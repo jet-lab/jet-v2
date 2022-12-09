@@ -77,10 +77,15 @@ export const useFixedTermSync = (): void => {
     program: Program<JetMarket>,
     marginProgramId: PublicKey
   ) => {
-    const markets: MarketAndconfig[] = await Promise.all(
+    const markets: Array<MarketAndconfig> = [];
+    await Promise.all(
       Object.entries(airspace.fixedTermMarkets).map(async ([name, marketConfig]) => {
-        const market = await FixedTermMarket.load(program, marketConfig.market, marginProgramId);
-        return { market, config: marketConfig, name };
+        try {
+          const market = await FixedTermMarket.load(program, marketConfig.market, marginProgramId);
+          markets.push({ market, config: marketConfig, name });
+        } catch (e) {
+          console.log(e);
+        }
       })
     );
     setMarkets(markets);

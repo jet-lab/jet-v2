@@ -18,8 +18,8 @@
 use std::collections::HashMap;
 
 use jet_control::TokenMetadataParams;
+use jet_fixed_term::orderbook::state::{event_queue_len, orderbook_slab_len};
 use jet_margin::TokenOracle;
-use jet_market::orderbook::state::{event_queue_len, orderbook_slab_len};
 use jet_test_service::TokenCreateParams;
 use serde::{Deserialize, Serialize};
 use solana_sdk::{
@@ -41,7 +41,7 @@ use crate::{
     tx_builder::{global_initialize_instructions, AirspaceAdmin, TokenDepositsConfig},
 };
 
-static ADAPTERS: &[Pubkey] = &[jet_margin_pool::ID, jet_margin_swap::ID, jet_market::ID];
+static ADAPTERS: &[Pubkey] = &[jet_margin_pool::ID, jet_margin_swap::ID, jet_fixed_term::ID];
 const ORDERBOOK_CAPACITY: usize = 1_000;
 const EVENT_QUEUE_CAPACITY: usize = 1_000;
 
@@ -368,21 +368,21 @@ fn create_airspace_token_fixed_term_markets_tx(
                     &key_eq.pubkey(),
                     rent.minimum_balance(len_eq),
                     len_eq as u64,
-                    &jet_market::ID,
+                    &jet_fixed_term::ID,
                 ),
                 system_instruction::create_account(
                     &config.authority,
                     &key_bids.pubkey(),
                     rent.minimum_balance(len_orders),
                     len_orders as u64,
-                    &jet_market::ID,
+                    &jet_fixed_term::ID,
                 ),
                 system_instruction::create_account(
                     &config.authority,
                     &key_asks.pubkey(),
                     rent.minimum_balance(len_orders),
                     len_orders as u64,
-                    &jet_market::ID,
+                    &jet_fixed_term::ID,
                 ),
                 fixed_term_ix.initialize_market(
                     config.authority,

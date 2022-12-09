@@ -31,10 +31,6 @@ describe('Main Flows', () => {
 
 describe('Error Flows', () => {
   it('Connects a new test wallet and creates an account', () => {
-    cy.on('uncaught:exception', (err, runnable, promise) => {
-      return false;
-    });
-
     cy.clearLocalStorage();
     loadPageAndCreateAccount();
   });

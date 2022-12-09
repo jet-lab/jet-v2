@@ -74,9 +74,9 @@ pub mod test_service;
 
 pub use jet_airspace;
 pub use jet_control;
+pub use jet_fixed_term;
 pub use jet_margin;
 pub use jet_margin_pool;
 pub use jet_margin_swap;
-pub use jet_market;
 pub use jet_metadata;
 pub use jet_test_service;

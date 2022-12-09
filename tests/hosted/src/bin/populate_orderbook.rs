@@ -3,8 +3,8 @@
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
+use jet_fixed_term::control::state::Market;
 use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, OrderParams};
-use jet_market::control::state::Market;
 use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
@@ -281,11 +281,11 @@ fn main() -> Result<()> {
     // read and display the orderbook
     let asks_data = &mut client.conn.get_account_data(&client.ix.asks())?;
     let asks = agnostic_orderbook::state::critbit::Slab::<
-        jet_market::orderbook::state::CallbackInfo,
+        jet_fixed_term::orderbook::state::CallbackInfo,
     >::from_buffer(asks_data, agnostic_orderbook::state::AccountTag::Asks)?;
     let bids_data = &mut client.conn.get_account_data(&client.ix.bids())?;
     let bids = agnostic_orderbook::state::critbit::Slab::<
-        jet_market::orderbook::state::CallbackInfo,
+        jet_fixed_term::orderbook::state::CallbackInfo,
     >::from_buffer(bids_data, agnostic_orderbook::state::AccountTag::Bids)?;
 
     #[derive(Debug)]

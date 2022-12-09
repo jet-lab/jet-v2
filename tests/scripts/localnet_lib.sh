@@ -20,7 +20,7 @@ CTRL_SO=target/deploy/jet_control.so
 MRGN_SO=target/deploy/jet_margin.so
 POOL_SO=target/deploy/jet_margin_pool.so
 META_SO=target/deploy/jet_metadata.so
-MRKT_SO=target/deploy/jet_market.so
+MRKT_SO=target/deploy/jet_fixed_term.so
 ASM_SO=target/deploy/jet_airspace.so
 JTS_SO=target/deploy/jet_test_service.so
 MGNSWAP_SO=target/deploy/jet_margin_swap.so
@@ -81,7 +81,7 @@ start-oracle() {
 }
 
 start-crank-service() {
-    cargo run --bin jet-markets-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:=0} &
+    cargo run --bin jet-fixed-terms-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:=0} &
 }
 
 resume-validator() {
@@ -94,7 +94,7 @@ resume-validator() {
 start-new-validator() {
     start-validator -r
     cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
-    cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
+    cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o apps/react-app/public/localnet.config.json
     start-crank-service
     start-oracle
     wait $VALIDATOR_PID

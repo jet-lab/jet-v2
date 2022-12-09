@@ -183,7 +183,7 @@ impl AirspaceAdmin {
         let collateral_mint = FixedTermIxBuilder::collateral_mint(&market);
 
         let claims_update = TokenConfigUpdate {
-            admin: TokenAdmin::Adapter(jet_market::ID),
+            admin: TokenAdmin::Adapter(jet_fixed_term::ID),
             underlying_mint: token_mint,
             token_kind: TokenKind::Claim,
             value_modifier: max_leverage,
@@ -191,7 +191,7 @@ impl AirspaceAdmin {
         };
 
         let collateral_update = TokenConfigUpdate {
-            admin: TokenAdmin::Adapter(jet_market::ID),
+            admin: TokenAdmin::Adapter(jet_fixed_term::ID),
             underlying_mint: token_mint,
             token_kind: TokenKind::AdapterCollateral,
             value_modifier: collateral_weight,

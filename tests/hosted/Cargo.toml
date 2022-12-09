@@ -46,7 +46,7 @@ spl-token = "3.1.0"
 spl-associated-token-account = "1.0"
 pyth-sdk-solana = "0.4"
 
-jet-market = { path = "../../programs/fixed_term", features = ["no-entrypoint", "testing"] }
+jet-fixed-term = { path = "../../programs/fixed-term", features = ["no-entrypoint", "testing"] }
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
 jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "testing"] }

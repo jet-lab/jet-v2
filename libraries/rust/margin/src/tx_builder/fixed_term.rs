@@ -3,8 +3,8 @@ use std::{collections::HashMap, sync::Arc};
 use anchor_lang::AccountDeserialize;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
+use jet_fixed_term::control::state::Market;
 use jet_margin::MarginAccount;
-use jet_market::control::state::Market;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
@@ -22,7 +22,7 @@ impl PositionRefresher for FixedTermPositionRefresher {
                 get_anchor_account::<MarginAccount>(self.rpc.clone(), &self.margin_account)
                     .await?
                     .positions()
-                    .filter(|p| p.adapter == jet_market::id())
+                    .filter(|p| p.adapter == jet_fixed_term::id())
             {
                 if position.token == fixed_term_market.claims()
                     || position.token == fixed_term_market.collateral()

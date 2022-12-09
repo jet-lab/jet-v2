@@ -130,8 +130,8 @@ jobs:
 
       - name: Deploy Fixed Term
         run: |
-          solana program deploy -u d --program-id JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc target/deploy/jet_market.so
-          anchor idl upgrade -f ./target/idl/jet_market.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
+          solana program deploy -u d --program-id JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc target/deploy/jet_fixed_term.so
+          anchor idl upgrade -f ./target/idl/jet_fixed_term.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
 
       - name: Build Programs for Testing
         run: |

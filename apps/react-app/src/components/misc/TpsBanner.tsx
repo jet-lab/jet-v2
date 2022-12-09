@@ -50,7 +50,6 @@ export function TpsBanner(): JSX.Element {
         return;
       }
     }
-
     getSolanaTps();
     // Check TPS every 30 seconds
     const tpsInterval = setInterval(getSolanaTps, 60_000);

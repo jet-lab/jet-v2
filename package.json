@@ -9,7 +9,7 @@
     "build": "FORCE_COLOR=1 turbo run build",
     "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && env > apps/react-app/.env && yarn build",
     "clean:all": "rm -rf ./target & rm -rf ./test-ledger & yarn --cwd apps/react-app clean & yarn --cwd packages/margin clean & yarn --cwd packages/fixed_term clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
-    "clean:ts": "yarn --cwd apps/react-app clean & yarn --cwd packages/margin clean & yarn --cwd packages/fixed_term clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "clean:ts": "yarn --cwd apps/react-app clean & yarn --cwd packages/margin clean & yarn --cwd packages/fixed-term clean",
     "dev": "turbo run dev",
     "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap -p jet-market --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "turbo run fmt",

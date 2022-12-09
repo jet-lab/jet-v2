@@ -22,7 +22,7 @@ SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 
 e2e-tests() { local args=$@
     extract-arg --skip-yarn || yarn-build
-    rm -f app/public/localnet.config.json
+    rm -f apps/react-app/public/localnet.config.json
     anchor test $args -- --features testing
 }
 

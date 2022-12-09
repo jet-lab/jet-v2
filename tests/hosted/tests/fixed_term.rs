@@ -11,6 +11,7 @@ use hosted_tests::{
     margin_test_context,
     setup_helper::{setup_user, tokens},
 };
+use jet_fixed_term::orderbook::state::OrderParams;
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -19,7 +20,6 @@ use jet_margin_sdk::{
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
-use jet_market::orderbook::state::OrderParams;
 use jet_program_common::Fp32;
 
 use solana_sdk::signer::Signer;

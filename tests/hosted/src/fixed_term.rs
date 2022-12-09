@@ -12,6 +12,12 @@ use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
 
+use jet_fixed_term::{
+    control::state::Market,
+    margin::state::{MarginUser, TermLoan},
+    orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
+    tickets::state::{ClaimTicket, SplitTicket},
+};
 use jet_margin_sdk::{
     fixed_term::{fixed_term_market_pda, FixedTermIxBuilder, OwnedEventQueue},
     ix_builder::{
@@ -23,12 +29,6 @@ use jet_margin_sdk::{
         transaction::{SendTransactionBuilder, TransactionBuilder},
     },
     tx_builder::global_initialize_instructions,
-};
-use jet_market::{
-    control::state::Market,
-    margin::state::{MarginUser, TermLoan},
-    orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
-    tickets::state::{ClaimTicket, SplitTicket},
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_program_common::Fp32;
@@ -124,7 +124,7 @@ impl TestManager {
             .create_oracle(&mint.pubkey())
             .await?;
         let ticket_mint = fixed_term_market_pda(&[
-            jet_market::seeds::TICKET_MINT,
+            jet_fixed_term::seeds::TICKET_MINT,
             FixedTermIxBuilder::market_key(
                 &Pubkey::default(), //todo airspace
                 &mint.pubkey(),
@@ -276,7 +276,7 @@ impl TestManager {
     /// set up metadata authorization for margin to invoke Jet market
     pub async fn with_margin(self) -> Result<Self> {
         self.create_authority_if_missing().await?;
-        self.register_adapter_if_unregistered(&jet_market::ID)
+        self.register_adapter_if_unregistered(&jet_fixed_term::ID)
             .await?;
         self.register_tickets_position_metadatata().await?;
 
@@ -434,7 +434,7 @@ impl TestManager {
         let pos_data = PositionTokenMetadata {
             position_token_mint,
             underlying_token_mint,
-            adapter_program: jet_market::ID,
+            adapter_program: jet_fixed_term::ID,
             token_kind,
             value_modifier,
             max_staleness: 1_000,
