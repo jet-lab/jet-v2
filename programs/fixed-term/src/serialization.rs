@@ -10,7 +10,7 @@ use arrayref::array_ref;
 
 use crate::{
     orderbook::state::{EventAdapterMetadata, EventQueue},
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 /// Wrapper for account structs that serializes/deserializes and automatically persists changes
@@ -147,7 +147,7 @@ algebraic! {
 /// Directly deserialize accounts from the remaining_accounts iterator
 pub trait RemainingAccounts<'a, 'info: 'a>: Iterator<Item = &'a AccountInfo<'info>> {
     fn next_account(&mut self) -> Result<&'a AccountInfo<'info>> {
-        Ok(self.next().ok_or(ErrorCode::NoMoreAccounts)?)
+        Ok(self.next().ok_or(FixedTermErrorCode::NoMoreAccounts)?)
     }
 
     fn next_anchor<T: AnchorStruct, A: AccessMode>(
@@ -215,7 +215,7 @@ pub fn init<'info, T: AnchorStruct>(
         &[payer, new_account.clone(), system_program],
         &[&signer[..]],
     )
-    .map_err(|_| error!(crate::errors::ErrorCode::InvokeCreateAccount))?;
+    .map_err(|_| error!(crate::errors::FixedTermErrorCode::InvokeCreateAccount))?;
 
     {
         let mut data = new_account.data.borrow_mut();

@@ -29,10 +29,10 @@ pub struct Market {
     pub underlying_token_vault: Pubkey,
     /// The token mint for the tickets
     pub ticket_mint: Pubkey,
-    /// Mint owned by Jet markets to issue claims against a user.
+    /// Mint owned by fixed-term market to issue claims against a user.
     /// These claim notes are monitored by margin to ensure claims are repaid.
     pub claims_mint: Pubkey,
-    /// Mint owned by Jet markets to issue collateral value to a user
+    /// Mint owned by fixed-term market to issue collateral value to a user
     /// The collateral notes are monitored by the margin program to track value
     pub collateral_mint: Pubkey,
     /// oracle that defines the value of the underlying asset

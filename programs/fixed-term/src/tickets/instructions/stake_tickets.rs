@@ -6,7 +6,7 @@ use crate::{
     control::state::Market,
     seeds,
     tickets::{events::TicketsStaked, state::ClaimTicket},
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 /// Params needed to stake tickets
@@ -42,7 +42,7 @@ pub struct StakeTickets<'info> {
     /// The Market account tracks fixed term market assets of a particular tenor
     #[account(
         mut,
-        has_one = ticket_mint @ ErrorCode::WrongTicketMint,
+        has_one = ticket_mint @ FixedTermErrorCode::WrongTicketMint,
     )]
     pub market: AccountLoader<'info, Market>,
 

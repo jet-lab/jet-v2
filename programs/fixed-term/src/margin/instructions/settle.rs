@@ -4,27 +4,27 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     control::state::Market, margin::state::MarginUser, market_token_manager::MarketTokenManager,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct Settle<'info> {
     /// The account tracking information related to this particular user
     #[account(mut,
-        has_one = market @ ErrorCode::UserNotInMarket,
-        has_one = claims @ ErrorCode::WrongClaimAccount,
-        has_one = collateral @ ErrorCode::WrongCollateralAccount,
-        has_one = underlying_settlement @ ErrorCode::WrongUnderlyingSettlementAccount,
-        has_one = ticket_settlement @ ErrorCode::WrongTicketSettlementAccount,
+        has_one = market @ FixedTermErrorCode::UserNotInMarket,
+        has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
+        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
+        has_one = underlying_settlement @ FixedTermErrorCode::WrongUnderlyingSettlementAccount,
+        has_one = ticket_settlement @ FixedTermErrorCode::WrongTicketSettlementAccount,
     )]
     pub margin_user: Account<'info, MarginUser>,
 
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
-        has_one = underlying_token_vault @ ErrorCode::WrongVault,
-        has_one = ticket_mint @ ErrorCode::WrongOracle,
-        has_one = claims_mint @ ErrorCode::WrongClaimMint,
-        has_one = collateral_mint @ ErrorCode::WrongCollateralMint,
+        has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
+        has_one = ticket_mint @ FixedTermErrorCode::WrongOracle,
+        has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
+        has_one = collateral_mint @ FixedTermErrorCode::WrongCollateralMint,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -68,7 +68,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     let debt = ctx.accounts.margin_user.debt.total();
     let ctokens_deserved = assets.collateral()?;
 
-    // Notify margin of the current debt owed to Jet markets
+    // Notify margin of the current debt owed to fixed-term market
     if claim_balance > debt {
         ctx.burn_notes(
             &ctx.accounts.claims_mint,

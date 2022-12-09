@@ -3,22 +3,22 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     margin::state::MarginUser, market_token_manager::MarketTokenManager,
-    tickets::instructions::redeem_ticket::*, ErrorCode,
+    tickets::instructions::redeem_ticket::*, FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct MarginRedeemTicket<'info> {
     #[account(mut,
-		constraint = margin_user.margin_account == inner.authority.key() @ ErrorCode::WrongMarginUserAuthority,
+		constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
         has_one = collateral,
 	)]
     pub margin_user: Account<'info, MarginUser>,
 
-    /// Token account used by the margin program to track the collateral value of assets custodied by Jet markets
+    /// Token account used by the margin program to track the collateral value of assets custodied by fixed-term market
     #[account(mut)]
     pub collateral: AccountInfo<'info>,
 
-    /// Token mint used by the margin program to track the collateral value of assets custodied by Jet markets
+    /// Token mint used by the margin program to track the collateral value of assets custodied by fixed-term market
     #[account(mut, address = inner.market.load()?.collateral_mint)]
     pub collateral_mint: AccountInfo<'info>,
 

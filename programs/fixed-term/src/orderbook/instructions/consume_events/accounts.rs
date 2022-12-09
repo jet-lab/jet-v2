@@ -10,17 +10,17 @@ use crate::{
     orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
     tickets::state::SplitTicket,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct ConsumeEvents<'info> {
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
-        has_one = ticket_mint @ ErrorCode::WrongTicketMint,
-        has_one = underlying_token_vault @ ErrorCode::WrongVault,
-        has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
-        has_one = event_queue @ ErrorCode::WrongEventQueue,
+        has_one = ticket_mint @ FixedTermErrorCode::WrongTicketMint,
+        has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
+        has_one = orderbook_market_state @ FixedTermErrorCode::WrongMarketState,
+        has_one = event_queue @ FixedTermErrorCode::WrongEventQueue,
     )]
     #[account(mut)]
     pub market: AccountLoader<'info, Market>,
@@ -42,9 +42,9 @@ pub struct ConsumeEvents<'info> {
     pub event_queue: AccountInfo<'info>,
 
     #[account(
-        has_one = crank @ ErrorCode::WrongCrankAuthority,
-        constraint = crank_authorization.airspace == market.load()?.airspace @ ErrorCode::WrongAirspaceAuthorization,
-        constraint = crank_authorization.market == market.key() @ ErrorCode::WrongCrankAuthority,
+        has_one = crank @ FixedTermErrorCode::WrongCrankAuthority,
+        constraint = crank_authorization.airspace == market.load()?.airspace @ FixedTermErrorCode::WrongAirspaceAuthorization,
+        constraint = crank_authorization.market == market.key() @ FixedTermErrorCode::WrongCrankAuthority,
     )]
     pub crank_authorization: Account<'info, CrankAuthorization>,
     pub crank: Signer<'info>,

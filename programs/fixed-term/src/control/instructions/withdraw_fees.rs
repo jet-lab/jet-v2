@@ -2,13 +2,13 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use jet_program_proc_macros::MarketTokenManager;
 
-use crate::{control::state::Market, market_token_manager::MarketTokenManager, ErrorCode};
+use crate::{control::state::Market, market_token_manager::MarketTokenManager, FixedTermErrorCode};
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct WithdrawFees<'info> {
     #[account(mut,
-        has_one = fee_destination @ ErrorCode::WrongFeeDestination,
-        has_one = underlying_token_vault @ ErrorCode::WrongVault,
+        has_one = fee_destination @ FixedTermErrorCode::WrongFeeDestination,
+        has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
     )]
     pub market: AccountLoader<'info, Market>,
 

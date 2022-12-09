@@ -8,7 +8,7 @@ use crate::{
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
     tickets::state::SplitTicket,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
@@ -27,15 +27,15 @@ pub struct LendOrder<'info> {
     ticket_settlement: AccountInfo<'info>,
 
     /// where to loan tokens from
-    #[account(mut, constraint = mint(&lender_tokens.to_account_info())? == orderbook_mut.underlying_mint() @ ErrorCode::WrongUnderlyingTokenMint)]
+    #[account(mut, constraint = mint(&lender_tokens.to_account_info())? == orderbook_mut.underlying_mint() @ FixedTermErrorCode::WrongUnderlyingTokenMint)]
     pub lender_tokens: Account<'info, TokenAccount>,
 
     /// The market token vault
-    #[account(mut, address = orderbook_mut.vault() @ ErrorCode::WrongVault)]
+    #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
     /// The market token vault
-    #[account(mut, address = orderbook_mut.ticket_mint() @ ErrorCode::WrongTicketMint)]
+    #[account(mut, address = orderbook_mut.ticket_mint() @ FixedTermErrorCode::WrongTicketMint)]
     pub ticket_mint: Account<'info, Mint>,
 
     #[account(mut)]
@@ -49,7 +49,7 @@ impl<'info> LendOrder<'info> {
         Account::<'info, TokenAccount>::try_from(&self.ticket_settlement)?;
         require!(
             mint(&self.ticket_settlement.to_account_info())? == self.orderbook_mut.ticket_mint(),
-            ErrorCode::WrongTicketMint
+            FixedTermErrorCode::WrongTicketMint
         );
 
         Ok(self.ticket_settlement.key())

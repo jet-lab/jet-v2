@@ -16,7 +16,7 @@ use crate::{
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
     utils::map,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 use super::{queue, ConsumeEvents, FillAccounts, OutAccounts, PreparedEvent};
@@ -36,7 +36,7 @@ pub fn handler<'info>(
         num_iters += 1;
     }
     if num_iters == 0 {
-        return err!(ErrorCode::NoEvents);
+        return err!(FixedTermErrorCode::NoEvents);
     }
 
     agnostic_orderbook::instruction::consume_events::process::<CallbackInfo>(
@@ -208,7 +208,7 @@ fn handle_out<'info>(
 
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
-    let quote_size = fp32_mul(*base_size, price).ok_or(ErrorCode::ArithmeticOverflow)?;
+    let quote_size = fp32_mul(*base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
     match Side::from_u8(*side).unwrap() {
         Side::Bid => {
             if let Some(mut margin_user) = margin_user {

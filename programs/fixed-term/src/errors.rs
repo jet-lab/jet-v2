@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum ErrorCode {
+pub enum FixedTermErrorCode {
     #[msg("overflow occured on checked_add")]
     ArithmeticOverflow,
     #[msg("underflow occured on checked_sub")]

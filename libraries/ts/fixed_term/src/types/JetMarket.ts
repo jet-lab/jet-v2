@@ -949,7 +949,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token account used by the margin program to track the collateral value of assets custodied by Jet markets"
+            "Token account used by the margin program to track the collateral value of assets custodied by fixed-term market"
           ]
         },
         {
@@ -957,7 +957,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token mint used by the margin program to track the collateral value of assets custodied by Jet markets"
+            "Token mint used by the margin program to track the collateral value of assets custodied by fixed-term market"
           ]
         },
         {
@@ -2107,7 +2107,7 @@ export type JetMarket = {
           {
             "name": "claimsMint",
             "docs": [
-              "Mint owned by Jet markets to issue claims against a user.",
+              "Mint owned by fixed-term market to issue claims against a user.",
               "These claim notes are monitored by margin to ensure claims are repaid."
             ],
             "type": "publicKey"
@@ -2115,7 +2115,7 @@ export type JetMarket = {
           {
             "name": "collateralMint",
             "docs": [
-              "Mint owned by Jet markets to issue collateral value to a user",
+              "Mint owned by fixed-term market to issue collateral value to a user",
               "The collateral notes are monitored by the margin program to track value"
             ],
             "type": "publicKey"
@@ -2292,7 +2292,7 @@ export type JetMarket = {
             "name": "collateral",
             "docs": [
               "Token account used by the margin program to track the collateral value of positions",
-              "which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.",
+              "which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.",
               "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
             ],
             "type": "publicKey"
@@ -4652,7 +4652,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token account used by the margin program to track the collateral value of assets custodied by Jet markets"
+            "Token account used by the margin program to track the collateral value of assets custodied by fixed-term market"
           ]
         },
         {
@@ -4660,7 +4660,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token mint used by the margin program to track the collateral value of assets custodied by Jet markets"
+            "Token mint used by the margin program to track the collateral value of assets custodied by fixed-term market"
           ]
         },
         {
@@ -5810,7 +5810,7 @@ export const IDL: JetMarket = {
           {
             "name": "claimsMint",
             "docs": [
-              "Mint owned by Jet markets to issue claims against a user.",
+              "Mint owned by fixed-term market to issue claims against a user.",
               "These claim notes are monitored by margin to ensure claims are repaid."
             ],
             "type": "publicKey"
@@ -5818,7 +5818,7 @@ export const IDL: JetMarket = {
           {
             "name": "collateralMint",
             "docs": [
-              "Mint owned by Jet markets to issue collateral value to a user",
+              "Mint owned by fixed-term market to issue collateral value to a user",
               "The collateral notes are monitored by the margin program to track value"
             ],
             "type": "publicKey"
@@ -5995,7 +5995,7 @@ export const IDL: JetMarket = {
             "name": "collateral",
             "docs": [
               "Token account used by the margin program to track the collateral value of positions",
-              "which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.",
+              "which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.",
               "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
             ],
             "type": "publicKey"

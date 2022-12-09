@@ -2,19 +2,19 @@ use std::io::Write;
 
 use anchor_lang::prelude::*;
 
-use crate::{control::state::Market, ErrorCode};
+use crate::{control::state::Market, FixedTermErrorCode};
 
 #[derive(Accounts)]
 pub struct ModifyMarket<'info> {
     /// The `Market` manages asset tokens for a particular tenor
-    #[account(mut, has_one = airspace @ ErrorCode::WrongAirspace)]
+    #[account(mut, has_one = airspace @ FixedTermErrorCode::WrongAirspace)]
     pub market: AccountLoader<'info, Market>,
 
     /// The authority that must sign to make this change
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 }
 
@@ -24,7 +24,7 @@ pub fn handler(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: usize) -> Resu
 
     (&mut buffer[(offset + 8)..])
         .write_all(&data)
-        .map_err(|_| ErrorCode::IoError)?;
+        .map_err(|_| FixedTermErrorCode::IoError)?;
 
     Ok(())
 }

@@ -10,7 +10,7 @@ use crate::{
     },
     seeds,
     utils::init,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts)]
@@ -37,8 +37,8 @@ pub struct InitializeMarginUser<'info> {
 
     /// The Boheader account
     #[account(
-        has_one = claims_mint @ ErrorCode::WrongClaimMint,
-        has_one = collateral_mint @ ErrorCode::WrongCollateralMint
+        has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
+        has_one = collateral_mint @ FixedTermErrorCode::WrongCollateralMint
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -91,12 +91,12 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
     require_eq!(
         mint(&ctx.accounts.underlying_settlement.to_account_info())?,
         ctx.accounts.market.load()?.underlying_token_mint,
-        ErrorCode::WrongUnderlyingTokenMint
+        FixedTermErrorCode::WrongUnderlyingTokenMint
     );
     require_eq!(
         mint(&ctx.accounts.ticket_settlement.to_account_info())?,
         ctx.accounts.market.load()?.ticket_mint,
-        ErrorCode::WrongTicketMint
+        FixedTermErrorCode::WrongTicketMint
     );
 
     init! {

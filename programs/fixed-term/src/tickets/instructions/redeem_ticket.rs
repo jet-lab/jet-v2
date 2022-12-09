@@ -8,7 +8,7 @@ use crate::{
         events::TicketRedeemed,
         state::{deserialize_ticket, TicketKind},
     },
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts)]
@@ -28,8 +28,8 @@ pub struct RedeemTicket<'info> {
 
     /// The Market responsible for the asset
     #[account(
-        has_one = underlying_token_vault @ ErrorCode::WrongVault,
-        constraint = !market.load()?.tickets_paused @ ErrorCode::TicketsPaused,
+        has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
+        constraint = !market.load()?.tickets_paused @ FixedTermErrorCode::TicketsPaused,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -68,7 +68,7 @@ impl<'info> RedeemTicket<'info> {
                 maturation_timestamp,
                 current_time
             );
-            return err!(ErrorCode::ImmatureTicket);
+            return err!(FixedTermErrorCode::ImmatureTicket);
         }
 
         // transfer from the vault to the ticket_holder

@@ -4,15 +4,15 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     control::state::Market, market_token_manager::MarketTokenManager,
-    tickets::events::TokensExchanged, ErrorCode,
+    tickets::events::TokensExchanged, FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct ExchangeTokens<'info> {
     /// The Market manages asset tokens for a particular tenor
     #[account(
-            has_one = ticket_mint @ ErrorCode::WrongTicketMint,
-            has_one = underlying_token_vault @ ErrorCode::WrongVault,
+            has_one = ticket_mint @ FixedTermErrorCode::WrongTicketMint,
+            has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
     )]
     pub market: AccountLoader<'info, Market>,
 

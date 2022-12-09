@@ -95,7 +95,7 @@
 //! the slot it was minted. To create a `SplitTicket`, you must configure your [`OrderParams`](struct@crate::orderbook::state::OrderParams) `auto_stake` flag to
 //! `true`. This will allow to program to immediately stake your tickets as the match event is processed.
 //!
-//! After the Jet market market tenor has passed, the ticket may be redeemed for the underlying value with the program. Also included are instructions
+//! After the tenor has passed, the ticket may be redeemed for the underlying value with the program. Also included are instructions
 //! for transferring ownership of a ticket.
 //!
 //! # Debt and Term Loans
@@ -105,7 +105,7 @@
 
 /// Program instructions and structs related to authoritative control of the program state
 pub mod control;
-/// Program instructions, methods and structs related to the use of margin accounts with the Jet market program
+/// Program instructions, methods and structs related to the use of margin accounts with the fixed-term program
 pub mod margin;
 /// Program instructions and structs related to use of the on chain orderbook
 pub mod orderbook;
@@ -114,7 +114,7 @@ pub mod tickets;
 
 mod errors;
 pub mod events;
-pub use errors::ErrorCode;
+pub use errors::FixedTermErrorCode;
 
 mod market_token_manager;
 /// Utilities for safely serializing and deserializing solana accounts

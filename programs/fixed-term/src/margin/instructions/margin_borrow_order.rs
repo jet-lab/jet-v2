@@ -15,7 +15,7 @@ use crate::{
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
@@ -24,8 +24,8 @@ pub struct MarginBorrowOrder<'info> {
     #[account(
         mut,
         has_one = margin_account,
-        has_one = claims @ ErrorCode::WrongClaimAccount,
-        has_one = collateral @ ErrorCode::WrongCollateralAccount,
+        has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
+        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -44,7 +44,7 @@ pub struct MarginBorrowOrder<'info> {
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     /// CHECK: in instruction handler
-    #[account(mut, address = orderbook_mut.claims_mint() @ ErrorCode::WrongClaimMint)]
+    #[account(mut, address = orderbook_mut.claims_mint() @ FixedTermErrorCode::WrongClaimMint)]
     pub claims_mint: AccountInfo<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
@@ -52,15 +52,15 @@ pub struct MarginBorrowOrder<'info> {
     pub collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut, address = orderbook_mut.collateral_mint() @ ErrorCode::WrongCollateralMint)]
+    #[account(mut, address = orderbook_mut.collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
     pub collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
-    #[account(mut, address = orderbook_mut.vault() @ ErrorCode::WrongVault)]
+    #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
     pub underlying_token_vault: AccountInfo<'info>,
 
     /// The market token vault
-    #[account(mut, address = margin_user.underlying_settlement @ ErrorCode::WrongUnderlyingSettlementAccount)]
+    #[account(mut, address = margin_user.underlying_settlement @ FixedTermErrorCode::WrongUnderlyingSettlementAccount)]
     pub underlying_settlement: AccountInfo<'info>,
 
     #[market]

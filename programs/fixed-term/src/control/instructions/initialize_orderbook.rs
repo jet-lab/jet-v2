@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use crate::{
     control::{events::OrderbookInitialized, state::Market},
     orderbook::state::{CallbackInfo, TICK_SIZE},
-    seeds, ErrorCode,
+    seeds, FixedTermErrorCode,
 };
 
 /// Parameters necessary for orderbook initialization
@@ -20,7 +20,7 @@ pub struct InitializeOrderbook<'info> {
     /// The `Market` account tracks global information related to this particular Jet market
     #[account(
         mut,
-        has_one = airspace @ ErrorCode::WrongAirspace,
+        has_one = airspace @ FixedTermErrorCode::WrongAirspace,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -54,7 +54,7 @@ pub struct InitializeOrderbook<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 
     /// The account paying rent for PDA initialization

@@ -5,15 +5,15 @@ use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChang
 use crate::{
     control::{events::PositionRefreshed, state::Market},
     margin::state::{return_to_margin, MarginUser},
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts)]
 pub struct RefreshPosition<'info> {
     /// The account tracking information related to this particular user
     #[account(
-        has_one = market @ ErrorCode::UserNotInMarket,
-        has_one = margin_account @ ErrorCode::WrongClaimAccount,
+        has_one = market @ FixedTermErrorCode::UserNotInMarket,
+        has_one = margin_account @ FixedTermErrorCode::WrongClaimAccount,
     )]
     pub margin_user: Account<'info, MarginUser>,
 
@@ -22,8 +22,8 @@ pub struct RefreshPosition<'info> {
 
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
-        has_one = underlying_oracle @ ErrorCode::WrongOracle,
-        has_one = ticket_oracle @ ErrorCode::WrongOracle,
+        has_one = underlying_oracle @ FixedTermErrorCode::WrongOracle,
+        has_one = ticket_oracle @ FixedTermErrorCode::WrongOracle,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -80,10 +80,14 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
 fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
     let oracle = pyth_sdk_solana::load_price_feed_from_account_info(oracle_info).map_err(|e| {
         msg!("oracle error in account {}: {:?}", oracle_info.key, e);
-        error!(ErrorCode::OracleError)
+        error!(FixedTermErrorCode::OracleError)
     })?;
-    let price = oracle.get_current_price().ok_or(ErrorCode::PriceMissing)?;
-    let ema_price = oracle.get_ema_price().ok_or(ErrorCode::PriceMissing)?;
+    let price = oracle
+        .get_current_price()
+        .ok_or(FixedTermErrorCode::PriceMissing)?;
+    let ema_price = oracle
+        .get_ema_price()
+        .ok_or(FixedTermErrorCode::PriceMissing)?;
     Ok(PositionChange::Price(PriceChangeInfo {
         publish_time: oracle.publish_time,
         exponent: oracle.expo,

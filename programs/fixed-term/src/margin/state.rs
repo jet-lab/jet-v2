@@ -3,7 +3,7 @@ use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
 use jet_program_common::traits::{SafeAdd, TryAddAssign, TrySubAssign};
 
-use crate::{orderbook::state::OrderTag, ErrorCode};
+use crate::{orderbook::state::OrderTag, FixedTermErrorCode};
 
 pub const MARGIN_USER_VERSION: u8 = 0;
 
@@ -20,7 +20,7 @@ pub struct MarginUser {
     /// Token account used by the margin program to track the debt
     pub claims: Pubkey,
     /// Token account used by the margin program to track the collateral value of positions
-    /// which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.
+    /// which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin
     pub collateral: Pubkey,
     /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
@@ -139,7 +139,7 @@ impl Debt {
             require_eq!(
                 next_term_loan.sequence_number,
                 self.next_unpaid_term_loan_seqno,
-                ErrorCode::TermLoanHasWrongSequenceNumber
+                FixedTermErrorCode::TermLoanHasWrongSequenceNumber
             );
             self.next_term_loan_maturity = next_term_loan.maturation_timestamp;
         }

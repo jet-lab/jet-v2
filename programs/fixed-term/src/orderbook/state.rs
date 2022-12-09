@@ -1,4 +1,6 @@
-use crate::{control::state::Market, events::OrderCancelled, utils::orderbook_accounts, ErrorCode};
+use crate::{
+    control::state::Market, events::OrderCancelled, utils::orderbook_accounts, FixedTermErrorCode,
+};
 use agnostic_orderbook::{
     instruction::cancel_order,
     state::{critbit::Slab, get_side_from_order_id, Side},
@@ -43,17 +45,17 @@ pub struct OrderbookMut<'info> {
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
             mut,
-            has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
-            has_one = bids @ ErrorCode::WrongBids,
-            has_one = asks @ ErrorCode::WrongAsks,
-            has_one = event_queue @ ErrorCode::WrongEventQueue,
-            constraint = !market.load()?.orderbook_paused @ ErrorCode::OrderbookPaused,
+            has_one = orderbook_market_state @ FixedTermErrorCode::WrongMarketState,
+            has_one = bids @ FixedTermErrorCode::WrongBids,
+            has_one = asks @ FixedTermErrorCode::WrongAsks,
+            has_one = event_queue @ FixedTermErrorCode::WrongEventQueue,
+            constraint = !market.load()?.orderbook_paused @ FixedTermErrorCode::OrderbookPaused,
         )]
     pub market: AccountLoader<'info, Market>,
 
     // aaob accounts
     /// CHECK: handled by aaob
-    #[account(mut, owner = crate::ID @ ErrorCode::MarketStateNotProgramOwned)]
+    #[account(mut, owner = crate::ID @ FixedTermErrorCode::MarketStateNotProgramOwned)]
     pub orderbook_market_state: AccountInfo<'info>,
     /// CHECK: handled by aaob
     #[account(mut)]
@@ -120,7 +122,7 @@ impl<'info> OrderbookMut<'info> {
         )?;
         require!(
             order_summary.posted_order_id.is_some() || order_summary.total_base_qty > 0,
-            ErrorCode::OrderRejected
+            FixedTermErrorCode::OrderRejected
         );
 
         Ok((
@@ -153,7 +155,7 @@ impl<'info> OrderbookMut<'info> {
         };
         let handle = slab.find_by_key(order_id).ok_or_else(|| {
             msg!("Given Order ID: [{}]", order_id);
-            error!(ErrorCode::OrderNotFound)
+            error!(FixedTermErrorCode::OrderNotFound)
         })?;
         let info = slab.get_callback_info(handle);
 
@@ -163,7 +165,7 @@ impl<'info> OrderbookMut<'info> {
         // drop the refs so the orderbook can borrow the slab data
         drop(buf);
 
-        require_eq!(info_owner, owner, ErrorCode::WrongUserAccount);
+        require_eq!(info_owner, owner, FixedTermErrorCode::WrongUserAccount);
         let orderbook_params = cancel_order::Params { order_id };
         let order_summary = agnostic_orderbook::instruction::cancel_order::process::<CallbackInfo>(
             &crate::id(),
@@ -369,7 +371,7 @@ impl SensibleOrderSummary {
     // todo defensive rounding - depends on how this function is used
     pub fn quote_posted(&self) -> Result<u64> {
         fp32_mul(self.summary.total_base_qty_posted, self.limit_price)
-            .ok_or_else(|| error!(ErrorCode::FixedPointDivision))
+            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointDivision))
     }
 
     pub fn base_posted(&self) -> u64 {
@@ -484,12 +486,18 @@ impl<'a> EventQueue<'a> {
     const ADAPTER_OFFSET: usize = EventAdapterMetadata::LEN + 8;
 
     pub fn deserialize_market(info: AccountInfo<'a>) -> Result<Self> {
-        require!(info.owner == &crate::id(), ErrorCode::WrongEventQueue);
+        require!(
+            info.owner == &crate::id(),
+            FixedTermErrorCode::WrongEventQueue
+        );
         Self::deserialize(info, false)
     }
 
     pub fn deserialize_user_adapter(info: AccountInfo<'a>) -> Result<Self> {
-        require!(info.owner != &crate::id(), ErrorCode::UserDoesNotOwnAdapter);
+        require!(
+            info.owner != &crate::id(),
+            FixedTermErrorCode::UserDoesNotOwnAdapter
+        );
         Self::deserialize(info, true)
     }
 

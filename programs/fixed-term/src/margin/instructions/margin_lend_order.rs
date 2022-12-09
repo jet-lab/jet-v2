@@ -10,7 +10,7 @@ use crate::{
         state::{CallbackFlags, OrderParams},
     },
     serialization::RemainingAccounts,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
@@ -19,7 +19,7 @@ pub struct MarginLendOrder<'info> {
     #[account(
         mut,
         constraint = margin_user.margin_account.key() == inner.authority.key(),
-        has_one = collateral @ ErrorCode::WrongCollateralAccount,
+        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 

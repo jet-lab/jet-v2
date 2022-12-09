@@ -7,7 +7,7 @@ use jet_program_common::traits::TrySubAssign;
 use crate::{
     events::{TermLoanFulfilled, TermLoanRepay},
     margin::state::{MarginUser, TermLoan},
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts)]
@@ -18,10 +18,10 @@ pub struct Repay<'info> {
 
     #[account(
         mut,
-        has_one = borrower_account @ ErrorCode::UserNotInMarket,
+        has_one = borrower_account @ FixedTermErrorCode::UserNotInMarket,
         constraint = term_loan.sequence_number
             == borrower_account.debt.next_term_loan_to_repay().unwrap()
-            @ ErrorCode::TermLoanHasWrongSequenceNumber
+            @ FixedTermErrorCode::TermLoanHasWrongSequenceNumber
     )]
     pub term_loan: Account<'info, TermLoan>,
 
@@ -83,7 +83,11 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
         let user_key = user.key();
         let next_term_loan =
             Account::<TermLoan>::try_from(&ctx.accounts.next_term_loan).and_then(|ob| {
-                require_eq!(ob.borrower_account, user_key, ErrorCode::UserNotInMarket);
+                require_eq!(
+                    ob.borrower_account,
+                    user_key,
+                    FixedTermErrorCode::UserNotInMarket
+                );
                 Ok(ob)
             });
         user.debt

@@ -10,7 +10,7 @@ use crate::{
     },
     serialization::RemainingAccounts,
     tickets::state::SplitTicket,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 use super::{ConsumeEvents, FillAccounts, LoanAccount, OutAccounts, UserAccount};
@@ -88,20 +88,28 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     &[
                         crate::seeds::SPLIT_TICKET,
                         &maker_info.fill_account.to_bytes(),
-                        &self.seeds.next().ok_or(ErrorCode::InsufficientSeeds)?,
+                        &self
+                            .seeds
+                            .next()
+                            .ok_or(FixedTermErrorCode::InsufficientSeeds)?,
                     ],
                 )?,
             ))
         } else if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-            Some(LoanAccount::NewDebt(self.accounts.init_next::<TermLoan>(
-                self.payer.to_account_info(),
-                self.system_program.to_account_info(),
-                &[
-                    crate::seeds::TERM_LOAN,
-                    &maker_info.fill_account.to_bytes(),
-                    &self.seeds.next().ok_or(ErrorCode::InsufficientSeeds)?,
-                ],
-            )?))
+            Some(LoanAccount::NewDebt(
+                self.accounts.init_next::<TermLoan>(
+                    self.payer.to_account_info(),
+                    self.system_program.to_account_info(),
+                    &[
+                        crate::seeds::TERM_LOAN,
+                        &maker_info.fill_account.to_bytes(),
+                        &self
+                            .seeds
+                            .next()
+                            .ok_or(FixedTermErrorCode::InsufficientSeeds)?,
+                    ],
+                )?,
+            ))
         } else {
             None
         };
@@ -123,7 +131,7 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
                 account.key(),
                 Pubkey::new_from_array(expected)
             );
-            return err!(ErrorCode::WrongUserAccount);
+            return err!(FixedTermErrorCode::WrongUserAccount);
         }
         Ok(UserAccount::new(account.clone()))
     }
@@ -136,7 +144,7 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
             match self.next_adapter() {
                 Ok(adapter) => {
                     // this needs to fail the ix because it means the crank passed the wrong account
-                    require_eq!(key, adapter.key(), ErrorCode::WrongAdapter);
+                    require_eq!(key, adapter.key(), FixedTermErrorCode::WrongAdapter);
                     Ok(Some(adapter))
                 }
                 Err(e) => {

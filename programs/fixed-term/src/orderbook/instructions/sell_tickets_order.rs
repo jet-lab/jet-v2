@@ -5,7 +5,7 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     events::OrderType, market_token_manager::MarketTokenManager, orderbook::state::*,
-    serialization::RemainingAccounts, ErrorCode,
+    serialization::RemainingAccounts, FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
@@ -16,14 +16,14 @@ pub struct SellTicketsOrder<'info> {
     /// Account containing the tickets being sold
     #[account(mut, constraint =
         mint(&user_ticket_vault.to_account_info()).unwrap()
-        == ticket_mint.key() @ ErrorCode::WrongTicketMint
+        == ticket_mint.key() @ FixedTermErrorCode::WrongTicketMint
     )]
     pub user_ticket_vault: Account<'info, TokenAccount>,
 
     /// The account to receive the matched tokens
     #[account(mut, constraint =
         mint(&user_token_vault.to_account_info()).unwrap()
-        == orderbook_mut.market.load().unwrap().underlying_token_mint.key() @ ErrorCode::WrongUnderlyingTokenMint
+        == orderbook_mut.market.load().unwrap().underlying_token_mint.key() @ FixedTermErrorCode::WrongUnderlyingTokenMint
     )]
     pub user_token_vault: Account<'info, TokenAccount>,
 
@@ -31,11 +31,11 @@ pub struct SellTicketsOrder<'info> {
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// The ticket mint
-    #[account(mut, address = orderbook_mut.market.load().unwrap().ticket_mint.key() @ ErrorCode::WrongTicketMint)]
+    #[account(mut, address = orderbook_mut.market.load().unwrap().ticket_mint.key() @ FixedTermErrorCode::WrongTicketMint)]
     pub ticket_mint: Account<'info, Mint>,
 
     /// The token vault holding the underlying token of the ticket
-    #[account(mut, address = orderbook_mut.market.load().unwrap().underlying_token_vault.key() @ ErrorCode::WrongTicketMint)]
+    #[account(mut, address = orderbook_mut.market.load().unwrap().underlying_token_vault.key() @ FixedTermErrorCode::WrongTicketMint)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,

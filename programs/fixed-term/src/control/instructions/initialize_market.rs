@@ -108,7 +108,7 @@ pub struct InitializeMarket<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 
     /// The oracle for the underlying asset price

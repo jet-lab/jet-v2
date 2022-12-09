@@ -4,18 +4,18 @@ use anchor_lang::prelude::*;
 use crate::{
     control::{events::ToggleOrderMatching, state::Market},
     orderbook::state::CallbackInfo,
-    ErrorCode,
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts)]
 pub struct ResumeOrderMatching<'info> {
     /// The `Market` manages asset tokens for a particular tenor
     #[account(
-        has_one = airspace @ ErrorCode::WrongAirspace,
-        has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
-        has_one = bids @ ErrorCode::WrongBids,
-        has_one = asks @ ErrorCode::WrongAsks,
-        has_one = event_queue @ ErrorCode::WrongEventQueue,
+        has_one = airspace @ FixedTermErrorCode::WrongAirspace,
+        has_one = orderbook_market_state @ FixedTermErrorCode::WrongMarketState,
+        has_one = bids @ FixedTermErrorCode::WrongBids,
+        has_one = asks @ FixedTermErrorCode::WrongAsks,
+        has_one = event_queue @ FixedTermErrorCode::WrongEventQueue,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -37,7 +37,7 @@ pub struct ResumeOrderMatching<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 }
 
