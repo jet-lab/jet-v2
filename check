@@ -21,7 +21,7 @@ SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 # Workflow Jobs
 
 e2e-tests() { local args=$@
-    extract-arg --skip-yarn || (yarn-build && yarn build:app)
+    extract-arg --skip-yarn || yarn-build
     rm -f app/public/localnet.config.json
     anchor test $args -- --features testing
 }
@@ -95,7 +95,7 @@ docker-run() {
 
 yarn-build() {
     yarn install --frozen-lockfile
-    yarn build:libs
+    yarn build
 }
 
 # runs every workflow job. default if no args are given
