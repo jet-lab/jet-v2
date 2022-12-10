@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::MarginUser, market_token_manager::MarketTokenManager,
+    events::AssetsUpdated, margin::state::MarginUser, market_token_manager::MarketTokenManager,
     tickets::instructions::redeem_ticket::*, FixedTermErrorCode,
 };
 
@@ -41,6 +41,11 @@ pub fn handler(ctx: Context<MarginRedeemTicket>) -> Result<()> {
         &ctx.accounts.collateral,
         redeemed,
     )?;
+
+    emit!(AssetsUpdated::from((
+        &ctx.accounts.margin_user.assets,
+        ctx.accounts.margin_user.key()
+    )));
 
     Ok(())
 }

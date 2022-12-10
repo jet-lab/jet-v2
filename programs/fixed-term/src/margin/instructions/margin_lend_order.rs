@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
+    events::AssetsUpdated,
     margin::state::MarginUser,
     market_token_manager::MarketTokenManager,
     orderbook::{
@@ -79,6 +80,10 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         limit_price: params.limit_price,
         order_type: crate::events::OrderType::MarginLend,
     });
+    emit!(AssetsUpdated::from((
+        &ctx.accounts.margin_user.assets,
+        ctx.accounts.margin_user.key()
+    )));
 
     Ok(())
 }
