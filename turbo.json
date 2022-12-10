@@ -3,7 +3,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build", "fmt"],
-      "outputs": ["apps/**/build", "packages/**/dist"],
+      "outputs": ["apps/**/build"],
       "outputMode": "new-only"
     },
     "fmt": {
@@ -13,23 +13,15 @@
       "cache": false
     },
     "@jet-lab/fixed-term#build": {
-      "inputs": ["packages/fixed_term/src/*"],
-      "outputs": ["packages/fixed_term/dist/*"],
       "dependsOn": ["^build", "wasm-src#build"]
     },
     "@jet-lab/margin#build": {
-      "inputs": ["packages/margin/src/*"],
-      "outputs": ["packages/margin/dist/*"],
       "dependsOn": ["^build"]
     },
     "app": {
-      "inputs": ["apps/react-app/src/*"],
-      "outputs": ["apps/react-app/build/*"],
       "dependsOn": ["^build", "fmt"]
     },
     "wasm-src": {
-      "inputs": ["packages/wasm-src/*"],
-      "outputs": ["packages/wasm/*"],
       "dependsOn": ["^build"]
     }
   }
