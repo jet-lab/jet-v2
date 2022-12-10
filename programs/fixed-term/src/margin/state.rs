@@ -72,7 +72,7 @@ impl Debt {
         }
     }
 
-    fn outstanding_term_loans(&self) -> u64 {
+    pub fn outstanding_term_loans(&self) -> u64 {
         self.next_new_term_loan_seqno - self.next_unpaid_term_loan_seqno
     }
 
