@@ -1,5 +1,6 @@
 {
-  "include": ["./src/**/*", "./src/**/*.json"],
+  "include": ["src"],
+  "exclude": ["dist"],
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
@@ -18,13 +19,12 @@
     "baseUrl": "src",
     "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node",
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
     "skipLibCheck": true,
-
     "allowJs": true,
     "isolatedModules": true,
     "noFallthroughCasesInSwitch": true,
