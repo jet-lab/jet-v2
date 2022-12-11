@@ -12,7 +12,7 @@ use super::ix_builder::fixed_term_market_pda;
 
 /// Maximum byte size of the `ConsumeEventsInfo`, determined by solana transaction size
 /// TODO: this is placeholder
-const MAX_BYTES: usize = 736;
+const MAX_BYTES: usize = 512;
 
 /// Number of bytes in a loan account seed
 const SEED_BYTES: usize = 8;
