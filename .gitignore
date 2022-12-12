@@ -16,6 +16,7 @@ lcov.info
 .vscode
 yarn-error.log
 tsconfig.tsbuildinfo
+crank-info.log
 
 app/build
 localnet.config.json

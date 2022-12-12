@@ -81,7 +81,7 @@ start-oracle() {
 }
 
 start-crank-service() {
-    cargo run --bin jet-fixed-terms-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:=0} &
+    cargo run --bin jet-fixed-terms-crank-service -- --config-path $PWD/localnet.toml &
 }
 
 resume-validator() {

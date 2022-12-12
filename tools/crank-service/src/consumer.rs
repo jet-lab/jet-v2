@@ -1,7 +1,8 @@
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, Market, OwnedEventQueue};
-use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use log::{error, trace};
+use solana_sdk::{pubkey::Pubkey, signature::Signature, signer::Signer};
 use tokio::task::JoinHandle;
 
 use crate::client::Client;
@@ -9,40 +10,55 @@ use crate::client::Client;
 pub struct Consumer {
     client: Client,
     ix: FixedTermIxBuilder,
-    is_verbose: bool,
+}
+
+/// Convenient struct for logging successful event consumption
+#[allow(dead_code)]
+#[derive(Debug)]
+struct EventConsumptionData {
+    pub market: Pubkey,
+    pub num_consumed: u32,
+    pub signature: Signature,
+}
+
+/// Convenient struct for logging event consumption errors
+#[allow(dead_code)]
+#[derive(Debug)]
+struct EventConsumptionErrorData<E: Into<anyhow::Error>> {
+    pub market: Pubkey,
+    pub error: E,
 }
 
 impl Consumer {
-    pub fn spawn(
-        client: Client,
-        market: Pubkey,
-        is_verbose: bool,
-    ) -> Result<JoinHandle<Result<()>>> {
+    pub fn spawn(client: Client, market: Pubkey) -> Result<JoinHandle<Result<()>>> {
         Ok(tokio::spawn(async move {
-            Self::init(client, market, is_verbose).await?.run().await
+            Self::init(client, market).await?.run().await
         }))
     }
 
-    async fn init(client: Client, market: Pubkey, is_verbose: bool) -> Result<Self> {
+    async fn init(client: Client, market: Pubkey) -> Result<Self> {
         let manager = {
-            let data = client.conn.get_account_data(&market).await?;
+            let data = client.conn.get_account_data(&market).await.map_err(|e| {
+                error!("failed to fetch data for market [{market}]. Error: {e}");
+                e
+            })?;
             Market::try_deserialize(&mut data.as_slice())?
         };
         let ix = FixedTermIxBuilder::from(manager)
             .with_crank(&client.signer.pubkey())
             .with_payer(&client.signer.pubkey());
 
-        Ok(Self {
-            client,
-            ix,
-            is_verbose,
-        })
+        trace!("consumer initialized for market: [{}]", market);
+        Ok(Self { client, ix })
     }
 
     async fn run(self) -> Result<()> {
+        let market = self.ix.market();
         loop {
             let mut queue = self.fetch_queue().await?;
+            trace!("fetched queue for market: [{}]", market);
             if queue.is_empty()? {
+                trace!("empty queue for market: [{}]", market);
                 // nothing to consume
                 continue;
             }
@@ -52,16 +68,22 @@ impl Consumer {
             // TODO: metrics and error handling
             match self.client.sign_send_ix(consume_ix).await {
                 Ok(s) => {
-                    if self.is_verbose {
-                        println!(
-                            "Success! Market Key: [{}] Events consumed: [{}] Signature: [{}]",
-                            self.ix.market(),
-                            params.num_events,
-                            s
-                        )
-                    }
+                    trace!(
+                        "event consumption success: [{:?}]",
+                        EventConsumptionData {
+                            market,
+                            num_consumed: params.num_events,
+                            signature: s,
+                        }
+                    );
                 }
-                Err(_) => continue,
+                Err(e) => {
+                    error!(
+                        "failed to consume events: [{:?}]",
+                        EventConsumptionErrorData { market, error: e }
+                    );
+                    continue;
+                }
             }
         }
     }
@@ -71,7 +93,14 @@ impl Consumer {
             .client
             .conn
             .get_account_data(&self.ix.event_queue())
-            .await?;
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to fetch queue for market [{}]. Error: {e}",
+                    self.ix.market()
+                );
+                e
+            })?;
 
         Ok(OwnedEventQueue::from(data))
     }

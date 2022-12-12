@@ -9,9 +9,20 @@ use client::Client;
 use consumer::Consumer;
 use jet_margin_sdk::ix_builder::{derive_airspace, test_service::derive_token_mint};
 use jetctl::actions::test::{derive_market_from_tenor_seed, TestEnvConfig};
+use log::LevelFilter;
+use log4rs::{
+    append::{
+        console::{ConsoleAppender, Target},
+        file::FileAppender,
+    },
+    config::{Appender, Config as LoggerConfig, Root},
+    encode::pattern::PatternEncoder,
+    filter::threshold::ThresholdFilter,
+};
 use solana_sdk::pubkey::Pubkey;
 
 static LOCALNET_URL: &str = "http://127.0.0.1:8899";
+static DEFAULT_LOG_PATH: &str = "crank-info.log";
 
 #[derive(Parser, Debug)]
 pub struct CliOpts {
@@ -23,14 +34,14 @@ pub struct CliOpts {
     #[clap(long, short = 'k')]
     pub keypair_path: Option<String>,
 
+    /// The path to use for storing logs
+    #[clap(long, short = 'l')]
+    pub logfile_path: Option<String>,
+
     /// The rpc endpoint
     /// Defaults to localhost
     #[clap(long, short = 'u')]
     pub url: Option<String>,
-
-    /// Verbosity
-    #[clap(long, short = 'v', default_value_t = 0)]
-    pub verbose: u32,
 }
 
 async fn run(opts: CliOpts) -> Result<()> {
@@ -45,7 +56,7 @@ async fn run(opts: CliOpts) -> Result<()> {
     for (_, markets) in targets {
         for market in markets {
             let c = client.clone();
-            consumers.push(Consumer::spawn(c, market, opts.verbose > 0)?);
+            consumers.push(Consumer::spawn(c, market)?);
         }
     }
 
@@ -75,9 +86,37 @@ fn read_config(path: &str) -> Result<Vec<(String, Vec<Pubkey>)>> {
         .collect::<Vec<_>>())
 }
 
+fn init_logger(log_path: Option<String>) -> Result<log4rs::Handle> {
+    let stderr = ConsoleAppender::builder().target(Target::Stderr).build();
+    let logfile = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        .build(log_path.unwrap_or_else(|| DEFAULT_LOG_PATH.into()))?;
+
+    let config = LoggerConfig::builder()
+        .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        .appender(
+            Appender::builder()
+                .filter(Box::new(ThresholdFilter::new(LevelFilter::Info)))
+                .build("stderr", Box::new(stderr)),
+        )
+        .build(
+            Root::builder()
+                .appender("logfile")
+                .appender("stderr")
+                .build(LevelFilter::Trace),
+        )?;
+
+    log4rs::init_config(config).map_err(anyhow::Error::from)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    run(CliOpts::parse()).await?;
+    let opts = CliOpts::parse();
+
+    // (Optional) TODO: add tools to be able to modify logging through this handle
+    let _log_handle = init_logger(opts.logfile_path.clone())?;
+
+    run(opts).await?;
 
     std::future::pending::<()>().await;
     Ok(())
