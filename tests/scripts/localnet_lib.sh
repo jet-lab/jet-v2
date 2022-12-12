@@ -94,7 +94,7 @@ resume-validator() {
 start-new-validator() {
     start-validator -r
     cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
-    cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
+    cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o apps/react-app/public/localnet.config.json
     start-crank-service
     start-oracle
     wait $VALIDATOR_PID
