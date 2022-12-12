@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use anchor_lang::prelude::Rent;
 use anyhow::{bail, Result};
 use jet_margin_sdk::{
-    bonds::bonds_pda,
+    fixed_term::fixed_term_market_pda,
     ix_builder::{
         derive_airspace,
         test_service::{derive_swap_pool, derive_token_mint},
@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{pubkey, pubkey::Pubkey, signer::Signer};
 
 use crate::{
-    app_config::{AirspaceInfo, BondMarketInfo, JetAppConfig, SwapPoolInfo, TokenInfo},
+    app_config::{AirspaceInfo, FixedTermMarketInfo, JetAppConfig, SwapPoolInfo, TokenInfo},
     client::{Client, NetworkKind, Plan},
 };
 
@@ -89,7 +89,7 @@ async fn generate_app_config(client: &Client, env: &EnvironmentConfig) -> Result
         AirspaceInfo {
             name: as_config.name.clone(),
             tokens: as_config.tokens.keys().cloned().collect(),
-            bond_markets: generate_bond_markets_app_config_from_env(client, as_config)
+            fixed_term_markets: generate_fixed_term_markets_app_config_from_env(client, as_config)
                 .await
                 .unwrap(),
         }
@@ -98,7 +98,7 @@ async fn generate_app_config(client: &Client, env: &EnvironmentConfig) -> Result
 
     Ok(JetAppConfig {
         airspace_program_id: jet_margin_sdk::jet_airspace::ID,
-        bonds_program_id: jet_margin_sdk::jet_bonds::ID,
+        fixed_term_market_program_id: jet_margin_sdk::jet_fixed_term::ID,
         control_program_id: jet_margin_sdk::jet_control::ID,
         margin_program_id: jet_margin_sdk::jet_margin::ID,
         margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,
@@ -162,53 +162,49 @@ fn generate_token_app_config_from_env(env: &EnvironmentConfig) -> HashMap<String
     }))
 }
 
-async fn generate_bond_markets_app_config_from_env(
+async fn generate_fixed_term_markets_app_config_from_env(
     client: &Client,
     as_config: &AirspaceConfig,
-) -> Result<HashMap<String, BondMarketInfo>> {
-    let mut bond_markets = HashMap::new();
+) -> Result<HashMap<String, FixedTermMarketInfo>> {
+    let mut fixed_term_markets = HashMap::new();
     let airspace = derive_airspace(&as_config.name);
 
     for (name, config) in &as_config.tokens {
         let token_mint = derive_token_mint(name);
 
-        for b_market in &config.bond_markets {
-            let bond_manager = derive_bond_manager_from_duration_seed(
+        for fixed_term_market in &config.fixed_term_markets {
+            let market = derive_market_from_tenor_seed(
                 &airspace,
                 &token_mint,
-                b_market.borrow_duration,
+                fixed_term_market.borrow_tenor,
             );
 
-            bond_markets.insert(
-                format!("{name}_{}", b_market.borrow_duration),
-                BondMarketInfo {
+            fixed_term_markets.insert(
+                format!("{name}_{}", fixed_term_market.borrow_tenor),
+                FixedTermMarketInfo {
                     symbol: name.clone(),
-                    bond_manager,
-                    market_info: client.read_anchor_account(&bond_manager).await?,
+                    market,
+                    market_info: client.read_anchor_account(&market).await?,
                 },
             );
         }
     }
 
-    Ok(bond_markets)
+    Ok(fixed_term_markets)
 }
 
-fn derive_bond_manager(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-    bonds_pda(&[
-        jet_margin_sdk::jet_bonds::seeds::BOND_MANAGER,
+fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
+    fixed_term_market_pda(&[
+        jet_margin_sdk::jet_fixed_term::seeds::MARKET,
         airspace.as_ref(),
         token_mint.as_ref(),
         &seed,
     ])
 }
 
-pub fn derive_bond_manager_from_duration_seed(
-    airspace: &Pubkey,
-    token_mint: &Pubkey,
-    duration: i64,
-) -> Pubkey {
+pub fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: i64) -> Pubkey {
     let mut seed = [0u8; 32];
-    seed[..8].copy_from_slice(&duration.to_le_bytes());
+    seed[..8].copy_from_slice(&tenor.to_le_bytes());
 
-    derive_bond_manager(airspace, token_mint, seed)
+    derive_market(airspace, token_mint, seed)
 }

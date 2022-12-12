@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build", "fmt"],
+      "outputs": ["apps/**/build"],
+      "outputMode": "new-only"
+    },
+    "fmt": {
+      "outputMode": "new-only"
+    },
+    "dev": {
+      "cache": false
+    },
+    "@jet-lab/fixed-term#build": {
+      "dependsOn": ["^build", "wasm-src#build"]
+    },
+    "@jet-lab/margin#build": {
+      "dependsOn": ["^build"]
+    },
+    "app": {
+      "dependsOn": ["^build", "fmt"]
+    },
+    "wasm-src": {
+      "dependsOn": ["^build"]
+    }
+  }
+}

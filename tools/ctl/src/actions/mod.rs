@@ -1,5 +1,5 @@
 pub mod apply;
-pub mod bonds;
+pub mod fixed_term;
 pub mod global;
 pub mod governance;
 pub mod margin;

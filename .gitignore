@@ -17,8 +17,12 @@ lcov.info
 yarn-error.log
 tsconfig.tsbuildinfo
 
-app/build
+**/build/**
+!.gitkeep
+!package.json
 localnet.config.json
 
 .env
 # documentations
+
+.turbo

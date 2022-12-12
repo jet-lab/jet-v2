@@ -1,6 +1,6 @@
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_margin_sdk::bonds::{BondManager, BondsIxBuilder, OwnedEventQueue};
+use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, Market, OwnedEventQueue};
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use tokio::task::JoinHandle;
 
@@ -8,7 +8,7 @@ use crate::client::Client;
 
 pub struct Consumer {
     client: Client,
-    ix: BondsIxBuilder,
+    ix: FixedTermIxBuilder,
     is_verbose: bool,
 }
 
@@ -26,9 +26,9 @@ impl Consumer {
     async fn init(client: Client, market: Pubkey, is_verbose: bool) -> Result<Self> {
         let manager = {
             let data = client.conn.get_account_data(&market).await?;
-            BondManager::try_deserialize(&mut data.as_slice())?
+            Market::try_deserialize(&mut data.as_slice())?
         };
-        let ix = BondsIxBuilder::from(manager)
+        let ix = FixedTermIxBuilder::from(manager)
             .with_crank(&client.signer.pubkey())
             .with_payer(&client.signer.pubkey());
 
@@ -55,7 +55,7 @@ impl Consumer {
                     if self.is_verbose {
                         println!(
                             "Success! Market Key: [{}] Events consumed: [{}] Signature: [{}]",
-                            self.ix.manager(),
+                            self.ix.market(),
                             params.num_events,
                             s
                         )
