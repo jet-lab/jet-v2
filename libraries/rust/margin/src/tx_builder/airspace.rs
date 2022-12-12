@@ -18,7 +18,7 @@
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    bonds::BondsIxBuilder,
+    fixed_term::FixedTermIxBuilder,
     ix_builder::{
         derive_airspace, derive_governor_id, get_control_authority_address,
         test_service::if_not_initialized, AirspaceIxBuilder, ControlIxBuilder,
@@ -173,8 +173,8 @@ impl AirspaceAdmin {
         .into()
     }
 
-    /// Register a bond market for use with margin accounts
-    pub fn register_bond_market(
+    /// Register a fixed term market for use with margin accounts
+    pub fn register_fixed_term_market(
         &self,
         token_mint: Pubkey,
         seed: [u8; 32],
@@ -183,12 +183,12 @@ impl AirspaceAdmin {
     ) -> TransactionBuilder {
         let margin_config_ix =
             MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
-        let bond_manager = BondsIxBuilder::bond_manager_key(&self.airspace, &token_mint, seed);
-        let claims_mint = BondsIxBuilder::claims_mint(&bond_manager);
-        let collateral_mint = BondsIxBuilder::collateral_mint(&bond_manager);
+        let market = FixedTermIxBuilder::market_key(&self.airspace, &token_mint, seed);
+        let claims_mint = FixedTermIxBuilder::claims_mint(&market);
+        let collateral_mint = FixedTermIxBuilder::collateral_mint(&market);
 
         let claims_update = TokenConfigUpdate {
-            admin: TokenAdmin::Adapter(jet_bonds::ID),
+            admin: TokenAdmin::Adapter(jet_fixed_term::ID),
             underlying_mint: token_mint,
             token_kind: TokenKind::Claim,
             value_modifier: max_leverage,
@@ -196,7 +196,7 @@ impl AirspaceAdmin {
         };
 
         let collateral_update = TokenConfigUpdate {
-            admin: TokenAdmin::Adapter(jet_bonds::ID),
+            admin: TokenAdmin::Adapter(jet_fixed_term::ID),
             underlying_mint: token_mint,
             token_kind: TokenKind::AdapterCollateral,
             value_modifier: collateral_weight,
@@ -254,7 +254,7 @@ mod tests {
         let foo = Pubkey::default();
 
         let am = AirspaceAdmin::new("test-airspace", foo, foo);
-        let txb = am.register_bond_market(foo, [0; 32], collateral_weight, max_leverage);
+        let txb = am.register_fixed_term_market(foo, [0; 32], collateral_weight, max_leverage);
 
         let mut data = &txb.instructions[0].data[8..];
         let dec = ConfigureToken::deserialize(&mut data).unwrap();

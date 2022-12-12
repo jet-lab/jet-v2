@@ -3,8 +3,8 @@
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_bonds::control::state::BondManager;
-use jet_margin_sdk::bonds::{BondsIxBuilder, OrderParams};
+use jet_fixed_term::control::state::Market;
+use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, OrderParams};
 use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
@@ -31,7 +31,7 @@ const DEVNET_USDC_FAUCET: Pubkey = pubkey!("MV2QoKwWmRQnu8HY56Hsmfhb6aC6L6mLirmQ
 const TOKEN_AMOUNT: u64 = 10_000_000_000;
 const TICKET_AMOUNT: u64 = 5_000_000_000;
 
-const BOND_DURATION: u64 = 5;
+const TICKET_TENOR: u64 = 5;
 
 lazy_static::lazy_static! {
     static ref PAYER: String = shellexpand::env("$PWD/tests/keypairs/payer.json")
@@ -49,7 +49,7 @@ fn map_keypair_file(path: String) -> Result<Keypair> {
 
 struct Client {
     conn: RpcClient,
-    ix: BondsIxBuilder,
+    ix: FixedTermIxBuilder,
     signer: Keypair,
 }
 
@@ -62,7 +62,7 @@ impl Client {
         token_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Result<Self> {
-        let mut ix = BondsIxBuilder::new_from_seed(
+        let mut ix = FixedTermIxBuilder::new_from_seed(
             &Pubkey::default(),
             &mint,
             seed,
@@ -72,17 +72,13 @@ impl Client {
             None,
         )
         .with_payer(&signer.pubkey());
-        let bond_manager = {
-            let data = conn.get_account_data(&ix.manager())?;
+        let market = {
+            let data = conn.get_account_data(&ix.market())?;
 
-            BondManager::try_deserialize(&mut data.as_slice())?
+            Market::try_deserialize(&mut data.as_slice())?
         };
 
-        ix = ix.with_orderbook_accounts(
-            bond_manager.bids,
-            bond_manager.asks,
-            bond_manager.event_queue,
-        );
+        ix = ix.with_orderbook_accounts(market.bids, market.asks, market.event_queue);
 
         Ok(Self { conn, ix, signer })
     }
@@ -242,7 +238,7 @@ fn main() -> Result<()> {
     // bob.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
 
     let params = |tickets, tokens, price| OrderParams {
-        max_bond_ticket_qty: tickets,
+        max_ticket_qty: tickets,
         max_underlying_token_qty: tokens,
         limit_price: price,
         match_limit: 100,
@@ -258,12 +254,12 @@ fn main() -> Result<()> {
         let rate = (0.05 * num).exp();
         let mut principal: u64 = rng.gen();
         principal %= 100_000;
-        let interest = principal as f64 * rate * BOND_DURATION as f64;
+        let interest = principal as f64 * rate * TICKET_TENOR as f64;
 
         let borrow = params(
             principal + interest as u64,
             u64::MAX,
-            rate_to_price(rate, BOND_DURATION).unwrap(),
+            rate_to_price(rate, TICKET_TENOR).unwrap(),
         );
         // alice.borrow_order(borrow)?;
     }
@@ -277,22 +273,20 @@ fn main() -> Result<()> {
         let lend = params(
             u64::MAX,
             principal,
-            rate_to_price(rate, BOND_DURATION).unwrap(),
+            rate_to_price(rate, TICKET_TENOR).unwrap(),
         );
         // bob.lend_order(lend)?;
     }
 
     // read and display the orderbook
     let asks_data = &mut client.conn.get_account_data(&client.ix.asks())?;
-    let asks = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
-            asks_data,
-            agnostic_orderbook::state::AccountTag::Asks,
-        )?;
+    let asks = agnostic_orderbook::state::critbit::Slab::<
+        jet_fixed_term::orderbook::state::CallbackInfo,
+    >::from_buffer(asks_data, agnostic_orderbook::state::AccountTag::Asks)?;
     let bids_data = &mut client.conn.get_account_data(&client.ix.bids())?;
-    let bids = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
-            bids_data,
-            agnostic_orderbook::state::AccountTag::Bids,
-        )?;
+    let bids = agnostic_orderbook::state::critbit::Slab::<
+        jet_fixed_term::orderbook::state::CallbackInfo,
+    >::from_buffer(bids_data, agnostic_orderbook::state::AccountTag::Bids)?;
 
     #[derive(Debug)]
     struct Order {

@@ -1903,8 +1903,8 @@ dependencies = [
  "futures-retry",
  "itertools 0.10.5",
  "jet-airspace",
- "jet-bonds",
  "jet-control",
+ "jet-fixed-term",
  "jet-margin",
  "jet-margin-pool",
  "jet-margin-sdk",
@@ -2150,35 +2150,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-bonds"
-version = "0.1.0"
-dependencies = [
- "agnostic-orderbook",
- "anchor-lang",
- "anchor-spl",
- "arrayref",
- "bitflags",
- "borsh 0.9.3",
- "bytemuck",
- "itertools 0.10.5",
- "jet-margin",
- "jet-program-common",
- "jet-program-proc-macros",
- "num-derive",
- "num-traits",
- "pyth-sdk-solana 0.4.2",
- "serde",
- "serde_json",
- "static_assertions",
-]
-
-[[package]]
 name = "jet-control"
 version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-bonds",
+ "jet-fixed-term",
  "jet-margin-pool",
  "jet-metadata",
  "solana-program",
@@ -2223,6 +2200,62 @@ dependencies = [
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio",
  "toml",
+]
+
+[[package]]
+name = "jet-fixed-term"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "anchor-spl",
+ "arrayref",
+ "bitflags",
+ "borsh 0.9.3",
+ "bytemuck",
+ "itertools 0.9.0",
+ "jet-margin",
+ "jet-program-common",
+ "jet-program-proc-macros",
+ "num-derive",
+ "num-traits",
+ "pyth-sdk-solana 0.4.2",
+ "serde",
+ "serde_json",
+ "static_assertions",
+]
+
+[[package]]
+name = "jet-fixed-terms-crank-service"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "anyhow",
+ "clap 3.2.22",
+ "jet-ctl-cli",
+ "jet-margin-sdk",
+ "serde",
+ "serde_json",
+ "solana-clap-utils",
+ "solana-cli-config",
+ "solana-client",
+ "solana-sdk",
+ "tokio",
+ "toml",
+]
+
+[[package]]
+name = "jet-lab-wasm-src"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "jet-program-common",
+ "js-sys",
+ "rand_chacha 0.3.1",
+ "serde",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -2279,8 +2312,8 @@ dependencies = [
  "bytemuck",
  "futures",
  "jet-airspace",
- "jet-bonds",
  "jet-control",
+ "jet-fixed-term",
  "jet-margin",
  "jet-margin-pool",
  "jet-margin-swap",
@@ -2309,26 +2342,6 @@ dependencies = [
  "jet-margin",
  "jet-margin-pool",
  "jet-static-program-registry",
-]
-
-[[package]]
-name = "jet-markets-crank-service"
-version = "0.1.0"
-dependencies = [
- "agnostic-orderbook",
- "anchor-lang",
- "anyhow",
- "clap 3.2.22",
- "jet-ctl-cli",
- "jet-margin-sdk",
- "serde",
- "serde_json",
- "solana-clap-utils",
- "solana-cli-config",
- "solana-client",
- "solana-sdk",
- "tokio",
- "toml",
 ]
 
 [[package]]
@@ -5674,19 +5687,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
-
-[[package]]
-name = "wasm-utils"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "jet-program-common",
- "js-sys",
- "rand_chacha 0.3.1",
- "serde",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "web-sys"

@@ -16,8 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod airspace;
-/// bonds-margin integration code
-pub mod bonds;
+/// fixed term market-margin integration code
+pub mod fixed_term;
 mod user;
 
 pub use airspace::*;

@@ -8,7 +8,7 @@ use clap::Parser;
 use client::Client;
 use consumer::Consumer;
 use jet_margin_sdk::ix_builder::{derive_airspace, test_service::derive_token_mint};
-use jetctl::actions::test::{derive_bond_manager_from_duration_seed, TestEnvConfig};
+use jetctl::actions::test::{derive_market_from_tenor_seed, TestEnvConfig};
 use solana_sdk::pubkey::Pubkey;
 
 static LOCALNET_URL: &str = "http://127.0.0.1:8899";
@@ -64,12 +64,8 @@ fn read_config(path: &str) -> Result<Vec<(String, Vec<Pubkey>)>> {
                 .flat_map(|(t, c)| {
                     let airspace = derive_airspace(&a.name);
                     let token_mint = derive_token_mint(&t);
-                    c.bond_markets.into_iter().map(move |m| {
-                        derive_bond_manager_from_duration_seed(
-                            &airspace,
-                            &token_mint,
-                            m.borrow_duration,
-                        )
+                    c.fixed_term_markets.into_iter().map(move |m| {
+                        derive_market_from_tenor_seed(&airspace, &token_mint, m.borrow_tenor)
                     })
                 })
                 .collect::<Vec<_>>();

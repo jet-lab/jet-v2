@@ -1,0 +1,50 @@
+[package]
+name = "jet-fixed-term"
+version = "0.1.0"
+description = "Jet Fixed Term Market program"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "jet_fixed_term"
+doctest = false
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+devnet = []
+cli = ["no-entrypoint", "serde"]
+mock-margin = []
+testing = ["jet-margin/testing"]
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+arrayref = "0.3.6"
+bitflags = "1.0.3"
+borsh = "0.9.1"
+bytemuck = {version = "1.7.2", features = ["derive"]}
+num-derive = "0.3.3"
+num-traits = "0.2"
+pyth-sdk-solana = "0.4"
+serde = { version = "1.0", optional = true }
+
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
+
+
+jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
+jet-program-common = { path = "../../libraries/rust/program-common" }
+
+jet-margin = { path = "../margin", features = ["no-entrypoint"] }
+
+[dev-dependencies]
+serde = "1.0"
+serde_json = "1.0"
+itertools = "*"
+static_assertions = "1.1.0"

@@ -146,7 +146,7 @@ static SIMULATION: OnceCell<Arc<dyn SolanaRpcClient>> = OnceCell::const_new();
 async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
     let runtime = jet_simulation::create_test_runtime![
         jet_test_service,
-        jet_bonds,
+        jet_fixed_term,
         jet_control,
         jet_margin,
         jet_metadata,

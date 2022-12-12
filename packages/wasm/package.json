@@ -1,0 +1,13 @@
+{
+  "name": "@jet-lab/wasm",
+  "version": "0.1.0",
+  "files": [
+    "jet_lab_wasm_src_bg.wasm",
+    "jet_lab_wasm_src.js",
+    "jet_lab_wasm_src_bg.js",
+    "jet_lab_wasm_src.d.ts"
+  ],
+  "module": "jet_lab_wasm_src.js",
+  "types": "jet_lab_wasm_src.d.ts",
+  "sideEffects": false
+}
