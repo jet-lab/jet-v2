@@ -25,7 +25,7 @@ pub struct MarginBorrowOrder<'info> {
         mut,
         has_one = margin_account,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
-        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -49,11 +49,11 @@ pub struct MarginBorrowOrder<'info> {
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral: AccountInfo<'info>,
+    pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut, address = orderbook_mut.collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
-    pub collateral_mint: AccountInfo<'info>,
+    #[account(mut, address = orderbook_mut.ticket_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
+    pub ticket_collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
@@ -153,8 +153,8 @@ pub fn handler(
     let total_debt = order_summary.base_combined();
     ctx.mint(&ctx.accounts.claims_mint, &ctx.accounts.claims, total_debt)?;
     ctx.mint(
-        &ctx.accounts.collateral_mint,
-        &ctx.accounts.collateral,
+        &ctx.accounts.ticket_collateral_mint,
+        &ctx.accounts.ticket_collateral,
         loan_to_disburse(order_summary.quote_posted()?, origination_fee),
     )?;
 

@@ -40,7 +40,7 @@ pub struct FixedTermIxBuilder {
     ticket_mint: Pubkey,
     underlying_token_vault: Pubkey,
     claims: Pubkey,
-    collateral: Pubkey,
+    ticket_collateral: Pubkey,
     orderbook_market_state: Pubkey,
     underlying_oracle: Pubkey,
     ticket_oracle: Pubkey,
@@ -88,7 +88,7 @@ impl From<Market> for FixedTermIxBuilder {
             ticket_mint: market.ticket_mint,
             underlying_token_vault: market.underlying_token_vault,
             claims: market.claims_mint,
-            collateral: market.collateral_mint,
+            ticket_collateral: market.ticket_collateral_mint,
             orderbook_market_state: market.orderbook_market_state,
             underlying_oracle: market.underlying_oracle,
             ticket_oracle: market.ticket_oracle,
@@ -135,7 +135,7 @@ impl FixedTermIxBuilder {
             ticket_mint,
             underlying_token_vault,
             claims,
-            collateral,
+            ticket_collateral: collateral,
             orderbook_market_state,
             underlying_oracle,
             ticket_oracle,
@@ -214,7 +214,7 @@ impl FixedTermIxBuilder {
         self.claims
     }
     pub fn collateral(&self) -> Pubkey {
-        self.collateral
+        self.ticket_collateral
     }
     pub fn event_queue(&self) -> Pubkey {
         self.orderbook.as_ref().unwrap().event_queue
@@ -312,7 +312,7 @@ impl FixedTermIxBuilder {
             underlying_token_vault: self.underlying_token_vault,
             ticket_mint: self.ticket_mint,
             claims: self.claims,
-            collateral: self.collateral,
+            collateral: self.ticket_collateral,
             authority: self.authority,
             airspace: self.airspace,
             underlying_oracle: self.underlying_oracle,
@@ -398,16 +398,16 @@ impl FixedTermIxBuilder {
             borrower_account,
             margin_account: owner,
             claims: FixedTermIxBuilder::user_claims(borrower_account),
-            collateral: FixedTermIxBuilder::user_collateral(borrower_account),
+            ticket_collateral: FixedTermIxBuilder::user_ticket_collateral(borrower_account),
             claims_mint: self.claims,
-            collateral_mint: self.collateral,
+            ticket_collateral_mint: self.ticket_collateral,
             underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
             ticket_settlement: get_associated_token_address(&owner, &self.ticket_mint),
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
             claims_metadata: get_metadata_address(&self.claims),
-            collateral_metadata: get_metadata_address(&self.collateral),
+            ticket_collateral_metadata: get_metadata_address(&self.ticket_collateral),
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(
@@ -522,8 +522,8 @@ impl FixedTermIxBuilder {
             margin_user: user.address,
             claims: user.claims,
             claims_mint: self.claims,
-            collateral: user.collateral,
-            collateral_mint: self.collateral,
+            ticket_collateral: user.ticket_collateral,
+            ticket_collateral_mint: self.ticket_collateral,
             underlying_token_vault: self.underlying_token_vault,
             underlying_settlement: underlying_settlement.unwrap_or_else(|| {
                 get_associated_token_address(&margin_account, &self.underlying_mint)
@@ -549,8 +549,8 @@ impl FixedTermIxBuilder {
         let data = jet_fixed_term::instruction::MarginRedeemTicket {}.data();
         let accounts = jet_fixed_term::accounts::MarginRedeemTicket {
             margin_user: margin_user.address,
-            collateral: margin_user.collateral,
-            collateral_mint: self.collateral,
+            ticket_collateral: margin_user.ticket_collateral,
+            ticket_collateral_mint: self.ticket_collateral,
             inner: self.redeem_ticket_accounts(margin_account, ticket, token_vault),
         }
         .to_account_metas(None);
@@ -634,8 +634,8 @@ impl FixedTermIxBuilder {
         let data = jet_fixed_term::instruction::MarginSellTicketsOrder { params }.data();
         let accounts = jet_fixed_term::accounts::MarginSellTicketsOrder {
             margin_user: margin_user.address,
-            collateral: margin_user.collateral,
-            collateral_mint: self.collateral,
+            ticket_collateral: margin_user.ticket_collateral,
+            ticket_collateral_mint: self.ticket_collateral,
             inner: self.sell_tickets_order_accounts(margin_account, ticket_vault, token_vault)?,
         }
         .to_account_metas(None);
@@ -692,8 +692,8 @@ impl FixedTermIxBuilder {
             claims: margin_user.claims,
             term_loan: self.term_loan_key(&margin_user.address, seed),
             claims_mint: self.claims,
-            collateral: margin_user.collateral,
-            collateral_mint: self.collateral,
+            ticket_collateral: margin_user.ticket_collateral,
+            ticket_collateral_mint: self.ticket_collateral,
             underlying_token_vault: self.underlying_token_vault,
             underlying_settlement: underlying_settlement.unwrap_or_else(|| {
                 get_associated_token_address(&margin_account, &self.underlying_mint)
@@ -749,8 +749,8 @@ impl FixedTermIxBuilder {
         .data();
         let accounts = jet_fixed_term::accounts::MarginLendOrder {
             margin_user: margin_user.address,
-            collateral: margin_user.collateral,
-            collateral_mint: self.collateral,
+            ticket_collateral: margin_user.ticket_collateral,
+            ticket_collateral_mint: self.ticket_collateral,
             inner: self.lend_order_accounts(
                 margin_user.address,
                 margin_account,
@@ -937,15 +937,15 @@ impl FixedTermIxBuilder {
         let data = jet_fixed_term::instruction::Settle {}.data();
         let margin_user = self.margin_user_account(margin_account);
         let claims = FixedTermIxBuilder::user_claims(margin_user);
-        let collateral = FixedTermIxBuilder::user_collateral(margin_user);
+        let ticket_collateral = FixedTermIxBuilder::user_ticket_collateral(margin_user);
         let accounts = jet_fixed_term::accounts::Settle {
             margin_user,
             market: self.market,
             token_program: spl_token::ID,
             claims,
             claims_mint: self.claims,
-            collateral,
-            collateral_mint: self.collateral,
+            ticket_collateral,
+            ticket_collateral_mint: self.ticket_collateral,
             underlying_token_vault: self.underlying_token_vault,
             ticket_mint: self.ticket_mint,
             underlying_settlement: get_associated_token_address(
@@ -988,7 +988,7 @@ impl FixedTermIxBuilder {
 pub struct MarginUser {
     pub address: Pubkey,
     pub claims: Pubkey,
-    pub collateral: Pubkey,
+    pub ticket_collateral: Pubkey,
 }
 
 impl FixedTermIxBuilder {
@@ -1000,7 +1000,7 @@ impl FixedTermIxBuilder {
         ]);
         MarginUser {
             address,
-            collateral: fixed_term_market_pda(&[
+            ticket_collateral: fixed_term_market_pda(&[
                 jet_fixed_term::seeds::COLLATERAL_NOTES,
                 address.as_ref(),
             ]),
@@ -1056,7 +1056,7 @@ impl FixedTermIxBuilder {
         ])
     }
 
-    pub fn user_collateral(borrower_account: Pubkey) -> Pubkey {
+    pub fn user_ticket_collateral(borrower_account: Pubkey) -> Pubkey {
         fixed_term_market_pda(&[
             jet_fixed_term::seeds::COLLATERAL_NOTES,
             borrower_account.as_ref(),

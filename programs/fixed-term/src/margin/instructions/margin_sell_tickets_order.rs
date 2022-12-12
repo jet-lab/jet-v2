@@ -19,17 +19,17 @@ pub struct MarginSellTicketsOrder<'info> {
     /// The account tracking borrower debts
     #[account(mut,
         constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::UnauthorizedCaller,
-        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral: AccountInfo<'info>,
+    pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral_mint: AccountInfo<'info>,
+    pub ticket_collateral_mint: AccountInfo<'info>,
 
     #[market(orderbook_mut)]
     #[token_program]
@@ -50,8 +50,8 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
         CallbackFlags::MARGIN,
     )?;
     ctx.mint(
-        &ctx.accounts.collateral_mint,
-        &ctx.accounts.collateral,
+        &ctx.accounts.ticket_collateral_mint,
+        &ctx.accounts.ticket_collateral,
         order_summary.quote_posted()?,
     )?;
 

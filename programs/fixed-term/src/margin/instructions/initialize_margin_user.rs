@@ -38,7 +38,7 @@ pub struct InitializeMarginUser<'info> {
     /// The Boheader account
     #[account(
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
-        has_one = collateral_mint @ FixedTermErrorCode::WrongCollateralMint
+        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -63,11 +63,11 @@ pub struct InitializeMarginUser<'info> {
             borrower_account.key().as_ref(),
         ],
         bump,
-        token::mint = collateral_mint,
+        token::mint = ticket_collateral_mint,
         token::authority = market,
         payer = payer)]
-    pub collateral: Box<Account<'info, TokenAccount>>,
-    pub collateral_mint: Box<Account<'info, Mint>>,
+    pub ticket_collateral: Box<Account<'info, TokenAccount>>,
+    pub ticket_collateral_mint: Box<Account<'info, Mint>>,
 
     pub underlying_settlement: Box<Account<'info, TokenAccount>>,
     pub ticket_settlement: Box<Account<'info, TokenAccount>>,
@@ -82,7 +82,7 @@ pub struct InitializeMarginUser<'info> {
     pub claims_metadata: AccountInfo<'info>,
 
     /// Token metadata account needed by the margin program to register the collateral position
-    pub collateral_metadata: AccountInfo<'info>,
+    pub ticket_collateral_metadata: AccountInfo<'info>,
 }
 
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
@@ -105,7 +105,7 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
             margin_account: ctx.accounts.margin_account.key(),
             market: ctx.accounts.market.key(),
             claims: ctx.accounts.claims.key(),
-            collateral: ctx.accounts.collateral.key(),
+            ticket_collateral: ctx.accounts.ticket_collateral.key(),
             underlying_settlement: ctx.accounts.underlying_settlement.key(),
             ticket_settlement: ctx.accounts.ticket_settlement.key(),
         } ignoring {
@@ -131,8 +131,10 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
                     vec![PositionChange::Register(ctx.accounts.claims.key())],
                 ),
                 (
-                    ctx.accounts.collateral_mint.key(),
-                    vec![PositionChange::Register(ctx.accounts.collateral.key())],
+                    ctx.accounts.ticket_collateral_mint.key(),
+                    vec![PositionChange::Register(
+                        ctx.accounts.ticket_collateral.key(),
+                    )],
                 ),
             ],
         },

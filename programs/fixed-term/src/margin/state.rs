@@ -22,7 +22,7 @@ pub struct MarginUser {
     /// Token account used by the margin program to track the collateral value of positions
     /// which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin
-    pub collateral: Pubkey,
+    pub ticket_collateral: Pubkey,
     /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
     /// the address to send owed tokens
     pub underlying_settlement: Pubkey,

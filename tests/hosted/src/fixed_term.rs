@@ -414,7 +414,7 @@ impl TestManager {
         )
         .await?;
         self.register_tickets_position_metadatata_impl(
-            market.collateral_mint,
+            market.ticket_collateral_mint,
             market.ticket_mint,
             TokenKind::AdapterCollateral,
             1_00,
@@ -884,7 +884,7 @@ impl<P: Proxy> FixedTermUser<P> {
             .manager
             .ix_builder
             .margin_user(self.proxy.pubkey())
-            .collateral;
+            .ticket_collateral;
         self.manager
             .load_anchor::<TokenAccount>(&key)
             .await

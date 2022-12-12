@@ -32,9 +32,10 @@ pub struct Market {
     /// Mint owned by fixed-term market to issue claims against a user.
     /// These claim notes are monitored by margin to ensure claims are repaid.
     pub claims_mint: Pubkey,
-    /// Mint owned by fixed-term market to issue collateral value to a user
-    /// The collateral notes are monitored by the margin program to track value
-    pub collateral_mint: Pubkey,
+    /// Mint owned by fixed-term market to issue collateral value to a user for
+    /// positions that are priced as tickets. The collateral notes are monitored
+    /// by the margin program to track value
+    pub ticket_collateral_mint: Pubkey,
     /// oracle that defines the value of the underlying asset
     pub underlying_oracle: Pubkey,
     /// oracle that defines the value of the tickets
@@ -112,7 +113,7 @@ impl Serialize for Market {
         )?;
         s.serialize_field("ticketMint", &self.ticket_mint.to_string())?;
         s.serialize_field("claimsMint", &self.claims_mint.to_string())?;
-        s.serialize_field("collateralMint", &self.collateral_mint.to_string())?;
+        s.serialize_field("collateralMint", &self.ticket_collateral_mint.to_string())?;
         s.serialize_field("underlyingOracle", &self.underlying_oracle.to_string())?;
         s.serialize_field("ticketOracle", &self.ticket_oracle.to_string())?;
         s.serialize_field("seed", &Pubkey::new_from_array(self.seed).to_string())?;

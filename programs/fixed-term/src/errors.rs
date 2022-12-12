@@ -87,7 +87,7 @@ pub enum FixedTermErrorCode {
     #[msg(
         "the wrong account was provided for the token account that represents a user's collateral"
     )]
-    WrongCollateralAccount,
+    WrongTicketCollateralAccount,
     #[msg("the wrong account was provided for the claims token mint")]
     WrongClaimMint,
     #[msg("the wrong account was provided for the collateral token mint")]

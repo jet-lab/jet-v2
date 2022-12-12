@@ -19,17 +19,17 @@ pub struct MarginLendOrder<'info> {
     #[account(
         mut,
         constraint = margin_user.margin_account.key() == inner.authority.key(),
-        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral: AccountInfo<'info>,
+    pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral_mint: AccountInfo<'info>,
+    pub ticket_collateral_mint: AccountInfo<'info>,
 
     #[market(orderbook_mut)]
     #[token_program]
@@ -64,8 +64,8 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
     )?;
     ctx.accounts.margin_user.assets.stake_tickets(staked)?;
     ctx.mint(
-        &ctx.accounts.collateral_mint,
-        &ctx.accounts.collateral,
+        &ctx.accounts.ticket_collateral_mint,
+        &ctx.accounts.ticket_collateral,
         staked + order_summary.quote_posted()?,
     )?;
     emit!(crate::events::OrderPlaced {
