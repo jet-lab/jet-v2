@@ -38,6 +38,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
 use crate::margin_integrator::PositionRefresher;
+use crate::solana::transaction::WithSigner;
 use crate::util::data::Join;
 use crate::{
     ix_builder::*,
@@ -117,7 +118,7 @@ impl MarginTxBuilder {
             None,
         );
 
-        let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey());
+        let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey(), None);
 
         Self {
             rpc,
@@ -144,7 +145,7 @@ impl MarginTxBuilder {
         let ix =
             MarginIxBuilder::new_with_payer(owner, seed, rpc.payer().pubkey(), Some(liquidator));
 
-        let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey());
+        let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey(), None);
 
         Self {
             rpc,
@@ -589,7 +590,10 @@ impl MarginTxBuilder {
     }
 
     /// Refresh metadata for all positions in the user account
-    pub async fn refresh_all_position_metadata(&self) -> Result<Vec<Transaction>> {
+    pub async fn refresh_all_position_metadata(
+        &self,
+        refresher: &Keypair,
+    ) -> Result<Vec<TransactionBuilder>> {
         let instructions = self
             .get_account_state()
             .await?
@@ -601,15 +605,16 @@ impl MarginTxBuilder {
                 match is_deposit_account {
                     false => self
                         .ix
-                        .refresh_position_metadata(&position.token, self.signer()),
+                        .refresh_position_metadata(&position.token, refresher.pubkey()),
                     true => self
                         .ix
-                        .refresh_position_config(&position.token, self.signer()),
+                        .refresh_position_config(&position.token, refresher.pubkey()),
                 }
+                .with_signer(clone(refresher))
             })
             .collect::<Vec<_>>();
 
-        self.get_chunk_transactions(12, instructions).await
+        Ok(instructions)
     }
 
     /// Create a new token account that accepts deposits, registered as a position
@@ -677,21 +682,6 @@ impl MarginTxBuilder {
                 &mut &account.data[..],
             )?)),
         }
-    }
-
-    async fn get_chunk_transactions(
-        &self,
-        chunk_size: usize,
-        instructions: Vec<Instruction>,
-    ) -> Result<Vec<Transaction>> {
-        futures::future::join_all(
-            instructions
-                .chunks(chunk_size)
-                .map(|c| self.create_transaction(c)),
-        )
-        .await
-        .into_iter()
-        .collect()
     }
 
     /// Append instructions to refresh pool positions to instructions

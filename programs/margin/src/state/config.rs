@@ -160,13 +160,22 @@ impl Permit {
         owner: Pubkey,
         permissions: Permissions,
     ) -> Result<()> {
-        if airspace != self.airspace {
+        // todo pubkey default is not acceptable once airspaces are in use
+        if airspace != self.airspace
+            && !(cfg!(feature = "testing") && airspace == Pubkey::default())
+        {
+            msg!(
+                "provided airspace: {airspace} - permit's airspace: {}",
+                self.airspace
+            );
             return err!(ErrorCode::WrongAirspace);
         }
         if owner != self.owner {
+            msg!("provided owner: {owner} - permit's owner: {}", self.owner);
             return err!(ErrorCode::PermitNotOwned);
         }
         if !self.permissions.contains(permissions) {
+            msg!("permissions: {:?}", self.permissions);
             return err!(ErrorCode::InsufficientPermissions);
         }
 

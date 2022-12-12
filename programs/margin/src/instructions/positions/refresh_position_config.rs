@@ -38,7 +38,7 @@ pub struct RefreshPositionConfig<'info> {
 /// Refresh the metadata for a position
 pub fn refresh_position_config_handler(ctx: Context<RefreshPositionConfig>) -> Result<()> {
     ctx.accounts.permit.validate(
-        Pubkey::default(), // todo airspaces must come from margin account once they are airspace-scoped
+        Pubkey::default(), // todo airspace must come from the margin account once they are airspace-scoped
         ctx.accounts.refresher.key(),
         Permissions::REFRESH_POSITION_METADATA,
     )?;

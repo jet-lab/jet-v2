@@ -15,7 +15,7 @@ lazy_static::lazy_static! {
 async fn main() -> Result<()> {
     let ctx = solana_test_context!();
 
-    let margin = MarginClient::new(ctx.rpc.clone(), "default");
+    let margin = MarginClient::new(ctx.rpc.clone(), "default", None);
     margin.init_globals().await?;
     margin.create_airspace_if_missing(false).await?;
     margin.create_authority_if_missing().await?;

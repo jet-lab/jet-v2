@@ -7,10 +7,11 @@ use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_margin_sdk::{
     ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder},
+    solana::{keypair::clone, transaction::WithSigner},
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
-use jet_simulation::{assert_custom_program_error, create_wallet};
+use jet_simulation::assert_custom_program_error;
 
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -95,11 +96,19 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = margin_test_context!();
 
+    // create position metadata refresher
+    let refresher = ctx.generate_key();
+    ctx.margin_config
+        .configure_position_metadata_refresher(refresher.pubkey(), true)
+        .with_signers(&[clone(&ctx.airspace_authority)])
+        .send_and_confirm(&ctx.rpc)
+        .await?;
+
     let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = ctx.create_wallet(10).await?;
+    let wallet_b = ctx.create_wallet(10).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
@@ -301,8 +310,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         )
         .await?;
 
-    user_a.refresh_all_position_metadata().await?;
-    user_b.refresh_all_position_metadata().await?;
+    user_a.refresh_all_position_metadata(&refresher).await?;
+    user_b.refresh_all_position_metadata(&refresher).await?;
 
     let mut user_a_state = ctx.margin.get_account(user_a.address()).await?;
     let mut user_b_state = ctx.margin.get_account(user_b.address()).await?;

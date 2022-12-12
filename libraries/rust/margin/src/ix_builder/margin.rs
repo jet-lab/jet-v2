@@ -251,7 +251,7 @@ impl MarginIxBuilder {
         position_token_mint: &Pubkey,
         refresher: Pubkey,
     ) -> Instruction {
-        let config = MarginConfigIxBuilder::new(self.airspace, self.payer)
+        let config = MarginConfigIxBuilder::new(self.airspace, self.payer, None)
             .derive_token_config(position_token_mint);
 
         let accounts = ix_account::RefreshPositionConfig {
@@ -401,7 +401,7 @@ impl MarginIxBuilder {
     ///
     /// `token_mint` - The mint for the token to be deposited
     pub fn create_deposit_position(&self, token_mint: Pubkey) -> Instruction {
-        let config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer, None);
         let token_account = get_associated_token_address(&self.address, &token_mint);
         let accounts = ix_account::CreateDepositPosition {
             margin_account: self.address,
@@ -518,12 +518,13 @@ pub struct MarginConfigIxBuilder {
 }
 
 impl MarginConfigIxBuilder {
-    /// Create a new [MarginConfigIxBuilder] for a given airspace, with the payer as the authority
-    pub fn new(airspace: Pubkey, payer: Pubkey) -> Self {
+    /// Create a new [MarginConfigIxBuilder] for a given airspace, assuming the
+    /// payer is the authority if not provided.
+    pub fn new(airspace: Pubkey, payer: Pubkey, airspace_authority: Option<Pubkey>) -> Self {
         Self {
             airspace,
+            authority: airspace_authority.unwrap_or(payer),
             payer,
-            authority: payer,
         }
     }
 
@@ -576,8 +577,21 @@ impl MarginConfigIxBuilder {
         }
     }
 
-    /// Set the configuration for a liquidator
-    pub fn configure_permit(&self, owner: Pubkey) -> ix_account::ConfigurePermit {
+    /// Enable or disable permission to refresh position metadata
+    pub fn configure_position_metadata_refresher(
+        &self,
+        refresher: Pubkey,
+        may_refresh: bool,
+    ) -> Instruction {
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::ConfigurePositionMetadataRefresher { may_refresh }.data(),
+            accounts: self.configure_permit(refresher).to_account_metas(None),
+        }
+    }
+
+    /// get the accounts to configure a permit
+    fn configure_permit(&self, owner: Pubkey) -> ix_account::ConfigurePermit {
         ix_account::ConfigurePermit {
             authority: self.authority,
             airspace: self.airspace,

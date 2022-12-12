@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use anyhow::Error;
+use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
+use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::InverseSendTransactionBuilder;
 use jet_margin_sdk::util::data::With;
 
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -46,7 +47,8 @@ pub struct MarginTestContext {
     pub rpc: Arc<dyn SolanaRpcClient>,
     pub tokens: TokenManager,
     pub margin: MarginClient,
-    pub authority: Keypair,
+    pub margin_config: MarginConfigIxBuilder,
+    pub airspace_authority: Keypair,
     pub payer: Keypair,
     pub solana: SolanaTestContext,
 }
@@ -54,7 +56,7 @@ pub struct MarginTestContext {
 impl std::fmt::Debug for MarginTestContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MarginTestContext")
-            .field("authority", &self.authority)
+            .field("airspace_authority", &self.airspace_authority)
             .field("payer", &self.payer)
             .finish()
     }
@@ -63,10 +65,21 @@ impl std::fmt::Debug for MarginTestContext {
 impl From<SolanaTestContext> for MarginTestContext {
     fn from(solana: SolanaTestContext) -> Self {
         let payer = Keypair::from_bytes(&solana.rpc.payer().to_bytes()).unwrap();
+        let airspace_authority = solana.keygen.generate_key();
+        let margin = MarginClient::new(
+            solana.rpc.clone(),
+            &airspace_authority.pubkey().to_string()[0..8],
+            Some(clone(&airspace_authority)),
+        );
         MarginTestContext {
             tokens: TokenManager::new(solana.clone()),
-            margin: MarginClient::new(solana.rpc.clone(), &payer.pubkey().to_string()[0..8]),
-            authority: Keypair::new(),
+            margin_config: MarginConfigIxBuilder::new(
+                margin.airspace(),
+                solana.rpc.payer().pubkey(),
+                Some(airspace_authority.pubkey()),
+            ),
+            margin,
+            airspace_authority,
             rpc: solana.rpc.clone(),
             solana,
             payer,
@@ -91,7 +104,7 @@ impl MarginTestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
-        jet_simulation::create_wallet(&self.rpc, sol_amount * LAMPORTS_PER_SOL).await
+        self.solana.create_wallet(sol_amount).await
     }
 
     pub fn generate_key(&self) -> Keypair {
