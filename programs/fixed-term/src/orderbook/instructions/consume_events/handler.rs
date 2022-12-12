@@ -174,7 +174,8 @@ fn handle_fill<'info>(
 
                     let flags = TermLoanFlags::default();
 
-                    **loan.as_mut().unwrap().new_debt()? = TermLoan {
+                    let term_loan = loan.as_mut().unwrap().new_debt()?;
+                    **term_loan = TermLoan {
                         sequence_number,
                         borrower_account: margin_user.key(),
                         market: ctx.accounts.market.key(),
@@ -190,7 +191,7 @@ fn handle_fill<'info>(
                     emit!(TermLoanCreated {
                         // TODO: any attempt to get the term_loan key results in a program panic.
                         // Need help.
-                        term_loan: Pubkey::default(),
+                        term_loan: term_loan.key(),
                         authority: maker_info.owner,
                         order_id: Some(maker_order_id),
                         sequence_number,
