@@ -3,7 +3,7 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
 import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
-import { JetMarket } from "./types"
+import { JetFixedTerm } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
 import { order_id_to_string, rate_to_price } from "@jet-lab/wasm"
 
@@ -101,13 +101,13 @@ export class FixedTermMarket {
     marginAdapterMetadata: PublicKey
   }
   readonly info: MarketInfo
-  readonly program: Program<JetMarket>
+  readonly program: Program<JetFixedTerm>
   private constructor(
     market: PublicKey,
     claimsMetadata: PublicKey,
     collateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
-    program: Program<JetMarket>,
+    program: Program<JetFixedTerm>,
     info: MarketInfo
   ) {
     this.addresses = {
@@ -133,12 +133,12 @@ export class FixedTermMarket {
    * Loads the program state from on chain and returns a `FixedTermMarket` client
    * class for interaction with the market
    *
-   * @param program The anchor `JetMarket` program
+   * @param program The anchor `JetFixedTerm` program
    * @param market The address of the `market` account
    * @returns
    */
   static async load(
-    program: Program<JetMarket>,
+    program: Program<JetFixedTerm>,
     market: Address,
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
