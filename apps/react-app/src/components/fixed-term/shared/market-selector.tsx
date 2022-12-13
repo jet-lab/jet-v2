@@ -90,7 +90,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
     }
   }, [selectedMarket, marginAccount]);
 
-  if (!marginAccount || !pools || !markets[selectedMarket]) return;
+  if (!marginAccount || !pools || !markets[selectedMarket]) return null;
 
   return (
     <div className="fixed-term-selector-view view-element">
