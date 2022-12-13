@@ -93,7 +93,7 @@ pub struct InitializeMarket<'info> {
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
         seeds = [
-            seeds::COLLATERAL_NOTES,
+            seeds::TICKET_COLLATERAL_NOTES,
             market.key().as_ref(),
         ],
         bump,

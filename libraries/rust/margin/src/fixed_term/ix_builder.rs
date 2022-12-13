@@ -125,8 +125,10 @@ impl FixedTermIxBuilder {
             market.as_ref(),
         ]);
         let claims = fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, market.as_ref()]);
-        let collateral =
-            fixed_term_market_pda(&[jet_fixed_term::seeds::COLLATERAL_NOTES, market.as_ref()]);
+        let collateral = fixed_term_market_pda(&[
+            jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
+            market.as_ref(),
+        ]);
         Self {
             airspace,
             authority,
@@ -1001,7 +1003,7 @@ impl FixedTermIxBuilder {
         MarginUser {
             address,
             ticket_collateral: fixed_term_market_pda(&[
-                jet_fixed_term::seeds::COLLATERAL_NOTES,
+                jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
                 address.as_ref(),
             ]),
             claims: fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, address.as_ref()]),
@@ -1026,7 +1028,10 @@ impl FixedTermIxBuilder {
     }
 
     pub fn collateral_mint(market_key: &Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[jet_fixed_term::seeds::COLLATERAL_NOTES, market_key.as_ref()])
+        fixed_term_market_pda(&[
+            jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
+            market_key.as_ref(),
+        ])
     }
 
     pub fn claim_ticket_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
@@ -1058,7 +1063,7 @@ impl FixedTermIxBuilder {
 
     pub fn user_ticket_collateral(borrower_account: Pubkey) -> Pubkey {
         fixed_term_market_pda(&[
-            jet_fixed_term::seeds::COLLATERAL_NOTES,
+            jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
             borrower_account.as_ref(),
         ])
     }
