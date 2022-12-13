@@ -360,7 +360,7 @@ pub mod seeds {
     pub const CLAIM_NOTES: &[u8] = b"claim_notes";
 
     #[constant]
-    pub const COLLATERAL_NOTES: &[u8] = b"collateral_notes";
+    pub const TICKET_COLLATERAL_NOTES: &[u8] = b"ticket_collateral_notes";
 
     #[constant]
     pub const SPLIT_TICKET: &[u8] = b"split_ticket";

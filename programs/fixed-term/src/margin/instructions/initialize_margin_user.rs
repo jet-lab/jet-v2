@@ -59,7 +59,7 @@ pub struct InitializeMarginUser<'info> {
     /// Token account used by the margin program to track owned assets
     #[account(init,
         seeds = [
-            seeds::COLLATERAL_NOTES,
+            seeds::TICKET_COLLATERAL_NOTES,
             borrower_account.key().as_ref(),
         ],
         bump,
