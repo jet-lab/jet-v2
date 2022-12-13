@@ -59,8 +59,8 @@ export interface MarginUserInfo {
 }
 
 export interface DebtInfo {
-  nextNewTermLoanSeqNo: BN
-  nextUnpaidTermLoanSeqNo: BN
+  nextNewTermLoanSeqno: BN
+  nextUnpaidTermLoanSeqno: BN
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
@@ -69,6 +69,8 @@ export interface DebtInfo {
 export interface AssetInfo {
   entitledTokens: BN
   entitledTickets: BN
+  nextDepositSeqno: BN
+  nextUnredeemedDepositSeqno: BN
   _reserved0: number[]
 }
 
@@ -169,9 +171,10 @@ export class FixedTermMarket {
     payer: Address,
     amount: BN,
     rate: BN,
-    seed: Uint8Array,
     tenor: number
   ): Promise<TransactionInstruction> {
+    const userAccount = await this.fetchUserAccount(user)
+    const seed = userAccount.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
     const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(tenor)).toString())
     const params: OrderParams = {
       maxTicketQty: new BN(U64_MAX.toString()),
@@ -185,12 +188,9 @@ export class FixedTermMarket {
     return await this.borrowIx(user, payer, params, seed)
   }
 
-  async borrowNowIx(
-    user: MarginAccount,
-    payer: Address,
-    amount: BN,
-    seed: Uint8Array
-  ): Promise<TransactionInstruction> {
+  async borrowNowIx(user: MarginAccount, payer: Address, amount: BN): Promise<TransactionInstruction> {
+    const userAccount = await this.fetchUserAccount(user)
+    const seed = userAccount.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
     // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
       maxTicketQty: new BN(U64_MAX.toString()),
@@ -238,9 +238,10 @@ export class FixedTermMarket {
     amount: BN,
     rate: BN,
     payer: Address,
-    seed: Uint8Array,
     tenor: number
   ): Promise<TransactionInstruction> {
+    const userAccount = await this.fetchUserAccount(user)
+    const seed = userAccount.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const userTicketVault = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), BigInt(tenor)))
@@ -256,7 +257,9 @@ export class FixedTermMarket {
     return await this.lendIx(user, userTicketVault, userTokenVault, payer, params, seed)
   }
 
-  async lendNowIx(user: MarginAccount, amount: BN, payer: Address, seed: Uint8Array): Promise<TransactionInstruction> {
+  async lendNowIx(user: MarginAccount, amount: BN, payer: Address): Promise<TransactionInstruction> {
+    const userAccount = await this.fetchUserAccount(user)
+    const seed = userAccount.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const userTicketVault = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const params: OrderParams = {
@@ -282,7 +285,7 @@ export class FixedTermMarket {
     let ticketSettlement = userTicketVault
     const marketUser = await this.deriveMarginUserAddress(user)
     if (params.autoStake) {
-      ticketSettlement = await this.deriveSplitTicket(marketUser, seed)
+      ticketSettlement = await this.deriveTermDepositAddress(marketUser, seed)
     }
     const collateral = await this.deriveMarginUserCollateral(marketUser)
     return await this.program.methods
@@ -392,6 +395,13 @@ export class FixedTermMarket {
       .instruction()
   }
 
+  async fetchUserAccount(user: MarginAccount): Promise<MarginUserInfo> {
+    const address = await this.deriveMarginUserAddress(user)
+    const data = await fetchData(this.program.provider.connection, address)
+
+    return this.program.coder.accounts.decode("MarginUser", data)
+  }
+
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
     return await findDerivedAccount(["margin_borrower", this.address, user.address], this.program.programId)
   }
@@ -405,18 +415,11 @@ export class FixedTermMarket {
   }
 
   async deriveTermLoanAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["term_loan", borrowerAccount, seed], this.program.programId)
+    return await findDerivedAccount(["term_loan", this.address, borrowerAccount, seed], this.program.programId)
   }
 
-  async deriveClaimTicketKey(ticketHolder: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(
-      ["claim_ticket", this.address, new PublicKey(ticketHolder), seed],
-      this.program.programId
-    )
-  }
-
-  async deriveSplitTicket(user: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["split_ticket", user, seed], this.program.programId)
+  async deriveTermDepositAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findDerivedAccount(["term_deposit", this.address, borrowerAccount, seed], this.program.programId)
   }
 
   async fetchOrderbook(): Promise<Orderbook> {

@@ -12,7 +12,7 @@ export type JetMarket = {
     {
       name: "TICKET_ACCOUNT"
       type: {
-        defined: "&[u8]"
+         defined: "&[u8]"
       }
       value: 'b"ticket_account"'
     },
@@ -2197,6 +2197,16 @@ export type JetMarket = {
           {
             name: "entitledTickets"
             docs: ["tickets to transfer into settlement account"]
+            type: "u64"
+          },
+          {
+            name: "nextDepositSeqno"
+            docs: ["sequence number for deposits"]
+            type: "u64"
+          },
+          {
+            name: "nextUnredeemedDepositSeqno"
+            docs: ["unredeemed deposit sequence number"]
             type: "u64"
           },
           {
@@ -5403,6 +5413,16 @@ export const IDL: JetMarket = {
           {
             name: "entitledTickets",
             docs: ["tickets to transfer into settlement account"],
+            type: "u64"
+          },
+          {
+            name: "nextDepositSeqno",
+            docs: ["sequence number for deposits"],
+            type: "u64"
+          },
+          {
+            name: "nextUnredeemedDepositSeqno",
+            docs: ["unredeemed deposit sequence number"],
             type: "u64"
           },
           {

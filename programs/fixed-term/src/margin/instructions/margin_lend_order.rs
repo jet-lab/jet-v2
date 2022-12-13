@@ -38,7 +38,7 @@ pub struct MarginLendOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
+pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
     let (callback_info, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
         ctx.accounts.inner.authority.key(),
         Side::Bid,
@@ -58,7 +58,11 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
     )?;
     let staked = ctx.accounts.inner.lend(
         ctx.accounts.margin_user.key(),
-        &seed,
+        &ctx.accounts
+            .margin_user
+            .assets
+            .next_deposit_seqno
+            .to_le_bytes(),
         callback_info,
         &order_summary,
     )?;

@@ -3,13 +3,13 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     margin::state::MarginUser, market_token_manager::MarketTokenManager,
-    tickets::instructions::redeem_ticket::*, FixedTermErrorCode,
+    tickets::instructions::redeem_deposit::*, FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
-pub struct MarginRedeemTicket<'info> {
+pub struct MarginRedeemDeposit<'info> {
     #[account(mut,
-		constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
+		constraint = margin_user.margin_account == inner.owner.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
         has_one = collateral,
 	)]
     pub margin_user: Account<'info, MarginUser>,
@@ -24,14 +24,11 @@ pub struct MarginRedeemTicket<'info> {
 
     #[market]
     #[token_program]
-    pub inner: RedeemTicket<'info>,
+    pub inner: RedeemDeposit<'info>,
 }
 
-pub fn handler(ctx: Context<MarginRedeemTicket>) -> Result<()> {
-    let redeemed = ctx
-        .accounts
-        .inner
-        .redeem(ctx.accounts.inner.authority.key())?;
+pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
+    let redeemed = ctx.accounts.inner.redeem()?;
     ctx.accounts
         .margin_user
         .assets
