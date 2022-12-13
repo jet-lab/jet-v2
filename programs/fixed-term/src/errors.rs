@@ -22,6 +22,8 @@ pub enum FixedTermErrorCode {
     InsufficientSeeds,
     #[msg("order price is prohibited")]
     InvalidOrderPrice,
+    #[msg("this token account is not a valid position for this margin user")]
+    InvalidPosition,
     #[msg("failed to invoke account creation")]
     InvokeCreateAccount,
     #[msg("failed to properly serialize or deserialize a data structure")]
@@ -36,6 +38,8 @@ pub enum FixedTermErrorCode {
     NoEvents,
     #[msg("expected additional remaining accounts, but there were none")]
     NoMoreAccounts,
+    #[msg("the debt has a non-zero balance")]
+    NonZeroDebt,
     #[msg("expected a term loan with a different sequence number")]
     TermLoanHasWrongSequenceNumber,
     #[msg("there was a problem loading the price oracle")]
