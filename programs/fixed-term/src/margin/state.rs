@@ -79,22 +79,22 @@ impl MarginUser {
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next term loan to be created
-    next_new_term_loan_seqno: u64,
+    pub next_new_term_loan_seqno: u64,
 
     /// The sequence number of the next term loan to be paid
-    next_unpaid_term_loan_seqno: u64,
+    pub next_unpaid_term_loan_seqno: u64,
 
     /// The maturation timestamp of the next term loan that is unpaid
-    next_term_loan_maturity: UnixTimestamp,
+    pub next_term_loan_maturity: UnixTimestamp,
 
     /// Amount that must be collateralized because there is an open order for it.
     /// Does not accrue interest because the loan has not been received yet.
-    pending: u64,
+    pub pending: u64,
 
     /// Debt that has already been borrowed because the order was matched.
     /// This debt will be due when the loan term ends.
     /// This includes all debt, including past due debt
-    committed: u64,
+    pub committed: u64,
 }
 
 pub type TermLoanSequenceNumber = u64;
@@ -208,6 +208,12 @@ pub struct Assets {
     /// tickets to transfer into settlement account
     pub entitled_tickets: u64,
 
+    /// The sequence number for the next deposit
+    pub next_deposit_seqno: u64,
+
+    /// The sequence number for the oldest deposit that has yet to be redeemed
+    pub next_unredeemed_deposit_seqno: u64,
+
     /// The number of tickets locked up in ClaimTicket or SplitTicket
     tickets_staked: u64,
 
@@ -252,10 +258,13 @@ impl Assets {
 
     /// make sure the order has already been accounted for before calling this method
     pub fn stake_tickets(&mut self, tickets: u64) -> Result<()> {
+        self.next_deposit_seqno += 1;
         self.tickets_staked.try_add_assign(tickets)
     }
 
     pub fn redeem_staked_tickets(&mut self, tickets: u64) {
+        self.next_unredeemed_deposit_seqno += 1;
+
         if tickets >= self.tickets_staked {
             self.tickets_staked = 0;
         } else {
@@ -293,12 +302,6 @@ pub struct TermLoan {
 
     /// Any boolean flags for this data type compressed to a single byte
     pub flags: TermLoanFlags,
-}
-
-impl TermLoan {
-    pub fn make_seeds<'a>(user: &'a [u8], bytes: &'a [u8]) -> [&'a [u8]; 3] {
-        [crate::seeds::TERM_LOAN, user, bytes]
-    }
 }
 
 bitflags! {

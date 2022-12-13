@@ -8,7 +8,7 @@ pub struct TokensExchanged {
 }
 
 #[event]
-pub struct TicketRedeemed {
+pub struct DepositRedeemed {
     pub market: Pubkey,
     pub ticket_holder: Pubkey,
     pub redeemed_value: u64,
@@ -24,8 +24,8 @@ pub struct TicketsStaked {
 }
 
 #[event]
-pub struct TicketTransferred {
-    pub ticket: Pubkey,
+pub struct DepositTransferred {
+    pub deposit: Pubkey,
     pub previous_owner: Pubkey,
     pub new_owner: Pubkey,
 }

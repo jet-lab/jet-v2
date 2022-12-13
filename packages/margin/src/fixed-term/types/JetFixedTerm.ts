@@ -2668,6 +2668,16 @@ export type JetFixedTerm = {
             "type": "u64"
           },
           {
+            "name": "nextNewDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
+            "type": "u64"
+          },
+          {
+            "name": "nextUnreedeemedDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
+            "type": "u64"
+          },
+          {
             "name": "ticketsStaked",
             "docs": [
               "The number of tickets locked up in ClaimTicket or SplitTicket"
@@ -6518,6 +6528,16 @@ export const IDL: JetFixedTerm = {
             "docs": [
               "tickets to transfer into settlement account"
             ],
+            "type": "u64"
+          },
+          {
+            "name": "nextNewDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
+            "type": "u64"
+          },
+          {
+            "name": "nextUnreedeemedDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
             "type": "u64"
           },
           {

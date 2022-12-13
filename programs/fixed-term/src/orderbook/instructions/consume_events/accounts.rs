@@ -9,7 +9,7 @@ use crate::{
     margin::state::{MarginUser, TermLoan},
     orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
-    tickets::state::SplitTicket,
+    tickets::state::TermDeposit,
     FixedTermErrorCode,
 };
 
@@ -76,13 +76,13 @@ pub struct FillAccounts<'info> {
 
 pub enum LoanAccount<'info> {
     /// Use if AUTO_STAKE is set in the maker's callback
-    AutoStake(AnchorAccount<'info, SplitTicket, Mut>), // (ticket, user/owner)
+    AutoStake(AnchorAccount<'info, TermDeposit, Mut>), // (ticket, user/owner)
     /// Use if NEW_DEBT is set in the maker's callback
     NewDebt(AnchorAccount<'info, TermLoan, Mut>), // (term loan, user)
 }
 
 impl<'info> LoanAccount<'info> {
-    pub fn auto_stake(&mut self) -> Result<&mut AnchorAccount<'info, SplitTicket, Mut>> {
+    pub fn auto_stake(&mut self) -> Result<&mut AnchorAccount<'info, TermDeposit, Mut>> {
         match self {
             LoanAccount::AutoStake(split_ticket) => Ok(split_ticket),
             _ => panic!(),
@@ -113,8 +113,8 @@ impl<'info> UserAccount<'info> {
         &self.0
     }
 
-    pub fn margin_user(self) -> Result<Box<AnchorAccount<'info, MarginUser, Mut>>> {
-        Ok(Box::new(AnchorAccount::try_from(self.0)?))
+    pub fn margin_user(&self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
+        Ok(AnchorAccount::try_from(self.0.clone())?)
     }
 
     pub fn pubkey(&self) -> Pubkey {
