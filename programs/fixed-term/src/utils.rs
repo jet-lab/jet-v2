@@ -35,12 +35,3 @@ macro_rules! orderbook_accounts {
     };
 }
 pub(crate) use orderbook_accounts;
-
-macro_rules! map {
-    ($option:ident.$($tt:tt)*) => {
-        if let Some(x) = $option.as_mut() {
-            x.$($tt)*
-        }
-    };
-}
-pub(crate) use map;

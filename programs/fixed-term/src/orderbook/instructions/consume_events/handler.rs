@@ -15,7 +15,6 @@ use crate::{
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
-    utils::map,
     FixedTermErrorCode,
 };
 
@@ -97,22 +96,15 @@ fn handle_fill<'info>(
     } = *event;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let fill_timestamp = taker_info.order_submitted_timestamp();
-    let mut margin_user = maker_info
-        .flags
-        .contains(CallbackFlags::MARGIN)
-        .then(|| maker.margin_user())
-        .transpose()?;
 
     match maker_side {
         Side::Bid => {
-            map!(margin_user.assets.reduce_order(quote_size));
             let maturation_timestamp = fill_timestamp.safe_add(manager.load()?.lend_tenor)?;
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                map!(margin_user.assets.stake_tickets(base_size)?);
                 let principal = quote_size;
                 let interest = base_size.safe_sub(principal)?;
                 **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
-                    owner: maker.pubkey(),
+                    owner: maker_info.owner,
                     market: manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
@@ -120,13 +112,18 @@ fn handle_fill<'info>(
                     principal,
                     interest,
                 };
-                if let Some(margin_user) = margin_user {
+                if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                    let mut margin_user = maker.margin_user()?;
+                    margin_user.assets.reduce_order(quote_size);
+                    margin_user.assets.stake_tickets(base_size)?;
                     emit!(AssetsUpdated::from((
                         &margin_user.assets,
                         margin_user.key()
                     )))
                 }
-            } else if let Some(mut margin_user) = margin_user {
+            } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = maker.margin_user()?;
+                margin_user.assets.reduce_order(quote_size);
                 margin_user.assets.entitled_tickets += base_size;
                 emit!(AssetsUpdated::from((
                     &margin_user.assets,
@@ -156,7 +153,8 @@ fn handle_fill<'info>(
         Side::Ask => {
             let mut emit_order_filled = true;
             let maturation_timestamp = fill_timestamp.safe_add(manager.load()?.borrow_tenor)?;
-            if let Some(mut margin_user) = margin_user {
+            if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
                     let mut manager = manager.load_mut()?;
@@ -269,18 +267,13 @@ fn handle_out<'info>(
         ..
     } = event;
 
-    let margin_user = info
-        .flags
-        .contains(CallbackFlags::MARGIN)
-        .then(|| user.margin_user())
-        .transpose()?;
-
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(*base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
     match Side::from_u8(*side).unwrap() {
         Side::Bid => {
-            if let Some(mut margin_user) = margin_user {
+            if info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = user.margin_user()?;
                 margin_user.assets.entitled_tokens += quote_size;
                 emit!(AssetsUpdated::from((
                     &margin_user.assets,
@@ -295,7 +288,9 @@ fn handle_out<'info>(
             }
         }
         Side::Ask => {
-            if let Some(mut margin_user) = margin_user {
+            if info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = user.margin_user()?;
+
                 if info.flags.contains(CallbackFlags::NEW_DEBT) {
                     margin_user.debt.process_out(*base_size)?;
                     emit!(DebtUpdated::from((&margin_user.debt, margin_user.key())));
