@@ -1,7 +1,7 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { AssociatedToken, FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange, sendAll } from "@jet-lab/margin"
-import { FixedTermMarket } from "./fixedTerm"
+import { FixedTermMarket, MarketAndconfig } from "./fixedTerm"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
 const createRandomSeed = (byteLength: number) => {
@@ -89,10 +89,7 @@ export const withCreateFixedTermMarketAccounts = async ({
 
 // MARKET MAKER ORDERS
 interface ICreateLendOrder {
-  market: {
-    market: FixedTermMarket
-    config: FixedTermMarketConfig
-  }
+  market: MarketAndconfig
   provider: AnchorProvider
   marginAccount: MarginAccount
   walletAddress: PublicKey
@@ -161,10 +158,7 @@ export const offerLoan = async ({
 }
 
 interface ICreateBorrowOrder {
-  market: {
-    market: FixedTermMarket
-    config: FixedTermMarketConfig
-  }
+  market: MarketAndconfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   walletAddress: PublicKey
@@ -229,10 +223,7 @@ export const requestLoan = async ({
 }
 
 interface ICancelOrder {
-  market: {
-    market: FixedTermMarket
-    config: FixedTermMarketConfig
-  }
+  market: MarketAndconfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   orderId: Uint8Array
@@ -283,10 +274,7 @@ export const cancelOrder = async ({
 // MARKET TAKER ORDERS
 
 interface IBorrowNow {
-  market: {
-    market: FixedTermMarket
-    config: FixedTermMarketConfig
-  }
+  market: MarketAndconfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   walletAddress: PublicKey
@@ -357,10 +345,7 @@ export const borrowNow = async ({
 }
 
 interface ILendNow {
-  market: {
-    market: FixedTermMarket
-    config: FixedTermMarketConfig
-  }
+  market: MarketAndconfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   walletAddress: PublicKey
@@ -418,31 +403,58 @@ export const lendNow = async ({
 }
 
 interface ISettle {
-  markets: FixedTermMarket[]
+  markets: MarketAndconfig[]
   selectedMarket: number
   marginAccount: MarginAccount
   provider: AnchorProvider
   pools: Record<string, Pool>
+  amount: BN
 }
 
-export const settle = async ({ markets, selectedMarket, marginAccount, provider, pools }: ISettle) => {
-  const market = markets[selectedMarket]
-  const instructions: TransactionInstruction[] = []
-  const user = await market.fetchMarginUser(marginAccount)
-  const pool = pools["USDC"]
-  await refreshAllMarkets(markets, instructions, marginAccount)
+export const settle = async ({ markets, selectedMarket, marginAccount, provider, pools, amount }: ISettle) => {
+  const { market, token } = markets[selectedMarket]
+  const instructions: TransactionInstruction[][] = []
+  const pool = pools[token.symbol]
+  const refreshIXS: TransactionInstruction[] = []
+  await refreshAllMarkets(
+    markets.map(m => m.market),
+    refreshIXS,
+    marginAccount
+  )
   await pool.withPrioritisedPositionRefresh({
-    instructions,
+    instructions: refreshIXS,
     pools,
     marginAccount
   })
 
-  if (user) {
-    const settleIX = await market.settle(marginAccount)
-    marginAccount.withAdapterInvoke({
-      instructions,
-      adapterInstruction: settleIX
+  instructions.push(refreshIXS)
+  const settleIXS: TransactionInstruction[] = []
+  const settleIX = await market.settle(marginAccount)
+  marginAccount.withAdapterInvoke({
+    instructions: settleIXS,
+    adapterInstruction: settleIX
+  })
+  const change = PoolTokenChange.shiftBy(amount)
+  const source = AssociatedToken.derive(market.addresses.underlyingTokenMint, marginAccount.address)
+  const position = await pool.withGetOrRegisterDepositPosition({ instructions: settleIXS, marginAccount })
+
+  const depositIx = await pool.programs.marginPool.methods
+    .deposit(change.changeKind.asParam(), change.value)
+    .accounts({
+      marginPool: pool.address,
+      vault: pool.addresses.vault,
+      depositNoteMint: pool.addresses.depositNoteMint,
+      depositor: marginAccount.address,
+      source,
+      destination: position,
+      tokenProgram: TOKEN_PROGRAM_ID
     })
-  }
+    .instruction()
+  await marginAccount.withAdapterInvoke({
+    instructions: settleIXS,
+    adapterInstruction: depositIx
+  })
+  await marginAccount.withUpdatePositionBalance({ instructions: settleIXS, position })
+  instructions.push(settleIXS)
   return sendAll(provider, [instructions])
 }
