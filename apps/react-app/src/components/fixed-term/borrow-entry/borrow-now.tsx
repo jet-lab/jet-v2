@@ -46,13 +46,11 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
     try {
       if (disabled || !wallet.publicKey) return;
       signature = await borrowNow({
-        market: marketAndConfig.market,
+        market: marketAndConfig,
         marginAccount,
-        marginConfig,
         provider,
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
-        currentPool,
         amount,
         markets: markets.map(m => m.market)
       });

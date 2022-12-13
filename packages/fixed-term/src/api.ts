@@ -1,14 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import {
-  AssociatedToken,
-  FixedTermMarketConfig,
-  MarginAccount,
-  MarginConfig,
-  Pool,
-  PoolTokenChange,
-  sendAll
-} from "@jet-lab/margin"
+import { AssociatedToken, FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange, sendAll } from "@jet-lab/margin"
 import { FixedTermMarket } from "./fixedTerm"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
@@ -58,7 +50,7 @@ interface IWithCreateFixedTermMarketAccount {
   markets: FixedTermMarket[]
   refreshPools: boolean
   pools: Record<string, Pool>
-  currentPool: Pool
+  pool: Pool
 }
 export const withCreateFixedTermMarketAccounts = async ({
   market,
@@ -68,7 +60,7 @@ export const withCreateFixedTermMarketAccounts = async ({
   markets,
   refreshPools,
   pools,
-  currentPool
+  pool
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.ticketMint
@@ -86,7 +78,7 @@ export const withCreateFixedTermMarketAccounts = async ({
   await refreshAllMarkets(markets, marketIXS, marginAccount)
 
   if (refreshPools) {
-    await currentPool.withPrioritisedPositionRefresh({
+    await pool.withPrioritisedPositionRefresh({
       instructions: marketIXS,
       pools,
       marginAccount
@@ -97,15 +89,16 @@ export const withCreateFixedTermMarketAccounts = async ({
 
 // MARKET MAKER ORDERS
 interface ICreateLendOrder {
-  market: FixedTermMarket
+  market: {
+    market: FixedTermMarket
+    config: FixedTermMarketConfig
+  }
   provider: AnchorProvider
   marginAccount: MarginAccount
-  marginConfig: MarginConfig
   walletAddress: PublicKey
   amount: BN
   basisPoints: BN
   pools: Record<string, Pool>
-  currentPool: Pool
   marketAccount?: string
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
@@ -114,50 +107,44 @@ export const offerLoan = async ({
   market,
   provider,
   marginAccount,
-  marginConfig,
   walletAddress,
   amount,
   basisPoints,
   pools,
-  currentPool,
   marketConfig,
   markets
 }: ICreateLendOrder) => {
-  // Fail if there is no active fixed term market program id in the config
-  if (!marginConfig.fixedTermMarketProgramId) {
-    throw new Error("There is no market configured on this network")
-  }
-
+  const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
-    market,
+    market: market.market,
     provider,
     marginAccount,
     walletAddress,
     markets,
     pools,
-    currentPool,
+    pool,
     refreshPools: true
   })
   instructions.push(marketIXS)
   const orderIXS: TransactionInstruction[] = []
 
   // refresh pool positions
-  await currentPool.withPrioritisedPositionRefresh({
+  await pool.withPrioritisedPositionRefresh({
     instructions: orderIXS,
     pools,
     marginAccount
   })
 
   // create lend instruction
-  await currentPool.withWithdrawToMargin({
+  await pool.withWithdrawToMargin({
     instructions: orderIXS,
     marginAccount,
     change: PoolTokenChange.shiftBy(amount)
   })
 
-  const loanOffer = await market.offerLoanIx(
+  const loanOffer = await market.market.offerLoanIx(
     marginAccount,
     amount,
     basisPoints,
@@ -174,13 +161,14 @@ export const offerLoan = async ({
 }
 
 interface ICreateBorrowOrder {
-  market: FixedTermMarket
+  market: {
+    market: FixedTermMarket
+    config: FixedTermMarketConfig
+  }
   marginAccount: MarginAccount
-  marginConfig: MarginConfig
   provider: AnchorProvider
   walletAddress: PublicKey
   pools: Record<string, Pool>
-  currentPool: Pool
   amount: BN
   basisPoints: BN
   marketConfig: FixedTermMarketConfig
@@ -190,45 +178,40 @@ interface ICreateBorrowOrder {
 export const requestLoan = async ({
   market,
   marginAccount,
-  marginConfig,
   provider,
   walletAddress,
   pools,
-  currentPool,
   amount,
   basisPoints,
   marketConfig,
   markets
 }: ICreateBorrowOrder): Promise<string> => {
-  // Fail if there is no active fixed term market program id in the config
-  if (!marginConfig.fixedTermMarketProgramId) {
-    throw new Error("There is no market configured on this network")
-  }
+  const pool = pools[market.config.symbol]
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
-    market,
+    market: market.market,
     provider,
     marginAccount,
     walletAddress,
     markets,
     pools,
-    currentPool,
+    pool,
     refreshPools: true
   })
   instructions.push(marketIXS)
 
   const orderIXS: TransactionInstruction[] = []
   // refresh pools positions
-  await currentPool.withPrioritisedPositionRefresh({
+  await pool.withPrioritisedPositionRefresh({
     instructions: orderIXS,
     pools,
     marginAccount
   })
 
   // Create borrow instruction
-  const borrowOffer = await market.requestBorrowIx(
+  const borrowOffer = await market.market.requestBorrowIx(
     marginAccount,
     walletAddress,
     amount,
@@ -246,40 +229,41 @@ export const requestLoan = async ({
 }
 
 interface ICancelOrder {
-  market: FixedTermMarket
+  market: {
+    market: FixedTermMarket
+    config: FixedTermMarketConfig
+  }
   marginAccount: MarginAccount
   provider: AnchorProvider
   orderId: Uint8Array
   pools: Record<string, Pool>
-  currentPool: Pool
 }
 export const cancelOrder = async ({
   market,
   marginAccount,
   provider,
   orderId,
-  pools,
-  currentPool
+  pools
 }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
-  const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
-
+  const borrowerAccount = await market.market.deriveMarginUserAddress(marginAccount)
+  const pool = pools[market.config.symbol]
   // refresh pools positions
-  await currentPool.withPrioritisedPositionRefresh({
+  await pool.withPrioritisedPositionRefresh({
     instructions,
     pools,
     marginAccount
   })
 
   // refresh market instruction
-  const refreshIx = await market.program.methods
+  const refreshIx = await market.market.program.methods
     .refreshPosition(true)
     .accounts({
       marginUser: borrowerAccount,
       marginAccount: marginAccount.address,
-      market: market.addresses.market,
-      underlyingOracle: market.addresses.underlyingOracle,
-      ticketOracle: market.addresses.ticketOracle,
+      market: market.market.addresses.market,
+      underlyingOracle: market.market.addresses.underlyingOracle,
+      ticketOracle: market.market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
     })
     .instruction()
@@ -288,7 +272,7 @@ export const cancelOrder = async ({
     instructions,
     adapterInstruction: refreshIx
   })
-  const cancelLoan = await market.cancelOrderIx(marginAccount, orderId)
+  const cancelLoan = await market.market.cancelOrderIx(marginAccount, orderId)
   await marginAccount.withAdapterInvoke({
     instructions,
     adapterInstruction: cancelLoan
@@ -299,57 +283,49 @@ export const cancelOrder = async ({
 // MARKET TAKER ORDERS
 
 interface IBorrowNow {
-  market: FixedTermMarket
+  market: {
+    market: FixedTermMarket
+    config: FixedTermMarketConfig
+  }
   marginAccount: MarginAccount
-  marginConfig: MarginConfig
   provider: AnchorProvider
   walletAddress: PublicKey
   pools: Record<string, Pool>
-  currentPool: Pool
   amount: BN
   markets: FixedTermMarket[]
 }
 
 export const borrowNow = async ({
-  marginConfig,
   market,
   marginAccount,
   provider,
   walletAddress,
-  currentPool,
   pools,
   amount,
   markets
 }: IBorrowNow): Promise<string> => {
-  // Fail if there is no active fixed term market program id in the config
-  if (!marginConfig.fixedTermMarketProgramId) {
-    throw new Error("There is no fixed term market configured on this network")
-  }
+  const pool = pools[market.config.symbol]
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const { marketIXS, tokenMint } = await withCreateFixedTermMarketAccounts({
-    market,
+    market: market.market,
     provider,
     marginAccount,
     walletAddress,
     markets,
     pools,
-    currentPool,
+    pool,
     refreshPools: true
   })
+
   instructions.push(marketIXS)
   // refresh pools positions
   const orderIXS: TransactionInstruction[] = []
-  await currentPool.withPrioritisedPositionRefresh({
-    instructions: orderIXS,
-    pools,
-    marginAccount
-  })
 
   // Create borrow instruction
   const seed = createRandomSeed(8)
-  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, seed)
+  const borrowNow = await market.market.borrowNowIx(marginAccount, walletAddress, amount, seed)
 
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,
@@ -358,13 +334,14 @@ export const borrowNow = async ({
 
   const change = PoolTokenChange.shiftBy(amount.sub(new BN(1)))
   const source = AssociatedToken.derive(tokenMint, marginAccount.address)
-  const position = currentPool.findDepositPositionAddress(marginAccount)
-  const depositIx = await currentPool.programs.marginPool.methods
+  const position = await pool.withGetOrRegisterDepositPosition({ instructions: orderIXS, marginAccount })
+
+  const depositIx = await pool.programs.marginPool.methods
     .deposit(change.changeKind.asParam(), change.value)
     .accounts({
-      marginPool: currentPool.address,
-      vault: currentPool.addresses.vault,
-      depositNoteMint: currentPool.addresses.depositNoteMint,
+      marginPool: pool.address,
+      vault: pool.addresses.vault,
+      depositNoteMint: pool.addresses.depositNoteMint,
       depositor: marginAccount.address,
       source,
       destination: position,
@@ -380,58 +357,52 @@ export const borrowNow = async ({
 }
 
 interface ILendNow {
-  market: FixedTermMarket
+  market: {
+    market: FixedTermMarket
+    config: FixedTermMarketConfig
+  }
   marginAccount: MarginAccount
-  marginConfig: MarginConfig
   provider: AnchorProvider
   walletAddress: PublicKey
   pools: Record<string, Pool>
-  currentPool: Pool
   amount: BN
   markets: FixedTermMarket[]
 }
 
 export const lendNow = async ({
-  marginConfig,
   market,
   marginAccount,
   provider,
   walletAddress,
-  currentPool,
   pools,
   amount,
   markets
 }: ILendNow): Promise<string> => {
-  // Fail if there is no active fixed term market program id in the config
-  if (!marginConfig.fixedTermMarketProgramId) {
-    throw new Error("There is no market configured on this network")
-  }
-
+  const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
-    market,
+    market: market.market,
     provider,
     marginAccount,
     walletAddress,
     markets,
     pools,
-    currentPool,
+    pool,
     refreshPools: true
   })
   instructions.push(marketIXS)
-
   const orderIXS: TransactionInstruction[] = []
 
   // create lend instruction
-  await currentPool.withWithdrawToMargin({
+  await pool.withWithdrawToMargin({
     instructions: orderIXS,
     marginAccount,
     change: PoolTokenChange.shiftBy(amount)
   })
 
   // Create borrow instruction
-  const lendNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(8))
+  const lendNow = await market.market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(8))
 
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,
