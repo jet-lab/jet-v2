@@ -17,7 +17,6 @@
 
 use anchor_lang::prelude::*;
 
-use jet_margin::MAX_ORACLE_STALENESS;
 use jet_margin::{AdapterResult, MarginAccount, PositionChange, PriceChangeInfo};
 
 use crate::state::*;
@@ -51,13 +50,10 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
         }
     };
 
-    // Required post pyth-sdk 0.6.1.
-    // See https://github.com/pyth-network/pyth-sdk-rs/commit/4f4f8c79efcee6402a94dd81a0aa1750a1a12297
-    let clock = Clock::get()?;
-
-    let price = token_oracle
-        .get_price_no_older_than(clock.unix_timestamp, MAX_ORACLE_STALENESS as u64)
-        .ok_or(ErrorCode::InvalidPoolPrice)?;
+    // This is safe as pool.calculate_prices will check the price's validity,
+    // while this price is used after that check. The margin program will also
+    // check the price.
+    let price = token_oracle.get_price_unchecked();
 
     let prices = pool.calculate_prices(&token_oracle)?;
 
