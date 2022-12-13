@@ -122,7 +122,7 @@ impl<'info> UserAccount<'info> {
         &self.0
     }
 
-    pub fn margin_user<'a>(self) -> Result<Box<AnchorAccount<'info, MarginUser, Mut>>> {
+    pub fn margin_user(self) -> Result<Box<AnchorAccount<'info, MarginUser, Mut>>> {
         Ok(Box::new(AnchorAccount::try_from(self.0)?))
     }
 }
