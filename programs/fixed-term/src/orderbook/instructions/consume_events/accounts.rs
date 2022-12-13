@@ -108,17 +108,8 @@ impl<'info> UserAccount<'info> {
         Self(account)
     }
 
-    pub fn pubkey(&self) -> &Pubkey {
-        self.0.key
-    }
-
     /// token account that will receive a deposit of underlying or tickets
     pub fn as_token_account(&self) -> &AccountInfo<'info> {
-        &self.0
-    }
-
-    /// arbitrary unchecked account that will be granted ownership of a split ticket
-    pub fn as_owner(&self) -> &AccountInfo<'info> {
         &self.0
     }
 
