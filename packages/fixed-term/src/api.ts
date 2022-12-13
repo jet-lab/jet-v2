@@ -21,14 +21,13 @@ const createRandomSeed = (byteLength: number) => {
 const refreshAllMarkets = async (
   markets: FixedTermMarket[],
   ixs: TransactionInstruction[],
-  marginAccount: MarginAccount,
-  marketAddress: PublicKey
+  marginAccount: MarginAccount
 ) => {
   await Promise.all(
     markets.map(async market => {
       const marketUserInfo = await market.fetchMarginUser(marginAccount)
       const marketUser = await market.deriveMarginUserAddress(marginAccount)
-      if (marketUserInfo || market.address.equals(marketAddress)) {
+      if (marketUserInfo) {
         const refreshIx = await market.program.methods
           .refreshPosition(true)
           .accounts({
@@ -84,7 +83,7 @@ export const withCreateFixedTermMarketAccounts = async ({
       adapterInstruction: createAccountIx
     })
   }
-  await refreshAllMarkets(markets, marketIXS, marginAccount, market.address)
+  await refreshAllMarkets(markets, marketIXS, marginAccount)
 
   if (refreshPools) {
     await currentPool.withPrioritisedPositionRefresh({
@@ -449,23 +448,30 @@ export const lendNow = async ({
 
 interface ISettle {
   markets: FixedTermMarket[]
+  selectedMarket: number
   marginAccount: MarginAccount
   provider: AnchorProvider
+  pools: Record<string, Pool>
 }
 
-export const settle = async ({ markets, marginAccount, provider }: ISettle) => {
+export const settle = async ({ markets, selectedMarket, marginAccount, provider, pools }: ISettle) => {
+  const market = markets[selectedMarket]
   const instructions: TransactionInstruction[] = []
-  await Promise.all(
-    markets.map(async market => {
-      const user = await market.fetchMarginUser(marginAccount)
-      if (user && (user.assets.entitledTickets.gtn(0) || user.assets.entitledTokens.gtn(0))) {
-        const settleIX = await market.settle(marginAccount)
-        marginAccount.withAdapterInvoke({
-          instructions,
-          adapterInstruction: settleIX
-        })
-      }
+  const user = await market.fetchMarginUser(marginAccount)
+  const pool = pools["USDC"]
+  await refreshAllMarkets(markets, instructions, marginAccount)
+  await pool.withPrioritisedPositionRefresh({
+    instructions,
+    pools,
+    marginAccount
+  })
+
+  if (user) {
+    const settleIX = await market.settle(marginAccount)
+    marginAccount.withAdapterInvoke({
+      instructions,
+      adapterInstruction: settleIX
     })
-  )
+  }
   return sendAll(provider, [instructions])
 }

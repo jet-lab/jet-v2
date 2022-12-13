@@ -2,7 +2,7 @@ import { FixedTermMarket, JetMarket, JetMarketIdl, Orderbook } from '@jet-lab/fi
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
-import { AirspaceConfig, FixedTermMarketConfig } from '@jet-lab/margin';
+import { AirspaceConfig, FixedTermMarketConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
@@ -62,6 +62,7 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
 export interface MarketAndconfig {
   market: FixedTermMarket;
   config: FixedTermMarketConfig;
+  token: MarginTokenConfig;
   name: string;
 }
 export const useFixedTermSync = (): void => {
@@ -82,7 +83,10 @@ export const useFixedTermSync = (): void => {
       Object.entries(airspace.fixedTermMarkets).map(async ([name, marketConfig]) => {
         try {
           const market = await FixedTermMarket.load(program, marketConfig.market, marginProgramId);
-          markets.push({ market, config: marketConfig, name });
+          const token = config?.tokens[marketConfig.symbol];
+          if (token) {
+            markets.push({ market, config: marketConfig, name, token });
+          }
         } catch (e) {
           console.log(e);
         }
