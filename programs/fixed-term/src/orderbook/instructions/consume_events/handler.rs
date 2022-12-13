@@ -187,8 +187,6 @@ fn handle_fill<'info>(
                     // where TermLoanCreated is emitted.
                     emit_order_filled = false;
                     emit!(TermLoanCreated {
-                        // TODO: any attempt to get the term_loan key results in a program panic.
-                        // Need help.
                         term_loan: term_loan.key(),
                         authority: maker_info.owner,
                         order_id: Some(maker_order_id),
