@@ -55,9 +55,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
     try {
       if (disabled || !wallet.publicKey) return;
       signature = await requestLoan({
-        market: marketAndConfig.market,
+        market: marketAndConfig,
         marginAccount,
-        marginConfig,
         provider,
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
