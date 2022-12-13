@@ -201,12 +201,8 @@ pub mod jet_fixed_term {
     }
 
     /// Place a borrow order by leveraging margin account value
-    pub fn margin_borrow_order(
-        ctx: Context<MarginBorrowOrder>,
-        params: OrderParams,
-        seed: Vec<u8>,
-    ) -> Result<()> {
-        instructions::margin_borrow_order::handler(ctx, params, seed)
+    pub fn margin_borrow_order(ctx: Context<MarginBorrowOrder>, params: OrderParams) -> Result<()> {
+        instructions::margin_borrow_order::handler(ctx, params)
     }
 
     /// Sell tickets that are already owned
@@ -218,17 +214,13 @@ pub mod jet_fixed_term {
     }
 
     /// Redeem a staked ticket
-    pub fn margin_redeem_ticket(ctx: Context<MarginRedeemTicket>) -> Result<()> {
-        instructions::margin_redeem_ticket::handler(ctx)
+    pub fn margin_redeem_deposit(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
+        instructions::margin_redeem_deposit::handler(ctx)
     }
 
     /// Place a `Lend` order to the book by depositing tokens
-    pub fn margin_lend_order(
-        ctx: Context<MarginLendOrder>,
-        params: OrderParams,
-        seed: Vec<u8>,
-    ) -> Result<()> {
-        instructions::margin_lend_order::handler(ctx, params, seed)
+    pub fn margin_lend_order(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
+        instructions::margin_lend_order::handler(ctx, params)
     }
 
     /// Refresh the associated margin account `claims` for a given `MarginUser` account
@@ -274,7 +266,7 @@ pub mod jet_fixed_term {
     pub fn consume_events<'a, 'b, 'info>(
         ctx: Context<'a, 'b, 'b, 'info, ConsumeEvents<'info>>,
         num_events: u32,
-        seed_bytes: Vec<Vec<u8>>,
+        seed_bytes: Vec<u8>,
     ) -> Result<()> {
         instructions::consume_events::handler(ctx, num_events, seed_bytes)
     }
@@ -294,9 +286,9 @@ pub mod jet_fixed_term {
         instructions::exchange_tokens::handler(ctx, amount)
     }
 
-    /// Redeems staked tickets for their underlying value
-    pub fn redeem_ticket(ctx: Context<RedeemTicket>) -> Result<()> {
-        instructions::redeem_ticket::handler(ctx)
+    /// Redeems deposit previously created by staking tickets for their underlying value
+    pub fn redeem_deposit(ctx: Context<RedeemDeposit>) -> Result<()> {
+        instructions::redeem_deposit::handler(ctx)
     }
 
     /// Stakes tickets for later redemption
@@ -306,10 +298,10 @@ pub mod jet_fixed_term {
 
     /// Transfer staked tickets to a new owner
     pub fn tranfer_ticket_ownership(
-        ctx: Context<TransferTicketOwnership>,
+        ctx: Context<TransferDeposit>,
         new_owner: Pubkey,
     ) -> Result<()> {
-        instructions::transfer_ticket_ownership::handler(ctx, new_owner)
+        instructions::transfer_deposit::handler(ctx, new_owner)
     }
     //
     // =============================================
@@ -351,9 +343,6 @@ pub mod seeds {
     pub const TICKET_MINT: &[u8] = b"ticket_mint";
 
     #[constant]
-    pub const CLAIM_TICKET: &[u8] = b"claim_ticket";
-
-    #[constant]
     pub const CRANK_AUTHORIZATION: &[u8] = b"crank_authorization";
 
     #[constant]
@@ -363,13 +352,13 @@ pub mod seeds {
     pub const COLLATERAL_NOTES: &[u8] = b"collateral_notes";
 
     #[constant]
-    pub const SPLIT_TICKET: &[u8] = b"split_ticket";
-
-    #[constant]
     pub const EVENT_ADAPTER: &[u8] = b"event_adapter";
 
     #[constant]
     pub const TERM_LOAN: &[u8] = b"term_loan";
+
+    #[constant]
+    pub const TERM_DEPOSIT: &[u8] = b"term_deposit";
 
     #[constant]
     pub const ORDERBOOK_MARKET_STATE: &[u8] = b"orderbook_market_state";

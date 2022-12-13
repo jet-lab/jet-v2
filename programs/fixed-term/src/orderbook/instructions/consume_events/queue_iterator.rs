@@ -9,7 +9,7 @@ use crate::{
         CallbackFlags, CallbackInfo, EventQueue, FillInfo, OrderbookEvent, OutInfo, QueueIterator,
     },
     serialization::RemainingAccounts,
-    tickets::state::SplitTicket,
+    tickets::state::TermDeposit,
     FixedTermErrorCode,
 };
 
@@ -17,25 +17,25 @@ use super::{ConsumeEvents, FillAccounts, LoanAccount, OutAccounts, UserAccount};
 
 pub fn queue<'c, 'info>(
     ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
-    seeds: Vec<Vec<u8>>,
+    seed: Vec<u8>,
 ) -> Result<EventIterator<'c, 'info>> {
     Ok(EventIterator {
         queue: EventQueue::deserialize_market(ctx.accounts.event_queue.to_account_info())?.iter(),
         accounts: ctx.remaining_accounts.iter(),
         system_program: ctx.accounts.system_program.to_account_info(),
         payer: ctx.accounts.payer.to_account_info(),
-        seeds: seeds.into_iter(),
+        market: ctx.accounts.market.key(),
+        seed,
     })
 }
 
 pub struct EventIterator<'a, 'info> {
     queue: QueueIterator<'info>,
     accounts: Iter<'a, AccountInfo<'info>>,
-    /// CHECK: anchor linter bug requires this
     system_program: AccountInfo<'info>,
-    /// CHECK: anchor linter bug requires this
     payer: AccountInfo<'info>,
-    seeds: std::vec::IntoIter<Vec<u8>>,
+    market: Pubkey,
+    seed: Vec<u8>,
 }
 
 impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
@@ -47,9 +47,10 @@ impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum PreparedEvent<'info> {
-    Fill(Box<FillAccounts<'info>>, Box<FillInfo>),
-    Out(Box<OutAccounts<'info>>, Box<OutInfo>),
+    Fill(FillAccounts<'info>, FillInfo),
+    Out(OutAccounts<'info>, OutInfo),
 }
 
 impl<'a, 'info> EventIterator<'a, 'info> {
@@ -57,14 +58,14 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         Ok(match event {
             OrderbookEvent::Fill(fill) => PreparedEvent::Fill(
                 self.extract_fill_accounts(&fill.maker_info, &fill.taker_info)?,
-                Box::new(fill),
+                fill,
             ),
             OrderbookEvent::Out(out) => PreparedEvent::Out(
-                Box::new(OutAccounts {
+                OutAccounts {
                     user: self.accounts.next_user_account(out.info.out_account)?,
                     user_adapter_account: self.accounts.next_adapter_if_needed(&out.info)?,
-                }),
-                Box::new(out),
+                },
+                out,
             ),
         })
     }
@@ -73,50 +74,62 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         &mut self,
         maker_info: &CallbackInfo,
         taker_info: &CallbackInfo,
-    ) -> Result<Box<FillAccounts<'info>>> {
+    ) -> Result<FillAccounts<'info>> {
         let maker = self.accounts.next_user_account(maker_info.fill_account)?;
         let maker_adapter = self.accounts.next_adapter_if_needed(maker_info)?;
         let taker_adapter = self.accounts.next_adapter_if_needed(taker_info)?;
 
+        let mut seed = [0u8; 8];
+
         let loan = if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
+            match maker.margin_user() {
+                Ok(user) => {
+                    seed[..8].copy_from_slice(&user.assets.next_deposit_seqno.to_le_bytes())
+                }
+
+                Err(_) => seed[..self.seed.len()].copy_from_slice(&self.seed),
+            };
+
             Some(LoanAccount::AutoStake(
-                self.accounts.init_next::<SplitTicket>(
+                self.accounts.init_next::<TermDeposit>(
                     self.payer.to_account_info(),
                     self.system_program.to_account_info(),
                     &[
-                        crate::seeds::SPLIT_TICKET,
+                        crate::seeds::TERM_DEPOSIT,
+                        self.market.as_ref(),
                         &maker_info.fill_account.to_bytes(),
-                        &self
-                            .seeds
-                            .next()
-                            .ok_or(FixedTermErrorCode::InsufficientSeeds)?,
+                        &seed,
                     ],
                 )?,
             ))
         } else if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-            Some(LoanAccount::NewDebt(
-                self.accounts.init_next::<TermLoan>(
-                    self.payer.to_account_info(),
-                    self.system_program.to_account_info(),
-                    &[
-                        crate::seeds::TERM_LOAN,
-                        &maker_info.fill_account.to_bytes(),
-                        &self
-                            .seeds
-                            .next()
-                            .ok_or(FixedTermErrorCode::InsufficientSeeds)?,
-                    ],
-                )?,
-            ))
+            match maker.margin_user() {
+                Ok(user) => {
+                    seed[..8].copy_from_slice(&user.debt.next_new_term_loan_seqno.to_le_bytes());
+                }
+
+                Err(_) => seed[..self.seed.len()].copy_from_slice(&self.seed),
+            };
+
+            Some(LoanAccount::NewDebt(self.accounts.init_next::<TermLoan>(
+                self.payer.to_account_info(),
+                self.system_program.to_account_info(),
+                &[
+                    crate::seeds::TERM_LOAN,
+                    self.market.as_ref(),
+                    &maker_info.fill_account.to_bytes(),
+                    &seed,
+                ],
+            )?))
         } else {
             None
         };
-        Ok(Box::new(FillAccounts {
+        Ok(FillAccounts {
             maker,
             loan,
             maker_adapter,
             taker_adapter,
-        }))
+        })
     }
 }
 
