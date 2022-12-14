@@ -61,9 +61,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             ),
             OrderbookEvent::Out(out) => PreparedEvent::Out(
                 Box::new(OutAccounts {
-                    user: self
-                        .accounts
-                        .next_user_account(out.info.out_account.to_bytes())?,
+                    user: self.accounts.next_user_account(out.info.out_account)?,
                     user_adapter_account: self.accounts.next_adapter_if_needed(&out.info)?,
                 }),
                 Box::new(out),
@@ -76,7 +74,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         maker_info: &CallbackInfo,
         taker_info: &CallbackInfo,
     ) -> Result<Box<FillAccounts<'info>>> {
-        let maker = self.accounts.next_account()?;
+        let maker = self.accounts.next_user_account(maker_info.fill_account)?;
         let maker_adapter = self.accounts.next_adapter_if_needed(maker_info)?;
         let taker_adapter = self.accounts.next_adapter_if_needed(taker_info)?;
 
@@ -114,7 +112,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             None
         };
         Ok(Box::new(FillAccounts {
-            maker: UserAccount::new(maker.clone()),
+            maker,
             loan,
             maker_adapter,
             taker_adapter,
@@ -123,13 +121,13 @@ impl<'a, 'info> EventIterator<'a, 'info> {
 }
 
 pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
-    fn next_user_account(&mut self, expected: [u8; 32]) -> Result<UserAccount<'info>> {
+    fn next_user_account(&mut self, expected: Pubkey) -> Result<UserAccount<'info>> {
         let account = self.next_account()?;
-        if account.key().to_bytes() != expected {
+        if account.key() != expected {
             msg!(
                 "Provided user account {} does not match the callback info {}",
                 account.key(),
-                Pubkey::new_from_array(expected)
+                expected
             );
             return err!(FixedTermErrorCode::WrongUserAccount);
         }
