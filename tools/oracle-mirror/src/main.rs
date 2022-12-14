@@ -17,9 +17,10 @@ use solana_client::{
     rpc_request::{RpcError, RpcResponseErrorData},
 };
 use solana_sdk::{
-    account::ReadableAccount, commitment_config::CommitmentConfig, hash::Hash,
-    instruction::Instruction, program_pack::Pack, pubkey, pubkey::Pubkey, signature::Keypair,
-    signer::Signer, system_instruction, sysvar::rent::Rent, transaction::Transaction,
+    account::ReadableAccount, commitment_config::CommitmentConfig,
+    compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction,
+    program_pack::Pack, pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer,
+    system_instruction, sysvar::rent::Rent, transaction::Transaction,
 };
 
 use pyth_sdk_solana::state::ProductAccount;
@@ -150,7 +151,7 @@ async fn sync_pool_balances(
     pools: &[(Pubkey, Pubkey)],
 ) -> Result<()> {
     for (token_a, token_b) in pools {
-        let mut instructions = vec![];
+        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(600_000)];
 
         let scratch_a = get_scratch_address(&signer.pubkey(), token_a);
         let scratch_b = get_scratch_address(&signer.pubkey(), token_b);
