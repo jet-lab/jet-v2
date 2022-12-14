@@ -1,7 +1,7 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
+import { bigIntToBn, bnToBigInt, FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
 import { JetFixedTerm } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
@@ -428,4 +428,11 @@ export class FixedTermMarket {
 
     return data ? await this.program.coder.accounts.decode("MarginUser", data) : null
   }
+}
+
+export interface MarketAndconfig {
+  market: FixedTermMarket
+  config: FixedTermMarketConfig
+  token: MarginTokenConfig
+  name: string
 }
