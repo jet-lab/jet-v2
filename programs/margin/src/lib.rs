@@ -504,11 +504,11 @@ pub mod jet_margin {
         configure_permit(ctx, is_liquidator, Permissions::LIQUIDATE)
     }
 
-    pub fn configure_position_metadata_refresher(
+    pub fn configure_position_config_refresher(
         ctx: Context<ConfigurePermit>,
         may_refresh: bool,
     ) -> Result<()> {
-        configure_permit(ctx, may_refresh, Permissions::REFRESH_POSITION_METADATA)
+        configure_permit(ctx, may_refresh, Permissions::REFRESH_POSITION_CONFIG)
     }
 
     /// Allow governing address to transfer any position from one margin account to another

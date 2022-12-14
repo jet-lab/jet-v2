@@ -578,14 +578,14 @@ impl MarginConfigIxBuilder {
     }
 
     /// Enable or disable permission to refresh position metadata
-    pub fn configure_position_metadata_refresher(
+    pub fn configure_position_config_refresher(
         &self,
         refresher: Pubkey,
         may_refresh: bool,
     ) -> Instruction {
         Instruction {
             program_id: jet_margin::ID,
-            data: ix_data::ConfigurePositionMetadataRefresher { may_refresh }.data(),
+            data: ix_data::ConfigurePositionConfigRefresher { may_refresh }.data(),
             accounts: self.configure_permit(refresher).to_account_metas(None),
         }
     }

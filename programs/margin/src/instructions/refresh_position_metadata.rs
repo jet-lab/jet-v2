@@ -42,7 +42,7 @@ pub fn refresh_position_metadata_handler(ctx: Context<RefreshPositionMetadata>) 
     ctx.accounts.permit.validate(
         Pubkey::default(), // todo airspace must come from the margin account once they are airspace-scoped
         ctx.accounts.refresher.key(),
-        Permissions::REFRESH_POSITION_METADATA,
+        Permissions::REFRESH_POSITION_CONFIG,
     )?;
     let metadata = &ctx.accounts.metadata;
     let mut account = ctx.accounts.margin_account.load_mut()?;

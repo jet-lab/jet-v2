@@ -99,7 +99,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     // create position metadata refresher
     let refresher = ctx.generate_key();
     ctx.margin_config
-        .configure_position_metadata_refresher(refresher.pubkey(), true)
+        .configure_position_config_refresher(refresher.pubkey(), true)
         .with_signers(&[clone(&ctx.airspace_authority)])
         .send_and_confirm(&ctx.rpc)
         .await?;

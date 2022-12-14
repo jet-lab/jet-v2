@@ -40,7 +40,7 @@ pub fn refresh_position_config_handler(ctx: Context<RefreshPositionConfig>) -> R
     ctx.accounts.permit.validate(
         Pubkey::default(), // todo airspace must come from the margin account once they are airspace-scoped
         ctx.accounts.refresher.key(),
-        Permissions::REFRESH_POSITION_METADATA,
+        Permissions::REFRESH_POSITION_CONFIG,
     )?;
     let config = &ctx.accounts.config;
     let mut account = ctx.accounts.margin_account.load_mut()?;

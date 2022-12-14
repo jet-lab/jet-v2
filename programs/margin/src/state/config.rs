@@ -194,7 +194,7 @@ bitflags! {
         const LIQUIDATE                 = 1 << 0;
 
         /// Execute update_position_metadata for margin accounts in this airspace.
-        const REFRESH_POSITION_METADATA = 1 << 1;
+        const REFRESH_POSITION_CONFIG   = 1 << 1;
     }
 }
 
