@@ -7,7 +7,7 @@
     "*.css"
   ],
   "scripts": {
-    "build": "rm -rf ./build && webpack --mode production && cp -r public/* build && cp -r build ../../app/",
+    "build": "rm -rf ./build && webpack --mode production && cp -r public/* build",
     "clean": "rm -rf ./build & rm -rf .turbo",
     "dev": "webpack serve --mode development",
     "e2e": "ELECTRON_ENABLE_LOGGING=1 cypress run --headless",
