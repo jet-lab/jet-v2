@@ -80,10 +80,10 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         limit_price: params.limit_price,
         order_type: crate::events::OrderType::MarginLend,
     });
-    emit!(AssetsUpdated::from((
+    emit!(AssetsUpdated::new(
+        ctx.accounts.margin_user.key(),
         &ctx.accounts.margin_user.assets,
-        ctx.accounts.margin_user.key()
-    )));
+    ));
 
     Ok(())
 }

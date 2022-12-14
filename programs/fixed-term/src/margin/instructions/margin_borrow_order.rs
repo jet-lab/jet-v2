@@ -169,10 +169,10 @@ pub fn handler(
         post_allowed: params.post_allowed,
         order_type: OrderType::MarginBorrow,
     });
-    emit!(DebtUpdated::from((
+    emit!(DebtUpdated::new(
+        ctx.accounts.margin_user.key(),
         &ctx.accounts.margin_user.debt,
-        ctx.accounts.margin_user.key()
-    )));
+    ));
 
     // this is just used to make sure the position is still registered.
     // it's actually registered by initialize_margin_user

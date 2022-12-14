@@ -120,14 +120,14 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     ctx.accounts.margin_user.assets.entitled_tickets = 0;
     ctx.accounts.margin_user.assets.entitled_tokens = 0;
 
-    emit!(AssetsUpdated::from((
+    emit!(AssetsUpdated::new(
+        ctx.accounts.margin_user.key(),
         &ctx.accounts.margin_user.assets,
-        ctx.accounts.margin_user.key()
-    )));
-    emit!(DebtUpdated::from((
+    ));
+    emit!(DebtUpdated::new(
+        ctx.accounts.margin_user.key(),
         &ctx.accounts.margin_user.debt,
-        ctx.accounts.margin_user.key()
-    )));
+    ));
 
     Ok(())
 }

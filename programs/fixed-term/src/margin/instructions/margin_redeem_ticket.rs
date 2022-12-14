@@ -42,10 +42,10 @@ pub fn handler(ctx: Context<MarginRedeemTicket>) -> Result<()> {
         redeemed,
     )?;
 
-    emit!(AssetsUpdated::from((
+    emit!(AssetsUpdated::new(
+        ctx.accounts.margin_user.key(),
         &ctx.accounts.margin_user.assets,
-        ctx.accounts.margin_user.key()
-    )));
+    ));
 
     Ok(())
 }

@@ -73,11 +73,10 @@ pub struct DebtUpdated {
     pub is_past_due: bool,
 }
 
-impl From<(&Debt, Pubkey)> for DebtUpdated {
-    fn from(src: (&Debt, Pubkey)) -> Self {
-        let (debt, pubkey) = src;
+impl DebtUpdated {
+    pub fn new(margin_user: Pubkey, debt: &Debt) -> Self {
         Self {
-            margin_user: pubkey,
+            margin_user,
             total_debt: debt.total(),
             next_obligation_to_repay: debt.next_term_loan_to_repay(),
             outstanding_obligations: debt.outstanding_term_loans(),
@@ -94,11 +93,10 @@ pub struct AssetsUpdated {
     pub collateral: u64,
 }
 
-impl From<(&Assets, Pubkey)> for AssetsUpdated {
-    fn from(src: (&Assets, Pubkey)) -> Self {
-        let (assets, pubkey) = src;
+impl AssetsUpdated {
+    pub fn new(margin_user: Pubkey, assets: &Assets) -> Self {
         Self {
-            margin_user: pubkey,
+            margin_user,
             entitled_tokens: assets.entitled_tokens,
             entitled_tickets: assets.entitled_tickets,
             collateral: assets.collateral().unwrap_or_default(),
