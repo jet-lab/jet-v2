@@ -160,7 +160,7 @@ impl Permit {
         owner: Pubkey,
         permissions: Permissions,
     ) -> Result<()> {
-        // todo pubkey default is not acceptable once airspaces are in use
+        // FIXME: pubkey default is not acceptable once airspaces are in use
         if airspace != self.airspace
             && !(cfg!(feature = "testing") && airspace == Pubkey::default())
         {
