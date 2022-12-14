@@ -104,7 +104,7 @@ fn handle_fill<'info>(
                 let principal = quote_size;
                 let interest = base_size.safe_sub(principal)?;
                 **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
-                    owner: maker_info.owner,
+                    owner: maker.pubkey(),
                     market: manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,

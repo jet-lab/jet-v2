@@ -116,4 +116,8 @@ impl<'info> UserAccount<'info> {
     pub fn margin_user(self) -> Result<Box<AnchorAccount<'info, MarginUser, Mut>>> {
         Ok(Box::new(AnchorAccount::try_from(self.0)?))
     }
+
+    pub fn pubkey(&self) -> Pubkey {
+        self.0.key()
+    }
 }
