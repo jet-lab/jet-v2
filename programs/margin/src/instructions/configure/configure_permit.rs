@@ -18,8 +18,9 @@
 use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
+use jet_program_common::serialization::StorageSpace;
 
-use crate::{seeds::PERMIT_SEED, Permissions, Permit, StorageSpace};
+use crate::{seeds::PERMIT_SEED, Permissions, Permit};
 
 #[derive(Accounts)]
 pub struct ConfigurePermit<'info> {

@@ -208,11 +208,3 @@ pub struct AdapterConfig {
     /// The program address allowed to be called as an adapter
     pub adapter_program: Pubkey,
 }
-
-pub trait StorageSpace {
-    const SPACE: usize;
-}
-
-impl<T: Sized + AnchorSerialize> StorageSpace for T {
-    const SPACE: usize = 8 + std::mem::size_of::<Self>();
-}
