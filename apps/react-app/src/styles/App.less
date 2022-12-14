@@ -2405,28 +2405,13 @@ html {
         text-transform: uppercase;
       }
 
-      .stats {
-        padding: @spacing-lg;
+      .selector-actions {
+        padding-right: @spacing-lg;
+        padding-left: @spacing-lg;
         display: flex;
         align-items: center;
         flex: 1;
         justify-content: space-between;
-
-        .single-stat {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-
-          .header {
-            text-transform: uppercase;
-            font-size: @sm-font-size;
-            color: @secondary-5;
-            margin-bottom: @spacing-xs;
-          }
-
-          .datapoint {
-          }
-        }
       }
     }
   }
@@ -2782,10 +2767,8 @@ html {
 }
 
 .assets-to-settle {
-  div {
-    padding: calc(var(--spacing-base) + 5px);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
