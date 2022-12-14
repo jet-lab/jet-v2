@@ -7,6 +7,7 @@ export const connectWallet = () => {
 };
 
 export const loadPageAndCreateAccount = (path?: string) => {
+  cy.clearLocalStorage();
   const url = path ? path : Cypress.config().baseUrl;
 
   cy.visit(url);

@@ -77,7 +77,7 @@
     "@types/webpack-bundle-analyzer": "^4.6.0",
     "buffer": "^6.0.3",
     "css-loader": "^6.7.1",
-    "cypress": "10.11.0",
+    "cypress": "^12.1.0",
     "cypress-wait-until": "^1.7.2",
     "html-webpack-plugin": "^5.5.0",
     "less": "^4.1.3",
