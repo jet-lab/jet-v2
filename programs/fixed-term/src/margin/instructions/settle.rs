@@ -3,10 +3,7 @@ use anchor_spl::token::{Token, TokenAccount};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    control::state::Market,
-    events::{AssetsUpdated, DebtUpdated},
-    margin::state::MarginUser,
-    market_token_manager::MarketTokenManager,
+    control::state::Market, margin::state::MarginUser, market_token_manager::MarketTokenManager,
     FixedTermErrorCode,
 };
 
@@ -120,14 +117,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     ctx.accounts.margin_user.assets.entitled_tickets = 0;
     ctx.accounts.margin_user.assets.entitled_tokens = 0;
 
-    emit!(AssetsUpdated::new(
-        ctx.accounts.margin_user.key(),
-        &ctx.accounts.margin_user.assets,
-    ));
-    emit!(DebtUpdated::new(
-        ctx.accounts.margin_user.key(),
-        &ctx.accounts.margin_user.debt,
-    ));
+    ctx.accounts.margin_user.emit_all_balances();
 
     Ok(())
 }

@@ -6,7 +6,7 @@ use jet_program_common::traits::{SafeSub, TryAddAssign};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    events::{DebtUpdated, TermLoanCreated},
+    events::TermLoanCreated,
     margin::{
         events::{OrderPlaced, OrderType},
         origination_fee::loan_to_disburse,
@@ -169,10 +169,7 @@ pub fn handler(
         post_allowed: params.post_allowed,
         order_type: OrderType::MarginBorrow,
     });
-    emit!(DebtUpdated::new(
-        ctx.accounts.margin_user.key(),
-        &ctx.accounts.margin_user.debt,
-    ));
+    ctx.accounts.margin_user.emit_debt_balances();
 
     // this is just used to make sure the position is still registered.
     // it's actually registered by initialize_margin_user

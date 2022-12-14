@@ -10,7 +10,7 @@ use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
-    events::{skip_err, AssetsUpdated, DebtUpdated, OrderFilled, OrderRemoved, TermLoanCreated},
+    events::{skip_err, OrderFilled, OrderRemoved, TermLoanCreated},
     margin::state::{TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
@@ -116,13 +116,13 @@ fn handle_fill<'info>(
                     let mut margin_user = maker.margin_user()?;
                     margin_user.assets.reduce_order(quote_size);
                     margin_user.assets.stake_tickets(base_size)?;
-                    emit!(AssetsUpdated::new(margin_user.key(), &margin_user.assets,))
+                    margin_user.emit_asset_balances();
                 }
             } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
                 margin_user.assets.entitled_tickets += base_size;
-                emit!(AssetsUpdated::new(margin_user.key(), &margin_user.assets,));
+                margin_user.emit_asset_balances();
             } else {
                 ctx.mint(
                     &ctx.accounts.ticket_mint,
@@ -191,14 +191,13 @@ fn handle_fill<'info>(
                         base_filled: base_size,
                         flags,
                     });
-                    emit!(AssetsUpdated::new(margin_user.key(), &margin_user.assets,));
-                    emit!(DebtUpdated::new(margin_user.key(), &margin_user.debt));
+                    margin_user.emit_all_balances();
                 } else {
                     margin_user
                         .assets
                         .entitled_tokens
                         .try_add_assign(quote_size)?;
-                    emit!(AssetsUpdated::new(margin_user.key(), &margin_user.assets,));
+                    margin_user.emit_asset_balances();
                 }
             } else {
                 ctx.withdraw(
@@ -261,7 +260,7 @@ fn handle_out<'info>(
             if info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = user.margin_user()?;
                 margin_user.assets.entitled_tokens += quote_size;
-                emit!(AssetsUpdated::new(margin_user.key(), &margin_user.assets,));
+                margin_user.emit_asset_balances();
             } else {
                 ctx.withdraw(
                     &ctx.accounts.underlying_token_vault,
@@ -276,10 +275,10 @@ fn handle_out<'info>(
 
                 if info.flags.contains(CallbackFlags::NEW_DEBT) {
                     margin_user.debt.process_out(*base_size)?;
-                    emit!(DebtUpdated::new(margin_user.key(), &margin_user.debt));
+                    margin_user.emit_debt_balances();
                 } else {
                     margin_user.assets.entitled_tickets += base_size;
-                    emit!(AssetsUpdated::new(margin_user.key(), &margin_user.assets,));
+                    margin_user.emit_asset_balances();
                 }
             } else {
                 ctx.mint(
