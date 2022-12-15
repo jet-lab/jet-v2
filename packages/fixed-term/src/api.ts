@@ -209,15 +209,10 @@ interface ICancelOrder {
   market: MarketAndconfig
   marginAccount: MarginAccount
   provider: AnchorProvider
-  orderId: BN,
+  orderId: BN
   amount: BN
 }
-export const cancelOrder = async ({
-  market,
-  marginAccount,
-  provider,
-  orderId,
-}: ICancelOrder): Promise<string> => {
+export const cancelOrder = async ({ market, marginAccount, provider, orderId }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
   const cancelLoan = await market.market.cancelOrderIx(marginAccount, orderId)
   await marginAccount.withAdapterInvoke({

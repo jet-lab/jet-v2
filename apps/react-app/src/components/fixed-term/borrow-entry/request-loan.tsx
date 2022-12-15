@@ -78,7 +78,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
-      throw(e)
+      throw e;
     }
   };
 

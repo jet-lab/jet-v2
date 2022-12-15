@@ -47,8 +47,6 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
   const marginConfig = useRecoilValue(MainConfig);
 
-  console.log(openOrders)
-
   const token = useMemo(() => {
     if (!marginConfig || !market) return null;
     return Object.values(marginConfig?.tokens).find(token => {

@@ -15,17 +15,17 @@ import { useEffect, useMemo } from 'react';
 import { notify } from '@utils/notify';
 import { cancelOrder, MarketAndconfig } from '@jet-lab/fixed-term';
 import { useProvider } from '@utils/jet/provider';
-import { AnchorProvider } from '@project-serum/anchor'
+import { AnchorProvider } from '@project-serum/anchor';
 import { getExplorerUrl } from '@utils/ui';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 
 const getFilledAmount = (fills: FixedOrderFill[]): BN => {
   let total = new BN(0);
-      fills.map((f: FixedOrderFill) => {
-        total = total.add(new BN(f.quote_filled));
-      });
-    return total
-}
+  fills.map((f: FixedOrderFill) => {
+    total = total.add(new BN(f.quote_filled));
+  });
+  return total;
+};
 
 const postOrderColumns: ColumnsType<FixedOrder> = [
   {
@@ -50,7 +50,7 @@ const postOrderColumns: ColumnsType<FixedOrder> = [
     dataIndex: ['fills'],
     key: 'filledSize',
     render: (fills: FixedOrderFill[]) => {
-      const filled = getFilledAmount(fills)
+      const filled = getFilledAmount(fills);
       return `USDC ${new TokenAmount(filled, 6).tokens.toFixed(2)}`;
     }
   },
@@ -64,7 +64,7 @@ const postOrderColumns: ColumnsType<FixedOrder> = [
     title: 'Cancel',
     dataIndex: 'cancel',
     key: 'cancel',
-    render: (cancel) => <CloseOutlined style={{ color: '#e36868' }} onClick={() => cancel()} /> // color: --dt-danger
+    render: cancel => <CloseOutlined style={{ color: '#e36868' }} onClick={() => cancel()} /> // color: --dt-danger
   }
 ];
 
@@ -99,31 +99,61 @@ const fillOrderColumns = [
   }
 ];
 
-const cancel = async (market: MarketAndconfig, marginAccount: MarginAccount, provider: AnchorProvider, order: FixedOrder, cluster: "mainnet-beta" | "localnet" | "devnet", blockExplorer: "solanaExplorer" | "solscan" | "solanaBeach") => {
+const cancel = async (
+  market: MarketAndconfig,
+  marginAccount: MarginAccount,
+  provider: AnchorProvider,
+  order: FixedOrder,
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
+  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach'
+) => {
   try {
-    const filled = getFilledAmount(order.fills)
+    const filled = getFilledAmount(order.fills);
     await cancelOrder({
       market,
       marginAccount,
       provider,
       orderId: new BN(order.id),
       amount: new BN(order.details.total_quote_qty).sub(filled)
-    })
-    notify('Order Cancelled', 'Your order was cancelled successfully', 'success')
+    });
+    notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
   } catch (e: any) {
-    notify('Cancel order failed', 'There was an error cancelling your order', 'error', getExplorerUrl(e.signature, cluster, blockExplorer))
-    throw (e)
+    notify(
+      'Cancel order failed',
+      'There was an error cancelling your order',
+      'error',
+      getExplorerUrl(e.signature, cluster, blockExplorer)
+    );
+    throw e;
   }
-}
+};
 
-const OrdersTable = ({ data, market, marginAccount, provider, cluster, blockExplorer }: { data: FixedOrder[], market: MarketAndconfig, marginAccount: MarginAccount, provider: AnchorProvider, cluster: "mainnet-beta" | "localnet" | "devnet", blockExplorer: "solanaExplorer" | "solscan" | "solanaBeach" }) => {
-  const orders = useMemo(() => data.reduce((all, item) => {
-    if (item.details.order_status !== 'Filled') {
-      item.cancel = () => cancel(market, marginAccount, provider, item, cluster, blockExplorer)
-    }
-    all.push(item)
-    return all
-  }, []), [data])
+const OrdersTable = ({
+  data,
+  market,
+  marginAccount,
+  provider,
+  cluster,
+  blockExplorer
+}: {
+  data: FixedOrder[];
+  market: MarketAndconfig;
+  marginAccount: MarginAccount;
+  provider: AnchorProvider;
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet';
+  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+}) => {
+  const orders = useMemo(
+    () =>
+      data.reduce((all, item) => {
+        if (item.details.order_status !== 'Filled') {
+          item.cancel = () => cancel(market, marginAccount, provider, item, cluster, blockExplorer);
+        }
+        all.push(item);
+        return all;
+      }, []),
+    [data]
+  );
 
   return (
     <Table
@@ -164,9 +194,9 @@ export function DebtTable(): JSX.Element {
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const selectedMarket = useRecoilValue(SelectedFixedTermMarketAtom);
   const market = markets[selectedMarket];
-  const { provider } = useProvider()
-  const blockExplorer = useRecoilValue(BlockExplorer)
-  const cluster = useRecoilValue(Cluster)
+  const { provider } = useProvider();
+  const blockExplorer = useRecoilValue(BlockExplorer);
+  const cluster = useRecoilValue(Cluster);
 
   const { data, error, loading } = useOrdersForUser(market?.market, account);
 
@@ -189,14 +219,19 @@ export function DebtTable(): JSX.Element {
           {
             label: 'Open Orders',
             key: 'open-orders',
-            children: loading || !account ? <LoadingOutlined /> : <OrdersTable
-              data={data || []}
-              provider={provider}
-              market={markets[selectedMarket]}
-              marginAccount={account}
-              cluster={cluster}
-              blockExplorer={blockExplorer}
-            />
+            children:
+              loading || !account ? (
+                <LoadingOutlined />
+              ) : (
+                <OrdersTable
+                  data={data || []}
+                  provider={provider}
+                  market={markets[selectedMarket]}
+                  marginAccount={account}
+                  cluster={cluster}
+                  blockExplorer={blockExplorer}
+                />
+              )
           },
           {
             label: 'Open Positions',
