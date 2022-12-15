@@ -447,27 +447,6 @@
     "borrow": {
       "title": "Borrow Fixed-Term",
       "chartTitle": "Bids"
-    },
-    "debtTable": {
-      "title": "Debt Detail",
-      "postOrder": {
-        "id": "Order ID",
-        "placedTime": "Order Placed",
-        "orderSize": "Order Size",
-        "filledSize": "Filled Size",
-        "tenor": "Tenor",
-        "rate": "Rate",
-        "autoRoll": "Auto-Roll",
-        "cancel": "Cancel"
-      },
-      "fillOrder": {
-        "id": "Fill ID",
-        "startTime": "Start Time",
-        "matureTime": "Mature Time",
-        "fillSize": "Fill Size",
-        "quoteValue": "Quote Value",
-        "status": "Status"
-      }
     }
   },
   "accountsView": {
