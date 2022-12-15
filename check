@@ -6,8 +6,12 @@
 #           (wrap the job name in quotes if it has spaces)
 # Run the entire workflow:
 #   ./check all
+#
 # Run jobs in the container used for CI:
 #   ./check in-docker '<job-name or all>'
+#
+# NOTE you may need to install cypress for the in-docker e2e-tests to run:
+#   ./check in-docker install-cypress
 #
 # This script can also be sourced:
 #   . check
@@ -97,6 +101,10 @@ docker-run() {
 
 #################
 # helper functions
+
+install-cypress() {
+    node_modules/cypress/bin/cypress install
+}
 
 yarn-build() {
     yarn install --frozen-lockfile
