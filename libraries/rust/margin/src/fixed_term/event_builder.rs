@@ -10,9 +10,9 @@ use super::error::Result;
 
 use super::ix_builder::fixed_term_market_pda;
 
-/// Maximum byte size of the `ConsumeEventsInfo`, determined by solana transaction size
+/// Maximum number of events that can be consumed in a single transaction
 /// TODO: this is placeholder
-const MAX_BYTES: usize = 736;
+const MAX_EVENTS: usize = 3;
 
 /// Number of bytes in a loan account seed
 const SEED_BYTES: usize = 8;
@@ -54,11 +54,11 @@ pub struct ConsumeEventsInfo(Vec<EventAccountKeys>);
 
 impl ConsumeEventsInfo {
     pub fn build(event_queue: EventQueue<'_, CallbackInfo>) -> Result<Self> {
-        let mut info = ConsumeEventsInfo::default();
+        let mut info = Self::default();
         let rng = &mut rand::rngs::OsRng::default();
 
         for event in event_queue.iter() {
-            if info.count_bytes() > MAX_BYTES {
+            if info.0.len() >= MAX_EVENTS {
                 break;
             }
             let keys = match event {

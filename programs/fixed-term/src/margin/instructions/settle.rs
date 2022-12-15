@@ -117,5 +117,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     ctx.accounts.margin_user.assets.entitled_tickets = 0;
     ctx.accounts.margin_user.assets.entitled_tokens = 0;
 
+    ctx.accounts.margin_user.emit_all_balances();
+
     Ok(())
 }
