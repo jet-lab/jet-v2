@@ -79,6 +79,7 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         limit_price: params.limit_price,
         order_type: crate::events::OrderType::MarginLend,
     });
+    ctx.accounts.margin_user.emit_asset_balances();
 
     Ok(())
 }
