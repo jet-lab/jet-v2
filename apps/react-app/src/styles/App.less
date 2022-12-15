@@ -1390,17 +1390,6 @@ html {
     }
   }
 
-  .debt-table {
-    width: calc(100% - (@spacing-sm * 2));
-    margin: @spacing-sm;
-    .ant-typography {
-      margin: unset;
-    }
-
-    .ant-table-row-expand-icon-cell {
-      width: 35px;
-    }
-  }
   // Graphs
   .swaps-graph,
   .fixed-term-graph {
@@ -2156,16 +2145,6 @@ html {
           }
         }
       }
-
-      &::after {
-        content: '';
-        position: absolute;
-        left: 2.5%;
-        bottom: calc(@spacing-base * 3);
-        width: 95%;
-        height: 1px;
-        background: @primary-3;
-      }
     }
 
     .abbrev {
@@ -2771,4 +2750,23 @@ html {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+}
+
+.debt-table {
+  width: calc(100% - (@spacing-sm * 2));
+  margin: @spacing-sm;
+  .ant-typography {
+    margin: unset;
+  }
+
+  .ant-table-row-expand-icon-cell {
+    width: 35px;
+  }
+
+  .ant-table-expanded-row td {
+    padding: 0 !important;
+  }
+  .ant-table-expanded-row table {
+    padding: 0 !important;
+  }
 }

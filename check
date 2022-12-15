@@ -6,8 +6,12 @@
 #           (wrap the job name in quotes if it has spaces)
 # Run the entire workflow:
 #   ./check all
+#
 # Run jobs in the container used for CI:
 #   ./check in-docker '<job-name or all>'
+#
+# NOTE you may need to install cypress for the in-docker e2e-tests to run:
+#   ./check in-docker install-cypress
 #
 # This script can also be sourced:
 #   . check
@@ -72,7 +76,11 @@ in-docker() {
     elif [ ! "$(docker ps -aq -f name="^$container_name$")" ]; then
         DOCKER_FLAGS="-d --name $container_name" docker-run sleep infinity
     fi
-    docker exec ${DOCKER_FLAGS:--it} "$container_name" /jet-v2/check $@
+    docker exec \
+        -e SOLANA_MAINNET_RPC=$SOLANA_MAINNET_RPC \
+        ${DOCKER_FLAGS:--it} \
+        "$container_name" \
+        /jet-v2/check $@
 }
 
 # you probably don't want to use this directly
@@ -81,6 +89,7 @@ in-docker() {
 docker-run() {
     local docker_flags="${DOCKER_FLAGS:-}"
     docker run \
+        -e SOLANA_MAINNET_RPC=$SOLANA_MAINNET_RPC \
         -u $(id -u) \
         -v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
         --workdir /jet-v2 \
@@ -92,6 +101,10 @@ docker-run() {
 
 #################
 # helper functions
+
+install-cypress() {
+    node_modules/cypress/bin/cypress install
+}
 
 yarn-build() {
     yarn install --frozen-lockfile
