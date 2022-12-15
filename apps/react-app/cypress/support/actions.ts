@@ -15,7 +15,6 @@ export const loadPageAndCreateAccount = (path?: string) => {
   cy.contains('Localnet').click();
   cy.contains('Save Preferences').click();
   connectWallet();
-  cy.contains('All Assets').click();
   airdrop('SOL', 'SOL');
   cy.contains('Create an account').should('be.visible').should('not.be.disabled').click();
   cy.contains('New Account');
