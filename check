@@ -72,7 +72,11 @@ in-docker() {
     elif [ ! "$(docker ps -aq -f name="^$container_name$")" ]; then
         DOCKER_FLAGS="-d --name $container_name" docker-run sleep infinity
     fi
-    docker exec ${DOCKER_FLAGS:--it} "$container_name" /jet-v2/check $@
+    docker exec \
+        -e SOLANA_MAINNET_RPC=$SOLANA_MAINNET_RPC \
+        ${DOCKER_FLAGS:--it} \
+        "$container_name" \
+        /jet-v2/check $@
 }
 
 # you probably don't want to use this directly
@@ -81,6 +85,7 @@ in-docker() {
 docker-run() {
     local docker_flags="${DOCKER_FLAGS:-}"
     docker run \
+        -e SOLANA_MAINNET_RPC=$SOLANA_MAINNET_RPC \
         -u $(id -u) \
         -v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
         --workdir /jet-v2 \
