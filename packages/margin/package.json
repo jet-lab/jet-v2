@@ -19,7 +19,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf ./dist & rm -rf .turbo & rm tsconfig.tsbuildinfo",
+    "clean": "rm -rf ./dist & rm -rf .turbo & rm -f tsconfig.tsbuildinfo",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ --check",
     "fmt:fix": "prettier src/ --write",

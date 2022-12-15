@@ -15,7 +15,6 @@ import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
-import { isDebug } from '../../../App';
 import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {
@@ -79,21 +78,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
-    }
-  };
-
-  const createDebugOrders = async () => {
-    function sleep(ms: number) {
-      return new Promise(resolve => {
-        setTimeout(resolve, ms);
-      });
-    }
-
-    for (let i = 0; i < 10; i++) {
-      const amount = new BN((10 + Math.random() * 10000) * 10 ** decimals);
-      const basisPoints = new BN(10 + Math.random() * 200);
-      await createBorrowOrder(amount, basisPoints);
-      await sleep(1000);
+      throw(e)
     }
   };
 
@@ -176,7 +161,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       <Button className="submit-button" disabled={disabled} onClick={() => createBorrowOrder()}>
         Request {marketToString(marketAndConfig.config)} loan
       </Button>
-      {isDebug && <Button onClick={createDebugOrders}>Generate 10 random orders</Button>}
     </div>
   );
 };

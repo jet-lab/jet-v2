@@ -2,7 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": ["^build", "fmt"],
+      "dependsOn": ["^build"],
       "outputs": ["apps/**/build"],
       "outputMode": "new-only"
     },

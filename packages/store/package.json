@@ -1,0 +1,19 @@
+{
+  "name": "@jet-lab/store",
+  "version": "0.1.0",
+  "type": "module",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "src/*",
+    "dist/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@jet-lab/fixed-term": "*",
+    "swr": "^2.0.0"
+  }
+}
