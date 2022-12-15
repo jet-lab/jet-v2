@@ -509,6 +509,22 @@ impl FixedTermIxBuilder {
         ))
     }
 
+    pub fn transfer_term_deposit(
+        &self,
+        deposit: Pubkey,
+        owner: Pubkey,
+        new_owner: Pubkey,
+    ) -> Result<Instruction> {
+        let data = jet_fixed_term::instruction::TransferDeposit { new_owner }.data();
+        let accounts =
+            jet_fixed_term::accounts::TransferDeposit { deposit, owner }.to_account_metas(None);
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
+    }
+
     pub fn settle(
         &self,
         margin_account: Pubkey,

@@ -11,7 +11,7 @@ use hosted_tests::{
     margin_test_context,
     setup_helper::{setup_user, tokens},
 };
-use jet_fixed_term::orderbook::state::OrderParams;
+use jet_fixed_term::{orderbook::state::OrderParams, tickets::state::TermDeposit};
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -416,6 +416,12 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         .iter()
         .next()
         .is_some());
+
+    // alice can give her deposit to bob
+    let deposit_key = alice.term_deposit_key(&[]);
+    alice.transfer_term_deposit(&[], bob.proxy.pubkey()).await?;
+    let deposit: TermDeposit = manager.load_anchor(&deposit_key).await?;
+    assert_eq!(deposit.owner, bob.proxy.pubkey());
 
     Ok(())
 }

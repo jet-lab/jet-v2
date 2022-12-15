@@ -21,8 +21,9 @@ tsconfig.tsbuildinfo
 !.gitkeep
 !package.json
 localnet.config.json
-
+.localnet
 .env
+
 # documentations
 
 .turbo

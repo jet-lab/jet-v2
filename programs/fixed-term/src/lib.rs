@@ -297,10 +297,7 @@ pub mod jet_fixed_term {
     }
 
     /// Transfer staked tickets to a new owner
-    pub fn tranfer_ticket_ownership(
-        ctx: Context<TransferDeposit>,
-        new_owner: Pubkey,
-    ) -> Result<()> {
+    pub fn transfer_deposit(ctx: Context<TransferDeposit>, new_owner: Pubkey) -> Result<()> {
         instructions::transfer_deposit::handler(ctx, new_owner)
     }
     //

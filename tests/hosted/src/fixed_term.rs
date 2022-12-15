@@ -718,6 +718,23 @@ impl<P: Proxy> FixedTermUser<P> {
             .await
     }
 
+    pub async fn transfer_term_deposit(
+        &self,
+        deposit_seed: &[u8],
+        new_owner: Pubkey,
+    ) -> Result<Signature> {
+        let deposit = self.term_deposit_key(deposit_seed);
+        let ix = self.manager.ix_builder.transfer_term_deposit(
+            deposit,
+            self.proxy.pubkey(),
+            new_owner,
+        )?;
+
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
+            .await
+    }
+
     pub async fn sell_tickets_order(&self, params: OrderParams) -> Result<Signature> {
         let borrow =
             self.manager
