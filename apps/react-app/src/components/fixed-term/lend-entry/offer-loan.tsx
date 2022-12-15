@@ -78,6 +78,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
+      throw(e)
     }
   };
 
