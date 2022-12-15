@@ -22,6 +22,8 @@ use jet_fixed_term::{
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use tracing::instrument;
 
+use crate::util::no_dupe_queue::AsyncNoDupeQueue;
+
 use super::FixedTermIxBuilder;
 
 const MAX_EVENTS_PER_TX: usize = 32;
@@ -44,6 +46,27 @@ pub struct EventConsumer {
     markets: Mutex<HashMap<Pubkey, Arc<Mutex<MarketState>>>>,
 }
 
+/// does not guarantee successful downloads, some may be omitted
+pub async fn download_markets(
+    rpc: &dyn SolanaRpcClient,
+    addresses: &[Pubkey],
+) -> Result<Vec<Market>, EventConsumerError> {
+    let markets = rpc.get_multiple_accounts(addresses).await?;
+    let mut structures = vec![];
+    for (address, market) in addresses.iter().zip(markets) {
+        if let Some(data) = market.map(|m| m.data) {
+            structures.push(
+                Market::try_deserialize(&mut &data[..])
+                    .map_err(|_| EventConsumerError::InvalidMarketAccount(*address))?,
+            );
+        } else {
+            tracing::warn!("missing market {address}");
+        }
+    }
+
+    Ok(structures)
+}
+
 impl EventConsumer {
     pub fn new(rpc: Arc<dyn SolanaRpcClient>) -> Self {
         Self {
@@ -53,32 +76,36 @@ impl EventConsumer {
     }
 
     /// Load fixed term markets to have their events consumed
+    /// Assumes there is no one listening for margin accounts to settle
     pub async fn load_markets(&self, addresses: &[Pubkey]) -> Result<(), EventConsumerError> {
-        let markets = self.rpc.get_multiple_accounts(addresses).await?;
-
-        for (address, market) in addresses.iter().zip(markets) {
-            if let Some(data) = market.map(|m| m.data) {
-                let structure = Market::try_deserialize(&mut &data[..])
-                    .map_err(|_| EventConsumerError::InvalidMarketAccount(*address))?;
-
-                self.markets.lock().unwrap().insert(
-                    *address,
-                    Arc::new(Mutex::new(MarketState {
-                        market_address: *address,
-                        market: structure,
-                        queue: Vec::new(),
-                        users: HashMap::new(),
-                        builder: FixedTermIxBuilder::from(structure)
-                            .with_payer(&self.rpc.payer().pubkey())
-                            .with_crank(&self.rpc.payer().pubkey()),
-                    })),
-                );
-            } else {
-                tracing::warn!("missing market {address}");
-            }
+        for market in download_markets(self.rpc.as_ref(), addresses).await? {
+            self.insert_market(market, None);
         }
 
         Ok(())
+    }
+
+    /// Insert fixed term market to enable it to have its events consumed
+    /// optionally include a sink representing a listener for accounts that need to be settled
+    pub fn insert_market(
+        &self,
+        market: Market,
+        margin_account_settlement_sink: Option<AsyncNoDupeQueue<Pubkey>>,
+    ) {
+        let builder = FixedTermIxBuilder::from(market)
+            .with_payer(&self.rpc.payer().pubkey())
+            .with_crank(&self.rpc.payer().pubkey());
+        self.markets.lock().unwrap().insert(
+            builder.market(),
+            Arc::new(Mutex::new(MarketState {
+                market_address: builder.market(),
+                market,
+                queue: Vec::new(),
+                users: HashMap::new(),
+                builder,
+                margin_accounts_to_settle: margin_account_settlement_sink,
+            })),
+        );
     }
 
     /// Sync state for all users in the market
@@ -219,6 +246,8 @@ struct MarketState {
     queue: Vec<u8>,
     users: HashMap<Pubkey, MarginUser>,
     builder: FixedTermIxBuilder,
+    /// send margin accounts here once they need to be settled
+    margin_accounts_to_settle: Option<AsyncNoDupeQueue<Pubkey>>,
 }
 
 impl MarketState {
@@ -234,10 +263,14 @@ impl MarketState {
         let recent_blockhash = rpc.get_latest_blockhash().await?;
         let mut consume_params = vec![];
         let mut consume_tx = Transaction::default();
+        let mut margin_accounts_to_settle = Vec::new();
 
         for event in queue.iter() {
             match event {
                 EventRef::Out(OutEventRef { callback_info, .. }) => {
+                    if callback_info.flags.contains(CallbackFlags::MARGIN) {
+                        margin_accounts_to_settle.push(callback_info.owner)
+                    }
                     consume_params.push(EventAccounts::Out(OutAccounts {
                         out_account: callback_info.out_account,
                         user_queue: callback_info.adapter(),
@@ -251,6 +284,9 @@ impl MarketState {
                 }) => {
                     let fill_account = maker_callback_info.fill_account;
                     let mut loan_account = None;
+                    if maker_callback_info.flags.contains(CallbackFlags::MARGIN) {
+                        margin_accounts_to_settle.push(maker_callback_info.owner)
+                    }
 
                     if maker_callback_info
                         .flags
@@ -346,6 +382,10 @@ impl MarketState {
 
         queue.pop_n(consume_params.len() as u64);
         rpc.send_and_confirm_transaction(&consume_tx).await?;
+        if let Some(sink) = self.margin_accounts_to_settle.as_ref() {
+            sink.push_many(margin_accounts_to_settle).await;
+        }
+
         Ok(())
     }
 }

@@ -3,15 +3,12 @@
 use std::{
     collections::{hash_map::DefaultHasher, HashSet, LinkedList},
     hash::{Hash, Hasher},
-    pin::Pin,
     sync::Arc,
-    task::{Context, Poll},
 };
 
-use futures::{pin_mut, Future, Stream};
 use tokio::sync::Mutex;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AsyncNoDupeQueue<T: Hash + Eq>(Arc<Mutex<NoDupeQueue<T>>>);
 
 impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
@@ -26,18 +23,29 @@ impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
     pub async fn pop(&self) -> Option<T> {
         self.0.lock().await.pop()
     }
-}
 
-impl<T: Hash + Eq> Stream for AsyncNoDupeQueue<T> {
-    type Item = T;
+    pub async fn push_many(&self, items: Vec<T>) {
+        let mut inner = self.0.lock().await;
+        for item in items {
+            inner.push(item);
+        }
+    }
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let fut = self.pop();
-        pin_mut!(fut);
-        Future::poll(fut, cx)
+    pub async fn pop_many(&self, max: usize) -> Vec<T> {
+        let mut inner = self.0.lock().await;
+        let mut ret = vec![];
+        for _ in 0..max {
+            if let Some(item) = inner.pop() {
+                ret.push(item);
+            } else {
+                break;
+            }
+        }
+        ret
     }
 }
 
+#[derive(Default)]
 pub struct NoDupeQueue<T: Hash + Eq> {
     list: LinkedList<T>,
     set: HashSet<u64>,

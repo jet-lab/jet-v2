@@ -9,8 +9,13 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file};
 
 use jet_margin_sdk::{
-    fixed_term::event_consumer::EventConsumer,
+    fixed_term::{
+        event_consumer::{download_markets, EventConsumer},
+        settler::settle_margin_users,
+        FixedTermIxBuilder,
+    },
     ix_builder::{derive_airspace, test_service::derive_token_mint},
+    util::no_dupe_queue::AsyncNoDupeQueue,
 };
 use jet_simulation::solana_rpc_api::RpcConnection;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -75,11 +80,20 @@ async fn run(opts: CliOpts) -> Result<()> {
             .unwrap_or(&solana_config.keypair_path),
     )
     .unwrap();
-    let rpc = RpcConnection::new(keypair, RpcClient::new(LOCALNET_URL.to_string()));
+    let rpc = Arc::new(RpcConnection::new(
+        keypair,
+        RpcClient::new(LOCALNET_URL.to_string()),
+    ));
     let targets = read_config(&opts.config_path)?;
 
-    let consumer = EventConsumer::new(Arc::new(rpc));
-    consumer.load_markets(&targets).await?;
+    let markets = download_markets(rpc.as_ref(), &targets).await?;
+    let consumer = EventConsumer::new(rpc.clone());
+    for market in markets {
+        let margin_accounts = AsyncNoDupeQueue::new();
+        let ix = FixedTermIxBuilder::from(market);
+        consumer.insert_market(market, Some(margin_accounts.clone()));
+        tokio::spawn(settle_margin_users(rpc.clone(), ix, margin_accounts));
+    }
 
     loop {
         consumer.sync_users().await?;
@@ -90,7 +104,6 @@ async fn run(opts: CliOpts) -> Result<()> {
             .any(|market| consumer.pending_events(market).unwrap() > 0)
         {
             consumer.consume().await?;
-            continue;
         }
 
         tokio::time::sleep(Duration::from_secs(2)).await;

@@ -1,50 +1,61 @@
 use std::{sync::Arc, time::Duration};
 
-use futures::StreamExt;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use super::FixedTermIxBuilder;
 use crate::{solana::transaction::WithSigner, util::no_dupe_queue::AsyncNoDupeQueue};
 
+const BATCH_SIZE: usize = 100;
+
 pub async fn settle_margin_users(
     rpc: Arc<dyn SolanaRpcClient>,
-    ix: FixedTermIxBuilder,
-    mut margin_accounts: AsyncNoDupeQueue<Pubkey>,
+    builder: FixedTermIxBuilder,
+    margin_accounts: AsyncNoDupeQueue<Pubkey>,
 ) {
-    let ix = Arc::new(ix);
+    tracing::info!(
+        "starting settler crank for fixed term market {}",
+        builder.market()
+    );
+    let ix = Arc::new(builder);
     loop {
-        while let Some(margin_account) = margin_accounts.next().await {
-            tokio::spawn({
-                println!(" INFO - attempting to settle margin account {margin_account}");
-                let fut = settle(rpc.clone(), ix.clone(), margin_account);
-                let queue = margin_accounts.clone();
-                async move {
-                    match fut.await {
-                        Ok(_) => println!(" INFO - settled margin account {margin_account}"),
-                        Err(e) => {
-                            println!(
-                                "ERROR - failed to settle margin account {margin_account} - {e}"
-                            );
-                            queue.push(margin_account).await;
-                        }
-                    }
-                }
-            });
+        let to_settle = margin_accounts.pop_many(BATCH_SIZE).await;
+        let has_more = to_settle.len() < BATCH_SIZE;
+        for margin_account in to_settle {
+            spawn_settle(
+                rpc.clone(),
+                ix.clone(),
+                margin_account,
+                Some(margin_accounts.clone()),
+            );
         }
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        if !has_more {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
     }
 }
 
-async fn settle(
+fn spawn_settle(
     rpc: Arc<dyn SolanaRpcClient>,
-    ix: Arc<FixedTermIxBuilder>,
+    builder: Arc<FixedTermIxBuilder>,
     margin_account: Pubkey,
-) -> Result<(), anyhow::Error> {
-    ix.settle(margin_account, None, None)?
-        .with_signers(&[])
-        .send_and_confirm(&rpc)
-        .await?;
-
-    Ok(())
+    retry_queue: Option<AsyncNoDupeQueue<Pubkey>>,
+) {
+    tokio::spawn(async move {
+        tracing::debug!("sending settle tx for margin account {margin_account}");
+        match builder
+            .margin_settle(margin_account)
+            .with_signers(&[])
+            .send_and_confirm(&rpc)
+            .await
+        {
+            Ok(_) => tracing::debug!("settled margin account {margin_account}"),
+            Err(e) => {
+                tracing::error!("failed to settle margin account {margin_account} - {e}");
+                if let Some(q) = retry_queue {
+                    q.push(margin_account).await;
+                }
+            }
+        }
+    });
 }
