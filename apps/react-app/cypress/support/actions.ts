@@ -13,6 +13,7 @@ export const loadPageAndCreateAccount = (path?: string) => {
   cy.visit(url);
   cy.get('.nav-section .settings-btn').click();
   cy.contains('Localnet').click();
+  cy.contains('Solana Explorer').click();
   cy.contains('Save Preferences').click();
   connectWallet();
   airdrop('SOL', 'SOL');
