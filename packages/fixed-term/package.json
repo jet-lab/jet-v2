@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf ./dist & rm -rf .turbo & rm tsconfig.tsbuildinfo",
+    "clean": "rm -rf ./dist & rm -rf .turbo & rm -f tsconfig.tsbuildinfo",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublishOnly": "yarn build",
     "watch": "tsc --watch",
