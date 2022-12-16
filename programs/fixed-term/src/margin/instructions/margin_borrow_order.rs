@@ -141,7 +141,7 @@ pub fn handler(
         emit!(TermLoanCreated {
             term_loan: term_loan.key(),
             authority: ctx.accounts.margin_account.key(),
-            order_id: order_summary.summary().posted_order_id,
+            order_tag: callback_info.order_tag.as_u128(),
             sequence_number,
             market: ctx.accounts.orderbook_mut.market.key(),
             maturation_timestamp,
@@ -162,6 +162,7 @@ pub fn handler(
         market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.margin_account.key(),
         margin_user: Some(ctx.accounts.margin_user.key()),
+        order_tag: callback_info.order_tag.as_u128(),
         order_summary: order_summary.summary(),
         limit_price: params.limit_price,
         auto_stake: params.auto_stake,

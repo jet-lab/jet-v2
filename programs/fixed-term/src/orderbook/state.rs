@@ -206,6 +206,10 @@ impl OrderTag {
     pub fn bytes(&self) -> &[u8; 16] {
         &self.0
     }
+
+    pub fn as_u128(&self) -> u128 {
+        u128::from_le_bytes(self.0)
+    }
 }
 
 /// The CallbackInfo is information about an order that is stored in the Event Queue
