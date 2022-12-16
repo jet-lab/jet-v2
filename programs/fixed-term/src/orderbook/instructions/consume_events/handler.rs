@@ -132,8 +132,10 @@ fn handle_fill<'info>(
 
             emit!(OrderFilled {
                 market: ctx.accounts.market.key(),
-                authority: maker_info.owner,
-                order_tag: maker_info.order_tag.as_u128(),
+                maker_authority: maker_info.owner,
+                taker_authority: taker_info.owner,
+                maker_order_tag: maker_info.order_tag.as_u128(),
+                taker_order_tag: taker_info.order_tag.as_u128(),
                 base_filled: base_size,
                 quote_filled: quote_size,
                 fill_timestamp,
@@ -209,8 +211,10 @@ fn handle_fill<'info>(
             if emit_order_filled {
                 emit!(OrderFilled {
                     market: ctx.accounts.market.key(),
-                    authority: maker_info.owner,
-                    order_tag: maker_info.order_tag.as_u128(),
+                    maker_authority: maker_info.owner,
+                    taker_authority: taker_info.owner,
+                    maker_order_tag: maker_info.order_tag.as_u128(),
+                    taker_order_tag: taker_info.order_tag.as_u128(),
                     base_filled: base_size,
                     quote_filled: quote_size,
                     fill_timestamp,

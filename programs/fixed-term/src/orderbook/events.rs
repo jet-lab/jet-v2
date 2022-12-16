@@ -19,8 +19,10 @@ pub struct EventAdapterRegistered {
 #[event]
 pub struct OrderFilled {
     pub market: Pubkey,
-    pub authority: Pubkey,
-    pub order_tag: u128,
+    pub maker_authority: Pubkey,
+    pub taker_authority: Pubkey,
+    pub maker_order_tag: u128,
+    pub taker_order_tag: u128,
     pub order_type: OrderType,
     pub sequence_number: u64,
     pub base_filled: u64,
