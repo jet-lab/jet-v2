@@ -355,7 +355,7 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   instructions.push(refreshIXS)
   const settleIXS: TransactionInstruction[] = []
   const settleIX = await market.settle(marginAccount)
-  marginAccount.withAdapterInvoke({
+  marginAccount.withAccountingInvoke({
     instructions: settleIXS,
     adapterInstruction: settleIX
   })
