@@ -1790,12 +1790,9 @@ export class MarginAccount {
          poolsToRefresh.push(pool)
        }
      }
-     console.log(instructions.length)
      for (const pool of poolsToRefresh) {
        await pool.withMarginRefreshPositionPrice({ instructions, marginAccount: this })
      }
-     console.log(instructions.length)
      await refreshAllMarkets(markets, instructions, this, marketAddress)
-     console.log(instructions.length)
    }
 }
