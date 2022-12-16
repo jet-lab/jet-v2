@@ -113,7 +113,10 @@ impl Serialize for Market {
         )?;
         s.serialize_field("ticketMint", &self.ticket_mint.to_string())?;
         s.serialize_field("claimsMint", &self.claims_mint.to_string())?;
-        s.serialize_field("ticketCollateralMint", &self.ticket_collateral_mint.to_string())?;
+        s.serialize_field(
+            "ticketCollateralMint",
+            &self.ticket_collateral_mint.to_string(),
+        )?;
         s.serialize_field("underlyingOracle", &self.underlying_oracle.to_string())?;
         s.serialize_field("ticketOracle", &self.ticket_oracle.to_string())?;
         s.serialize_field("seed", &Pubkey::new_from_array(self.seed).to_string())?;
