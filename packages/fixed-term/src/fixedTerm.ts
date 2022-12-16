@@ -349,16 +349,16 @@ export class FixedTermMarket {
   }
 
   async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
-    const borrowerAccount = await this.deriveMarginUserAddress(user)
-    const claims = await this.deriveMarginUserClaims(borrowerAccount)
-    const ticketCollateral = await this.deriveTicketCollateral(borrowerAccount)
+    const marginUser = await this.deriveMarginUserAddress(user)
+    const claims = await this.deriveMarginUserClaims(marginUser)
+    const ticketCollateral = await this.deriveTicketCollateral(marginUser)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     return await this.program.methods
       .initializeMarginUser()
       .accounts({
         ...this.addresses,
-        borrowerAccount,
+        marginUser,
         marginAccount: user.address,
         claims,
         ticketCollateral,
@@ -395,16 +395,16 @@ export class FixedTermMarket {
     return await findDerivedAccount(["margin_user", this.address, user.address], this.program.programId)
   }
 
-  async deriveMarginUserClaims(borrowerAccount: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["claim_notes", borrowerAccount], this.program.programId)
+  async deriveMarginUserClaims(marginUser: Address): Promise<PublicKey> {
+    return await findDerivedAccount(["claim_notes", marginUser], this.program.programId)
   }
 
-  async deriveTicketCollateral(borrowerAccount: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["ticket_collateral_notes", borrowerAccount], this.program.programId)
+  async deriveTicketCollateral(marginUser: Address): Promise<PublicKey> {
+    return await findDerivedAccount(["ticket_collateral_notes", marginUser], this.program.programId)
   }
 
-  async deriveTermLoanAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["term_loan", borrowerAccount, seed], this.program.programId)
+  async deriveTermLoanAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findDerivedAccount(["term_loan", marginUser, seed], this.program.programId)
   }
 
   async deriveClaimTicketKey(ticketHolder: Address, seed: Uint8Array): Promise<PublicKey> {
