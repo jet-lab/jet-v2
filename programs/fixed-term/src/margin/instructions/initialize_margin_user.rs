@@ -19,7 +19,7 @@ pub struct InitializeMarginUser<'info> {
     #[account(
         init,
         seeds = [
-            seeds::MARGIN_BORROWER,
+            seeds::MARGIN_USER,
             market.key().as_ref(),
             margin_account.key().as_ref(),
         ],

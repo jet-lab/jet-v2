@@ -593,7 +593,7 @@ impl FixedTermIxBuilder {
             accounts: jet_fixed_term::accounts::RefreshPosition {
                 market: self.market,
                 margin_user: fixed_term_market_pda(&[
-                    seeds::MARGIN_BORROWER,
+                    seeds::MARGIN_USER,
                     self.market.as_ref(),
                     margin_account.as_ref(),
                 ]),
@@ -986,6 +986,12 @@ impl FixedTermIxBuilder {
     }
 }
 
+pub enum FixedTermPosition {
+    Liability,
+    UnderlyingCollateral,
+    TicketCollateral,
+}
+
 /// helpful addresses for a MarginUser account
 pub struct MarginUser {
     pub address: Pubkey,
@@ -996,7 +1002,7 @@ pub struct MarginUser {
 impl FixedTermIxBuilder {
     pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
         let address = fixed_term_market_pda(&[
-            jet_fixed_term::seeds::MARGIN_BORROWER,
+            jet_fixed_term::seeds::MARGIN_USER,
             self.market.as_ref(),
             margin_account.as_ref(),
         ]);
@@ -1048,7 +1054,7 @@ impl FixedTermIxBuilder {
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
         fixed_term_market_pda(&[
-            jet_fixed_term::seeds::MARGIN_BORROWER,
+            jet_fixed_term::seeds::MARGIN_USER,
             self.market.as_ref(),
             owner.as_ref(),
         ])

@@ -66,7 +66,7 @@ impl MarginUser {
     fn derive_address(&self) -> Pubkey {
         Pubkey::find_program_address(
             &[
-                crate::seeds::MARGIN_BORROWER,
+                crate::seeds::MARGIN_USER,
                 self.market.as_ref(),
                 self.margin_account.as_ref(),
             ],

@@ -84,7 +84,7 @@ export type JetFixedTerm = {
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"margin_borrower\""
+      "value": "b\"margin_user\""
     },
     {
       "name": "UNDERLYING_TOKEN_VAULT",
@@ -3798,7 +3798,7 @@ export const IDL: JetFixedTerm = {
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"margin_borrower\""
+      "value": "b\"margin_user\""
     },
     {
       "name": "UNDERLYING_TOKEN_VAULT",

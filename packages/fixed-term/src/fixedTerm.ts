@@ -392,7 +392,7 @@ export class FixedTermMarket {
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
-    return await findDerivedAccount(["margin_borrower", this.address, user.address], this.program.programId)
+    return await findDerivedAccount(["margin_user", this.address, user.address], this.program.programId)
   }
 
   async deriveMarginUserClaims(borrowerAccount: Address): Promise<PublicKey> {
