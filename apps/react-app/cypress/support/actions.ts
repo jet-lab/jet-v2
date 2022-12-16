@@ -18,16 +18,16 @@ export const loadPageAndCreateAccount = (path?: string) => {
   connectWallet();
   airdrop('SOL', 'SOL');
 
-  cy.contains('Create an account').as('createAccountBtn')
-  cy.get('@createAccountBtn').should('be.visible')
-  cy.get('@createAccountBtn').should('not.be.disabled')
+  cy.contains('Create an account').as('createAccountBtn');
+  cy.get('@createAccountBtn').should('be.visible');
+  cy.get('@createAccountBtn').should('not.be.disabled');
   cy.get('@createAccountBtn').click();
 
   cy.contains('New Account');
-  
-  cy.contains('Create Account').as('createAccountAction')
-  cy.get('@createAccountAction').should('be.visible')
-  cy.get('@createAccountAction').should('not.be.disabled')
+
+  cy.contains('Create Account').as('createAccountAction');
+  cy.get('@createAccountAction').should('be.visible');
+  cy.get('@createAccountAction').should('not.be.disabled');
   cy.get('@createAccountAction').click();
   cy.contains('Account created');
   cy.contains('Account 1');

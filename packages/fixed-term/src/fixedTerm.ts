@@ -5,7 +5,7 @@ import { bigIntToBn, bnToBigInt, FixedTermMarketConfig, MarginAccount, MarginTok
 import { Orderbook } from "./orderbook"
 import { JetMarket } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
-import { order_id_to_string, rate_to_price } from "@jet-lab/wasm"
+import { rate_to_price } from "@jet-lab/wasm"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
 export interface OrderParams {
@@ -327,10 +327,9 @@ export class FixedTermMarket {
       .instruction()
   }
 
-  async cancelOrderIx(user: MarginAccount, orderId: Uint8Array): Promise<TransactionInstruction> {
-    const bnOrderId = new BN(order_id_to_string(orderId))
+  async cancelOrderIx(user: MarginAccount, orderId: BN): Promise<TransactionInstruction> {
     return await this.program.methods
-      .cancelOrder(bnOrderId)
+      .cancelOrder(orderId)
       .accounts({
         ...this.addresses,
         owner: user.address,
