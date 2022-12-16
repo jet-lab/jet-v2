@@ -25,7 +25,7 @@ pub struct OrderbookInitialized {
 
 #[event]
 pub struct PositionRefreshed {
-    pub borrower_account: Pubkey,
+    pub margin_user: Pubkey,
 }
 
 #[event]

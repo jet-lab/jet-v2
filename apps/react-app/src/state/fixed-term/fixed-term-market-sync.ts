@@ -1,4 +1,4 @@
-import { FixedTermMarket, JetMarket, JetMarketIdl, Orderbook, MarketAndconfig } from '@jet-lab/margin';
+import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, Orderbook, MarketAndconfig } from '@jet-lab/margin';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -69,7 +69,7 @@ export const useFixedTermSync = (): void => {
 
   const loadFixedTermMarkets = async (
     airspace: AirspaceConfig,
-    program: Program<JetMarket>,
+    program: Program<JetFixedTerm>,
     marginProgramId: PublicKey
   ) => {
     const markets: Array<MarketAndconfig> = [];
@@ -91,7 +91,7 @@ export const useFixedTermSync = (): void => {
 
   useEffect(() => {
     if (networkState === 'connected' && config?.fixedTermMarketProgramId) {
-      const program = new Program(JetMarketIdl, config.fixedTermMarketProgramId, provider);
+      const program = new Program(JetFixedTermIdl, config.fixedTermMarketProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
       if (airspace) {
         loadFixedTermMarkets(airspace, program, new PublicKey(config.marginProgramId));

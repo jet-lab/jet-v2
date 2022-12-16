@@ -169,7 +169,7 @@ fn handle_fill<'info>(
                     let term_loan = loan.as_mut().unwrap().new_debt()?;
                     **term_loan = TermLoan {
                         sequence_number,
-                        borrower_account: margin_user.key(),
+                        margin_user: margin_user.key(),
                         market: ctx.accounts.market.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,

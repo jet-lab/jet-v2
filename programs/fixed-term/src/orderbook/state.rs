@@ -81,8 +81,8 @@ impl<'info> OrderbookMut<'info> {
         self.market.load().unwrap().underlying_token_vault
     }
 
-    pub fn collateral_mint(&self) -> Pubkey {
-        self.market.load().unwrap().collateral_mint
+    pub fn ticket_collateral_mint(&self) -> Pubkey {
+        self.market.load().unwrap().ticket_collateral_mint
     }
 
     pub fn claims_mint(&self) -> Pubkey {
