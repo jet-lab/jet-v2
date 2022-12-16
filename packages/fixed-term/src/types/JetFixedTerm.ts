@@ -3303,9 +3303,7 @@ export type JetFixedTerm = {
         {
           "name": "nextObligationToRepay",
           "type": {
-            "option": {
-              "defined": "TermLoanSequenceNumber"
-            }
+            "option": "u64", // should be "u64"
           },
           "index": false
         },
@@ -7158,9 +7156,7 @@ export const IDL: JetFixedTerm = {
         {
           "name": "nextObligationToRepay",
           "type": {
-            "option": {
-              "defined": "TermLoanSequenceNumber"
-            }
+            "option": "u64", // should be "u64"
           },
           "index": false
         },
