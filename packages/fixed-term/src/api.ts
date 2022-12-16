@@ -13,13 +13,16 @@ const createRandomSeed = (byteLength: number) => {
 const refreshAllMarkets = async (
   markets: FixedTermMarket[],
   ixs: TransactionInstruction[],
-  marginAccount: MarginAccount
+  marginAccount: MarginAccount,
+  marketAddres: PublicKey
 ) => {
   await Promise.all(
     markets.map(async market => {
       const marketUserInfo = await market.fetchMarginUser(marginAccount)
       const marketUser = await market.deriveMarginUserAddress(marginAccount)
-      if (marketUserInfo) {
+       // We need to refresh the currnet market being created
+       // as the market gets created with an existing position, but the user will not yet be found
+      if (marketUserInfo || market.address.equals(marketAddres)) {
         const refreshIx = await market.program.methods
           .refreshPosition(true)
           .accounts({
@@ -48,19 +51,13 @@ interface IWithCreateFixedTermMarketAccount {
   marginAccount: MarginAccount
   walletAddress: PublicKey
   markets: FixedTermMarket[]
-  refreshPools: boolean
-  pools: Record<string, Pool>
-  pool: Pool
 }
 export const withCreateFixedTermMarketAccounts = async ({
   market,
   provider,
   marginAccount,
   walletAddress,
-  markets,
-  refreshPools,
-  pools,
-  pool
+  markets
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.ticketMint
@@ -75,15 +72,7 @@ export const withCreateFixedTermMarketAccounts = async ({
       adapterInstruction: createAccountIx
     })
   }
-  await refreshAllMarkets(markets, marketIXS, marginAccount)
-
-  if (refreshPools) {
-    await pool.withPrioritisedPositionRefresh({
-      instructions: marketIXS,
-      pools,
-      marginAccount
-    })
-  }
+  await refreshAllMarkets(markets, marketIXS, marginAccount, market.address)
   return { tokenMint, ticketMint, marketIXS }
 }
 
@@ -119,20 +108,19 @@ export const offerLoan = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets,
-    pools,
-    pool,
-    refreshPools: true
+    markets
   })
   instructions.push(marketIXS)
-  const orderIXS: TransactionInstruction[] = []
 
-  // refresh pool positions
+  const poolIXS: TransactionInstruction[] = []
   await pool.withPrioritisedPositionRefresh({
-    instructions: orderIXS,
+    instructions: poolIXS,
     pools,
     marginAccount
   })
+  instructions.push(poolIXS)
+
+  const orderIXS: TransactionInstruction[] = []
 
   // create lend instruction
   await pool.withWithdrawToMargin({
@@ -189,21 +177,19 @@ export const requestLoan = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets,
-    pools,
-    pool,
-    refreshPools: true
+    markets
   })
   instructions.push(marketIXS)
 
-  const orderIXS: TransactionInstruction[] = []
-  // refresh pools positions
+  const poolIXS: TransactionInstruction[] = []
   await pool.withPrioritisedPositionRefresh({
-    instructions: orderIXS,
+    instructions: poolIXS,
     pools,
     marginAccount
   })
+  instructions.push(poolIXS)
 
+  const orderIXS: TransactionInstruction[] = []
   // Create borrow instruction
   const borrowOffer = await market.market.requestBorrowIx(
     marginAccount,
@@ -226,43 +212,11 @@ interface ICancelOrder {
   market: MarketAndconfig
   marginAccount: MarginAccount
   provider: AnchorProvider
-  orderId: Uint8Array
-  pools: Record<string, Pool>
+  orderId: BN
+  amount: BN
 }
-export const cancelOrder = async ({
-  market,
-  marginAccount,
-  provider,
-  orderId,
-  pools
-}: ICancelOrder): Promise<string> => {
+export const cancelOrder = async ({ market, marginAccount, provider, orderId }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
-  const borrowerAccount = await market.market.deriveMarginUserAddress(marginAccount)
-  const pool = pools[market.config.symbol]
-  // refresh pools positions
-  await pool.withPrioritisedPositionRefresh({
-    instructions,
-    pools,
-    marginAccount
-  })
-
-  // refresh market instruction
-  const refreshIx = await market.market.program.methods
-    .refreshPosition(true)
-    .accounts({
-      marginUser: borrowerAccount,
-      marginAccount: marginAccount.address,
-      market: market.market.addresses.market,
-      underlyingOracle: market.market.addresses.underlyingOracle,
-      ticketOracle: market.market.addresses.ticketOracle,
-      tokenProgram: TOKEN_PROGRAM_ID
-    })
-    .instruction()
-
-  await marginAccount.withAdapterInvoke({
-    instructions,
-    adapterInstruction: refreshIx
-  })
   const cancelLoan = await market.market.cancelOrderIx(marginAccount, orderId)
   await marginAccount.withAdapterInvoke({
     instructions,
@@ -301,16 +255,20 @@ export const borrowNow = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets,
-    pools,
-    pool,
-    refreshPools: true
+    markets
   })
-
   instructions.push(marketIXS)
   // refresh pools positions
-  const orderIXS: TransactionInstruction[] = []
 
+  const poolIXS: TransactionInstruction[] = []
+  await pool.withPrioritisedPositionRefresh({
+    instructions: poolIXS,
+    pools,
+    marginAccount
+  })
+  instructions.push(poolIXS)
+
+  const orderIXS: TransactionInstruction[] = []
   // Create borrow instruction
   const seed = createRandomSeed(8)
   const borrowNow = await market.market.borrowNowIx(marginAccount, walletAddress, amount, seed)
@@ -371,15 +329,19 @@ export const lendNow = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets,
-    pools,
-    pool,
-    refreshPools: true
+    markets
   })
   instructions.push(marketIXS)
-  const orderIXS: TransactionInstruction[] = []
 
-  // create lend instruction
+  const poolIXS: TransactionInstruction[] = []
+  await pool.withPrioritisedPositionRefresh({
+    instructions: poolIXS,
+    pools,
+    marginAccount
+  })
+  instructions.push(poolIXS)
+
+  const orderIXS: TransactionInstruction[] = []
   await pool.withWithdrawToMargin({
     instructions: orderIXS,
     marginAccount,
@@ -419,7 +381,8 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   await refreshAllMarkets(
     markets.map(m => m.market),
     refreshIXS,
-    marginAccount
+    marginAccount,
+    market.address
   )
   await pool.withPrioritisedPositionRefresh({
     instructions: refreshIXS,

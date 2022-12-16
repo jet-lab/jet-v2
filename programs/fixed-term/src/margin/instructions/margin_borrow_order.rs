@@ -169,6 +169,7 @@ pub fn handler(
         post_allowed: params.post_allowed,
         order_type: OrderType::MarginBorrow,
     });
+    ctx.accounts.margin_user.emit_debt_balances();
 
     // this is just used to make sure the position is still registered.
     // it's actually registered by initialize_margin_user

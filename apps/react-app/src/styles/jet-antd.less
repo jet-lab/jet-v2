@@ -1325,18 +1325,18 @@
         transition: background-color @transition-duration ease-in-out, box-shadow @transition-duration-short ease;
         cursor: pointer;
 
-        &:hover {
+        &:hover:not('ant-table-expanded-row') {
           background: @header-bg;
         }
-        &:active {
+        &:active:not('ant-table-expanded-row') {
           box-shadow: @neu-shadow-inset-sm;
           transition: background-color @transition-duration ease;
         }
-        &.active {
+        &.active:not('ant-table-expanded-row') {
           box-shadow: @neu-shadow-inset-sm-2;
           background: @header-bg;
 
-          &:active {
+          &:active:not('ant-table-expanded-row') {
             box-shadow: @neu-shadow-inset-sm;
             transition: background-color @transition-duration ease;
           }

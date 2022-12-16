@@ -42,5 +42,7 @@ pub fn handler(ctx: Context<MarginRedeemTicket>) -> Result<()> {
         redeemed,
     )?;
 
+    ctx.accounts.margin_user.emit_asset_balances();
+
     Ok(())
 }

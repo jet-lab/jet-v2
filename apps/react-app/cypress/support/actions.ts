@@ -7,18 +7,28 @@ export const connectWallet = () => {
 };
 
 export const loadPageAndCreateAccount = (path?: string) => {
+  cy.clearLocalStorage();
   const url = path ? path : Cypress.config().baseUrl;
 
   cy.visit(url);
   cy.get('.nav-section .settings-btn').click();
   cy.contains('Localnet').click();
+  cy.contains('Solana Explorer').click();
   cy.contains('Save Preferences').click();
   connectWallet();
-  cy.contains('All Assets').click();
   airdrop('SOL', 'SOL');
-  cy.contains('Create an account').should('be.visible').should('not.be.disabled').click();
+
+  cy.contains('Create an account').as('createAccountBtn');
+  cy.get('@createAccountBtn').should('be.visible');
+  cy.get('@createAccountBtn').should('not.be.disabled');
+  cy.get('@createAccountBtn').click();
+
   cy.contains('New Account');
-  cy.contains('Create Account').should('be.visible').should('not.be.disabled').click();
+
+  cy.contains('Create Account').as('createAccountAction');
+  cy.get('@createAccountAction').should('be.visible');
+  cy.get('@createAccountAction').should('not.be.disabled');
+  cy.get('@createAccountAction').click();
   cy.contains('Account created');
   cy.contains('Account 1');
 };
@@ -35,7 +45,7 @@ export const deposit = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`).click();
   cy.contains('button', 'Deposit').should('not.be.disabled').click();
   const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
-  input.click().type(`${amount}`);
+  input.type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').should('not.be.disabled').contains('Deposit').click();
   cy.contains(`Your deposit of ${formatWithCommas(amount)} ${symbol} was successfully processed.`);
 };
