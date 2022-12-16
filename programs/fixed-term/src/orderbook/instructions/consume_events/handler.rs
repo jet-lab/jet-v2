@@ -91,7 +91,6 @@ fn handle_fill<'info>(
         taker_side,
         quote_size,
         base_size,
-        maker_order_id,
         ..
     } = *event;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
@@ -134,7 +133,7 @@ fn handle_fill<'info>(
             emit!(OrderFilled {
                 market: ctx.accounts.market.key(),
                 authority: maker_info.owner,
-                order_id: maker_order_id,
+                order_tag: maker_info.order_tag.as_u128(),
                 base_filled: base_size,
                 quote_filled: quote_size,
                 fill_timestamp,
@@ -211,7 +210,7 @@ fn handle_fill<'info>(
                 emit!(OrderFilled {
                     market: ctx.accounts.market.key(),
                     authority: maker_info.owner,
-                    order_id: maker_order_id,
+                    order_tag: maker_info.order_tag.as_u128(),
                     base_filled: base_size,
                     quote_filled: quote_size,
                     fill_timestamp,
@@ -293,7 +292,7 @@ fn handle_out<'info>(
     emit!(OrderRemoved {
         market: ctx.accounts.market.key(),
         authority: info.owner,
-        order_id: *order_id,
+        order_tag: info.order_tag.as_u128(),
         base_removed: *base_size,
         quote_removed: quote_size,
     });
