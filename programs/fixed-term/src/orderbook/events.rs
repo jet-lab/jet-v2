@@ -6,7 +6,7 @@ use crate::events::OrderType;
 pub struct OrderCancelled {
     pub market: Pubkey,
     pub authority: Pubkey,
-    pub order_id: u128,
+    pub order_tag: u128,
 }
 
 #[event]
