@@ -45,11 +45,11 @@ export type JetFixedTerm = {
       "value": "b\"claim_notes\""
     },
     {
-      "name": "COLLATERAL_NOTES",
+      "name": "TICKET_COLLATERAL_NOTES",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"collateral_notes\""
+      "value": "b\"ticket_collateral_notes\""
     },
     {
       "name": "SPLIT_TICKET",
@@ -80,7 +80,7 @@ export type JetFixedTerm = {
       "value": "b\"orderbook_market_state\""
     },
     {
-      "name": "MARGIN_BORROWER",
+      "name": "MARGIN_USER",
       "type": {
         "defined": "&[u8]"
       },
@@ -565,7 +565,7 @@ export type JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1219,7 +1219,7 @@ export type JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -2346,7 +2346,7 @@ export type JetFixedTerm = {
             "type": "u64" // should be "u64"
           },
           {
-            "name": "borrowerAccount",
+            "name": "marginUser",
             "docs": [
               "The user borrower account this term loan is assigned to"
             ],
@@ -3068,7 +3068,7 @@ export type JetFixedTerm = {
       "name": "PositionRefreshed",
       "fields": [
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "type": "publicKey",
           "index": false
         }
@@ -3108,7 +3108,7 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "type": "publicKey",
           "index": false
         },
@@ -3288,6 +3288,65 @@ export type JetFixedTerm = {
       ]
     },
     {
+      "name": "DebtUpdated",
+      "fields": [
+        {
+          "name": "marginUser",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "totalDebt",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "nextObligationToRepay",
+          "type": {
+            "option": {
+              "defined": "TermLoanSequenceNumber"
+            }
+          },
+          "index": false
+        },
+        {
+          "name": "outstandingObligations",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "isPastDue",
+          "type": "bool",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "AssetsUpdated",
+      "fields": [
+        {
+          "name": "marginUser",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "entitledTokens",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "entitledTickets",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "collateral",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
       "name": "OrderCancelled",
       "fields": [
         {
@@ -3323,6 +3382,88 @@ export type JetFixedTerm = {
         {
           "name": "adapter",
           "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "OrderFilled",
+      "fields": [
+        {
+          "name": "market",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderId",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "orderType",
+          "type": {
+            "defined": "OrderType"
+          },
+          "index": false
+        },
+        {
+          "name": "sequenceNumber",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "baseFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "quoteFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "fillTimestamp",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "maturationTimestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "OrderRemoved",
+      "fields": [
+        {
+          "name": "market",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderId",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "baseRemoved",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "quoteRemoved",
+          "type": "u64",
           "index": false
         }
       ]
@@ -3759,11 +3900,11 @@ export const IDL: JetFixedTerm = {
       "value": "b\"claim_notes\""
     },
     {
-      "name": "COLLATERAL_NOTES",
+      "name": "TICKET_COLLATERAL_NOTES",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"collateral_notes\""
+      "value": "b\"ticket_collateral_notes\""
     },
     {
       "name": "SPLIT_TICKET",
@@ -3794,7 +3935,7 @@ export const IDL: JetFixedTerm = {
       "value": "b\"orderbook_market_state\""
     },
     {
-      "name": "MARGIN_BORROWER",
+      "name": "MARGIN_USER",
       "type": {
         "defined": "&[u8]"
       },
@@ -4279,7 +4420,7 @@ export const IDL: JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -4933,7 +5074,7 @@ export const IDL: JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -6060,7 +6201,7 @@ export const IDL: JetFixedTerm = {
             "type": "u64" // should be "u64"
           },
           {
-            "name": "borrowerAccount",
+            "name": "marginUser",
             "docs": [
               "The user borrower account this term loan is assigned to"
             ],
@@ -6782,7 +6923,7 @@ export const IDL: JetFixedTerm = {
       "name": "PositionRefreshed",
       "fields": [
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "type": "publicKey",
           "index": false
         }
@@ -6822,7 +6963,7 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "type": "publicKey",
           "index": false
         },
@@ -7002,6 +7143,65 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
+      "name": "DebtUpdated",
+      "fields": [
+        {
+          "name": "marginUser",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "totalDebt",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "nextObligationToRepay",
+          "type": {
+            "option": {
+              "defined": "TermLoanSequenceNumber"
+            }
+          },
+          "index": false
+        },
+        {
+          "name": "outstandingObligations",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "isPastDue",
+          "type": "bool",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "AssetsUpdated",
+      "fields": [
+        {
+          "name": "marginUser",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "entitledTokens",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "entitledTickets",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "collateral",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
       "name": "OrderCancelled",
       "fields": [
         {
@@ -7037,6 +7237,88 @@ export const IDL: JetFixedTerm = {
         {
           "name": "adapter",
           "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "OrderFilled",
+      "fields": [
+        {
+          "name": "market",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderId",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "orderType",
+          "type": {
+            "defined": "OrderType"
+          },
+          "index": false
+        },
+        {
+          "name": "sequenceNumber",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "baseFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "quoteFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "fillTimestamp",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "maturationTimestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "OrderRemoved",
+      "fields": [
+        {
+          "name": "market",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderId",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "baseRemoved",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "quoteRemoved",
+          "type": "u64",
           "index": false
         }
       ]
