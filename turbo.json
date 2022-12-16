@@ -12,11 +12,11 @@
     "dev": {
       "cache": false
     },
-    "@jet-lab/fixed-term#build": {
+    "@jet-lab/margin#build": {
       "dependsOn": ["^build", "wasm-src#build"]
     },
-    "@jet-lab/margin#build": {
-      "dependsOn": ["^build"]
+    "@jet-lab/store#build": {
+      "dependsOn": ["^build", "@jet-lab/margin#build"]
     },
     "app": {
       "dependsOn": ["^build", "fmt"]

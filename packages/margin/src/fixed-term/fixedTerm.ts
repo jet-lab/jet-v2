@@ -1,10 +1,10 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { bigIntToBn, bnToBigInt, FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from "@jet-lab/margin"
+import { bigIntToBn, bnToBigInt, FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from ".."
 import { Orderbook } from "./orderbook"
 import { JetFixedTerm } from "./types"
-import { fetchData, findDerivedAccount } from "./utils"
+import { fetchData, findFixedTermDerivedAccount } from "./utils"
 import { rate_to_price } from "@jet-lab/wasm"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
@@ -144,20 +144,20 @@ export class FixedTermMarket {
   ): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
     let info: MarketInfo = program.coder.accounts.decode("Market", data)
-    const claimsMetadata = await findDerivedAccount(
+    const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
     )
-    const collateralMetadata = await findDerivedAccount(
+    const ticketCollateralMetadata = await findFixedTermDerivedAccount(
       ["token-config", info.airspace, info.ticketCollateralMint],
       new PublicKey(jetMarginProgramId)
     )
-    const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
+    const marginAdapterMetadata = await findFixedTermDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
 
     return new FixedTermMarket(
       new PublicKey(market),
       new PublicKey(claimsMetadata),
-      new PublicKey(collateralMetadata),
+      new PublicKey(ticketCollateralMetadata),
       new PublicKey(marginAdapterMetadata),
       program,
       info
@@ -392,30 +392,30 @@ export class FixedTermMarket {
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
-    return await findDerivedAccount(["margin_user", this.address, user.address], this.program.programId)
+    return await findFixedTermDerivedAccount(["margin_user", this.address, user.address], this.program.programId)
   }
 
   async deriveMarginUserClaims(marginUser: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["claim_notes", marginUser], this.program.programId)
+    return await findFixedTermDerivedAccount(["claim_notes", marginUser], this.program.programId)
   }
 
   async deriveTicketCollateral(marginUser: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["ticket_collateral_notes", marginUser], this.program.programId)
+    return await findFixedTermDerivedAccount(["ticket_collateral_notes", marginUser], this.program.programId)
   }
 
   async deriveTermLoanAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["term_loan", marginUser, seed], this.program.programId)
+    return await findFixedTermDerivedAccount(["term_loan", marginUser, seed], this.program.programId)
   }
 
   async deriveClaimTicketKey(ticketHolder: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(
+    return await findFixedTermDerivedAccount(
       ["claim_ticket", this.address, new PublicKey(ticketHolder), seed],
       this.program.programId
     )
   }
 
   async deriveSplitTicket(user: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["split_ticket", user, seed], this.program.programId)
+    return await findFixedTermDerivedAccount(["split_ticket", user, seed], this.program.programId)
   }
 
   async fetchOrderbook(): Promise<Orderbook> {
