@@ -1,12 +1,13 @@
 export interface FixedOrder {
-  id: string;
+  tag: string;
   details: FixedOrderDetails;
   fills: FixedOrderFill[];
 }
 
 export interface FixedOrderDetails {
   id: number;
-  order_id: string;
+  order_tag: string;
+  order_id?: string;
   market: string;
   authority: string;
   margin_user: string;
@@ -28,7 +29,7 @@ export interface FixedOrderDetails {
 
 export interface FixedOrderFill {
   id: number;
-  order_id: string;
+  order_tag: string;
   sequence_number: number;
   market: string;
   authority: string;

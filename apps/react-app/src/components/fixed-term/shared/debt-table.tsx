@@ -113,7 +113,7 @@ const cancel = async (
       market,
       marginAccount,
       provider,
-      orderId: new BN(order.id),
+      orderId: new BN(order.details.order_id!!),
       amount: new BN(order.details.total_quote_qty).sub(filled)
     });
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
