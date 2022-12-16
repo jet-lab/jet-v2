@@ -20,7 +20,7 @@ pub struct EventAdapterRegistered {
 pub struct OrderFilled {
     pub market: Pubkey,
     pub authority: Pubkey,
-    pub order_id: u128,
+    pub order_tag: u128,
     pub order_type: OrderType,
     pub sequence_number: u64,
     pub base_filled: u64,
@@ -33,7 +33,7 @@ pub struct OrderFilled {
 pub struct OrderRemoved {
     pub market: Pubkey,
     pub authority: Pubkey,
-    pub order_id: u128,
+    pub order_tag: u128,
     pub base_removed: u64,
     pub quote_removed: u64,
 }
