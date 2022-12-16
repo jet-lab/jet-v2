@@ -204,7 +204,6 @@ export function useMarginActions() {
     }
 
     try {
-      console.log(markets)
       const txId = await currentPool.marginBorrow({
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
