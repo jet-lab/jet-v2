@@ -18,6 +18,7 @@ pub struct OrderPlaced {
     /// The authority placing this order, almost always the margin account
     pub authority: Pubkey,
     pub margin_user: Option<Pubkey>,
+    pub order_tag: u128,
     pub order_type: OrderType,
     pub order_summary: OrderSummary,
     pub limit_price: u64,
@@ -39,7 +40,7 @@ pub enum OrderType {
 pub struct TermLoanCreated {
     pub term_loan: Pubkey,
     pub authority: Pubkey,
-    pub order_id: Option<u128>,
+    pub order_tag: u128,
     pub sequence_number: u64,
     pub market: Pubkey,
     pub maturation_timestamp: i64,

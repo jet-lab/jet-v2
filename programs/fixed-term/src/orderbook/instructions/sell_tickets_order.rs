@@ -46,6 +46,7 @@ pub struct SellTicketsOrder<'info> {
 impl<'info> SellTicketsOrder<'info> {
     pub fn sell_tickets(
         &self,
+        callback_info: CallbackInfo,
         order_summary: SensibleOrderSummary,
         params: &OrderParams,
         margin_user: Option<Pubkey>,
@@ -70,6 +71,7 @@ impl<'info> SellTicketsOrder<'info> {
         emit!(crate::events::OrderPlaced {
             market: self.orderbook_mut.market.key(),
             authority: self.authority.key(),
+            order_tag: callback_info.order_tag.as_u128(),
             order_summary: order_summary.summary(),
             margin_user,
             order_type,
@@ -84,7 +86,7 @@ impl<'info> SellTicketsOrder<'info> {
 }
 
 pub fn handler(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()> {
-    let (_, order_summary) = ctx.accounts.orderbook_mut.place_order(
+    let (info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.authority.key(),
         Side::Ask,
         params,
@@ -98,5 +100,5 @@ pub fn handler(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()
     )?;
 
     ctx.accounts
-        .sell_tickets(order_summary, &params, None, OrderType::SellTickets)
+        .sell_tickets(info, order_summary, &params, None, OrderType::SellTickets)
 }

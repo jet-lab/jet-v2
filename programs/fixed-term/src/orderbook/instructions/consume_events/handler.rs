@@ -183,7 +183,7 @@ fn handle_fill<'info>(
                     emit!(TermLoanCreated {
                         term_loan: term_loan.key(),
                         authority: maker_info.owner,
-                        order_id: Some(maker_order_id),
+                        order_tag: maker_info.order_tag.as_u128(),
                         sequence_number,
                         market: ctx.accounts.market.key(),
                         maturation_timestamp,

@@ -1,0 +1,6 @@
+  [2m2022-12-15T10:02:05.888978Z[0m [33m WARN[0m [1;33mjet_margin_sdk::fixed_term::event_consumer[0m[33m: [33mmissing market 66YAKEXVX57Jizn1fqL58nLRAZSFX1hZbdCeDoLfjM6k[0m
+    [2;3mat[0m libraries/rust/margin/src/fixed_term/event_consumer.rs:77
+
+  [2m2022-12-15T10:02:05.889130Z[0m [33m WARN[0m [1;33mjet_margin_sdk::fixed_term::event_consumer[0m[33m: [33mmissing market 4Tzy1FoNhFVzVNDMRdQoKGSt8JgVbiBjxQGcEoztNzz6[0m
+    [2;3mat[0m libraries/rust/margin/src/fixed_term/event_consumer.rs:77
+
