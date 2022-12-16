@@ -13,7 +13,7 @@ import formatDistanceToNowStrict from 'date-fns/formatDistanceToNowStrict';
 import BN from 'bn.js';
 import { useEffect, useMemo } from 'react';
 import { notify } from '@utils/notify';
-import { cancelOrder, MarketAndconfig } from '@jet-lab/fixed-term';
+import { cancelOrder, MarketAndconfig } from '@jet-lab/margin';
 import { useProvider } from '@utils/jet/provider';
 import { AnchorProvider } from '@project-serum/anchor';
 import { getExplorerUrl } from '@utils/ui';

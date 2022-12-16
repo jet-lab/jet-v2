@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow, MarketAndconfig } from '@jet-lab/fixed-term';
+import { borrowNow, MarketAndconfig } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
