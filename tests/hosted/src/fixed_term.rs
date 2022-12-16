@@ -23,12 +23,14 @@ use jet_margin_sdk::{
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
-    margin_integrator::{NoProxy, Proxy},
+    margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
         transaction::{SendTransactionBuilder, TransactionBuilder},
     },
-    tx_builder::global_initialize_instructions,
+    tx_builder::{
+        fixed_term::FixedTermPositionRefresher, global_initialize_instructions, MarginTxBuilder,
+    },
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_program_common::Fp32;
@@ -52,7 +54,9 @@ use spl_associated_token_account::{
 use spl_token::{instruction::initialize_mint, state::Mint};
 
 use crate::{
+    context::MarginTestContext,
     runtime::{Keygen, SolanaTestContext},
+    setup_helper::setup_user,
     tokens::TokenManager,
 };
 
@@ -833,9 +837,7 @@ impl<P: Proxy> FixedTermUser<P> {
             .manager
             .ix_builder
             .margin_user_account(self.proxy.pubkey());
-        self.manager
-            .ix_builder
-            .term_loan_key(&margin_user, seed)
+        self.manager.ix_builder.term_loan_key(&margin_user, seed)
     }
     pub async fn load_claim_ticket(&self, seed: &[u8]) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);
@@ -997,4 +999,49 @@ pub fn initialize_test_mint_transaction(
         signing_keypairs,
         recent_blockhash,
     )
+}
+
+pub async fn create_fixed_term_market_margin_user(
+    ctx: &Arc<MarginTestContext>,
+    manager: Arc<TestManager>,
+    pool_positions: Vec<(Pubkey, u64, u64)>,
+) -> FixedTermUser<RefreshingProxy<MarginIxBuilder>> {
+    let client = manager.client.clone();
+
+    // set up user
+    let user = setup_user(ctx, pool_positions).await.unwrap();
+    let margin = user.user.tx.ix.clone();
+    let wallet = user.user.signer;
+
+    // set up proxy
+    let proxy = RefreshingProxy {
+        proxy: margin.clone(),
+        refreshers: vec![
+            Arc::new(MarginTxBuilder::new(
+                client.clone(),
+                None,
+                wallet.pubkey(),
+                0,
+            )),
+            Arc::new(
+                FixedTermPositionRefresher::new(
+                    margin.pubkey(),
+                    client.clone(),
+                    &[manager.ix_builder.market()],
+                )
+                .await
+                .unwrap(),
+            ),
+        ],
+    };
+
+    let user = FixedTermUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+        .await
+        .unwrap();
+    user.initialize_margin_user().await.unwrap();
+
+    let margin_user = user.load_margin_user().await.unwrap();
+    assert_eq!(margin_user.market, manager.ix_builder.market());
+
+    user
 }

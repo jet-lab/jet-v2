@@ -1055,10 +1055,7 @@ impl FixedTermIxBuilder {
     }
 
     pub fn user_claims(margin_user: Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[
-            jet_fixed_term::seeds::CLAIM_NOTES,
-            margin_user.as_ref(),
-        ])
+        fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, margin_user.as_ref()])
     }
 
     pub fn user_ticket_collateral(margin_user: Pubkey) -> Pubkey {
