@@ -74,6 +74,9 @@ start-validator() {
         $@ &
     VALIDATOR_PID=$!
     sleep ${VALIDATOR_STARTUP:-5}
+    if [[ ${SOLANA_LOGS:-false} == true ]]; then
+        solana -ul logs &
+    fi
 }
 
 start-oracle() {
@@ -82,6 +85,8 @@ start-oracle() {
 
 start-crank-service() {
     log_filter="jet_margin_sdk=debug"
+    mkdir -p .localnet
+    touch .localnet/crank.log
     env RUST_LOG=$log_filter cargo run --bin jet-fixed-terms-crank-service -- \
         --config-path localnet.toml \
         --log-path .localnet/crank.log \
@@ -106,9 +111,7 @@ start-new-validator() {
 
 with-validator() {
     start-validator -r
-    if [[ ${SOLANA_LOGS:-false} == true ]]; then
-        solana -ul logs &
-    fi
+
     $@
 }
 
