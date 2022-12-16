@@ -13,7 +13,7 @@ import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
 import { AnchorProvider } from '@project-serum/anchor';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
-import { settle, MarketAndconfig } from '@jet-lab/fixed-term';
+import { settle, MarketAndconfig } from '@jet-lab/margin';
 import { useProvider } from '@utils/jet/provider';
 import { JetMarginPools, Pools } from '@state/pools/pools';
 import BN from 'bn.js';

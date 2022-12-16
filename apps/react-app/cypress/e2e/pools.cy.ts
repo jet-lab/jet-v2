@@ -31,20 +31,10 @@ describe('Main Flows', () => {
 
 describe('Error Flows', () => {
   it('Connects a new test wallet and creates an account', () => {
-    cy.clearLocalStorage();
     loadPageAndCreateAccount();
   });
 
   it('All deposits should be disabled, because SOL in wallet is under fees buffer amount', () => {
-    const disabledInput = () => {
-      cy.get('.ant-modal-content input.ant-input').should('be.disabled');
-    };
-    const notEnoughSolMessage = () => {
-      cy.contains('Please make sure you have a buffer of at least');
-    };
-    const closeModal = () => {
-      cy.get('button.ant-modal-close').click();
-    };
     cy.get('.SOL-pools-table-row').click();
     cy.contains('button', 'Deposit').should('not.be.disabled').click();
     cy.contains('Max').click();
@@ -52,8 +42,8 @@ describe('Error Flows', () => {
     cy.contains('deposit successful');
 
     cy.contains('button', 'Deposit').click();
-    disabledInput();
-    notEnoughSolMessage();
-    closeModal();
+    cy.get('.ant-modal-content input.ant-input').should('be.disabled');
+    cy.contains('Please make sure you have a buffer of at least');
+    cy.get('button.ant-modal-close').click();
   });
 });

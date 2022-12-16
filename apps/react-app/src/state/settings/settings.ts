@@ -17,28 +17,14 @@ export interface Node {
   mainnetBeta: string;
   mainnetBetaPing: number;
 }
-export type NodeOption = 'default' | 'solana' | 'projectSerum' | 'custom';
-export const rpcNodeOptions: NodeOption[] = ['default', 'solana', 'projectSerum', 'custom'];
+export type NodeOption = 'default' | 'custom';
+export const rpcNodeOptions: NodeOption[] = ['default', 'custom'];
 export const rpcNodes: Record<NodeOption, Node> = {
   default: {
     name: 'Default',
     devnet: `https://jetprot-develope-26c4.devnet.rpcpool.com/${process.env.REACT_APP_RPC_DEV_TOKEN ?? ''}`,
     devnetPing: 0,
     mainnetBeta: `https://jetprot-main-0d7b.mainnet.rpcpool.com/${process.env.REACT_APP_RPC_TOKEN ?? ''}`,
-    mainnetBetaPing: 0
-  },
-  solana: {
-    name: 'Solana',
-    devnet: 'https://api.devnet.solana.com',
-    devnetPing: 0,
-    mainnetBeta: 'https://api.mainnet-beta.solana.com/',
-    mainnetBetaPing: 0
-  },
-  projectSerum: {
-    name: 'Project Serum',
-    devnet: 'https://solana-api.projectserum.com/',
-    devnetPing: 0,
-    mainnetBeta: 'https://solana-api.projectserum.com/',
     mainnetBetaPing: 0
   },
   custom: {

@@ -3,7 +3,11 @@ use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
 use jet_program_common::traits::{SafeAdd, TryAddAssign, TrySubAssign};
 
-use crate::{orderbook::state::OrderTag, FixedTermErrorCode};
+use crate::{
+    events::{AssetsUpdated, DebtUpdated},
+    orderbook::state::OrderTag,
+    FixedTermErrorCode,
+};
 
 pub const MARGIN_USER_VERSION: u8 = 0;
 
@@ -34,6 +38,42 @@ pub struct MarginUser {
     pub debt: Debt,
     /// Accounting used to track assets in custody of the fixed term market
     pub assets: Assets,
+}
+
+impl MarginUser {
+    /// Emits an Anchor event with the latest balances for [Assets] and [Debt].
+    /// Callers should take care to invoke this function after mutating both assets
+    /// and debts. When only mutating either, they can emit the individual balances.
+    pub fn emit_all_balances(&self) {
+        let margin_user = self.derive_address();
+        emit!(AssetsUpdated::new(margin_user, &self.assets));
+        emit!(DebtUpdated::new(margin_user, &self.debt));
+    }
+
+    /// Emits an Anchor event with the latest balances for [Assets].
+    pub fn emit_asset_balances(&self) {
+        let margin_user = self.derive_address();
+        emit!(AssetsUpdated::new(margin_user, &self.assets));
+    }
+
+    /// Emits an Anchor event with the latest balances for [Debt].
+    pub fn emit_debt_balances(&self) {
+        let margin_user = self.derive_address();
+        emit!(DebtUpdated::new(margin_user, &self.debt));
+    }
+
+    #[inline]
+    fn derive_address(&self) -> Pubkey {
+        Pubkey::find_program_address(
+            &[
+                crate::seeds::MARGIN_BORROWER,
+                self.market.as_ref(),
+                self.margin_account.as_ref(),
+            ],
+            &crate::id(),
+        )
+        .0
+    }
 }
 
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
@@ -72,7 +112,7 @@ impl Debt {
         }
     }
 
-    fn outstanding_term_loans(&self) -> u64 {
+    pub fn outstanding_term_loans(&self) -> u64 {
         self.next_new_term_loan_seqno - self.next_unpaid_term_loan_seqno
     }
 

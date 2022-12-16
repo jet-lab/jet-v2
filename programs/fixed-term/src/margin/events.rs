@@ -1,7 +1,7 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
-use super::state::TermLoanFlags;
+use super::state::{Assets, Debt, TermLoanFlags, TermLoanSequenceNumber};
 
 #[event]
 pub struct MarginUserInitialized {
@@ -62,4 +62,44 @@ pub struct TermLoanFulfilled {
     pub orderbook_user: Pubkey,
     pub borrower: Pubkey,
     pub timestamp: i64,
+}
+
+#[event]
+pub struct DebtUpdated {
+    pub margin_user: Pubkey,
+    pub total_debt: u64,
+    pub next_obligation_to_repay: Option<TermLoanSequenceNumber>,
+    pub outstanding_obligations: u64,
+    pub is_past_due: bool,
+}
+
+impl DebtUpdated {
+    pub fn new(margin_user: Pubkey, debt: &Debt) -> Self {
+        Self {
+            margin_user,
+            total_debt: debt.total(),
+            next_obligation_to_repay: debt.next_term_loan_to_repay(),
+            outstanding_obligations: debt.outstanding_term_loans(),
+            is_past_due: debt.is_past_due(),
+        }
+    }
+}
+
+#[event]
+pub struct AssetsUpdated {
+    pub margin_user: Pubkey,
+    pub entitled_tokens: u64,
+    pub entitled_tickets: u64,
+    pub collateral: u64,
+}
+
+impl AssetsUpdated {
+    pub fn new(margin_user: Pubkey, assets: &Assets) -> Self {
+        Self {
+            margin_user,
+            entitled_tokens: assets.entitled_tokens,
+            entitled_tickets: assets.entitled_tickets,
+            collateral: assets.collateral().unwrap_or_default(),
+        }
+    }
 }
