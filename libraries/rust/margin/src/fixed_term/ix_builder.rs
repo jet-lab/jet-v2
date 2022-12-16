@@ -393,14 +393,14 @@ impl FixedTermIxBuilder {
     }
 
     pub fn initialize_margin_user(&self, owner: Pubkey) -> Result<Instruction> {
-        let borrower_account = self.margin_user_account(owner);
+        let margin_user = self.margin_user_account(owner);
         let accounts = jet_fixed_term::accounts::InitializeMarginUser {
             market: self.market,
             payer: self.payer.unwrap(),
-            borrower_account,
+            margin_user,
             margin_account: owner,
-            claims: FixedTermIxBuilder::user_claims(borrower_account),
-            ticket_collateral: FixedTermIxBuilder::user_ticket_collateral(borrower_account),
+            claims: FixedTermIxBuilder::user_claims(margin_user),
+            ticket_collateral: FixedTermIxBuilder::user_ticket_collateral(margin_user),
             claims_mint: self.claims,
             ticket_collateral_mint: self.ticket_collateral,
             underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
@@ -972,7 +972,7 @@ impl FixedTermIxBuilder {
         let margin_user = self.margin_user(*margin_account);
         let data = jet_fixed_term::instruction::Repay { amount }.data();
         let accounts = jet_fixed_term::accounts::Repay {
-            borrower_account: margin_user.address,
+            margin_user: margin_user.address,
             term_loan: self.term_loan_key(&margin_user.address, term_loan_seed),
             next_term_loan: self.term_loan_key(&margin_user.address, next_term_loan_seed),
             source: get_associated_token_address(payer, &self.underlying_mint),
@@ -1042,8 +1042,8 @@ impl FixedTermIxBuilder {
             seed,
         ])
     }
-    pub fn term_loan_key(&self, borrower_account: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_term_market_pda(&TermLoan::make_seeds(borrower_account.as_ref(), seed))
+    pub fn term_loan_key(&self, margin_user: &Pubkey, seed: &[u8]) -> Pubkey {
+        fixed_term_market_pda(&TermLoan::make_seeds(margin_user.as_ref(), seed))
     }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
@@ -1054,17 +1054,17 @@ impl FixedTermIxBuilder {
         ])
     }
 
-    pub fn user_claims(borrower_account: Pubkey) -> Pubkey {
+    pub fn user_claims(margin_user: Pubkey) -> Pubkey {
         fixed_term_market_pda(&[
             jet_fixed_term::seeds::CLAIM_NOTES,
-            borrower_account.as_ref(),
+            margin_user.as_ref(),
         ])
     }
 
-    pub fn user_ticket_collateral(borrower_account: Pubkey) -> Pubkey {
+    pub fn user_ticket_collateral(margin_user: Pubkey) -> Pubkey {
         fixed_term_market_pda(&[
             jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
-            borrower_account.as_ref(),
+            margin_user.as_ref(),
         ])
     }
     pub fn crank_authorization(&self) -> Result<Pubkey> {

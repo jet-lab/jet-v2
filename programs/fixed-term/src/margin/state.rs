@@ -277,7 +277,7 @@ pub struct TermLoan {
     pub sequence_number: TermLoanSequenceNumber,
 
     /// The user borrower account this term loan is assigned to
-    pub borrower_account: Pubkey,
+    pub margin_user: Pubkey,
 
     /// The market where the term loan was created
     pub market: Pubkey,

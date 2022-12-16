@@ -38,7 +38,7 @@ pub struct MarginBorrowOrder<'info> {
     pub margin_account: Signer<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
-    /// CHECK: borrower_account
+    /// CHECK: margin_user
     #[account(mut)]
     pub claims: AccountInfo<'info>,
 
@@ -124,7 +124,7 @@ pub fn handler(
         let base_filled = order_summary.base_filled();
         *term_loan = TermLoan {
             sequence_number,
-            borrower_account: ctx.accounts.margin_user.key(),
+            margin_user: ctx.accounts.margin_user.key(),
             market: ctx.accounts.orderbook_mut.market.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,

@@ -27,7 +27,7 @@ pub struct InitializeMarginUser<'info> {
         payer = payer,
         space = 8 + std::mem::size_of::<MarginUser>(),
     )]
-    pub borrower_account: Box<Account<'info, MarginUser>>,
+    pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// The signing authority for this user account
     #[account(
@@ -47,7 +47,7 @@ pub struct InitializeMarginUser<'info> {
     #[account(init,
         seeds = [
             seeds::CLAIM_NOTES,
-            borrower_account.key().as_ref(),
+            margin_user.key().as_ref(),
         ],
         bump,
         token::mint = claims_mint,
@@ -60,7 +60,7 @@ pub struct InitializeMarginUser<'info> {
     #[account(init,
         seeds = [
             seeds::TICKET_COLLATERAL_NOTES,
-            borrower_account.key().as_ref(),
+            margin_user.key().as_ref(),
         ],
         bump,
         token::mint = ticket_collateral_mint,
@@ -86,7 +86,7 @@ pub struct InitializeMarginUser<'info> {
 }
 
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
-    let user = &mut ctx.accounts.borrower_account;
+    let user = &mut ctx.accounts.margin_user;
 
     require_eq!(
         mint(&ctx.accounts.underlying_settlement.to_account_info())?,
@@ -116,7 +116,7 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
 
     emit!(MarginUserInitialized {
         market: ctx.accounts.market.key(),
-        borrower_account: ctx.accounts.borrower_account.key(),
+        margin_user: ctx.accounts.margin_user.key(),
         margin_account: ctx.accounts.margin_account.key(),
         underlying_settlement: ctx.accounts.underlying_settlement.key(),
         ticket_settlement: ctx.accounts.ticket_settlement.key(),

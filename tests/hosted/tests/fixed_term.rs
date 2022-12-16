@@ -91,8 +91,8 @@ async fn margin_repay() -> Result<()> {
         .unwrap();
     user.initialize_margin_user().await.unwrap();
 
-    let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(borrower_account.market, manager.ix_builder.market());
+    let margin_user = user.load_margin_user().await.unwrap();
+    assert_eq!(margin_user.market, manager.ix_builder.market());
 
     // place a borrow order
     let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 2_000);
@@ -111,16 +111,16 @@ async fn margin_repay() -> Result<()> {
 
     let term_loan = user.load_term_loan(&[]).await?;
     assert_eq!(
-        term_loan.borrower_account,
+        term_loan.margin_user,
         manager.ix_builder.margin_user_account(user.proxy.pubkey())
     );
     assert_eq!(term_loan.balance, posted_lend.base_quantity);
 
-    let borrower_account = user.load_margin_user().await.unwrap();
+    let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(borrower_account.debt.pending(), posted_order.base_quantity,);
+    assert_eq!(margin_user.debt.pending(), posted_order.base_quantity,);
     assert_eq!(
-        borrower_account.debt.total(),
+        margin_user.debt.total(),
         posted_order.base_quantity + term_loan.balance
     );
 
@@ -466,8 +466,8 @@ async fn create_fixed_term_market_margin_user(
         .unwrap();
     user.initialize_margin_user().await.unwrap();
 
-    let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(borrower_account.market, manager.ix_builder.market());
+    let margin_user = user.load_margin_user().await.unwrap();
+    assert_eq!(margin_user.market, manager.ix_builder.market());
 
     user
 }
@@ -509,9 +509,9 @@ async fn margin_borrow() -> Result<()> {
     assert_eq!(999, user.collateral().await?);
     assert_eq!(1_201, user.claims().await?);
 
-    let borrower_account = user.load_margin_user().await.unwrap();
+    let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(borrower_account.debt.total(), posted_order.base_quantity,);
+    assert_eq!(margin_user.debt.total(), posted_order.base_quantity,);
 
     Ok(())
 }
@@ -553,8 +553,8 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
         assert_eq!(0, user.claims().await?);
         let asks = manager.load_orderbook().await?.asks()?;
         assert_eq!(0, asks.len());
-        let borrower_account = user.load_margin_user().await.unwrap();
-        assert_eq!(0, borrower_account.debt.total());
+        let margin_user = user.load_margin_user().await.unwrap();
+        assert_eq!(0, margin_user.debt.total());
     }
 
     Ok(())

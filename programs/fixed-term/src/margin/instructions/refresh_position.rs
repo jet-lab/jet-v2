@@ -62,7 +62,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
     }
 
     emit!(PositionRefreshed {
-        borrower_account: ctx.accounts.margin_user.key(),
+        margin_user: ctx.accounts.margin_user.key(),
     });
 
     return_to_margin(

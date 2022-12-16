@@ -6,7 +6,7 @@ use super::state::{Assets, Debt, TermLoanFlags, TermLoanSequenceNumber};
 #[event]
 pub struct MarginUserInitialized {
     pub market: Pubkey,
-    pub borrower_account: Pubkey,
+    pub margin_user: Pubkey,
     pub margin_account: Pubkey,
     pub underlying_settlement: Pubkey,
     pub ticket_settlement: Pubkey,

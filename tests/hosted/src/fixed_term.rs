@@ -829,13 +829,13 @@ impl<P: Proxy> FixedTermUser<P> {
             .split_ticket_key(&self.proxy.pubkey(), seed)
     }
     pub fn term_loan_key(&self, seed: &[u8]) -> Pubkey {
-        let borrower_account = self
+        let margin_user = self
             .manager
             .ix_builder
             .margin_user_account(self.proxy.pubkey());
         self.manager
             .ix_builder
-            .term_loan_key(&borrower_account, seed)
+            .term_loan_key(&margin_user, seed)
     }
     pub async fn load_claim_ticket(&self, seed: &[u8]) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);

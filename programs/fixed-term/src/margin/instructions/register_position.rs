@@ -10,7 +10,7 @@ use crate::{
 #[derive(Accounts)]
 pub struct RegisterPosition<'info> {
     /// The account tracking information related to this particular user
-    pub borrower_account: Account<'info, MarginUser>,
+    pub margin_user: Account<'info, MarginUser>,
 
     /// The signing authority for this user account
     pub margin_account: Signer<'info>,
@@ -23,7 +23,7 @@ pub struct RegisterPosition<'info> {
 }
 
 pub fn handler(ctx: Context<RegisterPosition>) -> Result<()> {
-    let user = &ctx.accounts.borrower_account;
+    let user = &ctx.accounts.margin_user;
     let pta = &ctx.accounts.position_token_account;
 
     require!(
