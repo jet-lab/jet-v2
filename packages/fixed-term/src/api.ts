@@ -13,13 +13,16 @@ const createRandomSeed = (byteLength: number) => {
 const refreshAllMarkets = async (
   markets: FixedTermMarket[],
   ixs: TransactionInstruction[],
-  marginAccount: MarginAccount
+  marginAccount: MarginAccount,
+  marketAddres: PublicKey
 ) => {
   await Promise.all(
     markets.map(async market => {
       const marketUserInfo = await market.fetchMarginUser(marginAccount)
       const marketUser = await market.deriveMarginUserAddress(marginAccount)
-      if (marketUserInfo) {
+       // We need to refresh the currnet market being created
+       // as the market gets created with an existing position, but the user will not yet be found
+      if (marketUserInfo || market.address.equals(marketAddres)) {
         const refreshIx = await market.program.methods
           .refreshPosition(true)
           .accounts({
@@ -69,7 +72,7 @@ export const withCreateFixedTermMarketAccounts = async ({
       adapterInstruction: createAccountIx
     })
   }
-  await refreshAllMarkets(markets, marketIXS, marginAccount)
+  await refreshAllMarkets(markets, marketIXS, marginAccount, market.address)
   return { tokenMint, ticketMint, marketIXS }
 }
 
@@ -378,7 +381,8 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   await refreshAllMarkets(
     markets.map(m => m.market),
     refreshIXS,
-    marginAccount
+    marginAccount,
+    market.address
   )
   await pool.withPrioritisedPositionRefresh({
     instructions: refreshIXS,
