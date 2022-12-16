@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { AssociatedToken, FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange, sendAll } from "@jet-lab/margin"
+import { AssociatedToken, FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange, sendAll } from "../index"
 import { FixedTermMarket, MarketAndconfig } from "./fixedTerm"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
@@ -8,40 +8,6 @@ const createRandomSeed = (byteLength: number) => {
   const max = 127
   const min = 0
   return Uint8Array.from(new Array(byteLength).fill(0).map(() => Math.ceil(Math.random() * (max - min) + min)))
-}
-
-const refreshAllMarkets = async (
-  markets: FixedTermMarket[],
-  ixs: TransactionInstruction[],
-  marginAccount: MarginAccount,
-  marketAddres: PublicKey
-) => {
-  await Promise.all(
-    markets.map(async market => {
-      const marketUserInfo = await market.fetchMarginUser(marginAccount)
-      const marketUser = await market.deriveMarginUserAddress(marginAccount)
-       // We need to refresh the currnet market being created
-       // as the market gets created with an existing position, but the user will not yet be found
-      if (marketUserInfo || market.address.equals(marketAddres)) {
-        const refreshIx = await market.program.methods
-          .refreshPosition(true)
-          .accounts({
-            marginUser: marketUser,
-            marginAccount: marginAccount.address,
-            market: market.addresses.market,
-            underlyingOracle: market.addresses.underlyingOracle,
-            ticketOracle: market.addresses.ticketOracle,
-            tokenProgram: TOKEN_PROGRAM_ID
-          })
-          .instruction()
-
-        await marginAccount.withAccountingInvoke({
-          instructions: ixs,
-          adapterInstruction: refreshIx
-        })
-      }
-    })
-  )
 }
 
 // CREATE MARKET ACCOUNT
@@ -57,7 +23,6 @@ export const withCreateFixedTermMarketAccounts = async ({
   provider,
   marginAccount,
   walletAddress,
-  markets
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.ticketMint
@@ -72,7 +37,6 @@ export const withCreateFixedTermMarketAccounts = async ({
       adapterInstruction: createAccountIx
     })
   }
-  await refreshAllMarkets(markets, marketIXS, marginAccount, market.address)
   return { tokenMint, ticketMint, marketIXS }
 }
 
@@ -113,10 +77,11 @@ export const offerLoan = async ({
   instructions.push(marketIXS)
 
   const poolIXS: TransactionInstruction[] = []
-  await pool.withPrioritisedPositionRefresh({
+  await marginAccount.withPrioritisedPositionRefresh({
     instructions: poolIXS,
     pools,
-    marginAccount
+    markets,
+    marketAddress: market.market.address
   })
   instructions.push(poolIXS)
 
@@ -168,8 +133,6 @@ export const requestLoan = async ({
   marketConfig,
   markets
 }: ICreateBorrowOrder): Promise<string> => {
-  const pool = pools[market.config.symbol]
-
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
@@ -182,10 +145,11 @@ export const requestLoan = async ({
   instructions.push(marketIXS)
 
   const poolIXS: TransactionInstruction[] = []
-  await pool.withPrioritisedPositionRefresh({
+  await marginAccount.withPrioritisedPositionRefresh({
     instructions: poolIXS,
     pools,
-    marginAccount
+    markets,
+    marketAddress: market.market.address
   })
   instructions.push(poolIXS)
 
@@ -261,10 +225,11 @@ export const borrowNow = async ({
   // refresh pools positions
 
   const poolIXS: TransactionInstruction[] = []
-  await pool.withPrioritisedPositionRefresh({
+  await marginAccount.withPrioritisedPositionRefresh({
     instructions: poolIXS,
     pools,
-    marginAccount
+    markets,
+    marketAddress: market.market.address
   })
   instructions.push(poolIXS)
 
@@ -334,10 +299,11 @@ export const lendNow = async ({
   instructions.push(marketIXS)
 
   const poolIXS: TransactionInstruction[] = []
-  await pool.withPrioritisedPositionRefresh({
+  await marginAccount.withPrioritisedPositionRefresh({
     instructions: poolIXS,
     pools,
-    marginAccount
+    markets,
+    marketAddress: market.market.address
   })
   instructions.push(poolIXS)
 
@@ -378,16 +344,12 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   const instructions: TransactionInstruction[][] = []
   const pool = pools[token.symbol]
   const refreshIXS: TransactionInstruction[] = []
-  await refreshAllMarkets(
-    markets.map(m => m.market),
-    refreshIXS,
-    marginAccount,
-    market.address
-  )
-  await pool.withPrioritisedPositionRefresh({
+
+  await marginAccount.withPrioritisedPositionRefresh({
     instructions: refreshIXS,
     pools,
-    marginAccount
+    markets: markets.map(m => m.market),
+    marketAddress: market.address
   })
 
   instructions.push(refreshIXS)

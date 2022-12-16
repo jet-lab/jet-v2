@@ -13,7 +13,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@jet-lab/fixed-term": "*",
+    "@jet-lab/margin": "*",
     "swr": "^2.0.0"
   }
 }

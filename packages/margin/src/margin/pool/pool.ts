@@ -15,6 +15,7 @@ import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
+import { FixedTermMarket } from "fixed-term"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
@@ -611,13 +612,15 @@ export class Pool {
    */
   async marginRefreshAllPositionPrices({
     pools,
-    marginAccount
+    marginAccount,
+    markets
   }: {
     pools: Record<any, Pool> | Pool[]
     marginAccount: MarginAccount
+    markets: FixedTermMarket[]
   }): Promise<string> {
     const instructions: TransactionInstruction[] = []
-    await this.withPrioritisedPositionRefresh({ instructions, pools, marginAccount })
+    await marginAccount.withPrioritisedPositionRefresh({ instructions, pools, markets })
     return await marginAccount.sendAndConfirm(instructions)
   }
 
@@ -667,49 +670,6 @@ export class Pool {
       if (positionRegistered) {
         await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
       }
-    }
-  }
-
-  /**
-   * Create instructions to refresh [[MarginAccount]] pool positions in a prioritised manner so that additional
-   * borrows or withdraws can occur.
-   *
-   * @param {({
-   *     instructions: TransactionInstruction[]
-   *     pools: Record<any, Pool> | Pool[]
-   *     marginAccount: MarginAccount
-   *   })} {
-   *     instructions,
-   *     pools,
-   *     marginAccount
-   *   }
-   * @return {Promise<void>}
-   * @memberof Pool
-   */
-  async withPrioritisedPositionRefresh({
-    instructions,
-    pools,
-    marginAccount
-  }: {
-    instructions: TransactionInstruction[]
-    pools: Record<any, Pool> | Pool[]
-    marginAccount: MarginAccount
-  }): Promise<void> {
-    const poolsToRefresh: Pool[] = []
-    for (const pool of Object.values(pools)) {
-      const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
-      const depositPosition = marginAccount.getPositionNullable(pool.addresses.depositNoteMint)
-      const borrowPosition = marginAccount.getPositionNullable(pool.addresses.loanNoteMint)
-      if (pool.address === this.address) {
-        poolsToRefresh.push(pool)
-      } else if (borrowPosition && !borrowPosition.balance.eqn(0)) {
-        poolsToRefresh.push(pool)
-      } else if (assetCollateralWeight > 0 && depositPosition && !depositPosition.balance.eqn(0)) {
-        poolsToRefresh.push(pool)
-      }
-    }
-    for (const pool of poolsToRefresh) {
-      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
   }
 
@@ -855,12 +815,14 @@ export class Pool {
     marginAccount,
     pools,
     change,
-    destination
+    destination,
+    markets
   }: {
     marginAccount: MarginAccount
     pools: Record<string, Pool> | Pool[]
     change: PoolTokenChange
-    destination?: TokenAddress
+    destination?: TokenAddress,
+    markets: FixedTermMarket[]
   }): Promise<string> {
     if (!change.changeKind.isShiftBy()) {
       throw new Error("Use ShiftBy for all borrow instructions")
@@ -871,10 +833,10 @@ export class Pool {
     const registerinstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
 
-    await this.withPrioritisedPositionRefresh({
+    await marginAccount.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
-      marginAccount
+      markets
     })
 
     await this.withGetOrRegisterDepositPosition({
@@ -973,13 +935,15 @@ export class Pool {
   async marginRepay({
     marginAccount,
     pools,
+    markets,
     source,
     change,
     closeLoan,
-    signer
+    signer,
   }: {
     marginAccount: MarginAccount
     pools: Record<string, Pool> | Pool[]
+    markets: FixedTermMarket[]
     source?: TokenAddress
     change: PoolTokenChange
     closeLoan?: boolean
@@ -994,10 +958,10 @@ export class Pool {
     })
     assert(depositPosition)
 
-    await this.withPrioritisedPositionRefresh({
+    await marginAccount.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
-      marginAccount
+      markets
     })
 
     if (source === undefined) {
@@ -1118,21 +1082,23 @@ export class Pool {
   async withdraw({
     marginAccount,
     pools,
+    markets,
     change,
     destination = TokenFormat.unwrappedSol
   }: {
     marginAccount: MarginAccount
     pools: Record<string, Pool> | Pool[]
+    markets: FixedTermMarket[]
     change: PoolTokenChange
     destination?: TokenAddress
   }) {
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
 
-    await this.withPrioritisedPositionRefresh({
+    await marginAccount.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
-      marginAccount
+      markets
     })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
     await this.withWithdraw({
@@ -1234,6 +1200,7 @@ export class Pool {
   async splTokenSwap({
     marginAccount,
     pools,
+    markets,
     outputToken,
     swapPool,
     swapAmount,
@@ -1242,6 +1209,7 @@ export class Pool {
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
+    markets: FixedTermMarket[]
     outputToken: Pool
     swapPool: SPLSwapPool
     swapAmount: TokenAmount
@@ -1271,10 +1239,10 @@ export class Pool {
     }
 
     // Refresh prices
-    await this.withPrioritisedPositionRefresh({
+    await marginAccount.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools,
-      marginAccount
+      markets
     })
 
     // Source deposit position fetch / creation
