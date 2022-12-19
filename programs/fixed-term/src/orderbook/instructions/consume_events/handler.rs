@@ -148,7 +148,6 @@ fn handle_fill<'info>(
             });
         }
         Side::Ask => {
-            let mut emit_order_filled = true;
             let maturation_timestamp = fill_timestamp.safe_add(market.load()?.borrow_tenor)?;
             if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
