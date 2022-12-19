@@ -2352,7 +2352,7 @@ dependencies = [
 [[package]]
 name = "jet-simulation"
 version = "0.3.0"
-source = "git+https://github.com/jet-lab/jet-simulation?branch=flexible-versions#87dc928ae9df4a69233d443060e623de7cdc06f9"
+source = "git+https://github.com/jet-lab/jet-simulation?branch=master#583eaad3856ca8cfae2388108847190706f5f3b3"
 dependencies = [
  "anyhow",
  "async-trait",

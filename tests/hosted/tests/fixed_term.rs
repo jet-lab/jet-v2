@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anchor_lang::prelude::Clock;
 use anyhow::Result;
 use hosted_tests::{
     fixed_term::{

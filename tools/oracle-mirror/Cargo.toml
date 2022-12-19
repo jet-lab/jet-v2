@@ -22,4 +22,4 @@ spl-token = "3"
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "flexible-versions" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }

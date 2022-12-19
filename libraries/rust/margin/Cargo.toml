@@ -40,7 +40,7 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
 # waiting on PR 10 to be merged
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "flexible-versions" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
 jet-program-common = { path = "../program-common" }
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint", "cli"] }
