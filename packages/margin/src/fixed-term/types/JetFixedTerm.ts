@@ -559,6 +559,43 @@ export type JetFixedTerm = {
       "args": []
     },
     {
+      "name": "configureAutoRoll",
+      "docs": [
+        "Configure settings for rolling orders"
+      ],
+      "accounts": [
+        {
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The `MarginUser` account.",
+            "This account is specific to a particular fixed-term market"
+          ]
+        },
+        {
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "config",
+          "type": {
+            "defined": "AutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
       "name": "initializeMarginUser",
       "docs": [
         "Create a new borrower account"
@@ -2332,6 +2369,24 @@ export type JetFixedTerm = {
             "type": {
               "defined": "Assets"
             }
+          },
+          {
+            "name": "borrowRollConfig",
+            "docs": [
+              "Settings for borrow order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
+          },
+          {
+            "name": "lendRollConfig",
+            "docs": [
+              "Settings for lend order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
           }
         ]
       }
@@ -2708,6 +2763,21 @@ export type JetFixedTerm = {
                 64
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AutoRollConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limitPrice",
+            "docs": [
+              "the limit price at which orders may be placed by an authority"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -4435,6 +4505,43 @@ export const IDL: JetFixedTerm = {
       "args": []
     },
     {
+      "name": "configureAutoRoll",
+      "docs": [
+        "Configure settings for rolling orders"
+      ],
+      "accounts": [
+        {
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The `MarginUser` account.",
+            "This account is specific to a particular fixed-term market"
+          ]
+        },
+        {
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "config",
+          "type": {
+            "defined": "AutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
       "name": "initializeMarginUser",
       "docs": [
         "Create a new borrower account"
@@ -6208,6 +6315,24 @@ export const IDL: JetFixedTerm = {
             "type": {
               "defined": "Assets"
             }
+          },
+          {
+            "name": "borrowRollConfig",
+            "docs": [
+              "Settings for borrow order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
+          },
+          {
+            "name": "lendRollConfig",
+            "docs": [
+              "Settings for lend order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
           }
         ]
       }
@@ -6584,6 +6709,21 @@ export const IDL: JetFixedTerm = {
                 64
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AutoRollConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limitPrice",
+            "docs": [
+              "the limit price at which orders may be placed by an authority"
+            ],
+            "type": "u64"
           }
         ]
       }

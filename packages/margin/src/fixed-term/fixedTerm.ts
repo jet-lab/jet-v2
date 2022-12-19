@@ -65,6 +65,8 @@ export interface DebtInfo {
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
+  borrowRollConfig: AutoRollConfig
+  lendRollConfig: AutoRollConfig
 }
 
 export interface AssetInfo {
@@ -73,6 +75,10 @@ export interface AssetInfo {
   nextNewDepositSeqNo: BN
   nextUnredeemedDepositSeqNo: BN
   _reserved0: number[]
+}
+
+export interface AutoRollConfig {
+  limit_price: BN
 }
 
 export interface ClaimTicket {
