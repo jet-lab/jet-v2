@@ -3150,6 +3150,11 @@ export type JetFixedTerm = {
           "index": false
         },
         {
+          "name": "orderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
           "name": "orderType",
           "type": {
             "defined": "OrderType"
@@ -3199,10 +3204,8 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
-          "type": {
-            "option": "u128"
-          },
+          "name": "orderTag",
+          "type": "u128",
           "index": false
         },
         {
@@ -3358,7 +3361,7 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         }
@@ -3393,12 +3396,22 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "authority",
+          "name": "makerAuthority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "takerAuthority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "makerOrderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "takerOrderTag",
           "type": "u128",
           "index": false
         },
@@ -3450,7 +3463,7 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         },
@@ -7003,6 +7016,11 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
+          "name": "orderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
           "name": "orderType",
           "type": {
             "defined": "OrderType"
@@ -7052,10 +7070,8 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
-          "type": {
-            "option": "u128"
-          },
+          "name": "orderTag",
+          "type": "u128",
           "index": false
         },
         {
@@ -7211,7 +7227,7 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         }
@@ -7246,12 +7262,22 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "authority",
+          "name": "makerAuthority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "takerAuthority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "makerOrderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "takerOrderTag",
           "type": "u128",
           "index": false
         },
@@ -7303,7 +7329,7 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         },
