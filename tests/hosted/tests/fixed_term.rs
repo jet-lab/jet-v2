@@ -12,7 +12,7 @@ use hosted_tests::{
 };
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
-    orderbook::state::OrderParams,
+    orderbook::state::{CallbackFlags, OrderParams},
 };
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
@@ -807,6 +807,57 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
         .set_roll_config(MarketSide::Lending, AutoRollConfig { limit_price: 0 })
         .await
         .is_err());
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn auto_roll_borrow() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(
+        FixedTermTestManager::full(ctx.solana.clone())
+            .await
+            .unwrap(),
+    );
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    let user = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+
+    let mut params = underlying(1_000, 2_000);
+    params.auto_roll = true;
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(user.margin_borrow_order(params, &[]).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    let posted_info = manager.load_orderbook().await?.asks_order_callback(0)?;
+    assert!(posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
+
+    params.auto_roll = false;
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(user.margin_borrow_order(params, &[0]).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    let posted_info = manager.load_orderbook().await?.asks_order_callback(1)?;
+    assert!(!posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
 
     Ok(())
 }

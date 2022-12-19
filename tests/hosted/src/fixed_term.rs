@@ -499,6 +499,7 @@ impl TestManager {
     }
 }
 
+#[derive(Clone)]
 pub struct OwnedBook {
     bids: Vec<u8>,
     asks: Vec<u8>,
@@ -516,6 +517,19 @@ impl OwnedBook {
     }
     pub fn asks(&mut self) -> Result<Vec<LeafNode>> {
         Ok(self.inner()?.asks.into_iter(true).collect())
+    }
+
+    pub fn asks_order_callback(&mut self, pos: usize) -> Result<CallbackInfo> {
+        let key = self.asks()?[pos].key;
+        let handle = self.inner()?.asks.find_by_key(key).unwrap();
+
+        Ok(*self.inner()?.asks.get_callback_info(handle))
+    }
+    pub fn bids_order_callback(&mut self, pos: usize) -> Result<CallbackInfo> {
+        let key = self.bids()?[pos].key;
+        let handle = self.inner()?.bids.find_by_key(key).unwrap();
+
+        Ok(*self.inner()?.bids.get_callback_info(handle))
     }
 }
 
