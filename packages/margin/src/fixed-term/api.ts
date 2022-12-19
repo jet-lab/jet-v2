@@ -4,12 +4,6 @@ import { AssociatedToken, FixedTermMarketConfig, MarginAccount, Pool, PoolTokenC
 import { FixedTermMarket, MarketAndconfig } from "./fixedTerm"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
-const createRandomSeed = (byteLength: number) => {
-  const max = 127
-  const min = 0
-  return Uint8Array.from(new Array(byteLength).fill(0).map(() => Math.ceil(Math.random() * (max - min) + min)))
-}
-
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {
   market: FixedTermMarket

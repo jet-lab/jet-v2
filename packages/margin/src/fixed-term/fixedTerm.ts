@@ -59,8 +59,8 @@ export interface MarginUserInfo {
 }
 
 export interface DebtInfo {
-  nextNewTermLoanSeqno: BN
-  nextUnpaidTermLoanSeqno: BN
+  nextNewTermLoanSeqNo: BN
+  nextUnpaidTermLoanSeqNo: BN
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
@@ -69,8 +69,8 @@ export interface DebtInfo {
 export interface AssetInfo {
   entitledTokens: BN
   entitledTickets: BN
-  nextDepositSeqno: BN
-  nextUnredeemedDepositSeqno: BN
+  nextNewDepositSeqNo: BN
+  nextUnredeemedDepositSeqNo: BN
   _reserved0: number[]
 }
 
@@ -397,7 +397,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, 'le', 8);
     }
 
-    return userInfo.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, 'le', 8);
+    return userInfo.debt.nextNewTermLoanSeqNo.toArrayLike(Buffer, 'le', 8);
   }
 
   async fetchDepositSeed(user: MarginAccount): Promise<Uint8Array> {
@@ -407,7 +407,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, 'le', 8);
     }
 
-    return userInfo.assets.nextDepositSeqno.toArrayLike(Buffer, 'le', 8);
+    return userInfo.assets.nextNewDepositSeqNo.toArrayLike(Buffer, 'le', 8);
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
@@ -423,11 +423,11 @@ export class FixedTermMarket {
   }
 
   async deriveTermLoanAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findFixedTermDerivedAccount(["term_loan", marginUser, seed], this.program.programId)
+    return await findFixedTermDerivedAccount(["term_loan", this.address, marginUser, seed], this.program.programId)
   }
 
-  async deriveTermDepositAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findFixedTermDerivedAccount(["term_deposit", this.address, borrowerAccount, seed], this.program.programId)
+  async deriveTermDepositAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findFixedTermDerivedAccount(["term_deposit", this.address, marginUser, seed], this.program.programId)
   }
 
   async fetchOrderbook(): Promise<Orderbook> {

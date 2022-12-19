@@ -2608,14 +2608,14 @@ export type JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqno",
+            "name": "nextNewTermLoanSeqNo",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqno",
+            "name": "nextUnpaidTermLoanSeqNo",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
@@ -6471,14 +6471,14 @@ export const IDL: JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqno",
+            "name": "nextNewTermLoanSeqNo",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqno",
+            "name": "nextUnpaidTermLoanSeqNo",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
