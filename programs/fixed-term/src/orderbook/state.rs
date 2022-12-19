@@ -161,6 +161,7 @@ impl<'info> OrderbookMut<'info> {
 
         let info_owner = info.owner;
         let flags = info.flags;
+        let order_tag = info.order_tag.as_u128();
 
         // drop the refs so the orderbook can borrow the slab data
         drop(buf);
@@ -176,7 +177,7 @@ impl<'info> OrderbookMut<'info> {
         emit!(OrderCancelled {
             market: self.market.key(),
             authority: owner,
-            order_id,
+            order_tag,
         });
 
         Ok((side, flags, order_summary))
@@ -205,6 +206,10 @@ impl OrderTag {
 
     pub fn bytes(&self) -> &[u8; 16] {
         &self.0
+    }
+
+    pub fn as_u128(&self) -> u128 {
+        u128::from_le_bytes(self.0)
     }
 }
 

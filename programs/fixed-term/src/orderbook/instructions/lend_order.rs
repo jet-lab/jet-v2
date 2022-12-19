@@ -143,6 +143,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.authority.key(),
         margin_user: None,
+        order_tag: callback_info.order_tag.as_u128(),
         order_summary: order_summary.summary(),
         order_type: crate::events::OrderType::Lend,
         limit_price: params.limit_price,

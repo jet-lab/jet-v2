@@ -91,7 +91,6 @@ fn handle_fill<'info>(
         taker_side,
         quote_size,
         base_size,
-        maker_order_id,
         ..
     } = *event;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
@@ -133,8 +132,10 @@ fn handle_fill<'info>(
 
             emit!(OrderFilled {
                 market: ctx.accounts.market.key(),
-                authority: maker_info.owner,
-                order_id: maker_order_id,
+                maker_authority: maker_info.owner,
+                taker_authority: taker_info.owner,
+                maker_order_tag: maker_info.order_tag.as_u128(),
+                taker_order_tag: taker_info.order_tag.as_u128(),
                 base_filled: base_size,
                 quote_filled: quote_size,
                 fill_timestamp,
@@ -145,7 +146,6 @@ fn handle_fill<'info>(
             });
         }
         Side::Ask => {
-            let mut emit_order_filled = true;
             let maturation_timestamp = fill_timestamp.safe_add(manager.load()?.borrow_tenor)?;
             if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
@@ -179,11 +179,10 @@ fn handle_fill<'info>(
 
                     // TermLoanCreated includes OrderFill info, thus no OrderFill needed
                     // where TermLoanCreated is emitted.
-                    emit_order_filled = false;
                     emit!(TermLoanCreated {
                         term_loan: term_loan.key(),
                         authority: maker_info.owner,
-                        order_id: Some(maker_order_id),
+                        order_tag: maker_info.order_tag.as_u128(),
                         sequence_number,
                         market: ctx.accounts.market.key(),
                         maturation_timestamp,
@@ -207,20 +206,20 @@ fn handle_fill<'info>(
                 )?;
             }
 
-            if emit_order_filled {
-                emit!(OrderFilled {
-                    market: ctx.accounts.market.key(),
-                    authority: maker_info.owner,
-                    order_id: maker_order_id,
-                    base_filled: base_size,
-                    quote_filled: quote_size,
-                    fill_timestamp,
-                    // We can be more specific with the type
-                    order_type: crate::events::OrderType::MarginBorrow,
-                    sequence_number: 0,
-                    maturation_timestamp
-                });
-            }
+            emit!(OrderFilled {
+                market: ctx.accounts.market.key(),
+                maker_authority: maker_info.owner,
+                taker_authority: taker_info.owner,
+                maker_order_tag: maker_info.order_tag.as_u128(),
+                taker_order_tag: taker_info.order_tag.as_u128(),
+                base_filled: base_size,
+                quote_filled: quote_size,
+                fill_timestamp,
+                // We can be more specific with the type
+                order_type: crate::events::OrderType::MarginBorrow,
+                sequence_number: 0,
+                maturation_timestamp
+            });
         }
     }
 
@@ -293,7 +292,7 @@ fn handle_out<'info>(
     emit!(OrderRemoved {
         market: ctx.accounts.market.key(),
         authority: info.owner,
-        order_id: *order_id,
+        order_tag: info.order_tag.as_u128(),
         base_removed: *base_size,
         quote_removed: quote_size,
     });
