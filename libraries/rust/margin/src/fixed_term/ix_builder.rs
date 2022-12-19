@@ -502,7 +502,7 @@ impl FixedTermIxBuilder {
     ) -> Result<Instruction> {
         let data = jet_fixed_term::instruction::RedeemDeposit {}.data();
         let accounts = self
-            .redeem_deposit_accounts(ticket_holder, ticket, token_vault)
+            .redeem_deposit_accounts(ticket_holder, ticket_holder, ticket, token_vault)
             .to_account_metas(None);
         Ok(Instruction::new_with_bytes(
             jet_fixed_term::ID,
@@ -554,7 +554,12 @@ impl FixedTermIxBuilder {
             margin_user: margin_user.address,
             ticket_collateral: margin_user.ticket_collateral,
             ticket_collateral_mint: self.ticket_collateral,
-            inner: self.redeem_ticket_accounts(margin_account, ticket, token_vault),
+            inner: self.redeem_deposit_accounts(
+                margin_user.address,
+                margin_account,
+                ticket,
+                token_vault,
+            ),
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(
@@ -567,6 +572,7 @@ impl FixedTermIxBuilder {
     pub fn redeem_deposit_accounts(
         &self,
         owner: Pubkey,
+        authority: Pubkey,
         deposit: Pubkey,
         token_vault: Option<Pubkey>,
     ) -> jet_fixed_term::accounts::RedeemDeposit {
@@ -578,6 +584,7 @@ impl FixedTermIxBuilder {
         jet_fixed_term::accounts::RedeemDeposit {
             deposit,
             owner,
+            authority,
             token_account,
             payer: self.payer.unwrap_or(owner),
             market: self.market,
@@ -1040,7 +1047,12 @@ impl FixedTermIxBuilder {
         ])
     }
     pub fn term_loan_key(&self, margin_user: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_term_market_pda(&TermLoan::make_seeds(margin_user.as_ref(), seed))
+        fixed_term_market_pda(&[
+            jet_fixed_term::seeds::TERM_LOAN,
+            self.market.as_ref(),
+            margin_user.as_ref(),
+            seed,
+        ])
     }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {

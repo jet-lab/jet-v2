@@ -32,7 +32,7 @@ pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
     ctx.accounts
         .margin_user
         .assets
-        .redeem_staked_tickets(redeemed);
+        .redeem_deposit(ctx.accounts.inner.deposit.sequence_number, redeemed)?;
     ctx.burn_notes(
         &ctx.accounts.ticket_collateral_mint,
         &ctx.accounts.ticket_collateral,

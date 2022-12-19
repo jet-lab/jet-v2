@@ -102,21 +102,23 @@ fn handle_fill<'info>(
             let maturation_timestamp = fill_timestamp.safe_add(market.load()?.lend_tenor)?;
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
                 let matures_at = fill_timestamp.safe_add(market.load()?.lend_tenor)?;
+                let mut sequence_number = 0;
+
+                if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                    let mut margin_user = maker.margin_user()?;
+                    margin_user.assets.reduce_order(quote_size);
+                    sequence_number = margin_user.assets.new_deposit(base_size)?;
+                    margin_user.emit_asset_balances();
+                }
 
                 **loan.as_mut().unwrap().auto_stake()? = TermDeposit {
                     matures_at,
+                    sequence_number,
                     principal: quote_size,
                     amount: base_size,
                     owner: maker.pubkey(),
                     market: market.key(),
                 };
-
-                if maker_info.flags.contains(CallbackFlags::MARGIN) {
-                    let mut margin_user = maker.margin_user()?;
-                    margin_user.assets.reduce_order(quote_size);
-                    margin_user.assets.stake_tickets(base_size)?;
-                    margin_user.emit_asset_balances();
-                }
             } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);

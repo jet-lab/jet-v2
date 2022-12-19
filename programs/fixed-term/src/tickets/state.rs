@@ -13,6 +13,10 @@ pub struct TermDeposit {
     /// The relevant market for this deposit
     pub market: Pubkey,
 
+    /// The sequence number for this deposit, which serves as unique identifier for a
+    /// particular user's deposits.
+    pub sequence_number: u64,
+
     /// The timestamp at which this deposit has matured, and can be redeemed
     pub matures_at: i64,
 

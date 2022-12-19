@@ -1,24 +1,29 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
+use anchor_spl::token::{Token, TokenAccount};
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     control::state::Market,
+    market_token_manager::MarketTokenManager,
     tickets::{events::DepositRedeemed, state::TermDeposit},
     FixedTermErrorCode,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct RedeemDeposit<'info> {
     /// The tracking account for the deposit
     #[account(mut,
-              close = owner,
+              close = payer,
               has_one = owner
     )]
     pub deposit: Account<'info, TermDeposit>,
 
     /// The account that owns the deposit
     #[account(mut)]
-    pub owner: Signer<'info>,
+    pub owner: AccountInfo<'info>,
+
+    /// The authority that must sign to redeem the deposit
+    pub authority: Signer<'info>,
 
     /// Receiver for the rent used to track the deposit
     pub payer: AccountInfo<'info>,
@@ -55,16 +60,9 @@ impl<'info> RedeemDeposit<'info> {
         }
 
         // transfer from the vault to the ticket_holder
-        transfer(
-            CpiContext::new(
-                self.token_program.to_account_info(),
-                Transfer {
-                    to: self.token_account.to_account_info(),
-                    from: self.underlying_token_vault.to_account_info(),
-                    authority: self.market.to_account_info(),
-                },
-            )
-            .with_signer(&[&self.market.load()?.authority_seeds()]),
+        self.withdraw(
+            &self.underlying_token_vault,
+            &self.token_account,
             self.deposit.amount,
         )?;
 
@@ -81,6 +79,16 @@ impl<'info> RedeemDeposit<'info> {
 }
 
 pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
+    if ctx.accounts.owner.key != ctx.accounts.authority.key {
+        msg!(
+            "signer {} is not the deposit owner {}",
+            ctx.accounts.authority.key,
+            ctx.accounts.owner.key
+        );
+
+        return Err(FixedTermErrorCode::DoesNotOwnTicket.into());
+    }
+
     let _ = ctx.accounts.redeem()?;
 
     Ok(())

@@ -39,12 +39,14 @@ pub struct MarginLendOrder<'info> {
 }
 
 pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
+    let user = &mut ctx.accounts.margin_user;
+
     let (callback_info, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
         ctx.accounts.inner.authority.key(),
         Side::Bid,
         params,
-        ctx.accounts.margin_user.key(),
-        ctx.accounts.margin_user.key(),
+        user.key(),
+        user.key(),
         ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
@@ -57,16 +59,13 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()>
             },
     )?;
     let staked = ctx.accounts.inner.lend(
-        ctx.accounts.margin_user.key(),
-        &ctx.accounts
-            .margin_user
-            .assets
-            .next_deposit_seqno
-            .to_le_bytes(),
+        user.key(),
+        &user.assets.next_new_deposit_seqno().to_le_bytes(),
+        user.assets.next_new_deposit_seqno(),
         callback_info,
         &order_summary,
     )?;
-    ctx.accounts.margin_user.assets.stake_tickets(staked)?;
+    ctx.accounts.margin_user.assets.new_deposit(staked)?;
     ctx.mint(
         &ctx.accounts.ticket_collateral_mint,
         &ctx.accounts.ticket_collateral,

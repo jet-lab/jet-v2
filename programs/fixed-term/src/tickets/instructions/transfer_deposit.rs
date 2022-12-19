@@ -8,8 +8,11 @@ pub struct TransferDeposit<'info> {
     #[account(mut, has_one = owner)]
     pub deposit: Account<'info, TermDeposit>,
 
-    /// The current owner of the ticket
-    pub owner: Signer<'info>,
+    /// The current owner of the deposit
+    pub owner: AccountInfo<'info>,
+
+    /// The authority with control over the deposit
+    pub authority: Signer<'info>,
 }
 
 pub fn handler(ctx: Context<TransferDeposit>, new_owner: Pubkey) -> Result<()> {

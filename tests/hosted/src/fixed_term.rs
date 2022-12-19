@@ -751,7 +751,7 @@ impl<P: Proxy> FixedTermUser<P> {
         &self,
         params: OrderParams,
     ) -> Result<Vec<TransactionBuilder>> {
-        let debt_seqno = self.load_margin_user().await?.debt.next_new_term_loan_seqno;
+        let debt_seqno = self.load_margin_user().await?.debt.next_new_loan_seqno();
         let borrow = self.manager.ix_builder.margin_borrow_order(
             self.proxy.pubkey(),
             None,
@@ -764,7 +764,11 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn margin_lend_order(&self, params: OrderParams) -> Result<Vec<TransactionBuilder>> {
-        let deposit_seqno = self.load_margin_user().await?.assets.next_deposit_seqno;
+        let deposit_seqno = self
+            .load_margin_user()
+            .await?
+            .assets
+            .next_new_deposit_seqno();
         let ix = self.manager.ix_builder.margin_lend_order(
             self.proxy.pubkey(),
             None,

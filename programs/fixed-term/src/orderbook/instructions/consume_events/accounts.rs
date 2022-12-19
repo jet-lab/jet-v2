@@ -61,9 +61,10 @@ pub struct ConsumeEvents<'info> {
 /// for every event that will be processed.
 /// For a fill, 2-6 accounts need to be appended to remaining_accounts
 /// For an out, 1 account needs to be appended to remaining_accounts
+#[allow(clippy::large_enum_variant)]
 pub enum EventAccounts<'info> {
-    Fill(Box<FillAccounts<'info>>),
-    Out(Box<OutAccounts<'info>>),
+    Fill(FillAccounts<'info>),
+    Out(OutAccounts<'info>),
 }
 
 pub struct FillAccounts<'info> {
@@ -114,7 +115,7 @@ impl<'info> UserAccount<'info> {
     }
 
     pub fn margin_user(&self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
-        Ok(AnchorAccount::try_from(self.0.clone())?)
+        AnchorAccount::try_from(self.0.clone())
     }
 
     pub fn pubkey(&self) -> Pubkey {

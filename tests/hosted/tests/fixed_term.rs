@@ -4,7 +4,7 @@ use anyhow::Result;
 use hosted_tests::{
     fixed_term::{
         create_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
-        TestManager as FixedTermTestManager, LEND_TENOR, STARTING_TOKENS,
+        TestManager as FixedTermTestManager, STARTING_TOKENS,
     },
     margin_test_context,
     setup_helper::{setup_user, tokens},
@@ -340,7 +340,7 @@ async fn margin_repay() -> Result<()> {
             .await
             .unwrap(),
     ];
-    ixs.extend(user.margin_borrow_order(borrow_params, &[]).await.unwrap());
+    ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());
     client
         .send_and_confirm_condensed_in_order(ixs)
         .await
@@ -382,8 +382,7 @@ async fn margin_repay() -> Result<()> {
         post_repayment_debt.committed()
     );
 
-    user.repay(0, post_repayment_term_loan.balance)
-        .await?;
+    user.repay(0, post_repayment_term_loan.balance).await?;
 
     let repaid_term_loan_debt = user.load_margin_user().await?.debt;
     assert_eq!(
