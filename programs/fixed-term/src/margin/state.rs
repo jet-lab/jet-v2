@@ -40,6 +40,10 @@ pub struct MarginUser {
     pub debt: Debt,
     /// Accounting used to track assets in custody of the fixed term market
     pub assets: Assets,
+    /// Settings for borrow order "auto rolling"
+    pub borrow_roll_config: AutoRollConfig,
+    /// Settings for lend order "auto rolling"
+    pub lend_roll_config: AutoRollConfig,
 }
 
 impl MarginUser {
@@ -301,6 +305,12 @@ impl Assets {
     pub fn active_deposits(&self) -> Range<SequenceNumber> {
         self.next_unredeemed_deposit_seqno..self.next_deposit_seqno
     }
+}
+
+#[derive(Zeroable, Default, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct AutoRollConfig {
+    /// the limit price at which orders may be placed by an authority
+    pub limit_price: u64,
 }
 
 #[account]

@@ -101,6 +101,11 @@ impl<'info> OrderbookMut<'info> {
         flags: CallbackFlags,
     ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
         let mut manager = self.market.load_mut()?;
+        let auto_roll = if params.auto_roll {
+            CallbackFlags::AUTO_ROLL
+        } else {
+            CallbackFlags::default()
+        };
         let callback_info = CallbackInfo::new(
             self.market.key(),
             owner,
@@ -108,7 +113,7 @@ impl<'info> OrderbookMut<'info> {
             out,
             adapter.unwrap_or_default(),
             Clock::get()?.unix_timestamp,
-            flags,
+            flags | auto_roll,
             manager.nonce,
         );
         manager.nonce += 1;
@@ -325,6 +330,9 @@ bitflags! {
 
         /// order placed by a MarginUser. margin user == fill_account == out_account
         const MARGIN     = 1 << 2;
+
+        /// is this order subject to auto roll
+        const AUTO_ROLL  = 1 << 3;
     }
 }
 
@@ -347,6 +355,8 @@ pub struct OrderParams {
     pub post_allowed: bool,
     /// Should the purchased tickets be automatically staked with the ticket program
     pub auto_stake: bool,
+    /// Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll
+    pub auto_roll: bool,
 }
 
 // todo remove?

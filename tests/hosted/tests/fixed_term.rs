@@ -10,7 +10,10 @@ use hosted_tests::{
     margin_test_context,
     setup_helper::{setup_user, tokens},
 };
-use jet_fixed_term::orderbook::state::OrderParams;
+use jet_fixed_term::{
+    margin::{instructions::MarketSide, state::AutoRollConfig},
+    orderbook::state::OrderParams,
+};
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -84,6 +87,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
     let order_a_expected_base_to_post = quote_to_base(1_000, 2_000);
 
@@ -136,6 +140,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
     assert!(alice.lend_order(crossing_params, &[]).await.is_err());
 
@@ -149,6 +154,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
     let order_b_expected_base_to_fill = quote_to_base(500, 2000);
 
@@ -179,6 +185,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
 
     // simulate
@@ -755,6 +762,55 @@ async fn margin_sell_tickets() -> Result<()> {
     Ok(())
 }
 
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn auto_roll_settings_are_correct() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(
+        FixedTermTestManager::full(ctx.solana.clone())
+            .await
+            .unwrap(),
+    );
+    let ([collateral], _, _) = tokens(&ctx).await?;
+
+    let user = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+
+    // can properly set config
+    let lend_price = OrderAmount::from_base_amount_rate(1_000, 1_000).price;
+    let borrow_price = OrderAmount::from_base_amount_rate(1_000, 900).price;
+    user.set_roll_config(
+        MarketSide::Lending,
+        AutoRollConfig {
+            limit_price: lend_price,
+        },
+    )
+    .await?;
+    user.set_roll_config(
+        MarketSide::Borrowing,
+        AutoRollConfig {
+            limit_price: borrow_price,
+        },
+    )
+    .await?;
+
+    let margin_user = user.load_margin_user().await?;
+    assert_eq!(margin_user.lend_roll_config.limit_price, lend_price);
+    assert_eq!(margin_user.borrow_roll_config.limit_price, borrow_price);
+
+    // cannot set a bad config
+    assert!(user
+        .set_roll_config(MarketSide::Lending, AutoRollConfig { limit_price: 0 })
+        .await
+        .is_err());
+
+    Ok(())
+}
+
 fn quote_to_base(quote: u64, rate_bps: u64) -> u64 {
     quote + quote * rate_bps / 10_000
 }
@@ -769,6 +825,7 @@ fn underlying(quote: u64, rate_bps: u64) -> OrderParams {
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     }
 }
 
@@ -782,5 +839,6 @@ fn tickets(base: u64, rate_bps: u64) -> OrderParams {
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     }
 }

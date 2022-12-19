@@ -14,7 +14,10 @@ use async_trait::async_trait;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::state::{MarginUser, TermLoan},
+    margin::{
+        instructions::MarketSide,
+        state::{AutoRollConfig, MarginUser, TermLoan},
+    },
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
@@ -795,6 +798,20 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 
+    pub async fn set_roll_config(
+        &self,
+        side: MarketSide,
+        config: AutoRollConfig,
+    ) -> Result<Signature> {
+        let set_config =
+            self.manager
+                .ix_builder
+                .configure_auto_roll(self.proxy.pubkey(), side, config);
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
+            .await
+    }
+
     pub async fn repay(&self, term_loan_seqno: u64, amount: u64) -> Result<Signature> {
         let repay = self.manager.ix_builder.margin_repay(
             &self.proxy.pubkey(),
@@ -944,6 +961,7 @@ impl OrderAmount {
             post_only: false,
             post_allowed: true,
             auto_stake: true,
+            auto_roll: false,
         }
     }
 }

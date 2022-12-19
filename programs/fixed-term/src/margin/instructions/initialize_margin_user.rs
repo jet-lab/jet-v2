@@ -35,7 +35,7 @@ pub struct InitializeMarginUser<'info> {
     )]
     pub margin_account: Signer<'info>,
 
-    /// The Boheader account
+    /// The fixed-term header account
     #[account(
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
         has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint
@@ -108,6 +108,8 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
             ticket_collateral: ctx.accounts.ticket_collateral.key(),
             underlying_settlement: ctx.accounts.underlying_settlement.key(),
             ticket_settlement: ctx.accounts.ticket_settlement.key(),
+            borrow_roll_config: Default::default(),
+            lend_roll_config: Default::default(),
         } ignoring {
             debt,
             assets,
