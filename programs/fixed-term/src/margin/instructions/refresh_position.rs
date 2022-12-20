@@ -1,6 +1,8 @@
+use std::convert::TryInto;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo};
+use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange};
 
 use crate::{
     control::{events::PositionRefreshed, state::Market},
@@ -83,16 +85,7 @@ fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
         error!(FixedTermErrorCode::OracleError)
     })?;
     let price = oracle
-        .get_current_price()
-        .ok_or(FixedTermErrorCode::PriceMissing)?;
-    let ema_price = oracle
-        .get_ema_price()
-        .ok_or(FixedTermErrorCode::PriceMissing)?;
-    Ok(PositionChange::Price(PriceChangeInfo {
-        publish_time: oracle.publish_time,
-        exponent: oracle.expo,
-        value: price.price,
-        confidence: price.conf,
-        twap: ema_price.price,
-    }))
+        .try_into()
+        .map_err(|_| FixedTermErrorCode::PriceMissing)?;
+    Ok(PositionChange::Price(price))
 }

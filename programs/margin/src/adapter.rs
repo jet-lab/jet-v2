@@ -15,7 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{collections::BTreeMap, convert::TryInto};
+use std::{
+    collections::BTreeMap,
+    convert::{TryFrom, TryInto},
+};
 
 use crate::{
     events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
@@ -101,6 +104,22 @@ pub struct PriceChangeInfo {
 
     /// The exponent for the price values
     pub exponent: i32,
+}
+
+impl TryFrom<pyth_sdk_solana::PriceFeed> for PriceChangeInfo {
+    type Error = ErrorCode;
+
+    fn try_from(oracle: pyth_sdk_solana::PriceFeed) -> std::result::Result<Self, Self::Error> {
+        let price = oracle.get_current_price().ok_or(ErrorCode::InvalidOracle)?;
+        let ema_price = oracle.get_ema_price().ok_or(ErrorCode::InvalidOracle)?;
+        Ok(PriceChangeInfo {
+            publish_time: oracle.publish_time,
+            exponent: oracle.expo,
+            value: price.price,
+            confidence: price.conf,
+            twap: ema_price.price,
+        })
+    }
 }
 
 /// Invoke a margin adapter with the requested data
