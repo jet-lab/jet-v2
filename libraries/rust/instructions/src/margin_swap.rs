@@ -18,14 +18,13 @@
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 
-use anchor_lang::{Id, InstructionData, ToAccountMetas};
-use anchor_spl::token::Token;
+use anchor_lang::{InstructionData, ToAccountMetas};
 
+use jet_margin_pool::TokenChange;
 use jet_margin_swap::accounts as ix_accounts;
 use jet_margin_swap::instruction as ix_data;
 
-use crate::ix_builder::MarginPoolIxBuilder;
-use crate::jet_margin_pool::TokenChange;
+use crate::margin_pool::MarginPoolIxBuilder;
 
 /// Builder for creating instructions to interact with the margin swap program.
 pub struct MarginSwapIxBuilder {
@@ -114,7 +113,7 @@ impl MarginSwapIxBuilder {
                 deposit_note_mint: destination_pool.deposit_note_mint,
             },
             margin_pool_program: jet_margin_pool::id(),
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 

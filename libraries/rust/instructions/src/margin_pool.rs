@@ -17,7 +17,6 @@
 
 use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::InstructionData;
-use anchor_spl::token::Token;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
@@ -99,7 +98,7 @@ impl MarginPoolIxBuilder {
             loan_note_mint: self.loan_note_mint,
             vault: self.vault,
             payer,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
             system_program: System::id(),
             rent: Rent::id(),
         }
@@ -134,7 +133,7 @@ impl MarginPoolIxBuilder {
             depositor,
             source,
             destination,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -172,7 +171,7 @@ impl MarginPoolIxBuilder {
             depositor,
             source,
             destination,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -210,7 +209,7 @@ impl MarginPoolIxBuilder {
             deposit_note_mint: self.deposit_note_mint,
             loan_account,
             deposit_account,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -248,7 +247,7 @@ impl MarginPoolIxBuilder {
             deposit_note_mint: self.deposit_note_mint,
             loan_account,
             deposit_account,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -287,7 +286,7 @@ impl MarginPoolIxBuilder {
             loan_account,
             repayment_token_account: repayment_source_account,
             repayment_account_authority: repayment_source_authority,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -337,7 +336,7 @@ impl MarginPoolIxBuilder {
             loan_note_account,
             loan_note_mint: self.loan_note_mint,
             payer,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
             system_program: System::id(),
             rent: Rent::id(),
         };
@@ -361,7 +360,7 @@ impl MarginPoolIxBuilder {
             loan_note_account,
             loan_note_mint: self.loan_note_mint,
             beneficiary: payer,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         };
 
         Instruction {
@@ -378,7 +377,7 @@ impl MarginPoolIxBuilder {
             vault: self.vault,
             fee_destination,
             deposit_note_mint: self.deposit_note_mint,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 

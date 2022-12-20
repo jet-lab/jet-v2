@@ -2251,6 +2251,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "jet-instructions"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "jet-airspace",
+ "jet-control",
+ "jet-fixed-term",
+ "jet-margin",
+ "jet-margin-pool",
+ "jet-margin-swap",
+ "jet-metadata",
+ "jet-program-common",
+ "jet-test-service",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "spl-token 3.3.1",
+ "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "jet-lab-wasm-src"
 version = "0.1.0"
 dependencies = [
@@ -2319,6 +2340,7 @@ dependencies = [
  "jet-airspace",
  "jet-control",
  "jet-fixed-term",
+ "jet-instructions",
  "jet-margin",
  "jet-margin-pool",
  "jet-margin-swap",
