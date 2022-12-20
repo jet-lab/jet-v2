@@ -1,7 +1,7 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
-use super::state::{Assets, Debt, TermLoanFlags, TermLoanSequenceNumber};
+use super::state::{Assets, Debt, SequenceNumber, TermLoanFlags};
 
 #[event]
 pub struct MarginUserInitialized {
@@ -69,7 +69,7 @@ pub struct TermLoanFulfilled {
 pub struct DebtUpdated {
     pub margin_user: Pubkey,
     pub total_debt: u64,
-    pub next_obligation_to_repay: Option<TermLoanSequenceNumber>,
+    pub next_obligation_to_repay: Option<SequenceNumber>,
     pub outstanding_obligations: u64,
     pub is_past_due: bool,
 }

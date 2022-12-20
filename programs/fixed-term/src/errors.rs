@@ -42,6 +42,8 @@ pub enum FixedTermErrorCode {
     NonZeroDebt,
     #[msg("expected a term loan with a different sequence number")]
     TermLoanHasWrongSequenceNumber,
+    #[msg("expected a term deposit with a different sequence number")]
+    TermDepositHasWrongSequenceNumber,
     #[msg("there was a problem loading the price oracle")]
     OracleError,
     #[msg("id was not found in the user's open orders")]

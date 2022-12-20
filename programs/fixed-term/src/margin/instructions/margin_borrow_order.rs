@@ -78,11 +78,7 @@ pub struct MarginBorrowOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(
-    ctx: Context<MarginBorrowOrder>,
-    mut params: OrderParams,
-    seed: Vec<u8>,
-) -> Result<()> {
+pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Result<()> {
     let origination_fee = {
         let manager = ctx.accounts.orderbook_mut.market.load()?;
         params.max_ticket_qty = manager.borrow_order_qty(params.max_ticket_qty);
@@ -114,7 +110,12 @@ pub fn handler(
             ctx.accounts.term_loan.to_account_info(),
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            &TermLoan::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
+            &[
+                crate::seeds::TERM_LOAN,
+                ctx.accounts.orderbook_mut.market.key().as_ref(),
+                ctx.accounts.margin_user.key().as_ref(),
+                &sequence_number.to_le_bytes(),
+            ],
         )?;
         let quote_filled = order_summary.quote_filled()?;
         let disburse = manager.loan_to_disburse(quote_filled);

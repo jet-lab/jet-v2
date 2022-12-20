@@ -84,7 +84,7 @@ pub struct TokenInfo {
     pub precision: u8,
 
     #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub faucet: Option<Pubkey>,
 
     #[serde(skip_serializing_if = "Option::is_none")]

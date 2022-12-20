@@ -2608,14 +2608,14 @@ export type JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqno",
+            "name": "nextNewTermLoanSeqNo",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqno",
+            "name": "nextUnpaidTermLoanSeqNo",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
@@ -2665,6 +2665,16 @@ export type JetFixedTerm = {
             "docs": [
               "tickets to transfer into settlement account"
             ],
+            "type": "u64"
+          },
+          {
+            "name": "nextNewDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
+            "type": "u64"
+          },
+          {
+            "name": "nextUnreedeemedDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
             "type": "u64"
           },
           {
@@ -6474,14 +6484,14 @@ export const IDL: JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqno",
+            "name": "nextNewTermLoanSeqNo",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqno",
+            "name": "nextUnpaidTermLoanSeqNo",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
@@ -6531,6 +6541,16 @@ export const IDL: JetFixedTerm = {
             "docs": [
               "tickets to transfer into settlement account"
             ],
+            "type": "u64"
+          },
+          {
+            "name": "nextNewDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
+            "type": "u64"
+          },
+          {
+            "name": "nextUnreedeemedDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
             "type": "u64"
           },
           {
