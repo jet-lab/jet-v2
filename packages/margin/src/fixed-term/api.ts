@@ -2,7 +2,7 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { AssociatedToken, FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange, sendAll } from "../index"
 import { FixedTermMarket, MarketAndconfig } from "./fixedTerm"
-import { AnchorProvider, BN } from "@project-serum/anchor"
+import { Address, AnchorProvider, BN } from "@project-serum/anchor"
 
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {
@@ -371,5 +371,96 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   })
   await marginAccount.withUpdatePositionBalance({ instructions: settleIXS, position })
   instructions.push(settleIXS)
+  return sendAll(provider, [instructions])
+}
+
+interface IRepay {
+  amount: BN,
+  marginAccount: MarginAccount,
+  market: MarketAndconfig,
+  provider: AnchorProvider,
+  termLoans: Array<{
+    address: Address,
+    balance: number,
+    maturation_timestamp: number
+    sequence_number: number
+  }>
+  payer: Address,
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[]
+}
+
+export const repay = async ({
+  marginAccount,
+  market,
+  amount,
+  provider,
+  termLoans,
+  payer,
+  pools,
+  markets,
+}: IRepay) => {
+  const instructions: TransactionInstruction[][] = []
+
+  const poolIXS: TransactionInstruction[] = []
+  await marginAccount.withPrioritisedPositionRefresh({
+    instructions: poolIXS,
+    pools,
+    markets,
+    marketAddress: market.market.address
+  })
+  instructions.push(poolIXS)
+
+  const orderIXS: TransactionInstruction[] = []
+  const pool = pools[market.token.symbol]
+  await pool.withWithdrawToMargin({
+    instructions: orderIXS,
+    marginAccount,
+    change: PoolTokenChange.shiftBy(amount)
+  })
+  const source = AssociatedToken.derive(market.market.addresses.underlyingTokenMint, marginAccount.address)
+
+  let amountLeft = new BN(amount)
+
+  let sortedTermLoans = termLoans.sort((a, b) => a.maturation_timestamp - b.maturation_timestamp || a.sequence_number - b.sequence_number)
+  while (amountLeft.gt(new BN(0))) {
+    const currentLoan = sortedTermLoans[0]
+    const nextLoan = sortedTermLoans[1]
+    const balance = new BN(currentLoan.balance)
+    if (balance.gte(amountLeft)) {
+      const ix = await market.market.repay({
+        user: marginAccount,
+        termLoan: currentLoan.address,
+        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
+        payer: marginAccount.address,
+        amount: amountLeft,
+        source,
+      })
+      await marginAccount.withAdapterInvoke({
+        instructions: orderIXS,
+        adapterInstruction: ix
+      })
+      console.log(currentLoan.address, balance.toNumber(), amountLeft.toNumber())
+      amountLeft = amountLeft.sub(amountLeft)
+    } else {
+      const ix = await market.market.repay({
+        user: marginAccount,
+        termLoan: currentLoan.address,
+        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
+        payer:  marginAccount.address,
+        amount: balance,
+        source,
+      })
+      await marginAccount.withAdapterInvoke({
+        instructions: orderIXS,
+        adapterInstruction: ix
+      })
+      console.log(currentLoan.address, balance.toNumber(), amountLeft.toNumber())
+      amountLeft = amountLeft.sub(balance)
+      sortedTermLoans.shift()
+    }
+  }
+  console.log(orderIXS)
+  instructions.push(orderIXS)
   return sendAll(provider, [instructions])
 }

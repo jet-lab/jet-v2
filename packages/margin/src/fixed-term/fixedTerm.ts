@@ -326,6 +326,30 @@ export class FixedTermMarket {
       .instruction()
   }
 
+  async repay({
+    user, termLoan, nextTermLoan, payer, source, amount
+  }: {
+    user: MarginAccount,
+    termLoan: Address,
+    nextTermLoan: Address,
+    payer: Address,
+    source: Address,
+    amount: BN
+  }) {
+    const marketUser = await this.deriveMarginUserAddress(user)
+    return this.program.methods.repay(amount)
+      .accounts({
+        marginUser: marketUser,
+        termLoan,
+        nextTermLoan,
+        source,
+        payer,
+        underlyingTokenVault: this.addresses.underlyingTokenVault,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction()
+  }
+
   async cancelOrderIx(user: MarginAccount, orderId: BN): Promise<TransactionInstruction> {
     return await this.program.methods
       .cancelOrder(orderId)

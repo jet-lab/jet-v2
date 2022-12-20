@@ -15,7 +15,7 @@ import { OrdersTable } from './posted-order-table';
 import { TokenAmount } from '@jet-lab/margin';
 import BN from 'bn.js';
 import numeral from 'numeral'
-import { useOpenPositions } from '@jet-lab/store/dist/api';
+import { useOpenPositions } from '@jet-lab/store';
 import { OpenBorrowsTable } from './open-borrows-table';
 
 interface ITabLink {

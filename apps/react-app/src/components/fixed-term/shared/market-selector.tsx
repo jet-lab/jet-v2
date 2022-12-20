@@ -8,15 +8,17 @@ import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { MarginAccount, TokenAmount } from '@jet-lab/margin';
+import { MarginAccount, repay, TokenAmount, settle, MarketAndconfig, FixedTermMarket, Pool } from '@jet-lab/margin';
 import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
 import { AnchorProvider } from '@project-serum/anchor';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
-import { settle, MarketAndconfig } from '@jet-lab/margin';
 import { useProvider } from '@utils/jet/provider';
 import { JetMarginPools, Pools } from '@state/pools/pools';
 import BN from 'bn.js';
+import { Loan, useOpenPositions } from '@jet-lab/store';
+import { PublicKey } from '@solana/web3.js';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const { Option } = Select;
 
@@ -43,7 +45,8 @@ const settleNow = async (
   pools: JetMarginPools,
   amount: TokenAmount
 ) => {
-  if (!marginAccount) return;
+  const token = markets[selectedMarket].token
+  if (!marginAccount || !token) return;
   let tx = 'failed_before_tx';
   try {
     tx = await settle({
@@ -60,7 +63,7 @@ const settleNow = async (
       'success',
       getExplorerUrl(tx, cluster, blockExplorer)
     );
-    setOwedTokens(new TokenAmount(new BN(0), markets[selectedMarket].token.decimals));
+    setOwedTokens(new TokenAmount(new BN(0), token.decimals));
   } catch (e: any) {
     notify(
       'Settle Failed',
@@ -71,6 +74,39 @@ const settleNow = async (
   }
 };
 
+const submitRepay = async (marginAccount: MarginAccount, provider: AnchorProvider, amount: BN, termLoans: Loan[], walletAddress: PublicKey | null, pools: Record<string, Pool>, markets: FixedTermMarket[], market: MarketAndconfig, 
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
+  blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',) => {
+  if (!walletAddress) return
+  let tx = 'failed_before_tx';
+  try {
+    tx = await repay({
+      provider,
+      marginAccount,
+      amount,
+      termLoans,
+      payer: walletAddress.toBase58(),
+      pools,
+      markets,
+      market
+    })
+    notify(
+      'Settle Successful',
+      `Your assets have been sent to your margin account`,
+      'success',
+      getExplorerUrl(tx, cluster, blockExplorer)
+    );
+  } catch (e: any) {
+    notify(
+      'Settle Failed',
+      `There was an issue settling your funds, please try again.`,
+      'error',
+      getExplorerUrl(e.signature, cluster, blockExplorer)
+    );
+    throw(e)
+  }
+}
+
 export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) => {
   const [order, setOrder] = useRecoilState(type === 'asks' ? FixedLendViewOrder : FixedBorrowViewOrder);
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
@@ -80,9 +116,16 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
   const { provider } = useProvider();
   const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedTermMarketAtom);
   const pools = useRecoilValue(Pools);
+  const wallet = useWallet();
+
+
+  const [repayAmount, setRepayAmount] = useState(0)
+
   const [owedTokens, setOwedTokens] = useState<TokenAmount>(
     new TokenAmount(new BN(0), markets[selectedMarket]?.token.decimals || 6)
   );
+
+  const { data } = useOpenPositions(markets[selectedMarket]?.market, marginAccount)
 
   useEffect(() => {
     if (marginAccount) {
@@ -90,7 +133,12 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
     }
   }, [selectedMarket, marginAccount]);
 
-  if (!marginAccount || !pools || !markets[selectedMarket]) return null;
+  const token = markets[selectedMarket]?.token
+
+  if (!marginAccount || !pools || !markets[selectedMarket] || !data || !token) return null;
+
+  const hasToSettle = owedTokens?.tokens > 0
+  const hasToRepay = data.total_borrowed > 0
 
   return (
     <div className="fixed-term-selector-view view-element">
@@ -107,7 +155,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
           ))}
         </Select>
         <div className="selector-actions">
-          {owedTokens?.tokens > 0 ? (
+          {hasToSettle ? (
             <div className="assets-to-settle">
               <>
                 There are {owedTokens?.uiTokens} {markets[selectedMarket]?.token.symbol} currently pending settment on
@@ -130,7 +178,28 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
                 Settle Now
               </Button>
             </div>
-          ) : (
+          ) : hasToRepay ? <div className="assets-to-settle">
+            <>
+              You owe {new TokenAmount(new BN(data.total_borrowed), token.decimals).tokens.toFixed(token.precision)} {token.symbol} on this market.
+            </>
+            <input type='number' value={repayAmount} onChange={e => setRepayAmount(parseFloat(e.target.value))} max={data.total_borrowed / (10 ** token.decimals)} />
+            <Button
+              onClick={() => submitRepay(
+                marginAccount,
+                provider,
+                new BN(repayAmount * (10 ** token.decimals)),
+                data.loans,
+                wallet.publicKey,
+                pools.tokenPools,
+                markets.map(m => m.market),
+                markets[selectedMarket],
+                cluster,
+                blockExplorer
+              )}
+            >
+              Repay Now
+            </Button>
+          </div> : (
             <div>There are no outstanding actions on this market.</div>
           )}
         </div>
