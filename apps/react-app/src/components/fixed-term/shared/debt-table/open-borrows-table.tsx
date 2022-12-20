@@ -22,6 +22,12 @@ const getBorrowColumns = (token: MarginTokenConfig) => [
     dataIndex: 'balance',
     key: 'balance',
     render: (value: number) => `${token.symbol} ${new TokenAmount(new BN(value), token.decimals).tokens.toFixed(2)}`
+  },
+  {
+    title: 'Rate',
+    dataIndex: 'rate',
+    key: 'rate',
+    render: (rate: number) => `${rate}%`
   }
 ];
 
