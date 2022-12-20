@@ -23,6 +23,7 @@ tsconfig.tsbuildinfo
 localnet.config.json
 
 .env
+.localnet
 # documentations
 
 .turbo
