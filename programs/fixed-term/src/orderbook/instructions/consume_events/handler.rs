@@ -10,7 +10,7 @@ use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
-    events::{skip_err, OrderFilled, OrderRemoved, TermLoanCreated},
+    events::{skip_err, OrderFilled, OrderRemoved, TermDepositCreated, TermLoanCreated},
     margin::state::{TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
@@ -111,7 +111,8 @@ fn handle_fill<'info>(
                     margin_user.emit_asset_balances();
                 }
 
-                **loan.as_mut().unwrap().auto_stake()? = TermDeposit {
+                let term_deposit = loan.as_mut().unwrap().auto_stake()?;
+                **term_deposit = TermDeposit {
                     matures_at,
                     sequence_number,
                     principal: quote_size,
@@ -119,6 +120,16 @@ fn handle_fill<'info>(
                     owner: maker.pubkey(),
                     market: market.key(),
                 };
+                emit!(TermDepositCreated {
+                    term_deposit: term_deposit.key(),
+                    authority: maker.pubkey(),
+                    order_tag: Some(maker_info.order_tag.as_u128()),
+                    sequence_number,
+                    market: market.key(),
+                    maturation_timestamp,
+                    principal: quote_size,
+                    amount: base_size,
+                });
             } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
