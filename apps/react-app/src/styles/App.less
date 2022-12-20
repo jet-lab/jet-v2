@@ -2121,7 +2121,7 @@ html {
       }
 
       &-tab {
-        width: 125px;
+        min-width: 125px;
 
         span {
           font-size: @sm-font-size;
@@ -2768,5 +2768,21 @@ html {
   }
   .ant-table-expanded-row table {
     padding: 0 !important;
+  }
+}
+
+.debt-detail {
+  .tab-link {
+    display: flex;
+  
+    .badge {
+      font-size: 0.5em;
+      background: @header-bg;
+      color: white;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+    }
   }
 }
