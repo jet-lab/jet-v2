@@ -81,7 +81,7 @@ start-oracle() {
 }
 
 start-crank-service() {
-    mkdir .localnet
+    mkdir -p .localnet
 
     log_filter="jet_margin_sdk=debug"
     env RUST_LOG=$log_filter cargo run --bin jet-fixed-terms-crank-service -- \
