@@ -9,7 +9,7 @@ import { FixedBorrowRowOrder, FixedBorrowViewOrder } from '@state/views/fixed-te
 import { FixedTermMarketSelector } from '@components/fixed-term/shared/market-selector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
-import { DebtTable } from '@components/fixed-term/shared/debt-table';
+import { DebtTable } from '@components/fixed-term/shared/debt-table/debt-table';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedBorrowEntry: FixedBorrowOrderEntry,

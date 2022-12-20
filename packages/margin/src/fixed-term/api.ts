@@ -177,7 +177,6 @@ interface ICancelOrder {
   marginAccount: MarginAccount
   provider: AnchorProvider
   orderId: BN
-  amount: BN
 }
 export const cancelOrder = async ({ market, marginAccount, provider, orderId }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
