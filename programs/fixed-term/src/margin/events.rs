@@ -62,7 +62,22 @@ pub struct TermLoanFulfilled {
     pub term_loan: Pubkey,
     pub orderbook_user: Pubkey,
     pub borrower: Pubkey,
+    pub repayment_amount: u64,
     pub timestamp: i64,
+}
+
+#[event]
+pub struct TermDepositCreated {
+    pub term_deposit: Pubkey,
+    pub authority: Pubkey,
+    pub order_tag: Option<u128>,
+    pub sequence_number: u64,
+    pub market: Pubkey,
+    pub maturation_timestamp: i64,
+    // Quote
+    pub principal: u64,
+    // Base
+    pub amount: u64,
 }
 
 #[event]
