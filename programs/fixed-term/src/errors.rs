@@ -122,4 +122,6 @@ pub enum FixedTermErrorCode {
     WrongVault,
     #[msg("attempted to divide with zero")]
     ZeroDivision,
+    #[msg("failed to add event to the queue")]
+    FailedToPushEvent,
 }
