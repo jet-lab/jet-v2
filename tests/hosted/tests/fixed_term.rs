@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anchor_lang::prelude::Clock;
 use anyhow::Result;
 use hosted_tests::{
     fixed_term::{
@@ -435,16 +434,6 @@ async fn margin_borrow() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    // Set the clock for price refreshes
-    #[cfg(not(feature = "localnet"))]
-    ctx.rpc.set_clock(Clock {
-        slot: 1,
-        epoch_start_timestamp: 1000,
-        epoch: 1,
-        leader_schedule_epoch: 1,
-        unix_timestamp: 1000,
-    });
-
     let user = create_fixed_term_market_margin_user(
         &ctx,
         manager.clone(),
@@ -573,16 +562,6 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    // Set the clock for price refreshes
-    #[cfg(not(feature = "localnet"))]
-    ctx.rpc.set_clock(Clock {
-        slot: 1,
-        epoch_start_timestamp: 1000,
-        epoch: 1,
-        leader_schedule_epoch: 1,
-        unix_timestamp: 1000,
-    });
-
     let borrower = create_fixed_term_market_margin_user(
         &ctx,
         manager.clone(),
@@ -653,16 +632,6 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     );
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
-
-    // Set the clock for price refreshes
-    #[cfg(not(feature = "localnet"))]
-    ctx.rpc.set_clock(Clock {
-        slot: 1,
-        epoch_start_timestamp: 1000,
-        epoch: 1,
-        leader_schedule_epoch: 1,
-        unix_timestamp: 1000,
-    });
 
     let borrower = create_fixed_term_market_margin_user(
         &ctx,
@@ -743,16 +712,6 @@ async fn margin_sell_tickets() -> Result<()> {
     );
     let client = manager.client.clone();
     let ([], _, pricer) = tokens(&ctx).await.unwrap();
-
-    // Set the clock for price refreshes
-    #[cfg(not(feature = "localnet"))]
-    ctx.rpc.set_clock(Clock {
-        slot: 1,
-        epoch_start_timestamp: 1000,
-        epoch: 1,
-        leader_schedule_epoch: 1,
-        unix_timestamp: 1000,
-    });
 
     let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
