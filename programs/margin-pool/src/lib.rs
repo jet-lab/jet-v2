@@ -34,7 +34,7 @@ pub mod authority {
 }
 
 #[program]
-mod jet_margin_pool {
+pub mod jet_margin_pool {
     use super::*;
 
     /// Create a new pool for borrowing and lending
@@ -43,7 +43,7 @@ mod jet_margin_pool {
     ///
     /// * `fee_destination` - The address of the account to deposit collected fees, represented as deposit notes.
     ///
-    /// **[Accounts](jet_margin::accounts::CreatePool) expected with create\_pool.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::CreatePool) expected with create\_pool.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -73,10 +73,9 @@ mod jet_margin_pool {
     ///
     /// # Parameters
     ///
-    /// * [`clock`](solana_program::clock::Clock) - The network time represented as the current slot.       
-    /// TODO: ABOVE -- double check that the link (also) works right for Clock in docs
+    /// * [`clock`](https://docs.rs/solana-program/latest/solana_program/clock/) - The network time represented as the current slot.       
     ///
-    /// **[Accounts](jet_margin::accounts::Collect) expected with collect.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::Collect) expected with collect.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -101,7 +100,7 @@ mod jet_margin_pool {
     ///
     /// * `config` - The data with which to configure the respective pool.
     ///
-    /// **[Accounts](jet_margin::accounts::Configure) expected with configure.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::Configure) expected with configure.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -125,7 +124,7 @@ mod jet_margin_pool {
     ///
     /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a deposit) and amount of tokens.
     ///
-    /// **[Accounts](jet_margin::accounts::Deposit) expected with deposit.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::Deposit) expected with deposit.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -155,11 +154,9 @@ mod jet_margin_pool {
     ///
     /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a withdraw) and amount of tokens.
     ///
-    /// * [`clock`](solana_program::clock::Clock) - The network time represented as the current slot.       
-    /// TODO: ABOVE -- double check that the link works right for Clock in docs
-    /// TODO: I don't see anything populating in the docs..hmmm...
+    /// * [`clock`](https://docs.rs/solana-program/latest/solana_program/clock/index.htmlhttps://docs.rs/solana-program/latest/solana_program/clock/index.html) - The network time represented as the current slot.       
     ///
-    /// **[Accounts](jet_margin::accounts::Withdraw) expected with withdraw.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::Withdraw) expected with withdraw.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -188,7 +185,7 @@ mod jet_margin_pool {
     ///
     /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a margin borrow) and amount of tokens.
     ///
-    /// **[Accounts](jet_margin::accounts::MarginBorrow) expected with margin\_borrow.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::MarginBorrow) expected with margin\_borrow.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -221,7 +218,7 @@ mod jet_margin_pool {
     ///
     /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a margin repay) and amount of tokens.
     ///
-    /// **[Accounts](jet_margin::accounts::MarginRepay) expected with margin\_repay.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::MarginRepay) expected with margin\_repay.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -255,7 +252,7 @@ mod jet_margin_pool {
     /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a repay) and amount.
 
     ///
-    /// **[Accounts](jet_margin::accounts::Repay) expected with repay.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::Repay) expected with repay.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -282,7 +279,7 @@ mod jet_margin_pool {
     ///
     /// # Parameters
     ///
-    /// **[Accounts](jet_margin::accounts::MarginRefreshPosition) expected with margin\_refresh\_position.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::MarginRefreshPosition) expected with margin\_refresh\_position.rs:**
 
     ///     
     /// |     |     |     |
@@ -298,7 +295,7 @@ mod jet_margin_pool {
     /// Creates the token account to track the loan notes,
     /// then requests margin to register the position
     ///
-    /// **[Accounts](jet_margin::accounts::RegisterLoan) expected with register\_loan.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::RegisterLoan) expected with register\_loan.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -319,7 +316,7 @@ mod jet_margin_pool {
 
     /// Closes a previously opened loan token account
     ///     
-    /// **[Accounts](jet_margin::accounts::CloseLoan) expected with close\_loan.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::CloseLoan) expected with close\_loan.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -336,7 +333,7 @@ mod jet_margin_pool {
 
     /// Administrative function for moving loans between accounts
     ///
-    /// **[Accounts](jet_margin::accounts::AdminTransferLoan) expected with admin\_transfer\_loan.rs:**
+    /// **[Accounts](jet_margin_pool::accounts::AdminTransferLoan) expected with admin\_transfer\_loan.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |

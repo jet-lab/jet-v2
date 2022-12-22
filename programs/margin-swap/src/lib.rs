@@ -32,9 +32,34 @@ mod instructions;
 use instructions::*;
 
 #[program]
-mod jet_margin_swap {
+pub mod jet_margin_swap {
     use super::*;
 
+    /// Execute a swap by withdrawing tokens from a deposit pool, swapping them for
+    /// other tokens, then depositing those other tokens to another deposit pool.
+    ///
+    /// The instruction uses 'transit' accounts which are normally ATAs owned by the
+    /// margin account. To ensure that only the tokens withdrawn are swapped and
+    /// deposited, the instruction checks the balances of the transit accounts before
+    /// and after an action.
+    /// If either transit account has tokens before the instructions, it should still
+    /// have the same tokens after the swap.
+    /// 
+    /// **[Accounts](jet_margin_swap::accounts::MarginSplSwap) expected with margin\_spl\_swap.rs:**
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `read_only` | The margin account being executed on. |
+    /// | `source_account` | `writable` | The account with the source deposit to be exchanged from. |
+    /// | `destination_account` | `writable` |  The destination account to send the deposit that is exchanged into. |
+    /// | `transit_source_account` | `writable` | Temporary account for moving tokens. |
+    /// | `transit_destination_account` | `writable` | Temporary account for moving tokens. |
+    /// | `swap_info` | `read_only` | The accounts relevant to the swap pool used for the exchange. |
+    /// | `source_margin_pool` | `read_only` | The accounts relevant to the source margin pool. |
+    /// | `destination_margin_pool` | `read_only` | The accounts relevant to the destination margin pool. |
+    /// | `margin_pool_program` | `read_only` | The Jet margin-pool program. |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
     pub fn margin_swap(
         ctx: Context<MarginSplSwap>,
         withdrawal_change_kind: ChangeKind,
