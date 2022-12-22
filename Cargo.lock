@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "agnostic-orderbook"
 version = "1.0.0"
-source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#15c47292a59fc5c098ae65727f4ebc749a323dd7"
+source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#231c24e7e6de94625a0aa67e6120355758faff36"
 dependencies = [
  "bonfida-utils",
  "borsh 0.9.3",
@@ -554,20 +554,22 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bonfida-macros"
-version = "0.2.5"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f5ace5ed40eb56cd6d6a0de41bc2e919af6047d98f7e502d06fa201a7814ad4"
+checksum = "d47e29f573015689aab660e16bd63dc7272cf8d490729fbb9e07cfc5a7ada198"
 dependencies = [
  "proc-macro2 1.0.47",
  "quote 1.0.21",
  "solana-program",
+ "spl-name-service",
  "syn 1.0.102",
 ]
 
 [[package]]
 name = "bonfida-utils"
-version = "0.3.0"
-source = "git+https://github.com/Bonfida/bonfida-utils.git?branch=add-rounding-direction#11abafa345b5486062e8e3e1e8ca8077a4a9b507"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d324917eb29a5ddfaa33e006cff592d76bdc0b73543eb031cd05ee3e2ef1181b"
 dependencies = [
  "bonfida-macros",
  "borsh 0.9.3",
@@ -2214,7 +2216,7 @@ dependencies = [
  "bitflags",
  "borsh 0.9.3",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-margin",
  "jet-program-common",
  "jet-program-proc-macros",
@@ -2272,7 +2274,7 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-airspace",
  "jet-metadata",
  "jet-program-common",
@@ -4996,6 +4998,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0dc6f70db6bacea7ff25870b016a65ba1d1b6013536f08e4fd79a8f9005325"
 dependencies = [
  "solana-program",
+]
+
+[[package]]
+name = "spl-name-service"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c2920a0762e3fdbd02a24469787d9217f658776502265a9b99903557be28adf"
+dependencies = [
+ "borsh 0.9.3",
+ "num-derive",
+ "num-traits",
+ "solana-program",
+ "thiserror",
 ]
 
 [[package]]

@@ -59,7 +59,7 @@ impl<'info> RedeemDeposit<'info> {
             return err!(FixedTermErrorCode::ImmatureTicket);
         }
 
-        // transfer from the vault to the ticket_holder
+        // transfer from the vault to the deposit_holder
         self.withdraw(
             &self.underlying_token_vault,
             &self.token_account,
@@ -67,10 +67,9 @@ impl<'info> RedeemDeposit<'info> {
         )?;
 
         emit!(DepositRedeemed {
-            market: self.market.key(),
-            ticket_holder: self.owner.key(),
+            deposit: self.deposit.key(),
+            deposit_holder: self.owner.key(),
             redeemed_value: self.deposit.amount,
-            maturation_timestamp: self.deposit.matures_at,
             redeemed_timestamp: current_time,
         });
 
