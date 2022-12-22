@@ -2256,9 +2256,11 @@ dependencies = [
 name = "jet-lab-wasm-src"
 version = "0.1.0"
 dependencies = [
+ "agnostic-orderbook",
  "anyhow",
  "bytemuck",
  "console_error_panic_hook",
+ "jet-fixed-term",
  "jet-program-common",
  "js-sys",
  "rand_chacha 0.3.1",
@@ -2387,6 +2389,7 @@ name = "jet-program-common"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "borsh 0.9.3",
  "bytemuck",
  "num-traits",
  "solana-program",
