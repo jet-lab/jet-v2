@@ -60,7 +60,18 @@ pub fn base_to_quote(base: u64, price: u64) -> u64 {
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 #[wasm_bindgen]
 pub fn quote_to_base(quote: u64, price: u64) -> u64 {
-    Fp32::upcast_fp32(price).u64_div(quote).unwrap()
+    // price ~ quote per base
+    // base ~ quote / price
+    // Fp32::upcast_fp32(price).u64_div(quote).unwrap()
+
+    (Fp32::ONE / Fp32::upcast_fp32(price) * quote)
+        .as_decimal_u64()
+        .unwrap() // FIXME Check floor or ceil
+}
+
+#[test]
+fn test_quote_to_base() {
+    assert_eq!(quote_to_base(1000, (1515 << 32) / 100), 66);
 }
 
 /// Given a fixed-point 32 value, convert to decimal representation
@@ -123,8 +134,20 @@ pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
 
 #[test]
 fn test_calculate_implied_price() {
-    let result = calculate_implied_price(1000_u64, 1100_u64);
-    assert_eq!(result, 4724464025) // FIXME Check this test
+    assert_eq!(
+        calculate_implied_price(1000_u64, 1100_u64),
+        ((1100 * 10 / 1000) << 32) / 10
+    );
+
+    assert_eq!(
+        calculate_implied_price(23454, 7834),
+        ((7834 * 10_000_000_000 / 23454) << 32) / 10_000_000_000
+    );
+
+    assert_eq!(
+        calculate_implied_price(345, 3464),
+        crate::orderbook::interest_pricing::f64_to_fp32(10.04057971),
+    );
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,
