@@ -17,8 +17,9 @@
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build:wasm": "wasm-pack build --target bundler --release . --out-dir ../wasm && ./rename-wasm-package",
+    "build": "yarn build:wasm && tsc",
+    "dev": "build:wasm && tsc --watch",
     "clean": "rm -rf ./dist & rm -rf .turbo & rm -f tsconfig.tsbuildinfo",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ --check",
