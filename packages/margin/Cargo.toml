@@ -8,6 +8,7 @@ edition = "2021"
 wasm-opt = false
 
 [lib]
+path = "src/wasm/lib.rs"
 crate-type = ["cdylib", "rlib"]
 doctest = false
 

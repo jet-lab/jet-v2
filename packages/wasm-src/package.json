@@ -1,8 +1,0 @@
-{
-  "name": "wasm-src",
-  "version": "0.1.0",
-  "scripts": {
-    "build": "wasm-pack build --target bundler --release . --out-dir ../wasm && yarn cleanup",
-    "cleanup": "./rename.sh"
-  }
-}

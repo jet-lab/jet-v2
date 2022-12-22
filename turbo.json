@@ -13,16 +13,13 @@
       "cache": false
     },
     "@jet-lab/margin#build": {
-      "dependsOn": ["^build", "wasm-src#build"]
+      "dependsOn": ["^build"]
     },
     "@jet-lab/store#build": {
       "dependsOn": ["^build", "@jet-lab/margin#build"]
     },
     "app": {
       "dependsOn": ["^build", "fmt"]
-    },
-    "wasm-src": {
-      "dependsOn": ["^build"]
     }
   }
 }
