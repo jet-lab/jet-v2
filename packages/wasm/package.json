@@ -9,5 +9,16 @@
   ],
   "module": "jet_lab_wasm_src.js",
   "types": "jet_lab_wasm_src.d.ts",
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@solana/buffer-layout": "^4.0.0",
+    "@jet-lab/wasm": "*",
+    "assert": "^2.0.0",
+    "@solana/spl-token": "0.3.6",
+    "@pythnetwork/client": "^2.7.0",
+    "@project-serum/anchor": "0.24.2",
+    "@solana/web3.js": "1.66.2",
+    "axios": "^0.27.2",
+    "bs58": "^5.0.0"
+  }
 }

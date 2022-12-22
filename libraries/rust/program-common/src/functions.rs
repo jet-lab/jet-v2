@@ -1,5 +1,6 @@
 use crate::number::*;
 
+
 /// Computes the Taylor expansion of exp(x) - 1, using the
 /// indicated number of terms.
 /// For example,

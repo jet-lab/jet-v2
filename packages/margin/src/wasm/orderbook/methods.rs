@@ -1,48 +1,11 @@
 use std::ops::Div;
 
 use jet_program_common::Fp32;
-use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
 use super::{
-    critbit::Slab,
     interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl},
-    types::Order,
 };
-
-/// Converts a buffer from an orderbook side into an array of orders on the book
-///
-/// Params:
-///
-/// `slab_bytes`: a `UInt8Array` from the AccountInfo data
-#[wasm_bindgen]
-pub fn get_orders_from_slab(slab_bytes: &[u8]) -> Array {
-    let buf = &mut slab_bytes.to_owned();
-    let buf_clone = &mut slab_bytes.to_owned();
-
-    let slab = Slab::from_buffer_unchecked(buf).unwrap();
-    let slab_clone = Slab::from_buffer_unchecked(buf_clone).unwrap();
-
-    Array::from_iter(
-        slab_clone
-            .into_iter(true)
-            .map(|leaf| {
-                let handle = slab.find_by_key(leaf.key).unwrap();
-                let callback = slab.get_callback_info(handle);
-                Order {
-                    owner: Uint8Array::from(&callback.owner[..]),
-                    order_tag: Uint8Array::from(&callback.order_tag[..]),
-                    base_size: leaf.base_quantity,
-                    quote_size: Fp32::upcast_fp32(leaf.price())
-                        .decimal_u64_mul(leaf.base_quantity)
-                        .unwrap(),
-                    limit_price: leaf.price(),
-                    order_id: Uint8Array::from(&leaf.key.to_le_bytes()[..]),
-                }
-            })
-            .map(JsValue::from),
-    )
-}
 
 /// Given some bytes, reconstruct the u128 order_id and pass it back as a string
 #[wasm_bindgen]

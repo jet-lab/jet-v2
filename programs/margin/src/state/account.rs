@@ -186,7 +186,7 @@ impl MarginAccount {
         max_staleness: u64,
         approvals: &[Approver],
     ) -> AnchorResult<AccountPositionKey> {
-        if !self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
+        if !self.is_liquidating() && self.position_list().length.as_u64() >= MAX_USER_POSITIONS {
             return err!(ErrorCode::MaxPositions);
         }
 
@@ -270,7 +270,7 @@ impl MarginAccount {
     /// slightly slower if you have the wrong key
     pub fn get_position_by_key(&self, key: &AccountPositionKey) -> Option<&AccountPosition> {
         let list = self.position_list();
-        let position = &list.positions[key.index];
+        let position = &list.positions[key.index.as_usize()];
 
         if position.token == key.mint {
             Some(position)
@@ -286,10 +286,10 @@ impl MarginAccount {
         key: &AccountPositionKey,
     ) -> Option<&mut AccountPosition> {
         let list = self.position_list_mut();
-        let position = &list.positions[key.index];
+        let position = &list.positions[key.index.as_usize()];
 
         if position.token == key.mint {
-            Some(&mut list.positions[key.index])
+            Some(&mut list.positions[key.index.as_usize()])
         } else {
             list.get_mut(&key.mint)
         }
