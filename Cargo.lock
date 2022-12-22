@@ -2256,6 +2256,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "console_error_panic_hook",
  "jet-program-common",
  "js-sys",
  "rand_chacha 0.3.1",
