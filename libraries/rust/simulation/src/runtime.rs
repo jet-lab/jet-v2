@@ -216,6 +216,21 @@ fn global_instruction_handler(
 
     let (program_id, accounts, instruction_data) =
         unsafe { solana_sdk::entrypoint::deserialize(&mut memory.as_slice_mut()[0]) };
+
+    for account in &accounts {
+        let signer_text = account.is_signer.then_some("SIGNER").unwrap_or_default();
+        let mut_text = account.is_writable.then_some("MUTABLE").unwrap_or_default();
+
+        log::debug!(
+            "Loaded Account {}: {} lamports, {} bytes, {} {}",
+            account.key,
+            account.lamports(),
+            account.data_len(),
+            mut_text,
+            signer_text
+        );
+    }
+
     let result = program_entrypoint(program_id, &accounts, instruction_data);
     match result {
         Ok(()) => {
@@ -466,28 +481,9 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
         let signature = transaction.signatures[0];
         let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
 
-        for (i, address) in tx.message().account_keys().iter().enumerate() {
-            let account = self.bank.get_account(address).unwrap_or_default();
-            let signer_text = match tx.message().is_signer(i) {
-                true => "SIGNER",
-                _ => "",
-            };
-            let mut_text = match tx.message().is_writable(i) {
-                true => "MUTABLE",
-                _ => "",
-            };
-
-            log::debug!(
-                "Load Account {}: {} lamports, {} bytes, {} {}",
-                address,
-                account.lamports(),
-                account.data().len(),
-                mut_text,
-                signer_text
-            );
-        }
-
         log::info!("processing transaction {}", transaction.signatures[0]);
+        transaction.verify()?;
+
         let sim_result = self.bank.simulate_transaction_unchecked(tx);
 
         match sim_result.result {

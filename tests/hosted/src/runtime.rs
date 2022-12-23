@@ -4,7 +4,6 @@ use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
-use tokio::sync::OnceCell;
 
 use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
 use jet_simulation::TestRuntime;
@@ -135,13 +134,8 @@ async fn localnet_runtime() -> Arc<dyn SolanaRpcClient> {
 }
 
 async fn simulation_runtime() -> Arc<dyn SolanaRpcClient> {
-    SIMULATION
-        .get_or_init(build_simulation_runtime)
-        .await
-        .clone()
+    build_simulation_runtime().await
 }
-
-static SIMULATION: OnceCell<Arc<dyn SolanaRpcClient>> = OnceCell::const_new();
 
 async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
     let _ = env_logger::builder().is_test(false).try_init();
