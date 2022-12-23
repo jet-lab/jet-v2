@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
@@ -445,6 +447,8 @@ fn exec_swap_split<'a, 'b, 'c, 'info>(
     let mut account_index = account_index;
     let dst_ata_opening: u64;
     let dst_ata_closing: u64;
+    let mut bumps = BTreeMap::new();
+    let mut reallocs = BTreeSet::new();
     match route_ident {
         SwapRouteIdentifier::Empty => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
         SwapRouteIdentifier::Spl => {
@@ -468,8 +472,15 @@ fn exec_swap_split<'a, 'b, 'c, 'info>(
             let dst_ata =
                 dst_ata_opt.unwrap_or_else(|| ctx.remaining_accounts.get(account_index).unwrap());
             dst_ata_opening = token::accessor::amount(dst_ata)?;
-            SaberSwapInfo::swap(
-                accounts,
+            let mut accounts = accounts;
+            let accounts = SaberSwapInfo::try_accounts(
+                &saber_stable_swap::id(),
+                &mut accounts,
+                &[],
+                &mut bumps,
+                &mut reallocs,
+            )?;
+            accounts.swap(
                 src_ata,
                 dst_ata,
                 &ctx.accounts.margin_account.to_account_info(),

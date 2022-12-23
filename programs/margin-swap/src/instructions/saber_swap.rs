@@ -15,37 +15,36 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::{BTreeMap, BTreeSet};
-
 use crate::*;
 
 #[derive(Accounts)]
 pub struct SaberSwapInfo<'info> {
     /// CHECK: Validated by Saber
-    pub swap_pool: UncheckedAccount<'info>,
+    pub swap_pool: AccountInfo<'info>,
 
     /// CHECK: Validated by Saber
-    pub authority: UncheckedAccount<'info>,
-
-    /// CHECK: Validated by Saber
-    #[account(mut)]
-    pub vault_into: UncheckedAccount<'info>,
+    pub authority: AccountInfo<'info>,
 
     /// CHECK: Validated by Saber
     #[account(mut)]
-    pub vault_from: UncheckedAccount<'info>,
+    pub vault_into: AccountInfo<'info>,
 
     /// CHECK: Validated by Saber
     #[account(mut)]
-    pub admin_fee_destination: UncheckedAccount<'info>,
+    pub vault_from: AccountInfo<'info>,
+
+    /// CHECK: Validated by Saber
+    #[account(mut)]
+    pub admin_fee_destination: AccountInfo<'info>,
 
     /// The address of the swap program
     pub swap_program: Program<'info, saber_stable_swap::StableSwap>,
 }
 
 impl<'info> SaberSwapInfo<'info> {
+    #[inline(never)]
     pub fn swap(
-        accounts: &[AccountInfo<'info>],
+        &self,
         source: &AccountInfo<'info>,
         target: &AccountInfo<'info>,
         authority: &AccountInfo<'info>,
@@ -53,36 +52,25 @@ impl<'info> SaberSwapInfo<'info> {
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
-        let mut accounts = accounts;
-        let mut bumps = BTreeMap::new();
-        let mut reallocs = BTreeSet::new();
-        let accounts = SaberSwapInfo::try_accounts(
-            &saber_stable_swap::id(),
-            &mut accounts,
-            &[],
-            &mut bumps,
-            &mut reallocs,
-        )?;
-
         let swap_context = CpiContext::new(
             token_program.to_account_info(),
             saber_stable_swap::Swap {
                 user: saber_stable_swap::SwapUserContext {
                     token_program: token_program.to_account_info(),
-                    swap_authority: accounts.authority.to_account_info(),
+                    swap_authority: self.authority.to_account_info(),
                     user_authority: authority.to_account_info(),
-                    swap: accounts.swap_pool.to_account_info(),
+                    swap: self.swap_pool.to_account_info(),
                 },
                 input: saber_stable_swap::SwapToken {
                     user: source.to_account_info(),
-                    reserve: accounts.vault_into.to_account_info(),
+                    reserve: self.vault_into.to_account_info(),
                 },
                 output: saber_stable_swap::SwapOutput {
                     user_token: saber_stable_swap::SwapToken {
                         user: target.to_account_info(),
-                        reserve: accounts.vault_from.to_account_info(),
+                        reserve: self.vault_from.to_account_info(),
                     },
-                    fees: accounts.admin_fee_destination.to_account_info(),
+                    fees: self.admin_fee_destination.to_account_info(),
                 },
             },
         );
