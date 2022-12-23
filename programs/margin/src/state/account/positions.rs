@@ -369,14 +369,10 @@ impl AccountPositionList {
             index: index as u64,
         };
 
-        let length =
-            &mut usize::try_from(self.length).map_err(|_| error!(ErrorCode::IndexOverflows))?;
-        self.map[*length] = key;
-
-        *length = length
-            .checked_add(1)
-            .ok_or_else(|| error!(ErrorCode::IndexOverflows))?;
-        self.map[..*length].sort_by_key(|p| p.mint);
+        let max_index = usize::try_from(self.length).unwrap();
+        self.map[max_index] = key;
+        self.map[..max_index + 1].sort_by_key(|p| p.mint);
+        self.length += 1;
 
         // mark position as not free
         free_position.token = mint;
@@ -397,37 +393,31 @@ impl AccountPositionList {
             .ok_or(ErrorCode::PositionNotRegistered)?;
         // Get the map whose position to remove
         let map = self.map[map_index];
-        let data_index =
-            usize::try_from(map.index).map_err(|_| error!(ErrorCode::IndexOverflows))?;
+        let position_index = usize::try_from(map.index).unwrap();
         // Take a copy of the position to be removed
-        let position = self.positions[data_index];
+        let position = self.positions[position_index];
         // Check that the position is correct
         if &position.address != account {
             return err!(ErrorCode::PositionNotRegistered);
         }
 
         // Remove the position
-        self.positions[data_index] = Zeroable::zeroed();
+        self.positions[position_index] = Zeroable::zeroed();
 
         // Move the map elements up by 1 to replace map position being removed
-        let length =
-            &mut usize::try_from(self.length).map_err(|_| error!(ErrorCode::IndexOverflows))?;
+        let length = usize::try_from(self.length).unwrap();
+        self.map.copy_within(map_index + 1..length, map_index);
 
-        self.map.copy_within(map_index + 1..*length, map_index);
-
-        *length = length
-            .checked_sub(1)
-            .ok_or_else(|| error!(ErrorCode::IndexOverflows))?;
         // Clear the map at the last slot of the array, as it is shifted up
-        self.map[*length].mint = Pubkey::default();
-        self.map[*length].index = 0;
+        self.map[length - 1].mint = Pubkey::default();
+        self.map[length - 1].index = 0;
+        self.length -= 1;
 
         Ok(position)
     }
 
     pub fn get(&self, mint: &Pubkey) -> Option<&AccountPosition> {
         let key = self.get_key(mint)?;
-        // TODO: Propagate ErrorCode::IndexOverflows
         let position = &self.positions[usize::try_from(key.index).unwrap()];
 
         Some(position)
@@ -435,7 +425,6 @@ impl AccountPositionList {
 
     pub fn get_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
         let key = self.get_key(mint)?;
-        // TODO: Propagate ErrorCode::IndexOverflows
         let position = &mut self.positions[usize::try_from(key.index).unwrap()];
 
         Some(position)

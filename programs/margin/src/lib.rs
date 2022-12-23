@@ -569,9 +569,6 @@ pub enum ErrorCode {
     #[msg("dependencies are not satisfied to auto-register a required but unregistered position")]
     PositionNotRegisterable,
 
-    #[msg("index out of bounds for usize")]
-    IndexOverflows,
-
     /// 141020 - The adapter providing a position change is not authorized for this asset
     #[msg("wrong adapter to modify the position")]
     InvalidPositionAdapter = 135_020,
