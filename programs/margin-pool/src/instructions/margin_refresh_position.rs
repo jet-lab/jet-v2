@@ -50,6 +50,11 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
         }
     };
 
+    // This is safe as pool.calculate_prices will check the price's validity,
+    // while this price is used after that check. The margin program will also
+    // check the price.
+    let price = token_oracle.get_price_unchecked();
+
     let prices = pool.calculate_prices(&token_oracle)?;
 
     // Tell the margin program what the current prices are
@@ -60,8 +65,8 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
                 (
                     pool.deposit_note_mint,
                     vec![PositionChange::Price(PriceChangeInfo {
-                        publish_time: token_oracle.publish_time,
-                        exponent: token_oracle.expo,
+                        publish_time: price.publish_time,
+                        exponent: price.expo,
                         value: prices.deposit_note_price,
                         confidence: prices.deposit_note_conf,
                         twap: prices.deposit_note_twap,
@@ -70,8 +75,8 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
                 (
                     pool.loan_note_mint,
                     vec![PositionChange::Price(PriceChangeInfo {
-                        publish_time: token_oracle.publish_time,
-                        exponent: token_oracle.expo,
+                        publish_time: price.publish_time,
+                        exponent: price.expo,
                         value: prices.loan_note_price,
                         confidence: prices.loan_note_conf,
                         twap: prices.loan_note_twap,

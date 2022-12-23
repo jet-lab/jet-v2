@@ -55,21 +55,16 @@ pub fn refresh_deposit_position_handler(ctx: Context<RefreshDepositPosition>) ->
                 }
             };
 
-            let price_obj = price_feed.get_current_price().ok_or_else(|| {
-                msg!("current pyth price is invalid");
-                ErrorCode::InvalidOracle
-            })?;
-            let ema_obj = price_feed.get_ema_price().ok_or_else(|| {
-                msg!("current pyth ema price is invalid");
-                ErrorCode::InvalidOracle
-            })?;
+            // Price will be checked by the margin program
+            let price_obj = price_feed.get_price_unchecked();
+            let ema_obj = price_feed.get_ema_price_unchecked();
 
             let price_info = PriceChangeInfo {
                 value: price_obj.price,
                 confidence: price_obj.conf,
                 twap: ema_obj.price,
                 exponent: price_obj.expo,
-                publish_time: price_feed.publish_time,
+                publish_time: price_obj.publish_time,
             };
 
             let position = margin_account.get_position_mut(&config.mint).unwrap();
