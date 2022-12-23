@@ -271,6 +271,7 @@ impl MarginAccount {
     /// slightly slower if you have the wrong key
     pub fn get_position_by_key(&self, key: &AccountPositionKey) -> Option<&AccountPosition> {
         let list = self.position_list();
+        // TODO: Propagate ErrorCode::IndexOverflows
         let position = &list.positions[usize::try_from(key.index).unwrap()];
 
         if position.token == key.mint {
@@ -287,10 +288,12 @@ impl MarginAccount {
         key: &AccountPositionKey,
     ) -> Option<&mut AccountPosition> {
         let list = self.position_list_mut();
-        let position = &list.positions[usize::try_from(key.index).unwrap()];
+        // TODO: Propagate ErrorCode::IndexOverflows
+        let key_index = usize::try_from(key.index).unwrap();
+        let position = &list.positions[key_index];
 
         if position.token == key.mint {
-            Some(&mut list.positions[usize::try_from(key.index).unwrap()])
+            Some(&mut list.positions[key_index])
         } else {
             list.get_mut(&key.mint)
         }
