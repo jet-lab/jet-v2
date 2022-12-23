@@ -15,7 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{collections::{BTreeMap, BTreeSet}, slice::Iter};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    slice::Iter,
+};
 
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
@@ -216,7 +219,8 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
                     next_account_info(&mut remaining_accounts)?.to_account_info(),
                 ];
 
-                let source_pool_dep_note = next_account_info(&mut remaining_accounts)?.to_account_info();
+                let source_pool_dep_note =
+                    next_account_info(&mut remaining_accounts)?.to_account_info();
 
                 (source_pool_accounts, source_ata, source_pool_dep_note)
             }
@@ -397,7 +401,7 @@ fn exec_swap_split<'info>(
             let dst_ata =
                 dst_ata_opt.unwrap_or_else(|| next_account_info(remaining_accounts).unwrap());
             dst_ata_opening = token::accessor::amount(dst_ata)?;
-            
+
             swap_accounts.swap(
                 src_ata,
                 dst_ata,
@@ -421,7 +425,7 @@ fn exec_swap_split<'info>(
             let dst_ata =
                 dst_ata_opt.unwrap_or_else(|| next_account_info(remaining_accounts).unwrap());
             dst_ata_opening = token::accessor::amount(dst_ata)?;
-            
+
             swap_accounts.swap(
                 src_ata,
                 dst_ata,

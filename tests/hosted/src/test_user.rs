@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use jet_margin_sdk::cat;
+use jet_margin_sdk::ix_builder::MarginSwapRouteIxBuilder;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
 use solana_sdk::pubkey::Pubkey;
@@ -126,31 +127,18 @@ impl TestUser {
         change: TokenChange,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
-        let transit_src = self
-            .ctx
-            .tokens
-            .create_account(src, self.user.address())
-            .await?;
-        let transit_dst = self
-            .ctx
-            .tokens
-            .create_account(dst, self.user.address())
-            .await?;
-        // TODO: replace with route_swap
-        // self.user
-        //     .route_swap(
-        //         &orca_swap_v2::id(),
-        //         src,
-        //         dst,
-        //         &transit_src,
-        //         &transit_dst,
-        //         pool,
-        //         change,
-        //         1, // at least 1 token back
-        //     )
-        //     .await
+        let mut swap_builder = MarginSwapRouteIxBuilder::new(
+            *self.user.address(),
+            *src,
+            *dst,
+            change,
+            1, // at least 1 token back
+        );
+        swap_builder.add_swap_route(pool, src, 0)?;
+        swap_builder.finalize()?;
+        self.user.route_swap(&swap_builder, &[]).await?;
 
-        anyhow::bail!("To be replaced with route_swap")
+        Ok(())
     }
 
     pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<()> {

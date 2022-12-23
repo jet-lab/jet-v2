@@ -118,7 +118,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     })
 }
 
-#[cfg(reature = "localnet")]
+#[cfg(feature = "localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_swap() -> Result<(), anyhow::Error> {
