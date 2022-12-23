@@ -15,17 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{collections::{BTreeMap, BTreeSet}, slice::Iter};
 
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
 
 use crate::*;
-
-/// Number of accounts used for `swap` via an spl-swap program
-const SPL_SWAP_ACC_LEN: usize = 7;
-/// Number of accounts used for `saber_swap` via the Saber program
-const SABER_SWAP_ACC_LEN: usize = 6;
 
 #[derive(Accounts)]
 pub struct RouteSwap<'info> {
@@ -178,7 +173,8 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         return err!(crate::ErrorCode::NoSwapTokensWithdrawn);
     }
 
-    let mut account_index = 0;
+    // let mut account_index = 0;
+    let mut remaining_accounts = ctx.remaining_accounts.iter();
 
     // Iterate through all the valid swap legs and execute the swaps
     for (leg, route) in swap_routes.iter().enumerate().take(valid_swaps) {
@@ -211,17 +207,16 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
             _ => {
                 // Not the first leg
 
-                let source_ata = ctx.remaining_accounts[account_index].to_account_info();
+                let source_ata = next_account_info(&mut remaining_accounts)?.to_account_info();
 
+                // More convenient than next_account_infos(_, 3) as we want an array
                 let source_pool_accounts = [
-                    ctx.remaining_accounts[account_index + 1].to_account_info(),
-                    ctx.remaining_accounts[account_index + 2].to_account_info(),
-                    ctx.remaining_accounts[account_index + 3].to_account_info(),
+                    next_account_info(&mut remaining_accounts)?.to_account_info(),
+                    next_account_info(&mut remaining_accounts)?.to_account_info(),
+                    next_account_info(&mut remaining_accounts)?.to_account_info(),
                 ];
 
-                let source_pool_dep_note =
-                    ctx.remaining_accounts[account_index + 4].to_account_info();
-                account_index += 5;
+                let source_pool_dep_note = next_account_info(&mut remaining_accounts)?.to_account_info();
 
                 (source_pool_accounts, source_ata, source_pool_dep_note)
             }
@@ -232,17 +227,16 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         } else {
             None
         };
-        let (new_account_index, amount_in) = exec_swap(
+        let amount_in = exec_swap(
             &ctx,
             route,
             &source_pool_accounts,
             &src_transit,
             dst_transit,
             &source_pool_dep_note,
+            &mut remaining_accounts,
             swap_amount_in,
-            account_index,
         )?;
-        account_index = new_account_index;
         swap_amount_in = amount_in;
     }
 
@@ -300,10 +294,9 @@ fn exec_swap<'a, 'b, 'c, 'info>(
     src_ata: &AccountInfo<'info>,
     dst_ata_opt: Option<&AccountInfo<'info>>,
     source_pool_dep_note: &AccountInfo<'info>,
+    remaining_accounts: &mut Iter<AccountInfo<'info>>,
     swap_amount_in: u64,
-    acc_ix: usize,
-) -> Result<(usize, u64)> {
-    let mut acc_ix = acc_ix;
+) -> Result<u64> {
     // CHECK: The token program will withdraw from this account, and will check
     // that the type and authority are correct.
     let src_ata_opening = token::accessor::amount(src_ata)?;
@@ -320,15 +313,15 @@ fn exec_swap<'a, 'b, 'c, 'info>(
     };
 
     // Get the ATA opening and closing balances
-    let (new_acc_ix, dst_ata_opening, mut dst_ata_closing) = exec_swap_split(
-        ctx,
+    let (dst_ata_opening, mut dst_ata_closing) = exec_swap_split(
+        &ctx.accounts.margin_account.to_account_info(),
+        &ctx.accounts.token_program,
         &route.route_a,
         src_ata,
         dst_ata_opt,
+        remaining_accounts,
         curr_swap_in,
-        acc_ix,
     )?;
-    acc_ix = new_acc_ix;
 
     // Handle the next leg
     if route.split > 0 {
@@ -336,15 +329,15 @@ fn exec_swap<'a, 'b, 'c, 'info>(
         let curr_swap_in = swap_amount_in.checked_sub(curr_swap_in).unwrap();
         assert!(curr_swap_in > 0);
 
-        let (new_acc_ix, _, closing) = exec_swap_split(
-            ctx,
+        let (_, closing) = exec_swap_split(
+            &ctx.accounts.margin_account.to_account_info(),
+            &ctx.accounts.token_program,
             &route.route_a,
             src_ata,
             dst_ata_opt,
+            remaining_accounts,
             curr_swap_in,
-            acc_ix,
         )?;
-        acc_ix = new_acc_ix;
         // overwrite the dst_ata_closing with its latest balance
         dst_ata_closing = closing;
     }
@@ -369,50 +362,47 @@ fn exec_swap<'a, 'b, 'c, 'info>(
         )?;
     }
 
-    Ok((acc_ix, total_swap_output))
+    Ok(total_swap_output)
 }
 
 /// Execute the route leg and return the opening and closing balance of the ATA used
 #[inline]
-fn exec_swap_split<'a, 'b, 'c, 'info>(
-    ctx: &Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+fn exec_swap_split<'info>(
+    authority: &AccountInfo<'info>,
+    token_program: &AccountInfo<'info>,
     route_ident: &SwapRouteIdentifier,
     src_ata: &AccountInfo<'info>,
     dst_ata_opt: Option<&AccountInfo<'info>>,
+    remaining_accounts: &mut Iter<AccountInfo<'info>>,
     swap_amount_in: u64,
-    account_index: usize,
-) -> Result<(usize, u64, u64)> {
-    let mut account_index = account_index;
+) -> Result<(u64, u64)> {
     let dst_ata_opening: u64;
     let dst_ata_closing: u64;
     let mut bumps = BTreeMap::new();
     let mut reallocs = BTreeSet::new();
+    let mut accounts = remaining_accounts.as_slice();
     match route_ident {
         SwapRouteIdentifier::Empty => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
         SwapRouteIdentifier::Spl => {
-            // Will panic if exceeds bounds, which would mean that incorrect accounts are supplied
-            let accounts = &ctx.remaining_accounts[account_index..account_index + SPL_SWAP_ACC_LEN];
-            account_index += SPL_SWAP_ACC_LEN;
-            // We don't need to check the destination balance on this leg
-            let dst_ata =
-                dst_ata_opt.unwrap_or_else(|| ctx.remaining_accounts.get(account_index).unwrap());
-            dst_ata_opening = token::accessor::amount(dst_ata)?;
-            // As we can support multiple SPL Token swap programs, we can't know
-            // the program ID statically. We rely on it being last in the accounts.
-            let program_id = accounts.last().unwrap().key();
-            let mut accounts = accounts;
-            let accounts = SplSwapInfo::try_accounts(
-                &program_id,
+            let swap_accounts = SplSwapInfo::try_accounts(
+                // &program_id,
+                // TODO: how can we get the program_id?
+                &Pubkey::default(),
                 &mut accounts,
                 &[],
                 &mut bumps,
                 &mut reallocs,
             )?;
-            accounts.swap(
+            // We don't need to check the destination balance on this leg
+            let dst_ata =
+                dst_ata_opt.unwrap_or_else(|| next_account_info(remaining_accounts).unwrap());
+            dst_ata_opening = token::accessor::amount(dst_ata)?;
+            
+            swap_accounts.swap(
                 src_ata,
                 dst_ata,
-                &ctx.accounts.margin_account.to_account_info(),
-                &ctx.accounts.token_program,
+                &authority.to_account_info(),
+                token_program,
                 swap_amount_in,
                 0,
             )?;
@@ -420,26 +410,23 @@ fn exec_swap_split<'a, 'b, 'c, 'info>(
         }
         SwapRouteIdentifier::Whirlpool => todo!(),
         SwapRouteIdentifier::SaberStable => {
-            let accounts =
-                &ctx.remaining_accounts[account_index..account_index + SABER_SWAP_ACC_LEN];
-            account_index += SABER_SWAP_ACC_LEN;
-            // We don't need to check the destination balance on this leg
-            let dst_ata =
-                dst_ata_opt.unwrap_or_else(|| ctx.remaining_accounts.get(account_index).unwrap());
-            dst_ata_opening = token::accessor::amount(dst_ata)?;
-            let mut accounts = accounts;
-            let accounts = SaberSwapInfo::try_accounts(
+            let swap_accounts = SaberSwapInfo::try_accounts(
                 &saber_stable_swap::id(),
                 &mut accounts,
                 &[],
                 &mut bumps,
                 &mut reallocs,
             )?;
-            accounts.swap(
+            // We don't need to check the destination balance on this leg
+            let dst_ata =
+                dst_ata_opt.unwrap_or_else(|| next_account_info(remaining_accounts).unwrap());
+            dst_ata_opening = token::accessor::amount(dst_ata)?;
+            
+            swap_accounts.swap(
                 src_ata,
                 dst_ata,
-                &ctx.accounts.margin_account.to_account_info(),
-                &ctx.accounts.token_program,
+                &authority.to_account_info(),
+                token_program,
                 swap_amount_in,
                 0,
             )?;
@@ -447,5 +434,5 @@ fn exec_swap_split<'a, 'b, 'c, 'info>(
         }
     };
 
-    Ok((account_index, dst_ata_opening, dst_ata_closing))
+    Ok((dst_ata_opening, dst_ata_closing))
 }
