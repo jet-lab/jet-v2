@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::convert::TryFrom;
 use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
+use std::convert::TryFrom;
 
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};

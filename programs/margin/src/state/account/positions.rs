@@ -403,8 +403,10 @@ impl AccountPositionList {
         self.positions[usize::try_from(map.index).unwrap()] = Zeroable::zeroed();
 
         // Move the map elements up by 1 to replace map position being removed
-        self.map
-            .copy_within(map_index + 1..usize::try_from(self.length).unwrap(), map_index);
+        self.map.copy_within(
+            map_index + 1..usize::try_from(self.length).unwrap(),
+            map_index,
+        );
 
         self.length -= 1;
         // Clear the map at the last slot of the array, as it is shifted up
