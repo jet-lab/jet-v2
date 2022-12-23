@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::convert::TryFrom;
 use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
 
@@ -186,7 +187,7 @@ impl MarginAccount {
         max_staleness: u64,
         approvals: &[Approver],
     ) -> AnchorResult<AccountPositionKey> {
-        if !self.is_liquidating() && self.position_list().length.as_u64() >= MAX_USER_POSITIONS {
+        if !self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
             return err!(ErrorCode::MaxPositions);
         }
 
@@ -270,7 +271,7 @@ impl MarginAccount {
     /// slightly slower if you have the wrong key
     pub fn get_position_by_key(&self, key: &AccountPositionKey) -> Option<&AccountPosition> {
         let list = self.position_list();
-        let position = &list.positions[key.index.as_usize()];
+        let position = &list.positions[usize::try_from(key.index).unwrap()];
 
         if position.token == key.mint {
             Some(position)
@@ -286,10 +287,10 @@ impl MarginAccount {
         key: &AccountPositionKey,
     ) -> Option<&mut AccountPosition> {
         let list = self.position_list_mut();
-        let position = &list.positions[key.index.as_usize()];
+        let position = &list.positions[usize::try_from(key.index).unwrap()];
 
         if position.token == key.mint {
-            Some(&mut list.positions[key.index.as_usize()])
+            Some(&mut list.positions[usize::try_from(key.index).unwrap()])
         } else {
             list.get_mut(&key.mint)
         }

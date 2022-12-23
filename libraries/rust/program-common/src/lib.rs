@@ -5,8 +5,6 @@ mod number_128;
 
 pub mod traits;
 
-pub mod index_value;
-
 #[doc(inline)]
 pub use functions::*;
 
