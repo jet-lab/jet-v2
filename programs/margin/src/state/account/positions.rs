@@ -375,7 +375,7 @@ impl AccountPositionList {
 
         *length = length
             .checked_add(1)
-            .ok_or(error!(ErrorCode::IndexOverflows))?;
+            .ok_or_else(|| error!(ErrorCode::IndexOverflows))?;
         self.map[..*length].sort_by_key(|p| p.mint);
 
         // mark position as not free
@@ -417,7 +417,7 @@ impl AccountPositionList {
 
         *length = length
             .checked_sub(1)
-            .ok_or(error!(ErrorCode::IndexOverflows))?;
+            .ok_or_else(|| error!(ErrorCode::IndexOverflows))?;
         // Clear the map at the last slot of the array, as it is shifted up
         self.map[*length].mint = Pubkey::default();
         self.map[*length].index = 0;
