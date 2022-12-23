@@ -1,8 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_margin::{
-    AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo, MAX_ORACLE_STALENESS,
-};
+use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo};
 
 use crate::{
     control::{events::PositionRefreshed, state::Market},
@@ -84,16 +82,9 @@ fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
         msg!("oracle error in account {}: {:?}", oracle_info.key, e);
         error!(FixedTermErrorCode::OracleError)
     })?;
-    // Required post pyth-sdk 0.6.1.
-    // See https://github.com/pyth-network/pyth-sdk-rs/commit/4f4f8c79efcee6402a94dd81a0aa1750a1a12297
-    let clock = Clock::get()?;
-    let max_staleness = MAX_ORACLE_STALENESS as u64;
-    let price = oracle
-        .get_price_no_older_than(clock.unix_timestamp, max_staleness)
-        .ok_or(FixedTermErrorCode::PriceMissing)?;
-    let ema_price = oracle
-        .get_ema_price_no_older_than(clock.unix_timestamp, max_staleness)
-        .ok_or(FixedTermErrorCode::PriceMissing)?;
+    // Price will be checked by the margin program
+    let price = oracle.get_price_unchecked();
+    let ema_price = oracle.get_price_unchecked();
     Ok(PositionChange::Price(PriceChangeInfo {
         publish_time: price.publish_time,
         exponent: price.expo,

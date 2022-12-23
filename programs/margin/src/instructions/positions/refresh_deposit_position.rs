@@ -18,9 +18,7 @@
 use anchor_lang::prelude::*;
 use std::convert::TryInto;
 
-use crate::{
-    ErrorCode, MarginAccount, PriceChangeInfo, TokenConfig, TokenOracle, MAX_ORACLE_STALENESS,
-};
+use crate::{ErrorCode, MarginAccount, PriceChangeInfo, TokenConfig, TokenOracle};
 
 #[derive(Accounts)]
 pub struct RefreshDepositPosition<'info> {
@@ -57,22 +55,9 @@ pub fn refresh_deposit_position_handler(ctx: Context<RefreshDepositPosition>) ->
                 }
             };
 
-            // Required post pyth-sdk 0.6.1.
-            // See https://github.com/pyth-network/pyth-sdk-rs/commit/4f4f8c79efcee6402a94dd81a0aa1750a1a12297
-            let clock = Clock::get()?;
-
-            let price_obj = price_feed
-                .get_price_no_older_than(clock.unix_timestamp, MAX_ORACLE_STALENESS as u64)
-                .ok_or_else(|| {
-                    msg!("current pyth price is invalid");
-                    ErrorCode::InvalidOracle
-                })?;
-            let ema_obj = price_feed
-                .get_ema_price_no_older_than(clock.unix_timestamp, MAX_ORACLE_STALENESS as u64)
-                .ok_or_else(|| {
-                    msg!("current pyth ema price is invalid");
-                    ErrorCode::InvalidOracle
-                })?;
+            // Price will be checked by the margin program
+            let price_obj = price_feed.get_price_unchecked();
+            let ema_obj = price_feed.get_ema_price_unchecked();
 
             let price_info = PriceChangeInfo {
                 value: price_obj.price,

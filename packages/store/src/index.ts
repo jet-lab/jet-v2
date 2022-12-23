@@ -1,2 +1,2 @@
 export { useOrdersForUser } from './api';
-export { type FixedOrder, type FixedOrderDetails, type FixedOrderFill } from './types';
+export { type OpenOrders, type OpenOrder, type OpenPositions, type Loan } from './types';

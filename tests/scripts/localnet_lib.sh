@@ -93,7 +93,13 @@ start-oracle() {
 }
 
 start-crank-service() {
-    cargo run --bin jet-fixed-terms-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:=0} &
+    mkdir -p .localnet
+
+    log_filter="jet_margin_sdk=debug"
+    env RUST_LOG=$log_filter cargo run --bin jet-fixed-terms-crank-service -- \
+        --config-path localnet.toml \
+        --log-path .localnet/crank.log \
+        &
 }
 
 resume-validator() {

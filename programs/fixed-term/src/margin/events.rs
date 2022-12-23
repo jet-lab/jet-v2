@@ -1,7 +1,7 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
-use super::state::{Assets, Debt, TermLoanFlags, TermLoanSequenceNumber};
+use super::state::{Assets, Debt, SequenceNumber, TermLoanFlags};
 
 #[event]
 pub struct MarginUserInitialized {
@@ -18,6 +18,7 @@ pub struct OrderPlaced {
     /// The authority placing this order, almost always the margin account
     pub authority: Pubkey,
     pub margin_user: Option<Pubkey>,
+    pub order_tag: u128,
     pub order_type: OrderType,
     pub order_summary: OrderSummary,
     pub limit_price: u64,
@@ -39,7 +40,7 @@ pub enum OrderType {
 pub struct TermLoanCreated {
     pub term_loan: Pubkey,
     pub authority: Pubkey,
-    pub order_id: Option<u128>,
+    pub order_tag: u128,
     pub sequence_number: u64,
     pub market: Pubkey,
     pub maturation_timestamp: i64,
@@ -61,14 +62,29 @@ pub struct TermLoanFulfilled {
     pub term_loan: Pubkey,
     pub orderbook_user: Pubkey,
     pub borrower: Pubkey,
+    pub repayment_amount: u64,
     pub timestamp: i64,
+}
+
+#[event]
+pub struct TermDepositCreated {
+    pub term_deposit: Pubkey,
+    pub authority: Pubkey,
+    pub order_tag: Option<u128>,
+    pub sequence_number: u64,
+    pub market: Pubkey,
+    pub maturation_timestamp: i64,
+    // Quote
+    pub principal: u64,
+    // Base
+    pub amount: u64,
 }
 
 #[event]
 pub struct DebtUpdated {
     pub margin_user: Pubkey,
     pub total_debt: u64,
-    pub next_obligation_to_repay: Option<TermLoanSequenceNumber>,
+    pub next_obligation_to_repay: Option<SequenceNumber>,
     pub outstanding_obligations: u64,
     pub is_past_due: bool,
 }

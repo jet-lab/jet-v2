@@ -19,7 +19,6 @@ use std::cmp::Ordering;
 use std::convert::TryFrom;
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-use jet_margin::MAX_ORACLE_STALENESS;
 use jet_program_common::Number;
 use pyth_sdk_solana::PriceFeed;
 #[cfg(any(test, feature = "cli"))]
@@ -345,14 +344,8 @@ impl MarginPool {
     /// Calculate the prices for the deposit and loan notes, based on
     /// the price of the underlying token.
     pub fn calculate_prices(&self, pyth_price: &PriceFeed) -> Result<PriceResult> {
-        let clock = Clock::get()?;
-        let max_staleness = MAX_ORACLE_STALENESS as u64;
-        let price_obj = pyth_price
-            .get_price_no_older_than(clock.unix_timestamp, max_staleness)
-            .ok_or(ErrorCode::InvalidPoolPrice)?;
-        let ema_obj = pyth_price
-            .get_ema_price_no_older_than(clock.unix_timestamp, max_staleness)
-            .ok_or(ErrorCode::InvalidPoolPrice)?;
+        let price_obj = pyth_price.get_price_unchecked();
+        let ema_obj = pyth_price.get_ema_price_unchecked();
 
         let price_value = Number::from_decimal(price_obj.price, price_obj.expo);
         let conf_value = Number::from_decimal(price_obj.conf, price_obj.expo);

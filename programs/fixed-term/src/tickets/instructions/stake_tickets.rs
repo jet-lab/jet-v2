@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, Burn, Mint, Token, TokenAccount};
-use jet_program_common::traits::SafeAdd;
 
 use crate::{
     control::state::Market,
+    events::TermDepositCreated,
     seeds,
-    tickets::{events::TicketsStaked, state::ClaimTicket},
+    tickets::{events::TicketsStaked, state::TermDeposit},
     FixedTermErrorCode,
 };
 
@@ -14,13 +14,14 @@ use crate::{
 pub struct StakeTicketsParams {
     /// number of tickets to stake
     pub amount: u64,
-    /// uniqueness seed to allow a user to have many `ClaimTicket`s
-    pub ticket_seed: Vec<u8>,
+
+    /// uniqueness seed to allow a user to have many deposits
+    pub seed: Vec<u8>,
 }
 
-/// An instruction to stake held tickets
+/// An instruction to stake held tickets to mark a deposit
 ///
-/// Creates a [ClaimTicket] that is redeemable after the market tenor has passed
+/// Creates a [TermDeposit] that is redeemable after the market tenor has passed
 #[derive(Accounts)]
 #[instruction(params: StakeTicketsParams)]
 pub struct StakeTickets<'info> {
@@ -28,16 +29,16 @@ pub struct StakeTickets<'info> {
     #[account(
         init,
         seeds = [
-            seeds::CLAIM_TICKET,
+            seeds::TERM_DEPOSIT,
             market.key().as_ref(),
             ticket_holder.key.as_ref(),
-            params.ticket_seed.as_slice(),
+            params.seed.as_slice(),
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<ClaimTicket>(),
+        space = 8 + std::mem::size_of::<TermDeposit>(),
     )]
-    pub claim_ticket: Account<'info, ClaimTicket>,
+    pub deposit: Account<'info, TermDeposit>,
 
     /// The Market account tracks fixed term market assets of a particular tenor
     #[account(
@@ -85,19 +86,31 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
         amount,
     )?;
 
-    // Mint a claimable ticket for their burned tokens
-    *ctx.accounts.claim_ticket = ClaimTicket {
+    let matures_at = Clock::get()?.unix_timestamp + ctx.accounts.market.load()?.lend_tenor;
+
+    // Mint a deposit for their burned tokens
+    *ctx.accounts.deposit = TermDeposit {
+        matures_at,
+        sequence_number: 0,
         owner: ctx.accounts.ticket_holder.key(),
         market: ctx.accounts.market.key(),
-        maturation_timestamp: Clock::get()?
-            .unix_timestamp
-            .safe_add(ctx.accounts.market.load()?.lend_tenor)?,
-        redeemable: amount,
+        amount: params.amount,
+        principal: params.amount,
     };
 
     emit!(TicketsStaked {
         market: ctx.accounts.market.key(),
         ticket_holder: ctx.accounts.ticket_holder.key(),
+        amount: params.amount,
+    });
+    emit!(TermDepositCreated {
+        term_deposit: ctx.accounts.deposit.key(),
+        authority: ctx.accounts.ticket_holder.key(),
+        order_tag: None,
+        sequence_number: ctx.accounts.deposit.sequence_number,
+        market: ctx.accounts.deposit.market,
+        maturation_timestamp: matures_at,
+        principal: params.amount,
         amount: params.amount,
     });
 

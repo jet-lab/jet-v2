@@ -16,9 +16,3 @@ pub enum FixedTermMarketIxError {
 }
 
 pub type Result<T> = std::result::Result<T, FixedTermMarketIxError>;
-
-pub(crate) fn client_err(err: impl ToString) -> FixedTermMarketIxError {
-    FixedTermMarketIxError::Client {
-        msg: err.to_string(),
-    }
-}

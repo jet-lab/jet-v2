@@ -4,10 +4,11 @@ use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
+    events::TermDepositCreated,
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
-    tickets::state::SplitTicket,
+    tickets::state::TermDeposit,
     FixedTermErrorCode,
 };
 
@@ -20,7 +21,7 @@ pub struct LendOrder<'info> {
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// where to settle tickets on match:
-    /// - SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled
+    /// - TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled
     /// - ticket token account to receive tickets
     /// be careful to check this properly. one way is by using lender_tickets_token_account
     #[account(mut)]
@@ -60,28 +61,48 @@ impl<'info> LendOrder<'info> {
         &self,
         user: Pubkey,
         seed: &[u8],
+        sequence_number: u64,
         callback_info: CallbackInfo,
         order_summary: &SensibleOrderSummary,
     ) -> Result<u64> {
+        let market = self.orderbook_mut.market.key();
+        let tenor = self.orderbook_mut.market.load()?.lend_tenor;
+
         let staked = if order_summary.base_filled() > 0 {
             if callback_info.flags.contains(CallbackFlags::AUTO_STAKE) {
                 // auto_stake: issue split tickets to the user for immediate fill
-                let mut split_ticket = serialization::init::<SplitTicket>(
+                let mut deposit = serialization::init::<TermDeposit>(
                     self.ticket_settlement.to_account_info(),
                     self.payer.to_account_info(),
                     self.system_program.to_account_info(),
-                    &SplitTicket::make_seeds(user.as_ref(), seed),
+                    &[
+                        crate::seeds::TERM_DEPOSIT,
+                        market.as_ref(),
+                        user.as_ref(),
+                        seed,
+                    ],
                 )?;
                 let timestamp = Clock::get()?.unix_timestamp;
-                *split_ticket = SplitTicket {
+                let maturation_timestamp = timestamp + tenor;
+
+                *deposit = TermDeposit {
+                    market,
+                    sequence_number,
                     owner: user,
-                    market: self.orderbook_mut.market.key(),
-                    order_tag: callback_info.order_tag,
-                    struck_timestamp: timestamp,
-                    maturation_timestamp: timestamp + self.orderbook_mut.market.load()?.lend_tenor,
+                    matures_at: maturation_timestamp,
                     principal: order_summary.quote_filled()?,
-                    interest: order_summary.base_filled() - order_summary.quote_filled()?,
+                    amount: order_summary.base_filled(),
                 };
+                emit!(TermDepositCreated {
+                    term_deposit: deposit.key(),
+                    authority: user,
+                    order_tag: Some(callback_info.order_tag.as_u128()),
+                    sequence_number,
+                    market,
+                    maturation_timestamp,
+                    principal: deposit.principal,
+                    amount: deposit.amount,
+                });
                 order_summary.base_filled()
             } else {
                 // no auto_stake: issue free tickets to the user for immediate fill
@@ -136,6 +157,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
     ctx.accounts.lend(
         ctx.accounts.authority.key(),
         &seed,
+        0,
         callback_info,
         &order_summary,
     )?;
@@ -143,6 +165,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.authority.key(),
         margin_user: None,
+        order_tag: callback_info.order_tag.as_u128(),
         order_summary: order_summary.summary(),
         order_type: crate::events::OrderType::Lend,
         limit_price: params.limit_price,

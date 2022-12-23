@@ -62,23 +62,16 @@ impl Client {
         token_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Result<Self> {
-        let mut ix = FixedTermIxBuilder::new_from_seed(
-            &Pubkey::default(),
-            &mint,
-            seed,
-            signer.pubkey(),
-            token_oracle,
-            ticket_oracle,
-            None,
-        )
-        .with_payer(&signer.pubkey());
         let market = {
-            let data = conn.get_account_data(&ix.market())?;
+            let data = conn.get_account_data(&FixedTermIxBuilder::market_key(
+                &Pubkey::default(),
+                &mint,
+                seed,
+            ))?;
 
             Market::try_deserialize(&mut data.as_slice())?
         };
-
-        ix = ix.with_orderbook_accounts(market.bids, market.asks, market.event_queue);
+        let ix = FixedTermIxBuilder::new_from_state(signer.pubkey(), market);
 
         Ok(Self { conn, ix, signer })
     }
@@ -158,7 +151,7 @@ impl<'a> User<'a> {
         let fund_ticket = self
             .client
             .ix
-            .convert_tokens(self.key(), None, None, ticket_amount)?;
+            .convert_tokens(self.key(), None, None, ticket_amount);
 
         self.send_instructions(&[init_token, init_ticket, fund_token, fund_ticket])?;
         println!("funding success!");
@@ -169,7 +162,7 @@ impl<'a> User<'a> {
         let lend = self
             .client
             .ix
-            .lend_order(self.key(), None, None, params, &[])?;
+            .lend_order(self.key(), None, None, params, &[]);
 
         self.send_instructions(&[lend])
     }
@@ -177,7 +170,7 @@ impl<'a> User<'a> {
         let borrow = self
             .client
             .ix
-            .sell_tickets_order(self.key(), None, None, params)?;
+            .sell_tickets_order(self.key(), None, None, params);
 
         self.send_instructions(&[borrow])
     }

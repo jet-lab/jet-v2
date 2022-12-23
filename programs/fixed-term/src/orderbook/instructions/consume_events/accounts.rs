@@ -9,7 +9,7 @@ use crate::{
     margin::state::{MarginUser, TermLoan},
     orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
-    tickets::state::SplitTicket,
+    tickets::state::TermDeposit,
     FixedTermErrorCode,
 };
 
@@ -61,9 +61,10 @@ pub struct ConsumeEvents<'info> {
 /// for every event that will be processed.
 /// For a fill, 2-6 accounts need to be appended to remaining_accounts
 /// For an out, 1 account needs to be appended to remaining_accounts
+#[allow(clippy::large_enum_variant)]
 pub enum EventAccounts<'info> {
-    Fill(Box<FillAccounts<'info>>),
-    Out(Box<OutAccounts<'info>>),
+    Fill(FillAccounts<'info>),
+    Out(OutAccounts<'info>),
 }
 
 pub struct FillAccounts<'info> {
@@ -76,13 +77,13 @@ pub struct FillAccounts<'info> {
 
 pub enum LoanAccount<'info> {
     /// Use if AUTO_STAKE is set in the maker's callback
-    AutoStake(AnchorAccount<'info, SplitTicket, Mut>), // (ticket, user/owner)
+    AutoStake(AnchorAccount<'info, TermDeposit, Mut>), // (ticket, user/owner)
     /// Use if NEW_DEBT is set in the maker's callback
     NewDebt(AnchorAccount<'info, TermLoan, Mut>), // (term loan, user)
 }
 
 impl<'info> LoanAccount<'info> {
-    pub fn auto_stake(&mut self) -> Result<&mut AnchorAccount<'info, SplitTicket, Mut>> {
+    pub fn auto_stake(&mut self) -> Result<&mut AnchorAccount<'info, TermDeposit, Mut>> {
         match self {
             LoanAccount::AutoStake(split_ticket) => Ok(split_ticket),
             _ => panic!(),
@@ -113,8 +114,8 @@ impl<'info> UserAccount<'info> {
         &self.0
     }
 
-    pub fn margin_user(self) -> Result<Box<AnchorAccount<'info, MarginUser, Mut>>> {
-        Ok(Box::new(AnchorAccount::try_from(self.0)?))
+    pub fn margin_user(&self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
+        AnchorAccount::try_from(self.0.clone())
     }
 
     pub fn pubkey(&self) -> Pubkey {

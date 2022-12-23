@@ -2608,14 +2608,14 @@ export type JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqno",
+            "name": "nextNewTermLoanSeqNo",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqno",
+            "name": "nextUnpaidTermLoanSeqNo",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
@@ -2665,6 +2665,16 @@ export type JetFixedTerm = {
             "docs": [
               "tickets to transfer into settlement account"
             ],
+            "type": "u64"
+          },
+          {
+            "name": "nextNewDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
+            "type": "u64"
+          },
+          {
+            "name": "nextUnreedeemedDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
             "type": "u64"
           },
           {
@@ -3150,6 +3160,11 @@ export type JetFixedTerm = {
           "index": false
         },
         {
+          "name": "orderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
           "name": "orderType",
           "type": {
             "defined": "OrderType"
@@ -3199,10 +3214,8 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
-          "type": {
-            "option": "u128"
-          },
+          "name": "orderTag",
+          "type": "u128",
           "index": false
         },
         {
@@ -3358,7 +3371,7 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         }
@@ -3393,12 +3406,22 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "authority",
+          "name": "makerAuthority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "takerAuthority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "makerOrderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "takerOrderTag",
           "type": "u128",
           "index": false
         },
@@ -3450,7 +3473,7 @@ export type JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         },
@@ -6461,14 +6484,14 @@ export const IDL: JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqno",
+            "name": "nextNewTermLoanSeqNo",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqno",
+            "name": "nextUnpaidTermLoanSeqNo",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
@@ -6518,6 +6541,16 @@ export const IDL: JetFixedTerm = {
             "docs": [
               "tickets to transfer into settlement account"
             ],
+            "type": "u64"
+          },
+          {
+            "name": "nextNewDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
+            "type": "u64"
+          },
+          {
+            "name": "nextUnreedeemedDepositSeqNo",
+            "docs": ["sequence number for new deposits"],
             "type": "u64"
           },
           {
@@ -7003,6 +7036,11 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
+          "name": "orderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
           "name": "orderType",
           "type": {
             "defined": "OrderType"
@@ -7052,10 +7090,8 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
-          "type": {
-            "option": "u128"
-          },
+          "name": "orderTag",
+          "type": "u128",
           "index": false
         },
         {
@@ -7211,7 +7247,7 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         }
@@ -7246,12 +7282,22 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "authority",
+          "name": "makerAuthority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "takerAuthority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "makerOrderTag",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "takerOrderTag",
           "type": "u128",
           "index": false
         },
@@ -7303,7 +7349,7 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
-          "name": "orderId",
+          "name": "orderTag",
           "type": "u128",
           "index": false
         },
