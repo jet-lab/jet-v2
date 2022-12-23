@@ -10,7 +10,7 @@ serde_json = "1"
 clap = { version = "3.2", features = ["derive", "env"] }
 tokio = { version = "1.0", features = ["time", "rt"] }
 
-pyth-sdk-solana = "0.6"
+pyth-sdk-solana = "0.7"
 solana-clap-utils = "1.10"
 solana-cli-config = "1.10"
 solana-client = "1.10"

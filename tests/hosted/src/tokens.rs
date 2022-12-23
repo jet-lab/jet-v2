@@ -209,9 +209,7 @@ impl TokenManager {
             magic: pyth_sdk_solana::state::MAGIC,
             size: std::mem::size_of::<pyth_sdk_solana::Price>() as u32,
             atype: pyth_sdk_solana::state::AccountType::Product as u32,
-            px_acc: pyth_sdk_solana::state::AccKey {
-                val: price_address.to_bytes(),
-            },
+            px_acc: price_address,
             attr: [0u8; pyth_sdk_solana::state::PROD_ATTR_SIZE],
         };
 
@@ -492,7 +490,7 @@ fn default_price() -> pyth_sdk_solana::state::PriceAccount {
         atype: pyth_sdk_solana::state::AccountType::Price as u32,
         size: std::mem::size_of::<pyth_sdk_solana::state::PriceAccount>() as u32,
         expo: -8,
-        next: pyth_sdk_solana::state::AccKey { val: [0u8; 32] },
+        next: Pubkey::default(),
         ptype: pyth_sdk_solana::state::PriceType::Price,
         ..pyth_sdk_solana::state::PriceAccount::zeroed()
     }

@@ -387,7 +387,8 @@ async fn refresh_account_positions(client: &Client, account: &mut MarginAccount)
                 };
 
                 PriceInfo::new_valid(
-                    price_oracle.expo,
+                    // SAFETY: We only need the exponent, which won't change if the price is stale
+                    price_oracle.get_ema_price_unchecked().expo,
                     price_value,
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)

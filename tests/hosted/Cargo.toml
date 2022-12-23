@@ -44,7 +44,7 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
 spl-token = "3.1.0"
 spl-associated-token-account = "1.0"
-pyth-sdk-solana = "0.4"
+pyth-sdk-solana = "0.7"
 
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["no-entrypoint", "testing"] }
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
