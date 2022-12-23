@@ -2069,6 +2069,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "index"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anyhow",
+ "bytemuck",
+ "console_error_panic_hook",
+ "jet-fixed-term",
+ "jet-program-common",
+ "js-sys",
+ "rand_chacha 0.3.1",
+ "serde",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "index_list"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2250,22 +2266,6 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "jet-lab-wasm-src"
-version = "0.1.0"
-dependencies = [
- "agnostic-orderbook",
- "anyhow",
- "bytemuck",
- "console_error_panic_hook",
- "jet-fixed-term",
- "jet-program-common",
- "js-sys",
- "rand_chacha 0.3.1",
- "serde",
- "wasm-bindgen",
 ]
 
 [[package]]

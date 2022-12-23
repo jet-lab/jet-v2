@@ -1,3 +1,0 @@
-#!/bin/bash
-
-cp ../wasm/package.json.definitive ../wasm/package.json

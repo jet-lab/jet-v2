@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "clean": "rm -rf ./dist & rm -rf .turbo & rm -f tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@jet-lab/margin": "*",

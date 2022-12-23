@@ -1,5 +1,5 @@
 [package]
-name = "jet-lab-wasm-src"
+name = "index"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,7 +8,7 @@ edition = "2021"
 wasm-opt = false
 
 [lib]
-path = "src/wasm/lib.rs"
+path = "src/wasm-src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 doctest = false
 
