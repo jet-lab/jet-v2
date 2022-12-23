@@ -4,6 +4,7 @@ use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
+    events::TermDepositCreated,
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
@@ -82,15 +83,26 @@ impl<'info> LendOrder<'info> {
                     ],
                 )?;
                 let timestamp = Clock::get()?.unix_timestamp;
+                let maturation_timestamp = timestamp + tenor;
 
                 *deposit = TermDeposit {
                     market,
                     sequence_number,
                     owner: user,
-                    matures_at: timestamp + tenor,
+                    matures_at: maturation_timestamp,
                     principal: order_summary.quote_filled()?,
                     amount: order_summary.base_filled(),
                 };
+                emit!(TermDepositCreated {
+                    term_deposit: deposit.key(),
+                    authority: user,
+                    order_tag: Some(callback_info.order_tag.as_u128()),
+                    sequence_number,
+                    market,
+                    maturation_timestamp,
+                    principal: deposit.principal,
+                    amount: deposit.amount,
+                });
                 order_summary.base_filled()
             } else {
                 // no auto_stake: issue free tickets to the user for immediate fill

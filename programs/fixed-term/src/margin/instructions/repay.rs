@@ -70,14 +70,13 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
     if term_loan.balance > 0 {
         user.debt
             .partially_repay_term_loan(term_loan.sequence_number, amount)?;
-    } else {
-        emit!(TermLoanFulfilled {
+        emit!(TermLoanRepay {
+            orderbook_user: ctx.accounts.margin_user.key(),
             term_loan: term_loan.key(),
-            orderbook_user: user.key(),
-            borrower: term_loan.margin_user,
-            timestamp: Clock::get()?.unix_timestamp,
+            repayment_amount: amount,
+            final_balance: term_loan.balance,
         });
-
+    } else {
         term_loan.close(ctx.accounts.payer.to_account_info())?;
 
         let user_key = user.key();
@@ -92,14 +91,15 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
             });
         user.debt
             .fully_repay_term_loan(term_loan.sequence_number, amount, next_term_loan)?;
-    }
 
-    emit!(TermLoanRepay {
-        orderbook_user: ctx.accounts.margin_user.key(),
-        term_loan: term_loan.key(),
-        repayment_amount: amount,
-        final_balance: term_loan.balance,
-    });
+        emit!(TermLoanFulfilled {
+            term_loan: term_loan.key(),
+            orderbook_user: user.key(),
+            borrower: term_loan.margin_user,
+            repayment_amount: amount,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+    }
 
     Ok(())
 }

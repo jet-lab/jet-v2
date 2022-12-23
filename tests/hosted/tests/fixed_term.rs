@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use agnostic_orderbook::state::event_queue::EventRef;
 use anyhow::Result;
 use hosted_tests::{
     fixed_term::{
@@ -225,18 +226,13 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // run on validator
     bob.lend_order(c_params, &[1]).await?;
 
-    let split_ticket_c = bob.load_term_deposit(&[1]).await?;
-    dbg!(split_ticket_c);
+    // TODO: assertions
+    let _split_ticket_c = bob.load_term_deposit(&[1]).await?;
 
     assert_eq!(
         bob.tokens().await?,
         STARTING_TOKENS - summary_b.total_quote_qty - summary_c.total_quote_qty
     );
-
-    // order cancelling
-    let order_id = manager.load_orderbook().await?.bids()?[0].key;
-    bob.cancel_order(order_id).await?;
-    assert!(manager.load_orderbook().await?.bids()?.first().is_none());
 
     manager.consume_events().await?;
 
@@ -247,6 +243,24 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         .iter()
         .next()
         .is_none());
+
+    // order cancelling
+    let order = manager.load_orderbook().await?.bids()?[0];
+    bob.cancel_order(order.key).await?;
+
+    let mut eq = manager.load_event_queue().await?;
+    let local_eq = eq.inner()?;
+    let cancel_event = match local_eq.iter().next().unwrap() {
+        EventRef::Out(out) => out,
+        _ => panic!("expected an out event"),
+    };
+
+    manager.consume_events().await?;
+
+    assert!(manager.load_orderbook().await?.bids()?.first().is_none());
+    assert_eq!(order.base_quantity, cancel_event.event.base_size);
+    assert_eq!(cancel_event.callback_info.owner, bob.proxy.pubkey());
+    assert_eq!(cancel_event.event.order_id, order.key);
 
     // test order pausing
     manager.pause_orders().await?;
