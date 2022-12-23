@@ -21,9 +21,9 @@ use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2}
 
 use crate::*;
 
-/// There are 7 accounts for this swap, see [SwapInfo]
+/// Number of accounts used for `swap` via an spl-swap program
 const SPL_SWAP_ACC_LEN: usize = 7;
-/// There are 7 accounts for this swap, see [SaberSwapInfo]
+/// Number of accounts used for `saber_swap` via the Saber program
 const SABER_SWAP_ACC_LEN: usize = 6;
 
 #[derive(Accounts)]
@@ -179,56 +179,6 @@ impl<'info> RouteSwap<'info> {
                 self.token_program.to_account_info(),
             ],
         )?;
-
-        Ok(())
-    }
-
-    #[inline(never)]
-    fn saber_stable_swap(
-        &self,
-        accounts: &[AccountInfo<'info>],
-        source_ata: &AccountInfo<'info>,
-        dst_ata: &AccountInfo<'info>,
-        amount_in: u64,
-        minimum_amount_out: u64,
-    ) -> Result<()> {
-        assert!(accounts.len() >= SABER_SWAP_ACC_LEN);
-        // CHECK: The swap program validates the below accounts
-        let swap_pool = &accounts[0];
-        let authority = &accounts[1];
-        let vault_into = &accounts[2];
-        let vault_from = &accounts[3];
-        let fee_account = &accounts[4];
-
-        let swap_program = &accounts[5];
-
-        // Test that we are using the correct program
-        assert_eq!(swap_program.key(), saber_stable_swap::id());
-
-        let swap_context = CpiContext::new(
-            self.token_program.to_account_info(),
-            saber_stable_swap::Swap {
-                user: saber_stable_swap::SwapUserContext {
-                    token_program: self.token_program.to_account_info(),
-                    swap_authority: authority.to_account_info(),
-                    user_authority: self.margin_account.to_account_info(),
-                    swap: swap_pool.to_account_info(),
-                },
-                input: saber_stable_swap::SwapToken {
-                    user: source_ata.to_account_info(),
-                    reserve: vault_into.to_account_info(),
-                },
-                output: saber_stable_swap::SwapOutput {
-                    user_token: saber_stable_swap::SwapToken {
-                        user: dst_ata.to_account_info(),
-                        reserve: vault_from.to_account_info(),
-                    },
-                    fees: fee_account.to_account_info(),
-                },
-            },
-        );
-
-        saber_stable_swap::swap(swap_context, amount_in, minimum_amount_out)?;
 
         Ok(())
     }
@@ -518,8 +468,15 @@ fn exec_swap_split<'a, 'b, 'c, 'info>(
             let dst_ata =
                 dst_ata_opt.unwrap_or_else(|| ctx.remaining_accounts.get(account_index).unwrap());
             dst_ata_opening = token::accessor::amount(dst_ata)?;
-            ctx.accounts
-                .saber_stable_swap(accounts, src_ata, dst_ata, swap_amount_in, 0)?;
+            SaberSwapInfo::swap(
+                accounts,
+                src_ata,
+                dst_ata,
+                &ctx.accounts.margin_account.to_account_info(),
+                &ctx.accounts.token_program,
+                swap_amount_in,
+                0,
+            )?;
             dst_ata_closing = token::accessor::amount(dst_ata)?;
         }
     };
