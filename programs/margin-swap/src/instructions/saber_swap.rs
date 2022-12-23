@@ -80,8 +80,3 @@ impl<'info> SaberSwapInfo<'info> {
         Ok(())
     }
 }
-
-/// A stub for saber swap, allows Anchor to generate structs for the accounts
-pub fn saber_stable_swap_handler(_ctx: Context<SaberSwapInfo>) -> Result<()> {
-    Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
-}

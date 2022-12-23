@@ -156,7 +156,7 @@ impl SwapAccounts for SplSwapPool {
         };
         let (swap_authority, _) =
             Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
-        let accounts = ix_accounts::SwapInfo {
+        let accounts = ix_accounts::SplSwapInfo {
             swap_pool: self.pool,
             authority: swap_authority,
             vault_into,

@@ -43,25 +43,6 @@ pub const ROUTE_SWAP_MIN_SPLIT: u8 = 100 - ROUTE_SWAP_MAX_SPLIT;
 mod jet_margin_swap {
     use super::*;
 
-    pub fn margin_swap(
-        ctx: Context<MarginSplSwap>,
-        withdrawal_change_kind: ChangeKind,
-        withdrawal_amount: u64,
-        minimum_amount_out: u64,
-    ) -> Result<()> {
-        margin_spl_swap_handler(
-            ctx,
-            withdrawal_change_kind,
-            withdrawal_amount,
-            minimum_amount_out,
-        )
-    }
-
-    /// Swap using Saber for stable pools
-    pub fn saber_stable_swap(ctx: Context<SaberSwapInfo>) -> Result<()> {
-        saber_stable_swap_handler(ctx)
-    }
-
     /// Route a swap to one or more venues
     pub fn route_swap<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
@@ -77,6 +58,15 @@ mod jet_margin_swap {
             minimum_amount_out,
             swap_routes,
         )
+    }
+
+    pub fn spl_token_swap(_ctx: Context<MarginSplSwap>) -> Result<()> {
+        Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
+    }
+
+    /// Swap using Saber for stable pools
+    pub fn saber_stable_swap(_ctx: Context<SaberSwapInfo>) -> Result<()> {
+        Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
     }
 }
 

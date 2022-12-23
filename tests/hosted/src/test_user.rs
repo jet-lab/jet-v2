@@ -10,7 +10,6 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_margin_pool::TokenChange;
-use jet_static_program_registry::orca_swap_v2;
 
 use crate::context::MarginTestContext;
 use crate::margin::MarginUser;
@@ -137,18 +136,21 @@ impl TestUser {
             .tokens
             .create_account(dst, self.user.address())
             .await?;
-        self.user
-            .spl_swap(
-                &orca_swap_v2::id(),
-                src,
-                dst,
-                &transit_src,
-                &transit_dst,
-                pool,
-                change,
-                1, // at least 1 token back
-            )
-            .await
+        // TODO: replace with route_swap
+        // self.user
+        //     .route_swap(
+        //         &orca_swap_v2::id(),
+        //         src,
+        //         dst,
+        //         &transit_src,
+        //         &transit_dst,
+        //         pool,
+        //         change,
+        //         1, // at least 1 token back
+        //     )
+        //     .await
+
+        anyhow::bail!("To be replaced with route_swap")
     }
 
     pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<()> {

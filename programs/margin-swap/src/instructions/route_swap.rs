@@ -19,7 +19,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
-use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 
 use crate::*;
 
@@ -119,67 +118,6 @@ impl<'info> RouteSwap<'info> {
             ),
             change_kind,
             amount,
-        )?;
-
-        Ok(())
-    }
-
-    #[inline(never)]
-    fn spl_swap(
-        &self,
-        accounts: &[AccountInfo<'info>],
-        src_ata: &AccountInfo<'info>,
-        dst_ata: &AccountInfo<'info>,
-        amount_in: u64,
-        minimum_amount_out: u64,
-    ) -> Result<()> {
-        assert!(accounts.len() >= SPL_SWAP_ACC_LEN);
-        // CHECK: The swap program validates the below accounts
-        let swap_pool = &accounts[0];
-        let authority = &accounts[1];
-        let vault_into = &accounts[2];
-        let vault_from = &accounts[3];
-        let token_mint = &accounts[4];
-        let fee_account = &accounts[5];
-
-        // CHECK: The swap program gets validated by use_client! below
-        let swap_program = &accounts[6];
-
-        let swap_ix = use_client!(swap_program.key(), {
-            client::instruction::swap(
-                swap_program.key,
-                self.token_program.key,
-                swap_pool.key,
-                authority.key,
-                &self.margin_account.key(),
-                src_ata.key,
-                vault_into.key,
-                vault_from.key,
-                dst_ata.key,
-                token_mint.key,
-                fee_account.key,
-                None,
-                client::instruction::Swap {
-                    amount_in,
-                    minimum_amount_out,
-                },
-            )?
-        })?;
-
-        invoke(
-            &swap_ix,
-            &[
-                swap_pool.to_account_info(),
-                self.margin_account.to_account_info(),
-                authority.to_account_info(),
-                src_ata.to_account_info(),
-                vault_into.to_account_info(),
-                vault_from.to_account_info(),
-                dst_ata.to_account_info(),
-                token_mint.to_account_info(),
-                fee_account.to_account_info(),
-                self.token_program.to_account_info(),
-            ],
         )?;
 
         Ok(())
@@ -459,8 +397,25 @@ fn exec_swap_split<'a, 'b, 'c, 'info>(
             let dst_ata =
                 dst_ata_opt.unwrap_or_else(|| ctx.remaining_accounts.get(account_index).unwrap());
             dst_ata_opening = token::accessor::amount(dst_ata)?;
-            ctx.accounts
-                .spl_swap(accounts, src_ata, dst_ata, swap_amount_in, 0)?;
+            // As we can support multiple SPL Token swap programs, we can't know
+            // the program ID statically. We rely on it being last in the accounts.
+            let program_id = accounts.last().unwrap().key();
+            let mut accounts = accounts;
+            let accounts = SplSwapInfo::try_accounts(
+                &program_id,
+                &mut accounts,
+                &[],
+                &mut bumps,
+                &mut reallocs,
+            )?;
+            accounts.swap(
+                src_ata,
+                dst_ata,
+                &ctx.accounts.margin_account.to_account_info(),
+                &ctx.accounts.token_program,
+                swap_amount_in,
+                0,
+            )?;
             dst_ata_closing = token::accessor::amount(dst_ata)?;
         }
         SwapRouteIdentifier::Whirlpool => todo!(),
