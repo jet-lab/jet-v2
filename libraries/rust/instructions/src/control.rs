@@ -113,7 +113,7 @@ impl ControlIxBuilder {
 
             margin_pool_program: jet_margin_pool::ID,
             metadata_program: jet_metadata::ID,
-            token_program: anchor_spl::token::ID,
+            token_program: spl_token::ID,
             system_program: system_program::ID,
             rent: solana_sdk::sysvar::rent::ID,
         }

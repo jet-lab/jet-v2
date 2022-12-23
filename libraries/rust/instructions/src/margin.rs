@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_spl::associated_token::{self, get_associated_token_address};
-use jet_margin::seeds::{ADAPTER_CONFIG_SEED, LIQUIDATOR_CONFIG_SEED, TOKEN_CONFIG_SEED};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
@@ -24,10 +22,11 @@ use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
 use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::{system_program, InstructionData};
-use anchor_spl::token::Token;
+use spl_associated_token_account::get_associated_token_address;
 
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
+use jet_margin::seeds::{ADAPTER_CONFIG_SEED, LIQUIDATOR_CONFIG_SEED, TOKEN_CONFIG_SEED};
 use jet_margin::{accounts as ix_account, TokenConfigUpdate};
 
 /// Utility for creating instructions to interact with the margin
@@ -172,7 +171,7 @@ impl MarginIxBuilder {
             position_token_mint,
             metadata,
             token_account,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
             system_program: System::id(),
             rent: Rent::id(),
         };
@@ -204,7 +203,7 @@ impl MarginIxBuilder {
             margin_account: self.address,
             position_token_mint,
             token_account,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         };
 
         Instruction {
@@ -398,7 +397,7 @@ impl MarginIxBuilder {
             mint: token_mint,
             config: config_ix.derive_token_config(&token_mint),
             token_account,
-            associated_token_program: associated_token::ID,
+            associated_token_program: spl_associated_token_account::ID,
             token_program: spl_token::ID,
             system_program: system_program::ID,
             rent: Rent::id(),
