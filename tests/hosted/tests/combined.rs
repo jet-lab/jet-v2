@@ -13,7 +13,6 @@ feature_groups! {
         mod pool_overpayment;
         mod rounding;
         mod sanity;
-        mod spl_swap;
         mod route_swap;
     }
 }

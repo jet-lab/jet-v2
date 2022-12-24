@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "localnet"), allow(unused))]
 
-use std::{collections::HashSet, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use anyhow::Error;
 
 use jet_margin_sdk::{
-    ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder},
+    ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts},
     lookup_tables::LookupTable,
     swap::{saber_swap::SaberSwapPool, spl_swap::SplSwapPool},
     tokens::TokenPrice,
@@ -360,9 +360,186 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     swap_builder.finalize().unwrap();
 
     // Now user A swaps their USDC for TSOL
-    let signature = user_a.route_swap(&swap_builder, &[table]).await.unwrap();
+    user_a.route_swap(&swap_builder, &[table]).await.unwrap();
 
-    println!("Signature {signature}");
+    Ok(())
+}
+
+async fn single_leg_swap(
+    ctx: &Arc<MarginTestContext>,
+    env: &TestEnv,
+    pool: impl SwapAccounts,
+) -> Result<(), anyhow::Error> {
+    // Create our two user wallets, with some SOL funding to get started
+    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+
+    // Create the user context helpers, which give a simple interface for executing
+    // common actions on a margin account
+    let user_a = ctx.margin.user(&wallet_a, 0)?;
+    let user_b = ctx.margin.user(&wallet_b, 0)?;
+
+    // Initialize the margin accounts for each user
+    user_a.create_account().await?;
+    user_b.create_account().await?;
+
+    let user_a_msol_account = ctx
+        .tokens
+        .create_account_funded(&env.msol, &wallet_a.pubkey(), 100 * ONE_MSOL)
+        .await?;
+    let user_b_tsol_account = ctx
+        .tokens
+        .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10 * ONE_TSOL)
+        .await?;
+    let user_b_msol_account = ctx
+        .tokens
+        .create_account_funded(&env.msol, &wallet_b.pubkey(), 10 * ONE_MSOL)
+        .await?;
+
+    ctx.tokens
+        .set_price(
+            // Set price to 100 USD +- 1
+            &env.tsol,
+            &TokenPrice {
+                exponent: -8,
+                price: 10_000_000_000,
+                confidence: 100_000_000,
+                twap: 10_000_000_000,
+            },
+        )
+        .await?;
+    ctx.tokens
+        .set_price(
+            // Set price to 106 USD +- 1
+            &env.msol,
+            &TokenPrice {
+                exponent: -8,
+                price: 10_600_000_000,
+                confidence: 100_000_000,
+                twap: 10_600_000_000,
+            },
+        )
+        .await?;
+
+    // Deposit user funds into their margin accounts
+    user_a
+        .deposit(
+            &env.msol,
+            &user_a_msol_account,
+            TokenChange::shift(ONE_MSOL),
+        )
+        .await?;
+    user_b
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            TokenChange::shift(10 * ONE_TSOL),
+        )
+        .await?;
+    user_b
+        .deposit(
+            &env.msol,
+            &user_b_msol_account,
+            TokenChange::shift(10 * ONE_MSOL),
+        )
+        .await?;
+
+    user_a.refresh_all_pool_positions().await?;
+    user_b.refresh_all_pool_positions().await?;
+
+    // Create a swap route and execute it
+    let mut swap_builder = MarginSwapRouteIxBuilder::new(
+        *user_a.address(),
+        env.msol,
+        env.tsol,
+        TokenChange::shift(ONE_MSOL),
+        1, // Get at least 1 token back
+    );
+
+    swap_builder.add_swap_route(&pool, &env.msol, 60)?;
+    swap_builder.add_swap_route(&pool, &env.msol, 0)?;
+
+    // Adding a disconnected swap should fail
+    let result = swap_builder.add_swap_route(&pool, &env.usdc, 90);
+    assert!(result.is_err());
+
+    // TODO: add some tests to check validity
+    swap_builder.finalize().unwrap();
+
+    user_a.route_swap(&swap_builder, &[]).await.unwrap();
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn route_spl_swap() -> Result<(), anyhow::Error> {
+    let ctx = margin_test_context!();
+    let env = setup_environment(&ctx).await?;
+
+    let swap_program_id = spl_token_swap_v2::id();
+
+    // TOOD: replace with a different pool type
+    let pool = SplSwapPool::configure(
+        &ctx.solana,
+        &swap_program_id,
+        &env.msol,
+        &env.tsol,
+        // Set a 106 price relative to SOL at 100
+        1_060_000 * ONE_MSOL,
+        1_000_000 * ONE_TSOL,
+    )
+    .await?;
+
+    // Check that we can get the pool
+    // Check if the swap pool can be found
+    let mut supported_mints = HashSet::new();
+    supported_mints.insert(env.usdc);
+    supported_mints.insert(env.usdt);
+    supported_mints.insert(env.msol);
+    supported_mints.insert(env.tsol);
+
+    let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id)
+        .await
+        .unwrap();
+    assert_eq!(swap_pools.len(), 1);
+
+    single_leg_swap(&ctx, &env, pool).await?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn route_saber_swap() -> Result<(), anyhow::Error> {
+    let ctx = margin_test_context!();
+    let env = setup_environment(&ctx).await?;
+
+    // Add Saber swap pool
+    // Create a swap pool with sufficient liquidity
+    let pool = SaberSwapPool::configure(
+        &ctx.solana,
+        &env.msol,
+        &env.tsol,
+        // Set a 1.06 rate
+        10_000 * ONE_MSOL,
+        10_600 * ONE_TSOL,
+    )
+    .await?;
+
+    // Check that we can get the pool
+    // Check if the swap pool can be found
+    let mut supported_mints = HashSet::new();
+    supported_mints.insert(env.usdc);
+    supported_mints.insert(env.usdt);
+    supported_mints.insert(env.msol);
+    supported_mints.insert(env.tsol);
+
+    let swap_pools = SaberSwapPool::get_pools(&ctx.rpc, &supported_mints)
+        .await
+        .unwrap();
+    assert_eq!(swap_pools.len(), 1);
+
+    single_leg_swap(&ctx, &env, pool).await?;
 
     Ok(())
 }

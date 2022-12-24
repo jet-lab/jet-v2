@@ -34,51 +34,6 @@ use crate::margin_pool::MarginPoolIxBuilder;
 
 use crate::margin::owned_position_token_account;
 
-/// Builder for creating instructions to interact with the margin swap program.
-pub struct MarginSwapIxBuilder {
-    /// SPL mint of the left side of the pool
-    pub token_a: Pubkey,
-    /// SPL mint of the right side of the pool
-    pub token_b: Pubkey,
-    /// The address of the swap pool
-    pub swap_pool: Pubkey,
-    /// The PDA of the swap pool authority
-    pub swap_pool_authority: Pubkey,
-    /// The mint of the swap pool notes, minted in exchange for deposits
-    pub pool_mint: Pubkey,
-    /// The account that accumulates transaction fees
-    pub fee_account: Pubkey,
-    /// The swap program
-    pub swap_program: Pubkey,
-}
-
-impl MarginSwapIxBuilder {
-    /// Create a new Margin swap instruction builder
-    ///
-    /// # Params
-    ///
-    /// Refer to [MarginSwapIxBuilder] struct variables
-    pub fn new(
-        token_a: Pubkey,
-        token_b: Pubkey,
-        swap_pool: Pubkey,
-        authority: Pubkey,
-        pool_mint: Pubkey,
-        fee_account: Pubkey,
-        swap_program: Pubkey,
-    ) -> Self {
-        Self {
-            token_a,
-            token_b,
-            swap_pool,
-            swap_pool_authority: authority,
-            pool_mint,
-            fee_account,
-            swap_program,
-        }
-    }
-}
-
 /// Trait to get required information from a swap pool for the [MarginSwapRouteIxBuilder]
 pub trait SwapAccounts {
     /// Convert the pool to a vec of [AccountMeta]

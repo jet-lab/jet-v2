@@ -163,7 +163,11 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         (
             spl_associated_token_account::ID,
             spl_associated_token_account::processor::process_instruction
-        )
+        ),
+        (
+            saber_program::id(),
+            saber_program::processor::Processor::process
+        ),
     ];
 
     Arc::new(runtime)

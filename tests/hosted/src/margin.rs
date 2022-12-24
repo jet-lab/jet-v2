@@ -441,19 +441,20 @@ impl MarginUser {
         &self,
         builder: &MarginSwapRouteIxBuilder,
         account_lookup_tables: &[Pubkey],
-    ) -> Result<Signature, Error> {
+    ) -> Result<(), Error> {
         // If there are lookup tables, use them
         if account_lookup_tables.is_empty() {
             self.rpc
-                .send_and_confirm(self.tx.route_swap(builder).await?)
-                .await
+                .send_and_confirm_condensed_in_order(self.tx.route_swap(builder).await?)
+                .await?;
         } else {
             let versioned_tx = self
                 .tx
                 .route_swap_with_lookup(builder, account_lookup_tables, &self.signer)
                 .await?;
-            LookupTable::send_versioned_transaction(&self.rpc, &versioned_tx).await
+            LookupTable::send_versioned_transaction(&self.rpc, &versioned_tx).await?;
         }
+        Ok(())
     }
 
     pub async fn positions(&self) -> Result<Vec<AccountPosition>, Error> {

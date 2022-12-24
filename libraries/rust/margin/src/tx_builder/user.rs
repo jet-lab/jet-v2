@@ -474,13 +474,13 @@ impl MarginTxBuilder {
     pub async fn route_swap(
         &self,
         builder: &MarginSwapRouteIxBuilder,
-    ) -> Result<TransactionBuilder> {
+    ) -> Result<Vec<TransactionBuilder>> {
         // We can't get the instruction if not finalized, get it to check.
         let inner_swap_ix = builder.get_instruction()?;
 
-        let mut instructions = vec![];
+        let mut setup_instructions = vec![];
         for deposit_note_mint in builder.get_pool_note_mints() {
-            self.get_or_create_position(&mut instructions, deposit_note_mint)
+            self.get_or_create_position(&mut setup_instructions, deposit_note_mint)
                 .await?;
         }
         for token_mint in builder.get_spl_token_mints() {
@@ -493,13 +493,15 @@ impl MarginTxBuilder {
                     token_mint,
                     &spl_token::id(),
                 );
-                instructions.push(ix);
+                setup_instructions.push(ix);
             }
         }
+        let transactions = vec![
+            self.create_transaction_builder(&setup_instructions)?,
+            self.create_transaction_builder(&[self.adapter_invoke_ix(inner_swap_ix)])?,
+        ];
 
-        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
-
-        self.create_transaction_builder(&instructions)
+        Ok(transactions)
     }
 
     /// Transaction to begin liquidating user account.
