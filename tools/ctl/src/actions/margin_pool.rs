@@ -453,8 +453,9 @@ async fn collect_pool_summary(
         token_mint.decimals,
     );
     let rate = pool.interest_rate().to_string().parse::<f64>()?;
-    let interest_accrued_until =
-        chrono::NaiveDateTime::from_timestamp(pool.accrued_until, 0).to_string();
+    let interest_accrued_until = chrono::NaiveDateTime::from_timestamp_opt(pool.accrued_until, 0)
+        .unwrap()
+        .to_string();
 
     Ok(PoolSummary {
         token,

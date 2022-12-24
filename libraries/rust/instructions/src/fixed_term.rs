@@ -233,7 +233,12 @@ impl FixedTermIxBuilder {
         if self.fee_destination == ata {
             Some(if_not_initialized(
                 ata,
-                create_associated_token_account(payer, &self.authority, &self.underlying_mint),
+                create_associated_token_account(
+                    payer,
+                    &self.authority,
+                    &self.underlying_mint,
+                    &spl_token::id(),
+                ),
             ))
         } else {
             None

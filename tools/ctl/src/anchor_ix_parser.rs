@@ -260,6 +260,7 @@ impl<'a> IdlReader<'a> {
                 DataValue::IntegerSigned(<i64 as BorshDeserialize>::deserialize(data)? as i128)
             }
             IdlType::I128 => DataValue::IntegerSigned(BorshDeserialize::deserialize(data)?),
+            IdlType::I256 => DataValue::IntegerSigned(BorshDeserialize::deserialize(data)?),
             IdlType::U8 => {
                 DataValue::IntegerUnsigned(<u8 as BorshDeserialize>::deserialize(data)? as u128)
             }
@@ -273,6 +274,7 @@ impl<'a> IdlReader<'a> {
                 DataValue::IntegerUnsigned(<u64 as BorshDeserialize>::deserialize(data)? as u128)
             }
             IdlType::U128 => DataValue::IntegerUnsigned(BorshDeserialize::deserialize(data)?),
+            IdlType::U256 => DataValue::IntegerUnsigned(BorshDeserialize::deserialize(data)?),
             IdlType::F32 => {
                 DataValue::FloatingPoint(<u32 as BorshDeserialize>::deserialize(data)? as f64)
             }

@@ -613,6 +613,7 @@ impl MarginTxBuilder {
                 &self.signer(),
                 self.address(),
                 token_mint,
+                &spl_token::id(),
             ),
             self.ix.create_deposit_position(*token_mint),
         ])
@@ -644,6 +645,7 @@ impl MarginTxBuilder {
                     &self.signer(),
                     self.address(),
                     &token_mint,
+                    &spl_token::id(),
                 ),
             );
             instructions.push(self.ix.create_deposit_position(token_mint));
