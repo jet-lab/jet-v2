@@ -46,12 +46,22 @@ mod jet_margin_swap {
     /// Route a swap to one or more venues
     pub fn route_swap<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        swap_routes: [SwapRouteDetail; 3],
+    ) -> Result<()> {
+        route_swap_handler(ctx, amount_in, minimum_amount_out, swap_routes)
+    }
+
+    /// Route a swap to one or more venues by borrowing on margin
+    pub fn route_swap_margin<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RouteSwapPool<'info>>,
         withdrawal_change_kind: ChangeKind,
         withdrawal_amount: u64,
         minimum_amount_out: u64,
         swap_routes: [SwapRouteDetail; 3],
     ) -> Result<()> {
-        route_swap_handler(
+        route_swap_margin_handler(
             ctx,
             withdrawal_change_kind,
             withdrawal_amount,
@@ -60,7 +70,7 @@ mod jet_margin_swap {
         )
     }
 
-    pub fn spl_token_swap(_ctx: Context<MarginSplSwap>) -> Result<()> {
+    pub fn spl_token_swap(_ctx: Context<SplSwapInfo>) -> Result<()> {
         Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
     }
 

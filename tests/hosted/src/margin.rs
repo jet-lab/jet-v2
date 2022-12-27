@@ -436,7 +436,6 @@ impl MarginUser {
     }
 
     /// Execute a swap route
-    #[allow(clippy::too_many_arguments)]
     pub async fn route_swap(
         &self,
         builder: &MarginSwapRouteIxBuilder,

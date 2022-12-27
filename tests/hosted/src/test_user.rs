@@ -127,13 +127,14 @@ impl TestUser {
         change: TokenChange,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
-        let mut swap_builder = MarginSwapRouteIxBuilder::new(
+        let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+            jet_margin_sdk::ix_builder::SwapContext::MarginPool,
             *self.user.address(),
             *src,
             *dst,
             change,
             1, // at least 1 token back
-        );
+        )?;
         swap_builder.add_swap_route(pool, src, 0)?;
         swap_builder.finalize()?;
         self.user.route_swap(&swap_builder, &[]).await?;

@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_spl::token::Token;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
@@ -29,46 +28,6 @@ related_programs! {
         orca_swap_v1::OrcaV1,
         orca_swap_v2::OrcaV2,
     ]}
-}
-
-#[derive(Accounts)]
-pub struct MarginSplSwap<'info> {
-    /// The margin account being executed on
-    #[account(signer)]
-    pub margin_account: AccountLoader<'info, MarginAccount>,
-
-    /// The account with the source deposit to be exchanged from
-    /// CHECK:
-    #[account(mut)]
-    pub source_account: AccountInfo<'info>,
-
-    /// The destination account to send the deposit that is exchanged into
-    /// CHECK:
-    #[account(mut)]
-    pub destination_account: AccountInfo<'info>,
-
-    /// Temporary account for moving tokens
-    /// CHECK:
-    #[account(mut)]
-    pub transit_source_account: AccountInfo<'info>,
-
-    /// Temporary account for moving tokens
-    /// CHECK:
-    #[account(mut)]
-    pub transit_destination_account: AccountInfo<'info>,
-
-    /// The accounts relevant to the swap pool used for the exchange
-    pub swap_info: SplSwapInfo<'info>,
-
-    /// The accounts relevant to the source margin pool
-    pub source_margin_pool: MarginPoolInfo<'info>,
-
-    /// The accounts relevant to the destination margin pool
-    pub destination_margin_pool: MarginPoolInfo<'info>,
-
-    pub margin_pool_program: Program<'info, JetMarginPool>,
-
-    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]

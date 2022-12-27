@@ -26,7 +26,7 @@ use jet_margin_pool::ChangeKind;
 use crate::*;
 
 #[derive(Accounts)]
-pub struct RouteSwap<'info> {
+pub struct RouteSwapPool<'info> {
     /// The margin account being executed on
     #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
@@ -40,13 +40,13 @@ pub struct RouteSwap<'info> {
     /// CHECK: The token program validates both type and ownership thorugh withdrawals.
     /// The swap is also atomic, and no excess funds would be taken/left in the account.
     #[account(mut)]
-    pub destination_account: UncheckedAccount<'info>,
+    pub destination_account: AccountInfo<'info>,
 
     /// Temporary account for moving tokens
     /// CHECK: The token program validates both type and ownership thorugh withdrawals.
     /// The swap is also atomic, and no excess funds would be taken/left in the account.
     #[account(mut)]
-    pub transit_source_account: UncheckedAccount<'info>,
+    pub transit_source_account: AccountInfo<'info>,
 
     /// Temporary account for moving tokens
     /// CHECK: The token program validates both type and ownership thorugh withdrawals.
@@ -65,7 +65,7 @@ pub struct RouteSwap<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> RouteSwap<'info> {
+impl<'info> RouteSwapPool<'info> {
     #[inline(never)]
     fn withdraw(&self, change_kind: ChangeKind, amount_in: u64) -> Result<()> {
         jet_margin_pool::cpi::withdraw(
@@ -122,6 +122,26 @@ impl<'info> RouteSwap<'info> {
     }
 }
 
+#[derive(Accounts)]
+pub struct RouteSwap<'info> {
+    /// The margin account being executed on
+    #[account(signer)]
+    pub margin_account: AccountLoader<'info, MarginAccount>,
+
+    /// The account with the source deposit to be exchanged from
+    /// CHECK: The pool program validates the authority of the withdrawal
+    #[account(mut)]
+    pub source_account: AccountInfo<'info>,
+
+    /// The destination account to send the deposit that is exchanged into
+    /// CHECK: The token program validates both type and ownership thorugh withdrawals.
+    /// The swap is also atomic, and no excess funds would be taken/left in the account.
+    #[account(mut)]
+    pub destination_account: AccountInfo<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
 /// Route a swap with up to 3 legs, which can be split across venues (e.g 80/20).
 ///
 /// The instruction relies on extra accounts, which are structured for each leg as:
@@ -131,8 +151,8 @@ impl<'info> RouteSwap<'info> {
 /// - accounts of the swap instruction
 ///
 /// Where there are multiple swaps, the above are concatenated to each other
-pub fn route_swap_handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+pub fn route_swap_margin_handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, RouteSwapPool<'info>>,
     withdrawal_change_kind: ChangeKind,
     withdrawal_amount: u64,
     minimum_amount_out: u64,
@@ -231,7 +251,7 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         } else {
             None
         };
-        let amount_in = exec_swap(
+        let amount_in = exec_pool_swap(
             &ctx,
             route,
             &source_pool_accounts,
@@ -290,9 +310,88 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
     Ok(())
 }
 
+pub fn route_swap_handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+    amount_in: u64,
+    minimum_amount_out: u64,
+    swap_routes: [SwapRouteDetail; 3],
+) -> Result<()> {
+    // To protect users, the minimum_amount_out should always be positive.
+    // We only check for slippage after all swaps, and some swaps might return 0
+    // tokens, so we prevent this by ensuring that we'll compare against > 0.
+    assert!(amount_in > 0 && minimum_amount_out > 0);
+    // Validate input and find out how many swaps there are
+    let valid_swaps = match (
+        swap_routes[0].validate()?,
+        swap_routes[1].validate()?,
+        swap_routes[2].validate()?,
+    ) {
+        (_, false, true) | (false, _, _) => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
+        (true, true, true) => 3,
+        (true, true, false) => 2,
+        (true, false, _) => 1,
+    };
+
+    // The destination opening balance is used to track how many tokens were swapped
+    let destination_opening_balance =
+        token::accessor::amount(&ctx.accounts.destination_account.to_account_info())?;
+
+    // let mut account_index = 0;
+    let mut remaining_accounts = ctx.remaining_accounts.iter();
+    let mut swap_amount_in = amount_in;
+
+    // Iterate through all the valid swap legs and execute the swaps
+    for (leg, route) in swap_routes.iter().enumerate().take(valid_swaps) {
+        let src_transit = match leg {
+            0 => {
+                // First leg of 1 or more
+                ctx.accounts.source_account.to_account_info()
+            }
+            _ => {
+                // Not the first leg
+                next_account_info(&mut remaining_accounts)?.to_account_info()
+            }
+        };
+        // If this is the last/only leg, the destination transit is known, else get after swap accounts
+        let dst_transit = if leg + 1 == valid_swaps {
+            Some(&ctx.accounts.destination_account)
+        } else {
+            None
+        };
+        let amount_in = exec_swap(
+            &ctx,
+            route,
+            &src_transit,
+            dst_transit,
+            &mut remaining_accounts,
+            swap_amount_in,
+        )?;
+        swap_amount_in = amount_in;
+    }
+
+    let destination_closing_balance =
+        token::accessor::amount(&ctx.accounts.destination_account.to_account_info())?;
+
+    let swap_amount_out = destination_closing_balance
+        .checked_sub(destination_opening_balance)
+        .unwrap();
+    // Check if slippage tolerance is exceeded
+    if swap_amount_out < minimum_amount_out {
+        msg!(
+            "Amount out = {} less than minimum {}",
+            swap_amount_out,
+            minimum_amount_out
+        );
+        return Err(error!(crate::ErrorCode::SlippageExceeded));
+    }
+
+    Ok(())
+}
+
+/// Execute a swap and transfer tokens into a margin pool
 #[allow(clippy::too_many_arguments)]
-fn exec_swap<'a, 'b, 'c, 'info>(
-    ctx: &Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+fn exec_pool_swap<'a, 'b, 'c, 'info>(
+    ctx: &Context<'a, 'b, 'c, 'info, RouteSwapPool<'info>>,
     route: &SwapRouteDetail,
     source_pool_accounts: &[AccountInfo<'info>; 3],
     src_ata: &AccountInfo<'info>,
@@ -369,6 +468,60 @@ fn exec_swap<'a, 'b, 'c, 'info>(
     Ok(total_swap_output)
 }
 
+// TODO: make pool accounts optional, and merge with exec_pool_swap
+#[allow(clippy::too_many_arguments)]
+fn exec_swap<'a, 'b, 'c, 'info>(
+    ctx: &Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+    route: &SwapRouteDetail,
+    src_ata: &AccountInfo<'info>,
+    dst_ata_opt: Option<&AccountInfo<'info>>,
+    remaining_accounts: &mut Iter<AccountInfo<'info>>,
+    swap_amount_in: u64,
+) -> Result<u64> {
+    // Get the amount for the current leg if there is a split
+    let curr_swap_in = if route.split == 0 {
+        swap_amount_in
+    } else {
+        // This is safe as we have checked that split < 100 when validating legs
+        (swap_amount_in * route.split as u64) / 100
+    };
+
+    // Get the ATA opening and closing balances
+    let (dst_ata_opening, mut dst_ata_closing) = exec_swap_split(
+        &ctx.accounts.margin_account.to_account_info(),
+        &ctx.accounts.token_program,
+        &route.route_a,
+        src_ata,
+        dst_ata_opt,
+        remaining_accounts,
+        curr_swap_in,
+    )?;
+
+    // Handle the next leg
+    if route.split > 0 {
+        // Get the remaining amount to swap
+        let curr_swap_in = swap_amount_in.checked_sub(curr_swap_in).unwrap();
+        assert!(curr_swap_in > 0);
+
+        let (_, closing) = exec_swap_split(
+            &ctx.accounts.margin_account.to_account_info(),
+            &ctx.accounts.token_program,
+            &route.route_a,
+            src_ata,
+            dst_ata_opt,
+            remaining_accounts,
+            curr_swap_in,
+        )?;
+        // overwrite the dst_ata_closing with its latest balance
+        dst_ata_closing = closing;
+    }
+
+    // Track how much should be withdrawn from the ATA account in the next swap.
+    let total_swap_output = dst_ata_closing.checked_sub(dst_ata_opening).unwrap();
+
+    Ok(total_swap_output)
+}
+
 /// Execute the route leg and return the opening and closing balance of the ATA used
 #[inline]
 fn exec_swap_split<'info>(
@@ -389,8 +542,7 @@ fn exec_swap_split<'info>(
         SwapRouteIdentifier::Empty => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
         SwapRouteIdentifier::Spl => {
             let swap_accounts = SplSwapInfo::try_accounts(
-                // &program_id,
-                // TODO: how can we get the program_id?
+                // Will be validated by the spl swap registry
                 &Pubkey::default(),
                 &mut accounts,
                 &[],

@@ -5,8 +5,9 @@ use std::{collections::HashSet, sync::Arc, time::Duration};
 use anyhow::Error;
 
 use jet_margin_sdk::{
-    ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts},
+    ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts, SwapContext},
     lookup_tables::LookupTable,
+    margin_integrator::PositionRefresher,
     swap::{saber_swap::SaberSwapPool, spl_swap::SplSwapPool},
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
@@ -338,13 +339,14 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     tokio::time::sleep(Duration::from_secs(10)).await;
 
     // Create a swap route and execute it
-    let mut swap_builder = MarginSwapRouteIxBuilder::new(
+    let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+        SwapContext::MarginPool,
         *user_a.address(),
         env.msol,
         env.usdc,
         TokenChange::shift(ONE_MSOL),
         106 * ONE_USDC * 92 / 100,
-    );
+    )?;
 
     // Split the route 60/40 to emulate a split even if going to the same venue
     swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 60)?;
@@ -365,7 +367,7 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-async fn single_leg_swap(
+async fn single_leg_swap_margin(
     ctx: &Arc<MarginTestContext>,
     env: &TestEnv,
     pool: impl SwapAccounts,
@@ -448,13 +450,14 @@ async fn single_leg_swap(
     user_b.refresh_all_pool_positions().await?;
 
     // Create a swap route and execute it
-    let mut swap_builder = MarginSwapRouteIxBuilder::new(
+    let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+        SwapContext::MarginPool,
         *user_a.address(),
         env.msol,
         env.tsol,
         TokenChange::shift(ONE_MSOL),
         1, // Get at least 1 token back
-    );
+    )?;
 
     swap_builder.add_swap_route(&pool, &env.msol, 60)?;
     swap_builder.add_swap_route(&pool, &env.msol, 0)?;
@@ -466,7 +469,74 @@ async fn single_leg_swap(
     // TODO: add some tests to check validity
     swap_builder.finalize().unwrap();
 
-    user_a.route_swap(&swap_builder, &[]).await.unwrap();
+    user_a.route_swap(&swap_builder, &[]).await?;
+
+    Ok(())
+}
+
+async fn single_leg_swap(
+    ctx: &Arc<MarginTestContext>,
+    env: &TestEnv,
+    pool: impl SwapAccounts,
+) -> Result<(), anyhow::Error> {
+    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0)?;
+    user_a.create_account().await?;
+
+    ctx.tokens
+        .set_price(
+            // Set price to 100 USD +- 1
+            &env.tsol,
+            &TokenPrice {
+                exponent: -8,
+                price: 10_000_000_000,
+                confidence: 100_000_000,
+                twap: 10_000_000_000,
+            },
+        )
+        .await?;
+    ctx.tokens
+        .set_price(
+            // Set price to 106 USD +- 1
+            &env.msol,
+            &TokenPrice {
+                exponent: -8,
+                price: 10_600_000_000,
+                confidence: 100_000_000,
+                twap: 10_600_000_000,
+            },
+        )
+        .await?;
+
+    // Create a deposit accounts for the user
+    let user_a_msol = user_a.create_deposit_position(&env.msol).await?;
+    let user_a_tsol = user_a.create_deposit_position(&env.tsol).await?;
+
+    // Fund one margin position
+    ctx.tokens
+        .mint(&env.msol, &user_a_msol, 10 * ONE_MSOL)
+        .await?;
+
+    user_a.tx.refresh_positions().await?;
+
+    // Create a swap route and execute it
+    let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+        SwapContext::MarginPositions,
+        *user_a.address(),
+        env.msol,
+        env.tsol,
+        TokenChange::shift(ONE_MSOL),
+        1, // Get at least 1 token back
+    )?;
+    swap_builder.add_swap_route(&pool, &env.msol, 60)?;
+    swap_builder.add_swap_route(&pool, &env.msol, 0)?;
+    swap_builder.finalize().unwrap();
+
+    user_a.route_swap(&swap_builder, &[]).await?;
+
+    // There should be tokens in the user's destination account
+    let tsol_balance = ctx.tokens.get_balance(&user_a_tsol).await?;
+    assert!(tsol_balance > ONE_TSOL / 2);
 
     Ok(())
 }
@@ -504,6 +574,7 @@ async fn route_spl_swap() -> Result<(), anyhow::Error> {
         .unwrap();
     assert_eq!(swap_pools.len(), 1);
 
+    single_leg_swap_margin(&ctx, &env, pool).await?;
     single_leg_swap(&ctx, &env, pool).await?;
     Ok(())
 }
@@ -539,6 +610,7 @@ async fn route_saber_swap() -> Result<(), anyhow::Error> {
         .unwrap();
     assert_eq!(swap_pools.len(), 1);
 
+    single_leg_swap_margin(&ctx, &env, pool).await?;
     single_leg_swap(&ctx, &env, pool).await?;
 
     Ok(())
