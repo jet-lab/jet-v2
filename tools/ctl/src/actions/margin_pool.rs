@@ -4,7 +4,7 @@ use clap::Parser;
 use comfy_table::{presets::UTF8_FULL, Table};
 use jet_margin_sdk::{
     ix_builder::{
-        get_metadata_address, loan_token_account, ControlIxBuilder, MarginPoolConfiguration,
+        derive_loan_account, get_metadata_address, ControlIxBuilder, MarginPoolConfiguration,
         MarginPoolIxBuilder,
     },
     jet_control::TokenMetadataParams,
@@ -219,7 +219,7 @@ pub async fn process_transfer_loan(
     amount: Option<u64>,
 ) -> Result<Plan> {
     let ix = MarginPoolIxBuilder::new(token);
-    let loan_account = loan_token_account(&source_account, &ix.loan_note_mint).0;
+    let loan_account = derive_loan_account(&source_account, &ix.loan_note_mint);
     let amount = match amount {
         Some(n) => n,
         None => client.read_token_account(&loan_account).await?.amount,
