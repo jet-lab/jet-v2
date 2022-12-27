@@ -264,6 +264,9 @@ impl MarginSwapRouteIxBuilder {
 
     /// Validate and finalize this swap
     pub fn finalize(&mut self) -> Result<()> {
+        if self.is_finalized {
+            bail!("Swap route is already finalized")
+        }
         // Start with simple condiitions for data that should be present
         if self.next_route_index == 0 {
             bail!("No swap routes seem to be added")

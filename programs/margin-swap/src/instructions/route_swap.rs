@@ -255,9 +255,9 @@ pub fn route_swap_margin_handler<'a, 'b, 'c, 'info>(
             &ctx,
             route,
             &source_pool_accounts,
+            &source_pool_dep_note,
             &src_transit,
             dst_transit,
-            &source_pool_dep_note,
             &mut remaining_accounts,
             swap_amount_in,
         )?;
@@ -394,64 +394,30 @@ fn exec_pool_swap<'a, 'b, 'c, 'info>(
     ctx: &Context<'a, 'b, 'c, 'info, RouteSwapPool<'info>>,
     route: &SwapRouteDetail,
     source_pool_accounts: &[AccountInfo<'info>; 3],
+    source_pool_dep_note: &AccountInfo<'info>,
     src_ata: &AccountInfo<'info>,
     dst_ata_opt: Option<&AccountInfo<'info>>,
-    source_pool_dep_note: &AccountInfo<'info>,
     remaining_accounts: &mut Iter<AccountInfo<'info>>,
     swap_amount_in: u64,
 ) -> Result<u64> {
-    // CHECK: The token program will withdraw from this account, and will check
-    // that the type and authority are correct.
+    // Input opentng balance
     let src_ata_opening = token::accessor::amount(src_ata)?;
-    // Record the opening balance of the input
-    //
-    // Get the swap accounts
 
-    // Get the amount for the current leg if there is a split
-    let curr_swap_in = if route.split == 0 {
-        swap_amount_in
-    } else {
-        // This is safe as we have checked that split < 100 when validating legs
-        (swap_amount_in * route.split as u64) / 100
-    };
-
-    // Get the ATA opening and closing balances
-    let (dst_ata_opening, mut dst_ata_closing) = exec_swap_split(
+    let (dst_ata_opening, dst_ata_closing) = exec_common(
         &ctx.accounts.margin_account.to_account_info(),
         &ctx.accounts.token_program,
-        &route.route_a,
+        route,
         src_ata,
         dst_ata_opt,
         remaining_accounts,
-        curr_swap_in,
+        swap_amount_in,
     )?;
-
-    // Handle the next leg
-    if route.split > 0 {
-        // Get the remaining amount to swap
-        let curr_swap_in = swap_amount_in.checked_sub(curr_swap_in).unwrap();
-        assert!(curr_swap_in > 0);
-
-        let (_, closing) = exec_swap_split(
-            &ctx.accounts.margin_account.to_account_info(),
-            &ctx.accounts.token_program,
-            &route.route_a,
-            src_ata,
-            dst_ata_opt,
-            remaining_accounts,
-            curr_swap_in,
-        )?;
-        // overwrite the dst_ata_closing with its latest balance
-        dst_ata_closing = closing;
-    }
 
     // After the swaps above, we can now return any dust to the input token's pool
     let src_ata_closing = token::accessor::amount(src_ata)?;
     // Track how much was swapped, the balance between expected vs actual is returned
     // to the relevant pool
     let total_swap_input = src_ata_opening.checked_sub(src_ata_closing).unwrap();
-    // Track how much should be withdrawn from the ATA account in the next swap.
-    let total_swap_output = dst_ata_closing.checked_sub(dst_ata_opening).unwrap();
 
     if total_swap_input < swap_amount_in {
         // We swapped less than we had to, return dust back
@@ -465,11 +431,10 @@ fn exec_pool_swap<'a, 'b, 'c, 'info>(
         )?;
     }
 
-    Ok(total_swap_output)
+    Ok(dst_ata_closing.checked_sub(dst_ata_opening).unwrap())
 }
 
-// TODO: make pool accounts optional, and merge with exec_pool_swap
-#[allow(clippy::too_many_arguments)]
+/// Execute a swap leg using margin token accounts
 fn exec_swap<'a, 'b, 'c, 'info>(
     ctx: &Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
     route: &SwapRouteDetail,
@@ -478,6 +443,28 @@ fn exec_swap<'a, 'b, 'c, 'info>(
     remaining_accounts: &mut Iter<AccountInfo<'info>>,
     swap_amount_in: u64,
 ) -> Result<u64> {
+    let (dst_ata_opening, dst_ata_closing) = exec_common(
+        &ctx.accounts.margin_account.to_account_info(),
+        &ctx.accounts.token_program,
+        route,
+        src_ata,
+        dst_ata_opt,
+        remaining_accounts,
+        swap_amount_in,
+    )?;
+
+    Ok(dst_ata_closing.checked_sub(dst_ata_opening).unwrap())
+}
+
+fn exec_common<'info>(
+    margin_account: &AccountInfo<'info>,
+    token_program: &AccountInfo<'info>,
+    route: &SwapRouteDetail,
+    src_ata: &AccountInfo<'info>,
+    dst_ata_opt: Option<&AccountInfo<'info>>,
+    remaining_accounts: &mut Iter<AccountInfo<'info>>,
+    swap_amount_in: u64,
+) -> Result<(u64, u64)> {
     // Get the amount for the current leg if there is a split
     let curr_swap_in = if route.split == 0 {
         swap_amount_in
@@ -488,8 +475,8 @@ fn exec_swap<'a, 'b, 'c, 'info>(
 
     // Get the ATA opening and closing balances
     let (dst_ata_opening, mut dst_ata_closing) = exec_swap_split(
-        &ctx.accounts.margin_account.to_account_info(),
-        &ctx.accounts.token_program,
+        margin_account,
+        token_program,
         &route.route_a,
         src_ata,
         dst_ata_opt,
@@ -504,8 +491,8 @@ fn exec_swap<'a, 'b, 'c, 'info>(
         assert!(curr_swap_in > 0);
 
         let (_, closing) = exec_swap_split(
-            &ctx.accounts.margin_account.to_account_info(),
-            &ctx.accounts.token_program,
+            margin_account,
+            token_program,
             &route.route_a,
             src_ata,
             dst_ata_opt,
@@ -516,10 +503,7 @@ fn exec_swap<'a, 'b, 'c, 'info>(
         dst_ata_closing = closing;
     }
 
-    // Track how much should be withdrawn from the ATA account in the next swap.
-    let total_swap_output = dst_ata_closing.checked_sub(dst_ata_opening).unwrap();
-
-    Ok(total_swap_output)
+    Ok((dst_ata_opening, dst_ata_closing))
 }
 
 /// Execute the route leg and return the opening and closing balance of the ATA used

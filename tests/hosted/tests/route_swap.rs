@@ -358,7 +358,6 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     let result = swap_builder.add_swap_route(&swap_pool_spl_msol_usdt, &env.usdc, 0);
     assert!(result.is_err());
 
-    // TODO: add some tests to check validity
     swap_builder.finalize().unwrap();
 
     // Now user A swaps their USDC for TSOL
@@ -459,6 +458,9 @@ async fn single_leg_swap_margin(
         1, // Get at least 1 token back
     )?;
 
+    // Can't finalize if there are no routes
+    assert!(swap_builder.finalize().is_err());
+
     swap_builder.add_swap_route(&pool, &env.msol, 60)?;
     swap_builder.add_swap_route(&pool, &env.msol, 0)?;
 
@@ -466,8 +468,10 @@ async fn single_leg_swap_margin(
     let result = swap_builder.add_swap_route(&pool, &env.usdc, 90);
     assert!(result.is_err());
 
-    // TODO: add some tests to check validity
-    swap_builder.finalize().unwrap();
+    swap_builder.finalize()?;
+
+    // Can't finalize if already finalized
+    assert!(swap_builder.finalize().is_err());
 
     user_a.route_swap(&swap_builder, &[]).await?;
 
@@ -541,6 +545,9 @@ async fn single_leg_swap(
     Ok(())
 }
 
+// The tests create duplicate accounts, causing failures in localnet.
+// They are however useful for coverage and testing logic, so we run them on the sim.
+#[cfg(not(feature = "localnet"))]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_spl_swap() -> Result<(), anyhow::Error> {
@@ -579,6 +586,9 @@ async fn route_spl_swap() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+// The tests create duplicate accounts, causing failures in localnet.
+// They are however useful for coverage and testing logic, so we run them on the sim.
+#[cfg(not(feature = "localnet"))]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_saber_swap() -> Result<(), anyhow::Error> {

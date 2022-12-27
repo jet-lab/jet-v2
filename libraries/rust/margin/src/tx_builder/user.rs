@@ -24,6 +24,7 @@ use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
@@ -432,29 +433,10 @@ impl MarginTxBuilder {
         account_lookup_tables: &[Pubkey],
         signer: &Keypair,
     ) -> Result<VersionedTransaction> {
-        // TODO: DRY with the below
-
         // We can't get the instruction if not finalized, get it to check.
         let inner_swap_ix = builder.get_instruction()?;
 
-        let mut instructions = vec![];
-        for deposit_note_mint in builder.get_pool_note_mints() {
-            self.get_or_create_position(&mut instructions, deposit_note_mint)
-                .await?;
-        }
-        for token_mint in builder.get_spl_token_mints() {
-            // Check if an ATA exists before creating it
-            let ata = get_associated_token_address(self.address(), token_mint);
-            if self.rpc.get_account(&ata).await?.is_none() {
-                let ix = spl_associated_token_account::instruction::create_associated_token_account(
-                    &self.signer(),
-                    self.address(),
-                    token_mint,
-                    &spl_token::id(),
-                );
-                instructions.push(ix);
-            }
-        }
+        let mut instructions = self.setup_swap(builder).await?;
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
 
@@ -478,6 +460,19 @@ impl MarginTxBuilder {
         // We can't get the instruction if not finalized, get it to check.
         let inner_swap_ix = builder.get_instruction()?;
 
+        let setup_instructions = self.setup_swap(builder).await?;
+        let transactions = vec![
+            self.create_transaction_builder(&setup_instructions)?,
+            self.create_transaction_builder(&[
+                ComputeBudgetInstruction::set_compute_unit_limit(800000),
+                self.adapter_invoke_ix(inner_swap_ix),
+            ])?,
+        ];
+
+        Ok(transactions)
+    }
+
+    async fn setup_swap(&self, builder: &MarginSwapRouteIxBuilder) -> Result<Vec<Instruction>> {
         let mut setup_instructions = vec![];
         for deposit_note_mint in builder.get_pool_note_mints() {
             self.get_or_create_position(&mut setup_instructions, deposit_note_mint)
@@ -485,6 +480,7 @@ impl MarginTxBuilder {
         }
         for token_mint in builder.get_spl_token_mints() {
             // Check if an ATA exists before creating it
+            // TODO: if swapping using margin tokens, we could register positions
             let ata = get_associated_token_address(self.address(), token_mint);
             if self.rpc.get_account(&ata).await?.is_none() {
                 let ix = spl_associated_token_account::instruction::create_associated_token_account(
@@ -496,12 +492,7 @@ impl MarginTxBuilder {
                 setup_instructions.push(ix);
             }
         }
-        let transactions = vec![
-            self.create_transaction_builder(&setup_instructions)?,
-            self.create_transaction_builder(&[self.adapter_invoke_ix(inner_swap_ix)])?,
-        ];
-
-        Ok(transactions)
+        Ok(setup_instructions)
     }
 
     /// Transaction to begin liquidating user account.
