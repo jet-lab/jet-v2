@@ -34,8 +34,8 @@ serde = { version = "1.0", optional = true }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-spl =  { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 
 
 jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
