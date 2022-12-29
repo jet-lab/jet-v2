@@ -213,9 +213,7 @@ pub struct LiquidatorMetadata {
 pub struct ControlAuthority {}
 
 impl anchor_lang::Discriminator for ControlAuthority {
-    fn discriminator() -> [u8; 8] {
-        [36, 108, 254, 18, 167, 144, 27, 36]
-    }
+    const DISCRIMINATOR: [u8; 8] = [36, 108, 254, 18, 167, 144, 27, 36];
 }
 
 impl anchor_lang::Owner for ControlAuthority {
