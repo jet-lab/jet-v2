@@ -25,6 +25,7 @@ rand = "0.7"
 rand_distr = "0.3.0"
 lazy_static = "1.4.0"
 shellexpand = "2.1.0"
+env_logger = "0.10"
 solana-clap-utils = "1.14"
 serde_json = "1"
 
@@ -60,6 +61,6 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { path = "../../libraries/rust/simulation" }
 
 itertools = "0.10.3"

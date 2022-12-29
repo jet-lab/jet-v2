@@ -33,7 +33,7 @@ anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { path = "../simulation" }
 jet-program-common = { path = "../program-common" }
 jet-instructions = { path = "../instructions" }
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }

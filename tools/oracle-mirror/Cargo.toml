@@ -22,4 +22,4 @@ spl-token = "3"
 anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { path = "../../libraries/rust/simulation" }
