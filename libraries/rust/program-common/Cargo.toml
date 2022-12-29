@@ -16,5 +16,5 @@ static_assertions = "1.1.0"
 
 # Traits
 num-traits = "0.2"
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
-solana-program = "1.11"
+anchor-lang = "0.26"
+solana-program = "1.14"

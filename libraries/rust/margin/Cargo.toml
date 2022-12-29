@@ -29,19 +29,18 @@ serde_json = "1"
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
 pyth-sdk-solana = "0.7"
-solana-sdk = "1.11"
+solana-sdk = "1.14"
 # Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
-solana-client = "1.11"
+solana-client = "1.14"
 # Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
-solana-transaction-status = "1.11"
-solana-address-lookup-table-program = "1.11"
+solana-transaction-status = "1.14"
+solana-address-lookup-table-program = "1.14"
 
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
-anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
-anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+anchor-lang = "0.26"
+anchor-spl = "0.26"
+anchor-client = "0.26"
 
-# waiting on PR 10 to be merged
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { path = "../simulation" }
 jet-program-common = { path = "../program-common" }
 jet-instructions = { path = "../instructions" }
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
