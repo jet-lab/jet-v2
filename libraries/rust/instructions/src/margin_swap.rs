@@ -17,8 +17,6 @@
 
 use std::collections::HashSet;
 
-use anyhow::Context;
-use anyhow::{bail, Result};
 use solana_sdk::instruction::AccountMeta;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
@@ -31,15 +29,17 @@ use jet_margin_swap::{instruction as ix_data, ROUTE_SWAP_MAX_SPLIT, ROUTE_SWAP_M
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::margin_pool::MarginPoolIxBuilder;
+use crate::IxResult;
+use crate::JetIxError;
 
 use crate::margin::owned_position_token_account;
 
 /// Trait to get required information from a swap pool for the [MarginSwapRouteIxBuilder]
 pub trait SwapAccounts {
     /// Convert the pool to a vec of [AccountMeta]
-    fn to_account_meta(&self, src_token: &Pubkey) -> Result<Vec<AccountMeta>>;
+    fn to_account_meta(&self, src_token: &Pubkey) -> IxResult<Vec<AccountMeta>>;
     /// Determine the pool destination token based on its source token in the swap
-    fn dst_token(&self, src_token: &Pubkey) -> Result<Pubkey>;
+    fn dst_token(&self, src_token: &Pubkey) -> IxResult<Pubkey>;
     /// The identifier of the route
     fn route_type(&self) -> SwapRouteIdentifier;
 }
@@ -100,13 +100,15 @@ impl MarginSwapRouteIxBuilder {
         dst_token: Pubkey,
         withdrawal_change: TokenChange,
         minimum_amount_out: u64,
-    ) -> Result<Self> {
+    ) -> IxResult<Self> {
         // Withdrawal_change can only be shift_by if not using margin
         if matches!(
             (swap_context, withdrawal_change.kind),
             (SwapContext::MarginPositions, ChangeKind::SetTo)
         ) {
-            bail!("Change can only be ShiftBy when not swapping on margin")
+            return Err(JetIxError::SwapIxError(
+                "Change can only be ShiftBy when not swapping on margin".to_string(),
+            ));
         }
 
         let mut spl_token_accounts = HashSet::with_capacity(4);
@@ -184,12 +186,12 @@ impl MarginSwapRouteIxBuilder {
         pool: &T,
         src_token: &Pubkey,
         swap_split: u8,
-    ) -> anyhow::Result<()> {
+    ) -> IxResult<()> {
         // Check the swap split early
         if swap_split > ROUTE_SWAP_MAX_SPLIT
             || (swap_split > 0 && swap_split < ROUTE_SWAP_MIN_SPLIT)
         {
-            bail!("Invalid swap split, must be >= {ROUTE_SWAP_MIN_SPLIT} and <= {ROUTE_SWAP_MAX_SPLIT}");
+            return Err(JetIxError::SwapIxError(format!("Invalid swap split, must be >= {ROUTE_SWAP_MIN_SPLIT} and <= {ROUTE_SWAP_MAX_SPLIT}")));
         }
         let dst_token = pool.dst_token(src_token)?;
         // Run common checks
@@ -238,10 +240,11 @@ impl MarginSwapRouteIxBuilder {
         self.account_metas.append(&mut accounts);
 
         // Update the route information and persist builder state
-        let mut route = self
+        let Some(mut route) = self
             .route_details
-            .get_mut(self.next_route_index)
-            .context("Unable to get route detail")?;
+            .get_mut(self.next_route_index) else {
+                return Err(JetIxError::SwapIxError("Unable to get route detail".to_string()));
+            };
         if self.expects_multi_route {
             // This is the second leg of the multi-route
             route.route_b = pool.route_type();
@@ -263,24 +266,35 @@ impl MarginSwapRouteIxBuilder {
     }
 
     /// Validate and finalize this swap
-    pub fn finalize(&mut self) -> Result<()> {
+    pub fn finalize(&mut self) -> IxResult<()> {
         if self.is_finalized {
-            bail!("Swap route is already finalized")
+            return Err(JetIxError::SwapIxError(
+                "Swap route is already finalized".to_string(),
+            ));
         }
         // Start with simple condiitions for data that should be present
         if self.next_route_index == 0 {
-            bail!("No swap routes seem to be added")
+            return Err(JetIxError::SwapIxError(
+                "No swap routes seem to be added".to_string(),
+            ));
         }
         if self.expects_multi_route {
-            bail!("Swap incomplete, expected a second part of a swap to be executed as a split")
+            return Err(JetIxError::SwapIxError(
+                "Swap incomplete, expected a second part of a swap to be executed as a split"
+                    .to_string(),
+            ));
         }
         match &self.current_route_tokens {
             None => {
-                bail!("There should be current route tokens populated in the swap")
+                return Err(JetIxError::SwapIxError(
+                    "There should be current route tokens populated in the swap".to_string(),
+                ));
             }
             Some((_, b)) => {
                 if &self.dst_token != b {
-                    bail!("Swap does not terminate in the provided destination token")
+                    return Err(JetIxError::SwapIxError(
+                        "Swap does not terminate in the provided destination token".to_string(),
+                    ));
                 }
             }
         }
@@ -290,10 +304,12 @@ impl MarginSwapRouteIxBuilder {
     }
 
     /// Get the instruction of the swap, which the caller should wrap with an invoke action
-    pub fn get_instruction(&self) -> Result<Instruction> {
+    pub fn get_instruction(&self) -> IxResult<Instruction> {
         // Check if finalized
         if !self.is_finalized {
-            bail!("Can only get instruction when the builder is finalized")
+            return Err(JetIxError::SwapIxError(
+                "Can only get instruction when the builder is finalized".to_string(),
+            ));
         }
         Ok(Instruction {
             program_id: jet_margin_swap::id(),
@@ -334,25 +350,34 @@ impl MarginSwapRouteIxBuilder {
         src_token: &Pubkey,
         dst_token: &Pubkey,
         swap_split: u8,
-    ) -> Result<()> {
+    ) -> IxResult<()> {
         // If we are on the last index, we can only get a split
         if self.is_finalized {
-            bail!("Cannot add route to a finalized swap");
+            return Err(JetIxError::SwapIxError(
+                "Cannot add route to a finalized swap".to_string(),
+            ));
         }
         if self.next_route_index > 2 {
-            bail!("Cannot add more routes")
+            return Err(JetIxError::SwapIxError(
+                "Cannot add more routes".to_string(),
+            ));
         }
         if self.expects_multi_route && swap_split > 0 {
-            bail!("The next route is expected to be a second leg of a multi swap, do not specify percentage split");
+            return Err(JetIxError::SwapIxError("The next route is expected to be a second leg of a multi swap, do not specify percentage split".to_string()));
         }
         // Check that the source token agrees with the expected next token
         if let Some((a, b)) = &self.current_route_tokens {
             // If on a multi-hop, the source and desitnation must agree, otherwise source = destination
             if self.expects_multi_route && (a != src_token || b != dst_token) {
-                bail!("Source and destination tokens must be the same in a split-route swap")
+                return Err(JetIxError::SwapIxError(
+                    "Source and destination tokens must be the same in a split-route swap"
+                        .to_string(),
+                ));
             }
             if !self.expects_multi_route && b != src_token {
-                bail!("The source token must be the same as the expected destination")
+                return Err(JetIxError::SwapIxError(
+                    "The source token must be the same as the expected destination".to_string(),
+                ));
             }
         }
 

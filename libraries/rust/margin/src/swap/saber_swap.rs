@@ -26,6 +26,7 @@ use std::{
 
 use anchor_lang::ToAccountMetas;
 use anyhow::{bail, Result};
+use jet_instructions::{IxResult, JetIxError};
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use saber_client::state::SwapInfo;
@@ -161,13 +162,13 @@ impl SaberSwapPool {
 }
 
 impl SwapAccounts for SaberSwapPool {
-    fn to_account_meta(&self, src_token: &Pubkey) -> Result<Vec<AccountMeta>> {
+    fn to_account_meta(&self, src_token: &Pubkey) -> IxResult<Vec<AccountMeta>> {
         let (vault_from, vault_into, fee_account) = if src_token == &self.mint_a {
             (self.token_b, self.token_a, self.fee_b)
         } else if src_token == &self.mint_b {
             (self.token_a, self.token_b, self.fee_a)
         } else {
-            bail!("Invalid source token")
+            return Err(JetIxError::SwapIxError("Invalid source token".to_string()));
         };
         let (swap_authority, _) =
             Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
@@ -184,13 +185,13 @@ impl SwapAccounts for SaberSwapPool {
         Ok(accounts)
     }
 
-    fn dst_token(&self, src_token: &Pubkey) -> Result<Pubkey> {
+    fn dst_token(&self, src_token: &Pubkey) -> IxResult<Pubkey> {
         let dst_token = if src_token == &self.mint_a {
             self.mint_b
         } else if src_token == &self.mint_b {
             self.mint_a
         } else {
-            bail!("Invalid source token")
+            return Err(JetIxError::SwapIxError("Invalid source token".to_string()));
         };
         Ok(dst_token)
     }

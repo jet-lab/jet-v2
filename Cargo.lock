@@ -2377,6 +2377,7 @@ dependencies = [
  "spl-associated-token-account",
  "spl-token 3.5.0",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror",
 ]
 
 [[package]]

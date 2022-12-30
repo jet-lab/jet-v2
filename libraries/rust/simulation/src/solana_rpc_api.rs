@@ -35,6 +35,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature};
 use solana_sdk::signer::Signer;
+use solana_sdk::slot_history::Slot;
 use solana_sdk::transaction::Transaction;
 use solana_transaction_status::TransactionStatus;
 
@@ -98,6 +99,7 @@ pub trait SolanaRpcClient: Send + Sync {
             blockhash,
         ))
     }
+    async fn get_slot(&self, commitment_config: Option<CommitmentConfig>) -> Result<Slot>;
 
     async fn get_clock(&self) -> Result<Clock>;
     async fn set_clock(&self, new_clock: Clock) -> Result<()>;
@@ -168,6 +170,16 @@ impl RpcConnection {
             .await?;
 
         Ok(runtime)
+    }
+
+    /// Get the underlying [RpcClient]
+    pub fn client(&self) -> &RpcClient {
+        &self.0.rpc
+    }
+
+    /// Get the underlying transaction config
+    pub fn tx_config(&self) -> Option<&RpcSendTransactionConfig> {
+        self.0.tx_config.as_ref()
     }
 }
 
@@ -285,6 +297,17 @@ impl SolanaRpcClient for RpcConnection {
             unix_timestamp,
             ..Default::default() // epoch probably doesn't matter?
         })
+    }
+
+    async fn get_slot(&self, commitment_config: Option<CommitmentConfig>) -> Result<Slot> {
+        match commitment_config {
+            Some(commitment_config) => Ok(self
+                .0
+                .rpc
+                .get_slot_with_commitment(commitment_config)
+                .await?),
+            None => Ok(self.0.rpc.get_slot().await?),
+        }
     }
 
     async fn set_clock(&self, _new_clock: Clock) -> Result<()> {
