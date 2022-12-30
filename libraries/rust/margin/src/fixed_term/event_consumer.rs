@@ -71,7 +71,7 @@ impl EventConsumer {
                         users: HashMap::new(),
                         builder: FixedTermIxBuilder::new_from_state(
                             self.rpc.payer().pubkey(),
-                            structure,
+                            &structure,
                         ),
                     })),
                 );

@@ -47,42 +47,20 @@ pub struct MarginIxBuilder {
 
     /// The address of the airspace the margin account belongs to
     pub airspace: Pubkey,
-
-    /// The authority to use in place of the owner
-    authority: Option<Pubkey>,
 }
 
 impl MarginIxBuilder {
     /// Create a new [MarginIxBuilder] which uses the margin account as the authority.
     /// Ordinary margin users should use this function to create a builder.
-    pub fn new(owner: Pubkey, seed: u16) -> Self {
-        Self::new_with_payer(owner, seed, owner, None)
+    pub fn new(airspace: Pubkey, owner: Pubkey, seed: u16) -> Self {
+        Self::new_with_payer(airspace, owner, seed, owner)
     }
 
     /// Create a new [MarginIxBuilder] with a custom payer and authority.
     /// The authority is expected to sign the instructions generated, and
     /// is normally the margin account or its registered liquidator.
     /// If the authority is not set, it defaults to the margin account.
-    pub fn new_with_payer(
-        owner: Pubkey,
-        seed: u16,
-        payer: Pubkey,
-        authority: Option<Pubkey>,
-    ) -> Self {
-        Self::new_with_payer_and_airspace(owner, seed, payer, Pubkey::default(), authority)
-    }
-
-    /// Create a new [MarginIxBuilder] with a custom payer and authority.
-    /// The authority is expected to sign the instructions generated, and
-    /// is normally the margin account or its registered liquidator.
-    /// If the authority is not set, it defaults to the margin account.
-    pub fn new_with_payer_and_airspace(
-        owner: Pubkey,
-        seed: u16,
-        payer: Pubkey,
-        airspace: Pubkey,
-        authority: Option<Pubkey>,
-    ) -> Self {
+    pub fn new_with_payer(airspace: Pubkey, owner: Pubkey, seed: u16, payer: Pubkey) -> Self {
         let (address, _) = Pubkey::find_program_address(
             &[owner.as_ref(), seed.to_le_bytes().as_ref()],
             &jet_margin::ID,
@@ -92,7 +70,16 @@ impl MarginIxBuilder {
             seed,
             payer,
             address,
-            authority,
+            airspace,
+        }
+    }
+
+    pub fn new_for_address(airspace: Pubkey, address: Pubkey, payer: Pubkey) -> Self {
+        Self {
+            owner: payer,
+            seed: 0,
+            payer,
+            address,
             airspace,
         }
     }
@@ -158,14 +145,14 @@ impl MarginIxBuilder {
     ///
     /// Returns the instruction, and the address of the token account to be
     /// created for the position.
-    pub fn register_position(&self, position_token_mint: Pubkey) -> (Pubkey, Instruction) {
-        let (token_account, _) = owned_position_token_account(&self.address, &position_token_mint);
+    pub fn register_position(&self, position_token_mint: Pubkey) -> Instruction {
+        let token_account = derive_position_token_account(&self.address, &position_token_mint);
 
         let (metadata, _) =
             Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
 
         let accounts = ix_account::RegisterPosition {
-            authority: self.authority(),
+            authority: self.payer,
             payer: self.payer,
             margin_account: self.address,
             position_token_mint,
@@ -176,13 +163,11 @@ impl MarginIxBuilder {
             rent: Rent::id(),
         };
 
-        let ix = Instruction {
+        Instruction {
             program_id: JetMargin::id(),
             data: ix_data::RegisterPosition {}.data(),
             accounts: accounts.to_account_metas(None),
-        };
-
-        (token_account, ix)
+        }
     }
 
     /// Get instruction to close a position
@@ -198,7 +183,7 @@ impl MarginIxBuilder {
         token_account: Pubkey,
     ) -> Instruction {
         let accounts = ix_account::ClosePosition {
-            authority: self.authority(),
+            authority: self.payer,
             receiver: self.payer,
             margin_account: self.address,
             position_token_mint,
@@ -392,7 +377,7 @@ impl MarginIxBuilder {
         let token_account = get_associated_token_address(&self.address, &token_mint);
         let accounts = ix_account::CreateDepositPosition {
             margin_account: self.address,
-            authority: self.authority(),
+            authority: self.payer,
             payer: self.payer,
             mint: token_mint,
             config: config_ix.derive_token_config(&token_mint),
@@ -459,8 +444,8 @@ impl MarginIxBuilder {
             authority: jet_program_common::ADMINISTRATOR,
             source_account: self.address,
             target_account: *target,
-            source_token_account: self.get_token_account_address(position_token_mint).0,
-            target_token_account: owned_position_token_account(target, position_token_mint).0,
+            source_token_account: self.get_token_account_address(position_token_mint),
+            target_token_account: derive_position_token_account(target, position_token_mint),
             token_program: spl_token::ID,
         }
         .to_account_metas(None);
@@ -474,15 +459,8 @@ impl MarginIxBuilder {
 
     /// Helper function to get token account address for a position mint
     #[inline]
-    pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> (Pubkey, u8) {
-        owned_position_token_account(&self.address, position_token_mint)
-    }
-
-    fn authority(&self) -> Pubkey {
-        match self.authority {
-            None => self.owner,
-            Some(authority) => authority,
-        }
+    pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> Pubkey {
+        derive_position_token_account(&self.address, position_token_mint)
     }
 }
 
@@ -590,14 +568,24 @@ impl MarginConfigIxBuilder {
 
 /// The token account that holds position tokens when the position is custodied
 /// by the margin account
-pub fn owned_position_token_account(
+pub fn derive_position_token_account(
     margin_account: &Pubkey,
     position_token_mint: &Pubkey,
-) -> (Pubkey, u8) {
+) -> Pubkey {
     Pubkey::find_program_address(
         &[margin_account.as_ref(), position_token_mint.as_ref()],
         &JetMargin::id(),
     )
+    .0
+}
+
+/// Derive the address for a user's margin account
+pub fn derive_margin_account(_airspace: &Pubkey, owner: &Pubkey, seed: u16) -> Pubkey {
+    Pubkey::find_program_address(
+        &[owner.as_ref(), seed.to_le_bytes().as_ref()],
+        &jet_margin::ID,
+    )
+    .0
 }
 
 /// Derive address for the config account for a given token

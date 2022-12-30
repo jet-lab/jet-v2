@@ -74,7 +74,7 @@ impl FixedTermPositionRefresher {
     /// register a fixed term market to check when refreshing positions
     pub async fn add_fixed_term_market(&mut self, address: Pubkey) -> Result<()> {
         let market = get_anchor_account::<Market>(self.rpc.clone(), &address).await?;
-        let builder = FixedTermIxBuilder::new_from_state(self.rpc.payer().pubkey(), market);
+        let builder = FixedTermIxBuilder::new_from_state(self.rpc.payer().pubkey(), &market);
 
         self.fixed_term_markets.insert(address, builder);
 
