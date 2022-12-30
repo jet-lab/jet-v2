@@ -20,8 +20,8 @@ use jet_fixed_term::{
 };
 use jet_margin_sdk::{
     fixed_term::{
-        event_consumer::EventConsumer, fixed_term_market_pda, FixedTermIxBuilder,
-        OrderBookAddresses, OwnedEventQueue,
+        event_consumer::EventConsumer, fixed_term_address, FixedTermIxBuilder, OrderBookAddresses,
+        OwnedEventQueue,
     },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
@@ -131,7 +131,7 @@ impl TestManager {
         let oracle = TokenManager::new(client.clone())
             .create_oracle(&mint.pubkey())
             .await?;
-        let ticket_mint = fixed_term_market_pda(&[
+        let ticket_mint = fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_MINT,
             FixedTermIxBuilder::market_key(
                 &Pubkey::default(), //todo airspace
@@ -584,7 +584,7 @@ impl GenerateProxy for NoProxy {
 #[async_trait]
 impl GenerateProxy for MarginIxBuilder {
     async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
-        let margin = MarginIxBuilder::new(owner.pubkey(), 0);
+        let margin = MarginIxBuilder::new(manager.ix_builder.airspace(), owner.pubkey(), 0);
         manager
             .sign_send_transaction(&[margin.create_account()], Some(&[owner]))
             .await?;
@@ -646,11 +646,13 @@ impl<P: Proxy> FixedTermUser<P> {
             &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             &self.manager.ix_builder.token_mint(),
+            &spl_token::id(),
         );
         let create_ticket = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             &self.manager.ix_builder.ticket_mint(),
+            &spl_token::id(),
         );
         let fund = spl_token::instruction::mint_to(
             &spl_token::ID,
@@ -1005,6 +1007,7 @@ pub async fn create_fixed_term_market_margin_user(
                 None,
                 wallet.pubkey(),
                 0,
+                ctx.margin.airspace(),
             )),
             Arc::new(
                 FixedTermPositionRefresher::new(

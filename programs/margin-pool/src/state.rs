@@ -529,7 +529,7 @@ impl MarginPool {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FullAmount {
     pub tokens: u64,
     pub notes: u64,
