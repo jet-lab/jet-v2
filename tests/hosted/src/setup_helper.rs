@@ -6,6 +6,7 @@ use anyhow::{Error, Result};
 use jet_margin::TokenKind;
 use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
 use jet_margin_sdk::tokens::TokenPrice;
+use jet_margin_sdk::tx_builder::TokenDepositsConfig;
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -66,9 +67,19 @@ pub async fn setup_token(
         confidence: 1_000_000,
         twap: 100_000_000,
     };
+    let deposit_config = TokenDepositsConfig {
+        oracle: jet_margin::TokenOracle::Pyth {
+            price: token_oracle.price,
+            product: token_oracle.product,
+        },
+        collateral_weight,
+    };
+
     try_join!(
         ctx.margin.create_pool(&setup),
-        ctx.tokens.set_price(&token, &price)
+        ctx.tokens.set_price(&token, &price),
+        ctx.margin
+            .configure_token_deposits(&token, Some(&deposit_config))
     )?;
 
     Ok(token)

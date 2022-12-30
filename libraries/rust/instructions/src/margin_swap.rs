@@ -1,32 +1,15 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-//
-// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 use std::collections::HashSet;
 
-use solana_sdk::instruction::AccountMeta;
-use solana_sdk::instruction::Instruction;
-use solana_sdk::pubkey::Pubkey;
-
 use anchor_lang::{InstructionData, ToAccountMetas};
+use solana_sdk::{
+    instruction::{AccountMeta, Instruction},
+    pubkey::Pubkey,
+};
+use spl_associated_token_account::get_associated_token_address;
 
 use jet_margin_pool::{ChangeKind, TokenChange};
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteDetail, SwapRouteIdentifier};
 use jet_margin_swap::{instruction as ix_data, ROUTE_SWAP_MAX_SPLIT, ROUTE_SWAP_MIN_SPLIT};
-use spl_associated_token_account::get_associated_token_address;
 
 use crate::margin::derive_position_token_account;
 use crate::margin_pool::MarginPoolIxBuilder;
