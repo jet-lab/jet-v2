@@ -96,26 +96,13 @@ impl MarginTxBuilder {
         signer: Option<Keypair>,
         owner: Pubkey,
         seed: u16,
-    ) -> MarginTxBuilder {
-        Self::new_with_airspace(rpc, signer, owner, seed, Pubkey::default())
-    }
-
-    /// Create a [MarginTxBuilder] for an ordinary user. Liquidators should use
-    /// `Self::new_liquidator`.
-    pub fn new_with_airspace(
-        rpc: Arc<dyn SolanaRpcClient>,
-        signer: Option<Keypair>,
-        owner: Pubkey,
-        seed: u16,
         airspace: Pubkey,
     ) -> MarginTxBuilder {
-        let ix = MarginIxBuilder::new_with_payer_and_airspace(
-            owner,
-            seed,
-            rpc.payer().pubkey(),
-            airspace,
-            None,
-        );
+        let payer = signer
+            .as_ref()
+            .map(|s| s.pubkey())
+            .unwrap_or_else(|| rpc.payer().pubkey());
+        let ix = MarginIxBuilder::new_with_payer(airspace, owner, seed, payer);
 
         let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey());
 
@@ -137,12 +124,15 @@ impl MarginTxBuilder {
     pub fn new_liquidator(
         rpc: Arc<dyn SolanaRpcClient>,
         signer: Option<Keypair>,
+        airspace: Pubkey,
         owner: Pubkey,
         seed: u16,
-        liquidator: Pubkey,
     ) -> MarginTxBuilder {
-        let ix =
-            MarginIxBuilder::new_with_payer(owner, seed, rpc.payer().pubkey(), Some(liquidator));
+        let payer = signer
+            .as_ref()
+            .map(|s| s.pubkey())
+            .unwrap_or_else(|| rpc.payer().pubkey());
+        let ix = MarginIxBuilder::new_with_payer(airspace, owner, seed, payer);
 
         let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey());
 
@@ -225,7 +215,7 @@ impl MarginTxBuilder {
     /// Use [Self::close_empty_positions] to close all empty positions.
     pub async fn close_token_positions(&self, token_mint: &Pubkey) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
-        let (deposit_account, _) = self.ix.get_token_account_address(&pool.deposit_note_mint);
+        let deposit_account = self.ix.get_token_account_address(&pool.deposit_note_mint);
         let instructions = vec![
             self.ix
                 .close_position(pool.deposit_note_mint, deposit_account),
@@ -246,7 +236,7 @@ impl MarginTxBuilder {
         let ix = match kind {
             TokenKind::Collateral => self.ix.close_position(
                 pool.deposit_note_mint,
-                self.ix.get_token_account_address(&pool.deposit_note_mint).0,
+                self.ix.get_token_account_address(&pool.deposit_note_mint),
             ),
             TokenKind::Claim => {
                 self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
@@ -325,7 +315,7 @@ impl MarginTxBuilder {
         let deposit_position = self
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
-        let loan_position = self
+        let _ = self
             .get_or_create_pool_loan_position(&mut instructions, &pool)
             .await?;
 
@@ -333,8 +323,7 @@ impl MarginTxBuilder {
             pool.margin_refresh_position(self.ix.address, token_metadata.pyth_price);
         instructions.push(self.adapter_invoke_ix(inner_refresh_loan_ix));
 
-        let inner_borrow_ix =
-            pool.margin_borrow(self.ix.address, deposit_position, loan_position, change);
+        let inner_borrow_ix = pool.margin_borrow(self.ix.address, deposit_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_borrow_ix));
         self.create_transaction_builder(&instructions)
@@ -357,12 +346,11 @@ impl MarginTxBuilder {
         let deposit_position = self
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
-        let loan_position = self
+        let _ = self
             .get_or_create_pool_loan_position(&mut instructions, &pool)
             .await?;
 
-        let inner_repay_ix =
-            pool.margin_repay(self.ix.address, deposit_position, loan_position, change);
+        let inner_repay_ix = pool.margin_repay(self.ix.address, deposit_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_repay_ix));
         self.create_transaction_builder(&instructions)
@@ -433,8 +421,6 @@ impl MarginTxBuilder {
         &self,
         source_token_mint: &Pubkey,
         destination_token_mint: &Pubkey,
-        transit_source_account: &Pubkey,
-        transit_destination_account: &Pubkey,
         swap_pool: &Pubkey,
         pool_mint: &Pubkey,
         fee_account: &Pubkey,
@@ -470,29 +456,24 @@ impl MarginTxBuilder {
             ),
         );
 
-        let (swap_authority, _) = Pubkey::find_program_address(&[swap_pool.as_ref()], swap_program);
-        let swap_pool = MarginSwapIxBuilder::new(
-            *source_token_mint,
-            *destination_token_mint,
-            *swap_pool,
-            swap_authority,
-            *pool_mint,
-            *fee_account,
-        );
-
-        // added TokenChange here for LevSwap fix
-        let inner_swap_ix = swap_pool.swap(
-            *self.address(),
-            *transit_source_account,
-            *transit_destination_account,
-            source_position,
-            destination_position,
-            *source_token_account,
-            *destination_token_account,
-            *swap_program,
-            &source_pool,
-            &destination_pool,
-            change,
+        let swap_info = SplSwap {
+            program: *swap_program,
+            address: *swap_pool,
+            pool_mint: *pool_mint,
+            token_a: *source_token_mint,
+            token_b: *destination_token_mint,
+            token_a_vault: *source_token_account,
+            token_b_vault: *destination_token_account,
+            fee_account: *fee_account,
+        };
+        let inner_swap_ix = pool_spl_swap(
+            &swap_info,
+            self.airspace(),
+            &self.ix.address,
+            source_token_mint,
+            destination_token_mint,
+            change.kind,
+            change.tokens,
             minimum_amount_out,
         );
 
@@ -798,13 +779,13 @@ impl MarginTxBuilder {
         token_mint: &Pubkey,
     ) -> Result<Pubkey> {
         let state = self.get_account_state().await?;
-        let (address, ix_register) = self.ix.register_position(*token_mint);
+        let ix_register = self.ix.register_position(*token_mint);
 
         if !state.positions().any(|p| p.token == *token_mint) {
             instructions.push(ix_register);
         }
 
-        Ok(address)
+        Ok(derive_position_token_account(&self.ix.address, token_mint))
     }
 
     async fn get_or_create_pool_loan_position(
@@ -818,12 +799,11 @@ impl MarginTxBuilder {
         Ok(if let Some(position) = search_result {
             position.address
         } else {
-            let (loan_note_token_account, pools_ix) =
-                pool.register_loan(self.ix.address, self.ix.payer);
+            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer);
             let wrapped_ix = self.adapter_invoke_ix(pools_ix);
             instructions.push(wrapped_ix);
 
-            loan_note_token_account
+            derive_loan_account(&self.ix.address, &pool.loan_note_mint)
         })
     }
 

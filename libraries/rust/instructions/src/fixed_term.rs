@@ -59,17 +59,17 @@ impl FixedTermIxBuilder {
         orderbook: OrderBookAddresses,
     ) -> Self {
         let ticket_mint =
-            fixed_term_market_pda(&[jet_fixed_term::seeds::TICKET_MINT, market.as_ref()]);
-        let underlying_token_vault = fixed_term_market_pda(&[
+            fixed_term_address(&[jet_fixed_term::seeds::TICKET_MINT, market.as_ref()]);
+        let underlying_token_vault = fixed_term_address(&[
             jet_fixed_term::seeds::UNDERLYING_TOKEN_VAULT,
             market.as_ref(),
         ]);
-        let orderbook_market_state = fixed_term_market_pda(&[
+        let orderbook_market_state = fixed_term_address(&[
             jet_fixed_term::seeds::ORDERBOOK_MARKET_STATE,
             market.as_ref(),
         ]);
-        let claims = fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, market.as_ref()]);
-        let collateral = fixed_term_market_pda(&[
+        let claims = fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, market.as_ref()]);
+        let collateral = fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
             market.as_ref(),
         ]);
@@ -92,11 +92,11 @@ impl FixedTermIxBuilder {
         }
     }
 
-    pub fn new_from_state(payer: Pubkey, market: Market) -> Self {
+    pub fn new_from_state(payer: Pubkey, market: &Market) -> Self {
         FixedTermIxBuilder {
             airspace: market.airspace,
             authority: Pubkey::default(), //todo
-            market: fixed_term_market_pda(&[
+            market: fixed_term_address(&[
                 seeds::MARKET,
                 market.airspace.as_ref(),
                 market.underlying_token_mint.as_ref(),
@@ -147,6 +147,10 @@ impl FixedTermIxBuilder {
 }
 
 impl FixedTermIxBuilder {
+    pub fn airspace(&self) -> Pubkey {
+        self.airspace
+    }
+
     pub fn token_mint(&self) -> Pubkey {
         self.underlying_mint
     }
@@ -526,7 +530,7 @@ impl FixedTermIxBuilder {
             program_id: jet_fixed_term::ID,
             accounts: jet_fixed_term::accounts::RefreshPosition {
                 market: self.market,
-                margin_user: fixed_term_market_pda(&[
+                margin_user: fixed_term_address(&[
                     seeds::MARGIN_USER,
                     self.market.as_ref(),
                     margin_account.as_ref(),
@@ -850,23 +854,23 @@ pub struct MarginUser {
 
 impl FixedTermIxBuilder {
     pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
-        let address = fixed_term_market_pda(&[
+        let address = fixed_term_address(&[
             jet_fixed_term::seeds::MARGIN_USER,
             self.market.as_ref(),
             margin_account.as_ref(),
         ]);
         MarginUser {
             address,
-            ticket_collateral: fixed_term_market_pda(&[
+            ticket_collateral: fixed_term_address(&[
                 jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
                 address.as_ref(),
             ]),
-            claims: fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, address.as_ref()]),
+            claims: fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, address.as_ref()]),
         }
     }
 
     pub fn market_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-        fixed_term_market_pda(&[
+        fixed_term_address(&[
             jet_fixed_term::seeds::MARKET,
             airspace.as_ref(),
             mint.as_ref(),
@@ -875,18 +879,18 @@ impl FixedTermIxBuilder {
     }
 
     pub fn claims_mint(market_key: &Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, market_key.as_ref()])
+        fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, market_key.as_ref()])
     }
 
     pub fn collateral_mint(market_key: &Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[
+        fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
             market_key.as_ref(),
         ])
     }
 
     pub fn term_deposit_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_term_market_pda(&[
+        fixed_term_address(&[
             jet_fixed_term::seeds::TERM_DEPOSIT,
             self.market.as_ref(),
             ticket_holder.as_ref(),
@@ -894,7 +898,7 @@ impl FixedTermIxBuilder {
         ])
     }
     pub fn term_loan_key(&self, margin_user: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_term_market_pda(&[
+        fixed_term_address(&[
             jet_fixed_term::seeds::TERM_LOAN,
             self.market.as_ref(),
             margin_user.as_ref(),
@@ -903,7 +907,7 @@ impl FixedTermIxBuilder {
     }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[
+        fixed_term_address(&[
             jet_fixed_term::seeds::MARGIN_USER,
             self.market.as_ref(),
             owner.as_ref(),
@@ -911,11 +915,11 @@ impl FixedTermIxBuilder {
     }
 
     pub fn user_claims(margin_user: Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, margin_user.as_ref()])
+        fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, margin_user.as_ref()])
     }
 
     pub fn user_ticket_collateral(margin_user: Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[
+        fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
             margin_user.as_ref(),
         ])
@@ -937,6 +941,14 @@ impl FixedTermIxBuilder {
     }
 }
 
+pub fn derive_margin_user(market: &Pubkey, margin_account: &Pubkey) -> Pubkey {
+    fixed_term_address(&[
+        jet_fixed_term::seeds::MARGIN_USER,
+        market.as_ref(),
+        margin_account.as_ref(),
+    ])
+}
+
 pub fn derive_crank_authorization(market: &Pubkey, crank: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[
@@ -949,6 +961,6 @@ pub fn derive_crank_authorization(market: &Pubkey, crank: &Pubkey) -> Pubkey {
     .0
 }
 
-pub fn fixed_term_market_pda(seeds: &[&[u8]]) -> Pubkey {
+pub fn fixed_term_address(seeds: &[&[u8]]) -> Pubkey {
     Pubkey::find_program_address(seeds, &jet_fixed_term::ID).0
 }

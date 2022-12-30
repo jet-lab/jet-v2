@@ -37,7 +37,7 @@ const POWERS_OF_TEN: &[i128] = &[
 ];
 
 /// A fixed-point decimal number 128 bits wide
-#[derive(Pod, Zeroable, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Pod, Zeroable, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
 pub struct Number128(i128);
 

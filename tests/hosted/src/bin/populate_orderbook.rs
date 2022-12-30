@@ -71,7 +71,7 @@ impl Client {
 
             Market::try_deserialize(&mut data.as_slice())?
         };
-        let ix = FixedTermIxBuilder::new_from_state(signer.pubkey(), market);
+        let ix = FixedTermIxBuilder::new_from_state(signer.pubkey(), &market);
 
         Ok(Self { conn, ix, signer })
     }
