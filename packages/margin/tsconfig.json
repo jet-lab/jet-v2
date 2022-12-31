@@ -1,6 +1,6 @@
 {
   "include": ["src"],
-  "exclude": ["dist", "src/wasm"],
+  "exclude": ["src/wasm", "src/wasm-src"],
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",

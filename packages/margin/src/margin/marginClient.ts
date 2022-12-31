@@ -1,13 +1,17 @@
 import { getAccount, NATIVE_MINT } from "@solana/spl-token"
 import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
 import {
   JetControl,
   JetControlIdl,
+  JetMargin,
   JetMarginIdl,
+  JetMarginPool,
   JetMarginPoolIdl,
+  JetMarginSerum,
   JetMarginSerumIdl,
+  JetMarginSwap,
   JetMarginSwapIdl,
+  JetMetadata,
   JetMetadataIdl
 } from "../types"
 import { MarginCluster, MarginConfig, MarginTokenConfig, getLatestConfig } from "./config"
@@ -22,6 +26,8 @@ import {
   VersionedTransactionResponse
 } from "@solana/web3.js"
 import axios from "axios"
+import { PoolAction } from "./pool"
+import { TokenAmount } from "../token"
 
 interface TokenMintsList {
   tokenMint: PublicKey

@@ -22,24 +22,12 @@ import {
   MarginAccountData,
   PositionKind
 } from "./state"
-import { MarginPrograms } from "./marginClient"
-import { findDerivedAccount } from "../utils/pda"
-import {
-  AssociatedToken,
-  bigIntToBn,
-  bnToNumber,
-  FixedTermMarket,
-  getTimestamp,
-  Number192,
-  refreshAllMarkets,
-  sendAll,
-  sendAndConfirm,
-  sendAndConfirmV0,
-  TokenAmount
-} from ".."
-import { Number128 } from "../utils/number128"
 import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
+import { AssociatedToken, TokenAmount, bigIntToBn, bnToNumber } from "../token"
+import { Number128, Number192, findDerivedAccount, getTimestamp, sendAll, sendAndConfirm, sendAndConfirmV0 } from "../utils"
+import { MarginPrograms } from "./marginClient"
+import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
 
 /** A description of a position associated with a [[MarginAccount]] and [[Pool]] */
 export interface PoolPosition {

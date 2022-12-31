@@ -1,5 +1,5 @@
 import { BN } from "@project-serum/anchor"
-import { TokenAmount } from "../../"
+import { TokenAmount } from "../../token"
 
 export class PoolTokenChangeKind {
   constructor(private kind: PoolTokenChangeKindType) {}

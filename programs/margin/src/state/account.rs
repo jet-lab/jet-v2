@@ -17,6 +17,7 @@
 
 use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
+use std::convert::TryFrom;
 
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -270,7 +271,8 @@ impl MarginAccount {
     /// slightly slower if you have the wrong key
     pub fn get_position_by_key(&self, key: &AccountPositionKey) -> Option<&AccountPosition> {
         let list = self.position_list();
-        let position = &list.positions[key.index];
+        // TODO: Propagate ErrorCode::IndexOverflows
+        let position = &list.positions[usize::try_from(key.index).unwrap()];
 
         if position.token == key.mint {
             Some(position)
@@ -286,10 +288,12 @@ impl MarginAccount {
         key: &AccountPositionKey,
     ) -> Option<&mut AccountPosition> {
         let list = self.position_list_mut();
-        let position = &list.positions[key.index];
+        // TODO: Propagate ErrorCode::IndexOverflows
+        let key_index = usize::try_from(key.index).unwrap();
+        let position = &list.positions[key_index];
 
         if position.token == key.mint {
-            Some(&mut list.positions[key.index])
+            Some(&mut list.positions[key_index])
         } else {
             list.get_mut(&key.mint)
         }
