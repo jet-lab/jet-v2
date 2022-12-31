@@ -23,7 +23,6 @@
     "@jet-lab/e2e-react-adapter": "^0.1.3",
     "@jet-lab/margin": "*",
     "@jet-lab/store": "*",
-    "@jet-lab/wasm": "*",
     "@orca-so/stablecurve": "^1.0.6",
     "@solana/spl-token": "0.3.6",
     "@solana/wallet-adapter-react": "^0.15.23",

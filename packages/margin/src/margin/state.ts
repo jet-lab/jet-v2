@@ -2,8 +2,8 @@ import { BN, Idl } from "@project-serum/anchor"
 import { IdlTypeDef } from "@project-serum/anchor/dist/cjs/idl"
 import { AccountMap, AllAccountsMap, IdlTypes, TypeDef } from "@project-serum/anchor/dist/cjs/program/namespace/types"
 import { blob, Layout, s16, s32, seq, struct, u16, u32, u8 } from "@solana/buffer-layout"
-import { JetMargin } from ".."
-import { i64Field, number128Field, pubkey, u64 } from "../utils/layout"
+import { i64Field, number128Field, pubkey, u64 } from "../utils"
+import { JetMargin } from "../types"
 
 /****************************
  * Anchor program type definitions.

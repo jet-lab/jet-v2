@@ -2,6 +2,7 @@ use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+#[derive(Clone)]
 pub struct Order {
     /// Pukbey of the signer allowed to make changes to this order
     #[wasm_bindgen(getter_with_clone)]
