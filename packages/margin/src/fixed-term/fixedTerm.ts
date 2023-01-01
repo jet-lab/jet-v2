@@ -355,17 +355,23 @@ export class FixedTermMarket {
   }
 
   async repay({
-    user, termLoan, nextTermLoan, payer, source, amount
+    user,
+    termLoan,
+    nextTermLoan,
+    payer,
+    source,
+    amount
   }: {
-    user: MarginAccount,
-    termLoan: Address,
-    nextTermLoan: Address,
-    payer: Address,
-    source: Address,
+    user: MarginAccount
+    termLoan: Address
+    nextTermLoan: Address
+    payer: Address
+    source: Address
     amount: BN
   }) {
     const marketUser = await this.deriveMarginUserAddress(user)
-    return this.program.methods.repay(amount)
+    return this.program.methods
+      .repay(amount)
       .accounts({
         marginUser: marketUser,
         termLoan,
@@ -377,7 +383,7 @@ export class FixedTermMarket {
         claims: await this.deriveMarginUserClaims(marketUser),
         claimsMint: this.addresses.claimsMint,
         market: this.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
   }
