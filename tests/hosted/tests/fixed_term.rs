@@ -837,8 +837,11 @@ async fn auto_roll_borrow() -> Result<()> {
         pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await?,
     ]
-    .cat(user.margin_borrow_order(params, &[]).await?)
+    .cat(user.margin_borrow_order(params).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -851,8 +854,11 @@ async fn auto_roll_borrow() -> Result<()> {
         pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await?,
     ]
-    .cat(user.margin_borrow_order(params, &[0]).await?)
+    .cat(user.margin_borrow_order(params).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
