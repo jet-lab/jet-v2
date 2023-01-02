@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use jet_margin::MarginAccount;
 use jet_program_common::Fp32;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
@@ -26,10 +27,8 @@ pub struct ConfigureAutoRoll<'info> {
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// The signing authority for this user account
-    #[account(
-        constraint = margin_account.owner == &jet_margin::ID,
-    )]
-    pub margin_account: Signer<'info>,
+    #[account(signer)]
+    pub margin_account: AccountLoader<'info, MarginAccount>,
 }
 
 /// assert the new settings make sense

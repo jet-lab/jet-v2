@@ -832,7 +832,7 @@ async fn auto_roll_borrow() -> Result<()> {
 
     let mut params = underlying(1_000, 2_000);
     params.auto_roll = true;
-    vec![
+    let borrow_order = vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
@@ -841,9 +841,27 @@ async fn auto_roll_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_borrow_order(params).await?)
-    .send_and_confirm_condensed_in_order(&client)
+    .cat(user.margin_borrow_order(params).await?);
+
+    // TODO: assert proper failure
+    // This fails due to an unconfigured auto_roll setting in the margin_user account
+    let res = borrow_order
+        .clone()
+        .send_and_confirm_condensed_in_order(&client)
+        .await;
+    assert!(res.is_err());
+
+    user.set_roll_config(
+        MarketSide::Borrowing,
+        AutoRollConfig {
+            limit_price: params.limit_price,
+        },
+    )
     .await?;
+
+    borrow_order
+        .send_and_confirm_condensed_in_order(&client)
+        .await?;
 
     let posted_info = manager.load_orderbook().await?.asks_order_callback(0)?;
     assert!(posted_info.flags.contains(CallbackFlags::AUTO_ROLL));

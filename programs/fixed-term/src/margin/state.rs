@@ -307,7 +307,7 @@ impl Assets {
     }
 }
 
-#[derive(Zeroable, Default, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub struct AutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,

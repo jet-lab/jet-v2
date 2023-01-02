@@ -101,11 +101,6 @@ impl<'info> OrderbookMut<'info> {
         flags: CallbackFlags,
     ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
         let mut manager = self.market.load_mut()?;
-        let auto_roll = if params.auto_roll {
-            CallbackFlags::AUTO_ROLL
-        } else {
-            CallbackFlags::default()
-        };
         let callback_info = CallbackInfo::new(
             self.market.key(),
             owner,
@@ -113,7 +108,7 @@ impl<'info> OrderbookMut<'info> {
             out,
             adapter.unwrap_or_default(),
             Clock::get()?.unix_timestamp,
-            flags | auto_roll,
+            flags,
             manager.nonce,
         );
         manager.nonce += 1;
