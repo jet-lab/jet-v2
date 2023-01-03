@@ -127,6 +127,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
             sequence_number,
             margin_user: ctx.accounts.margin_user.key(),
             market: ctx.accounts.orderbook_mut.market.key(),
+            payer: ctx.accounts.payer.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
             balance: base_filled,

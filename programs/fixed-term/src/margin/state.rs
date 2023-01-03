@@ -314,6 +314,9 @@ pub struct TermLoan {
     /// The market where the term loan was created
     pub market: Pubkey,
 
+    /// Which account recieves the rent when this PDA is destructed
+    pub payer: Pubkey,
+
     /// The `OrderTag` associated with the creation of this `TermLoan`
     pub order_tag: OrderTag,
 

@@ -13,6 +13,9 @@ pub struct TermDeposit {
     /// The relevant market for this deposit
     pub market: Pubkey,
 
+    /// Which account recieves the rent when this PDA is destructed
+    pub payer: Pubkey,
+
     /// The sequence number for this deposit, which serves as unique identifier for a
     /// particular user's deposits.
     pub sequence_number: u64,

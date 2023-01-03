@@ -60,6 +60,7 @@ impl<'info> LendOrder<'info> {
     pub fn lend(
         &self,
         user: Pubkey,
+        payer: Pubkey,
         seed: &[u8],
         sequence_number: u64,
         callback_info: CallbackInfo,
@@ -89,6 +90,7 @@ impl<'info> LendOrder<'info> {
                     market,
                     sequence_number,
                     owner: user,
+                    payer,
                     matures_at: maturation_timestamp,
                     principal: order_summary.quote_filled()?,
                     amount: order_summary.base_filled(),
@@ -156,6 +158,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
     )?;
     ctx.accounts.lend(
         ctx.accounts.authority.key(),
+        ctx.accounts.payer.key(),
         &seed,
         0,
         callback_info,

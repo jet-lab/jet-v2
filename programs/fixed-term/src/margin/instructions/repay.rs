@@ -19,6 +19,7 @@ pub struct Repay<'info> {
     #[account(
         mut,
         has_one = margin_user @ FixedTermErrorCode::UserNotInMarket,
+        has_one = payer,
         constraint = term_loan.sequence_number
             == margin_user.debt.next_term_loan_to_repay().unwrap()
             @ FixedTermErrorCode::TermLoanHasWrongSequenceNumber
@@ -35,7 +36,10 @@ pub struct Repay<'info> {
     pub source: Account<'info, TokenAccount>,
 
     /// The signing authority for the source_account
-    pub payer: Signer<'info>,
+    pub source_authority: Signer<'info>,
+
+    /// The payer for the `TermLoan` to return rent to
+    pub payer: AccountInfo<'info>,
 
     /// The token vault holding the underlying token of the ticket
     #[account(mut)]
@@ -52,7 +56,7 @@ impl<'info> Repay<'info> {
             Transfer {
                 from: self.source.to_account_info(),
                 to: self.underlying_token_vault.to_account_info(),
-                authority: self.payer.to_account_info(),
+                authority: self.source_authority.to_account_info(),
             },
         )
     }

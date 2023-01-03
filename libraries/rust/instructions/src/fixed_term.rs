@@ -816,6 +816,7 @@ impl FixedTermIxBuilder {
 
     pub fn margin_repay(
         &self,
+        source_authority: &Pubkey,
         payer: &Pubkey,
         margin_account: &Pubkey,
         term_loan_seed: &[u8],
@@ -830,6 +831,7 @@ impl FixedTermIxBuilder {
             next_term_loan: self.term_loan_key(&margin_user.address, next_term_loan_seed),
             source: get_associated_token_address(payer, &self.underlying_mint),
             payer: *payer,
+            source_authority: *source_authority,
             underlying_token_vault: self.underlying_token_vault,
             token_program: spl_token::ID,
         }
