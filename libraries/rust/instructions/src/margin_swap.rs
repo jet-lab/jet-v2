@@ -117,9 +117,6 @@ impl MarginSwapRouteIxBuilder {
 
         let mut pool_note_mints = HashSet::with_capacity(4);
 
-        let transit_source_account = get_associated_token_address(&margin_account, &src_token);
-        let transit_destination_account = get_associated_token_address(&margin_account, &dst_token);
-
         let account_metas = match swap_context {
             SwapContext::MarginPool => {
                 let src_pool = MarginPoolIxBuilder::new(src_token);
@@ -137,8 +134,6 @@ impl MarginSwapRouteIxBuilder {
                     margin_account,
                     source_account,
                     destination_account,
-                    transit_source_account,
-                    transit_destination_account,
                     source_margin_pool: ix_accounts::MarginPoolInfo {
                         margin_pool: src_pool.address,
                         vault: src_pool.vault,
@@ -156,8 +151,6 @@ impl MarginSwapRouteIxBuilder {
             }
             SwapContext::MarginPositions => ix_accounts::RouteSwap {
                 margin_account,
-                source_account: transit_source_account,
-                destination_account: transit_destination_account,
                 token_program: spl_token::id(),
             }
             .to_account_metas(None),
@@ -180,8 +173,8 @@ impl MarginSwapRouteIxBuilder {
         })
     }
 
-    /// Add
-    pub fn add_swap_route<T: SwapAccounts>(
+    /// Add a swap leg to the route
+    pub fn add_swap_leg<T: SwapAccounts>(
         &mut self,
         pool: &T,
         src_token: &Pubkey,
@@ -197,47 +190,20 @@ impl MarginSwapRouteIxBuilder {
         // Run common checks
         self.verify_addition(src_token, &dst_token, swap_split)?;
 
-        // Add a margin pool from the previous swap if next_route > 0
-        if self.next_route_index > 0 && !self.expects_multi_route {
-            // Add ATA where the pool transfer will come from
-            let src_ata = get_associated_token_address(&self.margin_account, src_token);
-            self.account_metas.push(AccountMeta::new(src_ata, false));
+        // Add source ATA and pool accounts. Add destination only if this is
+        // the first part of a split leg.
+        let src_ata = get_associated_token_address(&self.margin_account, src_token);
+        self.account_metas.push(AccountMeta::new(src_ata, false));
 
-            match self.swap_context {
-                SwapContext::MarginPool => {
-                    // It depends on whether this is a multi-hop or not.
-                    let pool = MarginPoolIxBuilder::new(*src_token);
-                    let mut pool_accounts = ix_accounts::MarginPoolInfo {
-                        margin_pool: pool.address,
-                        vault: pool.vault,
-                        deposit_note_mint: pool.deposit_note_mint,
-                    }
-                    .to_account_metas(None);
-
-                    self.account_metas.append(&mut pool_accounts);
-
-                    self.pool_note_mints.insert(pool.deposit_note_mint);
-
-                    // Add the pool destination account
-                    let (pool_account, _) =
-                        owned_position_token_account(&self.margin_account, &pool.deposit_note_mint);
-                    self.account_metas
-                        .push(AccountMeta::new(pool_account, false));
-                }
-                SwapContext::MarginPositions => {
-                    // Add the margin destination account
-                    let dst_ata = get_associated_token_address(&self.margin_account, &dst_token);
-                    self.account_metas.push(AccountMeta::new(dst_ata, false));
-                }
-            }
-
-            self.spl_token_accounts.insert(*src_token);
-        }
-
-        // Build accounts
+        // Add swap pool accounts
         let mut accounts = pool.to_account_meta(src_token)?;
-
         self.account_metas.append(&mut accounts);
+
+        if !self.expects_multi_route && swap_split > 0 {
+            // Add destination ATA
+            let dst_ata = get_associated_token_address(&self.margin_account, &dst_token);
+            self.account_metas.push(AccountMeta::new(dst_ata, false));
+        }
 
         // Update the route information and persist builder state
         let Some(mut route) = self
@@ -298,6 +264,10 @@ impl MarginSwapRouteIxBuilder {
                 }
             }
         }
+        // Add destination ATA
+        let dst_ata = get_associated_token_address(&self.margin_account, &self.dst_token);
+        self.account_metas.push(AccountMeta::new(dst_ata, false));
+
         // Safe to finalize
         self.is_finalized = true;
         Ok(())
@@ -315,7 +285,7 @@ impl MarginSwapRouteIxBuilder {
             program_id: jet_margin_swap::id(),
             accounts: self.account_metas.clone(),
             data: match self.swap_context {
-                SwapContext::MarginPool => ix_data::RouteSwapMargin {
+                SwapContext::MarginPool => ix_data::RouteSwapPool {
                     withdrawal_change_kind: self.withdrawal_change.kind,
                     withdrawal_amount: self.withdrawal_change.tokens,
                     minimum_amount_out: self.minimum_amount_out,

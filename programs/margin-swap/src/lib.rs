@@ -44,8 +44,8 @@ mod jet_margin_swap {
     use super::*;
 
     /// Route a swap to one or more venues
-    pub fn route_swap<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+    pub fn route_swap<'info>(
+        ctx: Context<'_, '_, '_, 'info, RouteSwap<'info>>,
         amount_in: u64,
         minimum_amount_out: u64,
         swap_routes: [SwapRouteDetail; 3],
@@ -53,15 +53,15 @@ mod jet_margin_swap {
         route_swap_handler(ctx, amount_in, minimum_amount_out, swap_routes)
     }
 
-    /// Route a swap to one or more venues by borrowing on margin
-    pub fn route_swap_margin<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, RouteSwapPool<'info>>,
+    /// Route a swap to one or more venues by using margin pools
+    pub fn route_swap_pool<'info>(
+        ctx: Context<'_, '_, '_, 'info, RouteSwapPool<'info>>,
         withdrawal_change_kind: ChangeKind,
         withdrawal_amount: u64,
         minimum_amount_out: u64,
         swap_routes: [SwapRouteDetail; 3],
     ) -> Result<()> {
-        route_swap_margin_handler(
+        route_swap_pool_handler(
             ctx,
             withdrawal_change_kind,
             withdrawal_amount,

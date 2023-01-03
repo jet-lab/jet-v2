@@ -461,11 +461,11 @@ async fn single_leg_swap_margin(
     // Can't finalize if there are no routes
     assert!(swap_builder.finalize().is_err());
 
-    swap_builder.add_swap_route(&pool, &env.msol, 60)?;
-    swap_builder.add_swap_route(&pool, &env.msol, 0)?;
+    swap_builder.add_swap_leg(&pool, &env.msol, 60)?;
+    swap_builder.add_swap_leg(&pool, &env.msol, 0)?;
 
     // Adding a disconnected swap should fail
-    let result = swap_builder.add_swap_route(&pool, &env.usdc, 90);
+    let result = swap_builder.add_swap_leg(&pool, &env.usdc, 90);
     assert!(result.is_err());
 
     swap_builder.finalize()?;
@@ -532,8 +532,8 @@ async fn single_leg_swap(
         TokenChange::shift(ONE_MSOL),
         1, // Get at least 1 token back
     )?;
-    swap_builder.add_swap_route(&pool, &env.msol, 60)?;
-    swap_builder.add_swap_route(&pool, &env.msol, 0)?;
+    swap_builder.add_swap_leg(&pool, &env.msol, 60)?;
+    swap_builder.add_swap_leg(&pool, &env.msol, 0)?;
     swap_builder.finalize().unwrap();
 
     user_a.route_swap(&swap_builder, &[]).await?;
