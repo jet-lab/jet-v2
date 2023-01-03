@@ -110,11 +110,11 @@ impl TryFrom<pyth_sdk_solana::PriceFeed> for PriceChangeInfo {
     type Error = ErrorCode;
 
     fn try_from(oracle: pyth_sdk_solana::PriceFeed) -> std::result::Result<Self, Self::Error> {
-        let price = oracle.get_current_price().ok_or(ErrorCode::InvalidOracle)?;
-        let ema_price = oracle.get_ema_price().ok_or(ErrorCode::InvalidOracle)?;
+        let price = oracle.get_price_unchecked();
+        let ema_price = oracle.get_ema_price_unchecked();
         Ok(PriceChangeInfo {
-            publish_time: oracle.publish_time,
-            exponent: oracle.expo,
+            publish_time: price.publish_time,
+            exponent: price.expo,
             value: price.price,
             confidence: price.conf,
             twap: ema_price.price,

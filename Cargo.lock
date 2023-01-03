@@ -2476,7 +2476,6 @@ name = "jet-program-common"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "borsh 0.9.3",
  "bytemuck",
  "num-traits",
  "solana-program",
