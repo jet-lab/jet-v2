@@ -20,7 +20,8 @@ use jet_fixed_term::{
 };
 use jet_margin_sdk::{
     fixed_term::{
-        event_consumer::EventConsumer, fixed_term_market_pda, FixedTermIxBuilder, OwnedEventQueue,
+        event_consumer::EventConsumer, fixed_term_address, FixedTermIxBuilder, OrderBookAddresses,
+        OwnedEventQueue,
     },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
@@ -130,7 +131,7 @@ impl TestManager {
         let oracle = TokenManager::new(client.clone())
             .create_oracle(&mint.pubkey())
             .await?;
-        let ticket_mint = fixed_term_market_pda(&[
+        let ticket_mint = fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_MINT,
             FixedTermIxBuilder::market_key(
                 &Pubkey::default(), //todo airspace
@@ -180,6 +181,7 @@ impl TestManager {
         client.send_and_confirm_transaction(&transaction).await?;
 
         let ix_builder = FixedTermIxBuilder::new_from_seed(
+            payer.pubkey(),
             &Pubkey::default(),
             &mint.pubkey(),
             MARKET_SEED,
@@ -187,8 +189,12 @@ impl TestManager {
             underlying_oracle,
             ticket_oracle,
             None,
-        )
-        .with_payer(&payer.pubkey());
+            OrderBookAddresses {
+                bids: bids_kp.pubkey(),
+                asks: asks_kp.pubkey(),
+                event_queue: eq_kp.pubkey(),
+            },
+        );
         let mut this = Self {
             client: client.clone(),
             event_consumer: Arc::new(EventConsumer::new(client.clone())),
@@ -205,7 +211,7 @@ impl TestManager {
                 .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
                 .await?;
             this.ix_builder
-                .initialize_event_queue(&eq_kp.pubkey(), EVENT_QUEUE_CAPACITY, rent)?
+                .initialize_event_queue(&eq_kp.pubkey(), EVENT_QUEUE_CAPACITY, rent)
         };
 
         let init_bids = {
@@ -213,28 +219,17 @@ impl TestManager {
                 .client
                 .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
-            this.ix_builder.initialize_orderbook_slab(
-                &bids_kp.pubkey(),
-                ORDERBOOK_CAPACITY,
-                rent,
-            )?
+            this.ix_builder
+                .initialize_orderbook_slab(&bids_kp.pubkey(), ORDERBOOK_CAPACITY, rent)
         };
         let init_asks = {
             let rent = this
                 .client
                 .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
-            this.ix_builder.initialize_orderbook_slab(
-                &asks_kp.pubkey(),
-                ORDERBOOK_CAPACITY,
-                rent,
-            )?
+            this.ix_builder
+                .initialize_orderbook_slab(&asks_kp.pubkey(), ORDERBOOK_CAPACITY, rent)
         };
-        this.ix_builder = this.ix_builder.with_orderbook_accounts(
-            bids_kp.pubkey(),
-            asks_kp.pubkey(),
-            eq_kp.pubkey(),
-        );
         this.insert_kp("eq", clone(eq_kp));
         this.insert_kp("bids", clone(bids_kp));
         this.insert_kp("asks", clone(asks_kp));
@@ -252,13 +247,9 @@ impl TestManager {
             LEND_TENOR,
             ORIGINATION_FEE,
         );
-        let init_orderbook = this.ix_builder.initialize_orderbook(
-            this.client.payer().pubkey(),
-            eq_kp.pubkey(),
-            bids_kp.pubkey(),
-            asks_kp.pubkey(),
-            MIN_ORDER_SIZE,
-        )?;
+        let init_orderbook = this
+            .ix_builder
+            .initialize_orderbook(this.client.payer().pubkey(), MIN_ORDER_SIZE);
 
         this.sign_send_transaction(&[init_eq, init_bids, init_asks, init_fee_destination], None)
             .await?;
@@ -268,11 +259,8 @@ impl TestManager {
         Ok(this)
     }
 
-    pub async fn with_crank(mut self) -> Result<Self> {
-        let payer = self.client.payer().pubkey();
-
-        self.ix_builder = self.ix_builder.with_crank(&payer);
-        let auth_crank = self.ix_builder.authorize_crank(payer)?;
+    pub async fn with_crank(self) -> Result<Self> {
+        let auth_crank = self.ix_builder.authorize_crank();
 
         self.sign_send_transaction(&[auth_crank], None).await?;
         Ok(self)
@@ -336,18 +324,18 @@ impl TestManager {
         Ok(())
     }
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
-        let pause = self.ix_builder.pause_ticket_redemption()?;
+        let pause = self.ix_builder.pause_ticket_redemption();
 
         self.sign_send_transaction(&[pause], None).await
     }
     pub async fn resume_ticket_redemption(&self) -> Result<Signature> {
-        let resume = self.ix_builder.resume_ticket_redemption()?;
+        let resume = self.ix_builder.resume_ticket_redemption();
 
         self.sign_send_transaction(&[resume], None).await
     }
 
     pub async fn pause_orders(&self) -> Result<Signature> {
-        let pause = self.ix_builder.pause_order_matching()?;
+        let pause = self.ix_builder.pause_order_matching();
 
         self.sign_send_transaction(&[pause], None).await
     }
@@ -358,7 +346,7 @@ impl TestManager {
                 break;
             }
 
-            let resume = self.ix_builder.resume_order_matching()?;
+            let resume = self.ix_builder.resume_order_matching();
             self.sign_send_transaction(&[resume], None).await?;
         }
 
@@ -596,7 +584,7 @@ impl GenerateProxy for NoProxy {
 #[async_trait]
 impl GenerateProxy for MarginIxBuilder {
     async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
-        let margin = MarginIxBuilder::new(owner.pubkey(), 0);
+        let margin = MarginIxBuilder::new(manager.ix_builder.airspace(), owner.pubkey(), 0);
         manager
             .sign_send_transaction(&[margin.create_account()], Some(&[owner]))
             .await?;
@@ -658,11 +646,13 @@ impl<P: Proxy> FixedTermUser<P> {
             &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             &self.manager.ix_builder.token_mint(),
+            &spl_token::id(),
         );
         let create_ticket = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             &self.manager.ix_builder.ticket_mint(),
+            &spl_token::id(),
         );
         let fund = spl_token::instruction::mint_to(
             &spl_token::ID,
@@ -684,7 +674,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .initialize_margin_user(self.proxy.pubkey())?;
+            .initialize_margin_user(self.proxy.pubkey());
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
@@ -694,7 +684,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .convert_tokens(self.proxy.pubkey(), None, None, amount)?;
+            .convert_tokens(self.proxy.pubkey(), None, None, amount);
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
@@ -704,7 +694,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .stake_tickets(self.proxy.pubkey(), None, amount, seed)?;
+            .stake_tickets(self.proxy.pubkey(), None, amount, seed);
 
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
@@ -716,7 +706,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .redeem_ticket(self.proxy.pubkey(), ticket, None)?;
+            .redeem_ticket(self.proxy.pubkey(), ticket, None);
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
@@ -726,7 +716,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let borrow =
             self.manager
                 .ix_builder
-                .sell_tickets_order(self.proxy.pubkey(), None, None, params)?;
+                .sell_tickets_order(self.proxy.pubkey(), None, None, params);
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(borrow)], &[&self.owner])
             .await
@@ -741,7 +731,7 @@ impl<P: Proxy> FixedTermUser<P> {
             None,
             None,
             params,
-        )?;
+        );
         self.proxy
             .refresh_and_invoke_signed(ix, clone(&self.owner))
             .await
@@ -757,7 +747,7 @@ impl<P: Proxy> FixedTermUser<P> {
             None,
             params,
             debt_seqno,
-        )?;
+        );
         self.proxy
             .refresh_and_invoke_signed(borrow, clone(&self.owner))
             .await
@@ -774,7 +764,7 @@ impl<P: Proxy> FixedTermUser<P> {
             None,
             params,
             deposit_seqno,
-        )?;
+        );
         self.proxy
             .refresh_and_invoke_signed(ix, clone(&self.owner))
             .await
@@ -784,7 +774,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let lend =
             self.manager
                 .ix_builder
-                .lend_order(self.proxy.pubkey(), None, None, params, seed)?;
+                .lend_order(self.proxy.pubkey(), None, None, params, seed);
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(lend)], &[&self.owner])
             .await
@@ -794,7 +784,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let cancel = self
             .manager
             .ix_builder
-            .cancel_order(self.proxy.pubkey(), order_id)?;
+            .cancel_order(self.proxy.pubkey(), order_id);
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(cancel)], &[&self.owner])
             .await
@@ -1017,6 +1007,7 @@ pub async fn create_fixed_term_market_margin_user(
                 None,
                 wallet.pubkey(),
                 0,
+                ctx.margin.airspace(),
             )),
             Arc::new(
                 FixedTermPositionRefresher::new(

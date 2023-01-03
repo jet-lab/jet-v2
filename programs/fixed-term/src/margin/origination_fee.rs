@@ -1,4 +1,4 @@
-const FEE_UNIT: u64 = 1_000_000;
+pub const FEE_UNIT: u64 = 1_000_000;
 
 /// based on some requested amount, determines the size of a borrow order that
 /// adds an origination fee.

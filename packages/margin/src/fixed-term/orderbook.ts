@@ -1,5 +1,5 @@
 import { FixedTermMarket } from "./fixedTerm"
-import { get_orders_from_slab as getOrdersFromSlab, Order } from "@jet-lab/wasm"
+import { get_orders_from_slab as getOrdersFromSlab, Order } from "../wasm"
 
 export class Orderbook {
   readonly bids: Order[]

@@ -335,7 +335,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
 
     let mut clock = ctx.rpc.get_clock().await.unwrap();
     clock.unix_timestamp += 61;
-    ctx.rpc.set_clock(clock);
+    ctx.rpc.set_clock(clock).await.unwrap();
 
     scen.user_b
         .liquidate_end(Some(scen.liquidator.wallet.pubkey()))
@@ -358,14 +358,7 @@ async fn liquidator_permission_is_removable() -> Result<()> {
     // A liquidator tries to liquidate User B, it should no longer have authority to do that
     let result = scen.liquidator.begin(&scen.user_b, false).await;
 
-    #[cfg(feature = "localnet")]
     assert_custom_program_error(anchor_lang::error::ErrorCode::AccountNotInitialized, result);
-
-    #[cfg(not(feature = "localnet"))]
-    assert_custom_program_error(
-        anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
-        result,
-    );
 
     Ok(())
 }

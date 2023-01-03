@@ -329,14 +329,14 @@ pub struct AccountPositionKey {
     pub mint: Pubkey,
 
     /// The array index where the data for this position is located
-    pub index: usize,
+    pub index: u64,
 }
 
 #[assert_size(7432)]
 #[derive(AnchorSerialize, AnchorDeserialize, Default, Pod, Zeroable, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct AccountPositionList {
-    pub length: usize,
+    pub length: u64,
     pub map: [AccountPositionKey; 32],
     pub positions: [AccountPosition; 32],
 }
@@ -364,11 +364,15 @@ impl AccountPositionList {
             .ok_or_else(|| error!(ErrorCode::MaxPositions))?;
 
         // add the new entry to the sorted map
-        let key = AccountPositionKey { mint, index };
-        self.map[self.length] = key;
+        let key = AccountPositionKey {
+            mint,
+            index: index as u64,
+        };
 
+        let max_index = usize::try_from(self.length).unwrap();
+        self.map[max_index] = key;
+        self.map[..max_index + 1].sort_by_key(|p| p.mint);
         self.length += 1;
-        self.map[..self.length].sort_by_key(|p| p.mint);
 
         // mark position as not free
         free_position.token = mint;
@@ -389,37 +393,39 @@ impl AccountPositionList {
             .ok_or(ErrorCode::PositionNotRegistered)?;
         // Get the map whose position to remove
         let map = self.map[map_index];
+        let position_index = usize::try_from(map.index).unwrap();
         // Take a copy of the position to be removed
-        let position = self.positions[map.index];
+        let position = self.positions[position_index];
         // Check that the position is correct
         if &position.address != account {
             return err!(ErrorCode::PositionNotRegistered);
         }
 
         // Remove the position
-        self.positions[map.index] = Zeroable::zeroed();
+        self.positions[position_index] = Zeroable::zeroed();
 
         // Move the map elements up by 1 to replace map position being removed
-        self.map.copy_within(map_index + 1..self.length, map_index);
+        let length = usize::try_from(self.length).unwrap();
+        self.map.copy_within(map_index + 1..length, map_index);
 
-        self.length -= 1;
         // Clear the map at the last slot of the array, as it is shifted up
-        self.map[self.length].mint = Pubkey::default();
-        self.map[self.length].index = 0;
+        self.map[length - 1].mint = Pubkey::default();
+        self.map[length - 1].index = 0;
+        self.length -= 1;
 
         Ok(position)
     }
 
     pub fn get(&self, mint: &Pubkey) -> Option<&AccountPosition> {
         let key = self.get_key(mint)?;
-        let position = &self.positions[key.index];
+        let position = &self.positions[usize::try_from(key.index).unwrap()];
 
         Some(position)
     }
 
     pub fn get_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
         let key = self.get_key(mint)?;
-        let position = &mut self.positions[key.index];
+        let position = &mut self.positions[usize::try_from(key.index).unwrap()];
 
         Some(position)
     }
@@ -429,7 +435,7 @@ impl AccountPositionList {
     }
 
     fn get_map_index(&self, mint: &Pubkey) -> Option<usize> {
-        self.map[..self.length]
+        self.map[..usize::try_from(self.length).unwrap()]
             .binary_search_by_key(mint, |p| p.mint)
             .ok()
     }
