@@ -20,7 +20,10 @@ use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token::Mint;
 use jet_airspace::state::Airspace;
 
-use crate::{seeds::TOKEN_CONFIG_SEED, ErrorCode, TokenAdmin, TokenConfig, TokenKind};
+use crate::{
+    events::TokenConfigured, seeds::TOKEN_CONFIG_SEED, ErrorCode, TokenAdmin, TokenConfig,
+    TokenKind,
+};
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Eq, PartialEq, Clone)]
 pub struct TokenConfigUpdate {
@@ -99,6 +102,16 @@ pub fn configure_token_handler(
     config.max_staleness = updated_config.max_staleness;
 
     config.validate()?;
+
+    emit!(TokenConfigured {
+        airspace: config.airspace,
+        mint: config.mint,
+        underlying_mint: config.underlying_mint,
+        admin: config.admin,
+        token_kind: config.token_kind,
+        value_modifier: config.value_modifier,
+        max_staleness: config.max_staleness,
+    });
 
     Ok(())
 }

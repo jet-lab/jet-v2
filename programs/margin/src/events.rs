@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{AccountPosition, Liquidation, Valuation};
+use crate::{AccountPosition, Liquidation, TokenAdmin, TokenKind, Valuation};
 
 event_groups! {
     PositionEvent {
@@ -112,6 +112,31 @@ pub struct TransferPosition {
     pub source_token_account: Pubkey,
     pub target_token_account: Pubkey,
     pub amount: u64,
+}
+
+#[event]
+pub struct TokenConfigured {
+    pub airspace: Pubkey,
+    pub mint: Pubkey,
+    pub underlying_mint: Pubkey,
+    pub admin: TokenAdmin,
+    pub token_kind: TokenKind,
+    pub value_modifier: u16,
+    pub max_staleness: u64,
+}
+
+#[event]
+pub struct AdapterConfigured {
+    pub airspace: Pubkey,
+    pub adapter_program: Pubkey,
+    pub is_adapter: bool,
+}
+
+#[event]
+pub struct LiquidatorConfigured {
+    pub airspace: Pubkey,
+    pub liquidator: Pubkey,
+    pub is_liquidator: bool,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
