@@ -258,10 +258,12 @@ impl MarginSwapRouteIxBuilder {
         // Run common checks
         self.verify_addition(src_token, &dst_token, swap_split)?;
 
-        // Add source ATA and pool accounts. Add destination only if this is
-        // the first part of a split leg.
-        let src_ata = get_associated_token_address(&self.margin_account, src_token);
-        self.account_metas.push(AccountMeta::new(src_ata, false));
+        if !self.expects_multi_route {
+            // Add source ATA and pool accounts. Add destination only if this is
+            // the first part of a split leg.
+            let src_ata = get_associated_token_address(&self.margin_account, src_token);
+            self.account_metas.push(AccountMeta::new(src_ata, false));
+        }
 
         // Add swap pool accounts
         let mut accounts = pool.to_account_meta(src_token)?;
