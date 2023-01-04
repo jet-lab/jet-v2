@@ -2175,6 +2175,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "index"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anyhow",
+ "bytemuck",
+ "console_error_panic_hook",
+ "jet-fixed-term",
+ "jet-program-common",
+ "js-sys",
+ "rand_chacha 0.3.1",
+ "serde",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "index_list"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2378,20 +2394,6 @@ dependencies = [
  "spl-token 3.5.0",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
-]
-
-[[package]]
-name = "jet-lab-wasm-src"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "console_error_panic_hook",
- "jet-program-common",
- "js-sys",
- "rand_chacha 0.3.1",
- "serde",
- "wasm-bindgen",
 ]
 
 [[package]]

@@ -1,8 +1,10 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { AssociatedToken, FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange, sendAll } from "../index"
 import { FixedTermMarket, MarketAndconfig } from "./fixedTerm"
 import { AnchorProvider, BN } from "@project-serum/anchor"
+import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../margin"
+import { AssociatedToken } from "../token"
+import { sendAll } from "../utils"
 
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {

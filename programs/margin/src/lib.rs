@@ -78,7 +78,7 @@ pub const LIQUIDATION_TIMEOUT: UnixTimestamp = 60;
 
 /// The maximum number of positions that a user can register.
 /// This may be exceeded by a liquidator.
-pub const MAX_USER_POSITIONS: usize = 24;
+pub const MAX_USER_POSITIONS: u64 = 24;
 
 /// This crate documents the instructions used in the `margin` program of the
 /// [jet-v2 repo](https://github.com/jet-lab/jet-v2/).

@@ -15,5 +15,5 @@ replace() {
     fi
 }
 
-replace "s/jet-lab-wasm-src/@jet-lab\\/wasm/g" ../wasm/package.json
-replace "s/*/*\\n!package.json\\n!.gitkeep/g" ../wasm/.gitignore
+# See https://github.com/pyth-network/pyth-crosschain/blob/main/Dockerfile.wasm#L26
+replace  "/^\s*wasm.__wbg_systeminstruction_free(ptr);$/d" src/wasm/index_bg.js
