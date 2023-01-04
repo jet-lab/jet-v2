@@ -43,6 +43,20 @@ pub const ROUTE_SWAP_MIN_SPLIT: u8 = 100 - ROUTE_SWAP_MAX_SPLIT;
 mod jet_margin_swap {
     use super::*;
 
+    pub fn margin_swap(
+        ctx: Context<MarginSplSwap>,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        margin_spl_swap_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+        )
+    }
+
     /// Route a swap to one or more venues
     pub fn route_swap<'info>(
         ctx: Context<'_, '_, '_, 'info, RouteSwap<'info>>,

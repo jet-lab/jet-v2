@@ -36,7 +36,6 @@ use jet_margin_sdk::ix_builder::{
 use jet_margin_sdk::lookup_tables::LookupTable;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
-use jet_margin_sdk::swap::saber_swap::SaberSwapPool;
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
@@ -80,8 +79,12 @@ impl MarginClient {
         }
     }
 
+    pub fn airspace(&self) -> Pubkey {
+        self.tx_admin.airspace
+    }
+
     pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
-        let tx = MarginTxBuilder::new_with_airspace(
+        let tx = MarginTxBuilder::new(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             keypair.pubkey(),
@@ -105,9 +108,9 @@ impl MarginClient {
         let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            self.airspace(),
             *owner,
             seed,
-            keypair.pubkey(),
         );
 
         Ok(MarginUser {
@@ -433,6 +436,47 @@ impl MarginUser {
     ) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.repay(mint, source, change).await?)
             .await
+    }
+
+    /// Swap between two tokens using a swap pool.
+    ///
+    /// The `source_mint` and `destination_mint` determine the direction of
+    /// the swap.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn swap(
+        &self,
+        program_id: &Pubkey,
+        source_mint: &Pubkey,
+        destination_mint: &Pubkey,
+        swap_pool: &SplSwapPool,
+        change: TokenChange,
+        minimum_amount_out: u64,
+    ) -> Result<(), Error> {
+        // Determine the order of token_a and token_b based on direction of swap
+        let (source_token, destination_token) = if source_mint == &swap_pool.mint_a {
+            (&swap_pool.token_a, &swap_pool.token_b)
+        } else {
+            (&swap_pool.token_b, &swap_pool.token_a)
+        };
+        self.rpc
+            .send_and_confirm(
+                self.tx
+                    .swap(
+                        source_mint,
+                        destination_mint,
+                        &swap_pool.pool,
+                        &swap_pool.pool_mint,
+                        &swap_pool.fee_account,
+                        source_token,
+                        destination_token,
+                        program_id,
+                        change,
+                        minimum_amount_out,
+                    )
+                    .await?,
+            )
+            .await
+            .map(|_| ())
     }
 
     /// Execute a swap route

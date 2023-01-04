@@ -15,20 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use jet_static_program_registry::{
-    orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
-};
+use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 
 use crate::*;
-
-// register permitted swap programs
-related_programs! {
-    SwapProgram {[
-        spl_token_swap_v2::Spl2,
-        orca_swap_v1::OrcaV1,
-        orca_swap_v2::OrcaV2,
-    ]}
-}
 
 #[derive(Accounts)]
 pub struct SplSwapInfo<'info> {
