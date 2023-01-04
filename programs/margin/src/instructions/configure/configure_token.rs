@@ -81,6 +81,12 @@ pub fn configure_token_handler(
 ) -> Result<()> {
     let config = &mut ctx.accounts.token_config;
 
+    emit!(TokenConfigured {
+        airspace: config.airspace,
+        mint: config.mint,
+        update: updated_config.clone(),
+    });
+
     let updated_config = match updated_config {
         Some(update) => update,
         None => return config.close(ctx.accounts.payer.to_account_info()),
@@ -102,16 +108,6 @@ pub fn configure_token_handler(
     config.max_staleness = updated_config.max_staleness;
 
     config.validate()?;
-
-    emit!(TokenConfigured {
-        airspace: config.airspace,
-        mint: config.mint,
-        underlying_mint: config.underlying_mint,
-        admin: config.admin,
-        token_kind: config.token_kind,
-        value_modifier: config.value_modifier,
-        max_staleness: config.max_staleness,
-    });
 
     Ok(())
 }
