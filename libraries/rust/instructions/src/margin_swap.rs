@@ -113,7 +113,7 @@ pub trait SwapAccounts {
 }
 
 /// The context which a user wants to swap with. Indicates whether a user wants
-/// to use leverage by borrowing from a pool, or by using margin token accounts.
+/// to use margin pools or token accounts as the source and destination of the swap.
 #[derive(Debug, Clone, Copy)]
 pub enum SwapContext {
     /// Borrow inputs and deposit outputs using margin pools to swap.

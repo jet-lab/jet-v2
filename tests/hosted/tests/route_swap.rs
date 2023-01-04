@@ -349,13 +349,13 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     )?;
 
     // Split the route 60/40 to emulate a split even if going to the same venue
-    swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 60)?;
-    swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 40)?;
+    swap_builder.add_swap_leg(&swap_pool_sbr_msol_tsol, &env.msol, 60)?;
+    swap_builder.add_swap_leg(&swap_pool_sbr_msol_tsol, &env.msol, 40)?;
 
-    swap_builder.add_swap_route(&swap_pool_spl_usdc_tsol, &env.tsol, 0)?;
+    swap_builder.add_swap_leg(&swap_pool_spl_usdc_tsol, &env.tsol, 0)?;
 
     // Adding a disconnected swap should fail
-    let result = swap_builder.add_swap_route(&swap_pool_spl_msol_usdt, &env.usdc, 0);
+    let result = swap_builder.add_swap_leg(&swap_pool_spl_msol_usdt, &env.usdc, 0);
     assert!(result.is_err());
 
     swap_builder.finalize().unwrap();
