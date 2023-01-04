@@ -829,7 +829,7 @@ impl FixedTermIxBuilder {
             margin_user: margin_user.address,
             term_loan: self.term_loan_key(&margin_user.address, term_loan_seed),
             next_term_loan: self.term_loan_key(&margin_user.address, next_term_loan_seed),
-            source: get_associated_token_address(payer, &self.underlying_mint),
+            source: get_associated_token_address(source_authority, &self.underlying_mint),
             payer: *payer,
             source_authority: *source_authority,
             underlying_token_vault: self.underlying_token_vault,
