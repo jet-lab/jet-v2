@@ -1,5 +1,4 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-('../misc/ReorderArrows');
 import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { FixedBorrowViewOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
@@ -8,7 +7,7 @@ import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { MarginAccount, repay, TokenAmount, settle, MarketAndconfig, FixedTermMarket, Pool } from '@jet-lab/margin';
+import { MarginAccount, repay, TokenAmount, settle, MarketAndconfig, FixedTermMarket, Pool, AssociatedToken } from '@jet-lab/margin';
 import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
 import { AnchorProvider } from '@project-serum/anchor';
@@ -25,14 +24,6 @@ const { Option } = Select;
 interface FixedTermMarketSelectorProps {
   type: 'asks' | 'bids';
 }
-
-const fetchOwedTokens = async (market: MarketAndconfig, marginAccount: MarginAccount): Promise<TokenAmount> => {
-  const user = await market.market.fetchMarginUser(marginAccount);
-  const owedTokens = user?.assets.entitledTokens;
-  return owedTokens
-    ? new TokenAmount(owedTokens, market.token.decimals)
-    : new TokenAmount(new BN(0), market.token.decimals);
-};
 
 const settleNow = async (
   marginAccount: MarginAccount,
@@ -85,7 +76,6 @@ const submitRepay = async (marginAccount: MarginAccount, provider: AnchorProvide
       marginAccount,
       amount,
       termLoans,
-      payer: walletAddress.toBase58(),
       pools,
       markets,
       market
@@ -119,19 +109,27 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
   const wallet = useWallet();
 
 
+
   const [repayAmount, setRepayAmount] = useState(0)
 
   const [owedTokens, setOwedTokens] = useState<TokenAmount>(
     new TokenAmount(new BN(0), markets[selectedMarket]?.token.decimals || 6)
   );
 
-  const { data } = useOpenPositions(markets[selectedMarket]?.market, marginAccount)
-
   useEffect(() => {
-    if (marginAccount) {
-      fetchOwedTokens(markets[selectedMarket], marginAccount).then(owed => setOwedTokens(owed));
+    if (marginAccount?.address && markets[selectedMarket].token) {
+      const pda = AssociatedToken.derive(markets[selectedMarket].token.mint, marginAccount.address)
+      provider.connection.getTokenAccountBalance(pda).then(res => {
+        const { value } = res;
+        setOwedTokens(new TokenAmount(new BN(value.amount), value.decimals))
+      })
+      
     }
-  }, [selectedMarket, marginAccount]);
+  }, [marginAccount?.address])
+
+
+
+  const { data } = useOpenPositions(markets[selectedMarket]?.market, marginAccount)
 
   const token = markets[selectedMarket]?.token
 

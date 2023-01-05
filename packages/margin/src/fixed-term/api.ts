@@ -346,11 +346,6 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
 
   instructions.push(refreshIXS)
   const settleIXS: TransactionInstruction[] = []
-  const settleIX = await market.settle(marginAccount)
-  marginAccount.withAccountingInvoke({
-    instructions: settleIXS,
-    adapterInstruction: settleIX
-  })
   const change = PoolTokenChange.shiftBy(amount)
   const source = AssociatedToken.derive(market.addresses.underlyingTokenMint, marginAccount.address)
   const position = await pool.withGetOrRegisterDepositPosition({ instructions: settleIXS, marginAccount })
