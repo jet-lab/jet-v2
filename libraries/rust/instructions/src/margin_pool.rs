@@ -17,7 +17,6 @@
 
 use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::InstructionData;
-use anchor_spl::token::Token;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
@@ -28,6 +27,7 @@ use jet_margin_pool::{accounts as ix_accounts, TokenChange};
 
 /// Utility for creating instructions to interact with the margin
 /// pools program for a specific pool.
+#[derive(Clone)]
 pub struct MarginPoolIxBuilder {
     /// The address of the mint for tokens stored in the pool
     pub token_mint: Pubkey,
@@ -54,8 +54,7 @@ impl MarginPoolIxBuilder {
     ///
     /// `token_mint` - The token mint which whose tokens the pool stores
     pub fn new(token_mint: Pubkey) -> Self {
-        let (address, _) =
-            Pubkey::find_program_address(&[token_mint.as_ref()], &JetMarginPool::id());
+        let address = derive_margin_pool(&Pubkey::default(), &token_mint);
 
         let (vault, _) = Pubkey::find_program_address(
             &[address.as_ref(), b"vault".as_ref()],
@@ -99,7 +98,7 @@ impl MarginPoolIxBuilder {
             loan_note_mint: self.loan_note_mint,
             vault: self.vault,
             payer,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
             system_program: System::id(),
             rent: Rent::id(),
         }
@@ -134,7 +133,7 @@ impl MarginPoolIxBuilder {
             depositor,
             source,
             destination,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -172,7 +171,7 @@ impl MarginPoolIxBuilder {
             depositor,
             source,
             destination,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -200,7 +199,6 @@ impl MarginPoolIxBuilder {
         &self,
         margin_account: Pubkey,
         deposit_account: Pubkey,
-        loan_account: Pubkey,
         change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::MarginBorrow {
@@ -208,9 +206,9 @@ impl MarginPoolIxBuilder {
             margin_pool: self.address,
             loan_note_mint: self.loan_note_mint,
             deposit_note_mint: self.deposit_note_mint,
-            loan_account,
+            loan_account: derive_loan_account(&margin_account, &self.loan_note_mint),
             deposit_account,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -232,13 +230,11 @@ impl MarginPoolIxBuilder {
     ///
     /// `margin_account` - The account with the loan to be repaid
     /// `deposit_account` - The account with notes to repay the loan
-    /// `loan_account` - The account with the loan debt to be reduced
     /// `amount` - The amount to be repaid
     pub fn margin_repay(
         &self,
         margin_account: Pubkey,
         deposit_account: Pubkey,
-        loan_account: Pubkey,
         change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::MarginRepay {
@@ -246,9 +242,9 @@ impl MarginPoolIxBuilder {
             margin_pool: self.address,
             loan_note_mint: self.loan_note_mint,
             deposit_note_mint: self.deposit_note_mint,
-            loan_account,
+            loan_account: derive_loan_account(&margin_account, &self.loan_note_mint),
             deposit_account,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -287,7 +283,7 @@ impl MarginPoolIxBuilder {
             loan_account,
             repayment_token_account: repayment_source_account,
             repayment_account_authority: repayment_source_authority,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -325,8 +321,8 @@ impl MarginPoolIxBuilder {
     }
 
     /// Instruction to register a loan position with a margin pool.
-    pub fn register_loan(&self, margin_account: Pubkey, payer: Pubkey) -> (Pubkey, Instruction) {
-        let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
+    pub fn register_loan(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
+        let loan_note_account = derive_loan_account(&margin_account, &self.loan_note_mint);
         let position_token_metadata =
             Pubkey::find_program_address(&[self.loan_note_mint.as_ref()], &jet_metadata::ID).0;
 
@@ -337,23 +333,21 @@ impl MarginPoolIxBuilder {
             loan_note_account,
             loan_note_mint: self.loan_note_mint,
             payer,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
             system_program: System::id(),
             rent: Rent::id(),
         };
 
-        let ix = Instruction {
+        Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::RegisterLoan {}.data(),
             accounts: accounts.to_account_metas(None),
-        };
-
-        (loan_note_account, ix)
+        }
     }
 
     /// Instruction to close a loan account in a margin pool
     pub fn close_loan(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
-        let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
+        let loan_note_account = derive_loan_account(&margin_account, &self.loan_note_mint);
 
         let accounts = ix_accounts::CloseLoan {
             margin_account,
@@ -361,7 +355,7 @@ impl MarginPoolIxBuilder {
             loan_note_account,
             loan_note_mint: self.loan_note_mint,
             beneficiary: payer,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         };
 
         Instruction {
@@ -378,7 +372,7 @@ impl MarginPoolIxBuilder {
             vault: self.vault,
             fee_destination,
             deposit_note_mint: self.deposit_note_mint,
-            token_program: Token::id(),
+            token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
@@ -399,8 +393,8 @@ impl MarginPoolIxBuilder {
         let accounts = ix_accounts::AdminTransferLoan {
             authority: jet_program_common::ADMINISTRATOR,
             margin_pool: self.address,
-            source_loan_account: loan_token_account(source_margin_account, &self.loan_note_mint).0,
-            target_loan_account: loan_token_account(target_margin_account, &self.loan_note_mint).0,
+            source_loan_account: derive_loan_account(source_margin_account, &self.loan_note_mint),
+            target_loan_account: derive_loan_account(target_margin_account, &self.loan_note_mint),
             token_program: spl_token::ID,
         }
         .to_account_metas(None);
@@ -414,9 +408,15 @@ impl MarginPoolIxBuilder {
 }
 
 /// Find a loan token account for a margin account and margin pool's loan note mint
-pub fn loan_token_account(margin_account: &Pubkey, loan_note_mint: &Pubkey) -> (Pubkey, u8) {
+pub fn derive_loan_account(margin_account: &Pubkey, loan_note_mint: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[margin_account.as_ref(), loan_note_mint.as_ref()],
         &jet_margin_pool::id(),
     )
+    .0
+}
+
+/// Derive the address for a margin pool
+pub fn derive_margin_pool(_airspace: &Pubkey, token_mint: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[token_mint.as_ref()], &jet_margin_pool::ID).0
 }

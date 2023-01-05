@@ -9,10 +9,9 @@ pub struct TokensExchanged {
 
 #[event]
 pub struct DepositRedeemed {
-    pub market: Pubkey,
-    pub ticket_holder: Pubkey,
+    pub deposit: Pubkey,
+    pub deposit_holder: Pubkey,
     pub redeemed_value: u64,
-    pub maturation_timestamp: i64,
     pub redeemed_timestamp: i64,
 }
 

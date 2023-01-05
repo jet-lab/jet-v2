@@ -138,10 +138,10 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
 
     for (address, mut account) in margin_accounts {
         let ix = MarginIxBuilder::new_with_payer(
+            Pubkey::default(), // FIXME: read airspace from margin account
             account.owner,
             u16::from_le_bytes(account.user_seed),
             client.signer()?,
-            None,
         );
 
         if let Some(position) = account.get_position(&deposit_token) {
@@ -200,10 +200,10 @@ pub async fn process_update_balances(
         .await?;
 
     let ix = MarginIxBuilder::new_with_payer(
+        Pubkey::default(), // FIXME: read airspace from margin account
         account.owner,
         u16::from_le_bytes(account.user_seed),
         client.signer()?,
-        None,
     );
     let mut steps = vec![];
     let mut instructions = vec![];
@@ -232,10 +232,10 @@ pub async fn process_transfer_position(
         .await?;
 
     let ix = MarginIxBuilder::new_with_payer(
+        Pubkey::default(), // FIXME: read airspace from margin account
         source.owner,
         u16::from_le_bytes(source.user_seed),
         resolve_payer(client)?,
-        Some(jet_program_common::ADMINISTRATOR),
     );
     let pool_ix = MarginPoolIxBuilder::new(token);
     let position_token_mint = pool_ix.deposit_note_mint;
@@ -243,7 +243,7 @@ pub async fn process_transfer_position(
         Some(n) => n,
         None => {
             client
-                .read_token_account(&ix.get_token_account_address(&position_token_mint).0)
+                .read_token_account(&ix.get_token_account_address(&position_token_mint))
                 .await?
                 .amount
         }
@@ -387,7 +387,8 @@ async fn refresh_account_positions(client: &Client, account: &mut MarginAccount)
                 };
 
                 PriceInfo::new_valid(
-                    price_oracle.expo,
+                    // SAFETY: We only need the exponent, which won't change if the price is stale
+                    price_oracle.get_ema_price_unchecked().expo,
                     price_value,
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)

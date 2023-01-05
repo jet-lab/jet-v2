@@ -93,9 +93,10 @@ impl EventConsumer {
         market: Market,
         margin_account_settlement_sink: Option<AsyncNoDupeQueue<Pubkey>>,
     ) {
-        let builder = FixedTermIxBuilder::from(market)
-            .with_payer(&self.rpc.payer().pubkey())
-            .with_crank(&self.rpc.payer().pubkey());
+        let builder = FixedTermIxBuilder::new_from_state(
+            self.rpc.payer().pubkey(),
+            &market,
+        );
         self.markets.lock().unwrap().insert(
             builder.market(),
             Arc::new(Mutex::new(MarketState {
@@ -368,7 +369,7 @@ impl MarketState {
 
             let consume_ix = [
                 ComputeBudgetInstruction::set_compute_unit_limit(800_000),
-                self.builder.consume_events(&seed, &consume_params).unwrap(),
+                self.builder.consume_events(&seed, &consume_params),
             ];
             let next_tx = Transaction::new_signed_with_payer(
                 &consume_ix,

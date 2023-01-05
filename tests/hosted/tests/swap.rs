@@ -148,8 +148,8 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
         assert_eq!(swap_pool.pool, pool.pool);
     }
 
-    let user_a_usdc_transit = user_a.create_deposit_position(&env.usdc).await?;
-    let user_a_tsol_transit = user_a.create_deposit_position(&env.tsol).await?;
+    let _user_a_usdc_transit = user_a.create_deposit_position(&env.usdc).await?;
+    let _user_a_tsol_transit = user_a.create_deposit_position(&env.tsol).await?;
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
@@ -231,8 +231,6 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &user_a_usdc_transit,
-            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::shift(100 * ONE_USDC),
             // we want a minimum of 0.9 SOL for 100 USDC
@@ -258,8 +256,6 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &user_a_usdc_transit,
-            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::set(2_000 * ONE_USDC),
             // Value doesn't matter
@@ -274,8 +270,6 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &user_a_usdc_transit,
-            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::set(900 * ONE_USDC),
             // Value doesn't matter
@@ -290,8 +284,6 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &user_a_usdc_transit,
-            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::set(799 * ONE_USDC),
             // we want a minimum of 0.9 SOL for 101 USDC (1000 - 100 - 799)
@@ -313,8 +305,6 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
             &swap_program_id,
             &env.tsol,
             &env.usdc,
-            &user_a_tsol_transit,
-            &user_a_usdc_transit,
             &swap_pool,
             TokenChange::set(0),
             90 * 10 * ONE_USDC,

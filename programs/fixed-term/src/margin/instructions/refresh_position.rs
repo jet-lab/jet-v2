@@ -82,15 +82,12 @@ fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
         msg!("oracle error in account {}: {:?}", oracle_info.key, e);
         error!(FixedTermErrorCode::OracleError)
     })?;
-    let price = oracle
-        .get_current_price()
-        .ok_or(FixedTermErrorCode::PriceMissing)?;
-    let ema_price = oracle
-        .get_ema_price()
-        .ok_or(FixedTermErrorCode::PriceMissing)?;
+    // Price will be checked by the margin program
+    let price = oracle.get_price_unchecked();
+    let ema_price = oracle.get_price_unchecked();
     Ok(PositionChange::Price(PriceChangeInfo {
-        publish_time: oracle.publish_time,
-        exponent: oracle.expo,
+        publish_time: price.publish_time,
+        exponent: price.expo,
         value: price.price,
         confidence: price.conf,
         twap: ema_price.price,

@@ -3,6 +3,7 @@ use anchor_spl::token::{burn, Burn, Mint, Token, TokenAccount};
 
 use crate::{
     control::state::Market,
+    events::TermDepositCreated,
     seeds,
     tickets::{events::TicketsStaked, state::TermDeposit},
     FixedTermErrorCode,
@@ -100,6 +101,16 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
     emit!(TicketsStaked {
         market: ctx.accounts.market.key(),
         ticket_holder: ctx.accounts.ticket_holder.key(),
+        amount: params.amount,
+    });
+    emit!(TermDepositCreated {
+        term_deposit: ctx.accounts.deposit.key(),
+        authority: ctx.accounts.ticket_holder.key(),
+        order_tag: None,
+        sequence_number: ctx.accounts.deposit.sequence_number,
+        market: ctx.accounts.deposit.market,
+        maturation_timestamp: matures_at,
+        principal: params.amount,
         amount: params.amount,
     });
 

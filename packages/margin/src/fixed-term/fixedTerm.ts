@@ -1,11 +1,12 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { bigIntToBn, bnToBigInt, FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from ".."
+import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from "../margin"
 import { Orderbook } from "./orderbook"
 import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount } from "./utils"
-import { rate_to_price } from "@jet-lab/wasm"
+import { rate_to_price } from "../wasm"
+import { bigIntToBn, bnToBigInt } from "../token"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
 export interface OrderParams {

@@ -1,4 +1,4 @@
-# Usage
+# Usage (Out of date; TODO)
 
 Install `wasm-pack` from [here](https://rustwasm.github.io/wasm-pack/installer/).
 

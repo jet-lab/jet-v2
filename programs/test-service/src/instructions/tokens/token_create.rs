@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token};
 
-use pyth_sdk_solana::state::{AccKey, AccountType, PriceAccount, ProductAccount, MAGIC, VERSION};
+use pyth_sdk_solana::state::{AccountType, PriceAccount, ProductAccount, MAGIC, VERSION};
 
 use crate::{
     seeds::{TOKEN_INFO, TOKEN_MINT, TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT},
@@ -132,9 +132,7 @@ pub fn token_create_handler(ctx: Context<TokenCreate>, params: TokenCreateParams
     pyth_product.magic = MAGIC;
     pyth_product.ver = VERSION;
     pyth_product.atype = AccountType::Product as u32;
-    pyth_product.px_acc = AccKey {
-        val: ctx.accounts.pyth_price.key().to_bytes(),
-    };
+    pyth_product.px_acc = ctx.accounts.pyth_price.key();
 
     write_pyth_product_attributes(
         &mut pyth_product.attr,
@@ -148,9 +146,7 @@ pub fn token_create_handler(ctx: Context<TokenCreate>, params: TokenCreateParams
     pyth_price.magic = MAGIC;
     pyth_price.ver = VERSION;
     pyth_price.atype = AccountType::Price as u32;
-    pyth_price.prod = AccKey {
-        val: ctx.accounts.pyth_product.key().to_bytes(),
-    };
+    pyth_price.prod = ctx.accounts.pyth_product.key();
 
     Ok(())
 }

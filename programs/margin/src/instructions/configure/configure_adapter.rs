@@ -19,7 +19,7 @@ use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
 
-use crate::{seeds::ADAPTER_CONFIG_SEED, AdapterConfig};
+use crate::{events::AdapterConfigured, seeds::ADAPTER_CONFIG_SEED, AdapterConfig};
 
 #[derive(Accounts)]
 pub struct ConfigureAdapter<'info> {
@@ -55,6 +55,12 @@ pub struct ConfigureAdapter<'info> {
 
 pub fn configure_adapter_handler(ctx: Context<ConfigureAdapter>, is_adapter: bool) -> Result<()> {
     let config = &mut ctx.accounts.adapter_config;
+
+    emit!(AdapterConfigured {
+        airspace: ctx.accounts.airspace.key(),
+        adapter_program: ctx.accounts.adapter_program.key(),
+        is_adapter
+    });
 
     if !is_adapter {
         return config.close(ctx.accounts.payer.to_account_info());

@@ -1,48 +1,9 @@
 use std::ops::Div;
 
 use jet_program_common::Fp32;
-use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
-use super::{
-    critbit::Slab,
-    interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl},
-    types::Order,
-};
-
-/// Converts a buffer from an orderbook side into an array of orders on the book
-///
-/// Params:
-///
-/// `slab_bytes`: a `UInt8Array` from the AccountInfo data
-#[wasm_bindgen]
-pub fn get_orders_from_slab(slab_bytes: &[u8]) -> Array {
-    let buf = &mut slab_bytes.to_owned();
-    let buf_clone = &mut slab_bytes.to_owned();
-
-    let slab = Slab::from_buffer_unchecked(buf).unwrap();
-    let slab_clone = Slab::from_buffer_unchecked(buf_clone).unwrap();
-
-    Array::from_iter(
-        slab_clone
-            .into_iter(true)
-            .map(|leaf| {
-                let handle = slab.find_by_key(leaf.key).unwrap();
-                let callback = slab.get_callback_info(handle);
-                Order {
-                    owner: Uint8Array::from(&callback.owner[..]),
-                    order_tag: Uint8Array::from(&callback.order_tag[..]),
-                    base_size: leaf.base_quantity,
-                    quote_size: Fp32::upcast_fp32(leaf.price())
-                        .decimal_u64_mul(leaf.base_quantity)
-                        .unwrap(),
-                    limit_price: leaf.price(),
-                    order_id: Uint8Array::from(&leaf.key.to_le_bytes()[..]),
-                }
-            })
-            .map(JsValue::from),
-    )
-}
+use super::interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl};
 
 /// Given some bytes, reconstruct the u128 order_id and pass it back as a string
 #[wasm_bindgen]
@@ -60,7 +21,18 @@ pub fn base_to_quote(base: u64, price: u64) -> u64 {
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 #[wasm_bindgen]
 pub fn quote_to_base(quote: u64, price: u64) -> u64 {
-    Fp32::upcast_fp32(price).u64_div(quote).unwrap()
+    // price ~ quote per base
+    // base ~ quote / price
+    // Fp32::upcast_fp32(price).u64_div(quote).unwrap()
+
+    (Fp32::ONE / Fp32::upcast_fp32(price) * quote)
+        .as_decimal_u64()
+        .unwrap() // FIXME Check floor or ceil
+}
+
+#[test]
+fn test_quote_to_base() {
+    assert_eq!(quote_to_base(1000, (1515 << 32) / 100), 66);
 }
 
 /// Given a fixed-point 32 value, convert to decimal representation
@@ -123,8 +95,20 @@ pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
 
 #[test]
 fn test_calculate_implied_price() {
-    let result = calculate_implied_price(1000_u64, 1100_u64);
-    assert_eq!(result, 4724464025) // FIXME Check this test
+    assert_eq!(
+        calculate_implied_price(1000_u64, 1100_u64),
+        ((1100 * 10 / 1000) << 32) / 10
+    );
+
+    assert_eq!(
+        calculate_implied_price(23454, 7834),
+        ((7834 * 10_000_000_000 / 23454) << 32) / 10_000_000_000
+    );
+
+    assert_eq!(
+        calculate_implied_price(345, 3464),
+        crate::orderbook::interest_pricing::f64_to_fp32(10.04057971),
+    );
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,
