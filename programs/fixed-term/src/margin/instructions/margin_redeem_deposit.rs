@@ -9,18 +9,19 @@ use crate::{
 #[derive(Accounts, MarketTokenManager)]
 pub struct MarginRedeemDeposit<'info> {
     #[account(mut,
-		constraint = margin_user.margin_account == inner.owner.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
-        has_one = collateral,
+        address = inner.owner.key(),
+		constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
+        has_one = ticket_collateral,
 	)]
     pub margin_user: Account<'info, MarginUser>,
 
     /// Token account used by the margin program to track the collateral value of assets custodied by fixed-term market
     #[account(mut)]
-    pub collateral: AccountInfo<'info>,
+    pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the collateral value of assets custodied by fixed-term market
-    #[account(mut, address = inner.market.load()?.collateral_mint)]
-    pub collateral_mint: AccountInfo<'info>,
+    #[account(mut, address = inner.market.load()?.ticket_collateral_mint)]
+    pub ticket_collateral_mint: AccountInfo<'info>,
 
     #[market]
     #[token_program]
@@ -32,12 +33,14 @@ pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
     ctx.accounts
         .margin_user
         .assets
-        .redeem_staked_tickets(redeemed);
+        .redeem_deposit(ctx.accounts.inner.deposit.sequence_number, redeemed)?;
     ctx.burn_notes(
-        &ctx.accounts.collateral_mint,
-        &ctx.accounts.collateral,
+        &ctx.accounts.ticket_collateral_mint,
+        &ctx.accounts.ticket_collateral,
         redeemed,
     )?;
+
+    ctx.accounts.margin_user.emit_asset_balances();
 
     Ok(())
 }

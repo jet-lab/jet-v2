@@ -84,10 +84,10 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         let loan = if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
             match maker.margin_user() {
                 Ok(user) => {
-                    seed[..8].copy_from_slice(&user.assets.next_deposit_seqno.to_le_bytes())
+                    seed[..8].copy_from_slice(&user.assets.next_new_deposit_seqno().to_le_bytes())
                 }
 
-                Err(_) => seed[..self.seed.len()].copy_from_slice(&self.seed),
+                Err(_) => self.next_seed(&mut seed),
             };
 
             Some(LoanAccount::AutoStake(
@@ -105,10 +105,10 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         } else if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
             match maker.margin_user() {
                 Ok(user) => {
-                    seed[..8].copy_from_slice(&user.debt.next_new_term_loan_seqno.to_le_bytes());
+                    seed[..8].copy_from_slice(&user.debt.next_new_loan_seqno().to_le_bytes());
                 }
 
-                Err(_) => seed[..self.seed.len()].copy_from_slice(&self.seed),
+                Err(_) => self.next_seed(&mut seed),
             };
 
             Some(LoanAccount::NewDebt(self.accounts.init_next::<TermLoan>(
@@ -130,6 +130,11 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             maker_adapter,
             taker_adapter,
         })
+    }
+
+    fn next_seed(&mut self, seed: &mut [u8; 8]) {
+        seed[..self.seed.len()].copy_from_slice(&self.seed);
+        self.seed[0] = self.seed[0].wrapping_add(1);
     }
 }
 

@@ -14,13 +14,13 @@ use crate::{
 pub struct Repay<'info> {
     /// The account tracking information related to this particular user
     #[account(mut)]
-    pub borrower_account: Account<'info, MarginUser>,
+    pub margin_user: Account<'info, MarginUser>,
 
     #[account(
         mut,
-        has_one = borrower_account @ FixedTermErrorCode::UserNotInMarket,
+        has_one = margin_user @ FixedTermErrorCode::UserNotInMarket,
         constraint = term_loan.sequence_number
-            == borrower_account.debt.next_term_loan_to_repay().unwrap()
+            == margin_user.debt.next_term_loan_to_repay().unwrap()
             @ FixedTermErrorCode::TermLoanHasWrongSequenceNumber
     )]
     pub term_loan: Account<'info, TermLoan>,
@@ -63,7 +63,7 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
     transfer(ctx.accounts.transfer_context(), amount)?;
 
     let term_loan = &mut ctx.accounts.term_loan;
-    let user = &mut ctx.accounts.borrower_account;
+    let user = &mut ctx.accounts.margin_user;
 
     term_loan.balance.try_sub_assign(amount)?;
 
@@ -74,7 +74,7 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
         emit!(TermLoanFulfilled {
             term_loan: term_loan.key(),
             orderbook_user: user.key(),
-            borrower: term_loan.borrower_account,
+            borrower: term_loan.margin_user,
             timestamp: Clock::get()?.unix_timestamp,
         });
 
@@ -84,7 +84,7 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
         let next_term_loan =
             Account::<TermLoan>::try_from(&ctx.accounts.next_term_loan).and_then(|ob| {
                 require_eq!(
-                    ob.borrower_account,
+                    ob.margin_user,
                     user_key,
                     FixedTermErrorCode::UserNotInMarket
                 );
@@ -95,7 +95,7 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
     }
 
     emit!(TermLoanRepay {
-        orderbook_user: ctx.accounts.borrower_account.key(),
+        orderbook_user: ctx.accounts.margin_user.key(),
         term_loan: term_loan.key(),
         repayment_amount: amount,
         final_balance: term_loan.balance,

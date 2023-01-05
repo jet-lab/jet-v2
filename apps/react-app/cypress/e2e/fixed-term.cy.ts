@@ -1,4 +1,4 @@
-import { airdrop, deposit, loadPageAndCreateAccount } from '../support/actions';
+import { airdrop, borrow, deposit, loadPageAndCreateAccount } from '../support/actions';
 
 describe('Fixed Term Market', () => {
   it('creates a market maker account', () => {
@@ -8,8 +8,8 @@ describe('Fixed Term Market', () => {
   it('funds the market maker account', () => {
     airdrop('SOL', 'SOL');
     airdrop('USDC', 'USDC');
-    airdrop('BTC', 'BTC')
-    airdrop('USDT', 'USDT')
+    airdrop('BTC', 'BTC');
+    airdrop('USDT', 'USDT');
     deposit('SOL', 1);
     deposit('BTC', 1);
     deposit('USDT', 1);
@@ -73,8 +73,8 @@ describe('Fixed Term Market', () => {
   it('funds the market taker account', () => {
     airdrop('SOL', 'SOL');
     airdrop('USDC', 'USDC');
-    airdrop('BTC', 'BTC')
-    airdrop('USDT', 'USDT')
+    airdrop('BTC', 'BTC');
+    airdrop('USDT', 'USDT');
     deposit('SOL', 1);
     deposit('BTC', 1);
     deposit('USDT', 1);
@@ -106,4 +106,11 @@ describe('Fixed Term Market', () => {
     submitButton.click();
     cy.contains('Your borrow order for 100 USDC was filled successfully');
   });
+
+  it('can perform a borrow on a pool after a position on a fixed market could have gone stale', () => {
+    cy.wait(31000) // current stale time is 30 seconds
+    const poolsLink = cy.contains('.nav-link', 'Pools')
+    poolsLink.click();
+    borrow('USDC', 10)
+  })
 });

@@ -41,7 +41,7 @@ export interface FixedTermMarketConfig {
   underlyingTokenVault: Address
   ticketMint: Address
   claimsMint: Address
-  collateralMint: Address
+  ticketCollateralMint: Address
   underlyingOracle: Address
   ticketOracle: Address
   seed: Address

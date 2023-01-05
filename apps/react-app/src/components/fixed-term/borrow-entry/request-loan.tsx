@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { MarketAndconfig, requestLoan } from '@jet-lab/fixed-term';
+import { MarketAndconfig, requestLoan } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -78,7 +78,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
-      throw(e)
+      throw e;
     }
   };
 

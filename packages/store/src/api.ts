@@ -1,5 +1,5 @@
 import { MarginAccount } from '@jet-lab/margin';
-import { FixedTermMarket } from '@jet-lab/fixed-term';
+import { FixedTermMarket } from '@jet-lab/margin';
 import { FixedOrder } from './types';
 import useSWR from 'swr';
 
