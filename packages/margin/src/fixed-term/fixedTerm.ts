@@ -60,7 +60,7 @@ export interface MarginUserInfo {
 }
 
 export interface DebtInfo {
-  nextNewTermLoanSeqno: BN
+  nextNewTermLoanSeqNo: BN
   nextUnpaidTermLoanSeqno: BN
   nextTermLoanMaturity: BN
   pending: BN
