@@ -93,10 +93,7 @@ impl EventConsumer {
         market: Market,
         margin_account_settlement_sink: Option<AsyncNoDupeQueue<Pubkey>>,
     ) {
-        let builder = FixedTermIxBuilder::new_from_state(
-            self.rpc.payer().pubkey(),
-            &market,
-        );
+        let builder = FixedTermIxBuilder::new_from_state(self.rpc.payer().pubkey(), &market);
         self.markets.lock().unwrap().insert(
             builder.market(),
             Arc::new(Mutex::new(MarketState {

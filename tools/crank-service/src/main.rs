@@ -6,7 +6,7 @@ use clap::Parser;
 use jetctl::actions::test::{derive_market_from_tenor_seed, TestEnvConfig};
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file};
+use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file, signer::Signer};
 
 use jet_margin_sdk::{
     fixed_term::{
@@ -80,6 +80,7 @@ async fn run(opts: CliOpts) -> Result<()> {
             .unwrap_or(&solana_config.keypair_path),
     )
     .unwrap();
+    let payer = keypair.pubkey();
     let rpc = Arc::new(RpcConnection::new(
         keypair,
         RpcClient::new(LOCALNET_URL.to_string()),
@@ -90,7 +91,7 @@ async fn run(opts: CliOpts) -> Result<()> {
     let consumer = EventConsumer::new(rpc.clone());
     for market in markets {
         let margin_accounts = AsyncNoDupeQueue::new();
-        let ix = FixedTermIxBuilder::from(market);
+        let ix = FixedTermIxBuilder::new_from_state(payer, &market);
         consumer.insert_market(market, Some(margin_accounts.clone()));
         tokio::spawn(settle_margin_users(rpc.clone(), ix, margin_accounts));
     }
