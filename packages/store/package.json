@@ -16,5 +16,8 @@
   "dependencies": {
     "@jet-lab/margin": "*",
     "swr": "^2.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.4"
   }
 }
