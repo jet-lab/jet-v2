@@ -18,7 +18,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-use crate::{events::TransferPosition, MarginAccount, SignerSeeds};
+use crate::{
+    events::TransferPosition,
+    syscall::{sys, Sys},
+    MarginAccount, SignerSeeds,
+};
 
 #[derive(Accounts)]
 pub struct AdminTransferPosition<'info> {
@@ -84,11 +88,13 @@ pub fn admin_transfer_position_handler(
         &source_tokens.mint,
         &source_tokens.key(),
         source_tokens.amount,
+        sys().unix_timestamp(),
     )?;
     target.set_position_balance(
         &target_tokens.mint,
         &target_tokens.key(),
         target_tokens.amount,
+        sys().unix_timestamp(),
     )?;
 
     emit!(TransferPosition {

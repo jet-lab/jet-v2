@@ -299,12 +299,23 @@ impl MarginAccount {
         }
     }
 
+    /// Change the balance for a position, using a syscall to get the time.
+    pub fn set_position_balance_with_clock(
+        &mut self,
+        mint: &Pubkey,
+        account: &Pubkey,
+        balance: u64,
+    ) -> Result<AccountPosition, ErrorCode> {
+        self.set_position_balance(mint, account, balance, sys().unix_timestamp())
+    }
+
     /// Change the balance for a position
     pub fn set_position_balance(
         &mut self,
         mint: &Pubkey,
         account: &Pubkey,
         balance: u64,
+        timestamp: u64,
     ) -> Result<AccountPosition, ErrorCode> {
         let position = self.position_list_mut().get_mut(mint).require()?;
 
@@ -312,7 +323,7 @@ impl MarginAccount {
             return Err(ErrorCode::PositionNotRegistered);
         }
 
-        position.set_balance(balance);
+        position.set_balance(balance, timestamp);
 
         Ok(*position)
     }
@@ -332,8 +343,8 @@ impl MarginAccount {
     /// Check that the overall health of the account is acceptable, by comparing the
     /// total value of the claims versus the available collateral. If the collateralization
     /// ratio is above the minimum, then the account is considered healthy.
-    pub fn verify_healthy_positions(&self) -> AnchorResult<()> {
-        let info = self.valuation()?;
+    pub fn verify_healthy_positions(&self, timestamp: u64) -> AnchorResult<()> {
+        let info = self.valuation(timestamp)?;
 
         if info.required_collateral > info.effective_collateral || info.past_due {
             let due_status = match info.past_due {
@@ -354,8 +365,8 @@ impl MarginAccount {
     }
 
     /// Check that the overall health of the account is *not* acceptable.
-    pub fn verify_unhealthy_positions(&self) -> AnchorResult<()> {
-        let info = self.valuation()?;
+    pub fn verify_unhealthy_positions(&self, timestamp: u64) -> AnchorResult<()> {
+        let info = self.valuation(timestamp)?;
 
         if !info.stale_collateral_list.is_empty() {
             for (position_token, error) in info.stale_collateral_list {
@@ -386,9 +397,7 @@ impl MarginAccount {
         Ok(())
     }
 
-    pub fn valuation(&self) -> AnchorResult<Valuation> {
-        let timestamp = sys().unix_timestamp();
-
+    pub fn valuation(&self, timestamp: u64) -> AnchorResult<Valuation> {
         let mut past_due = false;
         let mut liabilities = Number128::ZERO;
         let mut required_collateral = Number128::ZERO;
@@ -593,14 +602,14 @@ impl Valuation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        syscall::{sys, thread_local_mock::mock_stack_height, Sys},
-        util::Invocation,
-    };
+
+    use crate::{mock_sys, util::Invocation};
 
     use super::*;
     use itertools::Itertools;
     use serde_test::{assert_ser_tokens, Token};
+
+    const ARBITRARY_TIME: u64 = 2_000_000_000;
 
     fn create_position_input(margin_address: &Pubkey) -> (Pubkey, Pubkey) {
         let token = Pubkey::new_unique();
@@ -613,7 +622,7 @@ mod tests {
     fn margin_account_debug() {
         let mut invocation = Invocation::default();
         for i in [0, 1, 2, 4, 7] {
-            mock_stack_height(Some(i));
+            mock_sys!(stack_height = i);
             invocation.start();
         }
         let mut acc = MarginAccount {
@@ -784,9 +793,11 @@ mod tests {
             positions: [0; 7432],
         };
         let pos = register_position(&mut margin_account, 0, TokenKind::Claim);
-        margin_account.set_position_balance(&pos, &pos, 1).unwrap();
+        margin_account
+            .set_position_balance(&pos, &pos, 1, ARBITRARY_TIME)
+            .unwrap();
 
-        assert!(margin_account.valuation().is_err());
+        assert!(margin_account.valuation(ARBITRARY_TIME).is_err());
     }
 
     #[test]
@@ -805,8 +816,10 @@ mod tests {
 
         let pos = register_position(&mut margin_account, 0, TokenKind::AdapterCollateral);
 
-        margin_account.set_position_balance(&pos, &pos, 1).unwrap();
-        let valuation = margin_account.valuation().unwrap();
+        margin_account
+            .set_position_balance(&pos, &pos, 1, ARBITRARY_TIME)
+            .unwrap();
+        let valuation = margin_account.valuation(ARBITRARY_TIME).unwrap();
         assert_eq!(valuation.effective_collateral, Number128::ZERO);
         assert_eq!(valuation.equity, Number128::ZERO);
 
@@ -815,14 +828,14 @@ mod tests {
                 &pos,
                 &PriceInfo {
                     value: 1,
-                    timestamp: sys().unix_timestamp(),
+                    timestamp: ARBITRARY_TIME,
                     exponent: 2,
                     is_valid: 1,
                     _reserved: Default::default(),
                 },
             )
             .unwrap();
-        let valuation = margin_account.valuation().unwrap();
+        let valuation = margin_account.valuation(ARBITRARY_TIME).unwrap();
         assert_eq!(valuation.effective_collateral, Number128::ONE * 100);
         assert_eq!(valuation.equity, Number128::ONE);
     }
@@ -893,10 +906,10 @@ mod tests {
 
         // Set and unset a position's balance
         margin_account
-            .set_position_balance(&token_a, &address_a, 100)
+            .set_position_balance(&token_a, &address_a, 100, ARBITRARY_TIME)
             .unwrap();
         margin_account
-            .set_position_balance(&token_a, &address_a, 0)
+            .set_position_balance(&token_a, &address_a, 0, ARBITRARY_TIME)
             .unwrap();
 
         // Unregister positions
@@ -1075,10 +1088,11 @@ mod tests {
         let claim = register_position(&mut acc, 1, TokenKind::Claim);
         set_price(&mut acc, collateral, 100);
         set_price(&mut acc, claim, 100);
-        acc.set_position_balance(&claim, &claim, 1).unwrap();
+        acc.set_position_balance(&claim, &claim, 1, ARBITRARY_TIME)
+            .unwrap();
         assert_unhealthy(&acc);
         // show that this collateral is sufficient to cover the debt
-        acc.set_position_balance(&collateral, &collateral, 100)
+        acc.set_position_balance(&collateral, &collateral, 100, ARBITRARY_TIME)
             .unwrap();
         assert_healthy(&acc);
         // but when past due, the account is unhealthy
@@ -1111,13 +1125,13 @@ mod tests {
     }
 
     fn assert_unhealthy(acc: &MarginAccount) {
-        acc.verify_healthy_positions().unwrap_err();
-        acc.verify_unhealthy_positions().unwrap();
+        acc.verify_healthy_positions(ARBITRARY_TIME).unwrap_err();
+        acc.verify_unhealthy_positions(ARBITRARY_TIME).unwrap();
     }
 
     fn assert_healthy(acc: &MarginAccount) {
-        acc.verify_healthy_positions().unwrap();
-        acc.verify_unhealthy_positions().unwrap_err();
+        acc.verify_healthy_positions(ARBITRARY_TIME).unwrap();
+        acc.verify_unhealthy_positions(ARBITRARY_TIME).unwrap_err();
     }
 
     fn set_price(acc: &mut MarginAccount, key: Pubkey, price: i64) {
@@ -1126,7 +1140,7 @@ mod tests {
             // &key,
             &PriceInfo {
                 value: price,
-                timestamp: sys().unix_timestamp(),
+                timestamp: ARBITRARY_TIME,
                 exponent: 1,
                 is_valid: 1,
                 _reserved: [0; 3],

@@ -188,7 +188,7 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent
         if account_info.owner == &TokenAccount::owner() {
             let data = &mut &**account_info.try_borrow_data()?;
             if let Ok(account) = TokenAccount::try_deserialize(data) {
-                match margin_account.set_position_balance(
+                match margin_account.set_position_balance_with_clock(
                     &account.mint,
                     account_info.key,
                     account.amount,
@@ -366,7 +366,7 @@ fn register_position(
         }
     };
 
-    margin_account.set_position_balance(
+    margin_account.set_position_balance_with_clock(
         &mint_address,
         &token_account_address,
         token_account.amount,

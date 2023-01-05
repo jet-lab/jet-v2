@@ -27,10 +27,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{
-    syscall::{sys, Sys},
-    ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
-};
+use crate::{ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -230,9 +227,9 @@ impl AccountPosition {
     }
 
     /// Update the balance for this position
-    pub fn set_balance(&mut self, balance: u64) {
+    pub fn set_balance(&mut self, balance: u64, timestamp: u64) {
         self.balance = balance;
-        self.balance_timestamp = sys().unix_timestamp();
+        self.balance_timestamp = timestamp;
         self.calculate_value();
     }
 
