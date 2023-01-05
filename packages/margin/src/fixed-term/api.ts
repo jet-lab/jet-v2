@@ -387,7 +387,6 @@ interface IRepay {
     maturation_timestamp: number
     sequence_number: number
   }>
-  payer: Address,
   pools: Record<string, Pool>,
   markets: FixedTermMarket[]
 }
@@ -398,7 +397,6 @@ export const repay = async ({
   amount,
   provider,
   termLoans,
-  payer,
   pools,
   markets,
 }: IRepay) => {
