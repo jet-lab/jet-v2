@@ -90,6 +90,7 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
     // Mint a deposit for their burned tokens
     *ctx.accounts.deposit = TermDeposit {
         matures_at,
+        sequence_number: 0,
         owner: ctx.accounts.ticket_holder.key(),
         market: ctx.accounts.market.key(),
         amount: params.amount,

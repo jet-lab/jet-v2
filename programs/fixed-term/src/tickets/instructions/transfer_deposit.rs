@@ -8,7 +8,7 @@ pub struct TransferDeposit<'info> {
     #[account(mut, has_one = owner)]
     pub deposit: Account<'info, TermDeposit>,
 
-    /// The current owner of the ticket
+    /// The current owner of the deposit
     pub owner: Signer<'info>,
 }
 

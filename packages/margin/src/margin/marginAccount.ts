@@ -28,8 +28,10 @@ import {
   AssociatedToken,
   bigIntToBn,
   bnToNumber,
+  FixedTermMarket,
   getTimestamp,
   Number192,
+  refreshAllMarkets,
   sendAll,
   sendAndConfirm,
   sendAndConfirmV0,
@@ -1745,4 +1747,52 @@ export class MarginAccount {
   async sendAll(transactions: (TransactionInstruction[] | TransactionInstruction[][])[]): Promise<string> {
     return await sendAll(this.provider, transactions)
   }
+
+    /**
+   * Create instructions to refresh [[MarginAccount]] pool positions in a prioritised manner so that additional
+   * borrows or withdraws can occur.
+   *
+   * @param {({
+    *     instructions: TransactionInstruction[]
+    *     pools: Record<any, Pool> | Pool[]
+    *     marginAccount: MarginAccount
+    *     markets: FixedTermMarket[]
+    *     marketAddresstoCreate?: PublicKey
+    *   })} {
+    *     instructions,
+    *     pools,
+    *     marginAccount
+    *   }
+    * @return {Promise<void>}
+    * @memberof Pool
+    */
+   async withPrioritisedPositionRefresh({
+     instructions,
+     pools,
+     markets,
+     marketAddress
+   }: {
+     instructions: TransactionInstruction[]
+     pools: Record<any, Pool> | Pool[]
+     markets: FixedTermMarket[],
+     marketAddress?: PublicKey
+   }): Promise<void> {
+     const poolsToRefresh: Pool[] = []
+     for (const pool of Object.values(pools)) {
+       const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
+       const depositPosition = this.getPositionNullable(pool.addresses.depositNoteMint)
+       const borrowPosition = this.getPositionNullable(pool.addresses.loanNoteMint)
+       if (pool.address === this.address) {
+         poolsToRefresh.push(pool)
+       } else if (borrowPosition && !borrowPosition.balance.eqn(0)) {
+         poolsToRefresh.push(pool)
+       } else if (assetCollateralWeight > 0 && depositPosition && !depositPosition.balance.eqn(0)) {
+         poolsToRefresh.push(pool)
+       }
+     }
+     for (const pool of poolsToRefresh) {
+       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount: this })
+     }
+     await refreshAllMarkets(markets, instructions, this, marketAddress)
+   }
 }

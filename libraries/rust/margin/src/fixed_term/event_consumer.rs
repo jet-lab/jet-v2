@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
+    time::SystemTime,
 };
 
 use agnostic_orderbook::state::{
@@ -24,7 +25,7 @@ use tracing::instrument;
 
 use super::FixedTermIxBuilder;
 
-const MAX_EVENTS_PER_TX: usize = 32;
+const MAX_EVENTS_PER_TX: usize = 8;
 
 #[derive(Error, Debug)]
 pub enum EventConsumerError {
@@ -247,6 +248,7 @@ impl MarketState {
                 EventRef::Fill(FillEventRef {
                     maker_callback_info,
                     taker_callback_info,
+                    event,
                     ..
                 }) => {
                     let fill_account = maker_callback_info.fill_account;
@@ -263,8 +265,11 @@ impl MarketState {
                         if let Some(maker_user) = self.users.get_mut(&fill_account) {
                             // In this case, the maker is using a margin account, so we derive
                             // the deposit account based on a sequence number in the account state
-                            let seed = maker_user.assets.next_deposit_seqno.to_le_bytes();
-                            maker_user.assets.next_deposit_seqno += 1;
+                            let seed = maker_user
+                                .assets
+                                .new_deposit(event.base_size)
+                                .unwrap()
+                                .to_le_bytes();
 
                             loan_account =
                                 Some(self.builder.term_deposit_key(&fill_account, &seed));
@@ -289,8 +294,17 @@ impl MarketState {
                             // In this case, the maker is using a margin account, so we
                             // derive the new `TermLoan` account based on the debt sequence
                             // number in the account state
-                            let seed = maker_user.debt.next_new_term_loan_seqno.to_le_bytes();
-                            maker_user.debt.next_new_term_loan_seqno += 1;
+                            let matures_at = self.market.borrow_tenor
+                                + SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_secs() as i64;
+
+                            let seed = maker_user
+                                .debt
+                                .new_term_loan_from_fill(event.quote_size, matures_at)
+                                .unwrap()
+                                .to_le_bytes();
 
                             loan_account = Some(self.builder.term_loan_key(&fill_account, &seed));
 

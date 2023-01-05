@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::convert::TryFrom;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
@@ -61,9 +61,10 @@ pub struct ConsumeEvents<'info> {
 /// for every event that will be processed.
 /// For a fill, 2-6 accounts need to be appended to remaining_accounts
 /// For an out, 1 account needs to be appended to remaining_accounts
+#[allow(clippy::large_enum_variant)]
 pub enum EventAccounts<'info> {
-    Fill(Box<FillAccounts<'info>>),
-    Out(Box<OutAccounts<'info>>),
+    Fill(FillAccounts<'info>),
+    Out(OutAccounts<'info>),
 }
 
 pub struct FillAccounts<'info> {
@@ -108,21 +109,16 @@ impl<'info> UserAccount<'info> {
         Self(account)
     }
 
-    pub fn pubkey(&self) -> Pubkey {
-        self.0.key()
-    }
-
     /// token account that will receive a deposit of underlying or tickets
-    pub fn as_token_account(&self) -> AccountInfo<'info> {
-        self.0.clone()
-    }
-
-    /// arbitrary unchecked account that will be granted ownership of a split ticket
-    pub fn as_owner(&self) -> AccountInfo<'info> {
-        self.0.clone()
+    pub fn as_token_account(&self) -> &AccountInfo<'info> {
+        &self.0
     }
 
     pub fn margin_user(&self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
-        self.0.clone().try_into()
+        AnchorAccount::try_from(self.0.clone())
+    }
+
+    pub fn pubkey(&self) -> Pubkey {
+        self.0.key()
     }
 }

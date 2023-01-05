@@ -13,7 +13,7 @@ pub struct Settle<'info> {
     #[account(mut,
         has_one = market @ FixedTermErrorCode::UserNotInMarket,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
-        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
         has_one = underlying_settlement @ FixedTermErrorCode::WrongUnderlyingSettlementAccount,
         has_one = ticket_settlement @ FixedTermErrorCode::WrongTicketSettlementAccount,
     )]
@@ -24,7 +24,7 @@ pub struct Settle<'info> {
         has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
         has_one = ticket_mint @ FixedTermErrorCode::WrongOracle,
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
-        has_one = collateral_mint @ FixedTermErrorCode::WrongCollateralMint,
+        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -41,11 +41,11 @@ pub struct Settle<'info> {
     pub claims_mint: UncheckedAccount<'info>,
 
     #[account(mut)]
-    pub collateral: Account<'info, TokenAccount>,
+    pub ticket_collateral: Account<'info, TokenAccount>,
 
     /// CHECK: token program checks it
     #[account(mut)]
-    pub collateral_mint: UncheckedAccount<'info>,
+    pub ticket_collateral_mint: UncheckedAccount<'info>,
 
     /// CHECK: token program checks it
     #[account(mut)]
@@ -63,7 +63,7 @@ pub struct Settle<'info> {
 
 pub fn handler(ctx: Context<Settle>) -> Result<()> {
     let claim_balance = ctx.accounts.claims.amount;
-    let ctokens_held = ctx.accounts.collateral.amount;
+    let ctokens_held = ctx.accounts.ticket_collateral.amount;
     let assets = &ctx.accounts.margin_user.assets;
     let debt = ctx.accounts.margin_user.debt.total();
     let ctokens_deserved = assets.collateral()?;
@@ -88,15 +88,15 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     // tickets after this settlement
     if ctokens_held > ctokens_deserved {
         ctx.burn_notes(
-            &ctx.accounts.collateral_mint,
-            &ctx.accounts.collateral,
+            &ctx.accounts.ticket_collateral_mint,
+            &ctx.accounts.ticket_collateral,
             ctokens_held - ctokens_deserved,
         )?;
     }
     if ctokens_held < ctokens_deserved {
         ctx.mint(
-            &ctx.accounts.collateral_mint,
-            &ctx.accounts.collateral,
+            &ctx.accounts.ticket_collateral_mint,
+            &ctx.accounts.ticket_collateral,
             ctokens_deserved - ctokens_held,
         )?;
     }
@@ -116,6 +116,8 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     // Update margin user assets to reflect the settlement
     ctx.accounts.margin_user.assets.entitled_tickets = 0;
     ctx.accounts.margin_user.assets.entitled_tokens = 0;
+
+    ctx.accounts.margin_user.emit_all_balances();
 
     Ok(())
 }

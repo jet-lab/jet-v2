@@ -10,12 +10,11 @@ use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
-    events::skip_err,
+    events::{skip_err, OrderFilled, OrderRemoved, TermLoanCreated},
     margin::state::{TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::TermDeposit,
-    utils::map,
     FixedTermErrorCode,
 };
 
@@ -97,28 +96,34 @@ fn handle_fill<'info>(
     } = *event;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let fill_timestamp = taker_info.order_submitted_timestamp();
-    let mut margin_user = maker_info
-        .flags
-        .contains(CallbackFlags::MARGIN)
-        .then(|| maker.margin_user())
-        .transpose()?;
 
     match maker_side {
         Side::Bid => {
-            map!(margin_user.assets.reduce_order(quote_size));
+            let maturation_timestamp = fill_timestamp.safe_add(market.load()?.lend_tenor)?;
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                map!(margin_user.assets.stake_tickets(base_size)?);
                 let matures_at = fill_timestamp.safe_add(market.load()?.lend_tenor)?;
+                let mut sequence_number = 0;
+
+                if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                    let mut margin_user = maker.margin_user()?;
+                    margin_user.assets.reduce_order(quote_size);
+                    sequence_number = margin_user.assets.new_deposit(base_size)?;
+                    margin_user.emit_asset_balances();
+                }
 
                 **loan.as_mut().unwrap().auto_stake()? = TermDeposit {
                     matures_at,
+                    sequence_number,
                     principal: quote_size,
                     amount: base_size,
                     owner: maker.pubkey(),
                     market: market.key(),
                 };
-            } else if let Some(mut margin_user) = margin_user {
+            } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = maker.margin_user()?;
+                margin_user.assets.reduce_order(quote_size);
                 margin_user.assets.entitled_tickets += base_size;
+                margin_user.emit_asset_balances();
             } else {
                 ctx.mint(
                     &ctx.accounts.ticket_mint,
@@ -126,9 +131,26 @@ fn handle_fill<'info>(
                     base_size,
                 )?;
             }
+
+            emit!(OrderFilled {
+                market: ctx.accounts.market.key(),
+                maker_authority: maker_info.owner,
+                taker_authority: taker_info.owner,
+                maker_order_tag: maker_info.order_tag.as_u128(),
+                taker_order_tag: taker_info.order_tag.as_u128(),
+                base_filled: base_size,
+                quote_filled: quote_size,
+                fill_timestamp,
+                // Not enough info to be more specific, side matters most
+                order_type: crate::events::OrderType::Lend,
+                sequence_number: 0,
+                maturation_timestamp
+            });
         }
         Side::Ask => {
-            if let Some(mut margin_user) = margin_user {
+            let maturation_timestamp = fill_timestamp.safe_add(market.load()?.borrow_tenor)?;
+            if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
                     let mut manager = market.load_mut()?;
@@ -140,25 +162,43 @@ fn handle_fill<'info>(
                         .assets
                         .entitled_tokens
                         .try_add_assign(disburse)?;
-                    let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_tenor)?;
                     let sequence_number = margin_user
                         .debt
                         .new_term_loan_from_fill(base_size, maturation_timestamp)?;
 
-                    **loan.as_mut().unwrap().new_debt()? = TermLoan {
+                    let flags = TermLoanFlags::default();
+
+                    let term_loan = loan.as_mut().unwrap().new_debt()?;
+                    **term_loan = TermLoan {
                         sequence_number,
-                        borrower_account: margin_user.key(),
+                        margin_user: margin_user.key(),
                         market: ctx.accounts.market.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: base_size,
-                        flags: TermLoanFlags::default(),
+                        flags,
                     };
+
+                    // TermLoanCreated includes OrderFill info, thus no OrderFill needed
+                    // where TermLoanCreated is emitted.
+                    emit!(TermLoanCreated {
+                        term_loan: term_loan.key(),
+                        authority: maker_info.owner,
+                        order_tag: maker_info.order_tag.as_u128(),
+                        sequence_number,
+                        market: ctx.accounts.market.key(),
+                        maturation_timestamp,
+                        quote_filled: quote_size,
+                        base_filled: base_size,
+                        flags,
+                    });
+                    margin_user.emit_all_balances();
                 } else {
                     margin_user
                         .assets
                         .entitled_tokens
                         .try_add_assign(quote_size)?;
+                    margin_user.emit_asset_balances();
                 }
             } else {
                 ctx.withdraw(
@@ -167,6 +207,21 @@ fn handle_fill<'info>(
                     quote_size,
                 )?;
             }
+
+            emit!(OrderFilled {
+                market: ctx.accounts.market.key(),
+                maker_authority: maker_info.owner,
+                taker_authority: taker_info.owner,
+                maker_order_tag: maker_info.order_tag.as_u128(),
+                taker_order_tag: taker_info.order_tag.as_u128(),
+                base_filled: base_size,
+                quote_filled: quote_size,
+                fill_timestamp,
+                // We can be more specific with the type
+                order_type: crate::events::OrderType::MarginBorrow,
+                sequence_number: 0,
+                maturation_timestamp
+            });
         }
     }
 
@@ -199,43 +254,51 @@ fn handle_out<'info>(
         ..
     } = event;
 
-    let margin_user = info
-        .flags
-        .contains(CallbackFlags::MARGIN)
-        .then(|| user.margin_user())
-        .transpose()?;
-
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(*base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
     match Side::from_u8(*side).unwrap() {
         Side::Bid => {
-            if let Some(mut margin_user) = margin_user {
+            if info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = user.margin_user()?;
                 margin_user.assets.entitled_tokens += quote_size;
-                Ok(())
+                margin_user.emit_asset_balances();
             } else {
                 ctx.withdraw(
                     &ctx.accounts.underlying_token_vault,
                     user.as_token_account(),
                     quote_size,
-                )
+                )?;
             }
         }
         Side::Ask => {
-            if let Some(mut margin_user) = margin_user {
+            if info.flags.contains(CallbackFlags::MARGIN) {
+                let mut margin_user = user.margin_user()?;
+
                 if info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    margin_user.debt.process_out(*base_size)
+                    margin_user.debt.process_out(*base_size)?;
+                    margin_user.emit_debt_balances();
                 } else {
                     margin_user.assets.entitled_tickets += base_size;
-                    Ok(())
+                    margin_user.emit_asset_balances();
                 }
             } else {
                 ctx.mint(
                     &ctx.accounts.ticket_mint,
                     user.as_token_account(),
                     *base_size,
-                )
+                )?;
             }
         }
     }
+
+    emit!(OrderRemoved {
+        market: ctx.accounts.market.key(),
+        authority: info.owner,
+        order_tag: info.order_tag.as_u128(),
+        base_removed: *base_size,
+        quote_removed: quote_size,
+    });
+
+    Ok(())
 }

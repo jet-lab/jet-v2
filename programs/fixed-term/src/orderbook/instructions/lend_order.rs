@@ -60,6 +60,7 @@ impl<'info> LendOrder<'info> {
         &self,
         user: Pubkey,
         seed: &[u8],
+        sequence_number: u64,
         callback_info: CallbackInfo,
         order_summary: &SensibleOrderSummary,
     ) -> Result<u64> {
@@ -84,6 +85,7 @@ impl<'info> LendOrder<'info> {
 
                 *deposit = TermDeposit {
                     market,
+                    sequence_number,
                     owner: user,
                     matures_at: timestamp + tenor,
                     principal: order_summary.quote_filled()?,
@@ -143,6 +145,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
     ctx.accounts.lend(
         ctx.accounts.authority.key(),
         &seed,
+        0,
         callback_info,
         &order_summary,
     )?;
@@ -150,6 +153,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.authority.key(),
         margin_user: None,
+        order_tag: callback_info.order_tag.as_u128(),
         order_summary: order_summary.summary(),
         order_type: crate::events::OrderType::Lend,
         limit_price: params.limit_price,
