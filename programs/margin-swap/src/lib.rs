@@ -56,6 +56,20 @@ mod jet_margin_swap {
             minimum_amount_out,
         )
     }
+    /// Swap using Orca Whirlpool for stable pools
+    pub fn orca_whirlpool_swap(
+        ctx: Context<OrcaWhirlpoolSwap>,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        orca_whirlpool_swap_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+        )
+    }
 
     /// Route a swap to one or more venues
     pub fn route_swap<'info>(
