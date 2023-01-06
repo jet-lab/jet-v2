@@ -15,7 +15,8 @@ use crate::{
 #[derive(Accounts, MarketTokenManager)]
 pub struct LendOrder<'info> {
     /// Signing authority over the token vault transferring for a lend order
-    pub authority: Signer<'info>,
+    /// Check for signature occurs in handler logic
+    pub authority: AccountInfo<'info>,
 
     #[market]
     pub orderbook_mut: OrderbookMut<'info>,
@@ -25,7 +26,7 @@ pub struct LendOrder<'info> {
     /// - ticket token account to receive tickets
     /// be careful to check this properly. one way is by using lender_tickets_token_account
     #[account(mut)]
-    ticket_settlement: AccountInfo<'info>,
+    pub(crate) ticket_settlement: AccountInfo<'info>,
 
     /// where to loan tokens from
     #[account(mut, constraint = mint(&lender_tokens.to_account_info())? == orderbook_mut.underlying_mint() @ FixedTermErrorCode::WrongUnderlyingTokenMint)]
@@ -136,6 +137,9 @@ impl<'info> LendOrder<'info> {
 }
 
 pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
+    if !ctx.accounts.authority.is_signer {
+        return err!(FixedTermErrorCode::MissingAuthoritySignature);
+    }
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.authority.key(),
         Side::Bid,

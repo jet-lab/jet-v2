@@ -126,4 +126,6 @@ pub enum FixedTermErrorCode {
     WrongVault,
     #[msg("attempted to divide with zero")]
     ZeroDivision,
+    #[msg("missing authority signature")]
+    MissingAuthoritySignature,
 }

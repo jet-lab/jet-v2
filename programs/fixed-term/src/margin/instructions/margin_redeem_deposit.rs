@@ -2,8 +2,7 @@ use anchor_lang::prelude::*;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::MarginUser, market_token_manager::MarketTokenManager,
-    tickets::instructions::redeem_deposit::*, FixedTermErrorCode,
+    margin::state::MarginUser, tickets::instructions::redeem_deposit::*, FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
@@ -28,20 +27,32 @@ pub struct MarginRedeemDeposit<'info> {
     pub inner: RedeemDeposit<'info>,
 }
 
-#[inline(never)]
+impl<'info> MarginRedeemDeposit<'info> {
+    pub fn redeem(&mut self) -> Result<()> {
+        let redeemed = self.inner.redeem()?;
+        self.margin_user
+            .assets
+            .redeem_deposit(self.inner.deposit.sequence_number, redeemed)?;
+
+        anchor_spl::token::burn(
+            CpiContext::new(
+                self.inner.token_program.to_account_info(),
+                anchor_spl::token::Burn {
+                    mint: self.ticket_collateral_mint.to_account_info(),
+                    from: self.ticket_collateral.to_account_info(),
+                    authority: self.inner.market.to_account_info(),
+                },
+            )
+            .with_signer(&[&self.inner.market.load()?.authority_seeds()]),
+            redeemed,
+        )?;
+
+        self.margin_user.emit_asset_balances();
+
+        Ok(())
+    }
+}
+
 pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
-    let redeemed = ctx.accounts.inner.redeem()?;
-    ctx.accounts
-        .margin_user
-        .assets
-        .redeem_deposit(ctx.accounts.inner.deposit.sequence_number, redeemed)?;
-    ctx.burn_notes(
-        &ctx.accounts.ticket_collateral_mint,
-        &ctx.accounts.ticket_collateral,
-        redeemed,
-    )?;
-
-    ctx.accounts.margin_user.emit_asset_balances();
-
-    Ok(())
+    ctx.accounts.redeem()
 }

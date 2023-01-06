@@ -40,7 +40,7 @@ pub const fn event_queue_len(event_capacity: usize) -> usize {
 }
 
 /// Set of accounts that are commonly needed together whenever the orderbook is modified
-#[derive(Accounts)]
+#[derive(Accounts, Clone)]
 pub struct OrderbookMut<'info> {
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(

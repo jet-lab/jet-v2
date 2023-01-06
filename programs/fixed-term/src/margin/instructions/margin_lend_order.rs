@@ -1,10 +1,10 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
+use anchor_spl::token::{mint_to, MintTo};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     margin::state::{AutoRollConfig, MarginUser},
-    market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::lend_order::*,
         state::{CallbackFlags, OrderParams},
@@ -38,6 +38,58 @@ pub struct MarginLendOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
+impl<'info> MarginLendOrder<'info> {
+    pub fn lend_order(&mut self, params: OrderParams, adapter: Option<Pubkey>) -> Result<()> {
+        let user = &mut self.margin_user;
+
+        let (callback_info, order_summary) = self.inner.orderbook_mut.place_order(
+            self.inner.authority.key(),
+            Side::Bid,
+            params,
+            user.key(),
+            user.key(),
+            adapter,
+            order_flags(user, &params)?,
+        )?;
+        let staked = self.inner.lend(
+            user.key(),
+            &user.assets.next_new_deposit_seqno().to_le_bytes(),
+            user.assets.next_new_deposit_seqno(),
+            callback_info,
+            &order_summary,
+        )?;
+        if staked > 0 {
+            self.margin_user.assets.new_deposit(staked)?;
+        }
+        mint_to(
+            CpiContext::new(
+                self.inner.token_program.to_account_info(),
+                MintTo {
+                    mint: self.ticket_collateral_mint.to_account_info(),
+                    to: self.ticket_collateral.to_account_info(),
+                    authority: self.inner.orderbook_mut.market.to_account_info(),
+                },
+            )
+            .with_signer(&[&self.inner.orderbook_mut.market.load()?.authority_seeds()]),
+            staked + order_summary.quote_posted()?,
+        )?;
+        emit!(crate::events::OrderPlaced {
+            market: self.inner.orderbook_mut.market.key(),
+            authority: self.inner.authority.key(),
+            margin_user: Some(self.margin_user.key()),
+            order_tag: callback_info.order_tag.as_u128(),
+            order_summary: order_summary.summary(),
+            auto_stake: params.auto_stake,
+            post_only: params.post_only,
+            post_allowed: params.post_allowed,
+            limit_price: params.limit_price,
+            order_type: crate::events::OrderType::MarginLend,
+        });
+        self.margin_user.emit_asset_balances();
+        Ok(())
+    }
+}
+
 fn order_flags(user: &Account<MarginUser>, params: &OrderParams) -> Result<CallbackFlags> {
     let auto_roll = if params.auto_roll {
         if user.borrow_roll_config == AutoRollConfig::default() {
@@ -61,50 +113,11 @@ fn order_flags(user: &Account<MarginUser>, params: &OrderParams) -> Result<Callb
 }
 
 pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
-    let user = &mut ctx.accounts.margin_user;
-
-    let (callback_info, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
-        ctx.accounts.inner.authority.key(),
-        Side::Bid,
+    ctx.accounts.lend_order(
         params,
-        user.key(),
-        user.key(),
         ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        order_flags(user, &params)?,
-    )?;
-    let staked = ctx.accounts.inner.lend(
-        user.key(),
-        &user.assets.next_new_deposit_seqno().to_le_bytes(),
-        user.assets.next_new_deposit_seqno(),
-        callback_info,
-        &order_summary,
-    )?;
-
-    if staked > 0 {
-        ctx.accounts.margin_user.assets.new_deposit(staked)?;
-    }
-
-    ctx.mint(
-        &ctx.accounts.ticket_collateral_mint,
-        &ctx.accounts.ticket_collateral,
-        staked + order_summary.quote_posted()?,
-    )?;
-    emit!(crate::events::OrderPlaced {
-        market: ctx.accounts.inner.orderbook_mut.market.key(),
-        authority: ctx.accounts.inner.authority.key(),
-        margin_user: Some(ctx.accounts.margin_user.key()),
-        order_tag: callback_info.order_tag.as_u128(),
-        order_summary: order_summary.summary(),
-        auto_stake: params.auto_stake,
-        post_only: params.post_only,
-        post_allowed: params.post_allowed,
-        limit_price: params.limit_price,
-        order_type: crate::events::OrderType::MarginLend,
-    });
-    ctx.accounts.margin_user.emit_asset_balances();
-
-    Ok(())
+    )
 }

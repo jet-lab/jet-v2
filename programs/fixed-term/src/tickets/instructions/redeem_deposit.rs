@@ -24,7 +24,8 @@ pub struct RedeemDeposit<'info> {
     pub owner: AccountInfo<'info>,
 
     /// The authority that must sign to redeem the deposit
-    pub authority: Signer<'info>,
+    /// The signature is asserted in handler logic
+    pub authority: AccountInfo<'info>,
 
     /// Receiver for the rent used to track the deposit
     #[account(mut)]
@@ -80,6 +81,9 @@ impl<'info> RedeemDeposit<'info> {
 }
 
 pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
+    if !ctx.accounts.authority.is_signer {
+        return err!(FixedTermErrorCode::MissingAuthoritySignature);
+    }
     if ctx.accounts.owner.key != ctx.accounts.authority.key {
         msg!(
             "signer {} is not the deposit owner {}",
