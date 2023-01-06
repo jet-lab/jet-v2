@@ -108,9 +108,9 @@ describe('Fixed Term Market', () => {
   });
 
   it('can perform a borrow on a pool after a position on a fixed market could have gone stale', () => {
-    cy.wait(31000) // current stale time is 30 seconds
-    const poolsLink = cy.contains('.nav-link', 'Pools')
+    cy.wait(31000); // current stale time is 30 seconds
+    const poolsLink = cy.contains('.nav-link', 'Pools');
     poolsLink.click();
-    borrow('USDC', 10)
-  })
+    borrow('USDC', 10);
+  });
 });

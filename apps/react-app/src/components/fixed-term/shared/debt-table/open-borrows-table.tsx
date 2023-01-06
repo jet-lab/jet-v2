@@ -1,8 +1,8 @@
-import { MarginTokenConfig, MarketAndconfig, TokenAmount } from "@jet-lab/margin";
-import { Loan } from "@jet-lab/store";
-import { Table } from "antd";
-import BN from "bn.js";
-import { formatDistanceToNowStrict } from "date-fns";
+import { MarginTokenConfig, MarketAndconfig, TokenAmount } from '@jet-lab/margin';
+import { Loan } from '@jet-lab/store';
+import { Table } from 'antd';
+import BN from 'bn.js';
+import { formatDistanceToNowStrict } from 'date-fns';
 
 const getBorrowColumns = (token: MarginTokenConfig) => [
   {
@@ -31,8 +31,7 @@ const getBorrowColumns = (token: MarginTokenConfig) => [
   }
 ];
 
-
-export const OpenBorrowsTable = ({ data, market}: { data: Loan[], market: MarketAndconfig }) => {
+export const OpenBorrowsTable = ({ data, market }: { data: Loan[]; market: MarketAndconfig }) => {
   return (
     <Table
       rowKey="id"

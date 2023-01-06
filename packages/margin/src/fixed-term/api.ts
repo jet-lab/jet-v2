@@ -435,7 +435,6 @@ export const repay = async ({
         instructions: orderIXS,
         adapterInstruction: ix
       })
-      console.log(currentLoan.address, balance.toNumber(), amountLeft.toNumber())
       amountLeft = amountLeft.sub(amountLeft)
     } else {
       const ix = await market.market.repay({
