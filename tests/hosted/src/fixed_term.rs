@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use agnostic_orderbook::state::{
     critbit::{LeafNode, Slab},
@@ -20,7 +23,7 @@ use jet_fixed_term::{
 };
 use jet_margin_sdk::{
     fixed_term::{
-        event_consumer::EventConsumer, fixed_term_address, FixedTermIxBuilder, OrderBookAddresses,
+        event_consumer::{EventConsumer, download_markets}, fixed_term_address, FixedTermIxBuilder, OrderBookAddresses,
         OwnedEventQueue,
     },
     ix_builder::{
@@ -34,6 +37,7 @@ use jet_margin_sdk::{
     tx_builder::{
         fixed_term::FixedTermPositionRefresher, global_initialize_instructions, MarginTxBuilder,
     },
+    util::no_dupe_queue::AsyncNoDupeQueue,
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_program_common::Fp32;
@@ -104,6 +108,7 @@ pub struct TestManager {
     pub event_consumer: Arc<EventConsumer>,
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
+    pub margin_accounts_to_settle: AsyncNoDupeQueue<Pubkey>,
 }
 
 impl Clone for TestManager {
@@ -121,6 +126,7 @@ impl Clone for TestManager {
             ),
             keys: self.keys.clone(),
             keygen: self.keygen.clone(),
+            margin_accounts_to_settle: Default::default(),
         }
     }
 }
@@ -202,6 +208,7 @@ impl TestManager {
             ix_builder,
             kps: Keys::new(),
             keys: Keys::new(),
+            margin_accounts_to_settle: Default::default(),
         };
         this.insert_kp("token_mint", clone(mint));
 
@@ -309,7 +316,9 @@ impl TestManager {
         let market = self.ix_builder.market();
 
         loop {
-            self.event_consumer.load_markets(&[market]).await?;
+            let market_struct = download_markets(self.client.as_ref(), &[market]).await?[0];
+            self.event_consumer
+                .insert_market(market_struct, Some(self.margin_accounts_to_settle.clone()));
             self.event_consumer.sync_queues().await?;
             self.event_consumer.sync_users().await?;
 
@@ -323,11 +332,37 @@ impl TestManager {
         }
         Ok(())
     }
+
+    /// Two jobs:
+    /// - Verifies that the event consumer has notified us that the expected
+    ///   account needs to be settled.
+    /// - settles those accounts.
+    pub async fn expect_and_execute_settlement<P: Proxy>(
+        &self,
+        expected: &[&FixedTermUser<P>],
+    ) -> Result<()> {
+        let to_settle = self.margin_accounts_to_settle.pop_many(usize::MAX).await;
+        assert_eq!(expected.len(), to_settle.len());
+        assert_eq!(
+            expected
+                .iter()
+                .map(|u| u.proxy.pubkey())
+                .collect::<HashSet<Pubkey>>(),
+            to_settle.into_iter().collect()
+        );
+        for user in expected {
+            user.settle().await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption();
 
         self.sign_send_transaction(&[pause], None).await
     }
+
     pub async fn resume_ticket_redemption(&self) -> Result<Signature> {
         let resume = self.ix_builder.resume_ticket_redemption();
 

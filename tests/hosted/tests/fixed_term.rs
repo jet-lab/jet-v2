@@ -432,6 +432,11 @@ async fn can_consume_lots_of_events() -> Result<()> {
     }
 
     manager.consume_events().await?;
+    // these are not margin users so there are no expected accounts to settle
+    manager
+        .expect_and_execute_settlement::<NoProxy>(&[])
+        .await?;
+
     assert!(manager.load_event_queue().await?.is_empty()?);
 
     Ok(())
@@ -620,8 +625,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
-    lender.settle().await?;
-    borrower.settle().await?;
+    manager.expect_and_execute_settlement(&[&borrower]).await?;
 
     assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
@@ -699,8 +703,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(1_201, borrower.claims().await?);
 
     manager.consume_events().await?;
-    lender.settle().await?;
-    borrower.settle().await?;
+    manager.expect_and_execute_settlement(&[&lender]).await?;
 
     // todo improve the rounding situation to make this 1_000
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
