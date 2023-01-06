@@ -11,6 +11,7 @@ import MSOL from '@assets/icons/cryptos/MSOL.svg';
 import SCNSOL from '@assets/icons/cryptos/scnSOL.svg';
 import DAI from '@assets/icons/cryptos/DAI.svg';
 import FTT from '@assets/icons/cryptos/FTT.svg';
+import ZBC from '@assets/icons/cryptos/ZBC.svg';
 
 // Component to render the SVG logo of a token
 export function TokenLogo(props: {
@@ -48,6 +49,8 @@ export function TokenLogo(props: {
       return <FTT className="token-logo" height={height} width={height} style={style} />;
     case 'DAI':
       return <DAI className="token-logo" height={height} width={height} style={style} />;
+    case 'ZBC':
+      return <ZBC className="token-logo" height={height} width={height} style={style} />;
     default:
       return <Skeleton.Avatar active size={height} shape="square" style={style} />;
   }
