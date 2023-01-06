@@ -17,6 +17,7 @@ import BN from 'bn.js';
 import numeral from 'numeral';
 import { useOpenPositions } from '@jet-lab/store';
 import { OpenBorrowsTable } from './open-borrows-table';
+import { Pools } from '@state/pools/pools';
 
 interface ITabLink {
   name: string;
@@ -38,7 +39,7 @@ const TabLink = ({ name, amount, decimals }: ITabLink) => {
   );
 };
 
-export function DebtTable(): JSX.Element {
+export function DebtTable() {
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
   const account = useRecoilValue(CurrentAccount);
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
@@ -47,6 +48,7 @@ export function DebtTable(): JSX.Element {
   const { provider } = useProvider();
   const blockExplorer = useRecoilValue(BlockExplorer);
   const cluster = useRecoilValue(Cluster);
+  const pools = useRecoilValue(Pools)
 
   const { data: ordersData, error: ordersError, isLoading: ordersLoading } = useOrdersForUser(market?.market, account);
   const {
@@ -63,6 +65,10 @@ export function DebtTable(): JSX.Element {
         'error'
       );
   }, [ordersError, positionsError]);
+
+  if (!pools) {
+    return null
+  }
 
   return (
     <div className="debt-detail account-table view-element flex-centered">
@@ -92,6 +98,8 @@ export function DebtTable(): JSX.Element {
                     marginAccount={account}
                     cluster={cluster}
                     blockExplorer={blockExplorer}
+                    pools={pools.tokenPools}
+                    markets={markets.map(m => m.market)}
                   />
                 )
             },
@@ -115,6 +123,8 @@ export function DebtTable(): JSX.Element {
                     marginAccount={account}
                     cluster={cluster}
                     blockExplorer={blockExplorer}
+                    pools={pools.tokenPools}
+                    markets={markets.map(m => m.market)}
                   />
                 )
             },

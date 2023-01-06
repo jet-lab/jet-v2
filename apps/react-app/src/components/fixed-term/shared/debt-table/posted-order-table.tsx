@@ -1,4 +1,4 @@
-import { MarginAccount, TokenAmount } from '@jet-lab/margin';
+import { FixedTermMarket, MarginAccount, Pool, TokenAmount } from '@jet-lab/margin';
 import { Table } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -17,13 +17,17 @@ interface GetPostOrderColumnes {
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
   blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+  pools: Record<string, Pool>
+  markets: FixedTermMarket[]
 }
 const getPostOrderColumns = ({
   market,
   marginAccount,
   provider,
   cluster,
-  blockExplorer
+  blockExplorer,
+  pools,
+  markets
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
   {
     title: 'Issue date',
@@ -58,7 +62,7 @@ const getPostOrderColumns = ({
       return (
         <CloseOutlined
           style={{ color: '#e36868' }}
-          onClick={() => cancel(market, marginAccount, provider, order, cluster, blockExplorer)}
+          onClick={() => cancel(market, marginAccount, provider, order, cluster, blockExplorer, pools, markets)}
         />
       );
     }
@@ -71,14 +75,18 @@ const cancel = async (
   provider: AnchorProvider,
   order: OpenOrder,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach'
+  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[]
 ) => {
   try {
     await cancelOrder({
       market,
       marginAccount,
       provider,
-      orderId: new BN(order.order_id)
+      orderId: new BN(order.order_id),
+      pools,
+      markets
     });
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
   } catch (e: any) {
@@ -98,7 +106,9 @@ export const OrdersTable = ({
   marginAccount,
   provider,
   cluster,
-  blockExplorer
+  blockExplorer,
+  pools,
+  markets
 }: {
   data: OpenOrder[];
   market: MarketAndconfig;
@@ -106,6 +116,8 @@ export const OrdersTable = ({
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
   blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+  pools: Record<string, Pool>
+  markets: FixedTermMarket[]
 }) => {
   const columns = useMemo(
     () =>
@@ -114,7 +126,9 @@ export const OrdersTable = ({
         marginAccount,
         provider,
         cluster,
-        blockExplorer
+        blockExplorer,
+        pools,
+        markets,
       }),
     [market, marginAccount, provider, cluster, blockExplorer]
   );
