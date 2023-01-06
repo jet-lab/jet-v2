@@ -23,8 +23,8 @@ use jet_fixed_term::{
 };
 use jet_margin_sdk::{
     fixed_term::{
-        event_consumer::{EventConsumer, download_markets}, fixed_term_address, FixedTermIxBuilder, OrderBookAddresses,
-        OwnedEventQueue,
+        event_consumer::{download_markets, EventConsumer},
+        fixed_term_address, FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
     },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
