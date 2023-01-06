@@ -832,6 +832,9 @@ impl FixedTermIxBuilder {
             payer: *payer,
             underlying_token_vault: self.underlying_token_vault,
             token_program: spl_token::ID,
+            claims: margin_user.claims,
+            claims_mint: self.claims,
+            market: self.market,
         }
         .to_account_metas(None);
 
