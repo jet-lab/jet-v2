@@ -39,6 +39,7 @@ pub struct Repay<'info> {
     pub source_authority: Signer<'info>,
 
     /// The payer for the `TermLoan` to return rent to
+    #[account(mut)]
     pub payer: AccountInfo<'info>,
 
     /// The token vault holding the underlying token of the ticket

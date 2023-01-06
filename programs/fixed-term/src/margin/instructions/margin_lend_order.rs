@@ -60,7 +60,6 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()>
     )?;
     let staked = ctx.accounts.inner.lend(
         user.key(),
-        ctx.accounts.inner.payer.key(),
         &user.assets.next_new_deposit_seqno().to_le_bytes(),
         user.assets.next_new_deposit_seqno(),
         callback_info,

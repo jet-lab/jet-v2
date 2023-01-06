@@ -27,6 +27,7 @@ pub struct RedeemDeposit<'info> {
     pub authority: Signer<'info>,
 
     /// Receiver for the rent used to track the deposit
+    #[account(mut)]
     pub payer: AccountInfo<'info>,
 
     /// The token account designated to receive the assets underlying the claim
