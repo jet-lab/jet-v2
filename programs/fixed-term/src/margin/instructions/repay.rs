@@ -1,7 +1,7 @@
 use std::cmp::min;
 
 use anchor_lang::{prelude::*, AccountsClose};
-use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{transfer, Token, Transfer};
 use jet_program_common::traits::TrySubAssign;
 use jet_program_proc_macros::MarketTokenManager;
 
@@ -35,22 +35,22 @@ pub struct Repay<'info> {
 
     /// The token account to deposit tokens from
     #[account(mut)]
-    pub source: Account<'info, TokenAccount>,
+    pub source: AccountInfo<'info>,
 
     /// The signing authority for the source_account
     pub payer: Signer<'info>,
 
     /// The token vault holding the underlying token of the ticket
     #[account(mut)]
-    pub underlying_token_vault: Account<'info, TokenAccount>,
+    pub underlying_token_vault: AccountInfo<'info>,
 
     /// The token account representing claims for this margin user
     #[account(mut)]
-    pub claims: Account<'info, TokenAccount>,
+    pub claims: AccountInfo<'info>,
 
     /// The token account representing claims for this margin user
     #[account(mut)]
-    pub claims_mint: Account<'info, Mint>,
+    pub claims_mint: AccountInfo<'info>,
 
     #[account(
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
