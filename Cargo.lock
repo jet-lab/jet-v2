@@ -2419,7 +2419,6 @@ dependencies = [
  "jet-simulation",
  "jet-static-program-registry",
  "jet-test-service",
- "num-traits",
  "pyth-sdk-solana 0.7.0",
  "rand 0.8.5",
  "serde",
