@@ -16,7 +16,7 @@ use crate::{
 #[derive(Accounts, MarketTokenManager)]
 pub struct Repay<'info> {
     /// The account tracking information related to this particular user
-    #[account(mut, has_one = claims)]
+    #[account(mut, has_one = claims @ FixedTermErrorCode::WrongClaimAccount)]
     pub margin_user: Account<'info, MarginUser>,
 
     #[account(
@@ -53,7 +53,7 @@ pub struct Repay<'info> {
     pub claims_mint: Account<'info, Mint>,
 
     #[account(
-        has_one = claims_mint,
+        has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
         has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
     )]
     pub market: AccountLoader<'info, Market>,
