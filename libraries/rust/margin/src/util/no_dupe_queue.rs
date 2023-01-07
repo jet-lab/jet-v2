@@ -1,5 +1,3 @@
-#![allow(missing_docs)] // FIXME
-
 use std::{
     collections::{hash_map::DefaultHasher, HashSet, LinkedList},
     hash::{Hash, Hasher},
@@ -8,22 +6,27 @@ use std::{
 
 use tokio::sync::Mutex;
 
+/// Atomic version of NoDupeQueue that uses async tokio mutexes.
 #[derive(Clone, Default)]
 pub struct AsyncNoDupeQueue<T: Hash + Eq>(Arc<Mutex<NoDupeQueue<T>>>);
 
 impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
+    /// returns a new empty queue
     pub fn new() -> Self {
         Self(Arc::new(Mutex::new(NoDupeQueue::new())))
     }
 
+    /// Acquires and releases the lock for a single push
     pub async fn push(&self, item: T) {
         self.0.lock().await.push(item)
     }
 
+    /// Acquires and releases the lock for a single pop
     pub async fn pop(&self) -> Option<T> {
         self.0.lock().await.pop()
     }
 
+    /// Adds many while acquiring the lock only once
     pub async fn push_many(&self, items: Vec<T>) {
         let mut inner = self.0.lock().await;
         for item in items {
@@ -31,6 +34,7 @@ impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
         }
     }
 
+    /// Pops many while acquiring the lock only once
     pub async fn pop_many(&self, max: usize) -> Vec<T> {
         let mut inner = self.0.lock().await;
         let mut ret = vec![];
@@ -45,6 +49,10 @@ impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
     }
 }
 
+/// A deduplicated queue. If you attempt to add a duplicate of a value that is
+/// already in the queue, it will simply not be added and the method will return
+/// successfully, because it assumes that you are satisfied that it already
+/// exists.
 #[derive(Default)]
 pub struct NoDupeQueue<T: Hash + Eq> {
     list: LinkedList<T>,
@@ -52,6 +60,7 @@ pub struct NoDupeQueue<T: Hash + Eq> {
 }
 
 impl<T: Hash + Eq> NoDupeQueue<T> {
+    /// returns a new empty queue
     pub fn new() -> Self {
         Self {
             list: LinkedList::new(),
@@ -59,6 +68,8 @@ impl<T: Hash + Eq> NoDupeQueue<T> {
         }
     }
 
+    /// Adds an item to the back of the queue if it is not already present in
+    /// the queue.
     pub fn push(&mut self, item: T) {
         let key = hash(&item);
         if !self.set.contains(&key) {
@@ -67,6 +78,7 @@ impl<T: Hash + Eq> NoDupeQueue<T> {
         }
     }
 
+    /// Removes the first item from the front of the queue and returns it.
     pub fn pop(&mut self) -> Option<T> {
         self.list.pop_front().map(|item| {
             self.set.remove(&hash(&item));
