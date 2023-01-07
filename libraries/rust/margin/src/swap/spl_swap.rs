@@ -23,7 +23,6 @@ use std::{
 };
 
 use anchor_lang::ToAccountMetas;
-use jet_instructions::{IxResult, JetIxError};
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
@@ -87,13 +86,13 @@ impl SplSwapPool {
                 continue;
             }
 
-            let (_mint_a, _mint_b) = match (
-                supported_mints.get(&swap.token_a_mint),
-                supported_mints.get(&swap.token_b_mint),
-            ) {
-                (Some(a), Some(b)) => (a, b),
-                _ => continue,
-            };
+            if supported_mints
+                .get(&swap.token_a_mint)
+                .and_then(|_| supported_mints.get(&swap.token_b_mint))
+                .is_none()
+            {
+                continue;
+            }
 
             // Get the pool tokens minted as a proxy of size
             let Ok(pool_mint) = find_mint(rpc, &swap.pool_mint).await else {
@@ -146,28 +145,20 @@ impl SplSwapPool {
 }
 
 impl SwapAccounts for SplSwapPool {
-    fn to_account_meta(&self, src_token: &Pubkey) -> IxResult<Vec<AccountMeta>> {
-        let (vault_from, vault_into) = if src_token == &self.mint_a {
-            (self.token_b, self.token_a)
-        } else if src_token == &self.mint_b {
-            (self.token_a, self.token_b)
-        } else {
-            return Err(JetIxError::SwapIxError("Invalid source token".to_string()));
-        };
+    fn to_account_meta(&self) -> Vec<AccountMeta> {
         let (swap_authority, _) =
             Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
-        let accounts = ix_accounts::SplSwapInfo {
+
+        ix_accounts::SplSwapInfo {
             swap_pool: self.pool,
             authority: swap_authority,
-            vault_into,
-            vault_from,
+            vault_a: self.token_a,
+            vault_b: self.token_b,
             token_mint: self.pool_mint,
             fee_account: self.fee_account,
             swap_program: self.program,
         }
-        .to_account_metas(None);
-
-        Ok(accounts)
+        .to_account_metas(None)
     }
 
     fn pool_tokens(&self) -> (Pubkey, Pubkey) {

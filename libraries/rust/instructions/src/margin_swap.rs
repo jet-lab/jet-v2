@@ -105,7 +105,7 @@ pub fn derive_spl_swap_authority(program: &Pubkey, pool: &Pubkey) -> Pubkey {
 /// Trait to get required information from a swap pool for the [MarginSwapRouteIxBuilder]
 pub trait SwapAccounts {
     /// Convert the pool to a vec of [AccountMeta]
-    fn to_account_meta(&self, src_token: &Pubkey) -> IxResult<Vec<AccountMeta>>;
+    fn to_account_meta(&self) -> Vec<AccountMeta>;
     /// Determine the pool source and destination tokens
     fn pool_tokens(&self) -> (Pubkey, Pubkey);
     /// The identifier of the route
@@ -261,7 +261,7 @@ impl MarginSwapRouteIxBuilder {
         }
 
         // Add swap pool accounts
-        let mut accounts = pool.to_account_meta(&src_token)?;
+        let mut accounts = pool.to_account_meta();
         self.account_metas.append(&mut accounts);
 
         if !self.expects_multi_route && swap_split > 0 {
@@ -382,7 +382,14 @@ impl MarginSwapRouteIxBuilder {
         let (mint_a, mint_b) = pool.pool_tokens();
         let next_src_token = self
             .current_route_tokens
-            .map(|(_, b)| b)
+            .map(|(a, b)| {
+                // If splitting a route, the expected source is a, else b
+                if self.expects_multi_route {
+                    a
+                } else {
+                    b
+                }
+            })
             .unwrap_or(self.src_token);
         if mint_a == next_src_token {
             Ok((mint_a, mint_b))

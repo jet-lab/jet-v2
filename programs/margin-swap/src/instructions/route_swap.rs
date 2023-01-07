@@ -402,7 +402,7 @@ fn exec_swap_split<'info>(
         }
         SwapRouteIdentifier::Whirlpool => todo!(),
         SwapRouteIdentifier::SaberStable => {
-            let accounts = remaining_accounts.take(6).cloned().collect::<Vec<_>>();
+            let accounts = remaining_accounts.take(7).cloned().collect::<Vec<_>>();
             let swap_accounts = SaberSwapInfo::try_accounts(
                 &saber_stable_swap::id(),
                 &mut &accounts[..],

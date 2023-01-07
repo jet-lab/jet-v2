@@ -17,16 +17,12 @@
 
 //! The saber swap module gets all saber swap pools that contain pairs of supported mints
 
-#![cfg_attr(not(feature = "localnet"), allow(unused))]
-
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
 
 use anchor_lang::ToAccountMetas;
-use anyhow::{bail, Result};
-use jet_instructions::{IxResult, JetIxError};
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use saber_client::state::SwapInfo;
@@ -34,7 +30,7 @@ use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
 
 use crate::ix_builder::SwapAccounts;
 
-use super::{find_mint, find_token};
+use super::find_mint;
 
 /// Accounts used for a Saber swap pool
 #[derive(Debug, Clone, Copy)]
@@ -86,27 +82,13 @@ impl SaberSwapPool {
                 continue;
             }
 
-            let (mint_a, mint_b) = match (
-                supported_mints.get(&swap.token_a.mint),
-                supported_mints.get(&swap.token_b.mint),
-            ) {
-                (Some(a), Some(b)) => (a, b),
-                _ => continue,
-            };
-
-            // Get the token balances of both sides
-            let token_a = match find_token(rpc, &swap.token_a.reserves).await {
-                Ok(val) => val,
-                Err(_) => {
-                    continue;
-                }
-            };
-            let token_b = match find_token(rpc, &swap.token_b.reserves).await {
-                Ok(val) => val,
-                Err(_) => {
-                    continue;
-                }
-            };
+            if supported_mints
+                .get(&swap.token_a.mint)
+                .and_then(|_| supported_mints.get(&swap.token_b.mint))
+                .is_none()
+            {
+                continue;
+            }
 
             let pool_mint = find_mint(rpc, &swap.pool_mint).await?;
 
@@ -162,27 +144,20 @@ impl SaberSwapPool {
 }
 
 impl SwapAccounts for SaberSwapPool {
-    fn to_account_meta(&self, src_token: &Pubkey) -> IxResult<Vec<AccountMeta>> {
-        let (vault_from, vault_into, fee_account) = if src_token == &self.mint_a {
-            (self.token_b, self.token_a, self.fee_b)
-        } else if src_token == &self.mint_b {
-            (self.token_a, self.token_b, self.fee_a)
-        } else {
-            return Err(JetIxError::SwapIxError("Invalid source token".to_string()));
-        };
+    fn to_account_meta(&self) -> Vec<AccountMeta> {
         let (swap_authority, _) =
             Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
-        let accounts = ix_accounts::SaberSwapInfo {
+
+        ix_accounts::SaberSwapInfo {
             swap_pool: self.pool,
             authority: swap_authority,
-            vault_into,
-            vault_from,
-            admin_fee_destination: fee_account,
+            vault_a: self.token_a,
+            vault_b: self.token_b,
+            admin_fee_a: self.fee_a,
+            admin_fee_b: self.fee_b,
             swap_program: self.program,
         }
-        .to_account_metas(None);
-
-        Ok(accounts)
+        .to_account_metas(None)
     }
 
     fn pool_tokens(&self) -> (Pubkey, Pubkey) {

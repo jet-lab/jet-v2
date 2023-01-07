@@ -29,11 +29,11 @@ pub struct SplSwapInfo<'info> {
 
     /// CHECK:
     #[account(mut)]
-    pub vault_into: AccountInfo<'info>,
+    pub vault_a: AccountInfo<'info>,
 
     /// CHECK:
     #[account(mut)]
-    pub vault_from: AccountInfo<'info>,
+    pub vault_b: AccountInfo<'info>,
 
     /// CHECK:
     #[account(mut)]
@@ -59,6 +59,20 @@ impl<'info> SplSwapInfo<'info> {
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
+        // It's safe to check only one side, if there is a mismatch, the swap ix will fail
+        let source_mint = token::accessor::mint(source)?;
+        let mint_a = token::accessor::mint(&self.vault_a)?;
+        let (source_vault, target_vault) = if source_mint == mint_a {
+            (
+                self.vault_a.to_account_info(),
+                self.vault_b.to_account_info(),
+            )
+        } else {
+            (
+                self.vault_b.to_account_info(),
+                self.vault_a.to_account_info(),
+            )
+        };
         let swap_ix = use_client!(self.swap_program.key(), {
             client::instruction::swap(
                 self.swap_program.key,
@@ -67,8 +81,8 @@ impl<'info> SplSwapInfo<'info> {
                 self.authority.key,
                 authority.key,
                 source.key,
-                self.vault_into.key,
-                self.vault_from.key,
+                source_vault.key,
+                target_vault.key,
                 target.key,
                 self.token_mint.key,
                 self.fee_account.key,
@@ -87,8 +101,8 @@ impl<'info> SplSwapInfo<'info> {
                 authority.to_account_info(),
                 self.authority.to_account_info(),
                 source.to_account_info(),
-                self.vault_into.to_account_info(),
-                self.vault_from.to_account_info(),
+                source_vault,
+                target_vault,
                 target.to_account_info(),
                 self.token_mint.to_account_info(),
                 self.fee_account.to_account_info(),

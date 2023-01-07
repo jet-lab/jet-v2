@@ -22,7 +22,7 @@ pub fn get_metadata_address(address: &Pubkey) -> Pubkey {
 
 #[derive(Error, Debug)]
 pub enum JetIxError {
-    #[error("Invalid swap action {0}")]
+    #[error("Invalid swap action. {0}")]
     SwapIxError(String),
 }
 

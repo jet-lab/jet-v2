@@ -27,15 +27,19 @@ pub struct SaberSwapInfo<'info> {
 
     /// CHECK: Validated by Saber
     #[account(mut)]
-    pub vault_into: AccountInfo<'info>,
+    pub vault_a: AccountInfo<'info>,
 
     /// CHECK: Validated by Saber
     #[account(mut)]
-    pub vault_from: AccountInfo<'info>,
+    pub vault_b: AccountInfo<'info>,
 
     /// CHECK: Validated by Saber
     #[account(mut)]
-    pub admin_fee_destination: AccountInfo<'info>,
+    pub admin_fee_a: AccountInfo<'info>,
+
+    /// CHECK: Validated by Saber
+    #[account(mut)]
+    pub admin_fee_b: AccountInfo<'info>,
 
     /// The address of the swap program
     pub swap_program: Program<'info, saber_stable_swap::StableSwap>,
@@ -52,6 +56,22 @@ impl<'info> SaberSwapInfo<'info> {
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
+        // It's safe to check only one side, if there is a mismatch, the swap ix will fail
+        let source_mint = token::accessor::mint(source)?;
+        let mint_a = token::accessor::mint(&self.vault_a)?;
+        let (source_vault, target_vault, fees) = if source_mint == mint_a {
+            (
+                self.vault_a.to_account_info(),
+                self.vault_b.to_account_info(),
+                self.admin_fee_b.to_account_info(),
+            )
+        } else {
+            (
+                self.vault_b.to_account_info(),
+                self.vault_a.to_account_info(),
+                self.admin_fee_a.to_account_info(),
+            )
+        };
         let swap_context = CpiContext::new(
             token_program.to_account_info(),
             saber_stable_swap::Swap {
@@ -63,14 +83,14 @@ impl<'info> SaberSwapInfo<'info> {
                 },
                 input: saber_stable_swap::SwapToken {
                     user: source.to_account_info(),
-                    reserve: self.vault_into.to_account_info(),
+                    reserve: source_vault,
                 },
                 output: saber_stable_swap::SwapOutput {
                     user_token: saber_stable_swap::SwapToken {
                         user: target.to_account_info(),
-                        reserve: self.vault_from.to_account_info(),
+                        reserve: target_vault,
                     },
-                    fees: self.admin_fee_destination.to_account_info(),
+                    fees,
                 },
             },
         );

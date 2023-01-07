@@ -27,18 +27,6 @@ use solana_sdk::pubkey::Pubkey;
 pub mod saber_swap;
 pub mod spl_swap;
 
-// helper function to find token account
-pub(super) async fn find_token(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    address: &Pubkey,
-) -> Result<anchor_spl::token::TokenAccount> {
-    let account = rpc.get_account(address).await?.unwrap();
-    let data = &mut &account.data[..];
-    let account = anchor_spl::token::TokenAccount::try_deserialize_unchecked(data)?;
-
-    Ok(account)
-}
-
 // helper function to find mint account
 pub(super) async fn find_mint(
     rpc: &Arc<dyn SolanaRpcClient>,
