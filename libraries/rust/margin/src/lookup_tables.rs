@@ -19,7 +19,7 @@
 
 #![cfg_attr(not(feature = "localnet"), allow(unused))]
 
-use std::{any::Any, collections::HashSet, sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use anchor_client::solana_client::rpc_config::RpcSendTransactionConfig;
 use anyhow::{bail, Context, Result};
@@ -173,7 +173,8 @@ impl LookupTable {
         let serialized = bincode::serialize(transaction)?;
         let encoded = base64::encode(serialized);
 
-        let connection = (rpc as &dyn Any)
+        let connection = rpc
+            .as_any()
             .downcast_ref::<RpcConnection>()
             .context("rpc is not an RpcConnection")?;
         let config = connection
@@ -187,14 +188,8 @@ impl LookupTable {
             });
         let signature = connection
             .client()
-            .send::<String>(
-                solana_client::rpc_request::RpcRequest::SendTransaction,
-                serde_json::json!([encoded, config]),
-            )
+            .send_transaction_with_config(transaction, config)
             .await?;
-        let signature = signature.parse::<Signature>()?;
-        // rpc.confirm_transactions(&[signature])
-        //     .await?;
 
         Ok(signature)
     }

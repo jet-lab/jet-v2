@@ -437,6 +437,9 @@ pub struct TestRuntimeRpcClient {
 
 #[async_trait]
 impl SolanaRpcClient for TestRuntimeRpcClient {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self as &dyn std::any::Any
+    }
     async fn get_account(&self, address: &Pubkey) -> anyhow::Result<Option<Account>> {
         Ok(self.bank.get_account(address).map(|a| a.into()))
     }
