@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow, MarketAndconfig } from '@jet-lab/margin';
+import { borrowNow, MarketAndconfig, OrderbookModel } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -75,7 +75,16 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           Loan amount
           <InputNumber
             className="input-amount"
-            onChange={debounce(e => setAmount(new BN(e * 10 ** decimals)), 300)}
+            onChange={debounce(e => {
+              // ORDERBOOKMODEL WASM CHECK
+              const amount = BigInt(e * 10 ** decimals);
+              const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
+              const sim = orderbookModel.simulateFills("borrow", amount, undefined);
+              console.log(sim);
+              // END CHECK TODO deleteme
+
+              setAmount(new BN(e * 10 ** decimals));
+            }, 300)}
             placeholder={'10,000'}
             min={0}
             formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}

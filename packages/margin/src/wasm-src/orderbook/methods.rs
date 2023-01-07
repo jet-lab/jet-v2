@@ -51,6 +51,33 @@ pub fn price_to_rate(price: u64, tenor: u64) -> u64 {
     PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor)
 }
 
+#[test]
+fn test_price_to_rate() {
+    let one_year = 365 * 24 * 60 * 60;
+
+    assert_eq!(price_to_rate(1 << 32, one_year), 0);
+    assert_eq!(price_to_rate((1 << 32) / 2, one_year), 6931);
+
+    let half_year = 365 * 24 * 60 * 60 / 2;
+    assert_eq!(price_to_rate((1 << 32) / 2, half_year), 6931 * 2 + 1); // rounding
+
+    let one_day = 24 * 60 * 60;
+    let price: u64 = (999863 << 32) / 1_000_000;
+    assert_eq!(price_to_rate(price, one_day), 500);
+}
+
+#[test]
+fn test_price_to_rate_2() {
+    assert_eq!(
+        price_to_rate(
+            crate::orderbook::interest_pricing::f64_to_fp32(0.9980840295893417),
+            154828800
+        ) as f64
+            / 10_000_f64,
+        0.0004
+    );
+}
+
 /// Given an interest rate and market tenor, calculates a price
 ///
 /// interest_rate: basis points
@@ -65,15 +92,6 @@ pub fn rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
 #[wasm_bindgen]
 pub fn ui_price(price: u64) -> f64 {
     fp32_to_f64(price)
-}
-
-#[wasm_bindgen]
-pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::types::OrderAmount {
-    let quote = amount;
-    let base = quote + ((quote * interest_rate) / 10_000);
-    let price = calculate_implied_price(base, quote);
-
-    super::types::OrderAmount { base, quote, price }
 }
 
 /// For calculation of an implied limit price given to the fixed term markets orderbook

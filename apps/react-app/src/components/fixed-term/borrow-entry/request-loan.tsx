@@ -81,7 +81,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       throw e;
     }
   };
-
+  
   return (
     <div className="fixed-term order-entry-body">
       <div className="request-loan fixed-order-entry-fields">
@@ -89,7 +89,13 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           Loan amount
           <InputNumber
             className="input-amount"
-            onChange={debounce(e => setAmount(new BN(e * 10 ** decimals)), 300)}
+            onChange={
+              debounce(e => {
+                // ORDERBOOKMODEL WASM CHECK
+                // END CHECK TODO deleteme
+
+                setAmount(new BN(e * 10 ** decimals));
+              }, 300)}
             placeholder={'10,000'}
             min={0}
             formatter={formatWithCommas}
@@ -102,6 +108,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <InputNumber
             className="input-rate"
             onChange={debounce(e => {
+              // ORDERBOOKMODEL WASM CHECK
+              // END CHECK TODO deleteme
+
               setBasisPoints(new BN(e * 100));
             }, 300)}
             placeholder={'1.5'}

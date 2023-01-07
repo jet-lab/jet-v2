@@ -2,10 +2,9 @@ import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from "../margin"
-import { Orderbook } from "./orderbook"
 import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount } from "./utils"
-import { rate_to_price } from "../wasm"
+import { OrderbookModel, rate_to_price } from "../wasm"
 import { bigIntToBn, bnToBigInt } from "../token"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
@@ -105,6 +104,7 @@ export class FixedTermMarket {
   }
   readonly info: MarketInfo
   readonly program: Program<JetFixedTerm>
+  public orderbookModel: OrderbookModel | undefined = undefined
   private constructor(
     market: PublicKey,
     claimsMetadata: PublicKey,
@@ -431,8 +431,16 @@ export class FixedTermMarket {
     return await findFixedTermDerivedAccount(["term_deposit", this.address, marginUser, seed], this.program.programId)
   }
 
-  async fetchOrderbook(): Promise<Orderbook> {
-    return await Orderbook.load(this)
+  async fetchOrderbook(tenor: bigint): Promise<OrderbookModel> {
+    const asksBuf = (await this.provider.connection.getAccountInfo(this.info.asks))!.data
+    const bidsBuf = (await this.provider.connection.getAccountInfo(this.info.bids))!.data
+
+    const model = new OrderbookModel(BigInt(tenor))
+    model.refresh(bidsBuf, asksBuf)
+    
+    this.orderbookModel = model
+
+    return model
   }
 
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {

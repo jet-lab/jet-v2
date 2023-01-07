@@ -68,7 +68,7 @@ name = "agnostic-orderbook"
 version = "1.0.0"
 source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#231c24e7e6de94625a0aa67e6120355758faff36"
 dependencies = [
- "bonfida-utils",
+ "bonfida-utils 0.3.2",
  "borsh 0.9.3",
  "bytemuck",
  "enumflags2 0.7.5",
@@ -542,6 +542,19 @@ dependencies = [
  "solana-program",
  "spl-name-service",
  "syn 1.0.107",
+]
+
+[[package]]
+name = "bonfida-utils"
+version = "0.3.0"
+source = "git+https://github.com/Bonfida/bonfida-utils.git?branch=add-rounding-direction#11abafa345b5486062e8e3e1e8ca8077a4a9b507"
+dependencies = [
+ "bonfida-macros",
+ "borsh 0.9.3",
+ "bytemuck",
+ "pyth-sdk-solana 0.4.2",
+ "solana-program",
+ "spl-token 3.5.0",
 ]
 
 [[package]]
@@ -2139,6 +2152,7 @@ version = "0.1.0"
 dependencies = [
  "agnostic-orderbook",
  "anyhow",
+ "bonfida-utils 0.3.0",
  "bytemuck",
  "console_error_panic_hook",
  "jet-fixed-term",
@@ -2146,6 +2160,8 @@ dependencies = [
  "js-sys",
  "rand_chacha 0.3.1",
  "serde",
+ "serde-wasm-bindgen",
+ "solana-program",
  "wasm-bindgen",
 ]
 
@@ -2476,6 +2492,7 @@ name = "jet-program-common"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "borsh 0.9.3",
  "bytemuck",
  "num-traits",
  "solana-program",
@@ -4025,6 +4042,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fed41fc1a24994d044e6db6935e69511a1153b52c15eb42493b26fa87feba0"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-wasm-bindgen"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3b4c031cd0d9014307d82b8abf653c0290fbdaeb4c02d00c63cf52f728628bf"
+dependencies = [
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
 ]
 
 [[package]]

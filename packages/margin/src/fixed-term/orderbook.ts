@@ -1,22 +1,29 @@
 import { FixedTermMarket } from "./fixedTerm"
-import { get_orders_from_slab as getOrdersFromSlab, Order } from "../wasm"
+import { OrderbookModel } from "../wasm"
+import { bnToBigInt } from "../token";
 
 export class Orderbook {
-  readonly bids: Order[]
-  readonly asks: Order[]
+  model: OrderbookModel
 
-  private constructor(bids: Order[], asks: Order[]) {
-    this.bids = bids
-    this.asks = asks
+  private constructor(model: OrderbookModel) {
+    this.model = model;
   }
 
   static async load(fixedTermMarket: FixedTermMarket): Promise<Orderbook> {
     const asksBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.asks))!.data
     const bidsBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.bids))!.data
 
-    const asks = getOrdersFromSlab(new Uint8Array(asksBuf))
-    const bids = getOrdersFromSlab(new Uint8Array(bidsBuf))
+    console.log("FIXME: tenor is broken")
+    const model = new OrderbookModel(bnToBigInt(fixedTermMarket.info.borrowTenor));
+    model.refresh(bidsBuf, asksBuf);
+    const orderbook = new Orderbook(model);
 
-    return new Orderbook(bids, asks)
+    return orderbook;
+  }
+
+  public liquidityChartData(side: string): any {
+    const sample = this.model.sampleLiquidity(side);
+
+    return sample;
   }
 }

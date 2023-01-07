@@ -204,11 +204,12 @@ impl<'info> OrderbookMut<'info> {
     }
 }
 
+#[cfg_attr(feature = "cli", derive(serde::Serialize))]
 #[derive(
     AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Zeroable, Pod,
 )]
 #[repr(transparent)]
-pub struct OrderTag([u8; 16]);
+pub struct OrderTag(pub [u8; 16]);
 
 impl OrderTag {
     //todo maybe this means we don't need owner to be stored in the CallbackInfo
