@@ -185,15 +185,8 @@ impl SwapAccounts for SaberSwapPool {
         Ok(accounts)
     }
 
-    fn dst_token(&self, src_token: &Pubkey) -> IxResult<Pubkey> {
-        let dst_token = if src_token == &self.mint_a {
-            self.mint_b
-        } else if src_token == &self.mint_b {
-            self.mint_a
-        } else {
-            return Err(JetIxError::SwapIxError("Invalid source token".to_string()));
-        };
-        Ok(dst_token)
+    fn pool_tokens(&self) -> (Pubkey, Pubkey) {
+        (self.mint_a, self.mint_b)
     }
 
     fn route_type(&self) -> SwapRouteIdentifier {

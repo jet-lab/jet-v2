@@ -106,8 +106,8 @@ pub fn derive_spl_swap_authority(program: &Pubkey, pool: &Pubkey) -> Pubkey {
 pub trait SwapAccounts {
     /// Convert the pool to a vec of [AccountMeta]
     fn to_account_meta(&self, src_token: &Pubkey) -> IxResult<Vec<AccountMeta>>;
-    /// Determine the pool destination token based on its source token in the swap
-    fn dst_token(&self, src_token: &Pubkey) -> IxResult<Pubkey>;
+    /// Determine the pool source and destination tokens
+    fn pool_tokens(&self) -> (Pubkey, Pubkey);
     /// The identifier of the route
     fn route_type(&self) -> SwapRouteIdentifier;
 }
@@ -242,31 +242,26 @@ impl MarginSwapRouteIxBuilder {
     }
 
     /// Add a swap leg to the route
-    pub fn add_swap_leg<T: SwapAccounts>(
-        &mut self,
-        pool: &T,
-        src_token: &Pubkey,
-        swap_split: u8,
-    ) -> IxResult<()> {
+    pub fn add_swap_leg<T: SwapAccounts>(&mut self, pool: &T, swap_split: u8) -> IxResult<()> {
         // Check the swap split early
         if swap_split > ROUTE_SWAP_MAX_SPLIT
             || (swap_split > 0 && swap_split < ROUTE_SWAP_MIN_SPLIT)
         {
             return Err(JetIxError::SwapIxError(format!("Invalid swap split, must be >= {ROUTE_SWAP_MIN_SPLIT} and <= {ROUTE_SWAP_MAX_SPLIT}")));
         }
-        let dst_token = pool.dst_token(src_token)?;
+        let (src_token, dst_token) = self.src_dst_tokens(pool)?;
         // Run common checks
-        self.verify_addition(src_token, &dst_token, swap_split)?;
+        self.verify_addition(&src_token, &dst_token, swap_split)?;
 
         if !self.expects_multi_route {
             // Add source ATA and pool accounts. Add destination only if this is
             // the first part of a split leg.
-            let src_ata = get_associated_token_address(&self.margin_account, src_token);
+            let src_ata = get_associated_token_address(&self.margin_account, &src_token);
             self.account_metas.push(AccountMeta::new(src_ata, false));
         }
 
         // Add swap pool accounts
-        let mut accounts = pool.to_account_meta(src_token)?;
+        let mut accounts = pool.to_account_meta(&src_token)?;
         self.account_metas.append(&mut accounts);
 
         if !self.expects_multi_route && swap_split > 0 {
@@ -296,7 +291,7 @@ impl MarginSwapRouteIxBuilder {
             }
         }
         // Update the current tokens in the swap
-        self.current_route_tokens = Some((*src_token, dst_token));
+        self.current_route_tokens = Some((src_token, dst_token));
 
         Ok(())
     }
@@ -382,7 +377,23 @@ impl MarginSwapRouteIxBuilder {
         &self.spl_token_accounts
     }
 
-    /// Create instruction accounts based on context
+    /// Determine the source and destination pool mints
+    fn src_dst_tokens<T: SwapAccounts>(&self, pool: &T) -> IxResult<(Pubkey, Pubkey)> {
+        let (mint_a, mint_b) = pool.pool_tokens();
+        let next_src_token = self
+            .current_route_tokens
+            .map(|(_, b)| b)
+            .unwrap_or(self.src_token);
+        if mint_a == next_src_token {
+            Ok((mint_a, mint_b))
+        } else if mint_b == next_src_token {
+            Ok((mint_b, mint_a))
+        } else {
+            Err(JetIxError::SwapIxError(format!(
+                "Expected a swap pool that has {next_src_token} as one of its token mints"
+            )))
+        }
+    }
 
     /// Verify that the swap can be added
     fn verify_addition(

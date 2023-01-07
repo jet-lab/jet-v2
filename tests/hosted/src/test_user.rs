@@ -138,7 +138,7 @@ impl TestUser {
             change,
             1, // at least 1 token back
         )?;
-        swap_builder.add_swap_leg(pool, src, 0)?;
+        swap_builder.add_swap_leg(pool, 0)?;
         swap_builder.finalize()?;
         self.user.route_swap(&swap_builder, &[]).await?;
 
