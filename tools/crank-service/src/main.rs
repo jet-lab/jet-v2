@@ -11,7 +11,7 @@ use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file, signer::Signer};
 use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
-        settler::settle_margin_users,
+        settler::settle_margin_users_loop,
         FixedTermIxBuilder,
     },
     ix_builder::{derive_airspace, test_service::derive_token_mint},
@@ -93,7 +93,12 @@ async fn run(opts: CliOpts) -> Result<()> {
         let margin_accounts = AsyncNoDupeQueue::new();
         let ix = FixedTermIxBuilder::new_from_state(payer, &market);
         consumer.insert_market(market, Some(margin_accounts.clone()));
-        tokio::spawn(settle_margin_users(rpc.clone(), ix, margin_accounts));
+        tokio::spawn(settle_margin_users_loop(
+            rpc.clone(),
+            ix,
+            margin_accounts,
+            Default::default(),
+        ));
     }
 
     loop {
