@@ -827,8 +827,16 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn repay(&self, term_loan_seqno: u64, amount: u64) -> Result<Signature> {
+        // we are not sure if the user or a crank paid for the rent, so we just fetch the data
+        let payer = {
+            let loan_key = self.term_loan_key(&term_loan_seqno.to_le_bytes());
+            let loan: TermLoan = self.load_anchor(&loan_key).await?;
+
+            loan.payer
+        };
         let repay = self.manager.ix_builder.margin_repay(
             &self.proxy.pubkey(),
+            &payer,
             &self.proxy.pubkey(),
             &term_loan_seqno.to_le_bytes(),
             &(term_loan_seqno + 1).to_le_bytes(),
@@ -838,6 +846,17 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(repay)], &[&self.owner])
             .await
+    }
+
+    pub async fn load_anchor<T: AccountDeserialize>(&self, key: &Pubkey) -> Result<T> {
+        let data = self
+            .client
+            .get_account(key)
+            .await?
+            .ok_or_else(|| anyhow::Error::msg("failed to fetch key: [key]"))?
+            .data;
+
+        T::try_deserialize(&mut data.as_slice()).map_err(anyhow::Error::from)
     }
 }
 
