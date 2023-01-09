@@ -583,7 +583,7 @@ export type JetFixedTerm = {
         {
           "name": "config",
           "type": {
-            "defined": "margin::state::AutoRollConfig"
+            "defined": "AutoRollConfig"
           }
         }
       ]
@@ -4576,7 +4576,7 @@ export const IDL: JetFixedTerm = {
         {
           "name": "config",
           "type": {
-            "defined": "margin::state::AutoRollConfig"
+            "defined": "AutoRollConfig"
           }
         }
       ]
