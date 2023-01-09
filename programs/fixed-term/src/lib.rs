@@ -195,6 +195,15 @@ pub mod jet_fixed_term {
     // =============================================
     //
 
+    /// Configure settings for rolling orders
+    pub fn configure_auto_roll(
+        ctx: Context<ConfigureAutoRoll>,
+        side: u8,
+        config: margin::state::AutoRollConfig,
+    ) -> Result<()> {
+        instructions::configure_auto_roll::handler(ctx, side, config)
+    }
+
     /// Create a new borrower account
     pub fn initialize_margin_user(ctx: Context<InitializeMarginUser>) -> Result<()> {
         instructions::initialize_margin_user::handler(ctx)

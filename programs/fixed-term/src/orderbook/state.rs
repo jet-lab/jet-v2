@@ -325,6 +325,9 @@ bitflags! {
 
         /// order placed by a MarginUser. margin user == fill_account == out_account
         const MARGIN     = 1 << 2;
+
+        /// is this order subject to auto roll
+        const AUTO_ROLL  = 1 << 3;
     }
 }
 
@@ -347,6 +350,8 @@ pub struct OrderParams {
     pub post_allowed: bool,
     /// Should the purchased tickets be automatically staked with the ticket program
     pub auto_stake: bool,
+    /// Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll
+    pub auto_roll: bool,
 }
 
 // todo remove?
