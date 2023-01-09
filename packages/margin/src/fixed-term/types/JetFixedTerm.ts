@@ -453,7 +453,7 @@ export type JetFixedTerm = {
         },
         {
           "name": "offset",
-          "type": "u64" // should be "u64"
+          "type": "u32"
         }
       ]
     },
@@ -4446,7 +4446,7 @@ export const IDL: JetFixedTerm = {
         },
         {
           "name": "offset",
-          "type": "u64" // should be "u64"
+          "type": "u32"
         }
       ]
     },

@@ -18,11 +18,11 @@ pub struct ModifyMarket<'info> {
     pub airspace: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: usize) -> Result<()> {
+pub fn handler(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: u32) -> Result<()> {
     let info = ctx.accounts.market.to_account_info();
     let buffer = &mut info.data.borrow_mut();
 
-    (&mut buffer[(offset + 8)..])
+    (&mut buffer[(offset as usize + 8)..])
         .write_all(&data)
         .map_err(|_| FixedTermErrorCode::IoError)?;
 
