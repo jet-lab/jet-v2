@@ -2104,7 +2104,7 @@ export type JetFixedTerm = {
   ],
   "accounts": [
     {
-      "name": "Market", // should be capitalized
+      "name": "market",
       "docs": [
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
@@ -2327,7 +2327,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "MarginUser", // should be capitalized
+      "name": "marginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -6097,7 +6097,7 @@ export const IDL: JetFixedTerm = {
   ],
   "accounts": [
     {
-      "name": "Market", // should be capitalized
+      "name": "market",
       "docs": [
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
@@ -6320,7 +6320,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "MarginUser", // should be capitalized
+      "name": "marginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
