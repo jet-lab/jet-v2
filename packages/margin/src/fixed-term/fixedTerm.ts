@@ -73,7 +73,7 @@ export interface DebtInfo {
 export interface AssetInfo {
   entitledTokens: BN
   entitledTickets: BN
-  nextNewDepositSeqno: BN
+  nextDepositSeqno: BN
   nextUnredeemedDepositSeqno: BN
   _reserved0: number[]
 }
@@ -434,7 +434,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.assets.nextNewDepositSeqno.toArrayLike(Buffer, "le", 8)
+    return userInfo.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
