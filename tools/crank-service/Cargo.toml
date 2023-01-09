@@ -7,14 +7,18 @@ edition = "2021"
 anyhow = "1.0"
 clap = { version = "3.2", features = ["derive", "env"] }
 tokio = { version = "1.0", features = ["time", "rt"] }
-toml = "0.5"
+toml = "0.4"
 
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-solana-client = "1.10"
-solana-cli-config = "1.10"
-solana-clap-utils = "1.10"
-solana-sdk = "1.10"
+anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+
+solana-client = "1.14"
+solana-cli-config = "1.14"
+solana-clap-utils = "1.14"
+solana-sdk = "1.14"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -23,3 +27,4 @@ agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git"
 
 jet-ctl-cli = { path = "../ctl" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
+jet-simulation = { path = "../../libraries/rust/simulation" }

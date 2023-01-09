@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { offerLoan } from '@jet-lab/fixed-term';
+import { MarketAndconfig, offerLoan } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -13,13 +13,8 @@ import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import {
-  AllFixedTermMarketsAtom,
-  AllFixedTermMarketsOrderBooksAtom,
-  MarketAndconfig
-} from '@state/fixed-term/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
-import { isDebug } from '../../../App';
 import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {
@@ -29,7 +24,7 @@ interface RequestLoanProps {
   marginConfig: MarginConfig;
 }
 
-export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: RequestLoanProps) => {
+export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const cluster = useRecoilValue(Cluster);
@@ -55,13 +50,11 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
     try {
       if (disabled || !wallet.publicKey) return;
       signature = await offerLoan({
-        market: marketAndConfig.market,
+        market: marketAndConfig,
         marginAccount,
-        marginConfig,
         provider,
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
-        currentPool,
         amount: amountParam || amount,
         basisPoints: basisPointsParam || basisPoints,
         marketConfig: marketAndConfig.config,
@@ -85,21 +78,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
-    }
-  };
-
-  const createDebugOrders = async () => {
-    function sleep(ms: number) {
-      return new Promise(resolve => {
-        setTimeout(resolve, ms);
-      });
-    }
-
-    for (let i = 0; i < 10; i++) {
-      const amount = new BN((10 + Math.random() * 10000) * 10 ** decimals);
-      const basisPoints = new BN(10 + Math.random() * 1000);
-      await createLendOrder(amount, basisPoints);
-      await sleep(500);
+      throw e;
     }
   };
 
@@ -182,7 +161,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
       <Button className="submit-button" disabled={disabled} onClick={() => createLendOrder()}>
         Offer {marketToString(marketAndConfig.config)} loan
       </Button>
-      {isDebug && <Button onClick={createDebugOrders}>Generate 10 random orders</Button>}
     </div>
   );
 };

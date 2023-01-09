@@ -1,4 +1,4 @@
-import { airdrop, deposit, loadPageAndCreateAccount } from '../support/actions';
+import { airdrop, borrow, deposit, loadPageAndCreateAccount } from '../support/actions';
 
 describe('Fixed Term Market', () => {
   it('creates a market maker account', () => {
@@ -8,7 +8,11 @@ describe('Fixed Term Market', () => {
   it('funds the market maker account', () => {
     airdrop('SOL', 'SOL');
     airdrop('USDC', 'USDC');
+    airdrop('BTC', 'BTC');
+    airdrop('USDT', 'USDT');
     deposit('SOL', 1);
+    deposit('BTC', 1);
+    deposit('USDT', 1);
     deposit('USDC', 50000);
   });
 
@@ -69,7 +73,11 @@ describe('Fixed Term Market', () => {
   it('funds the market taker account', () => {
     airdrop('SOL', 'SOL');
     airdrop('USDC', 'USDC');
+    airdrop('BTC', 'BTC');
+    airdrop('USDT', 'USDT');
     deposit('SOL', 1);
+    deposit('BTC', 1);
+    deposit('USDT', 1);
     deposit('USDC', 50000);
   });
 
@@ -80,10 +88,10 @@ describe('Fixed Term Market', () => {
     const lendNow = cy.contains('lend now');
     lendNow.click();
     const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
-    amountInput.click().type(`100`);
+    amountInput.click().type(`1000`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
-    cy.contains('Your lend order for 100 USDC was filled successfully');
+    cy.contains('Your lend order for 1000 USDC was filled successfully');
   });
 
   it('issues a borrow now order', () => {
@@ -97,5 +105,12 @@ describe('Fixed Term Market', () => {
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
     cy.contains('Your borrow order for 100 USDC was filled successfully');
+  });
+
+  it('can perform a borrow on a pool after a position on a fixed market could have gone stale', () => {
+    cy.wait(31000); // current stale time is 30 seconds
+    const poolsLink = cy.contains('.nav-link', 'Pools');
+    poolsLink.click();
+    borrow('USDC', 10);
   });
 });

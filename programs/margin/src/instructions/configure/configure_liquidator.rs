@@ -19,7 +19,7 @@ use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
 
-use crate::{seeds::LIQUIDATOR_CONFIG_SEED, LiquidatorConfig};
+use crate::{events::LiquidatorConfigured, seeds::LIQUIDATOR_CONFIG_SEED, LiquidatorConfig};
 
 #[derive(Accounts)]
 pub struct ConfigureLiquidator<'info> {
@@ -58,6 +58,12 @@ pub fn configure_liquidator_handler(
     is_liquidator: bool,
 ) -> Result<()> {
     let config = &mut ctx.accounts.liquidator_config;
+
+    emit!(LiquidatorConfigured {
+        airspace: ctx.accounts.airspace.key(),
+        liquidator: ctx.accounts.liquidator.key(),
+        is_liquidator
+    });
 
     if !is_liquidator {
         return config.close(ctx.accounts.payer.to_account_info());

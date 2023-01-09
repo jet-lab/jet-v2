@@ -17,9 +17,10 @@
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "clean": "rm -rf ./dist & rm -rf .turbo & rm tsconfig.tsbuildinfo",
+    "build:wasm": "wasm-pack build --target bundler --release --out-dir src/wasm .",
+    "build": "yarn build:wasm && ./fixup && mkdir -p dist/wasm && cp src/wasm/*.js src/wasm/*.ts src/wasm/*.wasm dist/wasm && tsc",
+    "dev": "yarn build:wasm && tsc --watch",
+    "clean": "rm -rf ./dist && rm -rf .turbo && rm -f tsconfig.tsbuildinfo && rm -rf src/wasm",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ --check",
     "fmt:fix": "prettier src/ --write",
@@ -54,6 +55,6 @@
     "@tsconfig/recommended": "^1.0.1",
     "@types/bn.js": "^5.1.0",
     "typedoc": "^0.23.14",
-    "typescript": "4.6.4"
+    "typescript": "^4.9.4"
   }
 }

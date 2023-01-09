@@ -10,7 +10,7 @@ use crate::{
     margin::{
         events::{OrderPlaced, OrderType},
         origination_fee::loan_to_disburse,
-        state::{return_to_margin, MarginUser, TermLoan, TermLoanFlags},
+        state::{return_to_margin, AutoRollConfig, MarginUser, TermLoan, TermLoanFlags},
     },
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
@@ -25,7 +25,7 @@ pub struct MarginBorrowOrder<'info> {
         mut,
         has_one = margin_account,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
-        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -38,7 +38,7 @@ pub struct MarginBorrowOrder<'info> {
     pub margin_account: Signer<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
-    /// CHECK: borrower_account
+    /// CHECK: margin_user
     #[account(mut)]
     pub claims: AccountInfo<'info>,
 
@@ -49,11 +49,11 @@ pub struct MarginBorrowOrder<'info> {
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral: AccountInfo<'info>,
+    pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut, address = orderbook_mut.collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
-    pub collateral_mint: AccountInfo<'info>,
+    #[account(mut, address = orderbook_mut.ticket_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
+    pub ticket_collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
@@ -78,16 +78,24 @@ pub struct MarginBorrowOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(
-    ctx: Context<MarginBorrowOrder>,
-    mut params: OrderParams,
-    seed: Vec<u8>,
-) -> Result<()> {
+pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Result<()> {
     let origination_fee = {
         let manager = ctx.accounts.orderbook_mut.market.load()?;
         params.max_ticket_qty = manager.borrow_order_qty(params.max_ticket_qty);
         params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
         manager.origination_fee
+    };
+    let auto_roll = if params.auto_roll {
+        if ctx.accounts.margin_user.borrow_roll_config == AutoRollConfig::default() {
+            msg!(
+                "Auto roll settings have not been configured for margin user [{}]",
+                ctx.accounts.margin_user.key()
+            );
+            return err!(FixedTermErrorCode::InvalidAutoRollConfig);
+        }
+        CallbackFlags::AUTO_ROLL
+    } else {
+        CallbackFlags::default()
     };
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.margin_account.key(),
@@ -99,7 +107,7 @@ pub fn handler(
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::NEW_DEBT | CallbackFlags::MARGIN,
+        CallbackFlags::NEW_DEBT | CallbackFlags::MARGIN | auto_roll,
     )?;
 
     let debt = &mut ctx.accounts.margin_user.debt;
@@ -114,7 +122,12 @@ pub fn handler(
             ctx.accounts.term_loan.to_account_info(),
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            &TermLoan::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
+            &[
+                crate::seeds::TERM_LOAN,
+                ctx.accounts.orderbook_mut.market.key().as_ref(),
+                ctx.accounts.margin_user.key().as_ref(),
+                &sequence_number.to_le_bytes(),
+            ],
         )?;
         let quote_filled = order_summary.quote_filled()?;
         let disburse = manager.loan_to_disburse(quote_filled);
@@ -124,8 +137,9 @@ pub fn handler(
         let base_filled = order_summary.base_filled();
         *term_loan = TermLoan {
             sequence_number,
-            borrower_account: ctx.accounts.margin_user.key(),
+            margin_user: ctx.accounts.margin_user.key(),
             market: ctx.accounts.orderbook_mut.market.key(),
+            payer: ctx.accounts.payer.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
             balance: base_filled,
@@ -141,7 +155,7 @@ pub fn handler(
         emit!(TermLoanCreated {
             term_loan: term_loan.key(),
             authority: ctx.accounts.margin_account.key(),
-            order_id: order_summary.summary().posted_order_id,
+            order_tag: callback_info.order_tag.as_u128(),
             sequence_number,
             market: ctx.accounts.orderbook_mut.market.key(),
             maturation_timestamp,
@@ -153,8 +167,8 @@ pub fn handler(
     let total_debt = order_summary.base_combined();
     ctx.mint(&ctx.accounts.claims_mint, &ctx.accounts.claims, total_debt)?;
     ctx.mint(
-        &ctx.accounts.collateral_mint,
-        &ctx.accounts.collateral,
+        &ctx.accounts.ticket_collateral_mint,
+        &ctx.accounts.ticket_collateral,
         loan_to_disburse(order_summary.quote_posted()?, origination_fee),
     )?;
 
@@ -162,6 +176,7 @@ pub fn handler(
         market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.margin_account.key(),
         margin_user: Some(ctx.accounts.margin_user.key()),
+        order_tag: callback_info.order_tag.as_u128(),
         order_summary: order_summary.summary(),
         limit_price: params.limit_price,
         auto_stake: params.auto_stake,
@@ -169,6 +184,7 @@ pub fn handler(
         post_allowed: params.post_allowed,
         order_type: OrderType::MarginBorrow,
     });
+    ctx.accounts.margin_user.emit_debt_balances();
 
     // this is just used to make sure the position is still registered.
     // it's actually registered by initialize_margin_user

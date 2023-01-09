@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use jet_fixed_term::control::state::Market;
 use jet_margin::MarginAccount;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{pubkey::Pubkey, signer::Signer};
 
 use crate::{
     fixed_term::FixedTermIxBuilder, ix_builder::accounting_invoke,
@@ -30,7 +30,7 @@ impl PositionRefresher for FixedTermPositionRefresher {
                     ret.push(
                         accounting_invoke(
                             self.margin_account,
-                            fixed_term_market.refresh_position(self.margin_account, false)?,
+                            fixed_term_market.refresh_position(self.margin_account, false),
                         )
                         .into(),
                     )
@@ -72,13 +72,11 @@ impl FixedTermPositionRefresher {
     }
 
     /// register a fixed term market to check when refreshing positions
-    pub async fn add_fixed_term_market(&mut self, manager: Pubkey) -> Result<()> {
-        self.fixed_term_markets.insert(
-            manager,
-            get_anchor_account::<Market>(self.rpc.clone(), &manager)
-                .await?
-                .into(),
-        );
+    pub async fn add_fixed_term_market(&mut self, address: Pubkey) -> Result<()> {
+        let market = get_anchor_account::<Market>(self.rpc.clone(), &address).await?;
+        let builder = FixedTermIxBuilder::new_from_state(self.rpc.payer().pubkey(), &market);
+
+        self.fixed_term_markets.insert(address, builder);
 
         Ok(())
     }

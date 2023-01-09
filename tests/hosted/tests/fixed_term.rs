@@ -1,17 +1,19 @@
 use std::sync::Arc;
 
-use anchor_lang::prelude::Pubkey;
+use agnostic_orderbook::state::event_queue::EventRef;
 use anyhow::Result;
 use hosted_tests::{
-    context::MarginTestContext,
     fixed_term::{
-        FixedTermUser, GenerateProxy, OrderAmount, TestManager as FixedTermTestManager, LEND_TENOR,
-        STARTING_TOKENS,
+        create_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
+        TestManager as FixedTermTestManager, STARTING_TOKENS,
     },
     margin_test_context,
     setup_helper::{setup_user, tokens},
 };
-use jet_fixed_term::orderbook::state::OrderParams;
+use jet_fixed_term::{
+    margin::{instructions::MarketSide, state::AutoRollConfig},
+    orderbook::state::{CallbackFlags, OrderParams},
+};
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -38,150 +40,6 @@ async fn non_margin_orders_through_margin_account() -> Result<()> {
     non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
 }
 
-#[tokio::test(flavor = "multi_thread")]
-#[serial_test::serial]
-async fn margin_repay() -> Result<()> {
-    let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
-    let client = manager.client.clone();
-    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
-
-    // set up user
-    let user = setup_user(&ctx, vec![(collateral, 0, u64::MAX / 2)])
-        .await
-        .unwrap();
-    let margin = user.user.tx.ix.clone();
-    let wallet = user.user.signer;
-
-    // set up proxy
-    let proxy = RefreshingProxy {
-        proxy: margin.clone(),
-        refreshers: vec![
-            Arc::new(MarginTxBuilder::new(
-                client.clone(),
-                None,
-                wallet.pubkey(),
-                0,
-            )),
-            Arc::new(
-                FixedTermPositionRefresher::new(
-                    margin.pubkey(),
-                    client.clone(),
-                    &[manager.ix_builder.market()],
-                )
-                .await
-                .unwrap(),
-            ),
-        ],
-    };
-
-    // set a lend order on the book
-    let lender = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
-    let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
-
-    lender.lend_order(lend_params, &[]).await?;
-    let posted_lend = manager.load_orderbook().await?.bids()?[0];
-
-    let user = FixedTermUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
-        .await
-        .unwrap();
-    user.initialize_margin_user().await.unwrap();
-
-    let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(borrower_account.market, manager.ix_builder.market());
-
-    // place a borrow order
-    let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 2_000);
-    let mut ixs = vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await
-            .unwrap(),
-    ];
-    ixs.extend(user.margin_borrow_order(borrow_params, &[]).await.unwrap());
-    client
-        .send_and_confirm_condensed_in_order(ixs)
-        .await
-        .unwrap();
-
-    let term_loan = user.load_term_loan(&[]).await?;
-    assert_eq!(
-        term_loan.borrower_account,
-        manager.ix_builder.margin_user_account(user.proxy.pubkey())
-    );
-    assert_eq!(term_loan.balance, posted_lend.base_quantity);
-
-    let borrower_account = user.load_margin_user().await.unwrap();
-    let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(borrower_account.debt.pending(), posted_order.base_quantity,);
-    assert_eq!(
-        borrower_account.debt.total(),
-        posted_order.base_quantity + term_loan.balance
-    );
-
-    // user.settle().await?;
-    // let assets = user.load_margin_user().await?.assets;
-    // assert_eq!(assets.entitled_tickets + assets.entitled_tokens, 0);
-    // TODO: assert balances on claims and user wallet
-
-    let pre_repayment_term_loan = user.load_term_loan(&[]).await?;
-    let pre_repayment_debt = user.load_margin_user().await?.debt;
-    let repayment = 400;
-    user.repay(&[], &[0], repayment).await?;
-
-    let post_repayment_term_loan = user.load_term_loan(&[]).await?;
-    let post_repayment_debt = user.load_margin_user().await?.debt;
-    assert_eq!(
-        pre_repayment_term_loan.balance - repayment,
-        post_repayment_term_loan.balance
-    );
-    assert_eq!(
-        pre_repayment_debt.committed() - repayment,
-        post_repayment_debt.committed()
-    );
-
-    user.repay(&[], &[0], post_repayment_term_loan.balance)
-        .await?;
-
-    let repaid_term_loan_debt = user.load_margin_user().await?.debt;
-    assert_eq!(
-        repaid_term_loan_debt.total(),
-        repaid_term_loan_debt.pending()
-    );
-
-    Ok(())
-}
-
-#[tokio::test(flavor = "multi_thread")]
-#[serial_test::serial]
-async fn can_consume_lots_of_events() -> Result<()> {
-    let manager =
-        Arc::new(FixedTermTestManager::full(margin_test_context!().solana.clone()).await?);
-
-    // make and fund users
-    let alice = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
-    let bob = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
-    alice.convert_tokens(1_000_000).await?;
-
-    let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 1_000);
-    let lend_params = OrderAmount::params_from_quote_amount_rate(1_000, 900);
-
-    for i in 0..100 {
-        alice.sell_tickets_order(borrow_params).await?;
-        bob.lend_order(lend_params, &[i]).await?;
-    }
-
-    manager.consume_events().await?;
-    assert!(manager.load_event_queue().await?.is_empty()?);
-
-    Ok(())
-}
-
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     manager: Arc<FixedTermTestManager>,
 ) -> Result<()> {
@@ -203,10 +61,10 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     alice.stake_tokens(STAKE_AMOUNT, &ticket_seed).await?;
     assert_eq!(alice.tickets().await?, START_TICKETS - STAKE_AMOUNT);
 
-    let ticket = alice.load_claim_ticket(&ticket_seed).await?;
-    assert_eq!(ticket.redeemable, STAKE_AMOUNT);
-    assert_eq!(ticket.market, manager.ix_builder.market());
-    assert_eq!(ticket.owner, alice.proxy.pubkey());
+    let deposit = alice.load_term_deposit(&ticket_seed).await?;
+    assert_eq!(deposit.amount, STAKE_AMOUNT);
+    assert_eq!(deposit.market, manager.ix_builder.market());
+    assert_eq!(deposit.owner, alice.proxy.pubkey());
 
     manager.pause_ticket_redemption().await?;
     let market = manager.load_market().await?;
@@ -229,6 +87,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
     let order_a_expected_base_to_post = quote_to_base(1_000, 2_000);
 
@@ -281,6 +140,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
     assert!(alice.lend_order(crossing_params, &[]).await.is_err());
 
@@ -294,6 +154,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
     let order_b_expected_base_to_fill = quote_to_base(500, 2000);
 
@@ -308,12 +169,6 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // send to validator
     let bob = FixedTermUser::<P>::new_funded(manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
-
-    let split_ticket_b = bob.load_split_ticket(&[0]).await?;
-    assert_eq!(
-        split_ticket_b.maturation_timestamp,
-        split_ticket_b.struck_timestamp + LEND_TENOR
-    );
 
     assert_eq!(
         bob.tokens().await?,
@@ -330,6 +185,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     };
 
     // simulate
@@ -377,18 +233,13 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // run on validator
     bob.lend_order(c_params, &[1]).await?;
 
-    let split_ticket_c = bob.load_split_ticket(&[1]).await?;
-    dbg!(split_ticket_c);
+    // TODO: assertions
+    let _split_ticket_c = bob.load_term_deposit(&[1]).await?;
 
     assert_eq!(
         bob.tokens().await?,
         STARTING_TOKENS - summary_b.total_quote_qty - summary_c.total_quote_qty
     );
-
-    // order cancelling
-    let order_id = manager.load_orderbook().await?.bids()?[0].key;
-    bob.cancel_order(order_id).await?;
-    assert!(manager.load_orderbook().await?.bids()?.first().is_none());
 
     manager.consume_events().await?;
 
@@ -399,6 +250,24 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         .iter()
         .next()
         .is_none());
+
+    // order cancelling
+    let order = manager.load_orderbook().await?.bids()?[0];
+    bob.cancel_order(order.key).await?;
+
+    let mut eq = manager.load_event_queue().await?;
+    let local_eq = eq.inner()?;
+    let cancel_event = match local_eq.iter().next().unwrap() {
+        EventRef::Out(out) => out,
+        _ => panic!("expected an out event"),
+    };
+
+    manager.consume_events().await?;
+
+    assert!(manager.load_orderbook().await?.bids()?.first().is_none());
+    assert_eq!(order.base_quantity, cancel_event.event.base_size);
+    assert_eq!(cancel_event.callback_info.owner, bob.proxy.pubkey());
+    assert_eq!(cancel_event.event.order_id, order.key);
 
     // test order pausing
     manager.pause_orders().await?;
@@ -427,15 +296,22 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     Ok(())
 }
 
-async fn create_fixed_term_market_margin_user(
-    ctx: &Arc<MarginTestContext>,
-    manager: Arc<FixedTermTestManager>,
-    pool_positions: Vec<(Pubkey, u64, u64)>,
-) -> FixedTermUser<RefreshingProxy<MarginIxBuilder>> {
+#[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+async fn margin_repay() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(
+        FixedTermTestManager::full(ctx.solana.clone())
+            .await
+            .unwrap(),
+    );
     let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     // set up user
-    let user = setup_user(ctx, pool_positions).await.unwrap();
+    let user = setup_user(&ctx, vec![(collateral, 0, u64::MAX / 2)])
+        .await
+        .unwrap();
     let margin = user.user.tx.ix.clone();
     let wallet = user.user.signer;
 
@@ -448,6 +324,7 @@ async fn create_fixed_term_market_margin_user(
                 None,
                 wallet.pubkey(),
                 0,
+                margin.airspace,
             )),
             Arc::new(
                 FixedTermPositionRefresher::new(
@@ -461,15 +338,110 @@ async fn create_fixed_term_market_margin_user(
         ],
     };
 
+    // set a lend order on the book
+    let lender = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
+
+    lender.lend_order(lend_params, &[]).await?;
+    let posted_lend = manager.load_orderbook().await?.bids()?[0];
+
     let user = FixedTermUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
         .await
         .unwrap();
     user.initialize_margin_user().await.unwrap();
 
-    let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(borrower_account.market, manager.ix_builder.market());
+    let margin_user = user.load_margin_user().await.unwrap();
+    assert_eq!(margin_user.market, manager.ix_builder.market());
 
-    user
+    // place a borrow order
+    let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 2_000);
+    let mut ixs = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await
+            .unwrap(),
+    ];
+    ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());
+    client
+        .send_and_confirm_condensed_in_order(ixs)
+        .await
+        .unwrap();
+
+    let term_loan = user.load_term_loan(0).await?;
+    assert_eq!(
+        term_loan.margin_user,
+        manager.ix_builder.margin_user_account(user.proxy.pubkey())
+    );
+    assert_eq!(term_loan.balance, posted_lend.base_quantity);
+
+    let margin_user = user.load_margin_user().await.unwrap();
+    let posted_order = manager.load_orderbook().await?.asks()?[0];
+    assert_eq!(margin_user.debt.pending(), posted_order.base_quantity,);
+    assert_eq!(
+        margin_user.debt.total(),
+        posted_order.base_quantity + term_loan.balance
+    );
+
+    // user.settle().await?;
+    // let assets = user.load_margin_user().await?.assets;
+    // assert_eq!(assets.entitled_tickets + assets.entitled_tokens, 0);
+    // TODO: assert balances on claims and user wallet
+
+    let pre_repayment_term_loan = user.load_term_loan(0).await?;
+    let pre_repayment_debt = user.load_margin_user().await?.debt;
+    let repayment = 400;
+    user.repay(0, repayment).await?;
+
+    let post_repayment_term_loan = user.load_term_loan(0).await?;
+    let post_repayment_debt = user.load_margin_user().await?.debt;
+    assert_eq!(
+        pre_repayment_term_loan.balance - repayment,
+        post_repayment_term_loan.balance
+    );
+    assert_eq!(
+        pre_repayment_debt.committed() - repayment,
+        post_repayment_debt.committed()
+    );
+
+    user.repay(0, post_repayment_term_loan.balance).await?;
+
+    let repaid_term_loan_debt = user.load_margin_user().await?.debt;
+    assert_eq!(
+        repaid_term_loan_debt.total(),
+        repaid_term_loan_debt.pending()
+    );
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+async fn can_consume_lots_of_events() -> Result<()> {
+    let manager =
+        Arc::new(FixedTermTestManager::full(margin_test_context!().solana.clone()).await?);
+
+    // make and fund users
+    let alice = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let bob = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
+    alice.convert_tokens(1_000_000).await?;
+
+    let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 1_000);
+    let lend_params = OrderAmount::params_from_quote_amount_rate(1_000, 900);
+
+    for i in 0..100 {
+        alice.sell_tickets_order(borrow_params).await?;
+        bob.lend_order(lend_params, &[i]).await?;
+    }
+
+    manager.consume_events().await?;
+    assert!(manager.load_event_queue().await?.is_empty()?);
+
+    Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -494,13 +466,14 @@ async fn margin_borrow() -> Result<()> {
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(
-        user.margin_borrow_order(underlying(1_000, 2_000), &[])
-            .await?,
-    )
+    .cat(user.margin_borrow_order(underlying(1_000, 2_000)).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -509,9 +482,9 @@ async fn margin_borrow() -> Result<()> {
     assert_eq!(999, user.collateral().await?);
     assert_eq!(1_201, user.claims().await?);
 
-    let borrower_account = user.load_margin_user().await.unwrap();
+    let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(borrower_account.debt.total(), posted_order.base_quantity,);
+    assert_eq!(margin_user.debt.total(), posted_order.base_quantity,);
 
     Ok(())
 }
@@ -533,13 +506,14 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
     let result = vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(
-        user.margin_borrow_order(underlying(1_000, 2_000), &[])
-            .await?,
-    )
+    .cat(user.margin_borrow_order(underlying(1_000, 2_000)).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await;
 
@@ -553,8 +527,8 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
         assert_eq!(0, user.claims().await?);
         let asks = manager.load_orderbook().await?.asks()?;
         assert_eq!(0, asks.len());
-        let borrower_account = user.load_margin_user().await.unwrap();
-        assert_eq!(0, borrower_account.debt.total());
+        let margin_user = user.load_margin_user().await.unwrap();
+        assert_eq!(0, margin_user.debt.total());
     }
 
     Ok(())
@@ -570,13 +544,25 @@ async fn margin_lend() -> Result<()> {
             .unwrap(),
     );
     let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
-    user.margin_lend_order(underlying(1_000, 2_000), &[])
-        .await?
-        .send_and_confirm_condensed_in_order(&client)
-        .await?;
+    let result = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(user.margin_lend_order(underlying(1_000, 2_000)).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await;
+
+    assert!(result.is_ok());
 
     assert_eq!(STARTING_TOKENS - 1_000, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
@@ -609,12 +595,16 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000), &[])
+            .margin_borrow_order(underlying(1_000, 2_000))
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -626,7 +616,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(1_201, borrower.claims().await?);
 
     lender
-        .margin_lend_order(underlying(1_001, 2_000), &[])
+        .margin_lend_order(underlying(1_001, 2_000))
         .await?
         .send_and_confirm_condensed_in_order(&client)
         .await?;
@@ -673,11 +663,19 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     .await;
     let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
-    lender
-        .margin_lend_order(underlying(1_001, 2_000), &[])
-        .await?
-        .send_and_confirm_condensed_in_order(&client)
-        .await?;
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(lender.margin_lend_order(underlying(1_001, 2_000)).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
@@ -687,12 +685,16 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000), &[])
+            .margin_borrow_order(underlying(1_000, 2_000))
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -731,19 +733,155 @@ async fn margin_sell_tickets() -> Result<()> {
             .unwrap(),
     );
     let client = manager.client.clone();
+    let ([], _, pricer) = tokens(&ctx).await.unwrap();
 
     let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
 
-    user.margin_sell_tickets_order(tickets(1_200, 2_000))
-        .await?
-        .send_and_confirm_condensed_in_order(&client)
-        .await?;
+    vec![
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(
+        user.margin_sell_tickets_order(tickets(1_200, 2_000))
+            .await?,
+    )
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
 
     assert_eq!(STARTING_TOKENS - 10_000, user.tokens().await?);
     assert_eq!(8_800, user.tickets().await?);
     assert_eq!(999, user.collateral().await?);
     assert_eq!(0, user.claims().await?);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn auto_roll_settings_are_correct() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(
+        FixedTermTestManager::full(ctx.solana.clone())
+            .await
+            .unwrap(),
+    );
+    let ([collateral], _, _) = tokens(&ctx).await?;
+
+    let user = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+
+    // can properly set config
+    let lend_price = OrderAmount::from_base_amount_rate(1_000, 1_000).price;
+    let borrow_price = OrderAmount::from_base_amount_rate(1_000, 900).price;
+    user.set_roll_config(
+        MarketSide::Lending,
+        AutoRollConfig {
+            limit_price: lend_price,
+        },
+    )
+    .await?;
+    user.set_roll_config(
+        MarketSide::Borrowing,
+        AutoRollConfig {
+            limit_price: borrow_price,
+        },
+    )
+    .await?;
+
+    let margin_user = user.load_margin_user().await?;
+    assert_eq!(margin_user.lend_roll_config.limit_price, lend_price);
+    assert_eq!(margin_user.borrow_roll_config.limit_price, borrow_price);
+
+    // cannot set a bad config
+    assert!(user
+        .set_roll_config(MarketSide::Lending, AutoRollConfig { limit_price: 0 })
+        .await
+        .is_err());
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn auto_roll_borrow() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(
+        FixedTermTestManager::full(ctx.solana.clone())
+            .await
+            .unwrap(),
+    );
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    let user = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+
+    let mut params = underlying(1_000, 2_000);
+    params.auto_roll = true;
+    let borrow_order = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await?,
+    ]
+    .cat(user.margin_borrow_order(params).await?);
+
+    // TODO: assert proper failure
+    // This fails due to an unconfigured auto_roll setting in the margin_user account
+    let res = borrow_order
+        .clone()
+        .send_and_confirm_condensed_in_order(&client)
+        .await;
+    assert!(res.is_err());
+
+    user.set_roll_config(
+        MarketSide::Borrowing,
+        AutoRollConfig {
+            limit_price: params.limit_price,
+        },
+    )
+    .await?;
+
+    borrow_order
+        .send_and_confirm_condensed_in_order(&client)
+        .await?;
+
+    let posted_info = manager.load_orderbook().await?.asks_order_callback(0)?;
+    assert!(posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
+
+    params.auto_roll = false;
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await?,
+    ]
+    .cat(user.margin_borrow_order(params).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    let posted_info = manager.load_orderbook().await?.asks_order_callback(1)?;
+    assert!(!posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
 
     Ok(())
 }
@@ -762,6 +900,7 @@ fn underlying(quote: u64, rate_bps: u64) -> OrderParams {
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     }
 }
 
@@ -775,5 +914,6 @@ fn tickets(base: u64, rate_bps: u64) -> OrderParams {
         post_only: false,
         post_allowed: true,
         auto_stake: true,
+        auto_roll: false,
     }
 }

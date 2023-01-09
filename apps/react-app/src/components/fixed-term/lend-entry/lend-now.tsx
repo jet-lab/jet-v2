@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { lendNow } from '@jet-lab/fixed-term';
+import { lendNow, MarketAndconfig } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -13,11 +13,7 @@ import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import {
-  AllFixedTermMarketsAtom,
-  AllFixedTermMarketsOrderBooksAtom,
-  MarketAndconfig
-} from '@state/fixed-term/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {
@@ -27,7 +23,7 @@ interface RequestLoanProps {
   marginConfig: MarginConfig;
 }
 
-export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: RequestLoanProps) => {
+export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const cluster = useRecoilValue(Cluster);
@@ -46,13 +42,11 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
     try {
       if (disabled || !wallet.publicKey) return;
       signature = await lendNow({
-        market: marketAndConfig.market,
+        market: marketAndConfig,
         marginAccount,
-        marginConfig,
         provider,
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
-        currentPool,
         amount,
         markets: markets.map(m => m.market)
       });
@@ -70,6 +64,7 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
+      throw e;
     }
   };
 

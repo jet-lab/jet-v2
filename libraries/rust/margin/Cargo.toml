@@ -19,21 +19,23 @@ bincode = "1.3"
 bytemuck = "1"
 futures = "0.3"
 thiserror = "1"
+tracing = "0.1"
 tokio = { version = "1", features = ["rt"] }
 rand = { version = "0.8.5" }
 serde = { version = "1", features = ["derive"] }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-pyth-sdk-solana = "0.4"
-solana-sdk = "1.10"
+pyth-sdk-solana = "0.7"
+solana-sdk = "1.14"
 
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-spl = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-client = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { path = "../simulation" }
 jet-program-common = { path = "../program-common" }
+jet-instructions = { path = "../instructions" }
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint", "cli"] }
 jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }

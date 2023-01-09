@@ -12,7 +12,6 @@ pub struct AuthorizeCrank<'info> {
         init,
         seeds = [
             crate::seeds::CRANK_AUTHORIZATION,
-            airspace.key.as_ref(),
             market.key().as_ref(),
             crank.key.as_ref()
         ],

@@ -22,22 +22,12 @@ import {
   MarginAccountData,
   PositionKind
 } from "./state"
-import { MarginPrograms } from "./marginClient"
-import { findDerivedAccount } from "../utils/pda"
-import {
-  AssociatedToken,
-  bigIntToBn,
-  bnToNumber,
-  getTimestamp,
-  Number192,
-  sendAll,
-  sendAndConfirm,
-  sendAndConfirmV0,
-  TokenAmount
-} from ".."
-import { Number128 } from "../utils/number128"
 import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
+import { AssociatedToken, TokenAmount, bigIntToBn, bnToNumber } from "../token"
+import { Number128, Number192, findDerivedAccount, getTimestamp, sendAll, sendAndConfirm, sendAndConfirmV0 } from "../utils"
+import { MarginPrograms } from "./marginClient"
+import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
 
 /** A description of a position associated with a [[MarginAccount]] and [[Pool]] */
 export interface PoolPosition {
@@ -1745,4 +1735,52 @@ export class MarginAccount {
   async sendAll(transactions: (TransactionInstruction[] | TransactionInstruction[][])[]): Promise<string> {
     return await sendAll(this.provider, transactions)
   }
+
+    /**
+   * Create instructions to refresh [[MarginAccount]] pool positions in a prioritised manner so that additional
+   * borrows or withdraws can occur.
+   *
+   * @param {({
+    *     instructions: TransactionInstruction[]
+    *     pools: Record<any, Pool> | Pool[]
+    *     marginAccount: MarginAccount
+    *     markets: FixedTermMarket[]
+    *     marketAddresstoCreate?: PublicKey
+    *   })} {
+    *     instructions,
+    *     pools,
+    *     marginAccount
+    *   }
+    * @return {Promise<void>}
+    * @memberof Pool
+    */
+   async withPrioritisedPositionRefresh({
+     instructions,
+     pools,
+     markets,
+     marketAddress
+   }: {
+     instructions: TransactionInstruction[]
+     pools: Record<any, Pool> | Pool[]
+     markets: FixedTermMarket[],
+     marketAddress?: PublicKey
+   }): Promise<void> {
+     const poolsToRefresh: Pool[] = []
+     for (const pool of Object.values(pools)) {
+       const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
+       const depositPosition = this.getPositionNullable(pool.addresses.depositNoteMint)
+       const borrowPosition = this.getPositionNullable(pool.addresses.loanNoteMint)
+       if (pool.address === this.address) {
+         poolsToRefresh.push(pool)
+       } else if (borrowPosition && !borrowPosition.balance.eqn(0)) {
+         poolsToRefresh.push(pool)
+       } else if (assetCollateralWeight > 0 && depositPosition && !depositPosition.balance.eqn(0)) {
+         poolsToRefresh.push(pool)
+       }
+     }
+     for (const pool of poolsToRefresh) {
+       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount: this })
+     }
+     await refreshAllMarkets(markets, instructions, this, marketAddress)
+   }
 }
