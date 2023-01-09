@@ -74,7 +74,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
       const currentSeries = {
         id: current.name,
         type: orderTypeKey,
-        data: sample.points.map((point: { cumulative_quote: number; cumulative_rate: number; }) => {
+        data: sample.points.map(point => {
           return {
             x: Number(BigInt(point.cumulative_quote) / BigInt(10 ** decimals)),
             y: point.cumulative_rate,
