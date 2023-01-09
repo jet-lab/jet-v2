@@ -372,6 +372,9 @@ export class FixedTermMarket {
         source,
         payer,
         underlyingTokenVault: this.addresses.underlyingTokenVault,
+        claims: await this.deriveMarginUserClaims(marketUser),
+        claimsMint: this.addresses.claimsMint,
+        market: this.address,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
