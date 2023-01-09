@@ -19,7 +19,7 @@ import {
 } from '@jet-lab/margin';
 import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
-import { AnchorProvider } from '@project-serum/anchor';
+import { Address, AnchorProvider } from '@project-serum/anchor';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useProvider } from '@utils/jet/provider';
 import { JetMarginPools, Pools } from '@state/pools/pools';
@@ -115,6 +115,19 @@ const submitRepay = async (
   }
 };
 
+const getOwedTokens = async (mint: Address, marginAccount: PublicKey, provider: AnchorProvider, setOwedTokens: Dispatch<SetStateAction<TokenAmount>>) => {
+  const pda = AssociatedToken.derive(mint, marginAccount);
+      try {
+        const exists = await provider.connection.getAccountInfo(pda)
+        if (exists) {
+          const { value } = await provider.connection.getTokenAccountBalance(pda)
+          setOwedTokens(new TokenAmount(new BN(value.amount), value.decimals));
+        }
+      } catch (e) {
+        console.log(e)
+      }
+}
+
 export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) => {
   const [order, setOrder] = useRecoilState(type === 'asks' ? FixedLendViewOrder : FixedBorrowViewOrder);
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
@@ -134,11 +147,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
 
   useEffect(() => {
     if (marginAccount?.address && markets[selectedMarket].token) {
-      const pda = AssociatedToken.derive(markets[selectedMarket].token.mint, marginAccount.address);
-      provider.connection.getTokenAccountBalance(pda).then(res => {
-        const { value } = res;
-        setOwedTokens(new TokenAmount(new BN(value.amount), value.decimals));
-      });
+      getOwedTokens(markets[selectedMarket].token.mint, marginAccount.address, provider, setOwedTokens);
     }
   }, [marginAccount?.address]);
 

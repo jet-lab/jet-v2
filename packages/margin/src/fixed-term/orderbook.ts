@@ -11,12 +11,20 @@ export class Orderbook {
   }
 
   static async load(fixedTermMarket: FixedTermMarket): Promise<Orderbook> {
-    const asksBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.asks))!.data
-    const bidsBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.bids))!.data
-
-    const asks = getOrdersFromSlab(new Uint8Array(asksBuf))
-    const bids = getOrdersFromSlab(new Uint8Array(bidsBuf))
-
+    let asks: Order[] = []
+    let bids: Order[] = []
+    try {
+      const asksBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.asks))!.data
+      asks = getOrdersFromSlab(new Uint8Array(asksBuf))
+    } catch (e) {
+      console.log(e)
+    }
+    try {
+      const bidsBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.bids))!.data
+      bids = getOrdersFromSlab(new Uint8Array(bidsBuf))
+    } catch (e) {
+      console.log(e)
+    }
     return new Orderbook(bids, asks)
   }
 }
