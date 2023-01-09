@@ -153,7 +153,7 @@ export class FixedTermMarket {
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
-    let info: MarketInfo = program.coder.accounts.decode("Market", data)
+    let info: MarketInfo = program.coder.accounts.decode("market", data)
     const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
@@ -491,7 +491,7 @@ export class FixedTermMarket {
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
 
-    return data ? await this.program.coder.accounts.decode("MarginUser", data) : null
+    return data ? await this.program.coder.accounts.decode("marginUser", data) : null
   }
 }
 

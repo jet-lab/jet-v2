@@ -453,7 +453,7 @@ export type JetFixedTerm = {
         },
         {
           "name": "offset",
-          "type": "u64" // should be "u64"
+          "type": "u32"
         }
       ]
     },
@@ -1015,7 +1015,7 @@ export type JetFixedTerm = {
             },
             {
               "name": "payer",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "Receiver for the rent used to track the deposit"
@@ -1288,11 +1288,19 @@ export type JetFixedTerm = {
           ]
         },
         {
-          "name": "payer",
+          "name": "sourceAuthority",
           "isMut": false,
           "isSigner": true,
           "docs": [
             "The signing authority for the source_account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The payer for the `TermLoan` to return rent to"
           ]
         },
         {
@@ -1862,7 +1870,7 @@ export type JetFixedTerm = {
         },
         {
           "name": "payer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "Receiver for the rent used to track the deposit"
@@ -2104,7 +2112,7 @@ export type JetFixedTerm = {
   ],
   "accounts": [
     {
-      "name": "Market", // should be capitalized
+      "name": "market",
       "docs": [
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
@@ -2304,7 +2312,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "CrankAuthorization", // should be capitalized
+      "name": "crankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -2327,7 +2335,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "MarginUser", // should be capitalized
+      "name": "marginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -2428,7 +2436,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "TermLoan", // should be capitalized
+      "name": "termLoan",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2447,6 +2455,13 @@ export type JetFixedTerm = {
             "name": "market",
             "docs": [
               "The market where the term loan was created"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
@@ -2484,7 +2499,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "EventAdapterMetadata", // should be capitalized
+      "name": "eventAdapterMetadata",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2513,7 +2528,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "TermDeposit", // should be capitalized
+      "name": "termDeposit",
       "docs": [
         "A representation of an interest earning deposit, which can be redeemed after reaching maturity"
       ],
@@ -2534,6 +2549,13 @@ export type JetFixedTerm = {
             "name": "market",
             "docs": [
               "The relevant market for this deposit"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
@@ -4446,7 +4468,7 @@ export const IDL: JetFixedTerm = {
         },
         {
           "name": "offset",
-          "type": "u64" // should be "u64"
+          "type": "u32"
         }
       ]
     },
@@ -5008,7 +5030,7 @@ export const IDL: JetFixedTerm = {
             },
             {
               "name": "payer",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "Receiver for the rent used to track the deposit"
@@ -5281,11 +5303,19 @@ export const IDL: JetFixedTerm = {
           ]
         },
         {
-          "name": "payer",
+          "name": "sourceAuthority",
           "isMut": false,
           "isSigner": true,
           "docs": [
             "The signing authority for the source_account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The payer for the `TermLoan` to return rent to"
           ]
         },
         {
@@ -5855,7 +5885,7 @@ export const IDL: JetFixedTerm = {
         },
         {
           "name": "payer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "Receiver for the rent used to track the deposit"
@@ -6097,7 +6127,7 @@ export const IDL: JetFixedTerm = {
   ],
   "accounts": [
     {
-      "name": "Market", // should be capitalized
+      "name": "market",
       "docs": [
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
@@ -6297,7 +6327,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "CrankAuthorization", // should be capitalized
+      "name": "crankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -6320,7 +6350,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "MarginUser", // should be capitalized
+      "name": "marginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -6421,7 +6451,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "TermLoan", // should be capitalized
+      "name": "termLoan",
       "type": {
         "kind": "struct",
         "fields": [
@@ -6440,6 +6470,13 @@ export const IDL: JetFixedTerm = {
             "name": "market",
             "docs": [
               "The market where the term loan was created"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
@@ -6477,7 +6514,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "EventAdapterMetadata", // should be capitalized
+      "name": "eventAdapterMetadata",
       "type": {
         "kind": "struct",
         "fields": [
@@ -6506,7 +6543,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "TermDeposit", // should be capitalized
+      "name": "termDeposit",
       "docs": [
         "A representation of an interest earning deposit, which can be redeemed after reaching maturity"
       ],
@@ -6527,6 +6564,13 @@ export const IDL: JetFixedTerm = {
             "name": "market",
             "docs": [
               "The relevant market for this deposit"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
