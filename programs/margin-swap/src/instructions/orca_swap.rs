@@ -17,11 +17,12 @@
 
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
+use orca_whirlpool::program::Whirlpool;
 
 use crate::*;
 
 #[derive(Accounts)]
-pub struct OrcaWhirlpoolSwap<'info> {
+pub struct OrcaWhirlpoolSwapPool<'info> {
     /// The margin account being executed on
     #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
@@ -47,7 +48,7 @@ pub struct OrcaWhirlpoolSwap<'info> {
     pub transit_destination_account: AccountInfo<'info>,
 
     /// The accounts relevant to the swap pool used for the exchange
-    pub swap_info: OrcaWhirlpoolSwapInfo<'info>,
+    pub swap_info: WhirlpoolSwapInfo<'info>,
 
     /// The accounts relevant to the source margin pool
     pub source_margin_pool: MarginPoolInfo<'info>,
@@ -58,9 +59,12 @@ pub struct OrcaWhirlpoolSwap<'info> {
     pub margin_pool_program: Program<'info, JetMarginPool>,
 
     pub token_program: Program<'info, Token>,
+
+    /// The address of the swap program
+    pub swap_program: Program<'info, Whirlpool>,
 }
 
-impl<'info> OrcaWhirlpoolSwap<'info> {
+impl<'info> OrcaWhirlpoolSwapPool<'info> {
     #[inline(never)]
     fn withdraw(&self, change_kind: ChangeKind, amount_in: u64) -> Result<()> {
         jet_margin_pool::cpi::withdraw(
@@ -131,83 +135,92 @@ impl<'info> OrcaWhirlpoolSwap<'info> {
     }
 
     // todo fixme
-    // SwapTestFixtureInfo
-    // pub tick_spacing: u16,
-    // pub liquidity: u128,
-    // pub curr_tick_index: i32,
-    // pub start_tick_index: i32,
-    // pub trade_amount: u64,
-    // pub sqrt_price_limit: u128,
-    // pub amount_specified_is_input: bool,
-    // pub a_to_b: bool,
-    // pub reward_last_updated_timestamp: u64,
-    // pub reward_infos: [WhirlpoolRewardInfo; NUM_REWARDS],
-    // pub fee_growth_global_a: u128,
-    // pub fee_growth_global_b: u128,
-    // pub array_1_ticks: &'info Vec<TestTickInfo>,
-    // pub array_2_ticks: Option<&'info Vec<TestTickInfo>>,
-    // pub array_3_ticks: Option<&'info Vec<TestTickInfo>>,
-    // pub fee_rate: u16,
-    // pub protocol_fee_rate: u16,
+    // amount: new u64(10),
+    // otherAmountThreshold: ZERO_BN,
+    // sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE),
+    // amountSpecifiedIsInput: false,
+    // aToB: false,
+
+    // whirlpool: whirlpoolPda.publicKey,
+    // tokenAuthority: ctx.wallet.publicKey,
+    // tokenOwnerAccountA: tokenAccountA,
+    // tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+    // tokenOwnerAccountB: tokenAccountB,
+    // tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+    // tickArray0: tickArrays[0].publicKey,
+    // tickArray1: tickArrays[0].publicKey,
+    // tickArray2: tickArrays[0].publicKey,
+    // oracle: oraclePda.publicKey,
 
     /// Issue a Orca swap
     #[inline(never)]
-    fn swap(&self, amount_in: u64, minimum_amount_out: u64) -> Result<()> {
+    fn swap(
+        &self,
+        withdrawal_amount: u64,
+        other_amount_threshold: u64,
+        sqrt_price_limit: u128,
+        amount_specified_is_input: bool,
+        a_to_b: bool,
+    ) -> Result<()> {
         let swap_context = CpiContext::new(
             self.token_program.to_account_info(),
-            saber_stable_swap::Swap {
-                user: saber_stable_swap::SwapUserContext {
-                    token_program: self.token_program.to_account_info(),
-                    swap_authority: self.swap_info.authority.to_account_info(),
-                    user_authority: self.margin_account.to_account_info(),
-                    swap: self.swap_info.swap_pool.to_account_info(),
-                },
-                input: saber_stable_swap::SwapToken {
-                    user: self.transit_source_account.to_account_info(),
-                    reserve: self.swap_info.vault_into.to_account_info(),
-                },
-                output: saber_stable_swap::SwapOutput {
-                    user_token: saber_stable_swap::SwapToken {
-                        user: self.transit_destination_account.to_account_info(),
-                        reserve: self.swap_info.vault_from.to_account_info(),
-                    },
-                    fees: self.swap_info.admin_fee_destination.to_account_info(),
-                },
+            // self.swap_program.to_account_info(),
+            orca_whirlpool::Swap {
+                token_program: self.token_program.to_account_info(),
+                token_authority: self.margin_account.to_account_info(),
+                whirlpool: self.swap_info.whirlpool.to_account_info(),
+                token_owner_account_a: self.transit_source_account.to_account_info(),
+                token_vault_a: self.swap_info.vault_a.to_account_info(),
+                token_owner_account_b: self.transit_destination_account.to_account_info(),
+                token_vault_b: self.swap_info.vault_b.to_account_info(),
+                tick_array_0: self.swap_info.tick_array_0.to_account_info(),
+                tick_array_1: self.swap_info.tick_array_1.to_account_info(),
+                tick_array_2: self.swap_info.tick_array_2.to_account_info(),
+                oracle: self.swap_info.oracle.to_account_info(),
             },
         );
 
-        saber_stable_swap::swap(swap_context, amount_in, minimum_amount_out)?;
+        orca_whirlpool::swap(
+            swap_context,
+            withdrawal_amount,
+            other_amount_threshold,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+        )?;
 
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-pub struct OrcaWhirlpoolSwapInfo<'info> {
-    /// CHECK:
-    pub swap_pool: UncheckedAccount<'info>,
+pub struct WhirlpoolSwapInfo<'info> {
+    /// Checked by Orca, whirlpool state
+    pub whirlpool: UncheckedAccount<'info>,
 
-    /// CHECK:
-    pub authority: UncheckedAccount<'info>,
+    /// Checked by Orca
+    pub token_authority: UncheckedAccount<'info>,
 
-    /// CHECK:
+    /// Checked by Orca
     #[account(mut)]
-    pub vault_into: UncheckedAccount<'info>,
+    pub vault_a: UncheckedAccount<'info>,
 
-    /// CHECK:
+    /// Checked by Orca
     #[account(mut)]
-    pub vault_from: UncheckedAccount<'info>,
+    pub vault_b: UncheckedAccount<'info>,
 
-    /// CHECK:
+    /// Checked by Orca
     #[account(mut)]
-    pub token_mint: UncheckedAccount<'info>,
-
-    /// CHECK:
+    pub tick_array_0: UncheckedAccount<'info>,
+    /// Checked by Orca
     #[account(mut)]
-    pub admin_fee_destination: UncheckedAccount<'info>,
-
-    /// The address of the swap program
-    pub swap_program: Program<'info, saber_stable_swap::StableSwap>,
+    pub tick_array_1: UncheckedAccount<'info>,
+    /// Checked by Orca
+    #[account(mut)]
+    pub tick_array_2: UncheckedAccount<'info>,
+    /// Checked by Orca
+    /// Oracle is currently unused and will be enabled on subsequent updates
+    pub oracle: UncheckedAccount<'info>,
 }
 
 /// Execute a swap by withdrawing tokens from a deposit pool, swapping them for
@@ -220,13 +233,15 @@ pub struct OrcaWhirlpoolSwapInfo<'info> {
 /// If either transit account has tokens before the instructions, it should still
 /// have the same tokens after the swap.
 pub fn orca_whirlpool_swap_handler(
-    ctx: Context<OrcaWhirlpoolSwap>,
+    ctx: Context<OrcaWhirlpoolSwapPool>,
     withdrawal_change_kind: ChangeKind,
     withdrawal_amount: u64,
-    minimum_amount_out: u64,
+    other_amount_threshold: u64,
+    sqrt_price_limit: u128,
+    amount_specified_is_input: bool,
+    a_to_b: bool, // Zero for one
 ) -> Result<()> {
     // TODO: this structure can be repeated across swap instructions, DRY
-
     // Get the balance before the withdrawal. The balance should almost always
     // be zero, however it could already have a value.
     let source_opening_balance =
@@ -246,7 +261,14 @@ pub fn orca_whirlpool_swap_handler(
 
     let destination_opening_balance =
         token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
-    ctx.accounts.swap(swap_amount_in, minimum_amount_out)?;
+    ctx.accounts.swap(
+        withdrawal_amount,
+        other_amount_threshold,
+        sqrt_price_limit,
+        amount_specified_is_input,
+        a_to_b,
+    )?;
+
     let destination_closing_balance =
         token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
 
