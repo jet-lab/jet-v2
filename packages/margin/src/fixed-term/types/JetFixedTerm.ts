@@ -2304,7 +2304,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "CrankAuthorization", // should be capitalized
+      "name": "crankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -2428,7 +2428,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "TermLoan", // should be capitalized
+      "name": "termLoan",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2484,7 +2484,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "EventAdapterMetadata", // should be capitalized
+      "name": "eventAdapterMetadata",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2513,7 +2513,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "TermDeposit", // should be capitalized
+      "name": "termDeposit",
       "docs": [
         "A representation of an interest earning deposit, which can be redeemed after reaching maturity"
       ],
@@ -6297,7 +6297,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "CrankAuthorization", // should be capitalized
+      "name": "crankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -6421,7 +6421,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "TermLoan", // should be capitalized
+      "name": "termLoan",
       "type": {
         "kind": "struct",
         "fields": [
@@ -6477,7 +6477,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "EventAdapterMetadata", // should be capitalized
+      "name": "eventAdapterMetadata",
       "type": {
         "kind": "struct",
         "fields": [
@@ -6506,7 +6506,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "TermDeposit", // should be capitalized
+      "name": "termDeposit",
       "docs": [
         "A representation of an interest earning deposit, which can be redeemed after reaching maturity"
       ],
