@@ -61,8 +61,8 @@ export interface MarginUserInfo {
 }
 
 export interface DebtInfo {
-  nextNewTermLoanSeqNo: BN
-  nextUnpaidTermLoanSeqNo: BN
+  nextNewTermLoanSeqno: BN
+  nextUnpaidTermLoanSeqno: BN
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
@@ -73,8 +73,8 @@ export interface DebtInfo {
 export interface AssetInfo {
   entitledTokens: BN
   entitledTickets: BN
-  nextNewDepositSeqNo: BN
-  nextUnredeemedDepositSeqNo: BN
+  nextNewDepositSeqno: BN
+  nextUnredeemedDepositSeqno: BN
   _reserved0: number[]
 }
 
@@ -448,7 +448,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.debt.nextNewTermLoanSeqNo.toArrayLike(Buffer, "le", 8)
+    return userInfo.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
   }
 
   async fetchDepositSeed(user: MarginAccount): Promise<Uint8Array> {
@@ -458,7 +458,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.assets.nextNewDepositSeqNo.toArrayLike(Buffer, "le", 8)
+    return userInfo.assets.nextNewDepositSeqno.toArrayLike(Buffer, "le", 8)
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
