@@ -187,6 +187,12 @@ export const cancelOrder = async ({ market, marginAccount, provider, orderId, po
     instructions,
     adapterInstruction: cancelLoan
   })
+  await marginAccount.withPrioritisedPositionRefresh({
+    instructions,
+    pools,
+    markets,
+    marketAddress: market.market.address
+  })
   return sendAll(provider, [instructions])
 }
 
@@ -243,7 +249,7 @@ export const borrowNow = async ({
     adapterInstruction: borrowNow
   })
 
-  const change = PoolTokenChange.shiftBy(amount.sub(new BN(1)))
+  const change = PoolTokenChange.shiftBy(amount)
   const source = AssociatedToken.derive(tokenMint, marginAccount.address)
   const position = await pool.withGetOrRegisterDepositPosition({ instructions: orderIXS, marginAccount })
 
@@ -457,12 +463,18 @@ export const repay = async ({
         instructions: orderIXS,
         adapterInstruction: ix
       })
-      console.log(currentLoan.address, balance.toNumber(), amountLeft.toNumber())
       amountLeft = amountLeft.sub(balance)
       sortedTermLoans.shift()
     }
   }
-  console.log(orderIXS)
   instructions.push(orderIXS)
+  const refreshIxs: TransactionInstruction[] = []
+  await marginAccount.withPrioritisedPositionRefresh({
+    instructions: refreshIxs,
+    pools,
+    markets,
+    marketAddress: market.market.address
+  })
+  instructions.push(refreshIxs)
   return sendAll(provider, [instructions])
 }
