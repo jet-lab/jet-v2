@@ -76,12 +76,12 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <InputNumber
             className="input-amount"
             onChange={debounce(e => {
-              // ORDERBOOKMODEL WASM CHECK
+              // Simulation demo logic
               const amount = BigInt(e * 10 ** decimals);
               const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
               const sim = orderbookModel.simulateFills("borrow", amount, undefined);
               console.log(sim);
-              // END CHECK TODO deleteme
+              // End simulation demo logic
 
               setAmount(new BN(e * 10 ** decimals));
             }, 300)}

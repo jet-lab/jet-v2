@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { MarketAndconfig, OrderbookModel, bnToBigInt, rate_to_price, requestLoan, ui_price } from '@jet-lab/margin';
+import { MarketAndconfig, OrderbookModel, bnToBigInt, rate_to_price, requestLoan } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -82,8 +82,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     }
   };
   
+  // Simulation demo logic
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
-    console.log(amount, limitPrice, ui_price(limitPrice));
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     if (model.wouldMatch("borrow", limitPrice)) {
       const fillSim = model.simulateFills("borrow", amount, limitPrice);
@@ -109,7 +109,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
 
   useEffect(() => {
     if (amount.eqn(0) || basisPoints.eqn(0)) return;
-    console.log(amount.toNumber(), basisPoints.toNumber());
     orderbookModelLogic(
       bnToBigInt(amount),
       rate_to_price(
@@ -118,6 +117,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       )
     );
   }, [amount, basisPoints])
+  // End simulation demo logic
 
   return (
     <div className="fixed-term order-entry-body">
@@ -128,10 +128,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
             className="input-amount"
             onChange={
               debounce(e => {
-                // ORDERBOOKMODEL WASM CHECK
-                //  -> want to call a function here that uses input amount AND input rate
-                // END CHECK TODO deleteme
-
                 setAmount(new BN(e * 10 ** decimals));
               }, 300)}
             placeholder={'10,000'}
@@ -146,10 +142,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <InputNumber
             className="input-rate"
             onChange={debounce(e => {
-              // ORDERBOOKMODEL WASM CHECK
-              //  -> want to call a function here that uses input amount AND input rate
-              // END CHECK TODO deleteme
-
               setBasisPoints(new BN(e * 100));
             }, 300)}
             placeholder={'1.5'}
