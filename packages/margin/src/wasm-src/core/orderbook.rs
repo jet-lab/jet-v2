@@ -82,7 +82,7 @@ impl From<&str> for Action {
     }
 }
 
-#[derive(Serialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub enum Side {
     LoanRequest,
