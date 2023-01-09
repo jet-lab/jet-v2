@@ -1015,7 +1015,7 @@ export type JetFixedTerm = {
             },
             {
               "name": "payer",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "Receiver for the rent used to track the deposit"
@@ -1288,11 +1288,19 @@ export type JetFixedTerm = {
           ]
         },
         {
-          "name": "payer",
+          "name": "sourceAuthority",
           "isMut": false,
           "isSigner": true,
           "docs": [
             "The signing authority for the source_account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The payer for the `TermLoan` to return rent to"
           ]
         },
         {
@@ -1862,7 +1870,7 @@ export type JetFixedTerm = {
         },
         {
           "name": "payer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "Receiver for the rent used to track the deposit"
@@ -2451,6 +2459,13 @@ export type JetFixedTerm = {
             "type": "publicKey"
           },
           {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
+            ],
+            "type": "publicKey"
+          },
+          {
             "name": "orderTag",
             "docs": [
               "The `OrderTag` associated with the creation of this `TermLoan`"
@@ -2534,6 +2549,13 @@ export type JetFixedTerm = {
             "name": "market",
             "docs": [
               "The relevant market for this deposit"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
@@ -5008,7 +5030,7 @@ export const IDL: JetFixedTerm = {
             },
             {
               "name": "payer",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "Receiver for the rent used to track the deposit"
@@ -5281,11 +5303,19 @@ export const IDL: JetFixedTerm = {
           ]
         },
         {
-          "name": "payer",
+          "name": "sourceAuthority",
           "isMut": false,
           "isSigner": true,
           "docs": [
             "The signing authority for the source_account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The payer for the `TermLoan` to return rent to"
           ]
         },
         {
@@ -5855,7 +5885,7 @@ export const IDL: JetFixedTerm = {
         },
         {
           "name": "payer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "Receiver for the rent used to track the deposit"
@@ -6444,6 +6474,13 @@ export const IDL: JetFixedTerm = {
             "type": "publicKey"
           },
           {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
+            ],
+            "type": "publicKey"
+          },
+          {
             "name": "orderTag",
             "docs": [
               "The `OrderTag` associated with the creation of this `TermLoan`"
@@ -6527,6 +6564,13 @@ export const IDL: JetFixedTerm = {
             "name": "market",
             "docs": [
               "The relevant market for this deposit"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
