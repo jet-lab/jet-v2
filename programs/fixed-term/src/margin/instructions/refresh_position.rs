@@ -53,7 +53,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
     }
     match load_price(&ctx.accounts.ticket_oracle) {
         Ok(price) => {
-            collateral_changes.push(price.clone());
+            collateral_changes.push(price);
         }
         Err(e) if expect_price => Err(e)?,
         Err(e) => msg!("skipping ticket price update due to error: {:?}", e),
