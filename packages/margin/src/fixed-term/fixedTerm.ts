@@ -61,8 +61,8 @@ export interface MarginUserInfo {
 }
 
 export interface DebtInfo {
-  nextNewTermLoanSeqNo: BN
-  nextUnpaidTermLoanSeqNo: BN
+  nextNewTermLoanSeqno: BN
+  nextUnpaidTermLoanSeqno: BN
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
@@ -73,8 +73,8 @@ export interface DebtInfo {
 export interface AssetInfo {
   entitledTokens: BN
   entitledTickets: BN
-  nextNewDepositSeqNo: BN
-  nextUnredeemedDepositSeqNo: BN
+  nextDepositSeqno: BN
+  nextUnredeemedDepositSeqno: BN
   _reserved0: number[]
 }
 
@@ -153,7 +153,7 @@ export class FixedTermMarket {
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
-    let info: MarketInfo = program.coder.accounts.decode("Market", data)
+    let info: MarketInfo = program.coder.accounts.decode("market", data)
     const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
@@ -372,6 +372,9 @@ export class FixedTermMarket {
         source,
         payer,
         underlyingTokenVault: this.addresses.underlyingTokenVault,
+        claims: await this.deriveMarginUserClaims(marketUser),
+        claimsMint: this.addresses.claimsMint,
+        market: this.address,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
@@ -448,7 +451,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.debt.nextNewTermLoanSeqNo.toArrayLike(Buffer, "le", 8)
+    return userInfo.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
   }
 
   async fetchDepositSeed(user: MarginAccount): Promise<Uint8Array> {
@@ -458,7 +461,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.assets.nextNewDepositSeqNo.toArrayLike(Buffer, "le", 8)
+    return userInfo.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
@@ -488,7 +491,7 @@ export class FixedTermMarket {
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
 
-    return data ? await this.program.coder.accounts.decode("MarginUser", data) : null
+    return data ? await this.program.coder.accounts.decode("marginUser", data) : null
   }
 }
 
