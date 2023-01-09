@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { MarketAndconfig, OrderbookModel, requestLoan } from '@jet-lab/margin';
+import { MarketAndconfig, OrderbookModel, bnToBigInt, rate_to_price, requestLoan, ui_price } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -11,7 +11,7 @@ import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
@@ -83,6 +83,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   };
   
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
+    console.log(amount, limitPrice, ui_price(limitPrice));
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     if (model.wouldMatch("borrow", limitPrice)) {
       const fillSim = model.simulateFills("borrow", amount, limitPrice);
@@ -96,7 +97,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         console.log("Nothing would be posted");
       }
     } else {
-      console.log("Order would post without any fills");
       const queueSim = model.simulateQueuing("borrow", limitPrice);
       if (queueSim.depth > 0) {
         console.log("Order would post without fills into the the book");
@@ -106,6 +106,18 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       }
     }
   }
+
+  useEffect(() => {
+    if (amount.eqn(0) || basisPoints.eqn(0)) return;
+    console.log(amount.toNumber(), basisPoints.toNumber());
+    orderbookModelLogic(
+      bnToBigInt(amount),
+      rate_to_price(
+        bnToBigInt(basisPoints),
+        BigInt(marketAndConfig.config.borrowTenor)
+      )
+    );
+  }, [amount, basisPoints])
 
   return (
     <div className="fixed-term order-entry-body">
