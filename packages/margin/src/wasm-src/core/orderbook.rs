@@ -246,10 +246,6 @@ impl OrderbookModel {
         let mut fills = vec![];
         for order in self.orders_on(side) {
             if unfilled_quote_qty > 0 && order.matches(action, limit_price) {
-                // let maker_quote_qty = order.quote_size(side).unwrap();
-                // let fill_quote_qty = unfilled_quote_qty.min(maker_quote_qty);
-                // let fill_base_qty = fp32_div(fill_quote_qty, order.price).unwrap();
-
                 let maker_base_qty = order.base_size;
                 let unfilled_base_qty = fp32_div(unfilled_quote_qty, order.price).unwrap();
                 let fill_base_qty = maker_base_qty.min(unfilled_base_qty);
@@ -465,7 +461,7 @@ mod test {
                     base_size: 1_500,
                     price: f64_to_fp32(0.99),
                 },
-            ],
+            ]
         }
     }
 
@@ -501,7 +497,7 @@ mod test {
         assert_eq!(sim.matches, 3);
         assert_eq!(sim.fills[0].base_qty, 2_000);
         assert_eq!(sim.unfilled_quote_qty, 1); // NOTE Rounding
-        assert_eq!(sim.unfilled_base_qty, 1); // NOTE Rounding
+        assert_eq!(sim.unfilled_base_qty, 1);  // NOTE Rounding
         assert_eq!(sim.vwap, 0.9777870913663035);
     }
 
