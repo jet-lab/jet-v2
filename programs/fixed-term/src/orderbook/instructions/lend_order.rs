@@ -89,6 +89,7 @@ impl<'info> LendOrder<'info> {
                     market,
                     sequence_number,
                     owner: user,
+                    payer: self.payer.key(),
                     matures_at: maturation_timestamp,
                     principal: order_summary.quote_filled()?,
                     amount: order_summary.base_filled(),

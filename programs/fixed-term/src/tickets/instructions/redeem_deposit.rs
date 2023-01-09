@@ -14,7 +14,8 @@ pub struct RedeemDeposit<'info> {
     /// The tracking account for the deposit
     #[account(mut,
               close = payer,
-              has_one = owner
+              has_one = owner,
+              has_one = payer
     )]
     pub deposit: Account<'info, TermDeposit>,
 
@@ -26,6 +27,7 @@ pub struct RedeemDeposit<'info> {
     pub authority: Signer<'info>,
 
     /// Receiver for the rent used to track the deposit
+    #[account(mut)]
     pub payer: AccountInfo<'info>,
 
     /// The token account designated to receive the assets underlying the claim

@@ -2,8 +2,8 @@ import { BN } from "@project-serum/anchor"
 import { bnToNumber, TokenAmount } from "../token"
 
 export class Number128 {
-  static readonly PRECISION = 10
-  static readonly ONE = new Number128(new BN(10_000_000_000))
+  static readonly PRECISION = 15
+  static readonly ONE = new Number128(new BN(1_000_000_000_000_000))
   static readonly ZERO = new Number128(new BN(0))
   static readonly MAX = new Number128(new BN("340282366920938463463374607431768211455"))
   private static readonly U64_MAX = new BN("18446744073709551615")

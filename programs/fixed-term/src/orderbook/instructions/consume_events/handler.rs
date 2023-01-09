@@ -119,6 +119,7 @@ fn handle_fill<'info>(
                     amount: base_size,
                     owner: maker.pubkey(),
                     market: market.key(),
+                    payer: ctx.accounts.payer.key(),
                 };
                 emit!(TermDepositCreated {
                     term_deposit: term_deposit.key(),
@@ -184,6 +185,7 @@ fn handle_fill<'info>(
                         sequence_number,
                         margin_user: margin_user.key(),
                         market: ctx.accounts.market.key(),
+                        payer: ctx.accounts.payer.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: base_size,

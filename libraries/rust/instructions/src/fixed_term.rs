@@ -1,7 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_fixed_term::{seeds, tickets::instructions::StakeTicketsParams};
+use jet_fixed_term::{
+    margin::{instructions::MarketSide, state::AutoRollConfig},
+    seeds,
+    tickets::instructions::StakeTicketsParams,
+};
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
@@ -816,6 +820,7 @@ impl FixedTermIxBuilder {
 
     pub fn margin_repay(
         &self,
+        source_authority: &Pubkey,
         payer: &Pubkey,
         margin_account: &Pubkey,
         term_loan_seed: &[u8],
@@ -828,10 +833,34 @@ impl FixedTermIxBuilder {
             margin_user: margin_user.address,
             term_loan: self.term_loan_key(&margin_user.address, term_loan_seed),
             next_term_loan: self.term_loan_key(&margin_user.address, next_term_loan_seed),
-            source: get_associated_token_address(payer, &self.underlying_mint),
+            source: get_associated_token_address(source_authority, &self.underlying_mint),
             payer: *payer,
+            source_authority: *source_authority,
             underlying_token_vault: self.underlying_token_vault,
             token_program: spl_token::ID,
+            claims: margin_user.claims,
+            claims_mint: self.claims,
+            market: self.market,
+        }
+        .to_account_metas(None);
+
+        Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
+    }
+
+    pub fn configure_auto_roll(
+        &self,
+        margin_account: Pubkey,
+        side: MarketSide,
+        config: AutoRollConfig,
+    ) -> Instruction {
+        let data = jet_fixed_term::instruction::ConfigureAutoRoll {
+            side: side as u8,
+            config,
+        }
+        .data();
+        let accounts = jet_fixed_term::accounts::ConfigureAutoRoll {
+            margin_user: self.margin_user(margin_account).address,
+            margin_account,
         }
         .to_account_metas(None);
 
