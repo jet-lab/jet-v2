@@ -124,4 +124,6 @@ pub enum FixedTermErrorCode {
     ZeroDivision,
     #[msg("failed to add event to the queue")]
     FailedToPushEvent,
+    #[msg("invalid auto roll configuration")]
+    InvalidAutoRollConfig,
 }

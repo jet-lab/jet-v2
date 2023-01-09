@@ -559,6 +559,43 @@ export type JetFixedTerm = {
       "args": []
     },
     {
+      "name": "configureAutoRoll",
+      "docs": [
+        "Configure settings for rolling orders"
+      ],
+      "accounts": [
+        {
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The `MarginUser` account.",
+            "This account is specific to a particular fixed-term market"
+          ]
+        },
+        {
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "config",
+          "type": {
+            "defined": "AutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
       "name": "initializeMarginUser",
       "docs": [
         "Create a new borrower account"
@@ -585,7 +622,7 @@ export type JetFixedTerm = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The Boheader account"
+            "The fixed-term header account"
           ]
         },
         {
@@ -803,10 +840,6 @@ export type JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -934,7 +967,7 @@ export type JetFixedTerm = {
       ]
     },
     {
-      "name": "marginRedeemTicket",
+      "name": "marginRedeemDeposit",
       "docs": [
         "Redeem a staked ticket"
       ],
@@ -964,23 +997,39 @@ export type JetFixedTerm = {
           "name": "inner",
           "accounts": [
             {
-              "name": "ticket",
+              "name": "deposit",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "One of either `SplitTicket` or `ClaimTicket` for redemption"
+                "The tracking account for the deposit"
+              ]
+            },
+            {
+              "name": "owner",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The account that owns the deposit"
               ]
             },
             {
               "name": "authority",
-              "isMut": true,
+              "isMut": false,
               "isSigner": true,
               "docs": [
-                "The account that must sign to redeem the ticket"
+                "The authority that must sign to redeem the deposit"
               ]
             },
             {
-              "name": "claimantTokenAccount",
+              "name": "payer",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "Receiver for the rent used to track the deposit"
+              ]
+            },
+            {
+              "name": "tokenAccount",
               "isMut": true,
               "isSigner": false,
               "docs": [
@@ -1096,7 +1145,7 @@ export type JetFixedTerm = {
               "isSigner": false,
               "docs": [
                 "where to settle tickets on match:",
-                "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+                "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
                 "- ticket token account to receive tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
@@ -1149,10 +1198,6 @@ export type JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -1562,7 +1607,7 @@ export type JetFixedTerm = {
           "isSigner": false,
           "docs": [
             "where to settle tickets on match:",
-            "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
             "- ticket token account to receive tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
@@ -1696,9 +1741,7 @@ export type JetFixedTerm = {
         },
         {
           "name": "seedBytes",
-          "type": {
-            "vec": "bytes"
-          }
+          "type": "bytes"
         }
       ]
     },
@@ -1774,29 +1817,45 @@ export type JetFixedTerm = {
       ]
     },
     {
-      "name": "redeemTicket",
+      "name": "redeemDeposit",
       "docs": [
-        "Redeems staked tickets for their underlying value"
+        "Redeems deposit previously created by staking tickets for their underlying value"
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "One of either `SplitTicket` or `ClaimTicket` for redemption"
+            "The tracking account for the deposit"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The account that owns the deposit"
           ]
         },
         {
           "name": "authority",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true,
           "docs": [
-            "The account that must sign to redeem the ticket"
+            "The authority that must sign to redeem the deposit"
           ]
         },
         {
-          "name": "claimantTokenAccount",
+          "name": "payer",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Receiver for the rent used to track the deposit"
+          ]
+        },
+        {
+          "name": "tokenAccount",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1837,7 +1896,7 @@ export type JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "claimTicket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1918,19 +1977,19 @@ export type JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ticket to transfer, either a ClaimTicket or SplitTicket"
+            "The deposit to transfer"
           ]
         },
         {
-          "name": "currentOwner",
+          "name": "owner",
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The current owner of the ticket"
+            "The current owner of the deposit"
           ]
         }
       ],
@@ -2332,6 +2391,24 @@ export type JetFixedTerm = {
             "type": {
               "defined": "Assets"
             }
+          },
+          {
+            "name": "borrowRollConfig",
+            "docs": [
+              "Settings for borrow order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
+          },
+          {
+            "name": "lendRollConfig",
+            "docs": [
+              "Settings for lend order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
           }
         ]
       }
@@ -2713,6 +2790,21 @@ export type JetFixedTerm = {
       }
     },
     {
+      "name": "AutoRollConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limitPrice",
+            "docs": [
+              "the limit price at which orders may be placed by an authority"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "RegisterAdapterParams",
       "type": {
         "kind": "struct",
@@ -2784,6 +2876,13 @@ export type JetFixedTerm = {
             "name": "autoStake",
             "docs": [
               "Should the purchased tickets be automatically staked with the ticket program"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "autoRoll",
+            "docs": [
+              "Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll"
             ],
             "type": "bool"
           }
@@ -4435,6 +4534,43 @@ export const IDL: JetFixedTerm = {
       "args": []
     },
     {
+      "name": "configureAutoRoll",
+      "docs": [
+        "Configure settings for rolling orders"
+      ],
+      "accounts": [
+        {
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The `MarginUser` account.",
+            "This account is specific to a particular fixed-term market"
+          ]
+        },
+        {
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "config",
+          "type": {
+            "defined": "AutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
       "name": "initializeMarginUser",
       "docs": [
         "Create a new borrower account"
@@ -4461,7 +4597,7 @@ export const IDL: JetFixedTerm = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The Boheader account"
+            "The fixed-term header account"
           ]
         },
         {
@@ -4679,10 +4815,6 @@ export const IDL: JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -4810,7 +4942,7 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
-      "name": "marginRedeemTicket",
+      "name": "marginRedeemDeposit",
       "docs": [
         "Redeem a staked ticket"
       ],
@@ -4840,23 +4972,39 @@ export const IDL: JetFixedTerm = {
           "name": "inner",
           "accounts": [
             {
-              "name": "ticket",
+              "name": "deposit",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "One of either `SplitTicket` or `ClaimTicket` for redemption"
+                "The tracking account for the deposit"
+              ]
+            },
+            {
+              "name": "owner",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The account that owns the deposit"
               ]
             },
             {
               "name": "authority",
-              "isMut": true,
+              "isMut": false,
               "isSigner": true,
               "docs": [
-                "The account that must sign to redeem the ticket"
+                "The authority that must sign to redeem the deposit"
               ]
             },
             {
-              "name": "claimantTokenAccount",
+              "name": "payer",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "Receiver for the rent used to track the deposit"
+              ]
+            },
+            {
+              "name": "tokenAccount",
               "isMut": true,
               "isSigner": false,
               "docs": [
@@ -4972,7 +5120,7 @@ export const IDL: JetFixedTerm = {
               "isSigner": false,
               "docs": [
                 "where to settle tickets on match:",
-                "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+                "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
                 "- ticket token account to receive tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
@@ -5025,10 +5173,6 @@ export const IDL: JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -5438,7 +5582,7 @@ export const IDL: JetFixedTerm = {
           "isSigner": false,
           "docs": [
             "where to settle tickets on match:",
-            "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
             "- ticket token account to receive tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
@@ -5572,9 +5716,7 @@ export const IDL: JetFixedTerm = {
         },
         {
           "name": "seedBytes",
-          "type": {
-            "vec": "bytes"
-          }
+          "type": "bytes"
         }
       ]
     },
@@ -5650,29 +5792,45 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
-      "name": "redeemTicket",
+      "name": "redeemDeposit",
       "docs": [
-        "Redeems staked tickets for their underlying value"
+        "Redeems deposit previously created by staking tickets for their underlying value"
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "One of either `SplitTicket` or `ClaimTicket` for redemption"
+            "The tracking account for the deposit"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The account that owns the deposit"
           ]
         },
         {
           "name": "authority",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true,
           "docs": [
-            "The account that must sign to redeem the ticket"
+            "The authority that must sign to redeem the deposit"
           ]
         },
         {
-          "name": "claimantTokenAccount",
+          "name": "payer",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Receiver for the rent used to track the deposit"
+          ]
+        },
+        {
+          "name": "tokenAccount",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -5713,7 +5871,7 @@ export const IDL: JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "claimTicket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -5794,19 +5952,19 @@ export const IDL: JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ticket to transfer, either a ClaimTicket or SplitTicket"
+            "The deposit to transfer"
           ]
         },
         {
-          "name": "currentOwner",
+          "name": "owner",
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The current owner of the ticket"
+            "The current owner of the deposit"
           ]
         }
       ],
@@ -6208,6 +6366,24 @@ export const IDL: JetFixedTerm = {
             "type": {
               "defined": "Assets"
             }
+          },
+          {
+            "name": "borrowRollConfig",
+            "docs": [
+              "Settings for borrow order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
+          },
+          {
+            "name": "lendRollConfig",
+            "docs": [
+              "Settings for lend order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
           }
         ]
       }
@@ -6589,6 +6765,21 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
+      "name": "AutoRollConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limitPrice",
+            "docs": [
+              "the limit price at which orders may be placed by an authority"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "RegisterAdapterParams",
       "type": {
         "kind": "struct",
@@ -6660,6 +6851,13 @@ export const IDL: JetFixedTerm = {
             "name": "autoStake",
             "docs": [
               "Should the purchased tickets be automatically staked with the ticket program"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "autoRoll",
+            "docs": [
+              "Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll"
             ],
             "type": "bool"
           }

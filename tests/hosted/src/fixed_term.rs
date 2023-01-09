@@ -14,7 +14,10 @@ use async_trait::async_trait;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::state::{MarginUser, TermLoan},
+    margin::{
+        instructions::MarketSide,
+        state::{AutoRollConfig, MarginUser, TermLoan},
+    },
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
@@ -496,6 +499,7 @@ impl TestManager {
     }
 }
 
+#[derive(Clone)]
 pub struct OwnedBook {
     bids: Vec<u8>,
     asks: Vec<u8>,
@@ -513,6 +517,19 @@ impl OwnedBook {
     }
     pub fn asks(&mut self) -> Result<Vec<LeafNode>> {
         Ok(self.inner()?.asks.into_iter(true).collect())
+    }
+
+    pub fn asks_order_callback(&mut self, pos: usize) -> Result<CallbackInfo> {
+        let key = self.asks()?[pos].key;
+        let handle = self.inner()?.asks.find_by_key(key).unwrap();
+
+        Ok(*self.inner()?.asks.get_callback_info(handle))
+    }
+    pub fn bids_order_callback(&mut self, pos: usize) -> Result<CallbackInfo> {
+        let key = self.bids()?[pos].key;
+        let handle = self.inner()?.bids.find_by_key(key).unwrap();
+
+        Ok(*self.inner()?.bids.get_callback_info(handle))
     }
 }
 
@@ -795,6 +812,20 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 
+    pub async fn set_roll_config(
+        &self,
+        side: MarketSide,
+        config: AutoRollConfig,
+    ) -> Result<Signature> {
+        let set_config =
+            self.manager
+                .ix_builder
+                .configure_auto_roll(self.proxy.pubkey(), side, config);
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
+            .await
+    }
+
     pub async fn repay(&self, term_loan_seqno: u64, amount: u64) -> Result<Signature> {
         // we are not sure if the user or a crank paid for the rent, so we just fetch the data
         let payer = {
@@ -963,6 +994,7 @@ impl OrderAmount {
             post_only: false,
             post_allowed: true,
             auto_stake: true,
+            auto_roll: false,
         }
     }
 }
