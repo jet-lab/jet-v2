@@ -465,7 +465,7 @@ mod test {
                     base_size: 1_500,
                     price: f64_to_fp32(0.99),
                 },
-            ]
+            ],
         }
     }
 
@@ -501,7 +501,7 @@ mod test {
         assert_eq!(sim.matches, 3);
         assert_eq!(sim.fills[0].base_qty, 2_000);
         assert_eq!(sim.unfilled_quote_qty, 1); // NOTE Rounding
-        assert_eq!(sim.unfilled_base_qty, 1);  // NOTE Rounding
+        assert_eq!(sim.unfilled_base_qty, 1); // NOTE Rounding
         assert_eq!(sim.vwap, 0.9777870913663035);
     }
 
