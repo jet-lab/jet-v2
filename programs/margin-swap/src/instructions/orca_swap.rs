@@ -162,26 +162,23 @@ impl<'info> OrcaWhirlpoolSwapPool<'info> {
         amount_specified_is_input: bool,
         a_to_b: bool,
     ) -> Result<()> {
-        let swap_context = CpiContext::new(
-            self.token_program.to_account_info(),
-            // self.swap_program.to_account_info(),
-            orca_whirlpool::Swap {
-                token_program: self.token_program.to_account_info(),
-                token_authority: self.margin_account.to_account_info(),
-                whirlpool: self.swap_info.whirlpool.to_account_info(),
-                token_owner_account_a: self.transit_source_account.to_account_info(),
-                token_vault_a: self.swap_info.vault_a.to_account_info(),
-                token_owner_account_b: self.transit_destination_account.to_account_info(),
-                token_vault_b: self.swap_info.vault_b.to_account_info(),
-                tick_array_0: self.swap_info.tick_array_0.to_account_info(),
-                tick_array_1: self.swap_info.tick_array_1.to_account_info(),
-                tick_array_2: self.swap_info.tick_array_2.to_account_info(),
-                oracle: self.swap_info.oracle.to_account_info(),
-            },
-        );
-
-        orca_whirlpool::swap(
-            swap_context,
+        orca_whirlpool::cpi::swap(
+            CpiContext::new(
+                self.swap_program.to_account_info(),
+                orca_whirlpool::cpi::accounts::Swap {
+                    token_program: self.token_program.to_account_info(),
+                    token_authority: self.margin_account.to_account_info(),
+                    whirlpool: self.swap_info.whirlpool.to_account_info(),
+                    token_owner_account_a: self.transit_source_account.to_account_info(),
+                    token_vault_a: self.swap_info.vault_a.to_account_info(),
+                    token_owner_account_b: self.transit_destination_account.to_account_info(),
+                    token_vault_b: self.swap_info.vault_b.to_account_info(),
+                    tick_array_0: self.swap_info.tick_array_0.to_account_info(),
+                    tick_array_1: self.swap_info.tick_array_1.to_account_info(),
+                    tick_array_2: self.swap_info.tick_array_2.to_account_info(),
+                    oracle: self.swap_info.oracle.to_account_info(),
+                },
+            ),
             withdrawal_amount,
             other_amount_threshold,
             sqrt_price_limit,
