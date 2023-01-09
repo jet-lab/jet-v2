@@ -13,7 +13,7 @@ pub struct OrderbookModel {
     asks: Vec<Order>,
 }
 
-#[derive(Serialize, Debug, Clone, Copy)]
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Order {
     /// Pukbey of the signer allowed to make changes to this order
     pub owner: Pubkey,
@@ -41,10 +41,7 @@ impl Order {
     }
 
     fn quote_size(&self, side: Side) -> Option<u64> {
-        match side {
-            Side::LoanOffer => fp32_mul_ceil(self.base_size, self.price),
-            Side::LoanRequest => fp32_mul_floor(self.base_size, self.price),
-        }
+        side.base_to_quote(self.base_size, self.price)
     }
 }
 
@@ -58,8 +55,8 @@ pub enum Action {
 impl Action {
     pub fn worst_price(&self) -> u64 {
         match self {
-            Action::Lend => 1,
-            Action::Borrow => 0,
+            Action::Lend => 1 << 32,
+            Action::Borrow => 1,
         }
     }
 
@@ -94,6 +91,13 @@ impl Side {
         match action {
             Action::Lend => Side::LoanRequest,
             Action::Borrow => Side::LoanOffer,
+        }
+    }
+
+    pub fn base_to_quote(&self, base: u64, price: u64) -> Option<u64> {
+        match self {
+            Side::LoanOffer => fp32_mul_ceil(base, price),
+            Side::LoanRequest => fp32_mul_floor(base, price),
         }
     }
 }
@@ -242,9 +246,14 @@ impl OrderbookModel {
         let mut fills = vec![];
         for order in self.orders_on(side) {
             if unfilled_quote_qty > 0 && order.matches(action, limit_price) {
-                let maker_quote_qty = order.quote_size(side).unwrap();
-                let fill_quote_qty = unfilled_quote_qty.min(maker_quote_qty);
-                let fill_base_qty = fp32_div(fill_quote_qty, order.price).unwrap();
+                // let maker_quote_qty = order.quote_size(side).unwrap();
+                // let fill_quote_qty = unfilled_quote_qty.min(maker_quote_qty);
+                // let fill_base_qty = fp32_div(fill_quote_qty, order.price).unwrap();
+
+                let maker_base_qty = order.base_size;
+                let unfilled_base_qty = fp32_div(unfilled_quote_qty, order.price).unwrap();
+                let fill_base_qty = maker_base_qty.min(unfilled_base_qty);
+                let fill_quote_qty = side.base_to_quote(fill_base_qty, order.price).unwrap();
 
                 let fill = Fill {
                     base_qty: fill_base_qty,
@@ -279,6 +288,7 @@ impl OrderbookModel {
             filled_quote_qty,
             unfilled_quote_qty,
             filled_base_qty,
+            unfilled_base_qty: fp32_div(unfilled_quote_qty, limit_price).unwrap(),
             matches: fills.len(),
             vwap,
             vwar,
@@ -297,7 +307,7 @@ impl OrderbookModel {
             if order.precedes(action, limit_price) {
                 depth += 1;
                 preceding_base_qty += order.base_size;
-                preceding_quote_qty += order.quote_size(side).unwrap();
+                preceding_quote_qty += order.quote_size(side).unwrap(); // FIXME CHECK
             } else {
                 break;
             }
@@ -346,6 +356,7 @@ pub struct FillSimulation {
     pub filled_quote_qty: u64,
     pub unfilled_quote_qty: u64,
     pub filled_base_qty: u64,
+    pub unfilled_base_qty: u64,
     pub matches: usize,
     pub vwap: f64,
     pub vwar: f64,
@@ -410,5 +421,98 @@ mod test {
 
         assert_eq!(sample.total_quote_qty, 10000100000);
         assert_eq!(sample.points[0].cumulative_rate, 0.05);
+    }
+
+    fn populate_orderbook_model() -> OrderbookModel {
+        OrderbookModel {
+            tenor: 60 * 60 * 24 * 90,
+            bids: vec![
+                Order {
+                    owner: Pubkey::default(),
+                    order_tag: OrderTag::default(),
+                    base_size: 1_000,
+                    price: f64_to_fp32(0.96),
+                },
+                Order {
+                    owner: Pubkey::default(),
+                    order_tag: OrderTag::default(),
+                    base_size: 1_500,
+                    price: f64_to_fp32(0.94),
+                },
+                Order {
+                    owner: Pubkey::default(),
+                    order_tag: OrderTag::default(),
+                    base_size: 500,
+                    price: f64_to_fp32(0.90),
+                },
+            ],
+            asks: vec![
+                Order {
+                    owner: Pubkey::default(),
+                    order_tag: OrderTag::default(),
+                    base_size: 2_000,
+                    price: f64_to_fp32(0.97),
+                },
+                Order {
+                    owner: Pubkey::default(),
+                    order_tag: OrderTag::default(),
+                    base_size: 4_500,
+                    price: f64_to_fp32(0.98),
+                },
+                Order {
+                    owner: Pubkey::default(),
+                    order_tag: OrderTag::default(),
+                    base_size: 1_500,
+                    price: f64_to_fp32(0.99),
+                },
+            ]
+        }
+    }
+
+    #[test]
+    fn test_misc() {
+        let om = populate_orderbook_model();
+
+        assert_eq!(om.loan_offers(), &om.bids);
+        assert_eq!(om.orders_on("loanoffer".into()), om.loan_offers());
+
+        assert_eq!(om.loan_requests(), &om.asks);
+        assert_eq!(om.orders_on("loanrequest".into()), om.loan_requests());
+    }
+
+    #[test]
+    fn test_would_match() {
+        let om = populate_orderbook_model();
+
+        assert!(om.would_match("lend".into(), f64_to_fp32(0.97)));
+        assert!(om.would_match("lend".into(), f64_to_fp32(1.0)));
+        assert!(!om.would_match("lend".into(), f64_to_fp32(0.9699)));
+
+        assert!(om.would_match("borrow".into(), f64_to_fp32(0.96)));
+        assert!(om.would_match("borrow".into(), f64_to_fp32(0.50)));
+        assert!(!om.would_match("borrow".into(), f64_to_fp32(0.960001)));
+    }
+
+    #[test]
+    fn test_simulate_fills() {
+        let om = populate_orderbook_model();
+
+        let sim = om.simulate_fills("lend".into(), 7_000, None);
+        assert_eq!(sim.matches, 3);
+        assert_eq!(sim.fills[0].base_qty, 2_000);
+        assert_eq!(sim.unfilled_quote_qty, 1); // NOTE Rounding
+        assert_eq!(sim.unfilled_base_qty, 1);  // NOTE Rounding
+        assert_eq!(sim.vwap, 0.9777870913663035);
+    }
+
+    #[test]
+    fn test_simulate_queuing() {
+        let om = populate_orderbook_model();
+
+        let sim = om.simulate_queuing("lend".into(), f64_to_fp32(0.94));
+        assert_eq!(sim.depth, 2);
+        assert_eq!(sim.preceding_base_qty, 2_500);
+        assert_eq!(sim.preceding_quote_qty, 2_370);
+        assert_eq!(sim.vwap, 0.948);
     }
 }

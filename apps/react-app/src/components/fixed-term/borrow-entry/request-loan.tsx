@@ -87,7 +87,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     if (model.wouldMatch("borrow", limitPrice)) {
       const fillSim = model.simulateFills("borrow", amount, limitPrice);
-      if (fillSim.unfilled_quote_qty > 0) {
+      if (fillSim.unfilled_base_qty > 10) { // NOTE Smaller quantities are not posted.
         console.log("Order would partially fill immediately");
         console.log(fillSim);
         console.log("Unfilled quantity would be posted to the top of the book");
