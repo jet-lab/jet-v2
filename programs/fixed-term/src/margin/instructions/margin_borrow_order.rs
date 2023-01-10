@@ -155,6 +155,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
         emit!(TermLoanCreated {
             term_loan: term_loan.key(),
             authority: ctx.accounts.margin_account.key(),
+            payer: ctx.accounts.payer.key(),
             order_tag: callback_info.order_tag.as_u128(),
             sequence_number,
             market: ctx.accounts.orderbook_mut.market.key(),

@@ -1,5 +1,4 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-('../misc/ReorderArrows');
 import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { FixedBorrowViewOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
@@ -8,29 +7,31 @@ import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { MarginAccount, TokenAmount } from '@jet-lab/margin';
+import {
+  MarginAccount,
+  repay,
+  TokenAmount,
+  settle,
+  MarketAndconfig,
+  FixedTermMarket,
+  Pool,
+  AssociatedToken
+} from '@jet-lab/margin';
 import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
-import { AnchorProvider } from '@project-serum/anchor';
+import { Address, AnchorProvider } from '@project-serum/anchor';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
-import { settle, MarketAndconfig } from '@jet-lab/margin';
 import { useProvider } from '@utils/jet/provider';
 import { JetMarginPools, Pools } from '@state/pools/pools';
 import BN from 'bn.js';
+import { Loan, useOpenPositions } from '@jet-lab/store';
+import { PublicKey } from '@solana/web3.js';
 
 const { Option } = Select;
 
 interface FixedTermMarketSelectorProps {
   type: 'asks' | 'bids';
 }
-
-const fetchOwedTokens = async (market: MarketAndconfig, marginAccount: MarginAccount): Promise<TokenAmount> => {
-  const user = await market.market.fetchMarginUser(marginAccount);
-  const owedTokens = user?.assets.entitledTokens;
-  return owedTokens
-    ? new TokenAmount(owedTokens, market.token.decimals)
-    : new TokenAmount(new BN(0), market.token.decimals);
-};
 
 const settleNow = async (
   marginAccount: MarginAccount,
@@ -41,9 +42,10 @@ const settleNow = async (
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
   blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
   pools: JetMarginPools,
-  amount: TokenAmount
+  amount: TokenAmount,
 ) => {
-  if (!marginAccount) return;
+  const token = markets[selectedMarket].token;
+  if (!marginAccount || !token) return;
   let tx = 'failed_before_tx';
   try {
     tx = await settle({
@@ -60,7 +62,7 @@ const settleNow = async (
       'success',
       getExplorerUrl(tx, cluster, blockExplorer)
     );
-    setOwedTokens(new TokenAmount(new BN(0), markets[selectedMarket].token.decimals));
+    setOwedTokens(new TokenAmount(new BN(0), token.decimals));
   } catch (e: any) {
     notify(
       'Settle Failed',
@@ -71,6 +73,58 @@ const settleNow = async (
   }
 };
 
+const submitRepay = async (
+  marginAccount: MarginAccount,
+  provider: AnchorProvider,
+  amount: BN,
+  termLoans: Loan[],
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[],
+  market: MarketAndconfig,
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
+  blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
+) => {
+  let tx = 'failed_before_tx';
+  try {
+    tx = await repay({
+      provider,
+      marginAccount,
+      amount,
+      termLoans,
+      pools,
+      markets,
+      market,
+    });
+    notify(
+      'Repay Successful',
+      `Your debt has been successfully repaid`,
+      'success',
+      getExplorerUrl(tx, cluster, blockExplorer)
+    );
+  } catch (e: any) {
+    notify(
+      'Repay Failed',
+      `There was an issue repaying your debt, please try again.`,
+      'error',
+      getExplorerUrl(e.signature, cluster, blockExplorer)
+    );
+    throw e;
+  }
+};
+
+const getOwedTokens = async (mint: Address, marginAccount: PublicKey, provider: AnchorProvider, setOwedTokens: Dispatch<SetStateAction<TokenAmount>>) => {
+  const pda = AssociatedToken.derive(mint, marginAccount);
+      try {
+        const exists = await provider.connection.getAccountInfo(pda)
+        if (exists) {
+          const { value } = await provider.connection.getTokenAccountBalance(pda)
+          setOwedTokens(new TokenAmount(new BN(value.amount), value.decimals));
+        }
+      } catch (e) {
+        console.log(e)
+      }
+}
+
 export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) => {
   const [order, setOrder] = useRecoilState(type === 'asks' ? FixedLendViewOrder : FixedBorrowViewOrder);
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
@@ -80,17 +134,27 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
   const { provider } = useProvider();
   const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedTermMarketAtom);
   const pools = useRecoilValue(Pools);
+
+  const [repayAmount, setRepayAmount] = useState('0');
+
   const [owedTokens, setOwedTokens] = useState<TokenAmount>(
     new TokenAmount(new BN(0), markets[selectedMarket]?.token.decimals || 6)
   );
 
   useEffect(() => {
-    if (marginAccount) {
-      fetchOwedTokens(markets[selectedMarket], marginAccount).then(owed => setOwedTokens(owed));
+    if (marginAccount?.address && markets[selectedMarket].token) {
+      getOwedTokens(markets[selectedMarket].token.mint, marginAccount.address, provider, setOwedTokens);
     }
-  }, [selectedMarket, marginAccount]);
+  }, [marginAccount?.address]);
 
-  if (!marginAccount || !pools || !markets[selectedMarket]) return null;
+  const { data } = useOpenPositions(markets[selectedMarket]?.market, marginAccount);
+
+  const token = markets[selectedMarket]?.token;
+
+  if (!marginAccount || !pools || !markets[selectedMarket] || !data || !token) return null;
+
+  const hasToSettle = owedTokens?.tokens > 0;
+  const hasToRepay = data.total_borrowed > 0;
 
   return (
     <div className="fixed-term-selector-view view-element">
@@ -107,7 +171,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
           ))}
         </Select>
         <div className="selector-actions">
-          {owedTokens?.tokens > 0 ? (
+          {hasToSettle ? (
             <div className="assets-to-settle">
               <>
                 There are {owedTokens?.uiTokens} {markets[selectedMarket]?.token.symbol} currently pending settment on
@@ -124,10 +188,46 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
                     cluster,
                     blockExplorer,
                     pools,
-                    owedTokens
+                    owedTokens,
                   )
                 }>
                 Settle Now
+              </Button>
+            </div>
+          ) : hasToRepay ? (
+            <div className="assets-to-settle">
+              <>
+                You owe {new TokenAmount(new BN(data.total_borrowed), token.decimals).tokens} {token.symbol} on this
+                market.
+              </>
+              <input
+                value={repayAmount}
+                onChange={e => {
+                  const parsed = parseFloat(e.target.value);
+                  if (isNaN(parsed)) {
+                    setRepayAmount('0');
+                  } else {
+                    const total = new TokenAmount(new BN(data.total_borrowed), token.decimals);
+                    const amount = parsed <= total.tokens ? e.target.value : total.uiTokens.replace(',', '');
+                    setRepayAmount(amount);
+                  }
+                }}
+              />
+              <Button
+                onClick={() =>
+                  submitRepay(
+                    marginAccount,
+                    provider,
+                    new BN(parseFloat(repayAmount) * 10 ** token.decimals),
+                    data.loans,
+                    pools.tokenPools,
+                    markets.map(m => m.market),
+                    markets[selectedMarket],
+                    cluster,
+                    blockExplorer,
+                  )
+                }>
+                Repay Now
               </Button>
             </div>
           ) : (

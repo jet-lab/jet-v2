@@ -88,7 +88,9 @@ describe('Fixed Term Market', () => {
     const lendNow = cy.contains('lend now');
     lendNow.click();
     const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
-    amountInput.click().type(`1000`);
+    amountInput.click()
+    cy.wait(5000)
+    amountInput.type(`1000`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
     cy.contains('Your lend order for 1000 USDC was filled successfully');
@@ -101,7 +103,9 @@ describe('Fixed Term Market', () => {
     const borrowNowTab = cy.contains('borrow now');
     borrowNowTab.click();
     const amountInput = cy.get('.fixed-term .borrow-now .input-amount input').should('not.be.disabled');
-    amountInput.click().type(`100`);
+    amountInput.click()
+    cy.wait(5000)
+    amountInput.type(`100`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
     cy.contains('Your borrow order for 100 USDC was filled successfully');

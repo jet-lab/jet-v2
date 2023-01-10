@@ -97,6 +97,7 @@ impl<'info> LendOrder<'info> {
                 emit!(TermDepositCreated {
                     term_deposit: deposit.key(),
                     authority: user,
+                    payer: self.payer.key(),
                     order_tag: Some(callback_info.order_tag.as_u128()),
                     sequence_number,
                     market,
