@@ -161,7 +161,7 @@ impl<I: UserNetworkInterface> MarginAccountMarketClient<I> {
     ///
     /// * `amount` - The amount of tokens to offer for lending
     /// * `interest_rate` - The interest rate to lend the tokens at (in basis points)
-    pub async fn offer_loan(&self, amount: u64, interest_rate: u32) -> ClientResult<I, ()> {
+    pub async fn offer_loan(&self, amount: u64, interest_rate: u64) -> ClientResult<I, ()> {
         let params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: amount,
@@ -182,7 +182,7 @@ impl<I: UserNetworkInterface> MarginAccountMarketClient<I> {
     ///
     /// * `amount` - The desired amount of tokens to borrow
     /// * `interest_rate` - The interest rate to borrow the tokens at (in basis points)
-    pub async fn request_loan(&self, amount: u64, interest_rate: u32) -> ClientResult<I, ()> {
+    pub async fn request_loan(&self, amount: u64, interest_rate: u64) -> ClientResult<I, ()> {
         let params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: amount,
@@ -512,8 +512,8 @@ impl<I: UserNetworkInterface> MarginAccountMarketClient<I> {
         self.client.state().get(&self.builder.market()).unwrap()
     }
 
-    fn limit_price_for_rate(&self, interest_rate: u32) -> u64 {
-        util::rate_to_price(interest_rate as u64, self.market.borrow_tenor as u64)
+    fn limit_price_for_rate(&self, interest_rate: u64) -> u64 {
+        util::rate_to_price(interest_rate, self.market.borrow_tenor as u64)
     }
 }
 

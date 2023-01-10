@@ -337,9 +337,9 @@ pub fn amount_to_f64(token: &Token, amount: u64) -> f64 {
     amount as f64 / one
 }
 
-fn f64_rate_to_bps(f: f64) -> u32 {
+fn f64_rate_to_bps(f: f64) -> u64 {
     let bps = f * 100.0;
     assert!(bps <= u32::MAX as f64);
     assert!(bps >= 0.0);
-    bps.round() as u32
+    bps.round() as u64
 }
