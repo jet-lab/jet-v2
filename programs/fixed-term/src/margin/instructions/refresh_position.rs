@@ -43,7 +43,6 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
         ctx.accounts.margin_user.debt.is_past_due(),
     )];
     let mut collateral_changes = vec![];
-    let mut ticket_changes = vec![];
 
     // always try to update the price, but conditionally permit position updates if price fails
     // so we can continue to mark positions as past due even if there is an oracle failure
@@ -54,8 +53,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
     }
     match load_price(&ctx.accounts.ticket_oracle) {
         Ok(price) => {
-            collateral_changes.push(price.clone());
-            ticket_changes.push(price);
+            collateral_changes.push(price);
         }
         Err(e) if expect_price => Err(e)?,
         Err(e) => msg!("skipping ticket price update due to error: {:?}", e),
@@ -71,7 +69,6 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
             position_changes: vec![
                 (market.claims_mint, claim_changes),
                 (market.ticket_collateral_mint, collateral_changes),
-                (market.ticket_mint, ticket_changes),
             ],
         },
     )

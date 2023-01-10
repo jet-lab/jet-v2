@@ -114,7 +114,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
         let mut manager = ctx.accounts.orderbook_mut.market.load_mut()?;
-        let maturation_timestamp = manager.borrow_tenor + Clock::get()?.unix_timestamp;
+        let maturation_timestamp = manager.borrow_tenor as i64 + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_term_loan_without_posting(order_summary.base_filled(), maturation_timestamp)?;
 
