@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow, MarketAndconfig, OrderbookModel } from '@jet-lab/margin';
+import { bigIntToBn, borrowNow, MarketAndconfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -23,6 +23,12 @@ interface RequestLoanProps {
   marginConfig: MarginConfig;
 }
 
+interface Forecast {
+  repayAmount: string
+  interest: string
+  effectiveRate: number
+}
+
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
@@ -34,6 +40,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [amount, setAmount] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
+  const [forecast, setForecast] = useState<Forecast | undefined>()
 
   const disabled = !marginAccount || !wallet.publicKey || !currentPool || !pools || amount.lte(new BN(0));
 
@@ -76,14 +83,25 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <InputNumber
             className="input-amount"
             onChange={debounce(e => {
-              // Simulation demo logic
               const amount = BigInt(e * 10 ** decimals);
+              if (amount === BigInt(0)) {
+                setForecast(undefined)
+                return
+              }
               const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
-              const sim = orderbookModel.simulateFills("borrow", amount, undefined);
-              console.log(sim);
-              // End simulation demo logic
-
-              setAmount(new BN(e * 10 ** decimals));
+              try {
+                const sim = orderbookModel.simulateFills("borrow", amount, undefined);
+                setAmount(new BN(e * 10 ** decimals));
+                const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
+                const borrowedAmount = new TokenAmount(bigIntToBn(amount), token.decimals)
+                setForecast({
+                  repayAmount: repayAmount.uiTokens,
+                  interest: repayAmount.sub(borrowedAmount).uiTokens,
+                  effectiveRate: sim.vwar
+                })
+              } catch (e) {
+                console.log(e)
+              }
             }, 300)}
             placeholder={'10,000'}
             min={0}
@@ -115,15 +133,15 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Repayment Amount</span>
-          <span>??</span>
+          {forecast && <span>{forecast.repayAmount} {token.symbol}</span>}
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          <span>??</span>
+          {forecast && <span>{forecast.interest} {token.symbol}</span>}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
-          <span>??</span>
+          {forecast && <span>{(forecast.effectiveRate * 100).toFixed(3)}%</span>}
         </div>
         <div className="stat-line">Risk Level</div>
         <div className="stat-line">
