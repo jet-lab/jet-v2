@@ -766,7 +766,7 @@ impl FixedTermIxBuilder {
         self.modify_market([false as u8].into(), 8 + 32 * 14 + 2)
     }
 
-    pub fn modify_market(&self, data: Vec<u8>, offset: usize) -> Instruction {
+    pub fn modify_market(&self, data: Vec<u8>, offset: u32) -> Instruction {
         let data = jet_fixed_term::instruction::ModifyMarket { data, offset }.data();
         let accounts = jet_fixed_term::accounts::ModifyMarket {
             market: self.market,
