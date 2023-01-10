@@ -26,11 +26,6 @@ impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
         self.0.lock().await.pop()
     }
 
-    /// Returns the number of items in the queue
-    pub async fn len(&self) -> usize {
-        self.0.lock().await.len()
-    }
-
     /// There are no items in the queue
     pub async fn is_empty(&self) -> bool {
         self.0.lock().await.is_empty()
@@ -94,11 +89,6 @@ impl<T: Hash + Eq> NoDupeQueue<T> {
             self.set.remove(&hash(&item));
             item
         })
-    }
-
-    /// Returns the number of items in the queue
-    pub fn len(&self) -> usize {
-        self.list.len()
     }
 
     /// There are no items in the queue
