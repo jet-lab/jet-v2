@@ -1,11 +1,17 @@
 use std::{sync::Arc, time::Duration};
 
+use futures::future::join_all;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use super::FixedTermIxBuilder;
 use crate::{solana::transaction::WithSigner, util::no_dupe_queue::AsyncNoDupeQueue};
 
+pub const SETTLES_PER_TX: usize = 4;
+
+/// Loops forever to keep checking the queue for margin accounts.
+/// Sends a separate Settle transaction for each without blocking.
+/// Limits rate based on config.
 pub async fn settle_margin_users_loop(
     rpc: Arc<dyn SolanaRpcClient>,
     builder: FixedTermIxBuilder,
@@ -16,21 +22,31 @@ pub async fn settle_margin_users_loop(
         "starting settler crank for fixed term market {}",
         builder.market()
     );
+    if config.batch_size == 0 {
+        panic!("invalid settler batch size of 0");
+    }
     let ix = Arc::new(builder);
+    let mut spawned = vec![];
     loop {
         let to_settle = margin_accounts.pop_many(config.batch_size).await;
-        let has_more = to_settle.len() < config.batch_size;
-        for margin_account in to_settle {
-            tokio::spawn(settle_with_recovery(
+        let has_more = to_settle.len() == config.batch_size;
+        for accounts_chunk in to_settle.chunks(SETTLES_PER_TX) {
+            let fut = tokio::spawn(settle_with_recovery(
                 rpc.clone(),
                 ix.clone(),
-                margin_account,
+                accounts_chunk.to_owned(),
                 Some(margin_accounts.clone()),
             ));
+            if config.exit_when_done {
+                spawned.push(fut);
+            }
         }
         if has_more {
             tokio::time::sleep(config.batch_delay).await;
         } else if config.exit_when_done {
+            for item in join_all(spawned).await {
+                item.unwrap();
+            }
             break;
         } else {
             tokio::time::sleep(config.wait_for_more_delay).await;
@@ -44,21 +60,24 @@ pub async fn settle_margin_users_loop(
 async fn settle_with_recovery(
     rpc: Arc<dyn SolanaRpcClient>,
     builder: Arc<FixedTermIxBuilder>,
-    margin_account: Pubkey,
+    mut margin_accounts: Vec<Pubkey>,
     retry_queue: Option<AsyncNoDupeQueue<Pubkey>>,
 ) {
-    tracing::debug!("sending settle tx for margin account {margin_account}");
-    match builder
-        .margin_settle(margin_account)
+    tracing::debug!("sending settle tx for margin accounts {margin_accounts:?}");
+    match margin_accounts
+        .iter()
+        .map(|ma| builder.margin_settle(*ma))
+        .collect::<Vec<_>>()
         .with_signers(&[])
         .send_and_confirm(&rpc)
         .await
     {
-        Ok(_) => tracing::debug!("settled margin account {margin_account}"),
+        Ok(_) => tracing::debug!("settled margin accounts {margin_accounts:?}"),
         Err(e) => {
-            tracing::error!("failed to settle margin account {margin_account} - {e}");
+            tracing::error!("failed to settle margin accounts {margin_accounts:?} - {e}");
             if let Some(q) = retry_queue {
-                q.push(margin_account).await;
+                margin_accounts.reverse();
+                q.push_many(margin_accounts).await
             }
         }
     }
@@ -71,12 +90,12 @@ pub struct SettleMarginUsersConfig {
     /// instructions will be sent at once.
     pub batch_size: usize,
 
-    /// Time to wait between batches when the previous batch maxed out
-    /// the batch_size and there are still more accounts to settle.
+    /// Time to wait between batches when the previous batch maxed out the
+    /// batch_size and there are still more accounts to settle.
     pub batch_delay: Duration,
 
-    /// Time to wait between batches when the previous batch cleared
-    /// the entire queue and there are no more accounts to settle at this time.
+    /// Time to wait between batches when the previous batch cleared the entire
+    /// queue and there are no more accounts to settle at this time.
     pub wait_for_more_delay: Duration,
 
     /// The loop will exit when there are no more events in the queue. Usually

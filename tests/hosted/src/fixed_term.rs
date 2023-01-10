@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
+    time::Duration,
 };
 
 use agnostic_orderbook::state::{
@@ -27,7 +28,9 @@ use jet_fixed_term::{
 use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
-        fixed_term_address, FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
+        fixed_term_address,
+        settler::{settle_margin_users_loop, SettleMarginUsersConfig},
+        FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
     },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
@@ -35,7 +38,7 @@ use jet_margin_sdk::{
     margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
-        transaction::{SendTransactionBuilder, TransactionBuilder},
+        transaction::{SendTransactionBuilder, TransactionBuilder, WithSigner},
     },
     tx_builder::{
         fixed_term::FixedTermPositionRefresher, global_initialize_instructions, MarginTxBuilder,
@@ -345,17 +348,33 @@ impl TestManager {
         expected: &[&FixedTermUser<P>],
     ) -> Result<()> {
         let to_settle = self.margin_accounts_to_settle.pop_many(usize::MAX).await;
-        assert_eq!(expected.len(), to_settle.len());
+        let expected_number_to_settle = expected.len();
+        assert_eq!(expected_number_to_settle, to_settle.len());
         assert_eq!(
             expected
                 .iter()
                 .map(|u| u.proxy.pubkey())
                 .collect::<HashSet<Pubkey>>(),
-            to_settle.into_iter().collect()
+            to_settle.clone().into_iter().collect()
         );
-        for user in expected {
-            user.settle().await?;
-        }
+        let q = AsyncNoDupeQueue::new();
+        q.push_many(to_settle).await;
+        settle_margin_users_loop(
+            self.client.clone(),
+            self.ix_builder.clone(),
+            q.clone(),
+            SettleMarginUsersConfig {
+                batch_size: std::cmp::max(1, expected_number_to_settle),
+                batch_delay: Duration::from_secs(0),
+                wait_for_more_delay: Duration::from_secs(0),
+                exit_when_done: true,
+            },
+        )
+        .await;
+        assert!(
+            q.is_empty().await,
+            "some settle transactions must have failed"
+        );
 
         Ok(())
     }
@@ -789,10 +808,17 @@ impl<P: Proxy> FixedTermUser<P> {
             .await
     }
 
-    pub async fn margin_borrow_order(
+    pub async fn refresh_and_margin_borrow_order(
         &self,
         params: OrderParams,
     ) -> Result<Vec<TransactionBuilder>> {
+        let mut txs = self.proxy.refresh().await?;
+        txs.push(self.margin_borrow_order(params).await?);
+
+        Ok(txs)
+    }
+
+    pub async fn margin_borrow_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
         let debt_seqno = self.load_margin_user().await?.debt.next_new_loan_seqno();
         let borrow = self.manager.ix_builder.margin_borrow_order(
             self.proxy.pubkey(),
@@ -800,12 +826,23 @@ impl<P: Proxy> FixedTermUser<P> {
             params,
             debt_seqno,
         );
-        self.proxy
-            .refresh_and_invoke_signed(borrow, clone(&self.owner))
-            .await
+        Ok(self
+            .proxy
+            .invoke_signed(borrow)
+            .with_signers(&[clone(&self.owner)]))
     }
 
-    pub async fn margin_lend_order(&self, params: OrderParams) -> Result<Vec<TransactionBuilder>> {
+    pub async fn refresh_and_margin_lend_order(
+        &self,
+        params: OrderParams,
+    ) -> Result<Vec<TransactionBuilder>> {
+        let mut txs = self.proxy.refresh().await?;
+        txs.push(self.margin_lend_order(params).await?);
+
+        Ok(txs)
+    }
+
+    pub async fn margin_lend_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
         let deposit_seqno = self
             .load_margin_user()
             .await?
@@ -817,9 +854,10 @@ impl<P: Proxy> FixedTermUser<P> {
             params,
             deposit_seqno,
         );
-        self.proxy
-            .refresh_and_invoke_signed(ix, clone(&self.owner))
-            .await
+        Ok(self
+            .proxy
+            .invoke_signed(ix)
+            .with_signers(&[clone(&self.owner)]))
     }
 
     pub async fn lend_order(&self, params: OrderParams, seed: &[u8]) -> Result<Signature> {

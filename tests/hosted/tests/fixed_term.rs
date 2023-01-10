@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use agnostic_orderbook::state::event_queue::EventRef;
 use anyhow::Result;
+use futures::{future::join_all, join};
 use hosted_tests::{
     fixed_term::{
         create_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
@@ -15,6 +16,8 @@ use jet_fixed_term::{
     orderbook::state::{CallbackFlags, OrderParams},
 };
 use jet_margin_sdk::{
+    cat,
+    fixed_term::settler::SETTLES_PER_TX,
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
     solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder},
@@ -366,7 +369,11 @@ async fn margin_repay() -> Result<()> {
             .await
             .unwrap(),
     ];
-    ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());
+    ixs.extend(
+        user.refresh_and_margin_borrow_order(borrow_params)
+            .await
+            .unwrap(),
+    );
     client
         .send_and_confirm_condensed_in_order(ixs)
         .await
@@ -450,6 +457,84 @@ async fn can_consume_lots_of_events() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+async fn settle_many_margin_accounts() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(
+        FixedTermTestManager::full(ctx.solana.clone())
+            .await
+            .unwrap(),
+    );
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+    let set_prices = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await
+            .unwrap(),
+    ]
+    .send_and_confirm_condensed(&client);
+
+    let mut user_actions = vec![];
+
+    // TODO: increase this to be the same as localnet.
+    // for now it seems there is a bug in the solana runtime simulator.
+    #[cfg(not(feature = "localnet"))]
+    let iterations = SETTLES_PER_TX;
+    #[cfg(feature = "localnet")]
+    let iterations = SETTLES_PER_TX * 3 + 1;
+
+    for _ in 0..iterations {
+        user_actions.push(async {
+            let (lender, borrower) = join!(
+                create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]),
+                create_fixed_term_market_margin_user(
+                    &ctx,
+                    manager.clone(),
+                    vec![(collateral, 0, u64::MAX / 1_000)],
+                )
+            );
+            cat![
+                lender.proxy.refresh().await.unwrap(),
+                borrower.proxy.refresh().await.unwrap(),
+                vec![
+                    lender
+                        .margin_lend_order(underlying(1_001, 2_000))
+                        .await
+                        .unwrap(),
+                    borrower
+                        .margin_borrow_order(underlying(1_000, 2_000))
+                        .await
+                        .unwrap()
+                ],
+            ]
+            .send_and_confirm_condensed_in_order(&client)
+            .await
+            .unwrap();
+
+            lender
+        });
+    }
+
+    set_prices.await.unwrap();
+    let users = join_all(user_actions).await;
+
+    manager.consume_events().await?;
+    manager
+        .expect_and_execute_settlement(&users.iter().collect::<Vec<_>>())
+        .await?;
+
+    assert!(manager.load_event_queue().await?.is_empty()?);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow() -> Result<()> {
     let ctx = margin_test_context!();
@@ -478,7 +563,10 @@ async fn margin_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_borrow_order(underlying(1_000, 2_000)).await?)
+    .cat(
+        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000))
+            .await?,
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -518,7 +606,10 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_borrow_order(underlying(1_000, 2_000)).await?)
+    .cat(
+        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000))
+            .await?,
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await;
 
@@ -563,7 +654,10 @@ async fn margin_lend() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_lend_order(underlying(1_000, 2_000)).await?)
+    .cat(
+        user.refresh_and_margin_lend_order(underlying(1_000, 2_000))
+            .await?,
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await;
 
@@ -609,7 +703,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000))
+            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -621,7 +715,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(1_201, borrower.claims().await?);
 
     lender
-        .margin_lend_order(underlying(1_001, 2_000))
+        .refresh_and_margin_lend_order(underlying(1_001, 2_000))
         .await?
         .send_and_confirm_condensed_in_order(&client)
         .await?;
@@ -677,7 +771,11 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(lender.margin_lend_order(underlying(1_001, 2_000)).await?)
+    .cat(
+        lender
+            .refresh_and_margin_lend_order(underlying(1_001, 2_000))
+            .await?,
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -698,7 +796,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000))
+            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -844,7 +942,7 @@ async fn auto_roll_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_borrow_order(params).await?);
+    .cat(user.refresh_and_margin_borrow_order(params).await?);
 
     // TODO: assert proper failure
     // This fails due to an unconfigured auto_roll setting in the margin_user account
@@ -879,7 +977,7 @@ async fn auto_roll_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_borrow_order(params).await?)
+    .cat(user.refresh_and_margin_borrow_order(params).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
