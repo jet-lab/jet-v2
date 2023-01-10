@@ -44,7 +44,7 @@ pub mod jet_margin_swap {
     /// and after an action.
     /// If either transit account has tokens before the instructions, it should still
     /// have the same tokens after the swap.
-    /// 
+    ///
     /// **[Accounts](jet_margin_swap::accounts::MarginSplSwap) expected with margin\_spl\_swap.rs:**
     ///
     /// |     |     |     |
