@@ -40,7 +40,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [amount, setAmount] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
-  const [forecast, setForecast] = useState<Forecast | undefined>()
+  const [forecast, setForecast] = useState<Forecast>()
 
   const disabled = !marginAccount || !wallet.publicKey || !currentPool || !pools || amount.lte(new BN(0));
 

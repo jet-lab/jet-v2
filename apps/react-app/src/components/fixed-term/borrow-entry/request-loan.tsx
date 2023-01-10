@@ -156,7 +156,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           />
         </label>
         <label>
-          Interest Rate
+          Max Interest Rate
           <InputNumber
             className="input-rate"
             onChange={debounce(e => {
