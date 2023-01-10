@@ -370,12 +370,13 @@ export class FixedTermMarket {
         termLoan,
         nextTermLoan,
         source,
+        sourceAuthority: user.address,
         payer,
         underlyingTokenVault: this.addresses.underlyingTokenVault,
         claims: await this.deriveMarginUserClaims(marketUser),
         claimsMint: this.addresses.claimsMint,
         market: this.address,
-        tokenProgram: TOKEN_PROGRAM_ID
+        tokenProgram: TOKEN_PROGRAM_ID,
       })
       .instruction()
   }

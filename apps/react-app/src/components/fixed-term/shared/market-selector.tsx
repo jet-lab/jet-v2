@@ -26,7 +26,6 @@ import { JetMarginPools, Pools } from '@state/pools/pools';
 import BN from 'bn.js';
 import { Loan, useOpenPositions } from '@jet-lab/store';
 import { PublicKey } from '@solana/web3.js';
-import { useWallet } from '@solana/wallet-adapter-react';
 
 const { Option } = Select;
 
@@ -79,14 +78,12 @@ const submitRepay = async (
   provider: AnchorProvider,
   amount: BN,
   termLoans: Loan[],
-  walletAddress: PublicKey | null,
   pools: Record<string, Pool>,
   markets: FixedTermMarket[],
   market: MarketAndconfig,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
   blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
 ) => {
-  if (!walletAddress) return;
   let tx = 'failed_before_tx';
   try {
     tx = await repay({
@@ -96,7 +93,7 @@ const submitRepay = async (
       termLoans,
       pools,
       markets,
-      market
+      market,
     });
     notify(
       'Repay Successful',
@@ -137,7 +134,6 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
   const { provider } = useProvider();
   const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedTermMarketAtom);
   const pools = useRecoilValue(Pools);
-  const wallet = useWallet();
 
   const [repayAmount, setRepayAmount] = useState('0');
 
@@ -224,7 +220,6 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
                     provider,
                     new BN(parseFloat(repayAmount) * 10 ** token.decimals),
                     data.loans,
-                    wallet.publicKey,
                     pools.tokenPools,
                     markets.map(m => m.market),
                     markets[selectedMarket],

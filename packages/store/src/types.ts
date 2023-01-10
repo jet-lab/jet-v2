@@ -34,4 +34,5 @@ export interface Loan {
   balance:              number;
   is_marked_due:        boolean;
   created_timestamp:    number;
+  payer: string
 }
