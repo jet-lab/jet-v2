@@ -85,22 +85,22 @@ impl MarginUser {
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next term loan to be created
-    pub next_new_term_loan_seqno: u64,
+    next_new_term_loan_seqno: u64,
 
     /// The sequence number of the next term loan to be paid
-    pub next_unpaid_term_loan_seqno: u64,
+    next_unpaid_term_loan_seqno: u64,
 
     /// The maturation timestamp of the next term loan that is unpaid
-    pub next_term_loan_maturity: UnixTimestamp,
+    next_term_loan_maturity: UnixTimestamp,
 
     /// Amount that must be collateralized because there is an open order for it.
     /// Does not accrue interest because the loan has not been received yet.
-    pub pending: u64,
+    pending: u64,
 
     /// Debt that has already been borrowed because the order was matched.
     /// This debt will be due when the loan term ends.
     /// This includes all debt, including past due debt
-    pub committed: u64,
+    committed: u64,
 }
 
 pub type SequenceNumber = u64;
