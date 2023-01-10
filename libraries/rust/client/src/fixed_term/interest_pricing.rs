@@ -33,6 +33,8 @@ use jet_program_common::{
 };
 use wasm_bindgen::prelude::wasm_bindgen;
 
+use crate::util::math::{bps_to_f64, f64_to_bps};
+
 const SECONDS_PER_YEAR: u64 = 31_536_000;
 
 pub type PricerImpl = AprPricer;
@@ -106,17 +108,6 @@ pub fn f64_to_fp32(f: f64) -> u64 {
 
 pub fn fp32_to_f64(fp: u64) -> f64 {
     fp as f64 / FP32_ONE as f64
-}
-
-pub fn f64_to_bps(f: f64) -> u64 {
-    let bps = f * 10_000.0;
-    assert!(bps <= u64::MAX as f64);
-    assert!(bps >= 0.0);
-    bps.round() as u64
-}
-
-pub fn bps_to_f64(bps: u64) -> f64 {
-    bps as f64 / 10_000.0
 }
 
 /// rate is continuously compounded over some rate_term

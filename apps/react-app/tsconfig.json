@@ -27,6 +27,9 @@
       "@views/*": ["views/*"]
     }
   },
-  "include": ["src/**/*", "./public", "@jet-lab/fixed_term", "@jet-lab/margin"],
+  "include": [
+    "src/**/*", "./public", "@jet-lab/fixed_term",
+    "@jet-lab/margin", "@jet-lab/jet-client-web"
+  ],
   "exclude": ["node_modules"]
 }
