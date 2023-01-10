@@ -21,7 +21,7 @@
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
     "test:gui": "yarn --cwd apps/react-app e2e:gui",
     "test:ci": "yarn --cwd apps/react-app e2e:ci",
-    "crank": "cargo run --bin jet-fixed-terms-crank-service -- --config-path ./localnet.toml --verbose 1"
+    "crank": "cargo run --bin jet-fixed-terms-crank-service -- --config-path ./localnet.toml"
   },
   "devDependencies": {
     "turbo": "^1.6.3"

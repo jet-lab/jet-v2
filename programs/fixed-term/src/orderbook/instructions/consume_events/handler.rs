@@ -124,6 +124,7 @@ fn handle_fill<'info>(
                 emit!(TermDepositCreated {
                     term_deposit: term_deposit.key(),
                     authority: maker.pubkey(),
+                    payer: ctx.accounts.payer.key(),
                     order_tag: Some(maker_info.order_tag.as_u128()),
                     sequence_number,
                     market: market.key(),
@@ -197,6 +198,7 @@ fn handle_fill<'info>(
                     emit!(TermLoanCreated {
                         term_loan: term_loan.key(),
                         authority: maker_info.owner,
+                        payer: ctx.accounts.payer.key(),
                         order_tag: maker_info.order_tag.as_u128(),
                         sequence_number,
                         market: ctx.accounts.market.key(),

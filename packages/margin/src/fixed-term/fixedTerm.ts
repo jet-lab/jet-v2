@@ -2,10 +2,9 @@ import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from "../margin"
-import { Orderbook } from "./orderbook"
 import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount } from "./utils"
-import { rate_to_price } from "../wasm"
+import { OrderbookModel, rate_to_price } from "../wasm"
 import { bigIntToBn, bnToBigInt } from "../token"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
@@ -61,8 +60,8 @@ export interface MarginUserInfo {
 }
 
 export interface DebtInfo {
-  nextNewTermLoanSeqNo: BN
-  nextUnpaidTermLoanSeqNo: BN
+  nextNewTermLoanSeqno: BN
+  nextUnpaidTermLoanSeqno: BN
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
@@ -73,8 +72,8 @@ export interface DebtInfo {
 export interface AssetInfo {
   entitledTokens: BN
   entitledTickets: BN
-  nextNewDepositSeqNo: BN
-  nextUnredeemedDepositSeqNo: BN
+  nextDepositSeqno: BN
+  nextUnredeemedDepositSeqno: BN
   _reserved0: number[]
 }
 
@@ -112,6 +111,7 @@ export class FixedTermMarket {
   }
   readonly info: MarketInfo
   readonly program: Program<JetFixedTerm>
+  public orderbookModel: OrderbookModel | undefined = undefined
   private constructor(
     market: PublicKey,
     claimsMetadata: PublicKey,
@@ -153,7 +153,7 @@ export class FixedTermMarket {
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
-    let info: MarketInfo = program.coder.accounts.decode("Market", data)
+    let info: MarketInfo = program.coder.accounts.decode("market", data)
     const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
@@ -353,6 +353,34 @@ export class FixedTermMarket {
       .instruction()
   }
 
+  async repay({
+    user, termLoan, nextTermLoan, payer, source, amount
+  }: {
+    user: MarginAccount,
+    termLoan: Address,
+    nextTermLoan: Address,
+    payer: Address,
+    source: Address,
+    amount: BN
+  }) {
+    const marketUser = await this.deriveMarginUserAddress(user)
+    return this.program.methods.repay(amount)
+      .accounts({
+        marginUser: marketUser,
+        termLoan,
+        nextTermLoan,
+        source,
+        sourceAuthority: user.address,
+        payer,
+        underlyingTokenVault: this.addresses.underlyingTokenVault,
+        claims: await this.deriveMarginUserClaims(marketUser),
+        claimsMint: this.addresses.claimsMint,
+        market: this.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .instruction()
+  }
+
   async cancelOrderIx(user: MarginAccount, orderId: BN): Promise<TransactionInstruction> {
     return await this.program.methods
       .cancelOrder(orderId)
@@ -424,7 +452,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.debt.nextNewTermLoanSeqNo.toArrayLike(Buffer, "le", 8)
+    return userInfo.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
   }
 
   async fetchDepositSeed(user: MarginAccount): Promise<Uint8Array> {
@@ -434,7 +462,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.assets.nextNewDepositSeqNo.toArrayLike(Buffer, "le", 8)
+    return userInfo.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
@@ -457,14 +485,22 @@ export class FixedTermMarket {
     return await findFixedTermDerivedAccount(["term_deposit", this.address, marginUser, seed], this.program.programId)
   }
 
-  async fetchOrderbook(): Promise<Orderbook> {
-    return await Orderbook.load(this)
+  async fetchOrderbook(tenor: bigint): Promise<OrderbookModel> {
+    const asksBuf = (await this.provider.connection.getAccountInfo(this.info.asks))!.data
+    const bidsBuf = (await this.provider.connection.getAccountInfo(this.info.bids))!.data
+
+    const model = new OrderbookModel(BigInt(tenor))
+    model.refresh(bidsBuf, asksBuf)
+    
+    this.orderbookModel = model
+
+    return model
   }
 
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
 
-    return data ? await this.program.coder.accounts.decode("MarginUser", data) : null
+    return data ? await this.program.coder.accounts.decode("marginUser", data) : null
   }
 }
 
