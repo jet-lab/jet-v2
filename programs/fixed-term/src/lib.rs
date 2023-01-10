@@ -124,6 +124,7 @@ pub(crate) mod utils;
 
 pub(crate) mod instructions;
 use instructions::*;
+use margin::state::AutoRollConfig;
 
 #[macro_use]
 extern crate bitflags;
@@ -170,7 +171,7 @@ pub mod jet_fixed_term {
 
     /// Modify a `Market` account
     /// Authority use only
-    pub fn modify_market(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: usize) -> Result<()> {
+    pub fn modify_market(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: u32) -> Result<()> {
         instructions::modify_market::handler(ctx, data, offset)
     }
 
@@ -199,7 +200,7 @@ pub mod jet_fixed_term {
     pub fn configure_auto_roll(
         ctx: Context<ConfigureAutoRoll>,
         side: u8,
-        config: margin::state::AutoRollConfig,
+        config: AutoRollConfig,
     ) -> Result<()> {
         instructions::configure_auto_roll::handler(ctx, side, config)
     }

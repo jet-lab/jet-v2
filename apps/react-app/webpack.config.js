@@ -20,7 +20,7 @@ module.exports = (_env, arg) => {
     }),
     new DefinePlugin({
       'process.env': JSON.stringify(dotenv.config().parsed || {})
-    }),
+    })
   ];
 
   if (arg.mode === 'production') {
