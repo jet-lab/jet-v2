@@ -1,4 +1,4 @@
-import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, Orderbook, MarketAndconfig } from '@jet-lab/margin';
+import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, MarketAndconfig, OrderbookModel } from '@jet-lab/margin';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -38,8 +38,9 @@ export const CurrentOrderTabAtom = atom<CurrentOrderTab>({
   default: 'not_set'
 });
 
-export interface ExtendedOrderBook extends Orderbook {
+export interface ExtendedOrderBook {
   name: string;
+  orderbook: OrderbookModel;
 }
 
 export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
@@ -48,11 +49,11 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
     const list = get(AllFixedTermMarketsAtom);
     return await Promise.all(
       list.map(async market => {
-        const raw = await market.market.fetchOrderbook();
+        const tenor = BigInt(market.config.borrowTenor);
+        const model = await market.market.fetchOrderbook(tenor);
         return {
           name: market.name,
-          asks: raw.asks.sort((a, b) => Number(a.limit_price) - Number(b.limit_price)),
-          bids: raw.bids.sort((a, b) => Number(b.limit_price) - Number(a.limit_price))
+          orderbook: model,
         };
       })
     );

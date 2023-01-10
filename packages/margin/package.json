@@ -20,7 +20,7 @@
     "build:wasm": "wasm-pack build --target bundler --release --out-dir src/wasm .",
     "build": "yarn build:wasm && ./fixup && mkdir -p dist/wasm && cp src/wasm/*.js src/wasm/*.ts src/wasm/*.wasm dist/wasm && tsc",
     "dev": "yarn build:wasm && tsc --watch",
-    "clean": "rm -rf ./dist && rm -rf .turbo && rm -f tsconfig.tsbuildinfo && rm -rf src/wasm",
+    "clean": "rm -rf ./dist && rm -rf .turbo && rm -f tsconfig.tsbuildinfo && rm -rf src/wasm && rm -rf src/wasm-src/.turbo",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ --check",
     "fmt:fix": "prettier src/ --write",

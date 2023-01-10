@@ -22,12 +22,16 @@ serde = { version = "1.0", features = ["derive"] }
 js-sys = "0.3.59"
 
 wasm-bindgen = "0.2.83"
+serde-wasm-bindgen = "0.4"
 console_error_panic_hook = "0.1.7"
 
+solana-program = "1.14"
+
 jet-program-common = { path = "../../libraries/rust/program-common" }
-jet-fixed-term = { path = "../../programs/fixed-term" }
+jet-fixed-term = { path = "../../programs/fixed-term", features = ["cli"] }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["utils"]}
+bonfida-utils = { git = "https://github.com/Bonfida/bonfida-utils.git", branch = "add-rounding-direction" }
 
 [dev-dependencies]
 rand_chacha = "0.3.1"
