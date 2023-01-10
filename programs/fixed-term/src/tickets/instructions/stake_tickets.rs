@@ -107,6 +107,7 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
     emit!(TermDepositCreated {
         term_deposit: ctx.accounts.deposit.key(),
         authority: ctx.accounts.ticket_holder.key(),
+        payer: ctx.accounts.payer.key(),
         order_tag: None,
         sequence_number: ctx.accounts.deposit.sequence_number,
         market: ctx.accounts.deposit.market,
