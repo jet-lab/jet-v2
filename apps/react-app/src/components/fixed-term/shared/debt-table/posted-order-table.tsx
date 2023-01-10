@@ -100,7 +100,7 @@ const cancel = async (
   }
 };
 
-export const OrdersTable = ({
+export const PostedOrdersTable = ({
   data,
   market,
   marginAccount,

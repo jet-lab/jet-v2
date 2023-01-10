@@ -11,12 +11,13 @@ import { useEffect, useMemo } from 'react';
 import { notify } from '@utils/notify';
 import { useProvider } from '@utils/jet/provider';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
-import { OrdersTable } from './posted-order-table';
+import { PostedOrdersTable } from './posted-order-table';
 import { TokenAmount } from '@jet-lab/margin';
 import BN from 'bn.js';
 import numeral from 'numeral';
 import { useOpenPositions } from '@jet-lab/store';
 import { OpenBorrowsTable } from './open-borrows-table';
+import { OpenDepositsTable } from './open-deposits-table';
 import { Pools } from '@state/pools/pools';
 
 interface ITabLink {
@@ -91,7 +92,7 @@ export function DebtTable() {
                 ordersLoading || !account ? (
                   <LoadingOutlined />
                 ) : (
-                  <OrdersTable
+                  <PostedOrdersTable
                     data={ordersData?.open_orders.filter(o => o.is_lend_order) || []}
                     provider={provider}
                     market={markets[selectedMarket]}
@@ -101,6 +102,22 @@ export function DebtTable() {
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />
+                )
+            },
+            {
+              label: (
+                <TabLink
+                  name="Open Deposits"
+                  amount={positionsData.total_lent}
+                  decimals={markets[selectedMarket].token.decimals}
+                />
+              ),
+              key: 'open-deposits',
+              children:
+                ordersLoading || !account ? (
+                  <LoadingOutlined />
+                ) : (
+                  <OpenDepositsTable data={positionsData.deposits} market={markets[selectedMarket]} />
                 )
             },
             {
@@ -116,7 +133,7 @@ export function DebtTable() {
                 ordersLoading || !account ? (
                   <LoadingOutlined />
                 ) : (
-                  <OrdersTable
+                  <PostedOrdersTable
                     data={ordersData?.open_orders.filter(o => !o.is_lend_order) || []}
                     provider={provider}
                     market={markets[selectedMarket]}

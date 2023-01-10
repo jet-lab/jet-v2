@@ -36,3 +36,14 @@ export interface Loan {
   created_timestamp:    number;
   payer: string
 }
+
+export interface Deposit {
+  id: number
+  address: string,
+  sequence_number: number,
+  maturation_timestamp: number,
+  balance: number,
+  rate: number,
+  payer: string,
+  created_timestamp: number
+}
