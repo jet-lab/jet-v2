@@ -28,6 +28,7 @@ pub struct MarginRedeemDeposit<'info> {
 }
 
 impl<'info> MarginRedeemDeposit<'info> {
+    #[inline(never)]
     pub fn redeem(&mut self) -> Result<()> {
         let redeemed = self.inner.redeem()?;
         self.margin_user

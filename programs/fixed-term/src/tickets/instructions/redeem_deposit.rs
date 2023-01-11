@@ -51,6 +51,7 @@ pub struct RedeemDeposit<'info> {
 }
 
 impl<'info> RedeemDeposit<'info> {
+    #[inline(never)]
     pub fn redeem(&self) -> Result<u64> {
         let current_time = Clock::get()?.unix_timestamp;
         if current_time < self.deposit.matures_at {

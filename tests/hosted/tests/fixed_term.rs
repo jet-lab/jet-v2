@@ -890,7 +890,7 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn auto_roll_borrow() -> Result<()> {
+async fn auto_roll_flags() -> Result<()> {
     let ctx = margin_test_context!();
     let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
@@ -955,6 +955,100 @@ async fn auto_roll_borrow() -> Result<()> {
 
     let posted_info = manager.load_orderbook().await?.asks_order_callback(1)?;
     assert!(!posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn auto_roll_lend_order_is_correct() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(
+        FixedTermTestManager::full(ctx.solana.clone())
+            .await
+            .unwrap(),
+    );
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    let borrower = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+    let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(vec![
+        lender.margin_lend_order(underlying(1_001, 2_000)).await?,
+    ])
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(vec![
+        borrower
+            .margin_borrow_order(underlying(2_000, 2_000))
+            .await?,
+    ])
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    manager.consume_events().await?;
+    lender.settle().await?;
+    borrower.settle().await?;
+
+    // let the `TermDeposit` mature
+    #[cfg(not(feature = "localnet"))]
+    {
+        let mut clock = manager.client.get_clock().await?;
+        clock.unix_timestamp += 6;
+        manager.client.set_clock(clock).await?;
+    }
+    #[cfg(feature = "localnet")]
+    {
+        std::thread::sleep(std::time::Duration::from_secs(
+            hosted_tests::fixed_term::LEND_TENOR as u64,
+        ));
+    }
+
+    // repay the loan
+    borrower.try_repay_all().await?;
+
+    lender
+        .set_roll_config(
+            MarketSide::Lending,
+            AutoRollConfig {
+                limit_price: underlying(1_001, 2_000).limit_price,
+            },
+        )
+        .await?;
+
+    // manager
+    //     .auto_roll_term_deposits(&lender.proxy.pubkey())
+    //     .await?;
+
+    // let auto_lend_bid = manager.load_orderbook().await?.bids()?[0];
+    // dbg!(auto_lend_bid);
 
     Ok(())
 }

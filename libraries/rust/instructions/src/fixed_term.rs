@@ -665,22 +665,47 @@ impl FixedTermIxBuilder {
         params: OrderParams,
         deposit_seqno: u64,
     ) -> Instruction {
-        let margin_user = self.margin_user(margin_account);
         let data = jet_fixed_term::instruction::MarginLendOrder { params }.data();
-        let accounts = jet_fixed_term::accounts::MarginLendOrder {
-            margin_user: margin_user.address,
-            ticket_collateral: margin_user.ticket_collateral,
-            ticket_collateral_mint: self.ticket_collateral,
-            inner: self.lend_order_accounts(
-                margin_user.address,
-                margin_account,
-                None,
-                lender_tokens,
-                params,
-                &deposit_seqno.to_le_bytes(),
-            ),
+        let accounts = self
+            .margin_lend_order_accounts(margin_account, lender_tokens, params, deposit_seqno)
+            .to_account_metas(None);
+        Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
+    }
+
+    pub fn auto_roll_lend_order(
+        &self,
+        margin_account: Pubkey,
+        deposit: Pubkey,
+        lender_tokens: Option<Pubkey>,
+        deposit_seqno: u64,
+    ) -> Instruction {
+        let margin_lend = self.margin_lend_order_accounts(
+            margin_account,
+            lender_tokens,
+            OrderParams {
+                auto_stake: true,
+                ..Default::default()
+            },
+            deposit_seqno,
+        );
+        let data = jet_fixed_term::instruction::AutoRollLendOrder {}.data();
+        let accounts = jet_fixed_term::accounts::AutoRollLendOrder {
+            deposit,
+            new_deposit: margin_lend.inner.ticket_settlement,
+            lender_tokens: margin_lend.inner.lender_tokens,
+            margin_account,
+            margin_user: margin_lend.margin_user,
+            orderbook_mut: margin_lend.inner.orderbook_mut,
+            ticket_collateral: margin_lend.ticket_collateral,
+            ticket_collateral_mint: margin_lend.ticket_collateral_mint,
+            ticket_mint: margin_lend.inner.ticket_mint,
+            underlying_token_vault: margin_lend.inner.underlying_token_vault,
+            payer: margin_lend.inner.payer,
+            system_program: margin_lend.inner.system_program,
+            token_program: margin_lend.inner.token_program,
         }
         .to_account_metas(None);
+
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
@@ -716,6 +741,29 @@ impl FixedTermIxBuilder {
             orderbook_mut: self.orderbook_mut(),
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
+        }
+    }
+
+    fn margin_lend_order_accounts(
+        &self,
+        margin_account: Pubkey,
+        lender_tokens: Option<Pubkey>,
+        params: OrderParams,
+        deposit_seqno: u64,
+    ) -> jet_fixed_term::accounts::MarginLendOrder {
+        let margin_user = self.margin_user(margin_account);
+        jet_fixed_term::accounts::MarginLendOrder {
+            margin_user: margin_user.address,
+            ticket_collateral: margin_user.ticket_collateral,
+            ticket_collateral_mint: self.ticket_collateral,
+            inner: self.lend_order_accounts(
+                margin_user.address,
+                margin_account,
+                None,
+                lender_tokens,
+                params,
+                &deposit_seqno.to_le_bytes(),
+            ),
         }
     }
 

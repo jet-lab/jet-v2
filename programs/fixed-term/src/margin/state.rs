@@ -269,14 +269,21 @@ impl Assets {
     pub fn new_deposit(&mut self, tickets: u64) -> Result<SequenceNumber> {
         let seqno = self.next_deposit_seqno;
 
+        // if tickets > 0 {
         self.next_deposit_seqno += 1;
         self.tickets_staked.try_add_assign(tickets)?;
+        // }
 
         Ok(seqno)
     }
 
     pub fn redeem_deposit(&mut self, seqno: SequenceNumber, tickets: u64) -> Result<()> {
         if seqno != self.next_unredeemed_deposit_seqno {
+            msg!(
+                "Given sequence number: [{}] Expected sequence number: [{}]",
+                seqno,
+                self.next_unredeemed_deposit_seqno
+            );
             return Err(FixedTermErrorCode::TermDepositHasWrongSequenceNumber.into());
         }
 

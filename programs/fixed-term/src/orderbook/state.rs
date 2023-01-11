@@ -333,7 +333,7 @@ bitflags! {
 }
 
 /// Parameters needed for order placement
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
+#[derive(AnchorDeserialize, AnchorSerialize, Debug, Default, Clone, Copy)]
 pub struct OrderParams {
     /// The maximum quantity of tickets to be traded.
     pub max_ticket_qty: u64,

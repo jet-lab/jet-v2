@@ -39,6 +39,7 @@ pub struct MarginLendOrder<'info> {
 }
 
 impl<'info> MarginLendOrder<'info> {
+    #[inline(never)]
     pub fn lend_order(&mut self, params: OrderParams, adapter: Option<Pubkey>) -> Result<()> {
         let user = &mut self.margin_user;
 
@@ -92,7 +93,7 @@ impl<'info> MarginLendOrder<'info> {
 
 fn order_flags(user: &Account<MarginUser>, params: &OrderParams) -> Result<CallbackFlags> {
     let auto_roll = if params.auto_roll {
-        if user.borrow_roll_config == AutoRollConfig::default() {
+        if user.lend_roll_config == AutoRollConfig::default() {
             msg!(
                 "Auto roll settings have not been configured for margin user [{}]",
                 user.key()

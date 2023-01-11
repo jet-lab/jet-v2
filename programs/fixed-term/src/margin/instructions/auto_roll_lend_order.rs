@@ -14,12 +14,11 @@ use crate::{
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct AutoRollLendOrder<'info> {
-    /// The off chain service authorized to roll this lend order
-    pub roll_servicer: Signer<'info>,
-
+    #[account(mut)]
     pub deposit: Account<'info, TermDeposit>,
 
-    pub new_deposit: Account<'info, TermDeposit>,
+    #[account(mut)]
+    pub new_deposit: AccountInfo<'info>,
 
     #[account(mut)]
     pub lender_tokens: Account<'info, TokenAccount>,
@@ -56,6 +55,7 @@ pub struct AutoRollLendOrder<'info> {
 }
 
 impl<'info> AutoRollLendOrder<'info> {
+    #[inline(never)]
     fn lend_order(&self, adapter: Option<Pubkey>) -> Result<()> {
         let params = self.order_params();
         let mut lend_accounts = MarginLendOrder {
@@ -74,10 +74,11 @@ impl<'info> AutoRollLendOrder<'info> {
                 token_program: self.token_program.clone(),
             },
         };
-        lend_accounts.lend_order(params, adapter)?;
-        Ok(())
+
+        lend_accounts.lend_order(params, adapter)
     }
 
+    #[inline(never)]
     fn redeem(&self) -> Result<()> {
         let mut redemption_accounts = MarginRedeemDeposit {
             margin_user: self.margin_user.clone(),
