@@ -53,9 +53,9 @@ pub struct Market {
     /// reserved for future use
     pub(crate) _reserved: [u8; 28],
     /// Length of time before a borrow is marked as due, in seconds
-    pub borrow_tenor: i64,
+    pub borrow_tenor: u64,
     /// Length of time before a claim is marked as mature, in seconds
-    pub lend_tenor: i64,
+    pub lend_tenor: u64,
     /// assessed on borrows. scaled by origination_fee::FEE_UNIT
     pub origination_fee: u64,
     /// amount of fees currently available to be withdrawn by market owner

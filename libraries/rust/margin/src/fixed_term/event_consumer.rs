@@ -332,11 +332,11 @@ impl MarketState {
                                 + SystemTime::now()
                                     .duration_since(SystemTime::UNIX_EPOCH)
                                     .unwrap()
-                                    .as_secs() as i64;
+                                    .as_secs();
 
                             let seed = maker_user
                                 .debt
-                                .new_term_loan_from_fill(event.quote_size, matures_at)
+                                .new_term_loan_from_fill(event.quote_size, matures_at as i64)
                                 .unwrap()
                                 .to_le_bytes();
 
