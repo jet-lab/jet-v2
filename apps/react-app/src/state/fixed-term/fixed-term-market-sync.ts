@@ -53,7 +53,7 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
         const model = await market.market.fetchOrderbook(tenor);
         return {
           name: market.name,
-          orderbook: model,
+          orderbook: model
         };
       })
     );

@@ -456,7 +456,7 @@ export const repay = async ({
         user: marginAccount,
         termLoan: currentLoan.address,
         nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
-        payer:  currentLoan.payer,
+        payer: currentLoan.payer,
         amount: balance,
         source,
       })
@@ -477,5 +477,56 @@ export const repay = async ({
     marketAddress: market.market.address
   })
   instructions.push(refreshIxs)
+  return sendAll(provider, [instructions])
+}
+
+
+interface IRedeem {
+  marginAccount: MarginAccount
+  pools: Record<string, Pool>
+  markets: FixedTermMarket[]
+  market: MarketAndconfig
+  provider: AnchorProvider
+  deposit: {
+    id: number
+    address: string,
+    sequence_number: number,
+    maturation_timestamp: number,
+    balance: number,
+    rate: number,
+    payer: string,
+    created_timestamp: number
+  }
+}
+export const redeem = async ({
+  marginAccount,
+  pools,
+  markets,
+  market,
+  provider,
+  deposit
+}: IRedeem) => {
+  const instructions: TransactionInstruction[][] = []
+  const refreshIxs: TransactionInstruction[] = []
+  await marginAccount.withPrioritisedPositionRefresh({
+    instructions: refreshIxs,
+    pools,
+    markets,
+    marketAddress: market.market.address
+  })
+  instructions.push(refreshIxs)
+
+  const redeemIxs: TransactionInstruction[] = []
+  const redeem = await market.market.redeemDeposit(
+    marginAccount,
+    deposit,
+    market.market
+  )
+  await marginAccount.withAdapterInvoke({
+    instructions: redeemIxs,
+    adapterInstruction: redeem
+  })
+  
+  instructions.push(redeemIxs)
   return sendAll(provider, [instructions])
 }

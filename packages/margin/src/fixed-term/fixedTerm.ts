@@ -5,7 +5,7 @@ import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig } from "../marg
 import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount } from "./utils"
 import { OrderbookModel, rate_to_price } from "../wasm"
-import { bigIntToBn, bnToBigInt } from "../token"
+import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
 export interface OrderParams {
@@ -501,6 +501,63 @@ export class FixedTermMarket {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
 
     return data ? await this.program.coder.accounts.decode("marginUser", data) : null
+  }
+
+  async redeemDeposit(
+    marginAccount: MarginAccount,
+    deposit: {
+      id: number
+      address: string,
+      sequence_number: number,
+      maturation_timestamp: number,
+      balance: number,
+      rate: number,
+      payer: string,
+      created_timestamp: number
+    },
+    market: FixedTermMarket
+  ) {
+    const tokenAccount = AssociatedToken.derive(market.addresses.underlyingTokenMint, marginAccount.address)
+    const marginUser = await this.deriveMarginUserAddress(marginAccount)
+    const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    const ticketCollateralMint = market.addresses.ticketCollateralMint
+
+    const marginUserData = await market.fetchMarginUser(marginAccount)
+    console.log(
+      marginUserData?.assets.nextUnredeemedDepositSeqno.toNumber(),
+      marginUserData?.assets.nextDepositSeqno.toNumber(),
+      marginUserData
+    )
+
+    console.table(
+      {
+        deposit: deposit.address,
+        owner: marginUser.toBase58(),
+        authority: marginAccount.address.toBase58(),
+        payer: deposit.payer,
+        tokenAccount: tokenAccount.toBase58(),
+        market: market.address.toBase58(),
+        underlyingTokenVault: market.addresses.underlyingTokenVault.toBase58(),
+        tokenProgram: TOKEN_PROGRAM_ID.toBase58(),
+        ticketCollateral: ticketCollateral.toBase58(),
+        ticketCollateralMint: ticketCollateralMint.toBase58()
+      }
+    )
+    return await this.program.methods.marginRedeemDeposit().accounts({
+      marginUser,
+      ticketCollateral,
+      ticketCollateralMint,
+      inner: {
+        deposit: deposit.address,
+        owner: marginUser,
+        authority: marginAccount.address,
+        payer: deposit.payer,
+        tokenAccount,
+        market: market.address,
+        underlyingTokenVault: market.addresses.underlyingTokenVault,
+        tokenProgram: TOKEN_PROGRAM_ID
+      }
+    }).instruction()
   }
 }
 
