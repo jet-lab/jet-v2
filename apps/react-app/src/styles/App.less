@@ -1216,7 +1216,7 @@ html {
 
     // Order entry
     .order-entry {
-      height: 600px;
+      height: 660px;
       margin-right: 16px;
 
       &-head {
@@ -1246,7 +1246,7 @@ html {
 
       &-body {
         width: calc(100% - (@spacing-lg * 2));
-        height: 465px;
+        height: 525px;
         padding: @spacing-lg;
 
         &-section {
@@ -1388,11 +1388,46 @@ html {
         }
       }
     }
+
+    .fixed-term-graph {
+      flex: 1;
+      height: 660px;
+
+      &-head {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: calc(100% - (@spacing-base * 2));
+        height: 50px;
+        padding: 0 @spacing-base;
+        background: @header-bg;
+  
+        &-info {
+          margin: @spacing-xs;
+  
+          h2 {
+            margin: 0 @spacing-xs;
+            text-transform: unset;
+          }
+        }
+      }
+  
+      &-container {
+        width: 100%;
+        padding: @spacing-xs;
+  
+        * {
+          font-family: 'Lato', Helvetica, Arial, sans-serif !important;
+        }
+  
+        text {
+          fill: @secondary-5;
+        }
+      }
+    }
   }
 
-  // Graphs
-  .swaps-graph,
-  .fixed-term-graph {
+  .swaps-graph {
     flex: 1;
     height: 600px;
 
