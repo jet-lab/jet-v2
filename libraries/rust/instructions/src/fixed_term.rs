@@ -356,8 +356,6 @@ impl FixedTermIxBuilder {
             ticket_collateral: FixedTermIxBuilder::user_ticket_collateral(margin_user),
             claims_mint: self.claims,
             ticket_collateral_mint: self.ticket_collateral,
-            underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
-            ticket_settlement: get_associated_token_address(&owner, &self.ticket_mint),
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
@@ -451,29 +449,24 @@ impl FixedTermIxBuilder {
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
-    pub fn settle(
-        &self,
-        margin_account: Pubkey,
-        underlying_settlement: Option<Pubkey>,
-        ticket_settlement: Option<Pubkey>,
-    ) -> Instruction {
+    pub fn settle(&self, margin_account: Pubkey) -> Instruction {
         let user = self.margin_user(margin_account);
         let accounts = jet_fixed_term::accounts::Settle {
             market: self.market,
             ticket_mint: self.ticket_mint,
             token_program: spl_token::ID,
             margin_user: user.address,
+            margin_account,
             claims: user.claims,
             claims_mint: self.claims,
             ticket_collateral: user.ticket_collateral,
             ticket_collateral_mint: self.ticket_collateral,
             underlying_token_vault: self.underlying_token_vault,
-            underlying_settlement: underlying_settlement.unwrap_or_else(|| {
-                get_associated_token_address(&margin_account, &self.underlying_mint)
-            }),
-            ticket_settlement: ticket_settlement.unwrap_or_else(|| {
-                get_associated_token_address(&margin_account, &self.ticket_mint)
-            }),
+            underlying_settlement: get_associated_token_address(
+                &margin_account,
+                &self.underlying_mint,
+            ),
+            ticket_settlement: get_associated_token_address(&margin_account, &self.ticket_mint),
         };
         Instruction::new_with_bytes(
             jet_fixed_term::ID,
@@ -789,32 +782,6 @@ impl FixedTermIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
-        Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
-    }
-
-    pub fn margin_settle(&self, margin_account: Pubkey) -> Instruction {
-        let data = jet_fixed_term::instruction::Settle {}.data();
-        let margin_user = self.margin_user_account(margin_account);
-        let claims = FixedTermIxBuilder::user_claims(margin_user);
-        let ticket_collateral = FixedTermIxBuilder::user_ticket_collateral(margin_user);
-        let accounts = jet_fixed_term::accounts::Settle {
-            margin_user,
-            market: self.market,
-            token_program: spl_token::ID,
-            claims,
-            claims_mint: self.claims,
-            ticket_collateral,
-            ticket_collateral_mint: self.ticket_collateral,
-            underlying_token_vault: self.underlying_token_vault,
-            ticket_mint: self.ticket_mint,
-            underlying_settlement: get_associated_token_address(
-                &margin_account,
-                &self.underlying_mint,
-            ),
-            ticket_settlement: get_associated_token_address(&margin_account, &self.ticket_mint),
-        }
-        .to_account_metas(None);
-
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 

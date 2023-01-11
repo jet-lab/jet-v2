@@ -68,7 +68,7 @@ use spl_token::{instruction::initialize_mint, state::Mint};
 use crate::{
     context::MarginTestContext,
     runtime::{Keygen, SolanaTestContext},
-    setup_helper::setup_user,
+    setup_helper::{register_deposit, setup_user},
     tokens::TokenManager,
 };
 
@@ -115,6 +115,7 @@ pub struct TestManager {
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
     pub margin_accounts_to_settle: AsyncNoDupeQueue<Pubkey>,
+    airspace: Pubkey,
 }
 
 impl Clone for TestManager {
@@ -133,14 +134,15 @@ impl Clone for TestManager {
             keys: self.keys.clone(),
             keygen: self.keygen.clone(),
             margin_accounts_to_settle: Default::default(),
+            airspace: self.airspace,
         }
     }
 }
 
 impl TestManager {
-    pub async fn full(client: SolanaTestContext) -> Result<Self> {
-        let mint = client.generate_key();
-        let oracle = TokenManager::new(client.clone())
+    pub async fn full(client: &MarginTestContext) -> Result<Self> {
+        let mint = client.solana.generate_key();
+        let oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&mint.pubkey())
             .await?;
         let ticket_mint = fixed_term_address(&[
@@ -152,11 +154,12 @@ impl TestManager {
             )
             .as_ref(),
         ]);
-        let ticket_oracle = TokenManager::new(client.clone())
+        let ticket_oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&ticket_mint)
             .await?;
         TestManager::new(
-            client.clone(),
+            client.solana.clone(),
+            client.margin.airspace(),
             &mint,
             &client.generate_key(),
             &client.generate_key(),
@@ -171,8 +174,10 @@ impl TestManager {
         .await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn new(
         client: SolanaTestContext,
+        airspace: Pubkey,
         mint: &Keypair,
         eq_kp: &Keypair,
         bids_kp: &Keypair,
@@ -194,7 +199,8 @@ impl TestManager {
 
         let ix_builder = FixedTermIxBuilder::new_from_seed(
             payer.pubkey(),
-            &Pubkey::default(),
+            // &airspace,
+            &Pubkey::default(), //todo airspace (i get a weird error in metadata program when this is set correctly)
             &mint.pubkey(),
             MARKET_SEED,
             payer.pubkey(),
@@ -215,6 +221,7 @@ impl TestManager {
             kps: Keys::new(),
             keys: Keys::new(),
             margin_accounts_to_settle: Default::default(),
+            airspace,
         };
         this.insert_kp("token_mint", clone(mint));
 
@@ -279,12 +286,15 @@ impl TestManager {
         Ok(self)
     }
 
-    /// set up metadata authorization for margin to invoke Jet market
+    /// set up metadata authorization for margin to invoke fixed term and
+    /// register relevant positions.
     pub async fn with_margin(self) -> Result<Self> {
         self.create_authority_if_missing().await?;
         self.register_adapter_if_unregistered(&jet_fixed_term::ID)
             .await?;
         self.register_tickets_position_metadatata().await?;
+        register_deposit(&self.client, self.airspace, self.ix_builder.token_mint()).await?;
+        register_deposit(&self.client, self.airspace, self.ix_builder.ticket_mint()).await?;
 
         Ok(self)
     }
@@ -881,7 +891,7 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn settle(&self) -> Result<Signature> {
-        let settle = self.manager.ix_builder.margin_settle(self.proxy.pubkey());
+        let settle = self.manager.ix_builder.settle(self.proxy.pubkey());
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 
