@@ -8,7 +8,7 @@ use solana_sdk::pubkey::Pubkey;
 use super::FixedTermIxBuilder;
 use crate::{solana::transaction::WithSigner, util::no_dupe_queue::AsyncNoDupeQueue};
 
-pub const SETTLES_PER_TX: usize = 4;
+pub const SETTLES_PER_TX: usize = 3;
 
 /// Loops forever to keep checking the queue for margin accounts.
 /// Sends a separate Settle transaction for each without blocking.
