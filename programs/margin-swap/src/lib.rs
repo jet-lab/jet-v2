@@ -92,6 +92,11 @@ mod jet_margin_swap {
     pub fn saber_stable_swap(_ctx: Context<SaberSwapInfo>) -> Result<()> {
         Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
     }
+
+    /// Swap using Orca whirlpool for stable pools
+    pub fn orca_whirlpool_swap(_ctx: Context<OrcaWhirlpoolSwapPoolInfo>) -> Result<()> {
+        Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
+    }
 }
 
 #[derive(Accounts)]
