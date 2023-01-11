@@ -1,35 +1,53 @@
-// FIXME Export Typescript declarations
+use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::prelude::*;
 
 use crate::core::orderbook::OrderbookModel;
 
 #[wasm_bindgen(js_name = "OrderbookModel", skip_typescript)]
-pub struct JsOrderbookModel(OrderbookModel);
+pub struct JsOrderbookModel {
+    inner: OrderbookModel,
+    serializer: Serializer,
+}
 
-// FIXME Ensure serialisation of u64 as bigint
+impl JsOrderbookModel {
+    fn get_serializer() -> Serializer {
+        Serializer::new().serialize_large_number_types_as_bigints(true)
+    }
+
+    fn to_js<T>(&self, value: &T) -> Result<JsValue, JsError>
+    where
+        T: serde::ser::Serialize + ?Sized,
+    {
+        Ok(value.serialize(&self.serializer)?)
+    }
+}
+
 #[wasm_bindgen(js_class = "OrderbookModel")]
 impl JsOrderbookModel {
     #[wasm_bindgen(constructor)]
     pub fn new(tenor: u64) -> Self {
-        Self(OrderbookModel::new(tenor))
+        Self {
+            inner: OrderbookModel::new(tenor),
+            serializer: Self::get_serializer(),
+        }
     }
 
     #[allow(non_snake_case)]
     pub fn refresh(&mut self, bidsBuffer: &[u8], asksBuffer: &[u8]) {
-        self.0.refresh(bidsBuffer, asksBuffer);
+        self.inner.refresh(bidsBuffer, asksBuffer);
     }
 
     #[wasm_bindgen(js_name = "sampleLiquidity")]
     pub fn sample_liquidity(&self, side: &str) -> Result<JsValue, JsError> {
-        let sample = self.0.sample_liquidity(side.into()); // TODO try_into
+        let sample = self.inner.sample_liquidity(side.into()); // TODO try_into
 
-        Ok(serde_wasm_bindgen::to_value(&sample)?)
+        self.to_js(&sample)
     }
 
     #[wasm_bindgen(js_name = "wouldMatch")]
     #[allow(non_snake_case)]
     pub fn would_match(&self, action: &str, limitPrice: u64) -> bool {
-        self.0.would_match(action.into(), limitPrice) // TODO try_into
+        self.inner.would_match(action.into(), limitPrice) // TODO try_into
     }
 
     #[wasm_bindgen(js_name = "simulateFills")]
@@ -40,27 +58,29 @@ impl JsOrderbookModel {
         quoteQty: u64,
         limitPrice: Option<u64>,
     ) -> Result<JsValue, JsError> {
-        let sim = self.0.simulate_fills(action.into(), quoteQty, limitPrice); // TODO try_into
+        let sim = self
+            .inner
+            .simulate_fills(action.into(), quoteQty, limitPrice); // TODO try_into
 
-        Ok(serde_wasm_bindgen::to_value(&sim)?)
+        self.to_js(&sim)
     }
 
     #[wasm_bindgen(js_name = "simulateQueuing")]
     #[allow(non_snake_case)]
     pub fn simulate_queuing(&self, action: &str, limitPrice: u64) -> Result<JsValue, JsError> {
-        let sim = self.0.simulate_queuing(action.into(), limitPrice);
+        let sim = self.inner.simulate_queuing(action.into(), limitPrice);
 
-        Ok(serde_wasm_bindgen::to_value(&sim)?)
+        self.to_js(&sim)
     }
 
     #[wasm_bindgen(js_name = "loanOffers")]
     pub fn loan_offers(&self) -> Result<JsValue, JsError> {
-        Ok(serde_wasm_bindgen::to_value(self.0.loan_offers())?)
+        self.to_js(&self.inner.loan_offers())
     }
 
     #[wasm_bindgen(js_name = "loanRequests")]
     pub fn loan_requests(&self) -> Result<JsValue, JsError> {
-        Ok(serde_wasm_bindgen::to_value(self.0.loan_requests())?)
+        self.to_js(&self.inner.loan_requests())
     }
 }
 
@@ -92,7 +112,6 @@ export type FillSimulation = {
     order_quote_qty: bigint,
     filled_quote_qty: bigint,
     unfilled_quote_qty: bigint,
-    filled_base_qty: bigint,
     unfilled_base_qty: bigint,
     matches: usize,
     vwap: number,
@@ -121,46 +140,46 @@ const ORDERBOOKMODEL_CLAS: &'static str = r#"
 */
 export class OrderbookModel {
     free(): void;
-  /**
-  * @param {bigint} tenor
-  */
+    /**
+    * @param {bigint} tenor
+    */
     constructor(tenor: bigint);
-  /**
-  * @param {Uint8Array} bidsBuffer
-  * @param {Uint8Array} asksBuffer
-  */
+    /**
+    * @param {Uint8Array} bidsBuffer
+    * @param {Uint8Array} asksBuffer
+    */
     refresh(bidsBuffer: Uint8Array, asksBuffer: Uint8Array): void;
-  /**
-  * @param {string} side
-  * @returns {LiquiditySample}
-  */
+    /**
+    * @param {string} side
+    * @returns {LiquiditySample}
+    */
     sampleLiquidity(side: string): LiquiditySample;
-  /**
-  * @param {string} action
-  * @param {bigint} limitPrice
-  * @returns {boolean}
-  */
+    /**
+    * @param {string} action
+    * @param {bigint} limitPrice
+    * @returns {boolean}
+    */
     wouldMatch(action: string, limitPrice: bigint): boolean;
-  /**
-  * @param {string} action
-  * @param {bigint} quoteQty
-  * @param {bigint | undefined} limitPrice
-  * @returns {FillSimulation}
-  */
+    /**
+    * @param {string} action
+    * @param {bigint} quoteQty
+    * @param {bigint | undefined} limitPrice
+    * @returns {FillSimulation}
+    */
     simulateFills(action: string, quoteQty: bigint, limitPrice?: bigint): FillSimulation;
-  /**
-  * @param {string} action
-  * @param {bigint} limitPrice
-  * @returns {QueuingSimulation}
-  */
+    /**
+    * @param {string} action
+    * @param {bigint} limitPrice
+    * @returns {QueuingSimulation}
+    */
     simulateQueuing(action: string, limitPrice: bigint): QueuingSimulation;
-  /**
-  * @returns {Array<Order>}
-  */
+    /**
+    * @returns {Array<Order>}
+    */
     loanOffers(): Array<Order>;
-  /**
-  * @returns {Array<Order>}
-  */
+    /**
+    * @returns {Array<Order>}
+    */
     loanRequests(): Array<Order>;
-  }
+    }
 "#;
