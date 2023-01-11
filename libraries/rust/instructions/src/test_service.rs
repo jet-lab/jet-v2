@@ -239,6 +239,91 @@ pub fn spl_swap_pool_balance(
     }
 }
 
+// todo - fixme: orca whirlpool initialization
+/// Create an Orca whirlpool
+pub fn orca_whirlpool_create(
+    payer: &Pubkey,
+    token_a: &Pubkey,
+    token_b: &Pubkey,
+    liquidity_level: u8,
+    price_threshold: u16,
+) -> Instruction {
+    let addrs = derive_swap_pool(token_a, token_b);
+    let accounts = jet_test_service::accounts::SplSwapPoolCreate {
+        payer: *payer,
+        mint_a: *token_a,
+        mint_b: *token_b,
+        info_a: derive_token_info(token_a),
+        info_b: derive_token_info(token_b),
+        pool_info: addrs.info,
+        pool_state: addrs.state,
+        pool_authority: addrs.authority,
+        pool_mint: addrs.mint,
+        pool_token_a: addrs.token_a_account,
+        pool_token_b: addrs.token_b_account,
+        pool_fees: addrs.fees,
+        swap_program: spl_token_swap::ID,
+        token_program: spl_token::ID,
+        system_program: system_program::ID,
+        rent: sysvar::rent::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::SplSwapPoolCreate {
+            params: SplSwapPoolCreateParams {
+                liquidity_level,
+                price_threshold,
+                nonce: addrs.nonce,
+            },
+        }
+        .data(),
+    }
+}
+
+/// Balance an Orca whirlpool
+pub fn orca_whirlpool_balance(
+    token_a: &Pubkey,
+    token_b: &Pubkey,
+    scratch_a: &Pubkey,
+    scratch_b: &Pubkey,
+    payer: &Pubkey,
+) -> Instruction {
+    let pool = derive_swap_pool(token_a, token_b);
+
+    let accounts = jet_test_service::accounts::SplSwapPoolBalance {
+        payer: *payer,
+        scratch_a: *scratch_a,
+        scratch_b: *scratch_b,
+        mint_a: *token_a,
+        mint_b: *token_b,
+        info_a: derive_token_info(token_a),
+        info_b: derive_token_info(token_b),
+        pyth_price_a: derive_pyth_price(token_a),
+        pyth_price_b: derive_pyth_price(token_b),
+        pool_info: pool.info,
+        pool_state: pool.state,
+        pool_authority: pool.authority,
+        pool_mint: pool.mint,
+        pool_token_a: pool.token_a_account,
+        pool_token_b: pool.token_b_account,
+        pool_fees: pool.fees,
+        swap_program: spl_token_swap::ID,
+        token_program: spl_token::ID,
+        system_program: system_program::ID,
+        rent: sysvar::rent::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::SplSwapPoolBalance {}.data(),
+    }
+}
+
 /// if the account is not initialized, invoke the instruction
 pub fn if_not_initialized(account_to_check: Pubkey, ix: Instruction) -> Instruction {
     let mut accounts = jet_test_service::accounts::IfNotInitialized {
