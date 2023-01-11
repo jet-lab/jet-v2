@@ -283,7 +283,6 @@ impl OrderbookModel {
             filled_quote_qty,
             unfilled_quote_qty,
             filled_base_qty,
-            unfilled_base_qty: fp32_div(unfilled_quote_qty, limit_price).unwrap(),
             matches: fills.len(),
             vwap,
             vwar,
@@ -351,7 +350,6 @@ pub struct FillSimulation {
     pub filled_quote_qty: u64,
     pub unfilled_quote_qty: u64,
     pub filled_base_qty: u64,
-    pub unfilled_base_qty: u64,
     pub matches: usize,
     pub vwap: f64,
     pub vwar: f64,
@@ -496,7 +494,6 @@ mod test {
         assert_eq!(sim.matches, 3);
         assert_eq!(sim.fills[0].base_qty, 2_000);
         assert_eq!(sim.unfilled_quote_qty, 1); // NOTE Rounding
-        assert_eq!(sim.unfilled_base_qty, 1); // NOTE Rounding
         assert_eq!(sim.vwap, 0.9777870913663035);
     }
 

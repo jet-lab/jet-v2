@@ -112,7 +112,7 @@ export type FillSimulation = {
     order_quote_qty: bigint,
     filled_quote_qty: bigint,
     unfilled_quote_qty: bigint,
-    unfilled_base_qty: bigint,
+    filled_base_qty: bigint,
     matches: usize,
     vwap: number,
     vwar: number,
