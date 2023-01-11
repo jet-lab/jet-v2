@@ -40,6 +40,7 @@ pub enum OrderType {
 pub struct TermLoanCreated {
     pub term_loan: Pubkey,
     pub authority: Pubkey,
+    pub payer: Pubkey,
     pub order_tag: u128,
     pub sequence_number: u64,
     pub market: Pubkey,
@@ -70,6 +71,7 @@ pub struct TermLoanFulfilled {
 pub struct TermDepositCreated {
     pub term_deposit: Pubkey,
     pub authority: Pubkey,
+    pub payer: Pubkey,
     pub order_tag: Option<u128>,
     pub sequence_number: u64,
     pub market: Pubkey,

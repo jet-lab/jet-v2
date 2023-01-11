@@ -24,13 +24,6 @@ export type JetFixedTerm = {
       "value": "b\"ticket_mint\""
     },
     {
-      "name": "CLAIM_TICKET",
-      "type": {
-        "defined": "&[u8]"
-      },
-      "value": "b\"claim_ticket\""
-    },
-    {
       "name": "CRANK_AUTHORIZATION",
       "type": {
         "defined": "&[u8]"
@@ -52,13 +45,6 @@ export type JetFixedTerm = {
       "value": "b\"ticket_collateral_notes\""
     },
     {
-      "name": "SPLIT_TICKET",
-      "type": {
-        "defined": "&[u8]"
-      },
-      "value": "b\"split_ticket\""
-    },
-    {
       "name": "EVENT_ADAPTER",
       "type": {
         "defined": "&[u8]"
@@ -71,6 +57,13 @@ export type JetFixedTerm = {
         "defined": "&[u8]"
       },
       "value": "b\"term_loan\""
+    },
+    {
+      "name": "TERM_DEPOSIT",
+      "type": {
+        "defined": "&[u8]"
+      },
+      "value": "b\"term_deposit\""
     },
     {
       "name": "ORDERBOOK_MARKET_STATE",
@@ -460,7 +453,7 @@ export type JetFixedTerm = {
         },
         {
           "name": "offset",
-          "type": "u64" // should be "u64"
+          "type": "u32"
         }
       ]
     },
@@ -559,6 +552,43 @@ export type JetFixedTerm = {
       "args": []
     },
     {
+      "name": "configureAutoRoll",
+      "docs": [
+        "Configure settings for rolling orders"
+      ],
+      "accounts": [
+        {
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The `MarginUser` account.",
+            "This account is specific to a particular fixed-term market"
+          ]
+        },
+        {
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "config",
+          "type": {
+            "defined": "AutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
       "name": "initializeMarginUser",
       "docs": [
         "Create a new borrower account"
@@ -585,7 +615,7 @@ export type JetFixedTerm = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The Boheader account"
+            "The fixed-term header account"
           ]
         },
         {
@@ -803,10 +833,6 @@ export type JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -934,7 +960,7 @@ export type JetFixedTerm = {
       ]
     },
     {
-      "name": "marginRedeemTicket",
+      "name": "marginRedeemDeposit",
       "docs": [
         "Redeem a staked ticket"
       ],
@@ -964,23 +990,39 @@ export type JetFixedTerm = {
           "name": "inner",
           "accounts": [
             {
-              "name": "ticket",
+              "name": "deposit",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "One of either `SplitTicket` or `ClaimTicket` for redemption"
+                "The tracking account for the deposit"
+              ]
+            },
+            {
+              "name": "owner",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The account that owns the deposit"
               ]
             },
             {
               "name": "authority",
-              "isMut": true,
+              "isMut": false,
               "isSigner": true,
               "docs": [
-                "The account that must sign to redeem the ticket"
+                "The authority that must sign to redeem the deposit"
               ]
             },
             {
-              "name": "claimantTokenAccount",
+              "name": "payer",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Receiver for the rent used to track the deposit"
+              ]
+            },
+            {
+              "name": "tokenAccount",
               "isMut": true,
               "isSigner": false,
               "docs": [
@@ -1096,7 +1138,7 @@ export type JetFixedTerm = {
               "isSigner": false,
               "docs": [
                 "where to settle tickets on match:",
-                "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+                "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
                 "- ticket token account to receive tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
@@ -1149,10 +1191,6 @@ export type JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -1250,11 +1288,19 @@ export type JetFixedTerm = {
           ]
         },
         {
-          "name": "payer",
+          "name": "sourceAuthority",
           "isMut": false,
           "isSigner": true,
           "docs": [
             "The signing authority for the source_account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The payer for the `TermLoan` to return rent to"
           ]
         },
         {
@@ -1264,6 +1310,27 @@ export type JetFixedTerm = {
           "docs": [
             "The token vault holding the underlying token of the ticket"
           ]
+        },
+        {
+          "name": "claims",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The token account representing claims for this margin user"
+          ]
+        },
+        {
+          "name": "claimsMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The token account representing claims for this margin user"
+          ]
+        },
+        {
+          "name": "market",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "tokenProgram",
@@ -1562,7 +1629,7 @@ export type JetFixedTerm = {
           "isSigner": false,
           "docs": [
             "where to settle tickets on match:",
-            "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
             "- ticket token account to receive tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
@@ -1696,9 +1763,7 @@ export type JetFixedTerm = {
         },
         {
           "name": "seedBytes",
-          "type": {
-            "vec": "bytes"
-          }
+          "type": "bytes"
         }
       ]
     },
@@ -1774,29 +1839,45 @@ export type JetFixedTerm = {
       ]
     },
     {
-      "name": "redeemTicket",
+      "name": "redeemDeposit",
       "docs": [
-        "Redeems staked tickets for their underlying value"
+        "Redeems deposit previously created by staking tickets for their underlying value"
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "One of either `SplitTicket` or `ClaimTicket` for redemption"
+            "The tracking account for the deposit"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The account that owns the deposit"
           ]
         },
         {
           "name": "authority",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true,
           "docs": [
-            "The account that must sign to redeem the ticket"
+            "The authority that must sign to redeem the deposit"
           ]
         },
         {
-          "name": "claimantTokenAccount",
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Receiver for the rent used to track the deposit"
+          ]
+        },
+        {
+          "name": "tokenAccount",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1837,7 +1918,7 @@ export type JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "claimTicket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1918,19 +1999,19 @@ export type JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ticket to transfer, either a ClaimTicket or SplitTicket"
+            "The deposit to transfer"
           ]
         },
         {
-          "name": "currentOwner",
+          "name": "owner",
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The current owner of the ticket"
+            "The current owner of the deposit"
           ]
         }
       ],
@@ -2031,7 +2112,7 @@ export type JetFixedTerm = {
   ],
   "accounts": [
     {
-      "name": "Market", // should be capitalized
+      "name": "market",
       "docs": [
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
@@ -2231,7 +2312,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "CrankAuthorization", // should be capitalized
+      "name": "crankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -2254,7 +2335,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "MarginUser", // should be capitalized
+      "name": "marginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -2332,12 +2413,30 @@ export type JetFixedTerm = {
             "type": {
               "defined": "Assets"
             }
+          },
+          {
+            "name": "borrowRollConfig",
+            "docs": [
+              "Settings for borrow order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
+          },
+          {
+            "name": "lendRollConfig",
+            "docs": [
+              "Settings for lend order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
           }
         ]
       }
     },
     {
-      "name": "TermLoan", // should be capitalized
+      "name": "termLoan",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2356,6 +2455,13 @@ export type JetFixedTerm = {
             "name": "market",
             "docs": [
               "The market where the term loan was created"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
@@ -2393,7 +2499,7 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "EventAdapterMetadata", // should be capitalized
+      "name": "eventAdapterMetadata",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2422,10 +2528,9 @@ export type JetFixedTerm = {
       }
     },
     {
-      "name": "ClaimTicket", // should be capitalized
+      "name": "termDeposit",
       "docs": [
-        "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
-        "This account is generated by the `StakeTickets` program instruction"
+        "A representation of an interest earning deposit, which can be redeemed after reaching maturity"
       ],
       "type": {
         "kind": "struct",
@@ -2433,97 +2538,56 @@ export type JetFixedTerm = {
           {
             "name": "owner",
             "docs": [
-              "The account registered as owner of this claim"
+              "The owner of the redeemable tokens",
+              "",
+              "This is usually a user's margin account, unless the deposit was created directly",
+              "with this program."
             ],
             "type": "publicKey"
           },
           {
             "name": "market",
             "docs": [
-              "The `TicketManager` this claim ticket was established under",
-              "Determines the asset this ticket will be redeemed for"
+              "The relevant market for this deposit"
             ],
             "type": "publicKey"
           },
           {
-            "name": "maturationTimestamp",
+            "name": "payer",
             "docs": [
-              "The slot after which this claim can be redeemed for the underlying value"
+              "Which account recieves the rent when this PDA is destructed"
             ],
-            "type": "i64"
+            "type": "publicKey"
           },
           {
-            "name": "redeemable",
+            "name": "sequenceNumber",
             "docs": [
-              "The number of tokens this claim  is redeemable for"
+              "The sequence number for this deposit, which serves as unique identifier for a",
+              "particular user's deposits."
             ],
             "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "SplitTicket", // should be capitalized
-      "docs": [
-        "A split ticket represents a claim of underlying tokens as the result of a lending action.",
-        "",
-        "The split ticket is generated when a user places a matched order with the `auto_stake` flag set to true.",
-        "By taking the difference between the matched base and quote quantities, the split ticket assigns principal and",
-        "interest values."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "docs": [
-              "The account registered as owner of this claim"
-            ],
-            "type": "publicKey"
           },
           {
-            "name": "market",
+            "name": "maturesAt",
             "docs": [
-              "The `TicketManager` this claim ticket was established under",
-              "Determines the asset this ticket will be redeemed for"
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "orderTag",
-            "docs": [
-              "The `OrderTag` associated with the creation of this struct"
-            ],
-            "type": {
-              "array": ["u8", 16] // should be ["u8", 16]
-            }
-          },
-          {
-            "name": "struckTimestamp",
-            "docs": [
-              "The time slot during which the ticket was struck"
+              "The timestamp at which this deposit has matured, and can be redeemed"
             ],
             "type": "i64"
           },
           {
-            "name": "maturationTimestamp",
+            "name": "amount",
             "docs": [
-              "The slot after which this claim can be redeemed for the underlying value"
+              "The number of tokens that can be reedeemed at maturity"
             ],
-            "type": "i64"
+            "type": "u64"
           },
           {
             "name": "principal",
             "docs": [
-              "The total number of principal tokens the ticket was struck for"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "interest",
-            "docs": [
-              "The total number of interest tokens struck for this ticket",
-              "same underlying asset as the principal token"
+              "The number tokens originally provided to create this deposit",
+              "",
+              "This is only accurate when using the auto-stake feature, which saves the original",
+              "token amount provided in the loan order."
             ],
             "type": "u64"
           }
@@ -2608,14 +2672,14 @@ export type JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqNo",
+            "name": "nextNewTermLoanSeqno",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqNo",
+            "name": "nextUnpaidTermLoanSeqno",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
@@ -2668,13 +2732,17 @@ export type JetFixedTerm = {
             "type": "u64"
           },
           {
-            "name": "nextNewDepositSeqNo",
-            "docs": ["sequence number for new deposits"],
+            "name": "nextDepositSeqno",
+            "docs": [
+              "The sequence number for the next deposit"
+            ],
             "type": "u64"
           },
           {
-            "name": "nextUnreedeemedDepositSeqNo",
-            "docs": ["sequence number for new deposits"],
+            "name": "nextUnredeemedDepositSeqno",
+            "docs": [
+              "The sequence number for the oldest deposit that has yet to be redeemed"
+            ],
             "type": "u64"
           },
           {
@@ -2708,6 +2776,21 @@ export type JetFixedTerm = {
                 64
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AutoRollConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limitPrice",
+            "docs": [
+              "the limit price at which orders may be placed by an authority"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -2786,6 +2869,13 @@ export type JetFixedTerm = {
               "Should the purchased tickets be automatically staked with the ticket program"
             ],
             "type": "bool"
+          },
+          {
+            "name": "autoRoll",
+            "docs": [
+              "Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll"
+            ],
+            "type": "bool"
           }
         ]
       }
@@ -2806,9 +2896,9 @@ export type JetFixedTerm = {
             "type": "u64"
           },
           {
-            "name": "ticketSeed",
+            "name": "seed",
             "docs": [
-              "uniqueness seed to allow a user to have many `ClaimTicket`s"
+              "uniqueness seed to allow a user to have many deposits"
             ],
             "type": "bytes"
           }
@@ -2834,6 +2924,20 @@ export type JetFixedTerm = {
           },
           {
             "name": "SellTickets"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketSide",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Borrowing"
+          },
+          {
+            "name": "Lending"
           }
         ]
       }
@@ -2877,7 +2981,7 @@ export type JetFixedTerm = {
             "name": "AutoStake",
             "fields": [
               {
-                "defined": "AnchorAccount<'info,SplitTicket,Mut>"
+                "defined": "AnchorAccount<'info,TermDeposit,Mut>"
               }
             ]
           },
@@ -2954,33 +3058,6 @@ export type JetFixedTerm = {
             "fields": [
               {
                 "defined": "OutInfo"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "TicketKind",
-      "docs": [
-        "Enum used for pattern matching a ticket deserialization"
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Claim",
-            "fields": [
-              {
-                "defined": "Account<'info,ClaimTicket>"
-              }
-            ]
-          },
-          {
-            "name": "Split",
-            "fields": [
-              {
-                "defined": "Account<'info,SplitTicket>"
               }
             ]
           }
@@ -3294,8 +3371,60 @@ export type JetFixedTerm = {
           "index": false
         },
         {
+          "name": "repaymentAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
           "name": "timestamp",
           "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "TermDepositCreated",
+      "fields": [
+        {
+          "name": "termDeposit",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderTag",
+          "type": {
+            "option": "u128"
+          },
+          "index": false
+        },
+        {
+          "name": "sequenceNumber",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "market",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "maturationTimestamp",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "principal",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
           "index": false
         }
       ]
@@ -3510,26 +3639,21 @@ export type JetFixedTerm = {
       ]
     },
     {
-      "name": "TicketRedeemed",
+      "name": "DepositRedeemed",
       "fields": [
         {
-          "name": "market",
+          "name": "deposit",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "ticketHolder",
+          "name": "depositHolder",
           "type": "publicKey",
           "index": false
         },
         {
           "name": "redeemedValue",
           "type": "u64",
-          "index": false
-        },
-        {
-          "name": "maturationTimestamp",
-          "type": "i64",
           "index": false
         },
         {
@@ -3560,10 +3684,10 @@ export type JetFixedTerm = {
       ]
     },
     {
-      "name": "TicketTransferred",
+      "name": "DepositTransferred",
       "fields": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "type": "publicKey",
           "index": false
         },
@@ -3683,193 +3807,208 @@ export type JetFixedTerm = {
     },
     {
       "code": 6020,
+      "name": "TermDepositHasWrongSequenceNumber",
+      "msg": "expected a term deposit with a different sequence number"
+    },
+    {
+      "code": 6021,
       "name": "OracleError",
       "msg": "there was a problem loading the price oracle"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "OrderNotFound",
       "msg": "id was not found in the user's open orders"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "OrderbookPaused",
       "msg": "Orderbook is not taking orders"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "OrderRejected",
       "msg": "aaob did not match or post the order. either posting is disabled or the order was too small"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "PriceMissing",
       "msg": "price could not be accessed from oracle"
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "TicketNotFromManager",
       "msg": "claim ticket is not from this manager"
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "TicketsPaused",
       "msg": "tickets are paused"
     },
     {
-      "code": 6027,
+      "code": 6028,
       "name": "UnauthorizedCaller",
       "msg": "this signer is not authorized to place a permissioned order"
     },
     {
-      "code": 6028,
+      "code": 6029,
       "name": "UserDoesNotOwnAccount",
       "msg": "this user does not own the user account"
     },
     {
-      "code": 6029,
+      "code": 6030,
       "name": "UserDoesNotOwnAdapter",
       "msg": "this adapter does not belong to the user"
     },
     {
-      "code": 6030,
+      "code": 6031,
       "name": "UserNotInMarket",
       "msg": "this user account is not associated with this fixed term market"
     },
     {
-      "code": 6031,
+      "code": 6032,
       "name": "WrongAdapter",
       "msg": "the wrong adapter account was passed to this instruction"
     },
     {
-      "code": 6032,
+      "code": 6033,
       "name": "WrongAsks",
       "msg": "asks account does not belong to this market"
     },
     {
-      "code": 6033,
+      "code": 6034,
       "name": "WrongAirspace",
       "msg": "the market is configured for a different airspace"
     },
     {
-      "code": 6034,
+      "code": 6035,
       "name": "WrongAirspaceAuthorization",
       "msg": "the signer is not authorized to perform this action in the current airspace"
     },
     {
-      "code": 6035,
+      "code": 6036,
       "name": "WrongBids",
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6036,
+      "code": 6037,
       "name": "WrongMarket",
       "msg": "adapter does not belong to given market"
     },
     {
-      "code": 6037,
+      "code": 6038,
       "name": "WrongCrankAuthority",
       "msg": "wrong authority for this crank instruction"
     },
     {
-      "code": 6038,
+      "code": 6039,
       "name": "WrongEventQueue",
       "msg": "event queue account does not belong to this market"
     },
     {
-      "code": 6039,
+      "code": 6040,
       "name": "WrongMarketState",
       "msg": "this market state is not associated with this market"
     },
     {
-      "code": 6040,
+      "code": 6041,
       "name": "WrongTicketManager",
       "msg": "wrong TicketManager account provided"
     },
     {
-      "code": 6041,
+      "code": 6042,
       "name": "DoesNotOwnMarket",
       "msg": "this market owner does not own this market"
     },
     {
-      "code": 6042,
+      "code": 6043,
       "name": "WrongClaimAccount",
       "msg": "the wrong account was provided for the token account that represents a user's claims"
     },
     {
-      "code": 6043,
+      "code": 6044,
       "name": "WrongTicketCollateralAccount",
       "msg": "the wrong account was provided for the token account that represents a user's collateral"
     },
     {
-      "code": 6044,
+      "code": 6045,
       "name": "WrongClaimMint",
       "msg": "the wrong account was provided for the claims token mint"
     },
     {
-      "code": 6045,
+      "code": 6046,
       "name": "WrongCollateralMint",
       "msg": "the wrong account was provided for the collateral token mint"
     },
     {
-      "code": 6046,
+      "code": 6047,
       "name": "WrongFeeDestination",
       "msg": "wrong fee destination"
     },
     {
-      "code": 6047,
+      "code": 6048,
       "name": "WrongOracle",
       "msg": "wrong oracle address was sent to instruction"
     },
     {
-      "code": 6048,
+      "code": 6049,
       "name": "WrongMarginUser",
       "msg": "wrong margin user account address was sent to instruction"
     },
     {
-      "code": 6049,
+      "code": 6050,
       "name": "WrongMarginUserAuthority",
       "msg": "wrong authority for the margin user account address was sent to instruction"
     },
     {
-      "code": 6050,
+      "code": 6051,
       "name": "WrongProgramAuthority",
       "msg": "incorrect authority account"
     },
     {
-      "code": 6051,
+      "code": 6052,
       "name": "WrongTicketMint",
       "msg": "not the ticket mint for this fixed term market"
     },
     {
-      "code": 6052,
+      "code": 6053,
       "name": "WrongTicketSettlementAccount",
       "msg": "wrong ticket settlement account"
     },
     {
-      "code": 6053,
+      "code": 6054,
       "name": "WrongUnderlyingSettlementAccount",
       "msg": "wrong underlying settlement account"
     },
     {
-      "code": 6054,
+      "code": 6055,
       "name": "WrongUnderlyingTokenMint",
       "msg": "wrong underlying token mint for this fixed term market"
     },
     {
-      "code": 6055,
+      "code": 6056,
       "name": "WrongUserAccount",
       "msg": "wrong user account address was sent to instruction"
     },
     {
-      "code": 6056,
+      "code": 6057,
       "name": "WrongVault",
       "msg": "wrong vault address was sent to instruction"
     },
     {
-      "code": 6057,
+      "code": 6058,
       "name": "ZeroDivision",
       "msg": "attempted to divide with zero"
+    },
+    {
+      "code": 6059,
+      "name": "FailedToPushEvent",
+      "msg": "failed to add event to the queue"
+    },
+    {
+      "code": 6060,
+      "name": "InvalidAutoRollConfig",
+      "msg": "invalid auto roll configuration"
     }
   ]
 };
@@ -3900,13 +4039,6 @@ export const IDL: JetFixedTerm = {
       "value": "b\"ticket_mint\""
     },
     {
-      "name": "CLAIM_TICKET",
-      "type": {
-        "defined": "&[u8]"
-      },
-      "value": "b\"claim_ticket\""
-    },
-    {
       "name": "CRANK_AUTHORIZATION",
       "type": {
         "defined": "&[u8]"
@@ -3928,13 +4060,6 @@ export const IDL: JetFixedTerm = {
       "value": "b\"ticket_collateral_notes\""
     },
     {
-      "name": "SPLIT_TICKET",
-      "type": {
-        "defined": "&[u8]"
-      },
-      "value": "b\"split_ticket\""
-    },
-    {
       "name": "EVENT_ADAPTER",
       "type": {
         "defined": "&[u8]"
@@ -3947,6 +4072,13 @@ export const IDL: JetFixedTerm = {
         "defined": "&[u8]"
       },
       "value": "b\"term_loan\""
+    },
+    {
+      "name": "TERM_DEPOSIT",
+      "type": {
+        "defined": "&[u8]"
+      },
+      "value": "b\"term_deposit\""
     },
     {
       "name": "ORDERBOOK_MARKET_STATE",
@@ -4336,7 +4468,7 @@ export const IDL: JetFixedTerm = {
         },
         {
           "name": "offset",
-          "type": "u64" // should be "u64"
+          "type": "u32"
         }
       ]
     },
@@ -4435,6 +4567,43 @@ export const IDL: JetFixedTerm = {
       "args": []
     },
     {
+      "name": "configureAutoRoll",
+      "docs": [
+        "Configure settings for rolling orders"
+      ],
+      "accounts": [
+        {
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The `MarginUser` account.",
+            "This account is specific to a particular fixed-term market"
+          ]
+        },
+        {
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "config",
+          "type": {
+            "defined": "AutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
       "name": "initializeMarginUser",
       "docs": [
         "Create a new borrower account"
@@ -4461,7 +4630,7 @@ export const IDL: JetFixedTerm = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The Boheader account"
+            "The fixed-term header account"
           ]
         },
         {
@@ -4679,10 +4848,6 @@ export const IDL: JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -4810,7 +4975,7 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
-      "name": "marginRedeemTicket",
+      "name": "marginRedeemDeposit",
       "docs": [
         "Redeem a staked ticket"
       ],
@@ -4840,23 +5005,39 @@ export const IDL: JetFixedTerm = {
           "name": "inner",
           "accounts": [
             {
-              "name": "ticket",
+              "name": "deposit",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "One of either `SplitTicket` or `ClaimTicket` for redemption"
+                "The tracking account for the deposit"
+              ]
+            },
+            {
+              "name": "owner",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The account that owns the deposit"
               ]
             },
             {
               "name": "authority",
-              "isMut": true,
+              "isMut": false,
               "isSigner": true,
               "docs": [
-                "The account that must sign to redeem the ticket"
+                "The authority that must sign to redeem the deposit"
               ]
             },
             {
-              "name": "claimantTokenAccount",
+              "name": "payer",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Receiver for the rent used to track the deposit"
+              ]
+            },
+            {
+              "name": "tokenAccount",
               "isMut": true,
               "isSigner": false,
               "docs": [
@@ -4972,7 +5153,7 @@ export const IDL: JetFixedTerm = {
               "isSigner": false,
               "docs": [
                 "where to settle tickets on match:",
-                "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+                "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
                 "- ticket token account to receive tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
@@ -5025,10 +5206,6 @@ export const IDL: JetFixedTerm = {
           "type": {
             "defined": "OrderParams"
           }
-        },
-        {
-          "name": "seed",
-          "type": "bytes"
         }
       ]
     },
@@ -5126,11 +5303,19 @@ export const IDL: JetFixedTerm = {
           ]
         },
         {
-          "name": "payer",
+          "name": "sourceAuthority",
           "isMut": false,
           "isSigner": true,
           "docs": [
             "The signing authority for the source_account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The payer for the `TermLoan` to return rent to"
           ]
         },
         {
@@ -5140,6 +5325,27 @@ export const IDL: JetFixedTerm = {
           "docs": [
             "The token vault holding the underlying token of the ticket"
           ]
+        },
+        {
+          "name": "claims",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The token account representing claims for this margin user"
+          ]
+        },
+        {
+          "name": "claimsMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The token account representing claims for this margin user"
+          ]
+        },
+        {
+          "name": "market",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "tokenProgram",
@@ -5438,7 +5644,7 @@ export const IDL: JetFixedTerm = {
           "isSigner": false,
           "docs": [
             "where to settle tickets on match:",
-            "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
             "- ticket token account to receive tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
@@ -5572,9 +5778,7 @@ export const IDL: JetFixedTerm = {
         },
         {
           "name": "seedBytes",
-          "type": {
-            "vec": "bytes"
-          }
+          "type": "bytes"
         }
       ]
     },
@@ -5650,29 +5854,45 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
-      "name": "redeemTicket",
+      "name": "redeemDeposit",
       "docs": [
-        "Redeems staked tickets for their underlying value"
+        "Redeems deposit previously created by staking tickets for their underlying value"
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "One of either `SplitTicket` or `ClaimTicket` for redemption"
+            "The tracking account for the deposit"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The account that owns the deposit"
           ]
         },
         {
           "name": "authority",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true,
           "docs": [
-            "The account that must sign to redeem the ticket"
+            "The authority that must sign to redeem the deposit"
           ]
         },
         {
-          "name": "claimantTokenAccount",
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Receiver for the rent used to track the deposit"
+          ]
+        },
+        {
+          "name": "tokenAccount",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -5713,7 +5933,7 @@ export const IDL: JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "claimTicket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -5794,19 +6014,19 @@ export const IDL: JetFixedTerm = {
       ],
       "accounts": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ticket to transfer, either a ClaimTicket or SplitTicket"
+            "The deposit to transfer"
           ]
         },
         {
-          "name": "currentOwner",
+          "name": "owner",
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The current owner of the ticket"
+            "The current owner of the deposit"
           ]
         }
       ],
@@ -5907,7 +6127,7 @@ export const IDL: JetFixedTerm = {
   ],
   "accounts": [
     {
-      "name": "Market", // should be capitalized
+      "name": "market",
       "docs": [
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
@@ -6107,7 +6327,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "CrankAuthorization", // should be capitalized
+      "name": "crankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -6130,7 +6350,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "MarginUser", // should be capitalized
+      "name": "marginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -6208,12 +6428,30 @@ export const IDL: JetFixedTerm = {
             "type": {
               "defined": "Assets"
             }
+          },
+          {
+            "name": "borrowRollConfig",
+            "docs": [
+              "Settings for borrow order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
+          },
+          {
+            "name": "lendRollConfig",
+            "docs": [
+              "Settings for lend order \"auto rolling\""
+            ],
+            "type": {
+              "defined": "AutoRollConfig"
+            }
           }
         ]
       }
     },
     {
-      "name": "TermLoan", // should be capitalized
+      "name": "termLoan",
       "type": {
         "kind": "struct",
         "fields": [
@@ -6232,6 +6470,13 @@ export const IDL: JetFixedTerm = {
             "name": "market",
             "docs": [
               "The market where the term loan was created"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "payer",
+            "docs": [
+              "Which account recieves the rent when this PDA is destructed"
             ],
             "type": "publicKey"
           },
@@ -6269,7 +6514,7 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "EventAdapterMetadata", // should be capitalized
+      "name": "eventAdapterMetadata",
       "type": {
         "kind": "struct",
         "fields": [
@@ -6298,10 +6543,9 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      "name": "ClaimTicket", // should be capitalized
+      "name": "termDeposit",
       "docs": [
-        "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
-        "This account is generated by the `StakeTickets` program instruction"
+        "A representation of an interest earning deposit, which can be redeemed after reaching maturity"
       ],
       "type": {
         "kind": "struct",
@@ -6309,97 +6553,56 @@ export const IDL: JetFixedTerm = {
           {
             "name": "owner",
             "docs": [
-              "The account registered as owner of this claim"
+              "The owner of the redeemable tokens",
+              "",
+              "This is usually a user's margin account, unless the deposit was created directly",
+              "with this program."
             ],
             "type": "publicKey"
           },
           {
             "name": "market",
             "docs": [
-              "The `TicketManager` this claim ticket was established under",
-              "Determines the asset this ticket will be redeemed for"
+              "The relevant market for this deposit"
             ],
             "type": "publicKey"
           },
           {
-            "name": "maturationTimestamp",
+            "name": "payer",
             "docs": [
-              "The slot after which this claim can be redeemed for the underlying value"
+              "Which account recieves the rent when this PDA is destructed"
             ],
-            "type": "i64"
+            "type": "publicKey"
           },
           {
-            "name": "redeemable",
+            "name": "sequenceNumber",
             "docs": [
-              "The number of tokens this claim  is redeemable for"
+              "The sequence number for this deposit, which serves as unique identifier for a",
+              "particular user's deposits."
             ],
             "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "SplitTicket", // should be capitalized
-      "docs": [
-        "A split ticket represents a claim of underlying tokens as the result of a lending action.",
-        "",
-        "The split ticket is generated when a user places a matched order with the `auto_stake` flag set to true.",
-        "By taking the difference between the matched base and quote quantities, the split ticket assigns principal and",
-        "interest values."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "docs": [
-              "The account registered as owner of this claim"
-            ],
-            "type": "publicKey"
           },
           {
-            "name": "market",
+            "name": "maturesAt",
             "docs": [
-              "The `TicketManager` this claim ticket was established under",
-              "Determines the asset this ticket will be redeemed for"
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "orderTag",
-            "docs": [
-              "The `OrderTag` associated with the creation of this struct"
-            ],
-            "type": {
-              "array": ["u8", 16] // should be ["u8", 16]
-            }
-          },
-          {
-            "name": "struckTimestamp",
-            "docs": [
-              "The time slot during which the ticket was struck"
+              "The timestamp at which this deposit has matured, and can be redeemed"
             ],
             "type": "i64"
           },
           {
-            "name": "maturationTimestamp",
+            "name": "amount",
             "docs": [
-              "The slot after which this claim can be redeemed for the underlying value"
+              "The number of tokens that can be reedeemed at maturity"
             ],
-            "type": "i64"
+            "type": "u64"
           },
           {
             "name": "principal",
             "docs": [
-              "The total number of principal tokens the ticket was struck for"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "interest",
-            "docs": [
-              "The total number of interest tokens struck for this ticket",
-              "same underlying asset as the principal token"
+              "The number tokens originally provided to create this deposit",
+              "",
+              "This is only accurate when using the auto-stake feature, which saves the original",
+              "token amount provided in the loan order."
             ],
             "type": "u64"
           }
@@ -6484,14 +6687,14 @@ export const IDL: JetFixedTerm = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewTermLoanSeqNo",
+            "name": "nextNewTermLoanSeqno",
             "docs": [
               "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidTermLoanSeqNo",
+            "name": "nextUnpaidTermLoanSeqno",
             "docs": [
               "The sequence number of the next term loan to be paid"
             ],
@@ -6544,13 +6747,17 @@ export const IDL: JetFixedTerm = {
             "type": "u64"
           },
           {
-            "name": "nextNewDepositSeqNo",
-            "docs": ["sequence number for new deposits"],
+            "name": "nextDepositSeqno",
+            "docs": [
+              "The sequence number for the next deposit"
+            ],
             "type": "u64"
           },
           {
-            "name": "nextUnreedeemedDepositSeqNo",
-            "docs": ["sequence number for new deposits"],
+            "name": "nextUnredeemedDepositSeqno",
+            "docs": [
+              "The sequence number for the oldest deposit that has yet to be redeemed"
+            ],
             "type": "u64"
           },
           {
@@ -6584,6 +6791,21 @@ export const IDL: JetFixedTerm = {
                 64
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AutoRollConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limitPrice",
+            "docs": [
+              "the limit price at which orders may be placed by an authority"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -6662,6 +6884,13 @@ export const IDL: JetFixedTerm = {
               "Should the purchased tickets be automatically staked with the ticket program"
             ],
             "type": "bool"
+          },
+          {
+            "name": "autoRoll",
+            "docs": [
+              "Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll"
+            ],
+            "type": "bool"
           }
         ]
       }
@@ -6682,9 +6911,9 @@ export const IDL: JetFixedTerm = {
             "type": "u64"
           },
           {
-            "name": "ticketSeed",
+            "name": "seed",
             "docs": [
-              "uniqueness seed to allow a user to have many `ClaimTicket`s"
+              "uniqueness seed to allow a user to have many deposits"
             ],
             "type": "bytes"
           }
@@ -6710,6 +6939,20 @@ export const IDL: JetFixedTerm = {
           },
           {
             "name": "SellTickets"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketSide",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Borrowing"
+          },
+          {
+            "name": "Lending"
           }
         ]
       }
@@ -6753,7 +6996,7 @@ export const IDL: JetFixedTerm = {
             "name": "AutoStake",
             "fields": [
               {
-                "defined": "AnchorAccount<'info,SplitTicket,Mut>"
+                "defined": "AnchorAccount<'info,TermDeposit,Mut>"
               }
             ]
           },
@@ -6830,33 +7073,6 @@ export const IDL: JetFixedTerm = {
             "fields": [
               {
                 "defined": "OutInfo"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "TicketKind",
-      "docs": [
-        "Enum used for pattern matching a ticket deserialization"
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Claim",
-            "fields": [
-              {
-                "defined": "Account<'info,ClaimTicket>"
-              }
-            ]
-          },
-          {
-            "name": "Split",
-            "fields": [
-              {
-                "defined": "Account<'info,SplitTicket>"
               }
             ]
           }
@@ -7170,8 +7386,60 @@ export const IDL: JetFixedTerm = {
           "index": false
         },
         {
+          "name": "repaymentAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
           "name": "timestamp",
           "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "TermDepositCreated",
+      "fields": [
+        {
+          "name": "termDeposit",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderTag",
+          "type": {
+            "option": "u128"
+          },
+          "index": false
+        },
+        {
+          "name": "sequenceNumber",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "market",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "maturationTimestamp",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "principal",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
           "index": false
         }
       ]
@@ -7386,26 +7654,21 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
-      "name": "TicketRedeemed",
+      "name": "DepositRedeemed",
       "fields": [
         {
-          "name": "market",
+          "name": "deposit",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "ticketHolder",
+          "name": "depositHolder",
           "type": "publicKey",
           "index": false
         },
         {
           "name": "redeemedValue",
           "type": "u64",
-          "index": false
-        },
-        {
-          "name": "maturationTimestamp",
-          "type": "i64",
           "index": false
         },
         {
@@ -7436,10 +7699,10 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
-      "name": "TicketTransferred",
+      "name": "DepositTransferred",
       "fields": [
         {
-          "name": "ticket",
+          "name": "deposit",
           "type": "publicKey",
           "index": false
         },
@@ -7559,193 +7822,208 @@ export const IDL: JetFixedTerm = {
     },
     {
       "code": 6020,
+      "name": "TermDepositHasWrongSequenceNumber",
+      "msg": "expected a term deposit with a different sequence number"
+    },
+    {
+      "code": 6021,
       "name": "OracleError",
       "msg": "there was a problem loading the price oracle"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "OrderNotFound",
       "msg": "id was not found in the user's open orders"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "OrderbookPaused",
       "msg": "Orderbook is not taking orders"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "OrderRejected",
       "msg": "aaob did not match or post the order. either posting is disabled or the order was too small"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "PriceMissing",
       "msg": "price could not be accessed from oracle"
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "TicketNotFromManager",
       "msg": "claim ticket is not from this manager"
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "TicketsPaused",
       "msg": "tickets are paused"
     },
     {
-      "code": 6027,
+      "code": 6028,
       "name": "UnauthorizedCaller",
       "msg": "this signer is not authorized to place a permissioned order"
     },
     {
-      "code": 6028,
+      "code": 6029,
       "name": "UserDoesNotOwnAccount",
       "msg": "this user does not own the user account"
     },
     {
-      "code": 6029,
+      "code": 6030,
       "name": "UserDoesNotOwnAdapter",
       "msg": "this adapter does not belong to the user"
     },
     {
-      "code": 6030,
+      "code": 6031,
       "name": "UserNotInMarket",
       "msg": "this user account is not associated with this fixed term market"
     },
     {
-      "code": 6031,
+      "code": 6032,
       "name": "WrongAdapter",
       "msg": "the wrong adapter account was passed to this instruction"
     },
     {
-      "code": 6032,
+      "code": 6033,
       "name": "WrongAsks",
       "msg": "asks account does not belong to this market"
     },
     {
-      "code": 6033,
+      "code": 6034,
       "name": "WrongAirspace",
       "msg": "the market is configured for a different airspace"
     },
     {
-      "code": 6034,
+      "code": 6035,
       "name": "WrongAirspaceAuthorization",
       "msg": "the signer is not authorized to perform this action in the current airspace"
     },
     {
-      "code": 6035,
+      "code": 6036,
       "name": "WrongBids",
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6036,
+      "code": 6037,
       "name": "WrongMarket",
       "msg": "adapter does not belong to given market"
     },
     {
-      "code": 6037,
+      "code": 6038,
       "name": "WrongCrankAuthority",
       "msg": "wrong authority for this crank instruction"
     },
     {
-      "code": 6038,
+      "code": 6039,
       "name": "WrongEventQueue",
       "msg": "event queue account does not belong to this market"
     },
     {
-      "code": 6039,
+      "code": 6040,
       "name": "WrongMarketState",
       "msg": "this market state is not associated with this market"
     },
     {
-      "code": 6040,
+      "code": 6041,
       "name": "WrongTicketManager",
       "msg": "wrong TicketManager account provided"
     },
     {
-      "code": 6041,
+      "code": 6042,
       "name": "DoesNotOwnMarket",
       "msg": "this market owner does not own this market"
     },
     {
-      "code": 6042,
+      "code": 6043,
       "name": "WrongClaimAccount",
       "msg": "the wrong account was provided for the token account that represents a user's claims"
     },
     {
-      "code": 6043,
+      "code": 6044,
       "name": "WrongTicketCollateralAccount",
       "msg": "the wrong account was provided for the token account that represents a user's collateral"
     },
     {
-      "code": 6044,
+      "code": 6045,
       "name": "WrongClaimMint",
       "msg": "the wrong account was provided for the claims token mint"
     },
     {
-      "code": 6045,
+      "code": 6046,
       "name": "WrongCollateralMint",
       "msg": "the wrong account was provided for the collateral token mint"
     },
     {
-      "code": 6046,
+      "code": 6047,
       "name": "WrongFeeDestination",
       "msg": "wrong fee destination"
     },
     {
-      "code": 6047,
+      "code": 6048,
       "name": "WrongOracle",
       "msg": "wrong oracle address was sent to instruction"
     },
     {
-      "code": 6048,
+      "code": 6049,
       "name": "WrongMarginUser",
       "msg": "wrong margin user account address was sent to instruction"
     },
     {
-      "code": 6049,
+      "code": 6050,
       "name": "WrongMarginUserAuthority",
       "msg": "wrong authority for the margin user account address was sent to instruction"
     },
     {
-      "code": 6050,
+      "code": 6051,
       "name": "WrongProgramAuthority",
       "msg": "incorrect authority account"
     },
     {
-      "code": 6051,
+      "code": 6052,
       "name": "WrongTicketMint",
       "msg": "not the ticket mint for this fixed term market"
     },
     {
-      "code": 6052,
+      "code": 6053,
       "name": "WrongTicketSettlementAccount",
       "msg": "wrong ticket settlement account"
     },
     {
-      "code": 6053,
+      "code": 6054,
       "name": "WrongUnderlyingSettlementAccount",
       "msg": "wrong underlying settlement account"
     },
     {
-      "code": 6054,
+      "code": 6055,
       "name": "WrongUnderlyingTokenMint",
       "msg": "wrong underlying token mint for this fixed term market"
     },
     {
-      "code": 6055,
+      "code": 6056,
       "name": "WrongUserAccount",
       "msg": "wrong user account address was sent to instruction"
     },
     {
-      "code": 6056,
+      "code": 6057,
       "name": "WrongVault",
       "msg": "wrong vault address was sent to instruction"
     },
     {
-      "code": 6057,
+      "code": 6058,
       "name": "ZeroDivision",
       "msg": "attempted to divide with zero"
+    },
+    {
+      "code": 6059,
+      "name": "FailedToPushEvent",
+      "msg": "failed to add event to the queue"
+    },
+    {
+      "code": 6060,
+      "name": "InvalidAutoRollConfig",
+      "msg": "invalid auto roll configuration"
     }
   ]
 };

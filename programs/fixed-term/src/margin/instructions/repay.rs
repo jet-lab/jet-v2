@@ -1,24 +1,28 @@
 use std::cmp::min;
 
 use anchor_lang::{prelude::*, AccountsClose};
-use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
+use anchor_spl::token::{transfer, Token, Transfer};
 use jet_program_common::traits::TrySubAssign;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
+    control::state::Market,
     events::{TermLoanFulfilled, TermLoanRepay},
     margin::state::{MarginUser, TermLoan},
+    market_token_manager::MarketTokenManager,
     FixedTermErrorCode,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct Repay<'info> {
     /// The account tracking information related to this particular user
-    #[account(mut)]
+    #[account(mut, has_one = claims @ FixedTermErrorCode::WrongClaimAccount)]
     pub margin_user: Account<'info, MarginUser>,
 
     #[account(
         mut,
         has_one = margin_user @ FixedTermErrorCode::UserNotInMarket,
+        has_one = payer,
         constraint = term_loan.sequence_number
             == margin_user.debt.next_term_loan_to_repay().unwrap()
             @ FixedTermErrorCode::TermLoanHasWrongSequenceNumber
@@ -32,14 +36,32 @@ pub struct Repay<'info> {
 
     /// The token account to deposit tokens from
     #[account(mut)]
-    pub source: Account<'info, TokenAccount>,
+    pub source: AccountInfo<'info>,
 
     /// The signing authority for the source_account
-    pub payer: Signer<'info>,
+    pub source_authority: Signer<'info>,
+
+    /// The payer for the `TermLoan` to return rent to
+    #[account(mut)]
+    pub payer: AccountInfo<'info>,
 
     /// The token vault holding the underlying token of the ticket
     #[account(mut)]
-    pub underlying_token_vault: Account<'info, TokenAccount>,
+    pub underlying_token_vault: AccountInfo<'info>,
+
+    /// The token account representing claims for this margin user
+    #[account(mut)]
+    pub claims: AccountInfo<'info>,
+
+    /// The token account representing claims for this margin user
+    #[account(mut)]
+    pub claims_mint: AccountInfo<'info>,
+
+    #[account(
+        has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
+        has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
+    )]
+    pub market: AccountLoader<'info, Market>,
 
     /// SPL token program
     pub token_program: Program<'info, Token>,
@@ -52,7 +74,7 @@ impl<'info> Repay<'info> {
             Transfer {
                 from: self.source.to_account_info(),
                 to: self.underlying_token_vault.to_account_info(),
-                authority: self.payer.to_account_info(),
+                authority: self.source_authority.to_account_info(),
             },
         )
     }
@@ -61,6 +83,7 @@ impl<'info> Repay<'info> {
 pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
     let amount = min(amount, ctx.accounts.term_loan.balance);
     transfer(ctx.accounts.transfer_context(), amount)?;
+    ctx.burn_notes(&ctx.accounts.claims_mint, &ctx.accounts.claims, amount)?;
 
     let term_loan = &mut ctx.accounts.term_loan;
     let user = &mut ctx.accounts.margin_user;

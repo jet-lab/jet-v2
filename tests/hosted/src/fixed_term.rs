@@ -14,7 +14,10 @@ use async_trait::async_trait;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::state::{MarginUser, TermLoan},
+    margin::{
+        instructions::MarketSide,
+        state::{AutoRollConfig, MarginUser, TermLoan},
+    },
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
@@ -71,8 +74,8 @@ pub const MARKET_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
-pub const BORROW_TENOR: i64 = 3;
-pub const LEND_TENOR: i64 = 5; // in seconds
+pub const BORROW_TENOR: u64 = 3;
+pub const LEND_TENOR: u64 = 5; // in seconds
 pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 
@@ -496,6 +499,7 @@ impl TestManager {
     }
 }
 
+#[derive(Clone)]
 pub struct OwnedBook {
     bids: Vec<u8>,
     asks: Vec<u8>,
@@ -513,6 +517,19 @@ impl OwnedBook {
     }
     pub fn asks(&mut self) -> Result<Vec<LeafNode>> {
         Ok(self.inner()?.asks.into_iter(true).collect())
+    }
+
+    pub fn asks_order_callback(&mut self, pos: usize) -> Result<CallbackInfo> {
+        let key = self.asks()?[pos].key;
+        let handle = self.inner()?.asks.find_by_key(key).unwrap();
+
+        Ok(*self.inner()?.asks.get_callback_info(handle))
+    }
+    pub fn bids_order_callback(&mut self, pos: usize) -> Result<CallbackInfo> {
+        let key = self.bids()?[pos].key;
+        let handle = self.inner()?.bids.find_by_key(key).unwrap();
+
+        Ok(*self.inner()?.bids.get_callback_info(handle))
     }
 }
 
@@ -795,9 +812,31 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 
+    pub async fn set_roll_config(
+        &self,
+        side: MarketSide,
+        config: AutoRollConfig,
+    ) -> Result<Signature> {
+        let set_config =
+            self.manager
+                .ix_builder
+                .configure_auto_roll(self.proxy.pubkey(), side, config);
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
+            .await
+    }
+
     pub async fn repay(&self, term_loan_seqno: u64, amount: u64) -> Result<Signature> {
+        // we are not sure if the user or a crank paid for the rent, so we just fetch the data
+        let payer = {
+            let loan_key = self.term_loan_key(&term_loan_seqno.to_le_bytes());
+            let loan: TermLoan = self.load_anchor(&loan_key).await?;
+
+            loan.payer
+        };
         let repay = self.manager.ix_builder.margin_repay(
             &self.proxy.pubkey(),
+            &payer,
             &self.proxy.pubkey(),
             &term_loan_seqno.to_le_bytes(),
             &(term_loan_seqno + 1).to_le_bytes(),
@@ -807,6 +846,17 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(repay)], &[&self.owner])
             .await
+    }
+
+    pub async fn load_anchor<T: AccountDeserialize>(&self, key: &Pubkey) -> Result<T> {
+        let data = self
+            .client
+            .get_account(key)
+            .await?
+            .ok_or_else(|| anyhow::Error::msg("failed to fetch key: [key]"))?
+            .data;
+
+        T::try_deserialize(&mut data.as_slice()).map_err(anyhow::Error::from)
     }
 }
 
@@ -944,6 +994,7 @@ impl OrderAmount {
             post_only: false,
             post_allowed: true,
             auto_stake: true,
+            auto_roll: false,
         }
     }
 }

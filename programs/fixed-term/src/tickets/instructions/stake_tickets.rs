@@ -86,7 +86,7 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
         amount,
     )?;
 
-    let matures_at = Clock::get()?.unix_timestamp + ctx.accounts.market.load()?.lend_tenor;
+    let matures_at = Clock::get()?.unix_timestamp + ctx.accounts.market.load()?.lend_tenor as i64;
 
     // Mint a deposit for their burned tokens
     *ctx.accounts.deposit = TermDeposit {
@@ -94,6 +94,7 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
         sequence_number: 0,
         owner: ctx.accounts.ticket_holder.key(),
         market: ctx.accounts.market.key(),
+        payer: ctx.accounts.payer.key(),
         amount: params.amount,
         principal: params.amount,
     };
@@ -106,6 +107,7 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
     emit!(TermDepositCreated {
         term_deposit: ctx.accounts.deposit.key(),
         authority: ctx.accounts.ticket_holder.key(),
+        payer: ctx.accounts.payer.key(),
         order_tag: None,
         sequence_number: ctx.accounts.deposit.sequence_number,
         market: ctx.accounts.deposit.market,

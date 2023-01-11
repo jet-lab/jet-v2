@@ -36,7 +36,7 @@ pub struct TransferDeposit<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The authority for the source account
-    pub source_owner: Signer<'info>,
+    pub source_owner: AccountInfo<'info>,
 
     /// The source account to transfer tokens from
     #[account(mut)]

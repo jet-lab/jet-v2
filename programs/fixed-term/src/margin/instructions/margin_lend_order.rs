@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::MarginUser,
+    margin::state::{AutoRollConfig, MarginUser},
     market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::lend_order::*,
@@ -38,6 +38,28 @@ pub struct MarginLendOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
+fn order_flags(user: &Account<MarginUser>, params: &OrderParams) -> Result<CallbackFlags> {
+    let auto_roll = if params.auto_roll {
+        if user.borrow_roll_config == AutoRollConfig::default() {
+            msg!(
+                "Auto roll settings have not been configured for margin user [{}]",
+                user.key()
+            );
+            return err!(FixedTermErrorCode::InvalidAutoRollConfig);
+        }
+        CallbackFlags::AUTO_ROLL
+    } else {
+        CallbackFlags::default()
+    };
+    let auto_stake = if params.auto_stake {
+        CallbackFlags::AUTO_STAKE
+    } else {
+        CallbackFlags::empty()
+    };
+
+    Ok(CallbackFlags::MARGIN | auto_roll | auto_stake)
+}
+
 pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
     let user = &mut ctx.accounts.margin_user;
 
@@ -51,12 +73,7 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()>
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::MARGIN
-            | if params.auto_stake {
-                CallbackFlags::AUTO_STAKE
-            } else {
-                CallbackFlags::empty()
-            },
+        order_flags(user, &params)?,
     )?;
     let staked = ctx.accounts.inner.lend(
         user.key(),

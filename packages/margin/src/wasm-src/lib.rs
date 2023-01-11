@@ -1,4 +1,7 @@
-pub mod orderbook;
+pub mod bindings;
+mod core;
+
+pub mod orderbook; // TODO remove
 
 use wasm_bindgen::prelude::*;
 

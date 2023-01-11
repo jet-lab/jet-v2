@@ -99,9 +99,9 @@ fn handle_fill<'info>(
 
     match maker_side {
         Side::Bid => {
-            let maturation_timestamp = fill_timestamp.safe_add(market.load()?.lend_tenor)?;
+            let maturation_timestamp = fill_timestamp.safe_add(market.load()?.lend_tenor as i64)?;
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                let matures_at = fill_timestamp.safe_add(market.load()?.lend_tenor)?;
+                let matures_at = fill_timestamp.safe_add(market.load()?.lend_tenor as i64)?;
                 let mut sequence_number = 0;
 
                 if maker_info.flags.contains(CallbackFlags::MARGIN) {
@@ -119,10 +119,12 @@ fn handle_fill<'info>(
                     amount: base_size,
                     owner: maker.pubkey(),
                     market: market.key(),
+                    payer: ctx.accounts.payer.key(),
                 };
                 emit!(TermDepositCreated {
                     term_deposit: term_deposit.key(),
                     authority: maker.pubkey(),
+                    payer: ctx.accounts.payer.key(),
                     order_tag: Some(maker_info.order_tag.as_u128()),
                     sequence_number,
                     market: market.key(),
@@ -159,7 +161,8 @@ fn handle_fill<'info>(
             });
         }
         Side::Ask => {
-            let maturation_timestamp = fill_timestamp.safe_add(market.load()?.borrow_tenor)?;
+            let maturation_timestamp =
+                fill_timestamp.safe_add(market.load()?.borrow_tenor as i64)?;
             if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
@@ -184,6 +187,7 @@ fn handle_fill<'info>(
                         sequence_number,
                         margin_user: margin_user.key(),
                         market: ctx.accounts.market.key(),
+                        payer: ctx.accounts.payer.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: base_size,
@@ -195,6 +199,7 @@ fn handle_fill<'info>(
                     emit!(TermLoanCreated {
                         term_loan: term_loan.key(),
                         authority: maker_info.owner,
+                        payer: ctx.accounts.payer.key(),
                         order_tag: maker_info.order_tag.as_u128(),
                         sequence_number,
                         market: ctx.accounts.market.key(),

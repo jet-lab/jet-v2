@@ -79,7 +79,6 @@ pub fn refresh_positions_deserialized(
         accounts.margin_user.debt.is_past_due(),
     )];
     let mut collateral_changes = vec![];
-    let mut ticket_changes = vec![];
 
     // always try to update the price, but conditionally permit position updates if price fails
     // so we can continue to mark positions as past due even if there is an oracle failure
@@ -89,10 +88,7 @@ pub fn refresh_positions_deserialized(
         Err(e) => msg!("skipping underlying price update due to error: {:?}", e),
     }
     match accounts.ticket_oracle {
-        Ok(price) => {
-            collateral_changes.push(PositionChange::Price(price.try_into()?));
-            ticket_changes.push(PositionChange::Price(price.try_into()?));
-        }
+        Ok(price) => collateral_changes.push(PositionChange::Price(price.try_into()?)),
         Err(e) if expect_price => Err(e)?,
         Err(e) => msg!("skipping ticket price update due to error: {:?}", e),
     }
@@ -101,7 +97,6 @@ pub fn refresh_positions_deserialized(
         position_changes: vec![
             (market.claims_mint, claim_changes),
             (market.ticket_collateral_mint, collateral_changes),
-            (market.ticket_mint, ticket_changes),
         ],
     })
 }

@@ -10,7 +10,7 @@ use crate::{
     margin::{
         events::{OrderPlaced, OrderType},
         origination_fee::loan_to_disburse,
-        state::{return_to_margin, MarginUser, TermLoan, TermLoanFlags},
+        state::{return_to_margin, AutoRollConfig, MarginUser, TermLoan, TermLoanFlags},
     },
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
@@ -85,6 +85,18 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
         params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
         manager.origination_fee
     };
+    let auto_roll = if params.auto_roll {
+        if ctx.accounts.margin_user.borrow_roll_config == AutoRollConfig::default() {
+            msg!(
+                "Auto roll settings have not been configured for margin user [{}]",
+                ctx.accounts.margin_user.key()
+            );
+            return err!(FixedTermErrorCode::InvalidAutoRollConfig);
+        }
+        CallbackFlags::AUTO_ROLL
+    } else {
+        CallbackFlags::default()
+    };
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.margin_account.key(),
         Side::Ask,
@@ -95,14 +107,14 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::NEW_DEBT | CallbackFlags::MARGIN,
+        CallbackFlags::NEW_DEBT | CallbackFlags::MARGIN | auto_roll,
     )?;
 
     let debt = &mut ctx.accounts.margin_user.debt;
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
         let mut manager = ctx.accounts.orderbook_mut.market.load_mut()?;
-        let maturation_timestamp = manager.borrow_tenor + Clock::get()?.unix_timestamp;
+        let maturation_timestamp = manager.borrow_tenor as i64 + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_term_loan_without_posting(order_summary.base_filled(), maturation_timestamp)?;
 
@@ -127,6 +139,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
             sequence_number,
             margin_user: ctx.accounts.margin_user.key(),
             market: ctx.accounts.orderbook_mut.market.key(),
+            payer: ctx.accounts.payer.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
             balance: base_filled,
@@ -142,6 +155,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
         emit!(TermLoanCreated {
             term_loan: term_loan.key(),
             authority: ctx.accounts.margin_account.key(),
+            payer: ctx.accounts.payer.key(),
             order_tag: callback_info.order_tag.as_u128(),
             sequence_number,
             market: ctx.accounts.orderbook_mut.market.key(),
