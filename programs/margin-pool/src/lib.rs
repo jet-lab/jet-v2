@@ -212,6 +212,15 @@ pub mod jet_margin_pool {
         instructions::margin_borrow_handler(ctx, change_kind, amount)
     }
 
+    /// Borrow tokens using a margin account
+    ///
+    /// # Parameters
+    ///
+    /// * `amount` - The token amount to borrow
+    pub fn margin_borrow_v2(ctx: Context<MarginBorrowV2>, amount: u64) -> Result<()> {
+        instructions::margin_borrow_v2_handler(ctx, amount)
+    }
+
     /// Repay a margin account debt from an outside token account
     ///
     /// # Parameters

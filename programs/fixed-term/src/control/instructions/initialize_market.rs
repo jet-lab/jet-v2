@@ -16,9 +16,9 @@ pub struct InitializeMarketParams {
     /// parameters, such as staking tenor
     pub seed: [u8; 32],
     /// Length of time before a borrow is marked as due, in seconds
-    pub borrow_tenor: i64,
+    pub borrow_tenor: u64,
     /// Length of time before a claim is marked as mature, in seconds
-    pub lend_tenor: i64,
+    pub lend_tenor: u64,
     /// assessed on borrows. scaled by origination_fee::FEE_UNIT
     pub origination_fee: u64,
 }

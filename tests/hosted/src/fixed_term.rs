@@ -74,8 +74,8 @@ pub const MARKET_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
-pub const BORROW_TENOR: i64 = 3;
-pub const LEND_TENOR: i64 = 5; // in seconds
+pub const BORROW_TENOR: u64 = 3;
+pub const LEND_TENOR: u64 = 5; // in seconds
 pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 

@@ -83,7 +83,7 @@ impl<'info> LendOrder<'info> {
                     ],
                 )?;
                 let timestamp = Clock::get()?.unix_timestamp;
-                let maturation_timestamp = timestamp + tenor;
+                let maturation_timestamp = timestamp + tenor as i64;
 
                 *deposit = TermDeposit {
                     market,

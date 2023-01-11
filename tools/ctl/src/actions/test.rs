@@ -202,7 +202,7 @@ fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubk
     ])
 }
 
-pub fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: i64) -> Pubkey {
+pub fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: u64) -> Pubkey {
     let mut seed = [0u8; 32];
     seed[..8].copy_from_slice(&tenor.to_le_bytes());
 

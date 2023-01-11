@@ -15,10 +15,10 @@ const MANAGER_VERSION: u64 = 0;
 #[derive(Debug, Clone, Parser, Serialize, Deserialize)]
 pub struct MarketParameters {
     #[clap(long)]
-    pub borrow_tenor: i64,
+    pub borrow_tenor: u64,
 
     #[clap(long)]
-    pub lend_tenor: i64,
+    pub lend_tenor: u64,
 
     #[clap(long)]
     pub origination_fee: u64,

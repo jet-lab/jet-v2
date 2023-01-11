@@ -258,8 +258,8 @@ impl FixedTermIxBuilder {
         payer: Pubkey,
         version_tag: u64,
         seed: [u8; 32],
-        borrow_tenor: i64,
-        lend_tenor: i64,
+        borrow_tenor: u64,
+        lend_tenor: u64,
         origination_fee: u64,
     ) -> Instruction {
         let data = jet_fixed_term::instruction::InitializeMarket {
