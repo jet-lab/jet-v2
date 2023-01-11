@@ -5,7 +5,7 @@ use serde::Serialize;
 use solana_program::pubkey::Pubkey;
 
 use crate::orderbook::interest_pricing::{f64_to_fp32, fp32_to_f64};
-use crate::orderbook::methods::{base_to_quote, price_to_rate};
+use crate::orderbook::methods::price_to_rate;
 
 pub struct OrderbookModel {
     tenor: u64,
@@ -178,8 +178,7 @@ impl OrderbookModel {
             ..
         } in self.orders_on(side)
         {
-            // TODO adjust for Side
-            let quote_size = base_to_quote(base_size, limit_price);
+            let quote_size = side.base_to_quote(base_size, limit_price).unwrap();
             total_base_qty += base_size;
             total_quote_qty += quote_size;
             let cumulative_price = total_quote_qty as f64 / total_base_qty as f64;
