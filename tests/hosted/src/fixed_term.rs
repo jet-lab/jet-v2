@@ -13,7 +13,7 @@ use agnostic_orderbook::state::{
 use anchor_lang::Discriminator;
 use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use anchor_spl::token::TokenAccount;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use async_trait::async_trait;
 
 use jet_fixed_term::{
@@ -351,12 +351,19 @@ impl TestManager {
 
     /// Two jobs:
     /// - Verifies that the event consumer has notified us that the expected
-    ///   account needs to be settled.
-    /// - settles those accounts.
+    ///   account needs to be settled. panic on failure.
+    /// - settles those accounts. return error on failure.
     pub async fn expect_and_execute_settlement<P: Proxy>(
         &self,
         expected: &[&FixedTermUser<P>],
     ) -> Result<()> {
+        self.expect_settlement(expected).await;
+        self.settle(expected).await?;
+
+        Ok(())
+    }
+
+    pub async fn expect_settlement<P: Proxy>(&self, expected: &[&FixedTermUser<P>]) {
         let to_settle = self.margin_accounts_to_settle.pop_many(usize::MAX).await;
         let expected_number_to_settle = expected.len();
         assert_eq!(expected_number_to_settle, to_settle.len());
@@ -367,26 +374,27 @@ impl TestManager {
                 .collect::<HashSet<Pubkey>>(),
             to_settle.clone().into_iter().collect()
         );
-        let q = AsyncNoDupeQueue::new();
-        q.push_many(to_settle).await;
+        self.margin_accounts_to_settle.push_many(to_settle).await;
+    }
+
+    pub async fn settle<P: Proxy>(&self, users: &[&FixedTermUser<P>]) -> Result<()> {
         settle_margin_users_loop(
             self.client.clone(),
             self.ix_builder.clone(),
-            q.clone(),
+            self.margin_accounts_to_settle.clone(),
             SettleMarginUsersConfig {
-                batch_size: std::cmp::max(1, expected_number_to_settle),
+                batch_size: std::cmp::max(1, users.len()),
                 batch_delay: Duration::from_secs(0),
                 wait_for_more_delay: Duration::from_secs(0),
                 exit_when_done: true,
             },
         )
         .await;
-        assert!(
-            q.is_empty().await,
-            "some settle transactions must have failed"
-        );
-
-        Ok(())
+        if self.margin_accounts_to_settle.is_empty().await {
+            Ok(())
+        } else {
+            bail!("some settle transactions must have failed")
+        }
     }
 
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {

@@ -31,7 +31,6 @@ use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBui
 use jet_program_common::Fp32;
 
 use solana_sdk::signer::Signer;
-use spl_associated_token_account::instruction::create_associated_token_account;
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -475,17 +474,17 @@ async fn settle_many_margin_accounts() -> Result<()> {
     ]
     .send_and_confirm_condensed(&client);
 
-    let mut user_actions = vec![];
+    let mut trades = vec![];
 
     // TODO: increase this to be the same as localnet.
     // for now it seems there is a bug in the solana runtime simulator.
     #[cfg(not(feature = "localnet"))]
-    let iterations = SETTLES_PER_TX;
+    let n_trades = SETTLES_PER_TX;
     #[cfg(feature = "localnet")]
-    let iterations = SETTLES_PER_TX * 3 + 1;
+    let n_trades = SETTLES_PER_TX * 3 + 1;
 
-    for _ in 0..iterations {
-        user_actions.push(async {
+    for _ in 0..n_trades {
+        trades.push(async {
             let (lender, borrower) = join!(
                 create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]),
                 create_fixed_term_market_margin_user(
@@ -517,11 +516,11 @@ async fn settle_many_margin_accounts() -> Result<()> {
     }
 
     set_prices.await.unwrap();
-    let users = join_all(user_actions).await;
+    let users_to_settle = join_all(trades).await;
 
     manager.consume_events().await?;
     manager
-        .expect_and_execute_settlement(&users.iter().collect::<Vec<_>>())
+        .expect_and_execute_settlement(&users_to_settle.iter().collect::<Vec<_>>())
         .await?;
 
     assert!(manager.load_event_queue().await?.is_empty()?);
@@ -669,18 +668,6 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     )
     .await;
     let mint = manager.ix_builder.token_mint();
-    vec![
-        create_associated_token_account(
-            &borrower.owner.pubkey(),
-            &borrower.owner.pubkey(),
-            &mint,
-            &spl_token::id(),
-        ),
-        borrower.proxy.proxy.create_deposit_position(mint),
-    ]
-    .with_signers(&[clone(&borrower.owner)])
-    .send_and_confirm(&ctx.rpc)
-    .await?;
 
     let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
@@ -719,6 +706,14 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
+    let _ = manager.expect_and_execute_settlement(&[&borrower]).await;
+    borrower
+        .proxy
+        .proxy
+        .create_deposit_position(mint)
+        .with_signers(&[clone(&borrower.owner)])
+        .send_and_confirm(&ctx.rpc)
+        .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;
 
     assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
