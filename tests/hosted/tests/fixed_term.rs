@@ -974,6 +974,16 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     )
     .await;
     let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    lender
+        .set_roll_config(
+            MarketSide::Lending,
+            AutoRollConfig {
+                limit_price: underlying(1_001, 2_000).limit_price,
+            },
+        )
+        .await?;
+    let mut lend_params = underlying(1_001, 2_000);
+    lend_params.auto_roll = true;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -985,11 +995,7 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(
-        lender
-            .refresh_and_margin_lend_order(underlying(1_001, 2_000))
-            .await?,
-    )
+    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -1031,21 +1037,24 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     // repay the loan
     borrower.try_repay_all().await?;
 
-    lender
-        .set_roll_config(
-            MarketSide::Lending,
-            AutoRollConfig {
-                limit_price: underlying(1_001, 2_000).limit_price,
-            },
-        )
+    let market_balance_pre = manager.load_manager_token_vault().await?.amount;
+    manager
+        .auto_roll_term_deposits(&lender.proxy.pubkey())
         .await?;
+    let market_balance_post = manager.load_manager_token_vault().await?.amount;
 
-    // manager
-    //     .auto_roll_term_deposits(&lender.proxy.pubkey())
-    //     .await?;
+    // no tokens should have leaked
+    assert_eq!(market_balance_pre, market_balance_post);
 
-    // let auto_lend_bid = manager.load_orderbook().await?.bids()?[0];
-    // dbg!(auto_lend_bid);
+    let order_info = manager.load_orderbook().await?.bids_order_callback(0)?;
+    assert_eq!(order_info.owner, lender.proxy.pubkey());
+    assert_eq!(
+        order_info.fill_account,
+        manager
+            .ix_builder
+            .margin_user(lender.proxy.pubkey())
+            .address
+    );
 
     Ok(())
 }

@@ -677,6 +677,8 @@ impl TestManager {
         margin_account: &Pubkey,
     ) -> Result<Vec<(Pubkey, TermDeposit)>> {
         let margin_user = self.ix_builder.margin_user(*margin_account).address;
+        let current_time = self.client.get_clock().await?.unix_timestamp;
+
         let deposits = self
             .client
             .get_program_accounts(
@@ -687,8 +689,7 @@ impl TestManager {
             .into_iter()
             .filter_map(|(k, a)| {
                 if let Ok(deposit) = TermDeposit::try_deserialize(&mut a.data.as_slice()) {
-                    dbg!(deposit.clone());
-                    if deposit.owner == margin_user {
+                    if deposit.owner == margin_user && deposit.matures_at <= current_time {
                         return Some((k, deposit));
                     }
                 }

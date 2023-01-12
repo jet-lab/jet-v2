@@ -8,7 +8,7 @@ use crate::{
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
-    tickets::state::TermDeposit,
+    tickets::state::{TermDeposit, TermDepositFlags},
     FixedTermErrorCode,
 };
 
@@ -88,6 +88,12 @@ impl<'info> LendOrder<'info> {
                 let timestamp = Clock::get()?.unix_timestamp;
                 let maturation_timestamp = timestamp + tenor as i64;
 
+                let auto_roll = if callback_info.flags.contains(CallbackFlags::AUTO_ROLL) {
+                    TermDepositFlags::AUTO_ROLL
+                } else {
+                    TermDepositFlags::default()
+                };
+
                 *deposit = TermDeposit {
                     market,
                     sequence_number,
@@ -96,6 +102,7 @@ impl<'info> LendOrder<'info> {
                     matures_at: maturation_timestamp,
                     principal: order_summary.quote_filled()?,
                     amount: order_summary.base_filled(),
+                    flags: TermDepositFlags::default() | auto_roll,
                 };
                 emit!(TermDepositCreated {
                     term_deposit: deposit.key(),

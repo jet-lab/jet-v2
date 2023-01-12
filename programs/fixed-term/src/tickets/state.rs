@@ -31,4 +31,15 @@ pub struct TermDeposit {
     /// This is only accurate when using the auto-stake feature, which saves the original
     /// token amount provided in the loan order.
     pub principal: u64,
+
+    /// Any boolean flags for this data type compressed to a single byte
+    pub flags: TermDepositFlags,
+}
+
+bitflags! {
+    #[derive(Default, AnchorSerialize, AnchorDeserialize)]
+    pub struct TermDepositFlags: u8 {
+        /// This term loan has already been marked as due.
+        const AUTO_ROLL = 0b00000001;
+    }
 }

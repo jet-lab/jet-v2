@@ -14,7 +14,7 @@ use crate::{
     margin::state::{TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
-    tickets::state::TermDeposit,
+    tickets::state::{TermDeposit, TermDepositFlags},
     FixedTermErrorCode,
 };
 
@@ -112,6 +112,12 @@ fn handle_fill<'info>(
                 }
 
                 let term_deposit = loan.as_mut().unwrap().auto_stake()?;
+                let auto_roll = if maker_info.flags.contains(CallbackFlags::AUTO_ROLL) {
+                    TermDepositFlags::AUTO_ROLL
+                } else {
+                    TermDepositFlags::default()
+                };
+
                 **term_deposit = TermDeposit {
                     matures_at,
                     sequence_number,
@@ -120,6 +126,7 @@ fn handle_fill<'info>(
                     owner: maker.pubkey(),
                     market: market.key(),
                     payer: ctx.accounts.payer.key(),
+                    flags: TermDepositFlags::default() | auto_roll,
                 };
                 emit!(TermDepositCreated {
                     term_deposit: term_deposit.key(),

@@ -128,4 +128,6 @@ pub enum FixedTermErrorCode {
     ZeroDivision,
     #[msg("missing authority signature")]
     MissingAuthoritySignature,
+    #[msg("this deposit is not configured for an auto roll")]
+    TermDepositIsNotAutoRoll,
 }

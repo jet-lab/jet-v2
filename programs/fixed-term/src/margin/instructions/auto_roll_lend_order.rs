@@ -8,27 +8,32 @@ use crate::{
     margin::state::MarginUser,
     orderbook::state::*,
     serialization::RemainingAccounts,
-    tickets::state::TermDeposit,
+    tickets::state::{TermDeposit, TermDepositFlags},
     FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct AutoRollLendOrder<'info> {
+    /// The `TermDeposit` account to roll
     #[account(mut)]
     pub deposit: Account<'info, TermDeposit>,
 
+    /// In the case the order matches, the new `TermDeposit` to account for
     #[account(mut)]
     pub new_deposit: AccountInfo<'info>,
 
-    #[account(mut)]
+    /// The underlying token account belonging to the lender, required for downstream checks
     pub lender_tokens: Account<'info, TokenAccount>,
 
+    /// The `MarginAccount` this `TermDeposit` belongs to
     #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
+    /// The `MarginUser` account for this market
     #[account(mut)]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
+    /// The accounts needed to interact with the orderbook
     #[market]
     pub orderbook_mut: OrderbookMut<'info>,
 
@@ -48,8 +53,10 @@ pub struct AutoRollLendOrder<'info> {
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
+    /// Payer for PDA initialization
     #[account(mut)]
     pub payer: Signer<'info>,
+
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
 }
@@ -86,7 +93,7 @@ impl<'info> AutoRollLendOrder<'info> {
             ticket_collateral_mint: self.ticket_collateral_mint.clone(),
             inner: RedeemDeposit {
                 deposit: self.deposit.clone(),
-                owner: self.margin_account.to_account_info(),
+                owner: self.margin_user.to_account_info(),
                 authority: self.margin_account.to_account_info(),
                 payer: self.payer.to_account_info(),
                 token_account: self.lender_tokens.clone(),
@@ -111,9 +118,17 @@ impl<'info> AutoRollLendOrder<'info> {
             auto_roll: true,
         }
     }
+
+    fn assert_deposit_is_auto_roll(&self) -> Result<()> {
+        if !self.deposit.flags.contains(TermDepositFlags::AUTO_ROLL) {
+            return err!(FixedTermErrorCode::TermDepositIsNotAutoRoll);
+        }
+        Ok(())
+    }
 }
 
 pub fn handler(ctx: Context<AutoRollLendOrder>) -> Result<()> {
+    ctx.accounts.assert_deposit_is_auto_roll()?;
     ctx.accounts.redeem()?;
     ctx.accounts.lend_order(
         ctx.remaining_accounts
