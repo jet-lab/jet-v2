@@ -19,3 +19,5 @@ testing = []
 [dependencies]
 solana-program = "1.14"
 anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master", features = ["init-if-needed"]}
+
+jet-program-common = { path = "../../libraries/rust/program-common" }

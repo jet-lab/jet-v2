@@ -1,14 +1,11 @@
 [token]
-symbol = "USDC"
-name = "USDC"
+name = "USDT"
+symbol = "USDT"
+decimals = 6
 precision = 2
 
-[config]
-mint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-pyth_price = "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD"
-pyth_product = "8GWTTbNiXdmyZREXbjsZBmCRuzdPrW55dnZGDkTRjWvb"
+max_test_amount = 1_000_000
 
-token_kind = 'Collateral'
 collateral_weight = 1_00
 max_leverage = 20_00
 

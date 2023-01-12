@@ -29,9 +29,6 @@ pub mod events;
 
 declare_id!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
 
-#[cfg(not(feature = "testing"))]
-static ROOT_AUTHORITY: Pubkey = pubkey!("2J2K1wHK3U8bsow1shUZJvEx1L2og2h5T5JGPqBS1uKA");
-
 pub mod seeds {
     use super::constant;
 

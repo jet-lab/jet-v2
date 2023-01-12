@@ -464,6 +464,10 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
             .collect())
     }
 
+    async fn get_genesis_hash(&self) -> anyhow::Result<Hash> {
+        Ok(self.bank.last_blockhash())
+    }
+
     async fn get_latest_blockhash(&self) -> anyhow::Result<Hash> {
         self.bank.register_recent_blockhash(&Hash::new_unique());
 

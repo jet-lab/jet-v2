@@ -4,9 +4,10 @@ use solana_sdk::pubkey::Pubkey;
 
 use jet_instructions::margin_pool::derive_margin_pool;
 use jet_margin_pool::MarginPool;
+use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
 use super::AccountStates;
-use crate::{client::ClientResult, ClientInterfaceExt, UserNetworkInterface};
+use crate::client::ClientResult;
 
 pub trait MarginPoolCacheExt {
     fn get_pool(&self, token: &Pubkey) -> Option<Arc<MarginPool>>;
@@ -19,7 +20,7 @@ impl<I> MarginPoolCacheExt for AccountStates<I> {
 }
 
 /// Sync latest state for all pools
-pub async fn sync<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
     let pools = states
         .config
         .tokens

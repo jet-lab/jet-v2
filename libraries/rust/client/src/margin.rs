@@ -15,6 +15,7 @@ use jet_instructions::{
 use jet_margin::{AccountPosition, MarginAccount, TokenAdmin, TokenConfig, TokenKind, TokenOracle};
 use jet_margin_pool::{Amount, MarginPool, PoolAction};
 use jet_program_common::Number128;
+use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
 use crate::{
     bail,
@@ -28,7 +29,7 @@ use crate::{
         tokens::{Mint, TokenAccount},
     },
     swaps::MarginAccountSwapsClient,
-    ClientInterfaceExt, JetClient, UserNetworkInterface,
+    JetClient,
 };
 
 /// Client for interacting with the margin program
@@ -37,7 +38,7 @@ pub struct MarginClient<I> {
     client: Arc<ClientState<I>>,
 }
 
-impl<I: UserNetworkInterface> MarginClient<I> {
+impl<I: NetworkUserInterface> MarginClient<I> {
     pub(crate) fn new(inner: Arc<ClientState<I>>) -> Self {
         Self { client: inner }
     }
@@ -126,7 +127,7 @@ pub struct MarginAccountClient<I> {
     pub(crate) builder: MarginIxBuilder,
 }
 
-impl<I: UserNetworkInterface> MarginAccountClient<I> {
+impl<I: NetworkUserInterface> MarginAccountClient<I> {
     fn new(client: Arc<ClientState<I>>, address: Pubkey) -> Self {
         let owner = client.signer();
         let builder = MarginIxBuilder::new_for_address(client.airspace(), address, owner);

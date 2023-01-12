@@ -409,7 +409,7 @@ fn create_airspace_token_fixed_term_markets_tx(
 
         // Submit separately as it is large and causes tx to fail
         txs.push(TransactionBuilder {
-            instructions: vec![fixed_term_ix.authorize_crank()],
+            instructions: vec![fixed_term_ix.authorize_crank(config.authority)],
             signers: vec![],
         });
 

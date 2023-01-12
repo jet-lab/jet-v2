@@ -21,6 +21,7 @@ bincode = "1"
 tokio = { version = "1.0", features = ["time", "rt"] }
 lazy_static = "1.4.0"
 shellexpand = "2.1.0"
+env_logger = "0.9"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "1.5"
@@ -50,3 +51,6 @@ solana-remote-wallet = "1.14"
 serum_dex = "0.5"
 jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
+jet-environment = { path = "../../libraries/rust/environment" }
+jet-client-native = { path = "../../libraries/rust/client-native" }
+jet-solana-client = { path = "../../libraries/rust/solana-client" }

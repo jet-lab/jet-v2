@@ -21,8 +21,12 @@ use std::convert::TryFrom;
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use jet_program_common::{Number, BPS_EXPONENT};
 use pyth_sdk_solana::PriceFeed;
-#[cfg(any(test, feature = "cli"))]
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+
+#[cfg(any(test, feature = "no-entrypoint"))]
+use serde::{
+    ser::{SerializeStruct, Serializer},
+    Deserialize, Serialize,
+};
 
 use crate::{
     util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange,
@@ -110,7 +114,7 @@ impl std::fmt::Debug for MarginPool {
     }
 }
 
-#[cfg(any(test, feature = "cli"))]
+#[cfg(any(test, feature = "no-entrypoint"))]
 impl Serialize for MarginPool {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -613,6 +617,7 @@ pub struct PriceResult {
 
 /// Configuration for a margin pool
 #[derive(Debug, Default, AnchorDeserialize, AnchorSerialize, Clone, Copy, Eq, PartialEq)]
+#[cfg_attr(feature = "no-entrypoint", derive(Serialize, Deserialize))]
 pub struct MarginPoolConfig {
     /// Space for binary settings
     pub flags: u64,
@@ -639,6 +644,7 @@ pub struct MarginPoolConfig {
     pub management_fee_rate: u16,
 
     /// Unused
+    #[cfg_attr(feature = "no-entrypoint", serde(default))]
     pub reserved: u64,
 }
 

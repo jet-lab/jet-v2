@@ -2036,6 +2036,7 @@ dependencies = [
  "jet-client",
  "jet-client-native",
  "jet-control",
+ "jet-environment",
  "jet-fixed-term",
  "jet-instructions",
  "jet-margin",
@@ -2045,6 +2046,7 @@ dependencies = [
  "jet-metadata",
  "jet-program-common",
  "jet-simulation",
+ "jet-solana-client",
  "jet-static-program-registry",
  "jet-test-service",
  "lazy_static",
@@ -2298,6 +2300,7 @@ name = "jet-airspace"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "jet-program-common",
  "solana-program",
 ]
 
@@ -2317,6 +2320,7 @@ dependencies = [
  "futures",
  "jet-airspace",
  "jet-control",
+ "jet-environment",
  "jet-fixed-term",
  "jet-instructions",
  "jet-margin",
@@ -2324,6 +2328,7 @@ dependencies = [
  "jet-margin-swap",
  "jet-metadata",
  "jet-program-common",
+ "jet-solana-client",
  "jet-test-service",
  "log",
  "pyth-sdk-solana 0.4.2",
@@ -2349,6 +2354,7 @@ dependencies = [
  "futures",
  "jet-client",
  "jet-simulation",
+ "jet-solana-client",
  "solana-client",
  "solana-sdk",
 ]
@@ -2362,6 +2368,7 @@ dependencies = [
  "jet-fixed-term",
  "jet-margin-pool",
  "jet-metadata",
+ "jet-program-common",
  "solana-program",
 ]
 
@@ -2380,12 +2387,16 @@ dependencies = [
  "clap 3.2.23",
  "comfy-table",
  "dialoguer",
+ "env_logger",
  "flate2",
  "futures",
  "heck 0.4.0",
  "indicatif",
+ "jet-client-native",
+ "jet-environment",
  "jet-margin-sdk",
  "jet-program-common",
+ "jet-solana-client",
  "lazy_static",
  "pyth-sdk-solana 0.7.0",
  "serde",
@@ -2403,6 +2414,28 @@ dependencies = [
  "spl-token 3.5.0",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio",
+ "toml 0.5.11",
+]
+
+[[package]]
+name = "jet-environment"
+version = "0.1.0"
+dependencies = [
+ "jet-fixed-term",
+ "jet-instructions",
+ "jet-margin",
+ "jet-margin-pool",
+ "jet-metadata",
+ "jet-solana-client",
+ "log",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "spl-governance",
+ "spl-token 3.5.0",
+ "thiserror",
  "toml 0.5.11",
 ]
 
@@ -2438,6 +2471,7 @@ dependencies = [
  "anyhow",
  "clap 3.2.23",
  "jet-ctl-cli",
+ "jet-environment",
  "jet-margin-sdk",
  "jet-simulation",
  "serde",
@@ -2641,6 +2675,20 @@ dependencies = [
  "solana-transaction-status",
  "solana_rbpf",
  "tokio",
+]
+
+[[package]]
+name = "jet-solana-client"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "async-trait",
+ "base64 0.13.1",
+ "bincode",
+ "serde",
+ "solana-sdk",
+ "spl-token 3.5.0",
+ "thiserror",
 ]
 
 [[package]]

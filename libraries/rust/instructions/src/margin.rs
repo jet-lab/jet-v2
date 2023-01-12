@@ -25,9 +25,12 @@ use solana_sdk::sysvar::{rent::Rent, SysvarId};
 use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::{system_program, InstructionData};
 
+use jet_margin::accounts as ix_account;
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
-use jet_margin::{accounts as ix_account, TokenConfigUpdate};
+pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
+
+pub use jet_margin::ID as MARGIN_PROGRAM;
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
@@ -462,7 +465,7 @@ impl MarginIxBuilder {
         amount: u64,
     ) -> Instruction {
         let accounts = ix_account::AdminTransferPosition {
-            authority: jet_program_common::ADMINISTRATOR,
+            authority: jet_program_common::GOVERNOR_ID,
             source_account: self.address,
             target_account: *target,
             source_token_account: self.get_token_account_address(position_token_mint),
@@ -512,6 +515,11 @@ impl MarginConfigIxBuilder {
             authority: airspace_authority.unwrap_or(payer),
             payer,
         }
+    }
+
+    /// Set the authority address to use separately from the payer
+    pub fn with_authority(self, authority: Pubkey) -> Self {
+        Self { authority, ..self }
     }
 
     /// Set the configuration for a token that can be used as a position within a margin account

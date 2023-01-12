@@ -10,6 +10,8 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use dialoguer::Confirm;
 use indicatif::{MultiProgress, ProgressBar};
+use jet_client_native::SolanaClient;
+use jet_solana_client::NetworkUserInterface;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::{
     client_error::ClientErrorKind,
@@ -47,6 +49,9 @@ pub struct ClientConfig {
     /// The solana rpc client
     rpc_client: RpcClient,
 
+    /// The URL the RPC client is connecting to
+    rpc_url: String,
+
     /// The user wallet
     signer: Option<Arc<dyn Signer>>,
 
@@ -65,7 +70,7 @@ impl ClientConfig {
         let solana_config =
             SolanaConfig::load(SOLANA_CONFIG_FILE.as_ref().unwrap()).unwrap_or_default();
         let rpc_url = rpc_endpoint.unwrap_or(solana_config.json_rpc_url);
-        let rpc_client = RpcClient::new(rpc_url);
+        let rpc_client = RpcClient::new(rpc_url.clone());
         let mut remote_wallet_manager = None;
 
         let signer = solana_clap_utils::keypair::signer_from_path(
@@ -81,6 +86,7 @@ impl ClientConfig {
             dry_run,
             no_confirm,
             rpc_client,
+            rpc_url,
             signer,
             compute_budget,
         })
@@ -129,6 +135,16 @@ impl Client {
 
     pub fn rpc(&self) -> &RpcClient {
         &self.config.rpc_client
+    }
+
+    pub fn network_interface(&self) -> impl NetworkUserInterface + std::fmt::Debug {
+        SolanaClient::new(
+            RpcClient::new_with_commitment(
+                self.config.rpc_url.clone(),
+                CommitmentConfig::processed(),
+            ),
+            self.config.signer.as_ref().unwrap().clone(),
+        )
     }
 
     pub fn signer(&self) -> Result<Pubkey> {

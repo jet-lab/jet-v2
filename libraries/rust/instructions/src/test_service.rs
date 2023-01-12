@@ -26,13 +26,14 @@ use solana_sdk::{
     sysvar::{self, SysvarId},
 };
 
-use jet_test_service::{
-    seeds::{
-        SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS, TOKEN_INFO, TOKEN_MINT,
-        TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
-    },
-    SplSwapPoolCreateParams, TokenCreateParams,
+use jet_test_service::seeds::{
+    SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS, TOKEN_INFO, TOKEN_MINT,
+    TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
 };
+
+pub use jet_test_service::{SplSwapPoolCreateParams, TokenCreateParams};
+
+pub use jet_test_service::ID as TEST_SERVICE_PROGRAM;
 
 /// Get instruction to create a token as described
 pub fn token_create(payer: &Pubkey, params: &TokenCreateParams) -> Instruction {

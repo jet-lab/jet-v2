@@ -193,7 +193,7 @@ impl AirspaceAdmin {
             MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
         let market = derive_market(&self.airspace, &token_mint, seed);
         let claims_mint = FixedTermIxBuilder::claims_mint(&market);
-        let collateral_mint = FixedTermIxBuilder::collateral_mint(&market);
+        let collateral_mint = FixedTermIxBuilder::ticket_collateral_mint(&market);
         let ticket_mint = derive_ticket_mint(&market);
 
         let claims_update = TokenConfigUpdate {

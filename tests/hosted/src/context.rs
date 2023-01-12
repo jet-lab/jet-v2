@@ -1,29 +1,36 @@
 use std::sync::Arc;
 
 use anyhow::Error;
-use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
-use jet_client::programs::ORCA_V2;
-use jet_client_native::{JetSimulationClient, SimulationClient};
-use jet_instructions::airspace::derive_airspace;
-use jet_instructions::fixed_term::derive_market_from_tenor;
-use jet_instructions::test_service::{
-    derive_pyth_price, derive_token_mint, token_update_pyth_price,
-};
-use jet_margin_pool::PoolFlags;
-use jet_margin_sdk::ix_builder::test_service::derive_swap_pool;
-use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
-use jet_margin_sdk::solana::keypair::clone;
-use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder};
-use jet_margin_sdk::test_service::{
-    init_environment, minimal_environment, AirspaceConfig, AirspaceTokenConfig, EnvironmentConfig,
-    MarginPoolConfig, SwapPoolsConfig, TokenDescription,
-};
-use jet_margin_sdk::util::data::With;
-use jet_metadata::TokenKind;
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
+
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
+
+use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
+use jet_client::NetworkKind;
+use jet_client_native::{JetSimulationClient, SimulationClient};
+use jet_environment::builder::{configure_environment, Builder};
+use jet_environment::{
+    config::{
+        AirspaceConfig, DexConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS,
+    },
+    programs::ORCA_V2,
+};
+use jet_instructions::airspace::derive_airspace;
+use jet_instructions::fixed_term::derive_market_from_tenor;
+use jet_instructions::margin::MarginConfigIxBuilder;
+use jet_instructions::test_service::{
+    derive_pyth_price, derive_token_mint, token_update_pyth_price,
+};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags};
+use jet_margin_sdk::ix_builder::test_service::derive_swap_pool;
+use jet_margin_sdk::solana::keypair::clone;
+use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder};
+use jet_margin_sdk::test_service::minimal_environment;
+use jet_margin_sdk::util::data::With;
+use jet_metadata::TokenKind;
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
 use crate::runtime::SolanaTestContext;
 use crate::{margin::MarginClient, tokens::TokenManager};
@@ -141,7 +148,7 @@ pub struct TestContext {
 }
 
 impl TestContext {
-    pub async fn new(name: &str, setup: &TestContextSetupInfo) -> Self {
+    pub async fn new(name: &str, setup: &TestContextSetupInfo) -> Result<Self, Error> {
         let mut seed = match cfg!(feature = "localnet") {
             false => name.to_owned(),
             true => format!("{name}_{}", rand::random::<u16>()),
@@ -153,45 +160,50 @@ impl TestContext {
         let setup_config = setup.to_config(&seed);
 
         let init_env_config = EnvironmentConfig {
-            authority: inner.rpc.payer().pubkey(),
-            tokens: setup_config
-                .tokens
+            network: NetworkKind::Localnet,
+            margin_adapters: DEFAULT_MARGIN_ADAPTERS.to_vec(),
+            oracle_authority: Some(inner.rpc.payer().pubkey()),
+            exchanges: setup_config
+                .spl_swap_pools
                 .iter()
-                .map(|(name, decimals, _)| TokenDescription {
-                    symbol: name.to_string(),
-                    name: name.to_string(),
-                    precision: *decimals,
-                    decimals: *decimals,
+                .map(|(a, b)| DexConfig {
+                    program: "spl-swap".to_string(),
+                    state: None,
+                    base: a.clone(),
+                    quote: b.clone(),
                 })
                 .collect(),
-            swap_pools: SwapPoolsConfig {
-                spl: setup_config
-                    .spl_swap_pools
-                    .iter()
-                    .map(|(a, b)| format!("{a}/{b}"))
-                    .collect(),
-            },
             airspaces: vec![AirspaceConfig {
                 name: seed.to_string(),
                 is_restricted: setup.is_restricted,
-                tokens: setup_config
-                    .tokens
-                    .iter()
-                    .map(|(name, _, config)| (name.to_string(), config.clone()))
-                    .collect(),
+                tokens: setup_config.tokens.clone(),
+                cranks: vec![],
             }],
         };
 
-        init_environment(&init_env_config, &Default::default())
-            .unwrap()
-            .send_and_confirm_condensed_in_order(&inner.rpc)
+        let interface = SimulationClient::new(inner.rpc.clone(), None);
+        let mut builder = Builder::new(interface.clone(), interface.signer())
             .await
             .unwrap();
 
-        Self {
+        configure_environment(&mut builder, &init_env_config)
+            .await
+            .unwrap();
+        let plan = builder.build();
+
+        let _ = interface
+            .send_condensed_unordered(&plan.setup)
+            .await
+            .into_iter()
+            .map(|r| r.unwrap());
+        let (_, error) = interface.send_condensed_ordered(&plan.propose).await;
+
+        assert!(error.is_none());
+
+        Ok(Self {
             inner,
             config: setup_config.config,
-        }
+        })
     }
 
     pub fn rpc(&self) -> &Arc<dyn SolanaRpcClient> {
@@ -259,32 +271,33 @@ pub const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     utilization_rate_2: 20,
     management_fee_rate: 10,
     flags: PoolFlags::ALLOW_LENDING.bits(),
+    reserved: 0,
 };
 
 pub fn default_test_setup() -> TestContextSetupInfo {
     TestContextSetupInfo {
         is_restricted: false,
         tokens: vec![
-            (
-                "TSOL",
-                9,
-                AirspaceTokenConfig {
-                    collateral_weight: 100,
-                    max_leverage: 20_00,
-                    margin_pool_config: Some(DEFAULT_POOL_CONFIG),
-                    fixed_term_markets: vec![],
-                },
-            ),
-            (
-                "USDC",
-                6,
-                AirspaceTokenConfig {
-                    collateral_weight: 100,
-                    max_leverage: 20_00,
-                    margin_pool_config: Some(DEFAULT_POOL_CONFIG),
-                    fixed_term_markets: vec![],
-                },
-            ),
+            TokenDescription {
+                name: "TSOL".to_string(),
+                symbol: "TSOL".to_string(),
+                decimals: 9,
+                collateral_weight: 100,
+                max_leverage: 20_00,
+                margin_pool: Some(DEFAULT_POOL_CONFIG),
+                fixed_term_markets: vec![],
+                ..Default::default()
+            },
+            TokenDescription {
+                name: "USDC".to_string(),
+                symbol: "".to_string(),
+                decimals: 6,
+                collateral_weight: 100,
+                max_leverage: 20_00,
+                margin_pool: Some(DEFAULT_POOL_CONFIG),
+                fixed_term_markets: vec![],
+                ..Default::default()
+            },
         ],
         spl_swap_pools: vec!["TSOL/USDC"],
     }
@@ -293,13 +306,13 @@ pub fn default_test_setup() -> TestContextSetupInfo {
 #[derive(Default, Clone)]
 pub struct TestContextSetupInfo {
     pub is_restricted: bool,
-    pub tokens: Vec<(&'static str, u8, AirspaceTokenConfig)>,
+    pub tokens: Vec<TokenDescription>,
     pub spl_swap_pools: Vec<&'static str>,
 }
 
 struct SetupOutput {
     config: JetAppConfig,
-    tokens: Vec<(String, u8, AirspaceTokenConfig)>,
+    tokens: Vec<TokenDescription>,
     spl_swap_pools: Vec<(String, String)>,
 }
 
@@ -309,7 +322,10 @@ impl TestContextSetupInfo {
         let tokens = self
             .tokens
             .iter()
-            .map(|(s, d, c)| (format!("{seed}-{s}"), *d, c.clone()))
+            .map(|t| TokenDescription {
+                name: format!("{seed}-{}", &t.name),
+                ..t.clone()
+            })
             .collect::<Vec<_>>();
 
         let spl_swap_pools = self
@@ -327,13 +343,13 @@ impl TestContextSetupInfo {
         let config = JetAppConfig {
             tokens: tokens
                 .iter()
-                .map(|(name, decimals, _)| {
-                    let mint = derive_token_mint(name);
+                .map(|t| {
+                    let mint = derive_token_mint(&t.name);
                     TokenInfo {
-                        symbol: name.clone(),
-                        name: name.clone(),
-                        precision: *decimals,
-                        decimals: *decimals,
+                        symbol: t.name.clone(),
+                        name: t.name.clone(),
+                        precision: t.decimals,
+                        decimals: t.decimals,
                         oracle: derive_pyth_price(&mint),
                         mint,
                     }
@@ -341,13 +357,13 @@ impl TestContextSetupInfo {
                 .collect(),
             airspaces: vec![AirspaceInfo {
                 name: seed.to_string(),
-                tokens: tokens.iter().map(|(name, _, _)| name.clone()).collect(),
+                tokens: tokens.iter().map(|t| t.name.clone()).collect(),
                 fixed_term_markets: tokens
                     .iter()
-                    .flat_map(|(name, _, c)| {
-                        let token = derive_token_mint(name);
+                    .flat_map(|t| {
+                        let token = derive_token_mint(&t.name);
 
-                        c.fixed_term_markets.iter().map(move |m| {
+                        t.fixed_term_markets.iter().map(move |m| {
                             derive_market_from_tenor(&airspace, &token, m.borrow_tenor)
                         })
                     })

@@ -331,6 +331,8 @@ pub enum Command {
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
+    let _ = env_logger::builder().is_test(false).try_init();
+
     let rpc_endpoint = opts
         .rpc_endpoint
         .map(solana_clap_utils::input_validators::normalize_to_url_if_moniker);

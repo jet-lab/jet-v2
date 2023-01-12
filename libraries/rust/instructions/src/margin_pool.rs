@@ -25,6 +25,8 @@ use jet_margin_pool::instruction as ix_data;
 use jet_margin_pool::program::JetMarginPool;
 use jet_margin_pool::{accounts as ix_accounts, TokenChange};
 
+pub use jet_margin_pool::ID as MARGIN_POOL_PROGRAM;
+
 /// Utility for creating instructions to interact with the margin
 /// pools program for a specific pool.
 #[derive(Clone)]
@@ -421,7 +423,7 @@ impl MarginPoolIxBuilder {
         amount: u64,
     ) -> Instruction {
         let accounts = ix_accounts::AdminTransferLoan {
-            authority: jet_program_common::ADMINISTRATOR,
+            authority: jet_program_common::GOVERNOR_ID,
             margin_pool: self.address,
             source_loan_account: derive_loan_account(source_margin_account, &self.loan_note_mint),
             target_loan_account: derive_loan_account(target_margin_account, &self.loan_note_mint),

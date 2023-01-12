@@ -16,7 +16,7 @@ cpi = ["no-entrypoint"]
 default = []
 testing = []
 cli = ["no-entrypoint", "serde"]
-devnet = []
+devnet = ["jet-program-common/devnet"]
 mock_syscall = []
 test = ["mock_syscall"]
 
