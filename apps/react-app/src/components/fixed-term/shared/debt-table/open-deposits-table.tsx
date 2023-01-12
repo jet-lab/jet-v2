@@ -1,20 +1,12 @@
-import { FixedTermMarket, MarginAccount, MarketAndconfig, Pool, redeem, TokenAmount } from '@jet-lab/margin';
+import { FixedTermMarket, MarginAccount, MarketAndconfig, Pool, TokenAmount } from '@jet-lab/margin';
 import { Deposit } from '@jet-lab/store';
-import { Button, Table } from 'antd';
+import { Table } from 'antd';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useMemo } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
-import { notify } from '@utils/notify';
-import { getExplorerUrl } from '@utils/ui';
 const getDepositsColumns = (
   market: MarketAndconfig,
-  markets: FixedTermMarket[],
-  marginAccount: MarginAccount,
-  provider: AnchorProvider,
-  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
-  pools: Record<string, Pool>
 ) => [
   {
     title: 'Created',
@@ -40,58 +32,8 @@ const getDepositsColumns = (
     dataIndex: 'rate',
     key: 'rate',
     render: (rate: number) => `${rate}%`
-  },
-  {
-    title: 'Actions',
-    key: 'actions',
-    render: (deposit: Deposit) => {
-      const maturationDate = new Date(deposit.maturation_timestamp);
-      if (maturationDate.getTime() <= Date.now()) {
-        return (
-          <Button
-            size="small"
-            onClick={() =>
-              redeemDeposit(market, marginAccount, provider, deposit, cluster, blockExplorer, pools, markets)
-            }>
-            Claim
-          </Button>
-        );
-      }
-      return null;
-    }
   }
 ];
-
-const redeemDeposit = async (
-  market: MarketAndconfig,
-  marginAccount: MarginAccount,
-  provider: AnchorProvider,
-  deposit: Deposit,
-  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
-  pools: Record<string, Pool>,
-  markets: FixedTermMarket[]
-) => {
-  try {
-    await redeem({
-      market,
-      marginAccount,
-      provider,
-      pools,
-      markets,
-      deposit
-    });
-    notify('Deposit Redeemed', 'Your deposit was successfully redeem', 'success');
-  } catch (e: any) {
-    notify(
-      'Deposit redemption failed',
-      'There was an error redeeming your deposit',
-      'error',
-      getExplorerUrl(e.signature, cluster, blockExplorer)
-    );
-    throw e;
-  }
-};
 
 export const OpenDepositsTable = ({
   data,
@@ -100,8 +42,6 @@ export const OpenDepositsTable = ({
   provider,
   cluster,
   blockExplorer,
-  pools,
-  markets
 }: {
   data: Deposit[];
   market: MarketAndconfig;
@@ -113,7 +53,7 @@ export const OpenDepositsTable = ({
   markets: FixedTermMarket[];
 }) => {
   const columns = useMemo(
-    () => getDepositsColumns(market, markets, marginAccount, provider, cluster, blockExplorer, pools),
+    () => getDepositsColumns(market),
     [market, marginAccount, provider, cluster, blockExplorer]
   );
   return (

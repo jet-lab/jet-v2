@@ -487,7 +487,7 @@ interface IRedeem {
   markets: FixedTermMarket[]
   market: MarketAndconfig
   provider: AnchorProvider
-  deposit: {
+  deposits: Array<{
     id: number
     address: string,
     sequence_number: number,
@@ -496,7 +496,7 @@ interface IRedeem {
     rate: number,
     payer: string,
     created_timestamp: number
-  }
+  }>
 }
 export const redeem = async ({
   marginAccount,
@@ -504,7 +504,7 @@ export const redeem = async ({
   markets,
   market,
   provider,
-  deposit
+  deposits
 }: IRedeem) => {
   const instructions: TransactionInstruction[][] = []
   const refreshIxs: TransactionInstruction[] = []
@@ -517,15 +517,21 @@ export const redeem = async ({
   instructions.push(refreshIxs)
 
   const redeemIxs: TransactionInstruction[] = []
-  const redeem = await market.market.redeemDeposit(
-    marginAccount,
-    deposit,
-    market.market
-  )
-  await marginAccount.withAdapterInvoke({
-    instructions: redeemIxs,
-    adapterInstruction: redeem
-  })
+  const sortedDeposits = deposits.sort((a, b) => a.sequence_number - b.sequence_number )
+
+  console.log(sortedDeposits)
+  for (let i = 0; i < sortedDeposits.length; i++) {
+    const deposit = sortedDeposits[i]
+    const redeem = await market.market.redeemDeposit(
+      marginAccount,
+      deposit,
+      market.market
+    )
+    await marginAccount.withAdapterInvoke({
+      instructions: redeemIxs,
+      adapterInstruction: redeem
+    })
+  }
   
   instructions.push(redeemIxs)
   return sendAll(provider, [instructions])

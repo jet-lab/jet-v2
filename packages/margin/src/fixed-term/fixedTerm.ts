@@ -523,11 +523,11 @@ export class FixedTermMarket {
     const ticketCollateralMint = market.addresses.ticketCollateralMint
 
     const marginUserData = await market.fetchMarginUser(marginAccount)
-    console.log(
-      marginUserData?.assets.nextUnredeemedDepositSeqno.toNumber(),
-      marginUserData?.assets.nextDepositSeqno.toNumber(),
-      marginUserData
-    )
+    console.table({
+      nextUnredeemedDepositSeqno: marginUserData?.assets.nextUnredeemedDepositSeqno.toNumber(),
+      nextDepositSeqno: marginUserData?.assets.nextDepositSeqno.toNumber(),
+      deposit_seq_no: deposit.sequence_number
+  })
 
     console.table(
       {
