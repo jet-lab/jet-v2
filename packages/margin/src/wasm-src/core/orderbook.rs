@@ -236,15 +236,23 @@ impl OrderbookModel {
         action: Action,
         quote_qty: u64,
         limit_price: Option<u64>,
+        user: Option<Pubkey>,
     ) -> FillSimulation {
         let limit_price = limit_price.unwrap_or_else(|| action.worst_price());
         let side = Side::matching(action);
 
+        let mut self_match = false;
         let mut filled_base_qty = 0;
         let mut unfilled_quote_qty = quote_qty;
         let mut fills = vec![];
         for order in self.orders_on(side) {
             if unfilled_quote_qty > 0 && order.matches(action, limit_price) {
+                if let Some(user) = user {
+                    if order.owner == user {
+                        self_match = true;
+                    }
+                }
+
                 let maker_base_qty = order.base_size;
                 let unfilled_base_qty = fp32_div(unfilled_quote_qty, order.price).unwrap();
                 let fill_base_qty = maker_base_qty.min(unfilled_base_qty);
@@ -287,6 +295,7 @@ impl OrderbookModel {
             vwap,
             vwar,
             fills,
+            self_match,
         }
     }
 
@@ -354,6 +363,7 @@ pub struct FillSimulation {
     pub vwap: f64,
     pub vwar: f64,
     pub fills: Vec<Fill>,
+    pub self_match: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -416,6 +426,15 @@ mod test {
         assert_eq!(sample.points[0].cumulative_rate, 0.05);
     }
 
+    fn get_pubkey() -> Pubkey {
+        Pubkey::new_from_array([
+            1, 2, 3, 4, 5, 6, 7, 8,
+            8, 7, 6, 5, 4, 3, 2, 1,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            8, 7, 6, 5, 4, 3, 2, 1,
+        ])
+    }
+
     fn populate_orderbook_model() -> OrderbookModel {
         OrderbookModel {
             tenor: 60 * 60 * 24 * 90,
@@ -427,7 +446,7 @@ mod test {
                     price: f64_to_fp32(0.96),
                 },
                 Order {
-                    owner: Pubkey::default(),
+                    owner: get_pubkey(),
                     order_tag: OrderTag::default(),
                     base_size: 1_500,
                     price: f64_to_fp32(0.94),
@@ -490,11 +509,25 @@ mod test {
     fn test_simulate_fills() {
         let om = populate_orderbook_model();
 
-        let sim = om.simulate_fills("lend".into(), 7_000, None);
+        let sim = om.simulate_fills("lend".into(), 7_000, None, None);
         assert_eq!(sim.matches, 3);
         assert_eq!(sim.fills[0].base_qty, 2_000);
         assert_eq!(sim.unfilled_quote_qty, 1); // NOTE Rounding
         assert_eq!(sim.vwap, 0.9777870913663035);
+        assert!(!sim.self_match);
+    }
+
+    #[test]
+    fn test_simulate_fills_self_match() {
+        let om = populate_orderbook_model();
+
+        let action = "borrow".into();
+        let quote_qty = 2_000;
+        let limit_price = None;
+        let user = Some(get_pubkey());
+
+        let sim = om.simulate_fills(action, quote_qty, limit_price, user);
+        assert!(sim.self_match);
     }
 
     #[test]

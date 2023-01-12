@@ -1,4 +1,5 @@
 use serde_wasm_bindgen::Serializer;
+use solana_program::pubkey::Pubkey;
 use wasm_bindgen::prelude::*;
 
 use crate::core::orderbook::OrderbookModel;
@@ -57,10 +58,12 @@ impl JsOrderbookModel {
         action: &str,
         quoteQty: u64,
         limitPrice: Option<u64>,
+        user: Option<Box<[u8]>>,
     ) -> Result<JsValue, JsError> {
+        let user = user.map(|b| Pubkey::new(&b));
         let sim = self
             .inner
-            .simulate_fills(action.into(), quoteQty, limitPrice); // TODO try_into
+            .simulate_fills(action.into(), quoteQty, limitPrice, user); // TODO try_into
 
         self.to_js(&sim)
     }
@@ -113,10 +116,11 @@ export type FillSimulation = {
     filled_quote_qty: bigint,
     unfilled_quote_qty: bigint,
     filled_base_qty: bigint,
-    matches: usize,
+    matches: bigint,
     vwap: number,
     vwar: number,
     fills: Array<Fill>,
+    self_match: boolean,
 }
 
 export type Fill = {
@@ -164,9 +168,10 @@ export class OrderbookModel {
     * @param {string} action
     * @param {bigint} quoteQty
     * @param {bigint | undefined} limitPrice
+    * @param {Uint8Array | undefined} user
     * @returns {FillSimulation}
     */
-    simulateFills(action: string, quoteQty: bigint, limitPrice?: bigint): FillSimulation;
+    simulateFills(action: string, quoteQty: bigint, limitPrice?: bigint, user?: Uint8Array): FillSimulation;
     /**
     * @param {string} action
     * @param {bigint} limitPrice

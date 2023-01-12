@@ -90,7 +90,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
               }
               const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
               try {
-                const sim = orderbookModel.simulateFills("borrow", amount, undefined);
+                const sim = orderbookModel.simulateFills("borrow", amount, undefined, marginAccount?.address.toBytes());
+                if (sim.self_match) { // TODO Integrate with forecast panel
+                  console.log("WARNING Order would be rejected for self-matching")
+                }
                 setAmount(new BN(e * 10 ** decimals));
                 const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
                 const borrowedAmount = new TokenAmount(bigIntToBn(amount), token.decimals)
