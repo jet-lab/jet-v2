@@ -136,7 +136,7 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
     println!("current config: {config:#?}");
     println!("found {} margin accounts", margin_accounts.len());
 
-    for (address, mut account) in margin_accounts {
+    for (address, account) in margin_accounts {
         let ix = MarginIxBuilder::new_with_payer(
             Pubkey::default(), // FIXME: read airspace from margin account
             account.owner,

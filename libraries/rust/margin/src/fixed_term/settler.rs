@@ -1,13 +1,14 @@
 use std::{sync::Arc, time::Duration};
 
 use futures::future::join_all;
+use jet_instructions::margin::accounting_invoke;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use super::FixedTermIxBuilder;
 use crate::{solana::transaction::WithSigner, util::no_dupe_queue::AsyncNoDupeQueue};
 
-pub const SETTLES_PER_TX: usize = 4;
+pub const SETTLES_PER_TX: usize = 3;
 
 /// Loops forever to keep checking the queue for margin accounts.
 /// Sends a separate Settle transaction for each without blocking.
@@ -66,7 +67,7 @@ async fn settle_with_recovery(
     tracing::debug!("sending settle tx for margin accounts {margin_accounts:?}");
     match margin_accounts
         .iter()
-        .map(|ma| builder.margin_settle(*ma))
+        .map(|margin_account| accounting_invoke(*margin_account, builder.settle(*margin_account)))
         .collect::<Vec<_>>()
         .with_signers(&[])
         .send_and_confirm(&rpc)

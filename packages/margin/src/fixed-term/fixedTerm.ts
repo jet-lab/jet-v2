@@ -344,6 +344,7 @@ export class FixedTermMarket {
       .accounts({
         ...this.addresses,
         marginUser: marketUser,
+        marginAccount: user.address,
         ticketCollateral,
         tokenProgram: TOKEN_PROGRAM_ID,
         claims,
@@ -406,8 +407,6 @@ export class FixedTermMarket {
     const marginUser = await this.deriveMarginUserAddress(user)
     const claims = await this.deriveMarginUserClaims(marginUser)
     const ticketCollateral = await this.deriveTicketCollateral(marginUser)
-    const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     return await this.program.methods
       .initializeMarginUser()
       .accounts({
@@ -416,8 +415,6 @@ export class FixedTermMarket {
         marginAccount: user.address,
         claims,
         ticketCollateral,
-        underlyingSettlement,
-        ticketSettlement,
         payer,
         rent: SYSVAR_RENT_PUBKEY,
         systemProgram: SystemProgram.programId,

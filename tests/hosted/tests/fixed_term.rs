@@ -20,7 +20,10 @@ use jet_margin_sdk::{
     fixed_term::settler::SETTLES_PER_TX,
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
-    solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder},
+    solana::{
+        keypair::clone,
+        transaction::{InverseSendTransactionBuilder, SendTransactionBuilder, WithSigner},
+    },
     tx_builder::fixed_term::FixedTermPositionRefresher,
     util::data::Concat,
 };
@@ -32,14 +35,14 @@ use solana_sdk::signer::Signer;
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders() -> Result<(), anyhow::Error> {
-    let manager = FixedTermTestManager::full(margin_test_context!().solana.clone()).await?;
+    let manager = FixedTermTestManager::full(&margin_test_context!()).await?;
     non_margin_orders_for_proxy::<NoProxy>(Arc::new(manager)).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let manager = FixedTermTestManager::full(margin_test_context!().solana.clone()).await?;
+    let manager = FixedTermTestManager::full(&margin_test_context!()).await?;
     non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
 }
 
@@ -303,11 +306,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
 #[serial_test::serial]
 async fn margin_repay() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -429,8 +428,7 @@ async fn margin_repay() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 async fn can_consume_lots_of_events() -> Result<()> {
-    let manager =
-        Arc::new(FixedTermTestManager::full(margin_test_context!().solana.clone()).await?);
+    let manager = Arc::new(FixedTermTestManager::full(&margin_test_context!()).await?);
 
     // make and fund users
     let alice = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
@@ -460,11 +458,7 @@ async fn can_consume_lots_of_events() -> Result<()> {
 #[serial_test::serial]
 async fn settle_many_margin_accounts() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
     let set_prices = vec![
@@ -480,17 +474,17 @@ async fn settle_many_margin_accounts() -> Result<()> {
     ]
     .send_and_confirm_condensed(&client);
 
-    let mut user_actions = vec![];
+    let mut trades = vec![];
 
     // TODO: increase this to be the same as localnet.
     // for now it seems there is a bug in the solana runtime simulator.
     #[cfg(not(feature = "localnet"))]
-    let iterations = SETTLES_PER_TX;
+    let n_trades = SETTLES_PER_TX;
     #[cfg(feature = "localnet")]
-    let iterations = SETTLES_PER_TX * 3 + 1;
+    let n_trades = SETTLES_PER_TX * 3 + 1;
 
-    for _ in 0..iterations {
-        user_actions.push(async {
+    for _ in 0..n_trades {
+        trades.push(async {
             let (lender, borrower) = join!(
                 create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]),
                 create_fixed_term_market_margin_user(
@@ -522,11 +516,11 @@ async fn settle_many_margin_accounts() -> Result<()> {
     }
 
     set_prices.await.unwrap();
-    let users = join_all(user_actions).await;
+    let users_to_settle = join_all(trades).await;
 
     manager.consume_events().await?;
     manager
-        .expect_and_execute_settlement(&users.iter().collect::<Vec<_>>())
+        .expect_and_execute_settlement(&users_to_settle.iter().collect::<Vec<_>>())
         .await?;
 
     assert!(manager.load_event_queue().await?.is_empty()?);
@@ -538,11 +532,7 @@ async fn settle_many_margin_accounts() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -586,11 +576,7 @@ async fn margin_borrow() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow_fails_without_collateral() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -634,11 +620,7 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_lend() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -675,11 +657,7 @@ async fn margin_lend() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow_then_margin_lend() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -689,6 +667,8 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         vec![(collateral, 0, u64::MAX / 2)],
     )
     .await;
+    let mint = manager.ix_builder.token_mint();
+
     let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     vec![
@@ -726,6 +706,14 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
+    let _ = manager.expect_and_execute_settlement(&[&borrower]).await;
+    borrower
+        .proxy
+        .proxy
+        .create_deposit_position(mint)
+        .with_signers(&[clone(&borrower.owner)])
+        .send_and_confirm(&ctx.rpc)
+        .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;
 
     assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
@@ -745,11 +733,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_lend_then_margin_borrow() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -828,11 +812,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_sell_tickets() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -867,11 +847,7 @@ async fn margin_sell_tickets() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn auto_roll_settings_are_correct() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let ([collateral], _, _) = tokens(&ctx).await?;
 
     let user = create_fixed_term_market_margin_user(
@@ -916,11 +892,7 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn auto_roll_borrow() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
