@@ -82,7 +82,11 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()>
         callback_info,
         &order_summary,
     )?;
-    ctx.accounts.margin_user.assets.new_deposit(staked)?;
+
+    if staked > 0 {
+        ctx.accounts.margin_user.assets.new_deposit(staked)?;
+    }
+
     ctx.mint(
         &ctx.accounts.ticket_collateral_mint,
         &ctx.accounts.ticket_collateral,
