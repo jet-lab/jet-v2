@@ -450,9 +450,18 @@ impl FixedTermIxBuilder {
         token_vault: Option<Pubkey>,
     ) -> Instruction {
         let data = jet_fixed_term::instruction::RedeemDeposit {}.data();
-        let accounts = self
+        let mut accounts = self
             .redeem_deposit_accounts(ticket_holder, ticket_holder, ticket, token_vault)
             .to_account_metas(None);
+
+        // the ticket holder must sign to authorize redemption
+        for a in &mut accounts {
+            if a.pubkey == ticket_holder {
+                a.is_signer = true;
+                break;
+            }
+        }
+
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
@@ -490,7 +499,7 @@ impl FixedTermIxBuilder {
     ) -> Instruction {
         let margin_user = self.margin_user(margin_account);
         let data = jet_fixed_term::instruction::MarginRedeemDeposit {}.data();
-        let accounts = jet_fixed_term::accounts::MarginRedeemDeposit {
+        let mut accounts = jet_fixed_term::accounts::MarginRedeemDeposit {
             margin_user: margin_user.address,
             ticket_collateral: margin_user.ticket_collateral,
             ticket_collateral_mint: self.ticket_collateral,
@@ -502,6 +511,15 @@ impl FixedTermIxBuilder {
             ),
         }
         .to_account_metas(None);
+
+        // the margin account must sign to authorize redemption
+        for a in &mut accounts {
+            if a.pubkey == margin_account {
+                a.is_signer = true;
+                break;
+            }
+        }
+
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
@@ -652,9 +670,19 @@ impl FixedTermIxBuilder {
             seed: seed.to_vec(),
         }
         .data();
-        let accounts = self
+        let mut accounts = self
             .lend_order_accounts(user, user, lender_tickets, lender_tokens, params, seed)
             .to_account_metas(None);
+
+        // The authority account, in this case the user account, needs to sign to transfer
+        // to the market vault
+        for a in &mut accounts {
+            if a.pubkey == user {
+                a.is_signer = true;
+                break;
+            }
+        }
+
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
@@ -666,9 +694,19 @@ impl FixedTermIxBuilder {
         deposit_seqno: u64,
     ) -> Instruction {
         let data = jet_fixed_term::instruction::MarginLendOrder { params }.data();
-        let accounts = self
+        let mut accounts = self
             .margin_lend_order_accounts(margin_account, lender_tokens, params, deposit_seqno)
             .to_account_metas(None);
+
+        // The authority account, in this case the margin account, needs to sign to transfer
+        // to the market vault
+        for a in &mut accounts {
+            if a.pubkey == margin_account {
+                a.is_signer = true;
+                break;
+            }
+        }
+
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 

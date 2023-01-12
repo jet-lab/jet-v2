@@ -75,7 +75,7 @@ impl<'info> AutoRollLendOrder<'info> {
             },
         };
 
-        lend_accounts.lend_order(params, adapter)
+        lend_accounts.lend_order(params, adapter, false)
     }
 
     #[inline(never)]
@@ -96,7 +96,7 @@ impl<'info> AutoRollLendOrder<'info> {
             },
         };
 
-        redemption_accounts.redeem()
+        redemption_accounts.redeem(false)
     }
 
     fn order_params(&self) -> OrderParams {

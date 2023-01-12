@@ -24,7 +24,8 @@ pub struct RedeemDeposit<'info> {
     pub owner: AccountInfo<'info>,
 
     /// The authority that must sign to redeem the deposit
-    /// The signature is asserted in handler logic
+    ///
+    /// Signature check is handled in instruction logic
     pub authority: AccountInfo<'info>,
 
     /// Receiver for the rent used to track the deposit
@@ -51,8 +52,12 @@ pub struct RedeemDeposit<'info> {
 }
 
 impl<'info> RedeemDeposit<'info> {
+    /// Account for the redemption of the `TermDeposit`
+    ///
+    /// in the case that this function is downstream from an auto rolled lend order, there is
+    /// no need to withdraw funds from the vault, and `is_withdrawing` should be false
     #[inline(never)]
-    pub fn redeem(&self) -> Result<u64> {
+    pub fn redeem(&self, is_withdrawing: bool) -> Result<u64> {
         let current_time = Clock::get()?.unix_timestamp;
         if current_time < self.deposit.matures_at {
             msg!(
@@ -64,11 +69,13 @@ impl<'info> RedeemDeposit<'info> {
         }
 
         // transfer from the vault to the deposit_holder
-        self.withdraw(
-            &self.underlying_token_vault,
-            &self.token_account,
-            self.deposit.amount,
-        )?;
+        if is_withdrawing {
+            self.withdraw(
+                &self.underlying_token_vault,
+                &self.token_account,
+                self.deposit.amount,
+            )?;
+        }
 
         emit!(DepositRedeemed {
             deposit: self.deposit.key(),
@@ -82,9 +89,6 @@ impl<'info> RedeemDeposit<'info> {
 }
 
 pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
-    if !ctx.accounts.authority.is_signer {
-        return err!(FixedTermErrorCode::MissingAuthoritySignature);
-    }
     if ctx.accounts.owner.key != ctx.accounts.authority.key {
         msg!(
             "signer {} is not the deposit owner {}",
@@ -95,7 +99,7 @@ pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
         return Err(FixedTermErrorCode::DoesNotOwnTicket.into());
     }
 
-    let _ = ctx.accounts.redeem()?;
+    let _ = ctx.accounts.redeem(true)?;
 
     Ok(())
 }

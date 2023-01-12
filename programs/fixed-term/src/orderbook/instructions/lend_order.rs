@@ -14,8 +14,9 @@ use crate::{
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct LendOrder<'info> {
-    /// Signing authority over the token vault transferring for a lend order
-    /// Check for signature occurs in handler logic
+    /// Authority accounted for as the owner of resulting orderbook bids and `TermDeposit` accounts
+    ///
+    /// If transfer of tokens to the market vault is necessary, this account must sign
     pub authority: AccountInfo<'info>,
 
     #[market]
@@ -65,6 +66,7 @@ impl<'info> LendOrder<'info> {
         sequence_number: u64,
         callback_info: CallbackInfo,
         order_summary: &SensibleOrderSummary,
+        requires_payment: bool,
     ) -> Result<u64> {
         let market = self.orderbook_mut.market.key();
         let tenor = self.orderbook_mut.market.load()?.lend_tenor;
@@ -119,27 +121,26 @@ impl<'info> LendOrder<'info> {
         } else {
             0
         };
-        // take all underlying that has been lent plus what may be lent later
-        anchor_spl::token::transfer(
-            anchor_lang::prelude::CpiContext::new(
-                self.token_program.to_account_info(),
-                anchor_spl::token::Transfer {
-                    from: self.lender_tokens.to_account_info(),
-                    to: self.underlying_token_vault.to_account_info(),
-                    authority: self.authority.to_account_info(),
-                },
-            ),
-            order_summary.quote_combined()?,
-        )?;
+        if requires_payment {
+            // take all underlying that has been lent plus what may be lent later
+            anchor_spl::token::transfer(
+                anchor_lang::prelude::CpiContext::new(
+                    self.token_program.to_account_info(),
+                    anchor_spl::token::Transfer {
+                        from: self.lender_tokens.to_account_info(),
+                        to: self.underlying_token_vault.to_account_info(),
+                        authority: self.authority.to_account_info(),
+                    },
+                ),
+                order_summary.quote_combined()?,
+            )?;
+        }
 
         Ok(staked)
     }
 }
 
 pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
-    if !ctx.accounts.authority.is_signer {
-        return err!(FixedTermErrorCode::MissingAuthoritySignature);
-    }
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.authority.key(),
         Side::Bid,
@@ -166,6 +167,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         0,
         callback_info,
         &order_summary,
+        true,
     )?;
     emit!(crate::events::OrderPlaced {
         market: ctx.accounts.orderbook_mut.market.key(),

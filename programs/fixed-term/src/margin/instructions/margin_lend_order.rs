@@ -40,7 +40,12 @@ pub struct MarginLendOrder<'info> {
 
 impl<'info> MarginLendOrder<'info> {
     #[inline(never)]
-    pub fn lend_order(&mut self, params: OrderParams, adapter: Option<Pubkey>) -> Result<()> {
+    pub fn lend_order(
+        &mut self,
+        params: OrderParams,
+        adapter: Option<Pubkey>,
+        requires_payment: bool,
+    ) -> Result<()> {
         let user = &mut self.margin_user;
 
         let (callback_info, order_summary) = self.inner.orderbook_mut.place_order(
@@ -58,6 +63,7 @@ impl<'info> MarginLendOrder<'info> {
             user.assets.next_new_deposit_seqno(),
             callback_info,
             &order_summary,
+            requires_payment,
         )?;
         if staked > 0 {
             self.margin_user.assets.new_deposit(staked)?;
@@ -120,5 +126,6 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()>
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
+        true,
     )
 }

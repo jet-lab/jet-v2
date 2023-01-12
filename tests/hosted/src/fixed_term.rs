@@ -353,7 +353,6 @@ impl TestManager {
             if pending == 0 {
                 break;
             }
-
             self.event_consumer.consume().await?;
         }
         Ok(())

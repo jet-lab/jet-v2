@@ -29,8 +29,8 @@ pub struct MarginRedeemDeposit<'info> {
 
 impl<'info> MarginRedeemDeposit<'info> {
     #[inline(never)]
-    pub fn redeem(&mut self) -> Result<()> {
-        let redeemed = self.inner.redeem()?;
+    pub fn redeem(&mut self, is_withdrawing: bool) -> Result<()> {
+        let redeemed = self.inner.redeem(is_withdrawing)?;
         self.margin_user
             .assets
             .redeem_deposit(self.inner.deposit.sequence_number, redeemed)?;
@@ -55,5 +55,5 @@ impl<'info> MarginRedeemDeposit<'info> {
 }
 
 pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
-    ctx.accounts.redeem()
+    ctx.accounts.redeem(true)
 }
