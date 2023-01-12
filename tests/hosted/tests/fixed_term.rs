@@ -963,11 +963,7 @@ async fn auto_roll_flags() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn auto_roll_lend_order_is_correct() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(
-        FixedTermTestManager::full(ctx.solana.clone())
-            .await
-            .unwrap(),
-    );
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -989,9 +985,11 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(vec![
-        lender.margin_lend_order(underlying(1_001, 2_000)).await?,
-    ])
+    .cat(
+        lender
+            .refresh_and_margin_lend_order(underlying(1_001, 2_000))
+            .await?,
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -1005,17 +1003,16 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(vec![
+    .cat(
         borrower
-            .margin_borrow_order(underlying(2_000, 2_000))
+            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
             .await?,
-    ])
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
     manager.consume_events().await?;
-    lender.settle().await?;
-    borrower.settle().await?;
+    manager.expect_and_execute_settlement(&[&lender]).await?;
 
     // let the `TermDeposit` mature
     #[cfg(not(feature = "localnet"))]
