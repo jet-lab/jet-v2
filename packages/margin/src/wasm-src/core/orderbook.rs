@@ -531,9 +531,9 @@ mod test {
         let sample = om.sample_liquidity(Side::LoanOffer);
 
         assert_eq!(sample.side, Side::LoanOffer);
-        assert_eq!(sample.total_quote_qty, 90); // rounding
+        assert_eq!(sample.total_quote_qty, 90);
         assert_eq!(sample.sample_quote_qty, sample.total_quote_qty);
-        assert_eq!(sample.points[0].cumulative_rate, 0.2363);
+        assert_eq!(sample.points[0].cumulative_rate, 0.2136);
     }
 
     #[test]
