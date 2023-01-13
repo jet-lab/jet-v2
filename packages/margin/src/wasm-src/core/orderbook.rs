@@ -245,6 +245,7 @@ impl OrderbookModel {
         let side = Side::matching(action);
 
         let mut self_match = false;
+        let mut filled_quote_qty = 0;
         let mut filled_base_qty = 0;
         let mut unfilled_quote_qty = quote_qty;
         let mut fills = vec![];
@@ -269,6 +270,7 @@ impl OrderbookModel {
 
                 fills.push(fill);
 
+                filled_quote_qty += fill_quote_qty;
                 filled_base_qty += fill_base_qty;
                 unfilled_quote_qty -= fill_quote_qty;
             } else {
@@ -276,7 +278,6 @@ impl OrderbookModel {
             }
         }
 
-        let filled_quote_qty = quote_qty - unfilled_quote_qty;
         let filled_vwap = if filled_base_qty > 0 {
             filled_quote_qty as f64 / filled_base_qty as f64
         } else {
