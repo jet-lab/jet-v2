@@ -3,21 +3,12 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use jet_program_proc_macros::MarketTokenManager;
 
-use crate::{
-    events::TermDepositCreated,
-    market_token_manager::MarketTokenManager,
-    orderbook::state::*,
-    serialization::{self, RemainingAccounts},
-    tickets::state::{TermDeposit, TermDepositFlags},
-    FixedTermErrorCode,
-};
+use crate::{orderbook::state::*, serialization::RemainingAccounts, FixedTermErrorCode};
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct LendOrder<'info> {
     /// Authority accounted for as the owner of resulting orderbook bids and `TermDeposit` accounts
-    ///
-    /// If transfer of tokens to the market vault is necessary, this account must sign
-    pub authority: AccountInfo<'info>,
+    pub authority: Signer<'info>,
 
     #[market]
     pub orderbook_mut: OrderbookMut<'info>,
@@ -57,94 +48,6 @@ impl<'info> LendOrder<'info> {
 
         Ok(self.ticket_settlement.key())
     }
-
-    /// returns the amount of tickets staked
-    pub fn lend(
-        &self,
-        user: Pubkey,
-        seed: &[u8],
-        sequence_number: u64,
-        callback_info: CallbackInfo,
-        order_summary: &SensibleOrderSummary,
-        requires_payment: bool,
-    ) -> Result<u64> {
-        let market = self.orderbook_mut.market.key();
-        let tenor = self.orderbook_mut.market.load()?.lend_tenor;
-
-        let staked = if order_summary.base_filled() > 0 {
-            if callback_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                // auto_stake: issue split tickets to the user for immediate fill
-                let mut deposit = serialization::init::<TermDeposit>(
-                    self.ticket_settlement.to_account_info(),
-                    self.payer.to_account_info(),
-                    self.system_program.to_account_info(),
-                    &[
-                        crate::seeds::TERM_DEPOSIT,
-                        market.as_ref(),
-                        user.as_ref(),
-                        seed,
-                    ],
-                )?;
-                let timestamp = Clock::get()?.unix_timestamp;
-                let maturation_timestamp = timestamp + tenor as i64;
-
-                let auto_roll = if callback_info.flags.contains(CallbackFlags::AUTO_ROLL) {
-                    TermDepositFlags::AUTO_ROLL
-                } else {
-                    TermDepositFlags::default()
-                };
-
-                *deposit = TermDeposit {
-                    market,
-                    sequence_number,
-                    owner: user,
-                    payer: self.payer.key(),
-                    matures_at: maturation_timestamp,
-                    principal: order_summary.quote_filled()?,
-                    amount: order_summary.base_filled(),
-                    flags: TermDepositFlags::default() | auto_roll,
-                };
-                emit!(TermDepositCreated {
-                    term_deposit: deposit.key(),
-                    authority: user,
-                    payer: self.payer.key(),
-                    order_tag: Some(callback_info.order_tag.as_u128()),
-                    sequence_number,
-                    market,
-                    maturation_timestamp,
-                    principal: deposit.principal,
-                    amount: deposit.amount,
-                });
-                order_summary.base_filled()
-            } else {
-                // no auto_stake: issue free tickets to the user for immediate fill
-                self.mint(
-                    &self.ticket_mint,
-                    &self.ticket_settlement,
-                    order_summary.base_filled(),
-                )?;
-                0
-            }
-        } else {
-            0
-        };
-        if requires_payment {
-            // take all underlying that has been lent plus what may be lent later
-            anchor_spl::token::transfer(
-                anchor_lang::prelude::CpiContext::new(
-                    self.token_program.to_account_info(),
-                    anchor_spl::token::Transfer {
-                        from: self.lender_tokens.to_account_info(),
-                        to: self.underlying_token_vault.to_account_info(),
-                        authority: self.authority.to_account_info(),
-                    },
-                ),
-                order_summary.quote_combined()?,
-            )?;
-        }
-
-        Ok(staked)
-    }
 }
 
 pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
@@ -168,14 +71,38 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
             CallbackFlags::empty()
         },
     )?;
-    ctx.accounts.lend(
-        ctx.accounts.authority.key(),
-        &seed,
-        0,
-        callback_info,
+    let lend_accounts = LendAccounts {
+        authority: &ctx.accounts.authority.to_account_info(),
+        market: &ctx.accounts.orderbook_mut.market,
+        ticket_mint: &ctx.accounts.ticket_mint,
+        ticket_settlement: &ctx.accounts.ticket_settlement,
+        lender_tokens: &ctx.accounts.lender_tokens,
+        underlying_token_vault: &ctx.accounts.underlying_token_vault,
+        payer: &ctx.accounts.payer,
+        token_program: &ctx.accounts.token_program,
+        system_program: &ctx.accounts.system_program,
+    };
+    let deposit_params = if callback_info.flags.contains(CallbackFlags::AUTO_STAKE) {
+        Some(InitTermDepositParams {
+            market: ctx.accounts.orderbook_mut.market.key(),
+            owner: ctx.accounts.authority.key(),
+            tenor: ctx.accounts.orderbook_mut.market.load()?.lend_tenor,
+            sequence_number: 0,
+            auto_roll: callback_info.flags.contains(CallbackFlags::AUTO_ROLL),
+            seed,
+        })
+    } else {
+        None
+    };
+
+    lend(
+        &lend_accounts,
+        deposit_params,
+        &callback_info,
         &order_summary,
         true,
     )?;
+
     emit!(crate::events::OrderPlaced {
         market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.authority.key(),

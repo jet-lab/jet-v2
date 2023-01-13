@@ -1,3 +1,6 @@
+mod lend;
+pub use lend::*;
+
 use crate::{
     control::state::Market, events::OrderCancelled, utils::orderbook_accounts, FixedTermErrorCode,
 };

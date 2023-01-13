@@ -130,4 +130,8 @@ pub enum FixedTermErrorCode {
     MissingAuthoritySignature,
     #[msg("this deposit is not configured for an auto roll")]
     TermDepositIsNotAutoRoll,
+    #[msg("attempted to unwrap the incorrect lend issuance accounts")]
+    WrongIssuance,
+    #[msg("missing TermDeposit initialization parameters")]
+    MissingTermDepositParameters,
 }
