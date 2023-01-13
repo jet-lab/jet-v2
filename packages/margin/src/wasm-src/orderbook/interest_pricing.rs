@@ -104,8 +104,24 @@ pub fn f64_to_fp32(f: f64) -> u64 {
     shifted.round() as u64
 }
 
+#[test]
+fn test_f64_to_fp32() {
+    let x: f64 = 1.5;
+    let y: u64 = (15 << 32) / 10;
+
+    assert_eq!(f64_to_fp32(x), y);
+}
+
 pub fn fp32_to_f64(fp: u64) -> f64 {
     fp as f64 / FP32_ONE as f64
+}
+
+#[test]
+fn test_fp32_to_f64() {
+    let x: f64 = 1.5;
+    let y: u64 = (15 << 32) / 10;
+
+    assert_eq!(x, fp32_to_f64(y));
 }
 
 pub fn f64_to_bps(f: f64) -> u64 {

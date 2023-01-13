@@ -14,7 +14,7 @@ import {
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { useMemo } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
-import { MarketAndconfig, calculate_implied_price, price_to_rate } from '@jet-lab/margin';
+import { MarketAndconfig } from '@jet-lab/margin';
 interface FixedChart {
   type: 'bids' | 'asks';
 }
@@ -67,42 +67,23 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
 
     const orderTypeKey = asksKeys.includes(currentTab) ? 'asks' : 'bids';
     return target.reduce((all, current) => {
-      if (current[orderTypeKey].length === 0) {
-        all.push({
-          id: current.name,
-          type: orderTypeKey,
-          data: []
-        });
-        return all;
-      }
       const currentMarketConfig = allMarkets.find(market => market.name === current.name)?.config;
       if (!currentMarketConfig) return all;
-      let cumulativeQuote = BigInt(0);
-      let cumulativeBase = BigInt(0);
-      const data: Array<{ x: number; y: number }> = [];
-      current[orderTypeKey].map(order => {
-        cumulativeQuote += order.quote_size;
-        cumulativeBase += order.base_size;
-        const price = calculate_implied_price(cumulativeBase, cumulativeQuote);
-        const rate = Number(price_to_rate(price, BigInt(currentMarketConfig.borrowTenor))) / 100;
-        data.push({
-          x: Number(cumulativeQuote / BigInt(10 ** decimals)),
-          y: rate
-        });
-      });
-      if (immediateKeys.includes(currentTab)) {
-        const y = data[0].y;
-        data.unshift({
-          x: 0,
-          y
-        });
-      }
+
+      const sample = current.orderbook.sampleLiquidity(orderTypeKey);
       const currentSeries = {
         id: current.name,
         type: orderTypeKey,
-        data
+        data: sample.points.map(point => {
+          return {
+            x: Number(BigInt(point.cumulative_quote) / BigInt(10 ** decimals)),
+            y: point.cumulative_rate,
+          }
+        })
       };
+
       all.push(currentSeries);
+
       return all;
     }, [] as ISeries[]);
   }, [openOrders, currentTab, selectedMarketIndex]);

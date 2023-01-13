@@ -105,7 +105,7 @@ jobs:
       - run: ./check cargo-test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: lcov.info
           fail_ci_if_error: true
@@ -140,4 +140,4 @@ jobs:
       - name: E2E
         run: |
           chmod -R 777 /root
-          SOLANA_LOGS=false ./check e2e-tests
+          SOLANA_LOGS=false ./check e2e

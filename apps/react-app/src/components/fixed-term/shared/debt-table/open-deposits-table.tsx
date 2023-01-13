@@ -1,10 +1,10 @@
 import { MarginTokenConfig, MarketAndconfig, TokenAmount } from '@jet-lab/margin';
-import { Loan } from '@jet-lab/store';
+import { Deposit } from '@jet-lab/store';
 import { Table } from 'antd';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
 
-const getBorrowColumns = (token: MarginTokenConfig) => [
+const getDepositsColumns = (token: MarginTokenConfig) => [
   {
     title: 'Created',
     dataIndex: 'created_timestamp',
@@ -31,12 +31,12 @@ const getBorrowColumns = (token: MarginTokenConfig) => [
   }
 ];
 
-export const OpenBorrowsTable = ({ data, market }: { data: Loan[]; market: MarketAndconfig }) => {
+export const OpenDepositsTable = ({ data, market }: { data: Deposit[]; market: MarketAndconfig }) => {
   return (
     <Table
       rowKey="id"
       className={'debt-table'}
-      columns={getBorrowColumns(market.token)}
+      columns={getDepositsColumns(market.token)}
       dataSource={data}
       pagination={{
         hideOnSinglePage: true

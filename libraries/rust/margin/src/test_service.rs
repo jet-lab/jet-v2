@@ -83,10 +83,10 @@ pub struct AirspaceTokenConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct FixedTermMarketConfig {
     /// The tenor for borrows
-    pub borrow_tenor: i64,
+    pub borrow_tenor: u64,
 
     /// The tenor for lending
-    pub lend_tenor: i64,
+    pub lend_tenor: u64,
 
     /// The origination fee for borrowing in origination_fee::FEE_UNIT
     pub origination_fee: u64,

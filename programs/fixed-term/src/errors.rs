@@ -12,14 +12,20 @@ pub enum FixedTermErrorCode {
     DoesNotOwnTicket,
     #[msg("signer does not own the event adapter")]
     DoesNotOwnEventAdapter,
+    #[msg("this market owner does not own this market")]
+    DoesNotOwnMarket,
     #[msg("queue does not have room for another event")]
     EventQueueFull,
     #[msg("failed to deserialize the SplitTicket or ClaimTicket")]
     FailedToDeserializeTicket,
+    #[msg("failed to add event to the queue")]
+    FailedToPushEvent,
     #[msg("ticket is not mature and cannot be claimed")]
     ImmatureTicket,
     #[msg("not enough seeds were provided for the accounts that need to be initialized")]
     InsufficientSeeds,
+    #[msg("invalid auto roll configuration")]
+    InvalidAutoRollConfig,
     #[msg("order price is prohibited")]
     InvalidOrderPrice,
     #[msg("this token account is not a valid position for this margin user")]
@@ -40,10 +46,6 @@ pub enum FixedTermErrorCode {
     NoMoreAccounts,
     #[msg("the debt has a non-zero balance")]
     NonZeroDebt,
-    #[msg("expected a term loan with a different sequence number")]
-    TermLoanHasWrongSequenceNumber,
-    #[msg("expected a term deposit with a different sequence number")]
-    TermDepositHasWrongSequenceNumber,
     #[msg("there was a problem loading the price oracle")]
     OracleError,
     #[msg("id was not found in the user's open orders")]
@@ -54,12 +56,20 @@ pub enum FixedTermErrorCode {
     OrderRejected,
     #[msg("price could not be accessed from oracle")]
     PriceMissing,
+    #[msg("expected a term deposit with a different sequence number")]
+    TermDepositHasWrongSequenceNumber,
+    #[msg("expected a term loan with a different sequence number")]
+    TermLoanHasWrongSequenceNumber,
     #[msg("claim ticket is not from this manager")]
     TicketNotFromManager,
+    #[msg("ticket settlement account is not registered as a position in the margin account")]
+    TicketSettlementAccountNotRegistered,
     #[msg("tickets are paused")]
     TicketsPaused,
     #[msg("this signer is not authorized to place a permissioned order")]
     UnauthorizedCaller,
+    #[msg("underlying settlement account is not registered as a position in the margin account")]
+    UnderlyingSettlementAccountNotRegistered,
     #[msg("this user does not own the user account")]
     UserDoesNotOwnAccount,
     #[msg("this adapter does not belong to the user")]
@@ -68,26 +78,24 @@ pub enum FixedTermErrorCode {
     UserNotInMarket,
     #[msg("the wrong adapter account was passed to this instruction")]
     WrongAdapter,
-    #[msg("asks account does not belong to this market")]
-    WrongAsks,
     #[msg("the market is configured for a different airspace")]
     WrongAirspace,
     #[msg("the signer is not authorized to perform this action in the current airspace")]
     WrongAirspaceAuthorization,
+    #[msg("asks account does not belong to this market")]
+    WrongAsks,
     #[msg("bids account does not belong to this market")]
     WrongBids,
-    #[msg("adapter does not belong to given market")]
-    WrongMarket,
     #[msg("wrong authority for this crank instruction")]
     WrongCrankAuthority,
     #[msg("event queue account does not belong to this market")]
     WrongEventQueue,
+    #[msg("adapter does not belong to given market")]
+    WrongMarket,
     #[msg("this market state is not associated with this market")]
     WrongMarketState,
     #[msg("wrong TicketManager account provided")]
     WrongTicketManager,
-    #[msg("this market owner does not own this market")]
-    DoesNotOwnMarket,
     #[msg("the wrong account was provided for the token account that represents a user's claims")]
     WrongClaimAccount,
     #[msg(
@@ -110,10 +118,6 @@ pub enum FixedTermErrorCode {
     WrongProgramAuthority,
     #[msg("not the ticket mint for this fixed term market")]
     WrongTicketMint,
-    #[msg("wrong ticket settlement account")]
-    WrongTicketSettlementAccount,
-    #[msg("wrong underlying settlement account")]
-    WrongUnderlyingSettlementAccount,
     #[msg("wrong underlying token mint for this fixed term market")]
     WrongUnderlyingTokenMint,
     #[msg("wrong user account address was sent to instruction")]
@@ -122,6 +126,4 @@ pub enum FixedTermErrorCode {
     WrongVault,
     #[msg("attempted to divide with zero")]
     ZeroDivision,
-    #[msg("failed to add event to the queue")]
-    FailedToPushEvent,
 }

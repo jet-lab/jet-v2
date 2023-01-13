@@ -8,8 +8,6 @@ pub struct MarginUserInitialized {
     pub market: Pubkey,
     pub margin_user: Pubkey,
     pub margin_account: Pubkey,
-    pub underlying_settlement: Pubkey,
-    pub ticket_settlement: Pubkey,
 }
 
 #[event]
@@ -40,6 +38,7 @@ pub enum OrderType {
 pub struct TermLoanCreated {
     pub term_loan: Pubkey,
     pub authority: Pubkey,
+    pub payer: Pubkey,
     pub order_tag: u128,
     pub sequence_number: u64,
     pub market: Pubkey,
@@ -70,6 +69,7 @@ pub struct TermLoanFulfilled {
 pub struct TermDepositCreated {
     pub term_deposit: Pubkey,
     pub authority: Pubkey,
+    pub payer: Pubkey,
     pub order_tag: Option<u128>,
     pub sequence_number: u64,
     pub market: Pubkey,

@@ -29,17 +29,15 @@ pub struct MarginUser {
     /// which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin
     pub ticket_collateral: Pubkey,
-    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
-    /// the address to send owed tokens
-    pub underlying_settlement: Pubkey,
-    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
-    /// the address to send owed tickets
-    pub ticket_settlement: Pubkey,
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not tickets
     pub debt: Debt,
     /// Accounting used to track assets in custody of the fixed term market
     pub assets: Assets,
+    /// Settings for borrow order "auto rolling"
+    pub borrow_roll_config: AutoRollConfig,
+    /// Settings for lend order "auto rolling"
+    pub lend_roll_config: AutoRollConfig,
 }
 
 impl MarginUser {
@@ -303,6 +301,12 @@ impl Assets {
     }
 }
 
+#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub struct AutoRollConfig {
+    /// the limit price at which orders may be placed by an authority
+    pub limit_price: u64,
+}
+
 #[account]
 #[derive(Debug)]
 pub struct TermLoan {
@@ -313,6 +317,9 @@ pub struct TermLoan {
 
     /// The market where the term loan was created
     pub market: Pubkey,
+
+    /// Which account recieves the rent when this PDA is destructed
+    pub payer: Pubkey,
 
     /// The `OrderTag` associated with the creation of this `TermLoan`
     pub order_tag: OrderTag,

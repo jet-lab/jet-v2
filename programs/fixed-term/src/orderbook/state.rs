@@ -204,11 +204,12 @@ impl<'info> OrderbookMut<'info> {
     }
 }
 
+#[cfg_attr(feature = "cli", derive(serde::Serialize))]
 #[derive(
     AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Zeroable, Pod,
 )]
 #[repr(transparent)]
-pub struct OrderTag([u8; 16]);
+pub struct OrderTag(pub [u8; 16]);
 
 impl OrderTag {
     //todo maybe this means we don't need owner to be stored in the CallbackInfo
@@ -325,6 +326,9 @@ bitflags! {
 
         /// order placed by a MarginUser. margin user == fill_account == out_account
         const MARGIN     = 1 << 2;
+
+        /// is this order subject to auto roll
+        const AUTO_ROLL  = 1 << 3;
     }
 }
 
@@ -347,6 +351,8 @@ pub struct OrderParams {
     pub post_allowed: bool,
     /// Should the purchased tickets be automatically staked with the ticket program
     pub auto_stake: bool,
+    /// Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll
+    pub auto_roll: bool,
 }
 
 // todo remove?

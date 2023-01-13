@@ -83,12 +83,13 @@ impl<'info> LendOrder<'info> {
                     ],
                 )?;
                 let timestamp = Clock::get()?.unix_timestamp;
-                let maturation_timestamp = timestamp + tenor;
+                let maturation_timestamp = timestamp + tenor as i64;
 
                 *deposit = TermDeposit {
                     market,
                     sequence_number,
                     owner: user,
+                    payer: self.payer.key(),
                     matures_at: maturation_timestamp,
                     principal: order_summary.quote_filled()?,
                     amount: order_summary.base_filled(),
@@ -96,6 +97,7 @@ impl<'info> LendOrder<'info> {
                 emit!(TermDepositCreated {
                     term_deposit: deposit.key(),
                     authority: user,
+                    payer: self.payer.key(),
                     order_tag: Some(callback_info.order_tag.as_u128()),
                     sequence_number,
                     market,

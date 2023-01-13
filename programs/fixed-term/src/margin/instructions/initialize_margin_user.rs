@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+use anchor_spl::token::{Mint, Token, TokenAccount};
 use jet_margin::{AdapterResult, PositionChange};
 
 use crate::{
@@ -35,7 +35,7 @@ pub struct InitializeMarginUser<'info> {
     )]
     pub margin_account: Signer<'info>,
 
-    /// The Boheader account
+    /// The fixed-term header account
     #[account(
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
         has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint
@@ -69,9 +69,6 @@ pub struct InitializeMarginUser<'info> {
     pub ticket_collateral: Box<Account<'info, TokenAccount>>,
     pub ticket_collateral_mint: Box<Account<'info, Mint>>,
 
-    pub underlying_settlement: Box<Account<'info, TokenAccount>>,
-    pub ticket_settlement: Box<Account<'info, TokenAccount>>,
-
     #[account(mut)]
     pub payer: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,
@@ -88,17 +85,6 @@ pub struct InitializeMarginUser<'info> {
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
     let user = &mut ctx.accounts.margin_user;
 
-    require_eq!(
-        mint(&ctx.accounts.underlying_settlement.to_account_info())?,
-        ctx.accounts.market.load()?.underlying_token_mint,
-        FixedTermErrorCode::WrongUnderlyingTokenMint
-    );
-    require_eq!(
-        mint(&ctx.accounts.ticket_settlement.to_account_info())?,
-        ctx.accounts.market.load()?.ticket_mint,
-        FixedTermErrorCode::WrongTicketMint
-    );
-
     init! {
         user = MarginUser {
             version: MARGIN_USER_VERSION,
@@ -106,8 +92,8 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
             market: ctx.accounts.market.key(),
             claims: ctx.accounts.claims.key(),
             ticket_collateral: ctx.accounts.ticket_collateral.key(),
-            underlying_settlement: ctx.accounts.underlying_settlement.key(),
-            ticket_settlement: ctx.accounts.ticket_settlement.key(),
+            borrow_roll_config: Default::default(),
+            lend_roll_config: Default::default(),
         } ignoring {
             debt,
             assets,
@@ -118,8 +104,6 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
         market: ctx.accounts.market.key(),
         margin_user: ctx.accounts.margin_user.key(),
         margin_account: ctx.accounts.margin_account.key(),
-        underlying_settlement: ctx.accounts.underlying_settlement.key(),
-        ticket_settlement: ctx.accounts.ticket_settlement.key(),
     });
 
     return_to_margin(
