@@ -51,9 +51,9 @@ impl JsOrderbookModel {
         self.inner.would_match(action.into(), limitPrice) // TODO try_into
     }
 
-    #[wasm_bindgen(js_name = "simulateFills")]
+    #[wasm_bindgen(js_name = "simulateTaker")]
     #[allow(non_snake_case)]
-    pub fn simulate_fills(
+    pub fn simulate_taker(
         &self,
         action: &str,
         quoteQty: u64,
@@ -63,15 +63,24 @@ impl JsOrderbookModel {
         let user = user.map(|b| Pubkey::new(&b));
         let sim = self
             .inner
-            .simulate_fills(action.into(), quoteQty, limitPrice, user); // TODO try_into
+            .simulate_taker(action.into(), quoteQty, limitPrice, user); // TODO try_into
 
         self.to_js(&sim)
     }
 
-    #[wasm_bindgen(js_name = "simulateQueuing")]
+    #[wasm_bindgen(js_name = "simulateMaker")]
     #[allow(non_snake_case)]
-    pub fn simulate_queuing(&self, action: &str, limitPrice: u64) -> Result<JsValue, JsError> {
-        let sim = self.inner.simulate_queuing(action.into(), limitPrice);
+    pub fn simulate_maker(
+        &self,
+        action: &str,
+        quoteQty: u64,
+        limitPrice: u64,
+        user: Option<Box<[u8]>>,
+    ) -> Result<JsValue, JsError> {
+        let user = user.map(|b| Pubkey::new(&b));
+        let sim = self
+            .inner
+            .simulate_maker(action.into(), quoteQty, limitPrice, user);
 
         self.to_js(&sim)
     }
@@ -110,17 +119,20 @@ export type LiquiditySample = {
     points: Array<LiquidityObservation>,
 }
 
-export type FillSimulation = {
-    limit_price: number,
+export type TakerSimulation = {
     order_quote_qty: bigint,
-    filled_quote_qty: bigint,
-    unfilled_quote_qty: bigint,
-    filled_base_qty: bigint,
+    limit_price: number,
+
+    would_match: bool,
+    self_match: bool,
     matches: bigint,
-    vwap: number,
-    vwar: number,
+    filled_quote_qty: bigint,
+    filled_base_qty: bigint,
+    filled_vwap: number,
+    filled_vwar: number,
     fills: Array<Fill>,
-    self_match: boolean,
+
+    unfilled_quote_qty: bigint,
 }
 
 export type Fill = {
@@ -129,12 +141,34 @@ export type Fill = {
     price: number,
 }
 
-export type QueuingSimulation = {
+export type MakerSimulation = {
+    order_quote_qty: bigint,
+    limit_price: number,
+
+    full_quote_qty: bigint,
+    full_base_qty: bigint,
+    full_vwap: number,
+    full_vwar: number,
+
+    would_post: bool,
     depth: bigint,
+    posted_quote_qty: bigint,
+    posted_base_qty: bigint,
+    posted_vwap: number,
+    posted_vwar: number,
     preceding_base_qty: bigint,
     preceding_quote_qty: bigint,
-    vwap: number,
-    vwar: number,
+    preceding_vwap: number,
+    preceding_vwar: number,
+
+    would_match: bool,
+    self_match: bool,
+    matches: bigint,
+    filled_quote_qty: bigint,
+    filled_base_qty: bigint,
+    filled_vwap: number,
+    filled_vwar: number,
+    fills: Array<Fill>,
 }
 "#;
 
@@ -169,15 +203,17 @@ export class OrderbookModel {
     * @param {bigint} quoteQty
     * @param {bigint | undefined} limitPrice
     * @param {Uint8Array | undefined} user
-    * @returns {FillSimulation}
+    * @returns {TakerSimulation}
     */
-    simulateFills(action: string, quoteQty: bigint, limitPrice?: bigint, user?: Uint8Array): FillSimulation;
+    simulateTaker(action: string, quoteQty: bigint, limitPrice?: bigint, user?: Uint8Array): TakerSimulation;
     /**
     * @param {string} action
+    * @param {bigint} quoteQty
     * @param {bigint} limitPrice
-    * @returns {QueuingSimulation}
+    * @param {Uint8Array | undefined} user
+    * @returns {MakerSimulation}
     */
-    simulateQueuing(action: string, limitPrice: bigint): QueuingSimulation;
+    simulateMaker(action: string, quoteQty: bigint, limitPrice: bigint, user?: Uint8Array): MakerSimulation;
     /**
     * @returns {Array<Order>}
     */

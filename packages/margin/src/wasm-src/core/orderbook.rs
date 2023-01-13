@@ -129,6 +129,8 @@ pub struct LiquidityObservation {
     pub cumulative_rate: f64,
 }
 
+// TODO Include more info and checks, eg price bounds and minimum posted order sizes.
+const MIN_BASE_SIZE_POSTED: u64 = 10;
 impl OrderbookModel {
     pub fn new(tenor: u64) -> Self {
         Self {
@@ -231,13 +233,14 @@ impl OrderbookModel {
 
     // TODO Alert self match
     // TODO Don't panic
-    pub fn simulate_fills(
+    pub fn simulate_taker(
         &self,
         action: Action,
         quote_qty: u64,
         limit_price: Option<u64>,
         user: Option<Pubkey>,
-    ) -> FillSimulation {
+    ) -> TakerSimulation {
+        let with_limit_price = limit_price.is_some();
         let limit_price = limit_price.unwrap_or_else(|| action.worst_price());
         let side = Side::matching(action);
 
@@ -274,66 +277,142 @@ impl OrderbookModel {
         }
 
         let filled_quote_qty = quote_qty - unfilled_quote_qty;
-        let vwap = if filled_base_qty > 0 {
+        let filled_vwap = if filled_base_qty > 0 {
             filled_quote_qty as f64 / filled_base_qty as f64
         } else {
             f64::NAN
         };
-        let vwar = if vwap.is_normal() {
-            price_to_rate(f64_to_fp32(vwap), self.tenor) as f64 / 10_000_f64
+        let filled_vwar = if filled_vwap.is_normal() {
+            price_to_rate(f64_to_fp32(filled_vwap), self.tenor) as f64 / 10_000_f64
         } else {
             f64::NAN
         };
 
-        FillSimulation {
-            limit_price: fp32_to_f64(limit_price),
+        let limit_price = if with_limit_price {
+            fp32_to_f64(limit_price)
+        } else {
+            f64::NAN
+        };
+
+        TakerSimulation {
             order_quote_qty: quote_qty,
-            filled_quote_qty,
-            unfilled_quote_qty,
-            filled_base_qty,
-            matches: fills.len(),
-            vwap,
-            vwar,
-            fills,
+            limit_price,
+            would_match: fills.len() > 0,
             self_match,
+            matches: fills.len(),
+            filled_quote_qty,
+            filled_base_qty,
+            filled_vwap,
+            filled_vwar,
+            fills,
+            unfilled_quote_qty,
         }
     }
 
-    pub fn simulate_queuing(&self, action: Action, limit_price: u64) -> QueuingSimulation {
-        let side = action.side_posted();
-        let orders = self.orders_on(side);
+    pub fn simulate_maker(
+        &self,
+        action: Action,
+        quote_qty: u64,
+        limit_price: u64,
+        user: Option<Pubkey>,
+    ) -> MakerSimulation {
+        let mut maker_sim = MakerSimulation::default();
+        maker_sim.order_quote_qty = quote_qty;
+        maker_sim.limit_price = fp32_to_f64(limit_price);
 
-        let mut depth: usize = 0;
-        let mut preceding_base_qty = 0;
-        let mut preceding_quote_qty = 0;
-        for order in orders {
-            if order.precedes(action, limit_price) {
-                depth += 1;
-                preceding_base_qty += order.base_size;
-                preceding_quote_qty += order.quote_size(side).unwrap(); // FIXME CHECK
-            } else {
-                break;
+        let fill_sim = self.simulate_taker(action, quote_qty, Some(limit_price), user);
+
+        if fill_sim.would_match {
+            maker_sim.would_match = true;
+            maker_sim.self_match = fill_sim.self_match;
+            maker_sim.matches = fill_sim.matches;
+            maker_sim.filled_quote_qty = fill_sim.filled_quote_qty;
+            maker_sim.filled_base_qty = fill_sim.filled_base_qty;
+            maker_sim.filled_vwap = fill_sim.filled_vwap;
+            maker_sim.filled_vwar = fill_sim.filled_vwar;
+            maker_sim.fills = fill_sim.fills;
+        } else {
+            maker_sim.filled_vwap = f64::NAN;
+            maker_sim.filled_vwar = f64::NAN;
+        }
+
+        let remaining_base_qty = if fill_sim.would_match {
+            fp32_div(fill_sim.unfilled_quote_qty, limit_price).unwrap()
+        } else {
+            fp32_div(quote_qty, limit_price).unwrap()
+        };
+
+        if remaining_base_qty < MIN_BASE_SIZE_POSTED {
+            maker_sim.would_post = false;
+        } else {
+            maker_sim.would_post = true;
+        }
+
+        if maker_sim.would_post {
+            let side = action.side_posted();
+            let orders = self.orders_on(side);
+
+            let mut depth: usize = 0;
+            let mut preceding_base_qty = 0;
+            let mut preceding_quote_qty = 0;
+            for order in orders {
+                if order.precedes(action, limit_price) {
+                    depth += 1;
+                    preceding_base_qty += order.base_size;
+                    preceding_quote_qty += order.quote_size(side).unwrap(); // FIXME CHECK
+                } else {
+                    break;
+                }
             }
+
+            let preceding_vwap = if preceding_quote_qty > 0 {
+                preceding_quote_qty as f64 / preceding_base_qty as f64
+            } else {
+                f64::NAN
+            };
+            let preceding_vwar = if preceding_vwap.is_normal() {
+                price_to_rate(f64_to_fp32(preceding_vwap), self.tenor) as f64 / 10_000_f64
+            } else {
+                f64::NAN
+            };
+
+            maker_sim.depth = depth;
+            maker_sim.posted_quote_qty =
+                side.base_to_quote(remaining_base_qty, limit_price).unwrap();
+            maker_sim.posted_base_qty = remaining_base_qty;
+            maker_sim.posted_vwap = fp32_to_f64(limit_price);
+            maker_sim.posted_vwar = price_to_rate(limit_price, self.tenor) as f64 / 10_000_f64;
+            maker_sim.preceding_quote_qty = preceding_quote_qty;
+            maker_sim.preceding_base_qty = preceding_base_qty;
+            maker_sim.preceding_vwap = preceding_vwap;
+            maker_sim.preceding_vwar = preceding_vwar;
+        } else {
+            maker_sim.posted_vwap = f64::NAN;
+            maker_sim.posted_vwar = f64::NAN;
+            maker_sim.preceding_vwap = f64::NAN;
+            maker_sim.preceding_vwar = f64::NAN;
         }
 
-        let vwap = if preceding_quote_qty > 0 {
-            preceding_quote_qty as f64 / preceding_base_qty as f64
+        let full_quote_qty = maker_sim.filled_quote_qty + maker_sim.posted_quote_qty;
+        let full_base_qty = maker_sim.filled_base_qty + maker_sim.posted_base_qty;
+
+        let full_vwap = if full_quote_qty > 0 {
+            full_quote_qty as f64 / full_base_qty as f64
         } else {
             f64::NAN
         };
-        let vwar = if vwap.is_normal() {
-            price_to_rate(f64_to_fp32(vwap), self.tenor) as f64 / 10_000_f64
+        let full_vwar = if full_vwap.is_normal() {
+            price_to_rate(f64_to_fp32(full_vwap), self.tenor) as f64 / 10_000_f64
         } else {
             f64::NAN
         };
 
-        QueuingSimulation {
-            depth,
-            preceding_base_qty,
-            preceding_quote_qty,
-            vwap,
-            vwar,
-        }
+        maker_sim.full_quote_qty = full_quote_qty;
+        maker_sim.full_base_qty = full_base_qty;
+        maker_sim.full_vwap = full_vwap;
+        maker_sim.full_vwar = full_vwar;
+
+        maker_sim
     }
 
     pub fn loan_offers(&self) -> &Vec<Order> {
@@ -353,17 +432,20 @@ impl OrderbookModel {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct FillSimulation {
-    pub limit_price: f64,
+pub struct TakerSimulation {
     pub order_quote_qty: u64,
-    pub filled_quote_qty: u64,
-    pub unfilled_quote_qty: u64,
-    pub filled_base_qty: u64,
-    pub matches: usize,
-    pub vwap: f64,
-    pub vwar: f64,
-    pub fills: Vec<Fill>,
+    pub limit_price: f64,
+
+    pub would_match: bool,
     pub self_match: bool,
+    pub matches: usize,
+    pub filled_quote_qty: u64,
+    pub filled_base_qty: u64,
+    pub filled_vwap: f64,
+    pub filled_vwar: f64,
+    pub fills: Vec<Fill>,
+
+    pub unfilled_quote_qty: u64,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -373,13 +455,35 @@ pub struct Fill {
     pub price: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct QueuingSimulation {
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct MakerSimulation {
+    pub order_quote_qty: u64,
+    pub limit_price: f64,
+
+    pub full_quote_qty: u64,
+    pub full_base_qty: u64,
+    pub full_vwap: f64,
+    pub full_vwar: f64,
+
+    pub would_post: bool,
     pub depth: usize,
+    pub posted_quote_qty: u64,
+    pub posted_base_qty: u64,
+    pub posted_vwap: f64,
+    pub posted_vwar: f64,
     pub preceding_base_qty: u64,
     pub preceding_quote_qty: u64,
-    pub vwap: f64,
-    pub vwar: f64,
+    pub preceding_vwap: f64,
+    pub preceding_vwar: f64,
+
+    pub would_match: bool,
+    pub self_match: bool,
+    pub matches: usize,
+    pub filled_quote_qty: u64,
+    pub filled_base_qty: u64,
+    pub filled_vwap: f64,
+    pub filled_vwar: f64,
+    pub fills: Vec<Fill>,
 }
 
 #[cfg(test)]
@@ -428,10 +532,8 @@ mod test {
 
     fn get_pubkey() -> Pubkey {
         Pubkey::new_from_array([
-            1, 2, 3, 4, 5, 6, 7, 8,
-            8, 7, 6, 5, 4, 3, 2, 1,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            8, 7, 6, 5, 4, 3, 2, 1,
+            1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4,
+            3, 2, 1,
         ])
     }
 
@@ -509,11 +611,11 @@ mod test {
     fn test_simulate_fills() {
         let om = populate_orderbook_model();
 
-        let sim = om.simulate_fills("lend".into(), 7_000, None, None);
+        let sim = om.simulate_taker("lend".into(), 7_000, None, None);
         assert_eq!(sim.matches, 3);
         assert_eq!(sim.fills[0].base_qty, 2_000);
         assert_eq!(sim.unfilled_quote_qty, 1); // NOTE Rounding
-        assert_eq!(sim.vwap, 0.9777870913663035);
+        assert_eq!(sim.filled_vwap, 0.9777870913663035);
         assert!(!sim.self_match);
     }
 
@@ -526,7 +628,7 @@ mod test {
         let limit_price = None;
         let user = Some(get_pubkey());
 
-        let sim = om.simulate_fills(action, quote_qty, limit_price, user);
+        let sim = om.simulate_taker(action, quote_qty, limit_price, user);
         assert!(sim.self_match);
     }
 
@@ -534,10 +636,10 @@ mod test {
     fn test_simulate_queuing() {
         let om = populate_orderbook_model();
 
-        let sim = om.simulate_queuing("lend".into(), f64_to_fp32(0.94));
+        let sim = om.simulate_maker("lend".into(), 1_000, f64_to_fp32(0.94), None);
         assert_eq!(sim.depth, 2);
         assert_eq!(sim.preceding_base_qty, 2_500);
         assert_eq!(sim.preceding_quote_qty, 2_370);
-        assert_eq!(sim.vwap, 0.948);
+        assert_eq!(sim.preceding_vwap, 0.948);
     }
 }

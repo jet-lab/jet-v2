@@ -90,7 +90,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
               }
               const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
               try {
-                const sim = orderbookModel.simulateFills("borrow", amount, undefined, marginAccount?.address.toBytes());
+                const sim = orderbookModel.simulateTaker("borrow", amount, undefined, marginAccount?.address.toBytes());
                 if (sim.self_match) { // TODO Integrate with forecast panel
                   console.log("WARNING Order would be rejected for self-matching")
                 }
@@ -100,8 +100,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
                 setForecast({
                   repayAmount: repayAmount.uiTokens,
                   interest: repayAmount.sub(borrowedAmount).uiTokens,
-                  effectiveRate: sim.vwar
+                  effectiveRate: sim.filled_vwar
                 })
+                console.log(sim);
               } catch (e) {
                 console.log(e)
               }

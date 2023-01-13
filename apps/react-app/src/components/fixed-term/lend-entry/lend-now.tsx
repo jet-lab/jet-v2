@@ -90,15 +90,16 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
               }
               const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
               try {
-                const sim = orderbookModel.simulateFills("lend", amount, undefined);
+                const sim = orderbookModel.simulateTaker("lend", amount, undefined);
                 setAmount(new BN(e * 10 ** decimals));
                 const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
                 const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals)
                 setForecast({
                   repayAmount: repayAmount.uiTokens,
                   interest: repayAmount.sub(lendAmount).uiTokens,
-                  effectiveRate: sim.vwar
+                  effectiveRate: sim.filled_vwar
                 })
+                console.log(sim)
               } catch (e) {
                 console.log(e)
               }

@@ -97,36 +97,28 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   // Simulation demo logic
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
-    if (model.wouldMatch("lend", limitPrice)) {
-      const fillSim = model.simulateFills("lend", amount, limitPrice);
-      const repayAmount = new TokenAmount(bigIntToBn(fillSim.filled_base_qty), token.decimals)
-      const lendAmount = new TokenAmount(bigIntToBn(fillSim.filled_quote_qty), token.decimals)        
-      if (fillSim.unfilled_base_qty > 10) { // NOTE Smaller quantities are not posted.
-        setForecast({
-          matchedAmount: repayAmount.uiTokens,
-          matchedInterest: repayAmount.sub(lendAmount).uiTokens,
-          matchedRate: fillSim.vwar
-        })
-      } else {
-        setForecast({
-          totalRepayAmount: repayAmount.uiTokens,
-          totalInterest: repayAmount.sub(lendAmount).uiTokens,
-          totalEffectiveRate: fillSim.vwar,
-          matchedAmount: repayAmount.uiTokens,
-          matchedInterest: repayAmount.sub(lendAmount).uiTokens,
-          matchedRate: fillSim.vwar
-        })
-      }
-    } else {
-      const queueSim = model.simulateQueuing("lend", limitPrice);
-      if (queueSim.depth > 0) {
-        console.log("Order would post without fills into the the book");
-        console.log(queueSim);
-      } else {
-        console.log("Order would post without fills to the top of the book");
-        console.log(queueSim);
-      }
+    const sim = model.simulateMaker("lend", amount, limitPrice, marginAccount?.address.toBytes());
+    if (sim.self_match) { // TODO Integrate with forecast panel
+      console.log("WARNING Order would be rejected for self-matching")
     }
+    if (sim.would_match) {
+      const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
+      const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals)
+      const matchRate = sim.filled_vwar
+      const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals)
+      const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals)
+      const totalRate = sim.filled_vwar
+
+      setForecast({
+        matchedAmount: matchRepayAmount.uiTokens,
+        matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+        matchedRate: matchRate,
+        totalRepayAmount: totalRepayAmount.uiTokens,
+        totalInterest: totalRepayAmount.sub(totalBorrowAmount).uiTokens,
+        totalEffectiveRate: totalRate,
+      })
+    }
+    console.log(sim);
   }
 
   useEffect(() => {
