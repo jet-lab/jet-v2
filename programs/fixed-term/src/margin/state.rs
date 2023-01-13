@@ -29,12 +29,6 @@ pub struct MarginUser {
     /// which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin
     pub ticket_collateral: Pubkey,
-    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
-    /// the address to send owed tokens
-    pub underlying_settlement: Pubkey,
-    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
-    /// the address to send owed tickets
-    pub ticket_settlement: Pubkey,
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not tickets
     pub debt: Debt,

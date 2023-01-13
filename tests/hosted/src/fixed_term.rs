@@ -1,4 +1,8 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Duration,
+};
 
 use agnostic_orderbook::state::{
     critbit::{LeafNode, Slab},
@@ -9,7 +13,7 @@ use agnostic_orderbook::state::{
 use anchor_lang::Discriminator;
 use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use anchor_spl::token::TokenAccount;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use async_trait::async_trait;
 
 use jet_fixed_term::{
@@ -23,8 +27,10 @@ use jet_fixed_term::{
 };
 use jet_margin_sdk::{
     fixed_term::{
-        event_consumer::EventConsumer, fixed_term_address, FixedTermIxBuilder, OrderBookAddresses,
-        OwnedEventQueue,
+        event_consumer::{download_markets, EventConsumer},
+        fixed_term_address,
+        settler::{settle_margin_users_loop, SettleMarginUsersConfig},
+        FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
     },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
@@ -32,11 +38,12 @@ use jet_margin_sdk::{
     margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
-        transaction::{SendTransactionBuilder, TransactionBuilder},
+        transaction::{SendTransactionBuilder, TransactionBuilder, WithSigner},
     },
     tx_builder::{
         fixed_term::FixedTermPositionRefresher, global_initialize_instructions, MarginTxBuilder,
     },
+    util::no_dupe_queue::AsyncNoDupeQueue,
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_program_common::Fp32;
@@ -61,7 +68,7 @@ use spl_token::{instruction::initialize_mint, state::Mint};
 use crate::{
     context::MarginTestContext,
     runtime::{Keygen, SolanaTestContext},
-    setup_helper::setup_user,
+    setup_helper::{register_deposit, setup_user},
     tokens::TokenManager,
 };
 
@@ -107,6 +114,8 @@ pub struct TestManager {
     pub event_consumer: Arc<EventConsumer>,
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
+    pub margin_accounts_to_settle: AsyncNoDupeQueue<Pubkey>,
+    airspace: Pubkey,
 }
 
 impl Clone for TestManager {
@@ -124,14 +133,16 @@ impl Clone for TestManager {
             ),
             keys: self.keys.clone(),
             keygen: self.keygen.clone(),
+            margin_accounts_to_settle: Default::default(),
+            airspace: self.airspace,
         }
     }
 }
 
 impl TestManager {
-    pub async fn full(client: SolanaTestContext) -> Result<Self> {
-        let mint = client.generate_key();
-        let oracle = TokenManager::new(client.clone())
+    pub async fn full(client: &MarginTestContext) -> Result<Self> {
+        let mint = client.solana.generate_key();
+        let oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&mint.pubkey())
             .await?;
         let ticket_mint = fixed_term_address(&[
@@ -143,11 +154,12 @@ impl TestManager {
             )
             .as_ref(),
         ]);
-        let ticket_oracle = TokenManager::new(client.clone())
+        let ticket_oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&ticket_mint)
             .await?;
         TestManager::new(
-            client.clone(),
+            client.solana.clone(),
+            client.margin.airspace(),
             &mint,
             &client.generate_key(),
             &client.generate_key(),
@@ -162,8 +174,10 @@ impl TestManager {
         .await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn new(
         client: SolanaTestContext,
+        airspace: Pubkey,
         mint: &Keypair,
         eq_kp: &Keypair,
         bids_kp: &Keypair,
@@ -185,7 +199,8 @@ impl TestManager {
 
         let ix_builder = FixedTermIxBuilder::new_from_seed(
             payer.pubkey(),
-            &Pubkey::default(),
+            // &airspace,
+            &Pubkey::default(), //todo airspace (i get a weird error in metadata program when this is set correctly)
             &mint.pubkey(),
             MARKET_SEED,
             payer.pubkey(),
@@ -205,6 +220,8 @@ impl TestManager {
             ix_builder,
             kps: Keys::new(),
             keys: Keys::new(),
+            margin_accounts_to_settle: Default::default(),
+            airspace,
         };
         this.insert_kp("token_mint", clone(mint));
 
@@ -269,12 +286,15 @@ impl TestManager {
         Ok(self)
     }
 
-    /// set up metadata authorization for margin to invoke Jet market
+    /// set up metadata authorization for margin to invoke fixed term and
+    /// register relevant positions.
     pub async fn with_margin(self) -> Result<Self> {
         self.create_authority_if_missing().await?;
         self.register_adapter_if_unregistered(&jet_fixed_term::ID)
             .await?;
         self.register_tickets_position_metadatata().await?;
+        register_deposit(&self.client, self.airspace, self.ix_builder.token_mint()).await?;
+        register_deposit(&self.client, self.airspace, self.ix_builder.ticket_mint()).await?;
 
         Ok(self)
     }
@@ -312,7 +332,9 @@ impl TestManager {
         let market = self.ix_builder.market();
 
         loop {
-            self.event_consumer.load_markets(&[market]).await?;
+            let market_struct = download_markets(self.client.as_ref(), &[market]).await?[0];
+            self.event_consumer
+                .insert_market(market_struct, Some(self.margin_accounts_to_settle.clone()));
             self.event_consumer.sync_queues().await?;
             self.event_consumer.sync_users().await?;
 
@@ -326,11 +348,61 @@ impl TestManager {
         }
         Ok(())
     }
+
+    /// Two jobs:
+    /// - Verifies that the event consumer has notified us that the expected
+    ///   account needs to be settled. panic on failure.
+    /// - settles those accounts. return error on failure.
+    pub async fn expect_and_execute_settlement<P: Proxy>(
+        &self,
+        expected: &[&FixedTermUser<P>],
+    ) -> Result<()> {
+        self.expect_settlement(expected).await;
+        self.settle(expected).await?;
+
+        Ok(())
+    }
+
+    pub async fn expect_settlement<P: Proxy>(&self, expected: &[&FixedTermUser<P>]) {
+        let to_settle = self.margin_accounts_to_settle.pop_many(usize::MAX).await;
+        let expected_number_to_settle = expected.len();
+        assert_eq!(expected_number_to_settle, to_settle.len());
+        assert_eq!(
+            expected
+                .iter()
+                .map(|u| u.proxy.pubkey())
+                .collect::<HashSet<Pubkey>>(),
+            to_settle.clone().into_iter().collect()
+        );
+        self.margin_accounts_to_settle.push_many(to_settle).await;
+    }
+
+    pub async fn settle<P: Proxy>(&self, users: &[&FixedTermUser<P>]) -> Result<()> {
+        settle_margin_users_loop(
+            self.client.clone(),
+            self.ix_builder.clone(),
+            self.margin_accounts_to_settle.clone(),
+            SettleMarginUsersConfig {
+                batch_size: std::cmp::max(1, users.len()),
+                batch_delay: Duration::from_secs(0),
+                wait_for_more_delay: Duration::from_secs(0),
+                exit_when_done: true,
+            },
+        )
+        .await;
+        if self.margin_accounts_to_settle.is_empty().await {
+            Ok(())
+        } else {
+            bail!("some settle transactions must have failed")
+        }
+    }
+
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption();
 
         self.sign_send_transaction(&[pause], None).await
     }
+
     pub async fn resume_ticket_redemption(&self) -> Result<Signature> {
         let resume = self.ix_builder.resume_ticket_redemption();
 
@@ -754,10 +826,17 @@ impl<P: Proxy> FixedTermUser<P> {
             .await
     }
 
-    pub async fn margin_borrow_order(
+    pub async fn refresh_and_margin_borrow_order(
         &self,
         params: OrderParams,
     ) -> Result<Vec<TransactionBuilder>> {
+        let mut txs = self.proxy.refresh().await?;
+        txs.push(self.margin_borrow_order(params).await?);
+
+        Ok(txs)
+    }
+
+    pub async fn margin_borrow_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
         let debt_seqno = self.load_margin_user().await?.debt.next_new_loan_seqno();
         let borrow = self.manager.ix_builder.margin_borrow_order(
             self.proxy.pubkey(),
@@ -765,12 +844,23 @@ impl<P: Proxy> FixedTermUser<P> {
             params,
             debt_seqno,
         );
-        self.proxy
-            .refresh_and_invoke_signed(borrow, clone(&self.owner))
-            .await
+        Ok(self
+            .proxy
+            .invoke_signed(borrow)
+            .with_signers(&[clone(&self.owner)]))
     }
 
-    pub async fn margin_lend_order(&self, params: OrderParams) -> Result<Vec<TransactionBuilder>> {
+    pub async fn refresh_and_margin_lend_order(
+        &self,
+        params: OrderParams,
+    ) -> Result<Vec<TransactionBuilder>> {
+        let mut txs = self.proxy.refresh().await?;
+        txs.push(self.margin_lend_order(params).await?);
+
+        Ok(txs)
+    }
+
+    pub async fn margin_lend_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
         let deposit_seqno = self
             .load_margin_user()
             .await?
@@ -782,9 +872,10 @@ impl<P: Proxy> FixedTermUser<P> {
             params,
             deposit_seqno,
         );
-        self.proxy
-            .refresh_and_invoke_signed(ix, clone(&self.owner))
-            .await
+        Ok(self
+            .proxy
+            .invoke_signed(ix)
+            .with_signers(&[clone(&self.owner)]))
     }
 
     pub async fn lend_order(&self, params: OrderParams, seed: &[u8]) -> Result<Signature> {
@@ -808,7 +899,7 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn settle(&self) -> Result<Signature> {
-        let settle = self.manager.ix_builder.margin_settle(self.proxy.pubkey());
+        let settle = self.manager.ix_builder.settle(self.proxy.pubkey());
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 

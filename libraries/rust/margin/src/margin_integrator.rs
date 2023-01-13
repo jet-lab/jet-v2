@@ -59,6 +59,10 @@ impl<P: Proxy> Proxy for RefreshingProxy<P> {
         Ok(refresh)
     }
 
+    async fn refresh(&self) -> Result<Vec<TransactionBuilder>> {
+        self.refresh().await
+    }
+
     fn pubkey(&self) -> Pubkey {
         self.proxy.pubkey()
     }
@@ -97,6 +101,11 @@ pub trait Proxy {
         signer: Keypair, //todo Signer
     ) -> Result<Vec<TransactionBuilder>> {
         Ok(vec![self.invoke_signed(ix).with_signer(signer)])
+    }
+    /// attempt to refresh any positions where the refresh method is understood
+    /// by the proxy implementation.
+    async fn refresh(&self) -> Result<Vec<TransactionBuilder>> {
+        Ok(vec![])
     }
 }
 
