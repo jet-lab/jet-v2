@@ -94,27 +94,28 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     const sim = model.simulateMaker("borrow", amount, limitPrice, marginAccount?.address.toBytes());
+
     if (sim.self_match) { // TODO Integrate with forecast panel
       console.log("WARNING Order would be rejected for self-matching")
     }
-    if (sim.would_match) {
-      const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
-      const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals)
-      const matchRate = sim.filled_vwar
-      const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals)
-      const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals)
-      const totalRate = sim.filled_vwar
 
-      setForecast({
-        matchedAmount: matchRepayAmount.uiTokens,
-        matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
-        matchedRate: matchRate,
-        totalRepayAmount: totalRepayAmount.uiTokens,
-        totalInterest: totalRepayAmount.sub(totalBorrowAmount).uiTokens,
-        totalEffectiveRate: totalRate,
-      })
-    }
-    console.log(sim);
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
+    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals)
+    const matchRate = sim.filled_vwar
+    const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals)
+    const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals)
+    const totalRate = sim.filled_vwar
+
+    setForecast({
+      matchedAmount: matchRepayAmount.uiTokens,
+      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+      matchedRate: matchRate,
+      totalRepayAmount: totalRepayAmount.uiTokens,
+      totalInterest: totalRepayAmount.sub(totalBorrowAmount).uiTokens,
+      totalEffectiveRate: totalRate,
+    })
+
+    console.log(sim)
   }
 
   useEffect(() => {
