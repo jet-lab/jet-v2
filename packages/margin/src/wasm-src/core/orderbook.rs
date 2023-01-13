@@ -531,7 +531,7 @@ mod test {
         let sample = om.sample_liquidity(Side::LoanOffer);
 
         assert_eq!(sample.side, Side::LoanOffer);
-        assert_eq!(sample.total_quote_qty, 89); // rounding
+        assert_eq!(sample.total_quote_qty, 90); // rounding
         assert_eq!(sample.sample_quote_qty, sample.total_quote_qty);
         assert_eq!(sample.points[0].cumulative_rate, 0.2363);
     }
@@ -543,7 +543,7 @@ mod test {
             bids: vec![Order {
                 owner: Default::default(),
                 order_tag: Default::default(),
-                base_size: 10001469970,
+                base_size: 10001469969,
                 price: f64_to_fp32(0.9998630231351882),
             }],
             asks: vec![],
