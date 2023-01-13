@@ -13,7 +13,7 @@ pub struct MarginRedeemDeposit<'info> {
 		constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
         has_one = ticket_collateral,
 	)]
-    pub margin_user: Account<'info, MarginUser>,
+    pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// Token account used by the margin program to track the collateral value of assets custodied by fixed-term market
     #[account(mut)]
@@ -28,6 +28,7 @@ pub struct MarginRedeemDeposit<'info> {
     pub inner: RedeemDeposit<'info>,
 }
 
+#[inline(never)]
 pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
     let redeemed = ctx.accounts.inner.redeem()?;
     ctx.accounts

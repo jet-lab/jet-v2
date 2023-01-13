@@ -1,6 +1,6 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use anchor_spl::token::Token;
+use anchor_spl::{associated_token::get_associated_token_address, token::Token};
 use jet_margin::{AdapterResult, PositionChange};
 use jet_program_common::traits::{SafeSub, TryAddAssign};
 use jet_program_proc_macros::MarketTokenManager;
@@ -59,8 +59,11 @@ pub struct MarginBorrowOrder<'info> {
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
     pub underlying_token_vault: AccountInfo<'info>,
 
-    /// The market token vault
-    #[account(mut, address = margin_user.underlying_settlement @ FixedTermErrorCode::WrongUnderlyingSettlementAccount)]
+    /// Where to receive borrowed tokens
+    #[account(mut, address = get_associated_token_address(
+        &margin_user.margin_account,
+        &orderbook_mut.underlying_mint(),
+    ))]
     pub underlying_settlement: AccountInfo<'info>,
 
     #[market]
@@ -114,7 +117,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
         let mut manager = ctx.accounts.orderbook_mut.market.load_mut()?;
-        let maturation_timestamp = manager.borrow_tenor + Clock::get()?.unix_timestamp;
+        let maturation_timestamp = manager.borrow_tenor as i64 + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_term_loan_without_posting(order_summary.base_filled(), maturation_timestamp)?;
 

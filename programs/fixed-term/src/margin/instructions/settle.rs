@@ -1,9 +1,15 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Token, TokenAccount};
+use anchor_spl::{
+    associated_token::get_associated_token_address,
+    token::{Token, TokenAccount},
+};
+use jet_margin::{AdapterResult, MarginAccount};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    control::state::Market, margin::state::MarginUser, market_token_manager::MarketTokenManager,
+    control::state::Market,
+    margin::state::{return_to_margin, MarginUser},
+    market_token_manager::MarketTokenManager,
     FixedTermErrorCode,
 };
 
@@ -14,10 +20,11 @@ pub struct Settle<'info> {
         has_one = market @ FixedTermErrorCode::UserNotInMarket,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
-        has_one = underlying_settlement @ FixedTermErrorCode::WrongUnderlyingSettlementAccount,
-        has_one = ticket_settlement @ FixedTermErrorCode::WrongTicketSettlementAccount,
     )]
     pub margin_user: Account<'info, MarginUser>,
+
+    /// use accounting_invoke
+    pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
@@ -53,11 +60,19 @@ pub struct Settle<'info> {
     /// CHECK: token program checks it
     #[account(mut)]
     pub ticket_mint: AccountInfo<'info>,
-    /// CHECK: token program checks it
-    #[account(mut)]
+
+    /// Where to receive owed tokens
+    #[account(mut, address = get_associated_token_address(
+        &margin_user.margin_account,
+        &market.load().unwrap().underlying_token_mint,
+    ))]
     pub underlying_settlement: AccountInfo<'info>,
-    /// CHECK: token program checks it
-    #[account(mut)]
+
+    /// Where to receive owed tickets
+    #[account(mut, address = get_associated_token_address(
+        &margin_user.margin_account,
+        &ticket_mint.key(),
+    ))]
     pub ticket_settlement: AccountInfo<'info>,
 }
 
@@ -102,16 +117,32 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     }
 
     // Disburse entitled funds due to fills
-    ctx.mint(
-        &ctx.accounts.ticket_mint,
-        &ctx.accounts.ticket_settlement,
-        assets.entitled_tickets,
-    )?;
-    ctx.withdraw(
-        &ctx.accounts.underlying_token_vault,
-        &ctx.accounts.underlying_settlement,
-        assets.entitled_tokens,
-    )?;
+    if assets.entitled_tickets > 0 {
+        verify_settlement_account_registration(
+            &*ctx.accounts.margin_account.load()?,
+            ctx.accounts.ticket_mint.key(),
+            ctx.accounts.ticket_settlement.key(),
+            FixedTermErrorCode::TicketSettlementAccountNotRegistered,
+        )?;
+        ctx.mint(
+            &ctx.accounts.ticket_mint,
+            &ctx.accounts.ticket_settlement,
+            assets.entitled_tickets,
+        )?;
+    }
+    if assets.entitled_tokens > 0 {
+        verify_settlement_account_registration(
+            &*ctx.accounts.margin_account.load()?,
+            ctx.accounts.market.load()?.underlying_token_mint.key(),
+            ctx.accounts.underlying_settlement.key(),
+            FixedTermErrorCode::UnderlyingSettlementAccountNotRegistered,
+        )?;
+        ctx.withdraw(
+            &ctx.accounts.underlying_token_vault,
+            &ctx.accounts.underlying_settlement,
+            assets.entitled_tokens,
+        )?;
+    }
 
     // Update margin user assets to reflect the settlement
     ctx.accounts.margin_user.assets.entitled_tickets = 0;
@@ -119,5 +150,32 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
 
     ctx.accounts.margin_user.emit_all_balances();
 
-    Ok(())
+    return_to_margin(
+        &ctx.accounts.margin_account.to_account_info(),
+        &AdapterResult {
+            position_changes: vec![],
+        },
+    )
+}
+
+fn verify_settlement_account_registration(
+    margin_account: &MarginAccount,
+    mint: Pubkey,
+    token_account: Pubkey,
+    error: FixedTermErrorCode,
+) -> Result<()> {
+    match margin_account.get_position(&mint) {
+        Some(pos) => {
+            if pos.address != token_account {
+                msg!("The token account registered as a position ({:?}) for this mint ({mint:?}) does not match the settlement account ({token_account:?}).", pos.address);
+                Err(error.into())
+            } else {
+                Ok(())
+            }
+        }
+        None => {
+            msg!("No position registered for this mint ({mint:?}), expected {token_account:?} to be registered.");
+            Err(error.into())
+        }
+    }
 }

@@ -259,7 +259,7 @@ impl MarginAccount {
         self.position_list().get_key(mint).copied()
     }
 
-    pub fn get_position(&mut self, mint: &Pubkey) -> Option<&AccountPosition> {
+    pub fn get_position(&self, mint: &Pubkey) -> Option<&AccountPosition> {
         self.position_list().get(mint)
     }
 

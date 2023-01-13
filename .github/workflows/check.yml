@@ -140,4 +140,4 @@ jobs:
       - name: E2E
         run: |
           chmod -R 777 /root
-          SOLANA_LOGS=false ./check e2e-tests
+          SOLANA_LOGS=false ./check e2e

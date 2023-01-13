@@ -10,13 +10,13 @@
 # Run jobs in the container used for CI:
 #   ./check in-docker '<job-name or all>'
 #
-# NOTE you may need to install cypress for the in-docker e2e-tests to run:
+# NOTE you may need to install cypress for the in-docker e2e to run:
 #   ./check in-docker install-cypress
 #
 # This script can also be sourced:
 #   . check
 # Then you can run any of the subcommands without calling ./check:
-#   e2e-tests    # tab completion is available
+#   e2e    # tab completion is available
 
 DOCKER_IMAGE=jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
 SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
@@ -24,11 +24,12 @@ SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 #################
 # Workflow Jobs
 
-e2e-tests() { local args=$@
+e2e() { local args=$@
     extract-arg --skip-yarn || yarn-build
     rm -f apps/react-app/public/localnet.config.json
     anchor test $args -- --features testing
 }
+e2e-tests() { e2e $@; } # alias to avoid frustration. remove if no one is using it
 
 hosted-tests-localnet() { local args=$@
     extract-arg --skip-build || tests/scripts/on_localnet.sh anchor-build
@@ -116,7 +117,7 @@ all() {
     cargo-lint
     cargo-test
     hosted-tests-localnet $@
-    e2e-tests --skip-build
+    e2e --skip-build
 }
 
 # assumes "args" variable is set.
