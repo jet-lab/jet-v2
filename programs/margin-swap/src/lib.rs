@@ -125,6 +125,9 @@ pub enum ErrorCode {
 
     #[msg("The instruction should not be called directly, use route_swap")]
     DisallowedDirectInstruction,
+
+    #[msg("Token swaps having a split should deposit into the same account")]
+    InvalidSplitDestination,
 }
 
 #[repr(u8)]

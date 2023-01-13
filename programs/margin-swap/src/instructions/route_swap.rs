@@ -178,6 +178,8 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
         return err!(crate::ErrorCode::NoSwapTokensWithdrawn);
     }
 
+    let mut scratch = Scratch::default();
+
     // Iterate through all the valid swap legs and execute the swaps
     for route in swap_routes.iter().take(valid_swaps) {
         let (amount_in, next_src_transit) = exec_swap(
@@ -187,6 +189,7 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
             &mut remaining_accounts,
             route,
             swap_amount_in,
+            &mut scratch,
         )?;
         swap_amount_in = amount_in;
         src_transit = next_src_transit;
@@ -272,6 +275,8 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
 
     let mut swap_amount_in = amount_in;
 
+    let mut scratch = Scratch::default();
+
     // Iterate through all the valid swap legs and execute the swaps
     for route in swap_routes.iter().take(valid_swaps) {
         let (amount_in, next_src_transit) = exec_swap(
@@ -281,6 +286,7 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
             &mut remaining_accounts,
             route,
             swap_amount_in,
+            &mut scratch,
         )?;
         swap_amount_in = amount_in;
         src_transit = next_src_transit;
@@ -312,6 +318,7 @@ fn exec_swap<'info>(
     remaining_accounts: &mut Iter<AccountInfo<'info>>,
     route: &SwapRouteDetail,
     swap_amount_in: u64,
+    scratch: &mut Scratch,
 ) -> Result<(u64, AccountInfo<'info>)> {
     // Get the amount for the current leg if there is a split
     let curr_swap_in = if route.split == 0 {
@@ -329,6 +336,7 @@ fn exec_swap<'info>(
         src_ata,
         remaining_accounts,
         curr_swap_in,
+        scratch,
     )?;
 
     // Handle the next leg
@@ -344,11 +352,12 @@ fn exec_swap<'info>(
             src_ata,
             remaining_accounts,
             curr_swap_in,
+            scratch,
         )?;
         // overwrite the dst_ata_closing with its latest balance
         dst_ata_closing = closing;
         if dst_transit.key != dst.key {
-            todo!("Tokens in a swap split should go to the same destination account");
+            return Err(error!(crate::ErrorCode::InvalidSplitDestination));
         }
     }
 
@@ -367,11 +376,10 @@ fn exec_swap_split<'info>(
     src_ata: &AccountInfo<'info>,
     remaining_accounts: &mut Iter<AccountInfo<'info>>,
     swap_amount_in: u64,
+    scratch: &mut Scratch,
 ) -> Result<(u64, u64, AccountInfo<'info>)> {
     let dst_ata_opening: u64;
     let dst_ata_closing: u64;
-    let mut bumps = BTreeMap::new();
-    let mut reallocs = BTreeSet::new();
     let dst_ata = match route_ident {
         SwapRouteIdentifier::Empty => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
         SwapRouteIdentifier::Spl => {
@@ -381,8 +389,8 @@ fn exec_swap_split<'info>(
                 &Pubkey::default(),
                 &mut &accounts[..],
                 &[],
-                &mut bumps,
-                &mut reallocs,
+                &mut scratch.bumps,
+                &mut scratch.reallocs,
             )?;
             // We don't need to check the destination balance on this leg
             let dst_ata = next_account_info(remaining_accounts).unwrap();
@@ -400,15 +408,15 @@ fn exec_swap_split<'info>(
 
             dst_ata.to_account_info()
         }
-        SwapRouteIdentifier::Whirlpool => todo!(),
+        SwapRouteIdentifier::Whirlpool => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
         SwapRouteIdentifier::SaberStable => {
             let accounts = remaining_accounts.take(7).cloned().collect::<Vec<_>>();
             let swap_accounts = SaberSwapInfo::try_accounts(
                 &saber_stable_swap::id(),
                 &mut &accounts[..],
                 &[],
-                &mut bumps,
-                &mut reallocs,
+                &mut scratch.bumps,
+                &mut scratch.reallocs,
             )?;
             // We don't need to check the destination balance on this leg
             let dst_ata = next_account_info(remaining_accounts).unwrap();
@@ -429,4 +437,11 @@ fn exec_swap_split<'info>(
     };
 
     Ok((dst_ata_opening, dst_ata_closing, dst_ata))
+}
+
+/// Scratch space for try_accounts, reused to prevent creating accounts each time
+#[derive(Default)]
+struct Scratch {
+    bumps: BTreeMap<String, u8>,
+    reallocs: BTreeSet<Pubkey>,
 }

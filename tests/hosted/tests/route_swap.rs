@@ -461,12 +461,17 @@ async fn single_leg_swap_margin(
     // Can't finalize if there are no routes
     assert!(swap_builder.finalize().is_err());
 
+    // Can't swap for more than the maximum split amount
+    let result = swap_builder.add_swap_leg(&pool, 95);
+    assert!(result.is_err());
+
     swap_builder.add_swap_leg(&pool, 60)?;
+    // Can't finalize an incomplete split
+    assert!(swap_builder.finalize().is_err());
     swap_builder.add_swap_leg(&pool, 0)?;
 
-    // // Adding a disconnected swap should fail
-    // let result = swap_builder.add_swap_leg(&pool, 90);
-    // assert!(result.is_err());
+    // Can't get instructions for a swap that's not finalized
+    assert!(swap_builder.get_instruction().is_err());
 
     swap_builder.finalize()?;
 
@@ -599,19 +604,17 @@ async fn route_saber_swap() -> Result<(), anyhow::Error> {
     // Create a swap pool with sufficient liquidity
     let pool = SaberSwapPool::configure(
         &ctx.solana,
-        &env.msol,
         &env.tsol,
+        &env.msol,
         // Set a 1.06 rate
-        10_000 * ONE_MSOL,
-        10_600 * ONE_TSOL,
+        10_000 * ONE_TSOL,
+        10_600 * ONE_MSOL,
     )
     .await?;
 
     // Check that we can get the pool
     // Check if the swap pool can be found
     let mut supported_mints = HashSet::new();
-    supported_mints.insert(env.usdc);
-    supported_mints.insert(env.usdt);
     supported_mints.insert(env.msol);
     supported_mints.insert(env.tsol);
 
