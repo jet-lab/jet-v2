@@ -108,7 +108,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     const matchRate = sim.filled_vwar
     const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals)
     const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals)
-    const totalRate = sim.filled_vwar
+    const totalRate = sim.full_vwar
 
     setForecast({
       matchedAmount: matchRepayAmount.uiTokens,
