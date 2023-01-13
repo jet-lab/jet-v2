@@ -297,7 +297,7 @@ impl OrderbookModel {
         TakerSimulation {
             order_quote_qty: quote_qty,
             limit_price,
-            would_match: fills.len() > 0,
+            would_match: !fills.is_empty(),
             self_match,
             matches: fills.len(),
             filled_quote_qty,
@@ -316,7 +316,32 @@ impl OrderbookModel {
         limit_price: u64,
         user: Option<Pubkey>,
     ) -> MakerSimulation {
-        let mut maker_sim = MakerSimulation::default();
+        let mut maker_sim = MakerSimulation {
+            order_quote_qty: 0,
+            limit_price: f64::NAN,
+            full_quote_qty: 0,
+            full_base_qty: 0,
+            full_vwap: f64::NAN,
+            full_vwar: f64::NAN,
+            would_post: false,
+            depth: 0,
+            posted_quote_qty: 0,
+            posted_base_qty: 0,
+            posted_vwap: f64::NAN,
+            posted_vwar: f64::NAN,
+            preceding_base_qty: 0,
+            preceding_quote_qty: 0,
+            preceding_vwap: f64::NAN,
+            preceding_vwar: f64::NAN,
+            would_match: false,
+            self_match: false,
+            matches: 0,
+            filled_quote_qty: 0,
+            filled_base_qty: 0,
+            filled_vwap: f64::NAN,
+            filled_vwar: f64::NAN,
+            fills: vec![],
+        };
         maker_sim.order_quote_qty = quote_qty;
         maker_sim.limit_price = fp32_to_f64(limit_price);
 
@@ -455,7 +480,7 @@ pub struct Fill {
     pub price: f64,
 }
 
-#[derive(Serialize, Debug, Clone, Default)]
+#[derive(Serialize, Debug, Clone)]
 pub struct MakerSimulation {
     pub order_quote_qty: u64,
     pub limit_price: f64,
