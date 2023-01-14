@@ -2,7 +2,12 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
 
 use crate::{
-    control::state::Market, margin::state::MarginUser, tickets::events::DepositRedeemed,
+    control::state::Market,
+    events::TermDepositCreated,
+    margin::state::MarginUser,
+    orderbook::state::{CallbackFlags, CallbackInfo, SensibleOrderSummary},
+    serialization,
+    tickets::events::DepositRedeemed,
     FixedTermErrorCode,
 };
 
@@ -47,6 +52,76 @@ bitflags! {
     pub struct TermDepositFlags: u8 {
         /// This term loan has already been marked as due.
         const AUTO_ROLL = 0b00000001;
+    }
+}
+
+pub struct InitTermDepositParams {
+    pub market: Pubkey,
+    pub owner: Pubkey,
+    pub tenor: u64,
+    pub sequence_number: u64,
+    pub auto_roll: bool,
+    pub seed: Vec<u8>,
+}
+
+pub struct InitTermDepositAccounts<'a, 'info> {
+    pub deposit: &'a AccountInfo<'info>,
+    pub payer: &'a Signer<'info>,
+    pub system_program: &'a Program<'info, System>,
+}
+
+impl<'a, 'info> InitTermDepositAccounts<'a, 'info> {
+    pub fn init(
+        self,
+        params: InitTermDepositParams,
+        info: &CallbackInfo,
+        summary: &SensibleOrderSummary,
+    ) -> Result<()> {
+        let mut deposit = serialization::init_from_ref::<TermDeposit>(
+            self.deposit,
+            self.payer,
+            self.system_program,
+            &[
+                crate::seeds::TERM_DEPOSIT,
+                params.market.as_ref(),
+                params.owner.as_ref(),
+                &params.seed,
+            ],
+        )?;
+
+        let timestamp = Clock::get()?.unix_timestamp;
+        let maturation_timestamp = timestamp + params.tenor as i64;
+
+        *deposit = TermDeposit {
+            market: params.market,
+            sequence_number: params.sequence_number,
+            owner: params.owner,
+            payer: self.payer.key(),
+            matures_at: maturation_timestamp,
+            principal: summary.quote_filled()?,
+            amount: summary.base_filled(),
+            flags: Self::flags(info),
+        };
+        emit!(TermDepositCreated {
+            term_deposit: deposit.key(),
+            authority: deposit.owner,
+            payer: self.payer.key(),
+            order_tag: Some(info.order_tag.as_u128()),
+            sequence_number: params.sequence_number,
+            market: params.market,
+            maturation_timestamp,
+            principal: deposit.principal,
+            amount: deposit.amount,
+        });
+        Ok(())
+    }
+
+    fn flags(info: &CallbackInfo) -> TermDepositFlags {
+        if info.flags.contains(CallbackFlags::AUTO_ROLL) {
+            TermDepositFlags::AUTO_ROLL
+        } else {
+            TermDepositFlags::empty()
+        }
     }
 }
 
