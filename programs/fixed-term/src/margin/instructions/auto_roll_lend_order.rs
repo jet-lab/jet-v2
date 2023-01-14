@@ -5,11 +5,13 @@ use jet_margin::MarginAccount;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    instructions::{MarginRedeemDeposit, RedeemDeposit},
     margin::state::MarginUser,
     orderbook::state::*,
     serialization::RemainingAccounts,
-    tickets::state::{TermDeposit, TermDepositFlags},
+    tickets::state::{
+        margin_redeem, MarginRedeemDepositAccounts, RedeemDepositAccounts, TermDeposit,
+        TermDepositFlags,
+    },
     FixedTermErrorCode,
 };
 
@@ -19,14 +21,14 @@ use super::margin_lend_order::order_flags;
 pub struct AutoRollLendOrder<'info> {
     /// The `TermDeposit` account to roll
     #[account(mut)]
-    pub deposit: Account<'info, TermDeposit>,
+    pub deposit: Box<Account<'info, TermDeposit>>,
 
     /// In the case the order matches, the new `TermDeposit` to account for
     #[account(mut)]
     pub new_deposit: AccountInfo<'info>,
 
     /// The underlying token account belonging to the lender, required for downstream checks
-    pub lender_tokens: Account<'info, TokenAccount>,
+    pub lender_tokens: Box<Account<'info, TokenAccount>>,
 
     /// The `MarginAccount` this `TermDeposit` belongs to
     #[account(mut)]
@@ -42,11 +44,11 @@ pub struct AutoRollLendOrder<'info> {
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub ticket_collateral: AccountInfo<'info>,
+    pub ticket_collateral: Box<Account<'info, TokenAccount>>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub ticket_collateral_mint: AccountInfo<'info>,
+    pub ticket_collateral_mint: Box<Account<'info, Mint>>,
 
     /// The market token vault
     #[account(mut, address = orderbook_mut.ticket_mint() @ FixedTermErrorCode::WrongTicketMint)]
@@ -55,6 +57,10 @@ pub struct AutoRollLendOrder<'info> {
     /// The market token vault
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
+
+    /// Reciever for rent from the closing of the TermDeposit
+    #[account(mut)]
+    pub rent_receiver: AccountInfo<'info>,
 
     /// Payer for PDA initialization
     #[account(mut)]
@@ -67,25 +73,6 @@ pub struct AutoRollLendOrder<'info> {
 impl<'info> AutoRollLendOrder<'info> {
     #[inline(never)]
     fn lend_order(&self, adapter: Option<Pubkey>) -> Result<()> {
-        // let params = self.order_params();
-        // let mut lend_accounts = MarginLendOrder {
-        //     margin_user: self.margin_user.clone(),
-        //     ticket_collateral: self.ticket_collateral.clone(),
-        //     ticket_collateral_mint: self.ticket_collateral_mint.clone(),
-        //     inner: LendOrder {
-        //         authority: self.margin_account.to_account_info(),
-        //         orderbook_mut: self.orderbook_mut.clone(),
-        //         ticket_settlement: self.new_deposit.to_account_info(),
-        //         lender_tokens: self.lender_tokens.clone(),
-        //         underlying_token_vault: self.underlying_token_vault.clone(),
-        //         ticket_mint: self.ticket_mint.clone(),
-        //         payer: self.payer.clone(),
-        //         system_program: self.system_program.clone(),
-        //         token_program: self.token_program.clone(),
-        //     },
-        // };
-
-        // lend_accounts.lend_order(params, adapter, false)
         let params = self.order_params();
         let (callback_info, order_summary) = self.orderbook_mut.place_order(
             self.margin_account.key(),
@@ -99,8 +86,8 @@ impl<'info> AutoRollLendOrder<'info> {
 
         let accounts = &mut MarginLendAccounts {
             margin_user: self.margin_user.clone(),
-            ticket_collateral: &self.ticket_collateral,
-            ticket_collateral_mint: &self.ticket_collateral_mint,
+            ticket_collateral: &self.ticket_collateral.to_account_info(),
+            ticket_collateral_mint: &self.ticket_collateral_mint.to_account_info(),
             inner: &LendAccounts {
                 authority: &self.margin_account.to_account_info(),
                 market: &self.orderbook_mut.market,
@@ -155,24 +142,24 @@ impl<'info> AutoRollLendOrder<'info> {
     }
 
     #[inline(never)]
-    fn redeem(&self) -> Result<()> {
-        let mut redemption_accounts = Box::new(MarginRedeemDeposit {
+    fn redeem(&mut self) -> Result<()> {
+        let accounts = &mut MarginRedeemDepositAccounts {
             margin_user: self.margin_user.clone(),
-            ticket_collateral: self.ticket_collateral.clone(),
-            ticket_collateral_mint: self.ticket_collateral_mint.clone(),
-            inner: RedeemDeposit {
-                deposit: self.deposit.clone(),
-                owner: self.margin_user.to_account_info(),
-                authority: self.margin_account.to_account_info(),
-                payer: self.payer.to_account_info(),
-                token_account: self.lender_tokens.clone(),
-                market: self.orderbook_mut.market.clone(),
-                underlying_token_vault: self.underlying_token_vault.clone(),
-                token_program: self.token_program.clone(),
+            ticket_collateral: &self.ticket_collateral.to_account_info(),
+            ticket_collateral_mint: &self.ticket_collateral_mint.to_account_info(),
+            inner: &RedeemDepositAccounts {
+                deposit: &self.deposit,
+                owner: &self.margin_user.to_account_info(),
+                authority: &self.margin_account.to_account_info(),
+                payer: &self.rent_receiver,
+                token_account: &self.lender_tokens,
+                market: &self.orderbook_mut.market,
+                underlying_token_vault: &self.underlying_token_vault,
+                token_program: &self.token_program,
             },
-        });
+        };
 
-        redemption_accounts.redeem(false)
+        margin_redeem(accounts, false)
     }
 
     fn order_params(&self) -> OrderParams {

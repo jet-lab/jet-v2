@@ -5,7 +5,10 @@ use jet_program_proc_macros::MarketTokenManager;
 use crate::{
     control::state::Market,
     market_token_manager::MarketTokenManager,
-    tickets::{events::DepositRedeemed, state::TermDeposit},
+    tickets::{
+        events::DepositRedeemed,
+        state::{redeem, RedeemDepositAccounts, TermDeposit},
+    },
     FixedTermErrorCode,
 };
 
@@ -99,7 +102,18 @@ pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
         return Err(FixedTermErrorCode::DoesNotOwnTicket.into());
     }
 
-    let _ = ctx.accounts.redeem(true)?;
+    let accs = ctx.accounts;
+    let accounts = RedeemDepositAccounts {
+        deposit: &accs.deposit,
+        owner: &accs.owner,
+        authority: &accs.authority,
+        payer: &accs.payer,
+        token_account: &accs.token_account,
+        market: &accs.market,
+        underlying_token_vault: &accs.underlying_token_vault,
+        token_program: &accs.token_program,
+    };
+    redeem(&accounts, true)?;
 
     Ok(())
 }

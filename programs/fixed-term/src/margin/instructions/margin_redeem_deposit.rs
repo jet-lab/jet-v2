@@ -2,7 +2,12 @@ use anchor_lang::prelude::*;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::MarginUser, tickets::instructions::redeem_deposit::*, FixedTermErrorCode,
+    margin::state::MarginUser,
+    tickets::{
+        instructions::redeem_deposit::*,
+        state::{margin_redeem, MarginRedeemDepositAccounts, RedeemDepositAccounts},
+    },
+    FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
@@ -27,33 +32,22 @@ pub struct MarginRedeemDeposit<'info> {
     pub inner: RedeemDeposit<'info>,
 }
 
-impl<'info> MarginRedeemDeposit<'info> {
-    #[inline(never)]
-    pub fn redeem(&mut self, is_withdrawing: bool) -> Result<()> {
-        let redeemed = self.inner.redeem(is_withdrawing)?;
-        self.margin_user
-            .assets
-            .redeem_deposit(self.inner.deposit.sequence_number, redeemed)?;
-
-        anchor_spl::token::burn(
-            CpiContext::new(
-                self.inner.token_program.to_account_info(),
-                anchor_spl::token::Burn {
-                    mint: self.ticket_collateral_mint.to_account_info(),
-                    from: self.ticket_collateral.to_account_info(),
-                    authority: self.inner.market.to_account_info(),
-                },
-            )
-            .with_signer(&[&self.inner.market.load()?.authority_seeds()]),
-            redeemed,
-        )?;
-
-        self.margin_user.emit_asset_balances();
-
-        Ok(())
-    }
-}
-
 pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
-    ctx.accounts.redeem(true)
+    let accs = ctx.accounts;
+    let accounts = &mut MarginRedeemDepositAccounts {
+        margin_user: accs.margin_user.clone(),
+        ticket_collateral: &accs.ticket_collateral,
+        ticket_collateral_mint: &accs.ticket_collateral_mint,
+        inner: &RedeemDepositAccounts {
+            deposit: &accs.inner.deposit,
+            owner: &accs.inner.owner,
+            authority: &accs.inner.authority,
+            payer: &accs.inner.payer,
+            token_account: &accs.inner.token_account,
+            market: &accs.inner.market,
+            underlying_token_vault: &accs.inner.underlying_token_vault,
+            token_program: &accs.inner.token_program,
+        },
+    };
+    margin_redeem(accounts, true)
 }

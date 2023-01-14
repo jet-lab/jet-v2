@@ -714,6 +714,7 @@ impl FixedTermIxBuilder {
         &self,
         margin_account: Pubkey,
         deposit: Pubkey,
+        rent_receiver: Pubkey,
         lender_tokens: Option<Pubkey>,
         deposit_seqno: u64,
     ) -> Instruction {
@@ -738,6 +739,7 @@ impl FixedTermIxBuilder {
             ticket_collateral_mint: margin_lend.ticket_collateral_mint,
             ticket_mint: margin_lend.inner.ticket_mint,
             underlying_token_vault: margin_lend.inner.underlying_token_vault,
+            rent_receiver,
             payer: margin_lend.inner.payer,
             system_program: margin_lend.inner.system_program,
             token_program: margin_lend.inner.token_program,

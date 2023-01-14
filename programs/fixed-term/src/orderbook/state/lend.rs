@@ -89,7 +89,7 @@ pub fn lend(
                 payer: accounts.payer,
                 system_program: accounts.system_program,
             },
-            deposit_params.ok_or_else(|| FixedTermErrorCode::MissingTermDepositParameters)?,
+            deposit_params.ok_or(FixedTermErrorCode::MissingTermDepositParameters)?,
         )
     } else {
         Issuance::Tickets(TicketMintAccounts {

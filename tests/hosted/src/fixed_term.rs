@@ -416,10 +416,14 @@ impl TestManager {
             .assets
             .next_new_deposit_seqno();
         let mut builder = Vec::<TransactionBuilder>::new();
-        for (key, _) in mature_deposits {
-            let ix = self
-                .ix_builder
-                .auto_roll_lend_order(*margin_account, key, None, seq_no);
+        for (key, deposit) in mature_deposits {
+            let ix = self.ix_builder.auto_roll_lend_order(
+                *margin_account,
+                key,
+                deposit.payer,
+                None,
+                seq_no,
+            );
             seq_no += 1;
             builder.push(ix.into())
         }
