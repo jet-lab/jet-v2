@@ -90,7 +90,7 @@ pub enum FixedTermErrorCode {
     WrongCrankAuthority,
     #[msg("event queue account does not belong to this market")]
     WrongEventQueue,
-    #[msg("adapter does not belong to given market")]
+    #[msg("account does not belong to given market")]
     WrongMarket,
     #[msg("this market state is not associated with this market")]
     WrongMarketState,
@@ -130,8 +130,12 @@ pub enum FixedTermErrorCode {
     MissingAuthoritySignature,
     #[msg("this deposit is not configured for an auto roll")]
     TermDepositIsNotAutoRoll,
-    #[msg("attempted to unwrap the incorrect lend issuance accounts")]
-    WrongIssuance,
     #[msg("missing TermDeposit initialization parameters")]
     MissingTermDepositParameters,
+    #[msg("incorrect margin account was sent to the instruction")]
+    WrongMarginAccount,
+    #[msg("specified rent receiver differs from the account field")]
+    WrongRentReceiver,
+    #[msg("specified owner differs from the field in the TermDeposit")]
+    WrongDepositOwner,
 }

@@ -249,10 +249,8 @@ pub struct CallbackInfo {
     /// order. for margin orders, this is the owner of the MarginUser, which is
     /// the margin account PDA from the margin program.
     pub owner: Pubkey,
-    /// the account that will be assigned ownership of any output resulting from
-    /// a fill. for margin orders this is the margin user. for auto-stake, this
-    /// account will be set as the split ticket owner. otherwise this is the
-    /// token account to be deposited into.
+    /// For auto-stake, this account will be set as the split ticket owner.
+    /// Otherwise this is the token account to be deposited into.
     pub fill_account: Pubkey,
     /// margin user or token account to be deposited into on out
     /// the account that will be assigned ownership of any output resulting from

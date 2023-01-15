@@ -305,13 +305,17 @@ impl MarketState {
                                 .unwrap()
                                 .to_le_bytes();
 
-                            loan_account =
-                                Some(self.builder.term_deposit_key(&fill_account, &seed));
+                            loan_account = Some(
+                                self.builder
+                                    .term_deposit_key(&maker_callback_info.owner, &seed),
+                            );
                         } else {
                             // In this case the maker doesn't have a margin account, so we derive
                             // the deposit account based on the random seed for this transaction
-                            loan_account =
-                                Some(self.builder.term_deposit_key(&fill_account, &seed));
+                            loan_account = Some(
+                                self.builder
+                                    .term_deposit_key(&maker_callback_info.owner, &seed),
+                            );
                         }
 
                         tracing::debug!(

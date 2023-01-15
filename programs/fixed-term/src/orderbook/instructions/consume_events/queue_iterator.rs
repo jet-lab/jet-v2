@@ -97,7 +97,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     &[
                         crate::seeds::TERM_DEPOSIT,
                         self.market.as_ref(),
-                        &maker_info.fill_account.to_bytes(),
+                        &maker_info.owner.to_bytes(),
                         &seed,
                     ],
                 )?,

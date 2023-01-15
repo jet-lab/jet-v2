@@ -39,25 +39,27 @@ pub struct MarginLendOrder<'info> {
 pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
     let a = ctx.accounts;
     let accounts = &mut MarginLendAccounts {
-        margin_user: a.margin_user.clone(),
+        margin_user: &mut a.margin_user,
         ticket_collateral: &a.ticket_collateral,
         ticket_collateral_mint: &a.ticket_collateral_mint,
         inner: &LendOrderAccounts {
             authority: &a.inner.authority,
             orderbook_mut: &a.inner.orderbook_mut,
             ticket_settlement: &a.inner.ticket_settlement,
-            lender_tokens: &a.inner.lender_tokens,
+            lender_tokens: a.inner.lender_tokens.as_ref(),
             underlying_token_vault: &a.inner.underlying_token_vault,
             ticket_mint: &a.inner.ticket_mint,
             payer: &a.inner.payer,
             system_program: &a.inner.system_program,
             token_program: &a.inner.token_program,
         },
-        adapter: ctx
-            .remaining_accounts
+    };
+    accounts.margin_lend_order(
+        &params,
+        ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-    };
-    accounts.margin_lend_order(&params, true)
+        true,
+    )
 }

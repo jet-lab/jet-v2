@@ -417,6 +417,7 @@ impl TestManager {
             .next_new_deposit_seqno();
         let mut builder = Vec::<TransactionBuilder>::new();
         for (key, deposit) in mature_deposits {
+            dbg!(deposit.clone());
             let ix = self.ix_builder.auto_roll_lend_order(
                 *margin_account,
                 key,
@@ -680,7 +681,6 @@ impl TestManager {
         &self,
         margin_account: &Pubkey,
     ) -> Result<Vec<(Pubkey, TermDeposit)>> {
-        let margin_user = self.ix_builder.margin_user(*margin_account).address;
         let current_time = self.client.get_clock().await?.unix_timestamp;
 
         let deposits = self
@@ -693,7 +693,7 @@ impl TestManager {
             .into_iter()
             .filter_map(|(k, a)| {
                 if let Ok(deposit) = TermDeposit::try_deserialize(&mut a.data.as_slice()) {
-                    if deposit.owner == margin_user && deposit.matures_at <= current_time {
+                    if &deposit.owner == margin_account && deposit.matures_at <= current_time {
                         return Some((k, deposit));
                     }
                 }

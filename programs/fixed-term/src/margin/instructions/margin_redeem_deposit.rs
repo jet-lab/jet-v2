@@ -5,7 +5,7 @@ use crate::{
     margin::state::MarginUser,
     tickets::{
         instructions::redeem_deposit::*,
-        state::{margin_redeem, MarginRedeemDepositAccounts, RedeemDepositAccounts},
+        state::{MarginRedeemDepositAccounts, RedeemDepositAccounts},
     },
     FixedTermErrorCode,
 };
@@ -14,7 +14,7 @@ use crate::{
 pub struct MarginRedeemDeposit<'info> {
     #[account(mut,
         address = inner.owner.key(),
-		constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
+		constraint = margin_user.margin_account == inner.owner.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
         has_one = ticket_collateral,
 	)]
     pub margin_user: Box<Account<'info, MarginUser>>,
@@ -35,19 +35,18 @@ pub struct MarginRedeemDeposit<'info> {
 pub fn handler(ctx: Context<MarginRedeemDeposit>) -> Result<()> {
     let accs = ctx.accounts;
     let accounts = &mut MarginRedeemDepositAccounts {
-        margin_user: accs.margin_user.clone(),
+        margin_user: &mut accs.margin_user,
         ticket_collateral: &accs.ticket_collateral,
         ticket_collateral_mint: &accs.ticket_collateral_mint,
         inner: &RedeemDepositAccounts {
             deposit: &accs.inner.deposit,
             owner: &accs.inner.owner,
-            authority: &accs.inner.authority,
             payer: &accs.inner.payer,
-            token_account: &accs.inner.token_account,
+            token_account: accs.inner.token_account.as_ref(),
             market: &accs.inner.market,
             underlying_token_vault: &accs.inner.underlying_token_vault,
             token_program: &accs.inner.token_program,
         },
     };
-    margin_redeem(accounts, true)
+    accounts.margin_redeem(true)
 }

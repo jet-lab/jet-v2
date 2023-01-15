@@ -23,7 +23,7 @@ pub struct LendOrderAccounts<'a, 'info> {
     pub(crate) ticket_settlement: &'a AccountInfo<'info>,
 
     /// where to loan tokens from
-    pub lender_tokens: &'a Account<'info, TokenAccount>,
+    pub lender_tokens: &'a AccountInfo<'info>,
 
     /// The market token vault
     pub underlying_token_vault: &'a Account<'info, TokenAccount>,
@@ -112,12 +112,14 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
         deposit: Option<InitTermDepositParams>,
     ) -> Result<u64> {
         let staked = if let Some(params) = deposit {
-            let accs = InitTermDepositAccounts {
-                deposit: self.ticket_settlement,
-                payer: self.payer,
-                system_program: self.system_program,
-            };
-            accs.init(params, info, summary)?;
+            if summary.base_filled() > 0 {
+                let accs = InitTermDepositAccounts {
+                    deposit: self.ticket_settlement,
+                    payer: self.payer,
+                    system_program: self.system_program,
+                };
+                accs.init(params, info, summary)?;
+            }
             summary.base_filled()
         } else {
             self.issue_tickets(summary.base_filled())?;
@@ -175,17 +177,17 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
 }
 
 pub struct MarginLendAccounts<'a, 'info> {
-    pub margin_user: Box<Account<'info, MarginUser>>,
+    pub margin_user: &'a mut Account<'info, MarginUser>,
     pub ticket_collateral: &'a AccountInfo<'info>,
     pub ticket_collateral_mint: &'a AccountInfo<'info>,
     pub inner: &'a LendOrderAccounts<'a, 'info>,
-    pub adapter: Option<Pubkey>,
 }
 
 impl<'a, 'info> MarginLendAccounts<'a, 'info> {
     pub fn margin_lend_order(
         &mut self,
         params: &OrderParams,
+        adapter: Option<Pubkey>,
         requires_payment: bool,
     ) -> Result<()> {
         let (info, summary) = self.inner.orderbook_mut.place_order(
@@ -194,7 +196,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
             *params,
             self.margin_user.key(),
             self.margin_user.key(),
-            self.adapter,
+            adapter,
             self.order_flags(params)?,
         )?;
 
@@ -236,7 +238,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         if info.flags.contains(CallbackFlags::AUTO_STAKE) {
             return Ok(Some(InitTermDepositParams {
                 market: self.inner.orderbook_mut.market.key(),
-                owner: self.margin_user.key(),
+                owner: self.inner.authority.key(),
                 tenor: self.inner.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: self.margin_user.assets.next_new_deposit_seqno(),
                 auto_roll: info.flags.contains(CallbackFlags::AUTO_ROLL),

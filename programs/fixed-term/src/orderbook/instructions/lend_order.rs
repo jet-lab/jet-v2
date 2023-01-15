@@ -40,10 +40,10 @@ pub struct LendOrder<'info> {
 pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
     let accs = ctx.accounts;
     let accounts = LendOrderAccounts {
-        authority: &accs.authority.to_account_info(),
+        authority: &accs.authority,
         orderbook_mut: &accs.orderbook_mut,
         ticket_settlement: &accs.ticket_settlement,
-        lender_tokens: &accs.lender_tokens,
+        lender_tokens: accs.lender_tokens.as_ref(),
         underlying_token_vault: &accs.underlying_token_vault,
         ticket_mint: &accs.ticket_mint,
         payer: &accs.payer,

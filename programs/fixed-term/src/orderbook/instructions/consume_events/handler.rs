@@ -117,13 +117,12 @@ fn handle_fill<'info>(
                 } else {
                     TermDepositFlags::default()
                 };
-
                 **term_deposit = TermDeposit {
                     matures_at,
                     sequence_number,
                     principal: quote_size,
                     amount: base_size,
-                    owner: maker.pubkey(),
+                    owner: maker_info.owner,
                     market: market.key(),
                     payer: ctx.accounts.payer.key(),
                     flags: TermDepositFlags::default() | auto_roll,

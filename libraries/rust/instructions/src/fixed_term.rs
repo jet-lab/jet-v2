@@ -450,17 +450,9 @@ impl FixedTermIxBuilder {
         token_vault: Option<Pubkey>,
     ) -> Instruction {
         let data = jet_fixed_term::instruction::RedeemDeposit {}.data();
-        let mut accounts = self
-            .redeem_deposit_accounts(ticket_holder, ticket_holder, ticket, token_vault)
+        let accounts = self
+            .redeem_deposit_accounts(ticket_holder, ticket, token_vault)
             .to_account_metas(None);
-
-        // the ticket holder must sign to authorize redemption
-        for a in &mut accounts {
-            if a.pubkey == ticket_holder {
-                a.is_signer = true;
-                break;
-            }
-        }
 
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
@@ -499,26 +491,13 @@ impl FixedTermIxBuilder {
     ) -> Instruction {
         let margin_user = self.margin_user(margin_account);
         let data = jet_fixed_term::instruction::MarginRedeemDeposit {}.data();
-        let mut accounts = jet_fixed_term::accounts::MarginRedeemDeposit {
+        let accounts = jet_fixed_term::accounts::MarginRedeemDeposit {
             margin_user: margin_user.address,
             ticket_collateral: margin_user.ticket_collateral,
             ticket_collateral_mint: self.ticket_collateral,
-            inner: self.redeem_deposit_accounts(
-                margin_user.address,
-                margin_account,
-                ticket,
-                token_vault,
-            ),
+            inner: self.redeem_deposit_accounts(margin_account, ticket, token_vault),
         }
         .to_account_metas(None);
-
-        // the margin account must sign to authorize redemption
-        for a in &mut accounts {
-            if a.pubkey == margin_account {
-                a.is_signer = true;
-                break;
-            }
-        }
 
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
@@ -526,7 +505,6 @@ impl FixedTermIxBuilder {
     pub fn redeem_deposit_accounts(
         &self,
         owner: Pubkey,
-        authority: Pubkey,
         deposit: Pubkey,
         token_vault: Option<Pubkey>,
     ) -> jet_fixed_term::accounts::RedeemDeposit {
@@ -538,7 +516,6 @@ impl FixedTermIxBuilder {
         jet_fixed_term::accounts::RedeemDeposit {
             deposit,
             owner,
-            authority,
             token_account,
             payer: self.payer,
             market: self.market,
@@ -670,18 +647,9 @@ impl FixedTermIxBuilder {
             seed: seed.to_vec(),
         }
         .data();
-        let mut accounts = self
-            .lend_order_accounts(user, user, lender_tickets, lender_tokens, params, seed)
+        let accounts = self
+            .lend_order_accounts(user, lender_tickets, lender_tokens, params, seed)
             .to_account_metas(None);
-
-        // The authority account, in this case the user account, needs to sign to transfer
-        // to the market vault
-        for a in &mut accounts {
-            if a.pubkey == user {
-                a.is_signer = true;
-                break;
-            }
-        }
 
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
@@ -694,18 +662,9 @@ impl FixedTermIxBuilder {
         deposit_seqno: u64,
     ) -> Instruction {
         let data = jet_fixed_term::instruction::MarginLendOrder { params }.data();
-        let mut accounts = self
+        let accounts = self
             .margin_lend_order_accounts(margin_account, lender_tokens, params, deposit_seqno)
             .to_account_metas(None);
-
-        // The authority account, in this case the margin account, needs to sign to transfer
-        // to the market vault
-        for a in &mut accounts {
-            if a.pubkey == margin_account {
-                a.is_signer = true;
-                break;
-            }
-        }
 
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
@@ -731,7 +690,6 @@ impl FixedTermIxBuilder {
         let accounts = jet_fixed_term::accounts::AutoRollLendOrder {
             deposit,
             new_deposit: margin_lend.inner.ticket_settlement,
-            lender_tokens: margin_lend.inner.lender_tokens,
             margin_account,
             margin_user: margin_lend.margin_user,
             orderbook_mut: margin_lend.inner.orderbook_mut,
@@ -751,7 +709,6 @@ impl FixedTermIxBuilder {
 
     fn lend_order_accounts(
         &self,
-        user: Pubkey,
         authority: Pubkey,
         lender_tickets: Option<Pubkey>,
         lender_tokens: Option<Pubkey>,
@@ -766,7 +723,7 @@ impl FixedTermIxBuilder {
             Some(vault) => vault,
             None => get_associated_token_address(&authority, &self.underlying_mint),
         };
-        let deposit = self.term_deposit_key(&user, seed);
+        let deposit = self.term_deposit_key(&authority, seed);
         jet_fixed_term::accounts::LendOrder {
             authority,
             ticket_settlement: if params.auto_stake {
@@ -797,7 +754,6 @@ impl FixedTermIxBuilder {
             ticket_collateral: margin_user.ticket_collateral,
             ticket_collateral_mint: self.ticket_collateral,
             inner: self.lend_order_accounts(
-                margin_user.address,
                 margin_account,
                 None,
                 lender_tokens,
@@ -983,11 +939,11 @@ impl FixedTermIxBuilder {
             seed,
         ])
     }
-    pub fn term_loan_key(&self, margin_user: &Pubkey, seed: &[u8]) -> Pubkey {
+    pub fn term_loan_key(&self, margin_account: &Pubkey, seed: &[u8]) -> Pubkey {
         fixed_term_address(&[
             jet_fixed_term::seeds::TERM_LOAN,
             self.market.as_ref(),
-            margin_user.as_ref(),
+            margin_account.as_ref(),
             seed,
         ])
     }
