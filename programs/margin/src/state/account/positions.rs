@@ -348,7 +348,7 @@ impl AccountPositionList {
     /// `positions`, adds an empty position to the slot, and returns a mutable
     /// reference to the position which must be initialized with the correct
     /// data.
-    /// 
+    ///
     /// If the position already exists, returns the key only, and no mutable
     /// position.
     pub fn add(
@@ -357,7 +357,7 @@ impl AccountPositionList {
     ) -> AnchorResult<(AccountPositionKey, Option<&mut AccountPosition>)> {
         // check for an existing position
         if let Some(p) = self.map.iter().find(|p| p.mint == mint) {
-            return Ok((p.clone(), None))
+            return Ok((*p, None));
         }
 
         // find the first free space to store the position info

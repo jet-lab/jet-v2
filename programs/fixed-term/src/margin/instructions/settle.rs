@@ -174,7 +174,11 @@ fn verify_settlement_account_registration(
             }
         }
         None => {
-            msg!("No position registered for this mint ({}), expected {} to be registered.", mint, token_account);
+            msg!(
+                "No position registered for this mint ({}), expected {} to be registered.",
+                mint,
+                token_account
+            );
             Err(error.into())
         }
     }
