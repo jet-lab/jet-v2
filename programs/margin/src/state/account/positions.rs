@@ -344,15 +344,20 @@ pub struct AccountPositionList {
 impl AccountPositionList {
     /// Add a position to the position list.
     ///
-    /// Finds an empty slot in `map` and `positions`, and adds an empty position
-    /// to the slot.
+    /// If the position does not exist, Finds an empty slot in `map` and
+    /// `positions`, adds an empty position to the slot, and returns a mutable
+    /// reference to the position which must be initialized with the correct
+    /// data.
+    /// 
+    /// If the position already exists, returns the key only, and no mutable
+    /// position.
     pub fn add(
         &mut self,
         mint: Pubkey,
-    ) -> AnchorResult<(AccountPositionKey, &mut AccountPosition)> {
-        // verify there's no existing position
-        if self.map.iter().any(|p| p.mint == mint) {
-            return err!(ErrorCode::PositionAlreadyRegistered);
+    ) -> AnchorResult<(AccountPositionKey, Option<&mut AccountPosition>)> {
+        // check for an existing position
+        if let Some(p) = self.map.iter().find(|p| p.mint == mint) {
+            return Ok((p.clone(), None))
         }
 
         // find the first free space to store the position info
@@ -378,7 +383,7 @@ impl AccountPositionList {
         free_position.token = mint;
 
         // return the allocated position to be initialized further
-        Ok((key, free_position))
+        Ok((key, Some(free_position)))
     }
 
     /// Remove a position from the margin account.

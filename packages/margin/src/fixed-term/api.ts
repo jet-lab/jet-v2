@@ -24,7 +24,7 @@ export const withCreateFixedTermMarketAccounts = async ({
   const ticketMint = market.addresses.ticketMint
   const marketIXS: TransactionInstruction[] = []
   await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, tokenMint)
-  await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, ticketMint)
+  await marginAccount.withCreateDepositPosition({ instructions: marketIXS, tokenMint })
   const marginUserInfo = await market.fetchMarginUser(marginAccount)
   if (!marginUserInfo) {
     const createAccountIx = await market.registerAccountWithMarket(marginAccount, walletAddress)
