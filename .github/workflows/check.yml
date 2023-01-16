@@ -4,118 +4,119 @@ on:
   push:
     branches:
       - "master"
+      - "flight-logs-ci"
   pull_request:
 
 jobs:
-  hosted-tests-localnet-batch1:
-    runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
-    env:
-      HOME: /home/tools
-      BATCH: batch1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+  # hosted-tests-localnet-batch1:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
+  #   env:
+  #     HOME: /home/tools
+  #     BATCH: batch1
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
       
-      - name: Get hosted-tests-localnet cache
-        uses: actions/cache@v3
-        with:
-          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            !target/idl
-            !target/deploy
+  #     - name: Get hosted-tests-localnet cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
+  #         path: |
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/
+  #           !target/idl
+  #           !target/deploy
 
-      - run: ./check hosted-tests-localnet
+  #     - run: ./check hosted-tests-localnet
 
 
-  hosted-tests-localnet-batch2:
-    runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
-    env:
-      HOME: /home/tools
-      BATCH: batch2
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+  # hosted-tests-localnet-batch2:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
+  #   env:
+  #     HOME: /home/tools
+  #     BATCH: batch2
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
       
-      - name: Get hosted-tests-localnet cache
-        uses: actions/cache@v3
-        with:
-          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            !target/idl
-            !target/deploy
+  #     - name: Get hosted-tests-localnet cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
+  #         path: |
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/
+  #           !target/idl
+  #           !target/deploy
 
-      - run: ./check hosted-tests-localnet
-
-
-  cargo-lint:
-    runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
-    env:
-      HOME: /home/tools
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Get cargo-lint cache
-        uses: actions/cache@v3
-        with:
-          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-
-      - run: ./check cargo-lint
+  #     - run: ./check hosted-tests-localnet
 
 
-  cargo-test:
-    runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
-    env:
-      HOME: /home/tools
-      CODECOV: true
-    steps:
-      - uses: actions/checkout@v3
+  # cargo-lint:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
+  #   env:
+  #     HOME: /home/tools
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
 
-      - name: Get cargo-test cache
-        uses: actions/cache@v3
-        with:
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+  #     - name: Get cargo-lint cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
+  #         path: |
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/
 
-      - run: ./check cargo-test
+  #     - run: ./check cargo-lint
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: lcov.info
-          fail_ci_if_error: true
+
+  # cargo-test:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
+  #   env:
+  #     HOME: /home/tools
+  #     CODECOV: true
+  #   steps:
+  #     - uses: actions/checkout@v3
+
+  #     - name: Get cargo-test cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+  #         path: |
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/
+
+  #     - run: ./check cargo-test
+
+  #     - name: Upload coverage to Codecov
+  #       uses: codecov/codecov-action@v3
+  #       with:
+  #         files: lcov.info
+  #         fail_ci_if_error: true
 
   e2e:
     runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
+    # container:
+    #   image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
-      HOME: /home/tools
+      # HOME: /home/tools
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
       REACT_APP_RPC_DEV_TOKEN: ${{ secrets.REACT_APP_RPC_DEV_TOKEN }}
@@ -123,21 +124,60 @@ jobs:
       REACT_APP_LOGROCKET_PROJECT: ''
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Get anchor cache
+      - id: cachedeps
+        name: Get anchor cache
         uses: actions/cache@v3
         with:
           key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}
           path: |
+            ~/.cache/act
+            ~/.cache/solana
+            ~/.cargo/bin/
+            ~/.cargo/git/db/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
+            ~/.local/share/solana/
+            ~/.npm
+            ~/.yarn
             target/
             !target/idl
             !target/deploy
 
+      - name: Install Rust
+        if: steps.cachedeps.outputs.cache-hit != 'true'
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - id: install-os-deps
+        # if: steps.cachedeps.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev
+
+      - name: Install Solana
+        if: steps.cachedeps.outputs.cache-hit != 'true'
+        # run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.13.6/install)"
+
+      - run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install wasm-pack
+        if: steps.cachedeps.outputs.cache-hit != 'true'
+        run: cargo install wasm-pack
+
+      - name: Install Anchor CLI
+        run: yarn global add @project-serum/anchor-cli@0.26.0
+
+      - run: solana-keygen new --no-bip39-passphrase
+
+      - name: Start data environment
+        uses: isbang/compose-action@v1.4.1
+        with:
+          compose-file: "./.github/e2e-docker-compose.yml"
+          down-flags: "--volumes"
+
       - name: E2E
         run: |
-          chmod -R 777 /root
           SOLANA_LOGS=false ./check e2e

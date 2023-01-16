@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  # solana:
+  #   image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
+  #   ports:
+  #     - "8899:8899"
+  #     - "8900:8900"
+  #   environment:
+  #     - HOME
+  #     - SOLANA_MAINNET_RPC
+  #     - REACT_APP_IP_REGISTRY
+  #     - REACT_APP_RPC_DEV_TOKEN
+  #     - REACT_APP_RPC_TOKEN
+  #     - REACT_APP_LOGROCKET_PROJECT
+  mongodb:
+    image: mongo:5
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=password123
+  api:
+    image: nevi/jet-margin-blackbox
+    environment:
+      - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
+      - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
+    ports:
+      - "3002:3002"
+  poller:
+    image: nevi/jet-margin-eventpoller
+    environment:
+      - POLLER_PROGRAMS=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8,JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ,JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG,JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN,JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp,JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi,JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc
+      - SOLANA_ENDPOINT=http://172.17.0.1:8899
+      - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
+  parser:
+    image: nevi/jet-margin-eventparser
+    environment:
+      - SOLANA_ENDPOINT=http://172.17.0.1:8899
+      - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
+      - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
+  
