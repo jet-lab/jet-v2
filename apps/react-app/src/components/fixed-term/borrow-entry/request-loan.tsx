@@ -1,6 +1,14 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { MarketAndconfig, OrderbookModel, bnToBigInt, rate_to_price, requestLoan, TokenAmount, bigIntToBn } from '@jet-lab/margin';
+import {
+  MarketAndconfig,
+  OrderbookModel,
+  bnToBigInt,
+  rate_to_price,
+  requestLoan,
+  TokenAmount,
+  bigIntToBn
+} from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -16,6 +24,7 @@ import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import debounce from 'lodash.debounce';
+import { RateDisplay } from '../shared/rate-display';
 
 interface RequestLoanProps {
   decimals: number;
@@ -25,12 +34,13 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  totalRepayAmount?: string
-  totalInterest?: string
-  totalEffectiveRate?: number
-  matchedAmount?: string
-  matchedInterest?: string
-  matchedRate?: number
+  totalRepayAmount?: string;
+  totalInterest?: string;
+  totalEffectiveRate?: number;
+  matchedAmount?: string;
+  matchedInterest?: string;
+  matchedRate?: number;
+  selfMatch: boolean;
 }
 
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -45,7 +55,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   const [basisPoints, setBasisPoints] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
-  const [forecast, setForecast] = useState<Forecast>()
+  const [forecast, setForecast] = useState<Forecast>();
 
   const disabled =
     !marginAccount ||
@@ -53,7 +63,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     !currentPool ||
     !pools ||
     basisPoints.lte(new BN(0)) ||
-    amount.lte(new BN(0));
+    amount.lte(new BN(0)) ||
+    forecast?.selfMatch;
 
   const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
@@ -72,7 +83,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       });
       notify(
         'Borrow Offer Created',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+          basisPoints.toNumber() / 100
         }% was created successfully`,
         'success',
         getExplorerUrl(signature, cluster, blockExplorer)
@@ -81,7 +93,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+          basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
@@ -93,18 +106,19 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   // Simulation demo logic
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
-    const sim = model.simulateMaker("borrow", amount, limitPrice, marginAccount?.address.toBytes());
+    const sim = model.simulateMaker('borrow', amount, limitPrice, marginAccount?.address.toBytes());
 
-    if (sim.self_match) { // TODO Integrate with forecast panel
-      console.log("WARNING Order would be rejected for self-matching")
+    if (sim.self_match) {
+      // TODO Integrate with forecast panel
+      console.log('WARNING Order would be rejected for self-matching');
     }
 
-    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
-    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals)
-    const matchRate = sim.filled_vwar
-    const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals)
-    const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals)
-    const totalRate = sim.full_vwar
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
+    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+    const matchRate = sim.filled_vwar;
+    const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals);
+    const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals);
+    const totalRate = sim.full_vwar;
 
     setForecast({
       matchedAmount: matchRepayAmount.uiTokens,
@@ -113,21 +127,19 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       totalRepayAmount: totalRepayAmount.uiTokens,
       totalInterest: totalRepayAmount.sub(totalBorrowAmount).uiTokens,
       totalEffectiveRate: totalRate,
-    })
+      selfMatch: sim.self_match
+    });
 
-    console.log(sim)
+    console.log(sim);
   }
 
   useEffect(() => {
     if (amount.eqn(0) || basisPoints.eqn(0)) return;
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(
-        bnToBigInt(basisPoints),
-        BigInt(marketAndConfig.config.borrowTenor)
-      )
+      rate_to_price(bnToBigInt(basisPoints), BigInt(marketAndConfig.config.borrowTenor))
     );
-  }, [amount, basisPoints])
+  }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
 
   return (
@@ -137,10 +149,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           Loan amount
           <InputNumber
             className="input-amount"
-            onChange={
-              debounce(e => {
-                setAmount(new BN(e * 10 ** decimals));
-              }, 300)}
+            onChange={debounce(e => {
+              setAmount(new BN(e * 10 ** decimals));
+            }, 300)}
             placeholder={'10,000'}
             min={0}
             formatter={formatWithCommas}
@@ -186,37 +197,45 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         </div>
         <div className="stat-line">
           <span>Total Repayment Amount</span>
-          {forecast?.totalRepayAmount && <span>
-            { forecast?.totalRepayAmount }
-            {token.symbol}
-          </span>}
+          {forecast?.totalRepayAmount && (
+            <span>
+              {forecast?.totalRepayAmount}
+              {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          { forecast?.totalInterest && <span>
-            {forecast?.totalInterest} {token.symbol}
-          </span>}
+          {forecast?.totalInterest && (
+            <span>
+              {forecast?.totalInterest} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Total Effective Rate</span>
-          { forecast?.totalEffectiveRate && <span>{(forecast.totalEffectiveRate * 100).toFixed(3)}%</span>}
+          <RateDisplay rate={forecast?.totalEffectiveRate} />
         </div>
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
-          { forecast?.matchedAmount && <span>
-            {forecast.matchedAmount}
-            {token.symbol}
-          </span>}
+          {forecast?.matchedAmount && (
+            <span>
+              {forecast.matchedAmount}
+              {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Matched Interest</span>
-          {forecast?.matchedInterest && <span>
-            {forecast.matchedInterest} {token.symbol}
-          </span>}
+          {forecast?.matchedInterest && (
+            <span>
+              {forecast.matchedInterest} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Matched Effective Rate</span>
-          {forecast?.matchedRate && <span>{(forecast.matchedRate * 100).toFixed(3)}%</span>}
+          <RateDisplay rate={forecast?.matchedRate} />
         </div>
         <div className="stat-line">Risk Level</div>
         <div className="stat-line">

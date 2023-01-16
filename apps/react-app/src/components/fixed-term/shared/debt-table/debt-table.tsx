@@ -49,7 +49,7 @@ export function DebtTable() {
   const { provider } = useProvider();
   const blockExplorer = useRecoilValue(BlockExplorer);
   const cluster = useRecoilValue(Cluster);
-  const pools = useRecoilValue(Pools)
+  const pools = useRecoilValue(Pools);
 
   const { data: ordersData, error: ordersError, isLoading: ordersLoading } = useOrdersForUser(market?.market, account);
   const {
@@ -68,7 +68,7 @@ export function DebtTable() {
   }, [ordersError, positionsError]);
 
   if (!pools) {
-    return null
+    return null;
   }
 
   return (
