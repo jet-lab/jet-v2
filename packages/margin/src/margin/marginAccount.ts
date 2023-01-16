@@ -205,6 +205,7 @@ export class MarginAccount {
     this.owner = translateAddress(owner)
     this.address = MarginAccount.derive(programs, owner, seed)
     this.airspace = PublicKey.default // TODO: populate from on-chain state
+    // this.airspace = findDerivedAccount(this.programs.config.airspaces[0])
     this.pools = pools
     this.walletTokens = walletTokens
     this.positions = this.getPositions()

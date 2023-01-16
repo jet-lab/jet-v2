@@ -16,15 +16,13 @@ interface IWithCreateFixedTermMarketAccount {
 }
 export const withCreateFixedTermMarketAccounts = async ({
   market,
-  provider,
   marginAccount,
   walletAddress,
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.ticketMint
   const marketIXS: TransactionInstruction[] = []
-  await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, tokenMint)
-  await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, ticketMint)
+  await marginAccount.withCreateDepositPosition({ instructions: marketIXS, tokenMint })
   const marginUserInfo = await market.fetchMarginUser(marginAccount)
   if (!marginUserInfo) {
     const createAccountIx = await market.registerAccountWithMarket(marginAccount, walletAddress)
@@ -456,7 +454,7 @@ export const repay = async ({
         user: marginAccount,
         termLoan: currentLoan.address,
         nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
-        payer:  currentLoan.payer,
+        payer: currentLoan.payer,
         amount: balance,
         source,
       })
