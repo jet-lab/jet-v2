@@ -89,7 +89,7 @@ impl<'info> AutoRollLendOrder<'info> {
             ticket_collateral_mint: self.ticket_collateral_mint.as_ref().as_ref(),
             inner: &RedeemDepositAccounts {
                 deposit: &self.deposit,
-                owner: self.margin_user.as_ref().as_ref(),
+                owner: self.margin_account.as_ref(),
                 payer: &self.rent_receiver,
                 token_account: &self.new_deposit, // not needed for this instruction, arbitrary account
                 market: &self.orderbook_mut.market,

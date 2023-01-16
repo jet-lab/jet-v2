@@ -4,7 +4,7 @@ use anchor_spl::token::{accessor, mint_to, Mint, MintTo, Token, TokenAccount};
 
 use crate::{
     margin::state::{AutoRollConfig, MarginUser},
-    tickets::state::{InitTermDepositAccounts, InitTermDepositParams},
+    tickets::state::{InitTermDepositAccounts, TermDepositWriter},
     FixedTermErrorCode,
 };
 
@@ -60,7 +60,7 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
                 CallbackFlags::empty()
             },
         )?;
-        self.lend(&info, &summary, self.term_deposit(&info, seed)?, true)?;
+        self.lend(&summary, self.term_deposit(&info, &summary, seed)?, true)?;
 
         emit!(crate::events::OrderPlaced {
             market: self.orderbook_mut.market.key(),
@@ -80,12 +80,11 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
 
     pub fn lend(
         &self,
-        info: &CallbackInfo,
         summary: &SensibleOrderSummary,
-        deposit: Option<InitTermDepositParams>,
+        deposit: Option<TermDepositWriter>,
         requires_payment: bool,
     ) -> Result<u64> {
-        let staked = self.issue(info, summary, deposit)?;
+        let staked = self.issue(summary, deposit)?;
 
         if requires_payment {
             // take all underlying that has been lent plus what may be lent later
@@ -107,18 +106,16 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
 
     fn issue(
         &self,
-        info: &CallbackInfo,
         summary: &SensibleOrderSummary,
-        deposit: Option<InitTermDepositParams>,
+        deposit: Option<TermDepositWriter>,
     ) -> Result<u64> {
-        let staked = if let Some(params) = deposit {
+        let staked = if let Some(writer) = deposit {
             if summary.base_filled() > 0 {
-                let accs = InitTermDepositAccounts {
+                writer.init_and_write(InitTermDepositAccounts {
                     deposit: self.ticket_settlement,
                     payer: self.payer,
                     system_program: self.system_program,
-                };
-                accs.init(params, info, summary)?;
+                })?;
             }
             summary.base_filled()
         } else {
@@ -160,12 +157,18 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
     fn term_deposit(
         &self,
         info: &CallbackInfo,
+        summary: &SensibleOrderSummary,
         seed: Vec<u8>,
-    ) -> Result<Option<InitTermDepositParams>> {
+    ) -> Result<Option<TermDepositWriter>> {
         if info.flags.contains(CallbackFlags::AUTO_STAKE) {
-            return Ok(Some(InitTermDepositParams {
+            return Ok(Some(TermDepositWriter {
                 market: self.orderbook_mut.market.key(),
                 owner: self.authority.key(),
+                payer: self.payer.key(),
+                margin_user: None,
+                order_tag: info.order_tag.as_u128(),
+                amount: summary.base_filled(),
+                principal: summary.quote_filled()?,
                 tenor: self.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: 0,
                 auto_roll: info.flags.contains(CallbackFlags::AUTO_ROLL),
@@ -200,8 +203,8 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
             self.order_flags(params)?,
         )?;
 
-        let deposit = self.maybe_term_deposit(&info)?;
-        self.margin_lend(&info, &summary, deposit, requires_payment)?;
+        let deposit = self.maybe_term_deposit(&info, &summary)?;
+        self.margin_lend(&summary, deposit, requires_payment)?;
 
         self.emit_margin_lend_order(params, &info, &summary);
 
@@ -210,12 +213,11 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
 
     fn margin_lend(
         &mut self,
-        info: &CallbackInfo,
         summary: &SensibleOrderSummary,
-        deposit: Option<InitTermDepositParams>,
+        deposit: Option<TermDepositWriter>,
         requires_payment: bool,
     ) -> Result<()> {
-        let staked = self.inner.lend(info, summary, deposit, requires_payment)?;
+        let staked = self.inner.lend(summary, deposit, requires_payment)?;
         if staked > 0 {
             self.margin_user.assets.new_deposit(staked)?;
         }
@@ -234,13 +236,22 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         )
     }
 
-    fn maybe_term_deposit(&self, info: &CallbackInfo) -> Result<Option<InitTermDepositParams>> {
+    fn maybe_term_deposit(
+        &self,
+        info: &CallbackInfo,
+        summary: &SensibleOrderSummary,
+    ) -> Result<Option<TermDepositWriter>> {
         if info.flags.contains(CallbackFlags::AUTO_STAKE) {
-            return Ok(Some(InitTermDepositParams {
+            return Ok(Some(TermDepositWriter {
                 market: self.inner.orderbook_mut.market.key(),
                 owner: self.inner.authority.key(),
+                payer: self.inner.payer.key(),
+                margin_user: Some(self.margin_user.key()),
+                order_tag: info.order_tag.as_u128(),
                 tenor: self.inner.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: self.margin_user.assets.next_new_deposit_seqno(),
+                amount: summary.base_filled(),
+                principal: summary.quote_filled()?,
                 auto_roll: info.flags.contains(CallbackFlags::AUTO_ROLL),
                 seed: self
                     .margin_user

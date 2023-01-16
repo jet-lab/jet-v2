@@ -4,7 +4,7 @@ use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
     seeds,
-    tickets::instructions::StakeTicketsParams,
+    tickets::{instructions::StakeTicketsParams, state::TermDeposit},
 };
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -648,7 +648,7 @@ impl FixedTermIxBuilder {
         }
         .data();
         let accounts = self
-            .lend_order_accounts(user, lender_tickets, lender_tokens, params, seed)
+            .lend_order_accounts(user, None, lender_tickets, lender_tokens, params, seed)
             .to_account_metas(None);
 
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
@@ -710,6 +710,7 @@ impl FixedTermIxBuilder {
     fn lend_order_accounts(
         &self,
         authority: Pubkey,
+        term_deposit: Option<Pubkey>,
         lender_tickets: Option<Pubkey>,
         lender_tokens: Option<Pubkey>,
         params: OrderParams,
@@ -723,7 +724,7 @@ impl FixedTermIxBuilder {
             Some(vault) => vault,
             None => get_associated_token_address(&authority, &self.underlying_mint),
         };
-        let deposit = self.term_deposit_key(&authority, seed);
+        let deposit = term_deposit.unwrap_or_else(|| self.term_deposit_key(&authority, seed));
         jet_fixed_term::accounts::LendOrder {
             authority,
             ticket_settlement: if params.auto_stake {
@@ -755,6 +756,7 @@ impl FixedTermIxBuilder {
             ticket_collateral_mint: self.ticket_collateral,
             inner: self.lend_order_accounts(
                 margin_account,
+                Some(self.term_deposit_key(&margin_user.address, &deposit_seqno.to_le_bytes())),
                 None,
                 lender_tokens,
                 params,
@@ -932,12 +934,11 @@ impl FixedTermIxBuilder {
     }
 
     pub fn term_deposit_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_term_address(&[
-            jet_fixed_term::seeds::TERM_DEPOSIT,
+        fixed_term_address(&TermDeposit::seeds(
             self.market.as_ref(),
             ticket_holder.as_ref(),
             seed,
-        ])
+        ))
     }
     pub fn term_loan_key(&self, margin_account: &Pubkey, seed: &[u8]) -> Pubkey {
         fixed_term_address(&[

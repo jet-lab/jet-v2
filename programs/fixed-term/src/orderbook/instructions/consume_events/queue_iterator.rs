@@ -94,12 +94,11 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                 self.accounts.init_next::<TermDeposit>(
                     self.payer.to_account_info(),
                     self.system_program.to_account_info(),
-                    &[
-                        crate::seeds::TERM_DEPOSIT,
+                    &TermDeposit::seeds(
                         self.market.as_ref(),
-                        &maker_info.owner.to_bytes(),
+                        maker_info.fill_account.as_ref(),
                         &seed,
-                    ],
+                    ),
                 )?,
             ))
         } else if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {

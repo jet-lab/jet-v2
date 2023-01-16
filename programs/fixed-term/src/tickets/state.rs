@@ -5,8 +5,7 @@ use crate::{
     control::state::Market,
     events::TermDepositCreated,
     margin::state::MarginUser,
-    orderbook::state::{CallbackFlags, CallbackInfo, SensibleOrderSummary},
-    serialization,
+    serialization::{self, AnchorAccount, Mut},
     tickets::events::DepositRedeemed,
     FixedTermErrorCode,
 };
@@ -17,8 +16,8 @@ use crate::{
 pub struct TermDeposit {
     /// The owner of the redeemable tokens
     ///
-    /// This is usually a user's margin account, unless the deposit was created directly
-    /// with this program.
+    /// If this deposit was created by a Margin account, this is the `MarginUser`.
+    /// Else, this is the Pubkey of the lender's signing account
     pub owner: Pubkey,
 
     /// The relevant market for this deposit
@@ -47,21 +46,10 @@ pub struct TermDeposit {
     pub flags: TermDepositFlags,
 }
 
-bitflags! {
-    #[derive(Default, AnchorSerialize, AnchorDeserialize)]
-    pub struct TermDepositFlags: u8 {
-        /// This term loan has already been marked as due.
-        const AUTO_ROLL = 0b00000001;
+impl TermDeposit {
+    pub fn seeds<'a>(market: &'a [u8], owner: &'a [u8], seed: &'a [u8]) -> [&'a [u8]; 4] {
+        [crate::seeds::TERM_DEPOSIT, market, owner, seed]
     }
-}
-
-pub struct InitTermDepositParams {
-    pub market: Pubkey,
-    pub owner: Pubkey,
-    pub tenor: u64,
-    pub sequence_number: u64,
-    pub auto_roll: bool,
-    pub seed: Vec<u8>,
 }
 
 pub struct InitTermDepositAccounts<'a, 'info> {
@@ -70,58 +58,78 @@ pub struct InitTermDepositAccounts<'a, 'info> {
     pub system_program: &'a Program<'info, System>,
 }
 
-impl<'a, 'info> InitTermDepositAccounts<'a, 'info> {
-    pub fn init(
-        self,
-        params: InitTermDepositParams,
-        info: &CallbackInfo,
-        summary: &SensibleOrderSummary,
-    ) -> Result<()> {
-        let mut deposit = serialization::init_from_ref::<TermDeposit>(
-            self.deposit,
-            self.payer,
-            self.system_program,
-            &[
-                crate::seeds::TERM_DEPOSIT,
-                params.market.as_ref(),
-                params.owner.as_ref(),
-                &params.seed,
-            ],
+pub struct TermDepositBuilder<U, M, I, S, A> {
+    pub margin_user: U,
+    pub market: M,
+    pub info: I,
+    pub summary: S,
+    pub init_accounts: A,
+}
+
+pub struct TermDepositWriter {
+    pub market: Pubkey,
+    pub owner: Pubkey,
+    pub payer: Pubkey,
+    pub margin_user: Option<Pubkey>,
+    pub order_tag: u128,
+    pub tenor: u64,
+    pub sequence_number: u64,
+    pub amount: u64,
+    pub principal: u64,
+    pub auto_roll: bool,
+    pub seed: Vec<u8>,
+}
+
+impl TermDepositWriter {
+    pub fn init_and_write(&self, init_accs: InitTermDepositAccounts) -> Result<()> {
+        let deposit = &mut serialization::init_from_ref::<TermDeposit>(
+            init_accs.deposit,
+            init_accs.payer,
+            init_accs.system_program,
+            &TermDeposit::seeds(
+                self.market.as_ref(),
+                self.margin_user.unwrap_or(self.owner).as_ref(),
+                &self.seed,
+            ),
         )?;
-
-        let timestamp = Clock::get()?.unix_timestamp;
-        let maturation_timestamp = timestamp + params.tenor as i64;
-
-        *deposit = TermDeposit {
-            market: params.market,
-            sequence_number: params.sequence_number,
-            owner: params.owner,
-            payer: self.payer.key(),
+        self.write(deposit)
+    }
+    pub fn write(&self, deposit: &mut AnchorAccount<TermDeposit, Mut>) -> Result<()> {
+        let maturation_timestamp = Clock::get()?.unix_timestamp + self.tenor as i64;
+        **deposit = TermDeposit {
+            market: self.market,
+            sequence_number: self.sequence_number,
+            owner: self.owner,
+            payer: self.payer,
             matures_at: maturation_timestamp,
-            principal: summary.quote_filled()?,
-            amount: summary.base_filled(),
-            flags: Self::flags(info),
+            principal: self.principal,
+            amount: self.amount,
+            flags: if self.auto_roll {
+                TermDepositFlags::AUTO_ROLL
+            } else {
+                TermDepositFlags::empty()
+            },
         };
         emit!(TermDepositCreated {
             term_deposit: deposit.key(),
             authority: deposit.owner,
-            payer: self.payer.key(),
-            order_tag: Some(info.order_tag.as_u128()),
-            sequence_number: params.sequence_number,
-            market: params.market,
+            payer: self.payer,
+            order_tag: Some(self.order_tag),
+            sequence_number: self.sequence_number,
+            market: self.market,
             maturation_timestamp,
             principal: deposit.principal,
             amount: deposit.amount,
         });
         Ok(())
     }
+}
 
-    fn flags(info: &CallbackInfo) -> TermDepositFlags {
-        if info.flags.contains(CallbackFlags::AUTO_ROLL) {
-            TermDepositFlags::AUTO_ROLL
-        } else {
-            TermDepositFlags::empty()
-        }
+bitflags! {
+    #[derive(Default, AnchorSerialize, AnchorDeserialize)]
+    pub struct TermDepositFlags: u8 {
+        /// This term loan has already been marked as due.
+        const AUTO_ROLL = 0b00000001;
     }
 }
 

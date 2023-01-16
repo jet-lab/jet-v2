@@ -138,4 +138,6 @@ pub enum FixedTermErrorCode {
     WrongRentReceiver,
     #[msg("specified owner differs from the field in the TermDeposit")]
     WrongDepositOwner,
+    #[msg("attempted to initialize a TermDeposit account that is already populated")]
+    TermDepositAlreadyInitialized,
 }

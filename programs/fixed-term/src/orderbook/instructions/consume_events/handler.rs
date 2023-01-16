@@ -10,11 +10,11 @@ use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
-    events::{skip_err, OrderFilled, OrderRemoved, TermDepositCreated, TermLoanCreated},
+    events::{skip_err, OrderFilled, OrderRemoved, TermLoanCreated},
     margin::state::{TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
-    tickets::state::{TermDeposit, TermDepositFlags},
+    tickets::state::TermDepositWriter,
     FixedTermErrorCode,
 };
 
@@ -101,43 +101,31 @@ fn handle_fill<'info>(
         Side::Bid => {
             let maturation_timestamp = fill_timestamp.safe_add(market.load()?.lend_tenor as i64)?;
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                let matures_at = fill_timestamp.safe_add(market.load()?.lend_tenor as i64)?;
                 let mut sequence_number = 0;
 
+                let mut margin_user_key = None;
                 if maker_info.flags.contains(CallbackFlags::MARGIN) {
                     let mut margin_user = maker.margin_user()?;
+                    margin_user_key = Some(margin_user.key());
                     margin_user.assets.reduce_order(quote_size);
                     sequence_number = margin_user.assets.new_deposit(base_size)?;
                     margin_user.emit_asset_balances();
                 }
 
-                let term_deposit = loan.as_mut().unwrap().auto_stake()?;
-                let auto_roll = if maker_info.flags.contains(CallbackFlags::AUTO_ROLL) {
-                    TermDepositFlags::AUTO_ROLL
-                } else {
-                    TermDepositFlags::default()
-                };
-                **term_deposit = TermDeposit {
-                    matures_at,
-                    sequence_number,
-                    principal: quote_size,
-                    amount: base_size,
+                let writer = TermDepositWriter {
+                    market: market.key(),
                     owner: maker_info.owner,
-                    market: market.key(),
                     payer: ctx.accounts.payer.key(),
-                    flags: TermDepositFlags::default() | auto_roll,
-                };
-                emit!(TermDepositCreated {
-                    term_deposit: term_deposit.key(),
-                    authority: maker.pubkey(),
-                    payer: ctx.accounts.payer.key(),
-                    order_tag: Some(maker_info.order_tag.as_u128()),
+                    margin_user: margin_user_key,
+                    order_tag: maker_info.order_tag.as_u128(),
+                    tenor: market.load()?.lend_tenor,
                     sequence_number,
-                    market: market.key(),
-                    maturation_timestamp,
-                    principal: quote_size,
                     amount: base_size,
-                });
+                    principal: quote_size,
+                    auto_roll: maker_info.flags.contains(CallbackFlags::AUTO_ROLL),
+                    seed: vec![], // account already initialized by the queue iterator
+                };
+                writer.write(loan.as_mut().unwrap().auto_stake()?)?;
             } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
