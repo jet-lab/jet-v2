@@ -167,14 +167,14 @@ fn verify_settlement_account_registration(
     match margin_account.get_position(&mint) {
         Some(pos) => {
             if pos.address != token_account {
-                msg!("The token account registered as a position ({:?}) for this mint ({mint:?}) does not match the settlement account ({token_account:?}).", pos.address);
+                msg!("The token account registered as a position ({}) for this mint ({}) does not match the settlement account ({}).", pos.address, mint, token_account);
                 Err(error.into())
             } else {
                 Ok(())
             }
         }
         None => {
-            msg!("No position registered for this mint ({mint:?}), expected {token_account:?} to be registered.");
+            msg!("No position registered for this mint ({}), expected {} to be registered.", mint, token_account);
             Err(error.into())
         }
     }
