@@ -16,12 +16,14 @@ interface IWithCreateFixedTermMarketAccount {
 }
 export const withCreateFixedTermMarketAccounts = async ({
   market,
+  provider,
   marginAccount,
   walletAddress,
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.ticketMint
   const marketIXS: TransactionInstruction[] = []
+  await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, tokenMint)
   await marginAccount.withCreateDepositPosition({ instructions: marketIXS, tokenMint })
   const marginUserInfo = await market.fetchMarginUser(marginAccount)
   if (!marginUserInfo) {
