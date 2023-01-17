@@ -21,8 +21,8 @@ export interface OpenPositions {
   market:         string;
   authority:      string;
   loans:          Loan[];
+  deposits:       Deposit[];
   total_borrowed: number;
-  deposits:       any[];
   total_lent:     number;
 }
 
