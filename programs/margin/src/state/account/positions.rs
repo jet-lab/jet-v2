@@ -27,8 +27,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
-
+use crate::{ErrorCode, TokenKind};
 const POS_PRICE_VALID: u8 = 1;
 
 #[assert_size(24)]
@@ -81,41 +80,6 @@ impl PriceInfo {
 
     pub fn is_valid(&self) -> bool {
         self.is_valid == POS_PRICE_VALID
-    }
-}
-
-impl TryFrom<PriceChangeInfo> for PriceInfo {
-    type Error = anchor_lang::error::Error;
-
-    fn try_from(value: PriceChangeInfo) -> AnchorResult<Self> {
-        let clock = Clock::get()?;
-        let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
-
-        let twap = Number128::from_decimal(value.twap, value.exponent);
-        let confidence = Number128::from_decimal(value.confidence, value.exponent);
-
-        if twap == Number128::ZERO {
-            msg!("avg price cannot be zero");
-            return err!(ErrorCode::InvalidPrice);
-        }
-
-        let price = match (confidence, value.publish_time) {
-            (c, _) if (c / twap) > max_confidence => {
-                msg!("price confidence exceeding max");
-                PriceInfo::new_invalid()
-            }
-            (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
-                msg!(
-                    "price timestamp is too old/stale. published: {}, now: {}",
-                    publish_time,
-                    clock.unix_timestamp
-                );
-                PriceInfo::new_invalid()
-            }
-            _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),
-        };
-
-        Ok(price)
     }
 }
 

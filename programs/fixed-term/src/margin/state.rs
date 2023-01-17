@@ -15,6 +15,7 @@ pub const MARGIN_USER_VERSION: u8 = 0;
 
 /// An acocunt used to track margin users of the market
 #[account]
+#[repr(C, align(8))]
 #[derive(Debug)]
 pub struct MarginUser {
     /// used to determine if a migration step is needed before user actions are allowed

@@ -15,24 +15,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{
-    collections::BTreeMap,
-    convert::{TryFrom, TryInto},
-};
+use std::{collections::BTreeMap, convert::TryFrom};
 
-use crate::{
-    events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
-    util::{log_on_error, Require},
-    AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, SignerSeeds,
-    TokenConfig,
-};
 use anchor_lang::{
     prelude::*,
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::{Mint, TokenAccount};
 use jet_metadata::PositionTokenMetadata;
+use jet_program_common::Number128;
+use solana_program::clock::UnixTimestamp;
 
+use crate::{
+    events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
+    syscall::{sys, Sys},
+    util::{log_on_error, Require},
+    AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, PriceInfo,
+    SignerSeeds, TokenConfig, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+};
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
     pub margin_account: &'a AccountLoader<'info, MarginAccount>,
@@ -104,6 +104,38 @@ pub struct PriceChangeInfo {
 
     /// The exponent for the price values
     pub exponent: i32,
+}
+
+impl PriceChangeInfo {
+    pub fn try_into(self, unix_timestamp: UnixTimestamp) -> Result<PriceInfo> {
+        let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
+
+        let twap = Number128::from_decimal(self.twap, self.exponent);
+        let confidence = Number128::from_decimal(self.confidence, self.exponent);
+
+        if twap == Number128::ZERO {
+            msg!("avg price cannot be zero");
+            return err!(ErrorCode::InvalidPrice);
+        }
+
+        let price = match (confidence, self.publish_time) {
+            (c, _) if (c / twap) > max_confidence => {
+                msg!("price confidence exceeding max");
+                PriceInfo::new_invalid()
+            }
+            (_, publish_time) if (unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
+                msg!(
+                    "price timestamp is too old/stale. published: {}, now: {}",
+                    publish_time,
+                    unix_timestamp
+                );
+                PriceInfo::new_invalid()
+            }
+            _ => PriceInfo::new_valid(self.exponent, self.value, unix_timestamp as u64),
+        };
+
+        Ok(price)
+    }
 }
 
 impl TryFrom<pyth_sdk_solana::PriceFeed> for PriceChangeInfo {
@@ -225,7 +257,7 @@ fn apply_changes(
         match change {
             PositionChange::Price(px) => {
                 if let Some(pos) = position {
-                    pos.set_price(&px.try_into()?)?;
+                    pos.set_price(&px.try_into(sys().unix_timestamp() as UnixTimestamp)?)?;
                 }
             }
             PositionChange::Flags(flags, true) => position.require_mut()?.flags |= flags,
