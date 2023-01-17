@@ -1,6 +1,14 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { bigIntToBn, bnToBigInt, MarketAndconfig, offerLoan, OrderbookModel, rate_to_price, TokenAmount } from '@jet-lab/margin';
+import {
+  bigIntToBn,
+  bnToBigInt,
+  MarketAndconfig,
+  offerLoan,
+  OrderbookModel,
+  rate_to_price,
+  TokenAmount
+} from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -25,14 +33,13 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  totalRepayAmount?: string
-  totalInterest?: string
-  totalEffectiveRate?: number
-  matchedAmount?: string
-  matchedInterest?: string
-  matchedRate?: number
+  totalRepayAmount?: string;
+  totalInterest?: string;
+  totalEffectiveRate?: number;
+  matchedAmount?: string;
+  matchedInterest?: string;
+  matchedRate?: number;
 }
-
 
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
@@ -46,7 +53,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [basisPoints, setBasisPoints] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
-  const [forecast, setForecast] = useState<Forecast>()
+  const [forecast, setForecast] = useState<Forecast>();
 
   const disabled =
     !marginAccount ||
@@ -93,20 +100,20 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     }
   };
 
-
   // Simulation demo logic
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
-    if (model.wouldMatch("lend", limitPrice)) {
-      const fillSim = model.simulateFills("lend", amount, limitPrice);
-      const repayAmount = new TokenAmount(bigIntToBn(fillSim.filled_base_qty), token.decimals)
-      const lendAmount = new TokenAmount(bigIntToBn(fillSim.filled_quote_qty), token.decimals)        
-      if (fillSim.unfilled_base_qty > 10) { // NOTE Smaller quantities are not posted.
+    if (model.wouldMatch('lend', limitPrice)) {
+      const fillSim = model.simulateFills('lend', amount, limitPrice);
+      const repayAmount = new TokenAmount(bigIntToBn(fillSim.filled_base_qty), token.decimals);
+      const lendAmount = new TokenAmount(bigIntToBn(fillSim.filled_quote_qty), token.decimals);
+      if (fillSim.unfilled_base_qty > 10) {
+        // NOTE Smaller quantities are not posted.
         setForecast({
           matchedAmount: repayAmount.uiTokens,
           matchedInterest: repayAmount.sub(lendAmount).uiTokens,
           matchedRate: fillSim.vwar
-        })
+        });
       } else {
         setForecast({
           totalRepayAmount: repayAmount.uiTokens,
@@ -115,15 +122,15 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           matchedAmount: repayAmount.uiTokens,
           matchedInterest: repayAmount.sub(lendAmount).uiTokens,
           matchedRate: fillSim.vwar
-        })
+        });
       }
     } else {
-      const queueSim = model.simulateQueuing("lend", limitPrice);
+      const queueSim = model.simulateQueuing('lend', limitPrice);
       if (queueSim.depth > 0) {
-        console.log("Order would post without fills into the the book");
+        console.log('Order would post without fills into the the book');
         console.log(queueSim);
       } else {
-        console.log("Order would post without fills to the top of the book");
+        console.log('Order would post without fills to the top of the book');
         console.log(queueSim);
       }
     }
@@ -133,12 +140,9 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     if (amount.eqn(0) || basisPoints.eqn(0)) return;
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(
-        bnToBigInt(basisPoints),
-        BigInt(marketAndConfig.config.borrowTenor)
-      )
+      rate_to_price(bnToBigInt(basisPoints), BigInt(marketAndConfig.config.borrowTenor))
     );
-  }, [amount, basisPoints])
+  }, [amount, basisPoints]);
   // End simulation demo logic
 
   return (
@@ -194,33 +198,41 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Total Repayment Amount</span>
-          {forecast?.totalRepayAmount && <span>
-            { forecast?.totalRepayAmount }
-            {token.symbol}
-          </span>}
+          {forecast?.totalRepayAmount && (
+            <span>
+              {forecast?.totalRepayAmount}
+              {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          { forecast?.totalInterest && <span>
-            {forecast?.totalInterest} {token.symbol}
-          </span>}
+          {forecast?.totalInterest && (
+            <span>
+              {forecast?.totalInterest} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Total Effective Rate</span>
-          { forecast?.totalEffectiveRate && <span>{(forecast.totalEffectiveRate * 100).toFixed(3)}%</span>}
+          {forecast?.totalEffectiveRate && <span>{(forecast.totalEffectiveRate * 100).toFixed(3)}%</span>}
         </div>
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
-          { forecast?.matchedAmount && <span>
-            {forecast.matchedAmount}
-            {token.symbol}
-          </span>}
+          {forecast?.matchedAmount && (
+            <span>
+              {forecast.matchedAmount}
+              {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Matched Interest</span>
-          {forecast?.matchedInterest && <span>
-            {forecast.matchedInterest} {token.symbol}
-          </span>}
+          {forecast?.matchedInterest && (
+            <span>
+              {forecast.matchedInterest} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Matched Effective Rate</span>

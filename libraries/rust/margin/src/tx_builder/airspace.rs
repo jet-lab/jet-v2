@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use jet_instructions::margin_pool::MarginPoolIxBuilder;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
@@ -78,6 +79,7 @@ impl AirspaceAdmin {
         config: &MarginPoolConfiguration,
     ) -> TransactionBuilder {
         let mut instructions = vec![];
+        let pool = MarginPoolIxBuilder::new(token_mint);
         let margin_config_ix_builder = MarginConfigIxBuilder::new(self.airspace, self.payer);
 
         // FIXME: remove control legacy
@@ -110,10 +112,11 @@ impl AirspaceAdmin {
 
             instructions.push(
                 margin_config_ix_builder
-                    .configure_token(token_mint, Some(deposit_note_config_update)),
+                    .configure_token(pool.deposit_note_mint, Some(deposit_note_config_update)),
             );
             instructions.push(
-                margin_config_ix_builder.configure_token(token_mint, Some(loan_note_config_update)),
+                margin_config_ix_builder
+                    .configure_token(pool.loan_note_mint, Some(loan_note_config_update)),
             );
         }
 

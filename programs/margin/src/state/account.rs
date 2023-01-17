@@ -193,21 +193,23 @@ impl MarginAccount {
 
         let (key, free_position) = self.position_list_mut().add(token)?;
 
-        free_position.exponent = -(decimals as i16);
-        free_position.address = address;
-        free_position.adapter = adapter;
-        free_position.kind = kind.into_integer();
-        free_position.balance = 0;
-        free_position.value_modifier = value_modifier;
-        free_position.max_staleness = max_staleness;
+        if let Some(free_position) = free_position {
+            free_position.exponent = -(decimals as i16);
+            free_position.address = address;
+            free_position.adapter = adapter;
+            free_position.kind = kind.into_integer();
+            free_position.balance = 0;
+            free_position.value_modifier = value_modifier;
+            free_position.max_staleness = max_staleness;
 
-        if !free_position.may_be_registered_or_closed(approvals) {
-            msg!(
-                "{:?} is not authorized to register {:?}",
-                approvals,
-                free_position
-            );
-            return err!(ErrorCode::InvalidPositionOwner);
+            if !free_position.may_be_registered_or_closed(approvals) {
+                msg!(
+                    "{:?} is not authorized to register {:?}",
+                    approvals,
+                    free_position
+                );
+                return err!(ErrorCode::InvalidPositionOwner);
+            }
         }
 
         Ok(key)
