@@ -130,7 +130,7 @@ export class MarginAccount {
   /** The owner of the [[MarginAccount]] */
   owner: PublicKey
   /** The address of the airspace this account is part of */
-  airspace: PublicKey
+  airspace?: PublicKey
   /** The parsed [[AccountPosition]] array of the margin account. */
   positions: AccountPosition[]
   /** The summarized [[PoolPosition]] array of pool deposits and borrows. */
@@ -204,11 +204,11 @@ export class MarginAccount {
   ) {
     this.owner = translateAddress(owner)
     this.address = MarginAccount.derive(programs, owner, seed)
-    this.airspace = findDerivedAccount(
+    this.airspace = this.programs.config.airspaces?.length > 0 ? findDerivedAccount(
       this.programs.config.airspaceProgramId,
       "airspace",
       this.programs.config.airspaces[0].name
-    )
+    ) : undefined;
     this.pools = pools
     this.walletTokens = walletTokens
     this.positions = this.getPositions()
@@ -290,7 +290,11 @@ export class MarginAccount {
    * @param tokenMint The mint address for the token to derive the config address for.
    */
   findTokenConfigAddress(tokenMint: Address): PublicKey {
-    return findDerivedAccount(this.programs.config.marginProgramId, "token-config", this.airspace, tokenMint)
+    if (this.airspace) {
+      return findDerivedAccount(this.programs.config.marginProgramId, "token-config", this.airspace, tokenMint)
+    }
+    return findDerivedAccount(this.programs.config.marginProgramId, "token-config", tokenMint)
+
   }
 
   /**
@@ -370,11 +374,13 @@ export class MarginAccount {
     const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
     const marginAccounts: MarginAccount[] = []
     for (let i = 0; i < infos.length; i++) {
-      const { account } = infos[i]
-      const seed = bnToNumber(new BN(account.userSeed, undefined, "le"))
-      const marginAccount = new MarginAccount(programs, provider, account.owner, seed, pools, walletTokens)
-      await marginAccount.refresh()
-      marginAccounts.push(marginAccount)
+      if (infos[i]) {
+        const { account } = infos[i]
+        const seed = bnToNumber(new BN(account.userSeed, undefined, "le"))
+        const marginAccount = new MarginAccount(programs, provider, account.owner, seed, pools, walletTokens)
+        await marginAccount.refresh()
+        marginAccounts.push(marginAccount)
+      }
     }
     return marginAccounts
   }
