@@ -117,7 +117,16 @@ export function DebtTable() {
                 ordersLoading || !account ? (
                   <LoadingOutlined />
                 ) : (
-                  <OpenDepositsTable data={positionsData.deposits} market={markets[selectedMarket]} />
+                  <OpenDepositsTable
+                    data={positionsData.deposits}
+                    market={markets[selectedMarket]}
+                    provider={provider}
+                    marginAccount={account}
+                    cluster={cluster}
+                    blockExplorer={blockExplorer}
+                    pools={pools.tokenPools}
+                    markets={markets.map(m => m.market)}
+                  />
                 )
             },
             {
