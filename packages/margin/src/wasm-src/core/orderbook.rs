@@ -668,4 +668,18 @@ mod test {
         assert_eq!(sim.preceding_quote_qty, 2_370);
         assert_eq!(sim.preceding_vwap, 0.948);
     }
+
+    #[test]
+    fn test_simulate_maker() {
+        let om = populate_orderbook_model();
+
+        let sim = om.simulate_maker("lend".into(), 8_500, f64_to_fp32(0.99), None);
+        assert_eq!(sim.matches, 3);
+        assert_eq!(sim.fills[0].base_qty, 2_000);
+        assert_eq!(sim.filled_vwap, 0.979);
+        assert!(!sim.self_match);
+        assert!(sim.would_post);
+        println!("{:?}", sim.fills);
+        assert_eq!(sim.posted_quote_qty, 668);
+    }
 }
