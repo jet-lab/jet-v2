@@ -24,6 +24,7 @@ import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import debounce from 'lodash.debounce';
+import { RateDisplay } from '../shared/rate-display';
 
 interface RequestLoanProps {
   decimals: number;
@@ -39,6 +40,7 @@ interface Forecast {
   matchedAmount?: string;
   matchedInterest?: string;
   matchedRate?: number;
+  selfMatch: boolean;
 }
 
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -61,7 +63,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !currentPool ||
     !pools ||
     basisPoints.lte(new BN(0)) ||
-    amount.lte(new BN(0));
+    amount.lte(new BN(0)) ||
+    forecast?.selfMatch;
 
   const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
@@ -103,37 +106,31 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   // Simulation demo logic
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
-    if (model.wouldMatch('lend', limitPrice)) {
-      const fillSim = model.simulateFills('lend', amount, limitPrice);
-      const repayAmount = new TokenAmount(bigIntToBn(fillSim.filled_base_qty), token.decimals);
-      const lendAmount = new TokenAmount(bigIntToBn(fillSim.filled_quote_qty), token.decimals);
-      if (fillSim.unfilled_base_qty > 10) {
-        // NOTE Smaller quantities are not posted.
-        setForecast({
-          matchedAmount: repayAmount.uiTokens,
-          matchedInterest: repayAmount.sub(lendAmount).uiTokens,
-          matchedRate: fillSim.vwar
-        });
-      } else {
-        setForecast({
-          totalRepayAmount: repayAmount.uiTokens,
-          totalInterest: repayAmount.sub(lendAmount).uiTokens,
-          totalEffectiveRate: fillSim.vwar,
-          matchedAmount: repayAmount.uiTokens,
-          matchedInterest: repayAmount.sub(lendAmount).uiTokens,
-          matchedRate: fillSim.vwar
-        });
-      }
-    } else {
-      const queueSim = model.simulateQueuing('lend', limitPrice);
-      if (queueSim.depth > 0) {
-        console.log('Order would post without fills into the the book');
-        console.log(queueSim);
-      } else {
-        console.log('Order would post without fills to the top of the book');
-        console.log(queueSim);
-      }
+    const sim = model.simulateMaker('lend', amount, limitPrice, marginAccount?.address.toBytes());
+
+    if (sim.self_match) {
+      // TODO Integrate with forecast panel
+      console.log('WARNING Order would be rejected for self-matching');
     }
+
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
+    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+    const matchRate = sim.filled_vwar;
+    const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals);
+    const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals);
+    const totalRate = sim.full_vwar;
+
+    setForecast({
+      matchedAmount: matchRepayAmount.uiTokens,
+      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+      matchedRate: matchRate,
+      totalRepayAmount: totalRepayAmount.uiTokens,
+      totalInterest: totalRepayAmount.sub(totalBorrowAmount).uiTokens,
+      totalEffectiveRate: totalRate,
+      selfMatch: sim.self_match
+    });
+
+    console.log(sim);
   }
 
   useEffect(() => {
@@ -142,7 +139,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       bnToBigInt(amount),
       rate_to_price(bnToBigInt(basisPoints), BigInt(marketAndConfig.config.borrowTenor))
     );
-  }, [amount, basisPoints]);
+  }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
 
   return (
@@ -215,7 +212,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Total Effective Rate</span>
-          {forecast?.totalEffectiveRate && <span>{(forecast.totalEffectiveRate * 100).toFixed(3)}%</span>}
+          <RateDisplay rate={forecast?.totalEffectiveRate} />
         </div>
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
@@ -236,7 +233,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Matched Effective Rate</span>
-          {forecast?.matchedRate && <span>{(forecast.matchedRate * 100).toFixed(3)}%</span>}
+          <RateDisplay rate={forecast?.matchedRate} />
         </div>
         <div className="stat-line">Risk Level</div>
         <div className="stat-line">

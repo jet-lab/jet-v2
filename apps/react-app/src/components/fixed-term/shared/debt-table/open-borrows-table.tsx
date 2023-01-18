@@ -9,13 +9,13 @@ const getBorrowColumns = (token: MarginTokenConfig) => [
     title: 'Created',
     dataIndex: 'created_timestamp',
     key: 'created_timestamp',
-    render: (date: string) => `${formatDistanceToNowStrict(new Date(date))} ago`
+    render: (date: string) => `${formatDistanceToNowStrict(new Date(date), { addSuffix: true })}`
   },
   {
     title: 'Maturity',
     dataIndex: 'maturation_timestamp',
     key: 'maturation_timestamp',
-    render: (date: string) => `in ${formatDistanceToNowStrict(new Date(date))}`
+    render: (date: string) => `${formatDistanceToNowStrict(new Date(date), { addSuffix: true })}`
   },
   {
     title: 'Balance',
