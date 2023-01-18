@@ -47,7 +47,7 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   key: 'allFixedTermMarketOrderBooks',
   get: async ({ get }) => {
     const list = get(AllFixedTermMarketsAtom);
-    return await Promise.all(
+    const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
         const model = await market.market.fetchOrderbook(tenor);
@@ -57,6 +57,7 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
         };
       })
     );
+    return markets.sort((a, b) => a.name.localeCompare(b.name));
   }
 });
 
@@ -87,7 +88,7 @@ export const useFixedTermSync = (): void => {
         }
       })
     );
-    setMarkets(markets);
+    setMarkets(markets.sort((a, b) => b.name.localeCompare(a.name)));
   };
 
   useEffect(() => {

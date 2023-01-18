@@ -338,7 +338,7 @@ export const lendNow = async ({
 
 interface ISettle {
   markets: MarketAndconfig[]
-  selectedMarket: number
+  selectedMarket: MarketAndconfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   pools: Record<string, Pool>
@@ -346,7 +346,7 @@ interface ISettle {
 }
 
 export const settle = async ({ markets, selectedMarket, marginAccount, provider, pools, amount }: ISettle) => {
-  const { market, token } = markets[selectedMarket]
+  const { market, token } = selectedMarket
   const instructions: TransactionInstruction[][] = []
   const pool = pools[token.symbol]
   const refreshIXS: TransactionInstruction[] = []
