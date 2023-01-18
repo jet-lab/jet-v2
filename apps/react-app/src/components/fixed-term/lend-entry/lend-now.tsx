@@ -70,9 +70,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         interest: repayAmount.sub(lendAmount).uiTokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
-        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty
+        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches
       });
-      console.log(sim);
     } catch (e) {
       console.log(e);
     }
@@ -110,7 +109,6 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   };
 
   useEffect(() => {
-    console.log('forecasting');
     handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 

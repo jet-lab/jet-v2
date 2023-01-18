@@ -5,9 +5,7 @@ import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useMemo } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
-const getDepositsColumns = (
-  market: MarketAndconfig,
-) => [
+const getDepositsColumns = (market: MarketAndconfig) => [
   {
     title: 'Created',
     dataIndex: 'created_timestamp',
@@ -41,7 +39,7 @@ export const OpenDepositsTable = ({
   marginAccount,
   provider,
   cluster,
-  blockExplorer,
+  blockExplorer
 }: {
   data: Deposit[];
   market: MarketAndconfig;
@@ -52,10 +50,7 @@ export const OpenDepositsTable = ({
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }) => {
-  const columns = useMemo(
-    () => getDepositsColumns(market),
-    [market, marginAccount, provider, cluster, blockExplorer]
-  );
+  const columns = useMemo(() => getDepositsColumns(market), [market, marginAccount, provider, cluster, blockExplorer]);
   return (
     <Table
       rowKey="address"
