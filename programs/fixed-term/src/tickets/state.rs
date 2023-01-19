@@ -16,7 +16,7 @@ use crate::{
 pub struct TermDeposit {
     /// The owner of the redeemable tokens
     ///
-    /// If this deposit was created by a Margin account, this is the `MarginUser`.
+    /// If this deposit was created by a Margin account, this is the `MarginAccount`.
     /// Else, this is the Pubkey of the lender's signing account
     pub owner: Pubkey,
 
@@ -81,7 +81,8 @@ pub struct TermDepositWriter {
 }
 
 impl TermDepositWriter {
-    pub fn init_and_write(&self, init_accs: InitTermDepositAccounts) -> Result<()> {
+    /// Initializes the `TermDeposit` anchor account and writes the `self` parameters into it
+    pub fn init_and_write(self, init_accs: InitTermDepositAccounts) -> Result<()> {
         let deposit = &mut serialization::init_from_ref::<TermDeposit>(
             init_accs.deposit,
             init_accs.payer,
@@ -94,7 +95,8 @@ impl TermDepositWriter {
         )?;
         self.write(deposit)
     }
-    pub fn write(&self, deposit: &mut AnchorAccount<TermDeposit, Mut>) -> Result<()> {
+    /// writes itself into an already initialized `TermDeposit` struct
+    pub fn write(self, deposit: &mut AnchorAccount<TermDeposit, Mut>) -> Result<()> {
         let maturation_timestamp = Clock::get()?.unix_timestamp + self.tenor as i64;
         **deposit = TermDeposit {
             market: self.market,

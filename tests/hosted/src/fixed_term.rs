@@ -417,7 +417,6 @@ impl TestManager {
             .next_new_deposit_seqno();
         let mut builder = Vec::<TransactionBuilder>::new();
         for (key, deposit) in mature_deposits {
-            dbg!(deposit.clone());
             let ix = self.ix_builder.auto_roll_lend_order(
                 *margin_account,
                 key,

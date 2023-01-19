@@ -18,8 +18,8 @@ pub struct AutoRollLendOrder<'info> {
     /// The `MarginUser` account for this market
     #[account(
         mut,
-        constraint = margin_user.margin_account == margin_account.key() @ FixedTermErrorCode::WrongMarginAccount,
         constraint = margin_user.market == orderbook_mut.market.key() @ FixedTermErrorCode::WrongMarket,
+        has_one = margin_account @ FixedTermErrorCode::WrongMarginAccount,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount ,
 	)]
     pub margin_user: Box<Account<'info, MarginUser>>,
@@ -50,7 +50,7 @@ pub struct AutoRollLendOrder<'info> {
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(
         mut,
-        address = orderbook_mut.market.load()?.ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint,
+        address = orderbook_mut.ticket_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint,
     )]
     pub ticket_collateral_mint: Box<Account<'info, Mint>>,
 
