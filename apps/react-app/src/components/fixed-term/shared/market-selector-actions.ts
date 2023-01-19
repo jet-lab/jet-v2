@@ -68,7 +68,7 @@ export const getOwedTokens = async (
     const exists = await provider.connection.getAccountInfo(pda);
     if (exists) {
       const balance = await provider.connection.getTokenAccountBalance(pda);
-      setOwedTokens(new TokenAmount(new BN(balance.value.uiAmount || 0), balance.value.decimals));
+      setOwedTokens(new TokenAmount(new BN(balance.value.amount || 0), balance.value.decimals));
     }
   } catch (e) {
     console.log(e);

@@ -52,7 +52,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
       {hasToClaim ? (
         <div className="assets-to-settle">
           <>
-            Need to claim {new TokenAmount(amountToClaim, token.decimals).uiTokens} {token.symbol}
+            Need to claim {new TokenAmount(amountToClaim, token.decimals).uiTokens} {token.symbol} on this market.
             <Button
               size="small"
               onClick={() => {
@@ -73,7 +73,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         </div>
       ) : hasToSettle ? (
         <div className="assets-to-settle">
-          There are {owedTokens?.uiTokens} {selectedMarket?.token.symbol} currently pending settment on this market.
+          There are {owedTokens?.uiTokens} {selectedMarket?.token.symbol} currently pending settment on this account.
           <Button
             onClick={() =>
               settleNow(
