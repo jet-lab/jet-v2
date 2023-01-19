@@ -355,7 +355,6 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
     instructions: refreshIXS,
     pools,
     markets: markets.map(m => m.market),
-    marketAddress: market.address
   })
 
   instructions.push(refreshIXS)
@@ -519,7 +518,6 @@ export const redeem = async ({
   const redeemIxs: TransactionInstruction[] = []
   const sortedDeposits = deposits.sort((a, b) => a.sequence_number - b.sequence_number )
 
-  console.log(sortedDeposits)
   for (let i = 0; i < sortedDeposits.length; i++) {
     const deposit = sortedDeposits[i]
     const redeem = await market.market.redeemDeposit(
