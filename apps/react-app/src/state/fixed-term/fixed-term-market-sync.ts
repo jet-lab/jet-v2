@@ -57,7 +57,7 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
         };
       })
     );
-    return markets.sort((a, b) => a.name.localeCompare(b.name));
+    return markets.sort((a, b) => b.name.localeCompare(a.name));
   }
 });
 
