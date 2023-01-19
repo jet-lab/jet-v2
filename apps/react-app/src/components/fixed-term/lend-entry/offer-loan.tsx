@@ -129,8 +129,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       totalEffectiveRate: totalRate,
       selfMatch: sim.self_match
     });
-
-    console.log(sim);
   }
 
   useEffect(() => {
