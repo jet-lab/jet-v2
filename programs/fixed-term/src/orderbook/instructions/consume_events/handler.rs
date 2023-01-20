@@ -122,7 +122,7 @@ fn handle_fill<'info>(
                     sequence_number,
                     amount: base_size,
                     principal: quote_size,
-                    auto_roll: maker_info.flags.contains(CallbackFlags::AUTO_ROLL),
+                    flags: maker_info.flags.into(),
                     seed: vec![], // account already initialized by the queue iterator
                 };
                 writer.write(loan.as_mut().unwrap().auto_stake()?)?;

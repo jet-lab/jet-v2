@@ -171,7 +171,7 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
                 principal: summary.quote_filled()?,
                 tenor: self.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: 0,
-                auto_roll: info.flags.contains(CallbackFlags::AUTO_ROLL),
+                flags: info.flags.into(),
                 seed,
             }));
         }
@@ -252,7 +252,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 sequence_number: self.margin_user.assets.next_new_deposit_seqno(),
                 amount: summary.base_filled(),
                 principal: summary.quote_filled()?,
-                auto_roll: info.flags.contains(CallbackFlags::AUTO_ROLL),
+                flags: info.flags.into(),
                 seed: self
                     .margin_user
                     .assets

@@ -4,7 +4,7 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     control::state::Market,
-    tickets::state::{RedeemDepositAccounts, TermDeposit},
+    tickets::state::{RedeemDepositAccounts, TermDeposit, TermDepositFlags},
     FixedTermErrorCode,
 };
 
@@ -45,8 +45,20 @@ pub struct RedeemDeposit<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+impl<'info> RedeemDeposit<'info> {
+    fn check(&self) -> Result<()> {
+        if self.deposit.flags.contains(TermDepositFlags::MARGIN) {
+            return err!(FixedTermErrorCode::MarginUserCannotUseInstruction);
+        }
+
+        Ok(())
+    }
+}
+
 pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
     let accs = ctx.accounts;
+    accs.check()?;
+
     let accounts = RedeemDepositAccounts {
         deposit: &accs.deposit,
         owner: &accs.owner,
@@ -56,7 +68,7 @@ pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
         underlying_token_vault: &accs.underlying_token_vault,
         token_program: &accs.token_program,
     };
-
     accounts.redeem(true)?;
+
     Ok(())
 }

@@ -140,4 +140,6 @@ pub enum FixedTermErrorCode {
     WrongDepositOwner,
     #[msg("attempted to initialize a TermDeposit account that is already populated")]
     TermDepositAlreadyInitialized,
+    #[msg("a term deposit belonging to margin account collateral must use the MarginRedeemDeposit instruction")]
+    MarginUserCannotUseInstruction,
 }

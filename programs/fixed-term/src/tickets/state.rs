@@ -5,6 +5,7 @@ use crate::{
     control::state::Market,
     events::TermDepositCreated,
     margin::state::MarginUser,
+    orderbook::state::CallbackFlags,
     serialization::{self, AnchorAccount, Mut},
     tickets::events::DepositRedeemed,
     FixedTermErrorCode,
@@ -76,7 +77,7 @@ pub struct TermDepositWriter {
     pub sequence_number: u64,
     pub amount: u64,
     pub principal: u64,
-    pub auto_roll: bool,
+    pub flags: TermDepositFlags,
     pub seed: Vec<u8>,
 }
 
@@ -106,11 +107,7 @@ impl TermDepositWriter {
             matures_at: maturation_timestamp,
             principal: self.principal,
             amount: self.amount,
-            flags: if self.auto_roll {
-                TermDepositFlags::AUTO_ROLL
-            } else {
-                TermDepositFlags::empty()
-            },
+            flags: self.flags,
         };
         emit!(TermDepositCreated {
             term_deposit: deposit.key(),
@@ -130,8 +127,24 @@ impl TermDepositWriter {
 bitflags! {
     #[derive(Default, AnchorSerialize, AnchorDeserialize)]
     pub struct TermDepositFlags: u8 {
-        /// This term loan has already been marked as due.
-        const AUTO_ROLL = 0b00000001;
+        /// Can this term deposit be redeemed and replaced on the orderbook
+        const AUTO_ROLL = 1;
+
+        /// Is this term deposit custodied by the margin account
+        const MARGIN    = 1 << 1;
+    }
+}
+
+impl From<CallbackFlags> for TermDepositFlags {
+    fn from(info: CallbackFlags) -> Self {
+        let mut flags = Self::empty();
+        if info.contains(CallbackFlags::AUTO_ROLL) {
+            flags |= Self::AUTO_ROLL;
+        }
+        if info.contains(CallbackFlags::MARGIN) {
+            flags |= Self::MARGIN;
+        }
+        flags
     }
 }
 
