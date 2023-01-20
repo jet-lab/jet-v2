@@ -12,7 +12,7 @@ use comfy_table::{presets::UTF8_FULL, Table};
 use futures::FutureExt;
 use jet_margin_sdk::{
     ix_builder::{get_metadata_address, ControlIxBuilder, MarginIxBuilder, MarginPoolIxBuilder},
-    jet_margin::{self, syscall::thread_local_mock, MarginAccount, PriceInfo, Valuation},
+    jet_margin::{self, MarginAccount, PriceInfo, Valuation},
     jet_margin_pool::{self, MarginPool},
     jet_metadata::{self, PositionTokenMetadata},
 };
@@ -292,7 +292,14 @@ pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<
         accounts.push(MarginAccountSummary {
             address,
             position_count: account.positions().count(),
-            valuation: account.valuation().unwrap(),
+            valuation: account
+                .valuation(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                )
+                .unwrap(),
         });
     }
 
@@ -334,7 +341,6 @@ async fn get_all_accounts(client: &Client) -> Result<Vec<(Pubkey, MarginAccount)
 }
 
 pub async fn process_inspect(client: &Client, addresses: Vec<Pubkey>) -> Result<Plan> {
-    thread_local_mock::mock_clock(Some(0));
     for address in addresses {
         let account = client
             .read_anchor_account::<MarginAccount>(&address)
@@ -342,8 +348,7 @@ pub async fn process_inspect(client: &Client, addresses: Vec<Pubkey>) -> Result<
         println!("{address:#?}");
         println!("{account:#?}");
         if let Some(oldest_price) = account.positions().map(|p| p.price.timestamp).min() {
-            thread_local_mock::mock_clock(Some(oldest_price));
-            print!("{:#?}", account.valuation()?);
+            print!("{:#?}", account.valuation(oldest_price)?);
             let dt: DateTime<Local> = (UNIX_EPOCH + Duration::from_secs(oldest_price)).into();
             println!("   priced_at: {}", dt.to_rfc2822());
         }
