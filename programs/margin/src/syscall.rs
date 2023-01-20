@@ -4,7 +4,7 @@ use anchor_lang::{
 };
 
 #[inline]
-#[cfg(all(target_arch = "bpf", not(test), not(mock_syscall)))]
+#[cfg(not(feature = "mock_syscall"))]
 pub fn sys() -> RealSys {
     RealSys
 }
@@ -29,30 +29,67 @@ pub trait Sys {
     }
 }
 
-#[cfg(any(not(target_arch = "bpf"), test, mock_syscall))]
-pub use thread_local_mock::sys;
+#[cfg(feature = "mock_syscall")]
+pub use thread_local_mock::test_sys as sys;
 
-#[cfg(any(not(target_arch = "bpf"), test, mock_syscall))]
+#[cfg(feature = "mock_syscall")]
 pub mod thread_local_mock {
-    use anchor_lang::prelude::SolanaSysvar;
-
     use super::*;
-    use std::{
-        cell::RefCell,
-        rc::Rc,
-        time::{SystemTime, UNIX_EPOCH},
-    };
+    use std::{cell::RefCell, rc::Rc};
 
-    pub fn sys() -> Rc<RefCell<TestSys>> {
+    pub enum SyscallProvider<T> {
+        /// Return the provided value.
+        Mock(Box<dyn Fn() -> T>),
+        /// Attempts to query the solana runtime, as if there were no mock.
+        SolanaRuntime,
+        /// Guarantees that the syscall can complete withour error even if the
+        /// solana runtime is unavailable. You cannot rely on a consistent or
+        /// correct value being returned, only that the syscall itself will not
+        /// fail.
+        Stub,
+    }
+
+    impl<T> Default for SyscallProvider<T> {
+        /// This makes it so that the compiler feature is additive, in the sense
+        /// that enabling this feature will not alter the behavior of any code
+        /// that can be compiled without this feature being enabled (aside from
+        /// the performance cost of dynamic dispatch). You will only see changes
+        /// in behavior when you actually use the code that is added by the
+        /// feature.
+        /// https://doc.rust-lang.org/cargo/reference/features.html?highlight=additive#feature-unification
+        fn default() -> Self {
+            Self::SolanaRuntime
+        }
+    }
+
+    pub fn test_sys() -> Rc<RefCell<TestSys>> {
         SYS.with(|t| t.clone())
     }
 
-    pub fn mock_stack_height(height: Option<usize>) {
-        sys().borrow_mut().mock_stack_height = height;
+    /// Disables all mocks/stubs and switches everything back to using the
+    /// solana runtime.
+    pub fn restore() {
+        *test_sys().borrow_mut() = TestSys {
+            stack_height: SyscallProvider::SolanaRuntime,
+            clock: SyscallProvider::SolanaRuntime,
+        };
     }
 
-    pub fn mock_clock(unix_timestamp: Option<u64>) {
-        sys().borrow_mut().mock_clock = unix_timestamp;
+    /// Stubs out all syscalls with a meaningless but reliable return.
+    pub fn stub() {
+        *test_sys().borrow_mut() = TestSys {
+            stack_height: SyscallProvider::Stub,
+            clock: SyscallProvider::Stub,
+        }
+    }
+
+    /// Mocks syscalls so they produce values by executing the expression.
+    #[macro_export]
+    macro_rules! mock_sys {
+        ($($name:ident = $evaluator:expr);+$(;)?) => {{
+            use $crate::syscall::thread_local_mock::*;
+            $(test_sys().borrow_mut().$name = SyscallProvider::Mock(Box::new(move || $evaluator));)+
+        }};
     }
 
     thread_local! {
@@ -61,28 +98,24 @@ pub mod thread_local_mock {
 
     #[derive(Default)]
     pub struct TestSys {
-        pub mock_stack_height: Option<usize>,
-        pub mock_clock: Option<u64>,
+        pub stack_height: SyscallProvider<usize>,
+        pub clock: SyscallProvider<u64>,
     }
 
     impl Sys for Rc<RefCell<TestSys>> {
         fn get_stack_height(&self) -> usize {
-            self.borrow()
-                .mock_stack_height
-                .unwrap_or_else(|| RealSys.get_stack_height())
+            match &self.borrow().stack_height {
+                SyscallProvider::Mock(height) => height(),
+                SyscallProvider::SolanaRuntime => RealSys.get_stack_height(),
+                SyscallProvider::Stub => 0,
+            }
         }
 
         fn unix_timestamp(&self) -> u64 {
-            // The mocked clock gets top priority if set. Otherwise, actually
-            // try to get the solana clock, in case it's available in a
-            // simulation, then fall back to the system clock.
-            if let Some(mocked) = self.borrow().mock_clock {
-                mocked
-            } else if let Ok(clock) = Clock::get() {
-                clock.unix_timestamp as u64
-            } else {
-                let time = SystemTime::now();
-                time.duration_since(UNIX_EPOCH).unwrap().as_secs()
+            match &self.borrow().clock {
+                SyscallProvider::Mock(time) => time(),
+                SyscallProvider::SolanaRuntime => RealSys.unix_timestamp(),
+                SyscallProvider::Stub => 1_600_000_000,
             }
         }
     }

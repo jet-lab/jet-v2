@@ -133,7 +133,7 @@ impl Clone for TestManager {
             ),
             keys: self.keys.clone(),
             keygen: self.keygen.clone(),
-            margin_accounts_to_settle: Default::default(),
+            margin_accounts_to_settle: AsyncNoDupeQueue::new(),
             airspace: self.airspace,
         }
     }

@@ -20,6 +20,7 @@ use anchor_lang::prelude::*;
 use jet_metadata::MarginAdapterMetadata;
 
 use crate::adapter::{self, InvokeAdapter};
+use crate::syscall::{sys, Sys};
 use crate::{events, ErrorCode, Liquidation, LiquidationState, MarginAccount, Valuation};
 
 #[derive(Accounts)]
@@ -51,7 +52,7 @@ pub fn liquidator_invoke_handler<'info>(
     data: Vec<u8>,
 ) -> Result<()> {
     let margin_account = &ctx.accounts.margin_account;
-    let start_value = margin_account.load()?.valuation()?;
+    let start_value = margin_account.load()?.valuation(sys().unix_timestamp())?;
 
     emit!(events::LiquidatorInvokeBegin {
         margin_account: ctx.accounts.margin_account.key(),
@@ -93,7 +94,7 @@ fn update_and_verify_liquidation(
     liquidation: &mut Liquidation,
     start_value: Valuation,
 ) -> Result<Valuation> {
-    let end_value = margin_account.valuation()?;
+    let end_value = margin_account.valuation(sys().unix_timestamp())?;
 
     *liquidation.equity_change_mut() += end_value.equity - start_value.equity; // side effects
 

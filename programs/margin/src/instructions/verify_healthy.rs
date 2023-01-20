@@ -17,7 +17,11 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{events, MarginAccount};
+use crate::{
+    events,
+    syscall::{sys, Sys},
+    MarginAccount,
+};
 
 #[derive(Accounts)]
 pub struct VerifyHealthy<'info> {
@@ -28,7 +32,7 @@ pub struct VerifyHealthy<'info> {
 pub fn verify_healthy_handler(ctx: Context<VerifyHealthy>) -> Result<()> {
     let account = ctx.accounts.margin_account.load()?;
 
-    account.verify_healthy_positions()?;
+    account.verify_healthy_positions(sys().unix_timestamp())?;
 
     emit!(events::VerifiedHealthy {
         margin_account: ctx.accounts.margin_account.key(),
