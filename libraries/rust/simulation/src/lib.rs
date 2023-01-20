@@ -24,13 +24,8 @@ use std::{
 
 use rand::rngs::mock::StepRng;
 use solana_sdk::{
-    account_info::AccountInfo,
-    instruction::InstructionError,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    signature::Keypair,
-    signer::Signer,
-    transaction::{Transaction, TransactionError},
+    account_info::AccountInfo, instruction::InstructionError, program_error::ProgramError,
+    pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::TransactionError,
 };
 
 #[doc(hidden)]
@@ -69,25 +64,8 @@ pub async fn create_wallet(
     lamports: u64,
 ) -> Result<solana_sdk::signature::Keypair, anyhow::Error> {
     let wallet = solana_sdk::signature::Keypair::new();
-    let blockhash = rpc.get_latest_blockhash().await?;
 
-    let payer = rpc.payer();
-    let signers = vec![payer, &wallet];
-
-    let tx = Transaction::new_signed_with_payer(
-        &[solana_sdk::system_instruction::create_account(
-            &payer.pubkey(),
-            &wallet.pubkey(),
-            lamports,
-            0,
-            &solana_sdk::system_program::ID,
-        )],
-        Some(&payer.pubkey()),
-        &signers,
-        blockhash,
-    );
-
-    rpc.send_and_confirm_transaction(&tx).await?;
+    rpc.airdrop(&wallet.pubkey(), lamports).await?;
 
     Ok(wallet)
 }

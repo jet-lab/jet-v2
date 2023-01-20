@@ -193,7 +193,6 @@ impl MarginPoolIxBuilder {
     ///
     /// `margin_account` - The account being borrowed against
     /// `deposit_account` - The account to receive the notes for the borrowed tokens
-    /// `loan_account` - The account to receive the notes representing the debt
     /// `amount` - The amount of tokens to be borrowed
     pub fn margin_borrow(
         &self,
@@ -220,6 +219,37 @@ impl MarginPoolIxBuilder {
                 amount: tokens,
             }
             .data(),
+            accounts,
+        }
+    }
+
+    /// Instruction to borrow tokens using a margin account
+    ///
+    /// # Params
+    ///
+    /// `margin_account` - The account being borrowed against
+    /// `destination` - The account to receive the borrowed tokens
+    /// `amount` - The amount of tokens to be borrowed
+    pub fn margin_borrow_v2(
+        &self,
+        margin_account: Pubkey,
+        destination: Pubkey,
+        amount: u64,
+    ) -> Instruction {
+        let accounts = ix_accounts::MarginBorrowV2 {
+            margin_account,
+            margin_pool: self.address,
+            loan_note_mint: self.loan_note_mint,
+            vault: self.vault,
+            loan_account: derive_loan_account(&margin_account, &self.loan_note_mint),
+            destination,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: jet_margin_pool::ID,
+            data: ix_data::MarginBorrowV2 { amount }.data(),
             accounts,
         }
     }

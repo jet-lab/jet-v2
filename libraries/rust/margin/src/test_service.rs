@@ -19,6 +19,7 @@ use std::collections::HashMap;
 
 use jet_control::TokenMetadataParams;
 use jet_fixed_term::orderbook::state::{event_queue_len, orderbook_slab_len};
+use jet_instructions::{fixed_term::derive_market, test_service::derive_token_info};
 use jet_margin::TokenOracle;
 use jet_test_service::TokenCreateParams;
 use serde::{Deserialize, Serialize};
@@ -256,7 +257,7 @@ fn create_swap_pools_tx(config: &EnvironmentConfig) -> anyhow::Result<Vec<Transa
 fn verify_token_declared(config: &EnvironmentConfig, name: &str) -> anyhow::Result<()> {
     if !config.tokens.iter().any(|t| t.name == *name) {
         anyhow::bail!(
-            "configuring token {} in airspace, but not a global token",
+            "configuring token {} as a resource, but no such global token found",
             name
         );
     }
@@ -272,8 +273,13 @@ fn create_airspace_tx(
 
     for as_config in &config.airspaces {
         let as_admin = AirspaceAdmin::new(&as_config.name, config.authority, config.authority);
+        let create_ix = as_admin
+            .create_airspace(as_config.is_restricted)
+            .instructions
+            .pop()
+            .unwrap();
 
-        txs.push(as_admin.create_airspace(as_config.is_restricted));
+        txs.push(vec![if_not_initialized(as_admin.airspace, create_ix)].into());
 
         txs.extend(
             ADAPTERS
@@ -327,11 +333,7 @@ fn create_airspace_token_fixed_term_markets_tx(
         market_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
 
         let mint = derive_token_mint(&token.name);
-        let ticket_mint = derive_ticket_mint(&FixedTermIxBuilder::market_key(
-            &admin.airspace,
-            &mint,
-            market_seed,
-        ));
+        let ticket_mint = derive_ticket_mint(&derive_market(&admin.airspace, &mint, market_seed));
         let fixed_term_ix = FixedTermIxBuilder::new_from_seed(
             config.authority,
             &admin.airspace,
@@ -420,6 +422,8 @@ fn create_airspace_token_fixed_term_markets_tx(
 
         txs.push(admin.register_fixed_term_market(
             mint,
+            derive_pyth_price(&ticket_mint),
+            derive_pyth_product(&ticket_mint),
             market_seed,
             tk_config.collateral_weight,
             tk_config.max_leverage,
@@ -494,8 +498,11 @@ fn create_token_tx(config: &EnvironmentConfig) -> Vec<TransactionBuilder> {
                 ),
             };
 
+            let mint = derive_token_mint(&desc.name);
+            let info = derive_token_info(&mint);
+
             TransactionBuilder {
-                instructions: vec![ix],
+                instructions: vec![if_not_initialized(info, ix)],
                 signers: vec![],
             }
         })
