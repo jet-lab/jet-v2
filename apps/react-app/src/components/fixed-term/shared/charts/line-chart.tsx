@@ -115,7 +115,7 @@ export const LineChart = ({
           if (y) {
             yValues.push({
               y,
-              valueOfY: yScale.invert(y),
+              valueOfY: yScale.invert(y) * 100,
               lineId: path.getAttribute('id') || ''
             });
           }
