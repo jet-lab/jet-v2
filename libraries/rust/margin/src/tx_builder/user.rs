@@ -146,6 +146,16 @@ impl MarginTxBuilder {
         }
     }
 
+    /// Creates a variant of the builder that has an actor other than the margin
+    /// account owner.
+    pub fn with_signer(&self, signer: Keypair) -> Self {
+        let mut new = self.clone();
+        new.ix.payer = signer.pubkey();
+        new.signer = Some(signer);
+
+        new
+    }
+
     async fn create_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
         let signers = self.signer.as_ref().map(|s| vec![s]).unwrap_or_default();
 
@@ -178,6 +188,14 @@ impl MarginTxBuilder {
     /// The address of the transaction signer
     pub fn signer(&self) -> Pubkey {
         self.signer.as_ref().unwrap().pubkey()
+    }
+
+    /// The address of the transaction signer
+    fn signers(&self) -> Vec<Keypair> {
+        match &self.signer {
+            Some(s) => vec![clone(s)],
+            None => vec![],
+        }
     }
 
     /// The owner of the margin account
@@ -564,17 +582,12 @@ impl MarginTxBuilder {
         &self,
         position_token_mint: &Pubkey,
     ) -> Result<Transaction> {
-        self.create_transaction(&[self
-            .ix
-            .refresh_position_metadata(position_token_mint, self.signer())])
+        self.create_transaction(&[self.ix.refresh_position_metadata(position_token_mint)])
             .await
     }
 
     /// Refresh metadata for all positions in the user account
-    pub async fn refresh_all_position_metadata(
-        &self,
-        refresher: &Keypair,
-    ) -> Result<Vec<TransactionBuilder>> {
+    pub async fn refresh_all_position_metadata(&self) -> Result<Vec<TransactionBuilder>> {
         let instructions = self
             .get_account_state()
             .await?
@@ -584,14 +597,10 @@ impl MarginTxBuilder {
                     == get_associated_token_address(self.address(), &position.token);
 
                 match is_deposit_account {
-                    false => self
-                        .ix
-                        .refresh_position_metadata(&position.token, refresher.pubkey()),
-                    true => self
-                        .ix
-                        .refresh_position_config(&position.token, refresher.pubkey()),
+                    false => self.ix.refresh_position_metadata(&position.token),
+                    true => self.ix.refresh_position_config(&position.token),
                 }
-                .with_signer(clone(refresher))
+                .with_signers(&self.signers())
             })
             .collect::<Vec<_>>();
 

@@ -407,7 +407,8 @@ impl MarginUser {
 
     pub async fn refresh_all_position_metadata(&self, refresher: &Keypair) -> Result<(), Error> {
         self.tx
-            .refresh_all_position_metadata(refresher)
+            .with_signer(clone(refresher))
+            .refresh_all_position_metadata()
             .await?
             .send_and_confirm_condensed(&self.rpc)
             .await
