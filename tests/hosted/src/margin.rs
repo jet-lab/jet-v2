@@ -87,10 +87,6 @@ impl MarginClient {
         }
     }
 
-    pub fn airspace(&self) -> Pubkey {
-        self.tx_admin.airspace
-    }
-
     pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),

@@ -191,7 +191,7 @@ pub async fn register_deposit(
     airspace: Pubkey,
     mint: Pubkey,
 ) -> Result<Signature> {
-    let config_builder = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey());
+    let config_builder = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey(), None);
     config_builder
         .configure_token(
             mint,

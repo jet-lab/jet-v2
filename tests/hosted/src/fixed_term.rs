@@ -493,7 +493,7 @@ impl TestManager {
         value_modifier: u16,
     ) -> Result<()> {
         let margin_config_ix =
-            MarginConfigIxBuilder::new(self.airspace, self.client.payer().pubkey());
+            MarginConfigIxBuilder::new(self.airspace, self.client.payer().pubkey(), None);
 
         self.sign_send_transaction(
             &[margin_config_ix.configure_token(
