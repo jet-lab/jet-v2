@@ -146,14 +146,12 @@ impl MarginTxBuilder {
         }
     }
 
-    /// Creates a variant of the builder that has an actor other than the margin
-    /// account owner.
-    pub fn with_signer(&self, signer: Keypair) -> Self {
-        let mut new = self.clone();
-        new.ix.payer = signer.pubkey();
-        new.signer = Some(signer);
+    /// Creates a variant of the builder that has a signer other than the payer.
+    pub fn with_signer(mut self, signer: Keypair) -> Self {
+        self.ix = self.ix.with_authority(signer.pubkey());
+        self.signer = Some(signer);
 
-        new
+        self
     }
 
     async fn create_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
@@ -238,7 +236,7 @@ impl MarginTxBuilder {
         let instructions = vec![
             self.ix
                 .close_position(pool.deposit_note_mint, deposit_account),
-            self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer)),
+            self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer())),
         ];
         self.create_transaction(&instructions).await
     }
@@ -258,7 +256,7 @@ impl MarginTxBuilder {
                 self.ix.get_token_account_address(&pool.deposit_note_mint),
             ),
             TokenKind::Claim => {
-                self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
+                self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer()))
             }
             TokenKind::AdapterCollateral => panic!("pools do not issue AdapterCollateral"),
         };
@@ -279,7 +277,7 @@ impl MarginTxBuilder {
             .map(|p| {
                 if p.adapter == JetMarginPool::id() && p.kind() == TokenKind::Claim {
                     let pool = MarginPoolIxBuilder::new(*loan_to_token.get(&p.token).unwrap());
-                    self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
+                    self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer()))
                 } else {
                     self.ix.close_position(p.token, p.address)
                 }
@@ -531,10 +529,7 @@ impl MarginTxBuilder {
         };
 
         // Add liquidation instruction
-        txs.instructions.push(
-            self.ix
-                .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
-        );
+        txs.instructions.push(self.ix.liquidate_begin());
         txs.signers.push(clone(self.signer.as_ref().unwrap()));
 
         Ok(txs)
@@ -542,12 +537,7 @@ impl MarginTxBuilder {
 
     /// Transaction to end liquidating user account
     pub async fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Result<Transaction> {
-        let self_key = self
-            .signer
-            .as_ref()
-            .map(|s| s.pubkey())
-            .unwrap_or(*self.owner());
-        self.create_transaction(&[self.ix.liquidate_end(self_key, original_liquidator)])
+        self.create_transaction(&[self.ix.liquidate_end(original_liquidator)])
             .await
     }
 
@@ -804,7 +794,7 @@ impl MarginTxBuilder {
         Ok(if let Some(position) = search_result {
             position.address
         } else {
-            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer);
+            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer());
             let wrapped_ix = self.adapter_invoke_ix(pools_ix);
             instructions.push(wrapped_ix);
 
@@ -814,9 +804,7 @@ impl MarginTxBuilder {
 
     fn adapter_invoke_ix(&self, inner: Instruction) -> Instruction {
         match self.is_liquidator {
-            true => self
-                .ix
-                .liquidator_invoke(inner, &self.signer.as_ref().unwrap().pubkey()),
+            true => self.ix.liquidator_invoke(inner),
             false => self.ix.adapter_invoke(inner),
         }
     }

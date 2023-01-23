@@ -33,34 +33,31 @@ use jet_margin::{accounts as ix_account, TokenConfigUpdate};
 /// program for a specific account.
 #[derive(Clone)]
 pub struct MarginIxBuilder {
-    /// The account owner,
+    /// Owner of the margin account.
     pub owner: Pubkey,
 
-    /// The account seed
+    /// Seed used to generate margin account PDA.
     pub seed: u16,
 
-    /// The account paying for any rent
-    pub payer: Pubkey,
-
-    /// The address of the margin account for the owner
+    /// The address of the margin account.
     pub address: Pubkey,
 
-    /// The address of the airspace the margin account belongs to
+    /// The address of the airspace the margin account belongs to.
     pub airspace: Pubkey,
+
+    /// The account paying for any rent.
+    /// - Defaults to authority, then owner.
+    payer: Option<Pubkey>,
+
+    /// Key that authorizes changes to the margin account.
+    /// - Defaults to payer, then owner.
+    authority: Option<Pubkey>,
 }
 
 impl MarginIxBuilder {
     /// Create a new [MarginIxBuilder] which uses the margin account as the authority.
     /// Ordinary margin users should use this function to create a builder.
     pub fn new(airspace: Pubkey, owner: Pubkey, seed: u16) -> Self {
-        Self::new_with_payer(airspace, owner, seed, owner)
-    }
-
-    /// Create a new [MarginIxBuilder] with a custom payer and authority.
-    /// The authority is expected to sign the instructions generated, and
-    /// is normally the margin account or its registered liquidator.
-    /// If the authority is not set, it defaults to the margin account.
-    pub fn new_with_payer(airspace: Pubkey, owner: Pubkey, seed: u16, payer: Pubkey) -> Self {
         let (address, _) = Pubkey::find_program_address(
             &[owner.as_ref(), seed.to_le_bytes().as_ref()],
             &jet_margin::ID,
@@ -68,27 +65,57 @@ impl MarginIxBuilder {
         Self {
             owner,
             seed,
-            payer,
+            payer: None,
             address,
             airspace,
+            authority: None,
         }
+    }
+
+    /// Create a new [MarginIxBuilder] with a custom payer and authority.
+    /// The authority is expected to sign the instructions generated, and
+    /// is normally the margin account or its registered liquidator.
+    /// If the authority is not set, it defaults to the margin account.
+    pub fn new_with_payer(airspace: Pubkey, owner: Pubkey, seed: u16, payer: Pubkey) -> Self {
+        Self::new(airspace, owner, seed).with_payer(payer)
     }
 
     pub fn new_for_address(airspace: Pubkey, address: Pubkey, payer: Pubkey) -> Self {
         Self {
             owner: payer,
             seed: 0,
-            payer,
+            payer: Some(payer),
             address,
             airspace,
+            authority: None,
         }
+    }
+
+    pub fn with_authority(mut self, authority: Pubkey) -> Self {
+        self.authority = Some(authority);
+        self
+    }
+
+    pub fn with_payer(mut self, payer: Pubkey) -> Self {
+        self.payer = Some(payer);
+        self
+    }
+
+    pub fn authority(&self) -> Pubkey {
+        self.authority
+            .unwrap_or_else(|| self.payer.unwrap_or(self.owner))
+    }
+
+    pub fn payer(&self) -> Pubkey {
+        self.payer
+            .unwrap_or_else(|| self.authority.unwrap_or(self.owner))
     }
 
     /// Get instruction to create the account
     pub fn create_account(&self) -> Instruction {
         let accounts = ix_account::CreateAccount {
             owner: self.owner,
-            payer: self.payer,
+            payer: self.payer(),
             margin_account: self.address,
             system_program: SYSTEM_PROGAM_ID,
         };
@@ -104,7 +131,7 @@ impl MarginIxBuilder {
     pub fn close_account(&self) -> Instruction {
         let accounts = ix_account::CloseAccount {
             owner: self.owner,
-            receiver: self.payer,
+            receiver: self.payer(),
             margin_account: self.address,
         };
 
@@ -152,8 +179,8 @@ impl MarginIxBuilder {
             Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
 
         let accounts = ix_account::RegisterPosition {
-            authority: self.payer,
-            payer: self.payer,
+            authority: self.authority(),
+            payer: self.payer(),
             margin_account: self.address,
             position_token_mint,
             metadata,
@@ -183,8 +210,8 @@ impl MarginIxBuilder {
         token_account: Pubkey,
     ) -> Instruction {
         let accounts = ix_account::ClosePosition {
-            authority: self.payer,
-            receiver: self.payer,
+            authority: self.authority(),
+            receiver: self.payer(),
             margin_account: self.address,
             position_token_mint,
             token_account,
@@ -210,8 +237,8 @@ impl MarginIxBuilder {
         let accounts = ix_account::RefreshPositionMetadata {
             metadata,
             margin_account: self.address,
-            permit: derive_margin_permit(&self.airspace, &self.payer),
-            refresher: self.payer,
+            permit: derive_margin_permit(&self.airspace, &self.authority()),
+            refresher: self.authority(),
         };
 
         Instruction {
@@ -227,14 +254,14 @@ impl MarginIxBuilder {
     ///
     /// `position_token_mint` - The mint for the position to be refreshed
     pub fn refresh_position_config(&self, position_token_mint: &Pubkey) -> Instruction {
-        let config = MarginConfigIxBuilder::new(self.airspace, self.payer, None)
+        let config = MarginConfigIxBuilder::new(self.airspace, self.payer(), None)
             .derive_token_config(position_token_mint);
 
         let accounts = ix_account::RefreshPositionConfig {
             config,
             margin_account: self.address,
-            permit: derive_margin_permit(&self.airspace, &self.payer),
-            refresher: self.payer,
+            permit: derive_margin_permit(&self.airspace, &self.authority()),
+            refresher: self.authority(),
         };
 
         Instruction {
@@ -295,7 +322,8 @@ impl MarginIxBuilder {
     /// # Params
     ///
     /// `liquidator` - The address of the liquidator
-    pub fn liquidate_begin(&self, liquidator: Pubkey) -> Instruction {
+    pub fn liquidate_begin(&self) -> Instruction {
+        let liquidator = self.authority();
         let (liquidator_metadata, _) =
             Pubkey::find_program_address(&[liquidator.as_ref()], &jet_metadata::id());
 
@@ -306,7 +334,7 @@ impl MarginIxBuilder {
 
         let accounts = ix_account::LiquidateBegin {
             margin_account: self.address,
-            payer: self.payer,
+            payer: self.payer(),
             liquidator,
             liquidator_metadata,
             liquidation,
@@ -321,8 +349,8 @@ impl MarginIxBuilder {
     }
 
     /// Invoke action as liquidator
-    #[allow(clippy::redundant_field_names)]
-    pub fn liquidator_invoke(&self, adapter_ix: Instruction, liquidator: &Pubkey) -> Instruction {
+    pub fn liquidator_invoke(&self, adapter_ix: Instruction) -> Instruction {
+        let liquidator = self.authority();
         let (liquidation, _) = Pubkey::find_program_address(
             &[b"liquidation", self.address.as_ref(), liquidator.as_ref()],
             &jet_margin::id(),
@@ -332,8 +360,8 @@ impl MarginIxBuilder {
             self.address,
             adapter_ix,
             LiquidatorInvoke {
-                liquidator: *liquidator,
-                liquidation: liquidation,
+                liquidator,
+                liquidation,
             }
         )
     }
@@ -344,11 +372,8 @@ impl MarginIxBuilder {
     ///
     /// `liquidator` - The address of the liquidator
     /// `original_liquidator` - The liquidator that started the liquidation process
-    pub fn liquidate_end(
-        &self,
-        authority: Pubkey,
-        original_liquidator: Option<Pubkey>,
-    ) -> Instruction {
+    pub fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Instruction {
+        let authority = self.authority();
         let original = original_liquidator.unwrap_or(authority);
         let (liquidation, _) = Pubkey::find_program_address(
             &[b"liquidation", self.address.as_ref(), original.as_ref()],
@@ -377,12 +402,12 @@ impl MarginIxBuilder {
     ///
     /// `token_mint` - The mint for the token to be deposited
     pub fn create_deposit_position(&self, token_mint: Pubkey) -> Instruction {
-        let config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer, None);
+        let config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer(), None);
         let token_account = get_associated_token_address(&self.address, &token_mint);
         let accounts = ix_account::CreateDepositPosition {
             margin_account: self.address,
-            authority: self.payer,
-            payer: self.payer,
+            authority: self.authority(),
+            payer: self.payer(),
             mint: token_mint,
             config: config_ix.derive_token_config(&token_mint),
             token_account,
@@ -659,7 +684,7 @@ macro_rules! invoke {
         $margin_account:expr,
         $adapter_ix:ident,
         $Instruction:ident $({
-            $($additional_field:ident: $value:expr),* $(,)?
+            $($additional_field:ident$(: $value:expr)?),* $(,)?
         })?
     ) => {{
         let (adapter_metadata, _) =
@@ -669,9 +694,7 @@ macro_rules! invoke {
             margin_account: $margin_account,
             adapter_program: $adapter_ix.program_id,
             adapter_metadata,
-            $(
-                $($additional_field: $value),*
-            )?
+            $($($additional_field$(: $value)?),*)?
         }
         .to_account_metas(None);
 
