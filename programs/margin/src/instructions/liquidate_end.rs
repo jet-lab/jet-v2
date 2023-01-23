@@ -28,7 +28,9 @@ pub struct LiquidateEnd<'info> {
     pub authority: Signer<'info>,
 
     /// The account in need of liquidation
-    #[account(mut, has_one = liquidation)]
+    #[account(mut,constraint =
+        margin_account.load()?.liquidator == liquidation.load()?.liquidator
+            @ ErrorCode::UnauthorizedLiquidator)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// Account to persist the state of the liquidation

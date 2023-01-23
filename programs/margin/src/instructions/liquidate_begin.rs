@@ -61,8 +61,7 @@ pub struct LiquidateBegin<'info> {
 }
 
 pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
-    let liquidation = &ctx.accounts.liquidation;
-    let liquidator = &ctx.accounts.liquidator;
+    let liquidator = ctx.accounts.liquidator.key();
     let mut account = ctx.accounts.margin_account.load_mut()?;
     let timestamp = sys().unix_timestamp();
 
@@ -70,8 +69,8 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
     account.verify_unhealthy_positions(timestamp)?;
 
     // verify not already being liquidated
-    match account.liquidation {
-        liq if liq == liquidation.key() => {
+    match account.liquidator {
+        liq if liq == liquidator => {
             // this liquidator has already been set as the active liquidator,
             // so there is nothing to do
             unreachable!();
@@ -79,7 +78,7 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
 
         liq if liq == Pubkey::default() => {
             // not being liquidated, so claim it
-            account.start_liquidation(liquidation.key(), liquidator.key());
+            account.start_liquidation(liquidator);
         }
 
         _ => {
@@ -94,13 +93,15 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
         * Number128::from_bps(LIQUIDATION_MAX_EQUITY_LOSS_BPS);
 
     let liquidation_state = LiquidationState {
+        liquidator,
+        margin_account: ctx.accounts.margin_account.key(),
         state: Liquidation::new(Clock::get()?.unix_timestamp, min_equity_change),
     };
     *ctx.accounts.liquidation.load_init()? = liquidation_state;
 
     emit!(events::LiquidationBegun {
         margin_account: ctx.accounts.margin_account.key(),
-        liquidator: ctx.accounts.liquidator.key(),
+        liquidator,
         liquidation: ctx.accounts.liquidation.key(),
         liquidation_data: liquidation_state.state,
         valuation_summary: valuation.into(),

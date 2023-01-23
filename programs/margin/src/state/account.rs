@@ -58,8 +58,8 @@ pub struct MarginAccount {
     /// The owner of this account, which generally has to sign for any changes to it
     pub owner: Pubkey,
 
-    /// The state of an active liquidation for this account
-    pub liquidation: Pubkey,
+    /// The airspace this account belongs to
+    pub airspace: Pubkey,
 
     /// The active liquidator for this account
     pub liquidator: Pubkey,
@@ -77,7 +77,7 @@ impl Serialize for MarginAccount {
         let mut s = serializer.serialize_struct("MarginAccount", 5)?;
         s.serialize_field("version", &self.version)?;
         s.serialize_field("owner", &self.owner.to_string())?;
-        s.serialize_field("liquidation", &self.liquidation.to_string())?;
+        s.serialize_field("airspace", &self.airspace.to_string())?;
         s.serialize_field("liquidator", &self.liquidator.to_string())?;
         s.serialize_field("positions", &self.positions().collect::<Vec<_>>())?;
         s.end()
@@ -93,7 +93,7 @@ impl std::fmt::Debug for MarginAccount {
             .field("reserved0", &self.reserved0)
             .field("invocation", &self.invocation)
             .field("owner", &self.owner)
-            .field("liquidation", &self.liquidation)
+            .field("airspace", &self.airspace)
             .field("liquidator", &self.liquidator);
 
         if self.positions().next().is_some() {
@@ -135,13 +135,11 @@ pub trait AnchorVerify: Discriminator + Owner {
 impl AnchorVerify for MarginAccount {}
 
 impl MarginAccount {
-    pub fn start_liquidation(&mut self, liquidation: Pubkey, liquidator: Pubkey) {
-        self.liquidation = liquidation;
+    pub fn start_liquidation(&mut self, liquidator: Pubkey) {
         self.liquidator = liquidator;
     }
 
     pub fn end_liquidation(&mut self) {
-        self.liquidation = Pubkey::default();
         self.liquidator = Pubkey::default();
     }
 
@@ -155,7 +153,7 @@ impl MarginAccount {
     }
 
     pub fn is_liquidating(&self) -> bool {
-        self.liquidation != Pubkey::default()
+        self.liquidator != Pubkey::default()
     }
 
     pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
@@ -516,6 +514,10 @@ pub enum Approver {
 #[account(zero_copy)]
 #[repr(C, align(8))]
 pub struct LiquidationState {
+    /// The signer responsible for liquidation
+    pub liquidator: Pubkey,
+    /// The margin account being liquidated
+    pub margin_account: Pubkey,
     /// The state object
     pub state: Liquidation,
 }
@@ -627,7 +629,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation,
             positions: [0; 7432],
@@ -641,7 +643,7 @@ mod tests {
                 caller_heights: BitSet(0b10010111)
             },
             owner: 11111111111111111111111111111111,
-            liquidation: 11111111111111111111111111111111,
+            airspace: 11111111111111111111111111111111,
             liquidator: 11111111111111111111111111111111,
             positions: []
         }"
@@ -696,7 +698,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -713,7 +715,7 @@ mod tests {
                 Token::U8(1),
                 Token::Str("owner"),
                 Token::Str("11111111111111111111111111111111"),
-                Token::Str("liquidation"),
+                Token::Str("airspace"),
                 Token::Str("11111111111111111111111111111111"),
                 Token::Str("liquidator"),
                 Token::Str("11111111111111111111111111111111"),
@@ -783,7 +785,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -804,7 +806,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -846,7 +848,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -976,7 +978,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -1046,7 +1048,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -1075,7 +1077,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -1217,7 +1219,7 @@ mod tests {
     #[test]
     fn margin_account_32_positions_with_liquidator() {
         let mut account = blank_account();
-        account.liquidation = pda(234);
+        account.liquidator = pda(234);
         for i in 0..30 {
             try_register_position(&mut account, i, TokenKind::Collateral).unwrap();
         }
@@ -1227,7 +1229,6 @@ mod tests {
     fn margin_account_authority() {
         let mut account = blank_account();
         account.owner = pda(0);
-        account.liquidator = pda(1);
         account.verify_authority(pda(0)).unwrap();
         account.verify_authority(pda(1)).unwrap_err();
         account.verify_authority(pda(2)).unwrap_err();
@@ -1239,7 +1240,7 @@ mod tests {
         let mut account = blank_account();
         account.owner = pda(0);
         account.liquidator = pda(1);
-        account.liquidation = pda(2);
+        account.airspace = pda(2);
         account.verify_authority(pda(0)).unwrap_err();
         account.verify_authority(pda(1)).unwrap();
         account.verify_authority(pda(2)).unwrap_err();
@@ -1257,7 +1258,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],

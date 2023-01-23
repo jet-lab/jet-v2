@@ -45,7 +45,7 @@ pub fn adapter_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
     data: Vec<u8>,
 ) -> Result<()> {
-    if ctx.accounts.margin_account.load()?.liquidation != Pubkey::default() {
+    if ctx.accounts.margin_account.load()?.liquidator != Pubkey::default() {
         msg!("account is being liquidated");
         return Err(ErrorCode::Liquidating.into());
     }

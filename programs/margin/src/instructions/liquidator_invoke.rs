@@ -29,13 +29,14 @@ pub struct LiquidatorInvoke<'info> {
     pub liquidator: Signer<'info>,
 
     /// Account to persist the state of the liquidation
-    #[account(mut)]
+    #[account(mut,
+        has_one = liquidator,
+        has_one = margin_account,
+    )]
     pub liquidation: AccountLoader<'info, LiquidationState>,
 
     /// The margin account to proxy an action for
-    #[account(mut,
-              has_one = liquidation,
-              has_one = liquidator)]
+    #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The program to be invoked
