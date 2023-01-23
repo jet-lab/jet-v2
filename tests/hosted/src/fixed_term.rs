@@ -165,7 +165,7 @@ impl TestManager {
         .await?
         .with_crank()
         .await?
-        .with_margin()
+        .with_margin(&client.airspace_authority)
         .await
     }
 
@@ -282,13 +282,26 @@ impl TestManager {
 
     /// set up metadata authorization for margin to invoke fixed term and
     /// register relevant positions.
-    pub async fn with_margin(self) -> Result<Self> {
+    pub async fn with_margin(self, airspace_authority: &Keypair) -> Result<Self> {
         self.create_authority_if_missing().await?;
         self.register_adapter_if_unregistered(&jet_fixed_term::ID)
             .await?;
-        self.register_tickets_position_metadatata().await?;
-        register_deposit(&self.client, self.airspace, self.ix_builder.token_mint()).await?;
-        register_deposit(&self.client, self.airspace, self.ix_builder.ticket_mint()).await?;
+        self.register_tickets_position_metadatata(airspace_authority)
+            .await?;
+        register_deposit(
+            &self.client,
+            self.airspace,
+            airspace_authority,
+            self.ix_builder.token_mint(),
+        )
+        .await?;
+        register_deposit(
+            &self.client,
+            self.airspace,
+            airspace_authority,
+            self.ix_builder.ticket_mint(),
+        )
+        .await?;
 
         Ok(self)
     }
@@ -465,13 +478,17 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_tickets_position_metadatata(&self) -> Result<()> {
+    pub async fn register_tickets_position_metadatata(
+        &self,
+        airspace_authority: &Keypair,
+    ) -> Result<()> {
         let market = self.load_market().await?;
         self.register_tickets_position_metadatata_impl(
             market.claims_mint,
             market.underlying_token_mint,
             TokenKind::Claim,
             10_00,
+            airspace_authority,
         )
         .await?;
         self.register_tickets_position_metadatata_impl(
@@ -479,6 +496,7 @@ impl TestManager {
             market.ticket_mint,
             TokenKind::AdapterCollateral,
             1_00,
+            airspace_authority,
         )
         .await?;
 
@@ -491,9 +509,13 @@ impl TestManager {
         underlying_token_mint: Pubkey,
         token_kind: TokenKind,
         value_modifier: u16,
+        airspace_authority: &Keypair,
     ) -> Result<()> {
-        let margin_config_ix =
-            MarginConfigIxBuilder::new(self.airspace, self.client.payer().pubkey(), None);
+        let margin_config_ix = MarginConfigIxBuilder::new(
+            self.airspace,
+            self.client.payer().pubkey(),
+            Some(airspace_authority.pubkey()),
+        );
 
         self.sign_send_transaction(
             &[margin_config_ix.configure_token(
@@ -506,7 +528,7 @@ impl TestManager {
                     max_staleness: 0,
                 }),
             )],
-            None,
+            Some(&[airspace_authority]),
         )
         .await?;
 
