@@ -99,12 +99,10 @@ impl MarginTxBuilder {
         seed: u16,
         airspace: Pubkey,
     ) -> MarginTxBuilder {
-        let payer = signer
-            .as_ref()
-            .map(|s| s.pubkey())
-            .unwrap_or_else(|| rpc.payer().pubkey());
-        let ix = MarginIxBuilder::new_with_payer(airspace, owner, seed, payer);
-
+        let mut ix = MarginIxBuilder::new(airspace, owner, seed).with_payer(rpc.payer().pubkey());
+        if let Some(signer) = signer.as_ref() {
+            ix = ix.with_authority(signer.pubkey());
+        }
         let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey(), None);
 
         Self {
@@ -129,12 +127,10 @@ impl MarginTxBuilder {
         owner: Pubkey,
         seed: u16,
     ) -> MarginTxBuilder {
-        let payer = signer
-            .as_ref()
-            .map(|s| s.pubkey())
-            .unwrap_or_else(|| rpc.payer().pubkey());
-        let ix = MarginIxBuilder::new_with_payer(airspace, owner, seed, payer);
-
+        let mut ix = MarginIxBuilder::new(airspace, owner, seed).with_payer(rpc.payer().pubkey());
+        if let Some(signer) = signer.as_ref() {
+            ix = ix.with_authority(signer.pubkey());
+        }
         let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey(), None);
 
         Self {

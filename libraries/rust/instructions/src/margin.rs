@@ -46,11 +46,11 @@ pub struct MarginIxBuilder {
     pub airspace: Pubkey,
 
     /// The account paying for any rent.
-    /// - Defaults to authority, then owner.
+    /// - Defaults to authority, which defaults to owner.
     payer: Option<Pubkey>,
 
-    /// Key that authorizes changes to the margin account.
-    /// - Defaults to payer, then owner.
+    /// Key that will sign to authorize changes to the margin account.
+    /// - Defaults to owner.
     authority: Option<Pubkey>,
 }
 
@@ -72,14 +72,6 @@ impl MarginIxBuilder {
         }
     }
 
-    /// Create a new [MarginIxBuilder] with a custom payer and authority.
-    /// The authority is expected to sign the instructions generated, and
-    /// is normally the margin account or its registered liquidator.
-    /// If the authority is not set, it defaults to the margin account.
-    pub fn new_with_payer(airspace: Pubkey, owner: Pubkey, seed: u16, payer: Pubkey) -> Self {
-        Self::new(airspace, owner, seed).with_payer(payer)
-    }
-
     pub fn new_for_address(airspace: Pubkey, address: Pubkey, payer: Pubkey) -> Self {
         Self {
             owner: payer,
@@ -91,24 +83,24 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Use if an administrator is managing the account instead of the owner.
     pub fn with_authority(mut self, authority: Pubkey) -> Self {
         self.authority = Some(authority);
         self
     }
 
+    /// Use if a different wallet should pay or receive rent instead of the authority.
     pub fn with_payer(mut self, payer: Pubkey) -> Self {
         self.payer = Some(payer);
         self
     }
 
     pub fn authority(&self) -> Pubkey {
-        self.authority
-            .unwrap_or_else(|| self.payer.unwrap_or(self.owner))
+        self.authority.unwrap_or(self.owner)
     }
 
     pub fn payer(&self) -> Pubkey {
-        self.payer
-            .unwrap_or_else(|| self.authority.unwrap_or(self.owner))
+        self.payer.unwrap_or_else(|| self.authority())
     }
 
     /// Get instruction to create the account
