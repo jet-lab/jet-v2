@@ -88,10 +88,12 @@ describe('Fixed Term Market', () => {
     const lendNow = cy.contains('lend now');
     lendNow.click();
     const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
-    amountInput.click().type(`100`);
+    amountInput.click();
+    cy.wait(5000);
+    amountInput.type(`1000`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
-    cy.contains('Your lend order for 100 USDC was filled successfully');
+    cy.contains('Your lend order for 1000 USDC was filled successfully');
   });
 
   it('issues a borrow now order', () => {
@@ -101,16 +103,18 @@ describe('Fixed Term Market', () => {
     const borrowNowTab = cy.contains('borrow now');
     borrowNowTab.click();
     const amountInput = cy.get('.fixed-term .borrow-now .input-amount input').should('not.be.disabled');
-    amountInput.click().type(`100`);
+    amountInput.click();
+    cy.wait(5000);
+    amountInput.type(`100`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
     cy.contains('Your borrow order for 100 USDC was filled successfully');
   });
 
   it('can perform a borrow on a pool after a position on a fixed market could have gone stale', () => {
-    cy.wait(31000) // current stale time is 30 seconds
-    const poolsLink = cy.contains('.nav-link', 'Pools')
+    cy.wait(31000); // current stale time is 30 seconds
+    const poolsLink = cy.contains('.nav-link', 'Pools');
     poolsLink.click();
-    borrow('USDC', 10)
-  })
+    borrow('USDC', 10);
+  });
 });

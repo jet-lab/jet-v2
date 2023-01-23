@@ -1,4 +1,4 @@
-import { FixedTermMarket, JetMarket, JetMarketIdl, Orderbook, MarketAndconfig } from '@jet-lab/margin';
+import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, MarketAndconfig, OrderbookModel } from '@jet-lab/margin';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -38,24 +38,26 @@ export const CurrentOrderTabAtom = atom<CurrentOrderTab>({
   default: 'not_set'
 });
 
-export interface ExtendedOrderBook extends Orderbook {
+export interface ExtendedOrderBook {
   name: string;
+  orderbook: OrderbookModel;
 }
 
 export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   key: 'allFixedTermMarketOrderBooks',
   get: async ({ get }) => {
     const list = get(AllFixedTermMarketsAtom);
-    return await Promise.all(
+    const markets = await Promise.all(
       list.map(async market => {
-        const raw = await market.market.fetchOrderbook();
+        const tenor = BigInt(market.config.borrowTenor);
+        const model = await market.market.fetchOrderbook(tenor);
         return {
           name: market.name,
-          asks: raw.asks.sort((a, b) => Number(a.limit_price) - Number(b.limit_price)),
-          bids: raw.bids.sort((a, b) => Number(b.limit_price) - Number(a.limit_price))
+          orderbook: model
         };
       })
     );
+    return markets.sort((a, b) => b.name.localeCompare(a.name));
   }
 });
 
@@ -69,7 +71,7 @@ export const useFixedTermSync = (): void => {
 
   const loadFixedTermMarkets = async (
     airspace: AirspaceConfig,
-    program: Program<JetMarket>,
+    program: Program<JetFixedTerm>,
     marginProgramId: PublicKey
   ) => {
     const markets: Array<MarketAndconfig> = [];
@@ -86,12 +88,12 @@ export const useFixedTermSync = (): void => {
         }
       })
     );
-    setMarkets(markets);
+    setMarkets(markets.sort((a, b) => b.name.localeCompare(a.name)));
   };
 
   useEffect(() => {
     if (networkState === 'connected' && config?.fixedTermMarketProgramId) {
-      const program = new Program(JetMarketIdl, config.fixedTermMarketProgramId, provider);
+      const program = new Program(JetFixedTermIdl, config.fixedTermMarketProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
       if (airspace) {
         loadFixedTermMarkets(airspace, program, new PublicKey(config.marginProgramId));

@@ -16,9 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-use std::convert::TryInto;
+use solana_program::clock::UnixTimestamp;
 
-use crate::{ErrorCode, MarginAccount, PriceChangeInfo, TokenConfig, TokenOracle};
+use crate::{
+    syscall::{sys, Sys},
+    ErrorCode, MarginAccount, PriceChangeInfo, TokenConfig, TokenOracle,
+};
 
 #[derive(Accounts)]
 pub struct RefreshDepositPosition<'info> {
@@ -55,25 +58,20 @@ pub fn refresh_deposit_position_handler(ctx: Context<RefreshDepositPosition>) ->
                 }
             };
 
-            let price_obj = price_feed.get_current_price().ok_or_else(|| {
-                msg!("current pyth price is invalid");
-                ErrorCode::InvalidOracle
-            })?;
-            let ema_obj = price_feed.get_ema_price().ok_or_else(|| {
-                msg!("current pyth ema price is invalid");
-                ErrorCode::InvalidOracle
-            })?;
+            // Price will be checked by the margin program
+            let price_obj = price_feed.get_price_unchecked();
+            let ema_obj = price_feed.get_ema_price_unchecked();
 
             let price_info = PriceChangeInfo {
                 value: price_obj.price,
                 confidence: price_obj.conf,
                 twap: ema_obj.price,
                 exponent: price_obj.expo,
-                publish_time: price_feed.publish_time,
+                publish_time: price_obj.publish_time,
             };
 
             let position = margin_account.get_position_mut(&config.mint).unwrap();
-            position.set_price(&price_info.try_into()?)?;
+            position.set_price(&price_info.try_into(sys().unix_timestamp() as UnixTimestamp)?)?;
         }
 
         None => {

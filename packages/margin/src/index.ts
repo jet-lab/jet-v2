@@ -20,3 +20,11 @@ export * from "./token"
 export * from "./types"
 export * from "./utils"
 export * from './fixed-term'
+export * from './wasm'
+
+// FIXME This function is supposed to be execute automatically
+// in each thread when loading the wasm module but, as far as
+// I can tell, that isn't happening. It's idempotent anyway, so
+// just force the issue here.
+import { initModule } from "./wasm"
+initModule();

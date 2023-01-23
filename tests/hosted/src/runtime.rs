@@ -1,12 +1,12 @@
 use rand::rngs::mock::StepRng;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::signature::Keypair;
+use solana_sdk::signer::Signer;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
-use tokio::sync::OnceCell;
 
-use jet_simulation::runtime::TestRuntime;
 use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+use jet_simulation::TestRuntime;
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 
 /// If you don't provide a name, gets the name of the current function name and
@@ -131,19 +131,19 @@ async fn get_runtime() -> Arc<dyn SolanaRpcClient> {
 }
 
 async fn localnet_runtime() -> Arc<dyn SolanaRpcClient> {
-    Arc::new(RpcConnection::new_local_funded().await.unwrap())
+    Arc::new(
+        RpcConnection::new_local_funded(Keypair::new())
+            .await
+            .unwrap(),
+    )
 }
 
 async fn simulation_runtime() -> Arc<dyn SolanaRpcClient> {
-    SIMULATION
-        .get_or_init(build_simulation_runtime)
-        .await
-        .clone()
+    build_simulation_runtime().await
 }
 
-static SIMULATION: OnceCell<Arc<dyn SolanaRpcClient>> = OnceCell::const_new();
-
 async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
+    let _ = env_logger::builder().is_test(false).try_init();
     let runtime = jet_simulation::create_test_runtime![
         jet_test_service,
         jet_fixed_term,
@@ -153,6 +153,7 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         jet_airspace,
         jet_margin_pool,
         jet_margin_swap,
+        (spl_token::ID, spl_token::processor::Processor::process),
         (
             orca_swap_v1::id(),
             orca_swap_v1::processor::Processor::process
@@ -171,7 +172,15 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         )
     ];
 
-    Arc::new(runtime)
+    let payer_key = Keypair::new();
+    let payer = payer_key.pubkey();
+    let rpc = runtime.rpc(payer_key);
+
+    rpc.airdrop(&payer, 10_000 * LAMPORTS_PER_SOL)
+        .await
+        .unwrap();
+
+    Arc::new(rpc)
 }
 
 pub async fn init_wallet(

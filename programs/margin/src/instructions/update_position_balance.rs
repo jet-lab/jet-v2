@@ -18,7 +18,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
-use crate::{events, MarginAccount};
+use crate::{
+    events,
+    syscall::{sys, Sys},
+    MarginAccount,
+};
 
 #[derive(Accounts)]
 pub struct UpdatePositionBalance<'info> {
@@ -38,6 +42,7 @@ pub fn update_position_balance_handler(ctx: Context<UpdatePositionBalance>) -> R
         &token_account.mint,
         &token_account.key(),
         token_account.amount,
+        sys().unix_timestamp(),
     )?;
 
     emit!(events::PositionBalanceUpdated { position });

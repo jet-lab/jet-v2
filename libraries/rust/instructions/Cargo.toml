@@ -1,0 +1,27 @@
+[package]
+name = "jet-instructions"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+solana-sdk = "1.14"
+
+anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+
+spl-token = "3"
+spl-token-swap = "2"
+spl-associated-token-account = "1"
+
+jet-program-common = { path = "../program-common" }
+
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+
+jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
+jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint"] }
+jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }
+jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
+jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
+jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
+jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
+jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }

@@ -20,7 +20,7 @@ use anchor_lang::{prelude::*, AccountsClose};
 use jet_airspace::state::Airspace;
 use jet_program_common::serialization::StorageSpace;
 
-use crate::{seeds::PERMIT_SEED, Permissions, Permit};
+use crate::{events::PermitConfigured, seeds::PERMIT_SEED, Permissions, Permit};
 
 #[derive(Accounts)]
 pub struct ConfigurePermit<'info> {
@@ -69,6 +69,12 @@ pub fn configure_permit(
     } else {
         permit.permissions.remove(flag);
     }
+
+    emit!(PermitConfigured {
+        airspace: ctx.accounts.airspace.key(),
+        owner: ctx.accounts.owner.key(),
+        permissions: permit.permissions,
+    });
 
     if permit.permissions.is_empty() {
         return permit.close(ctx.accounts.payer.to_account_info());

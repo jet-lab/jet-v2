@@ -1,11 +1,17 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
-use jet_margin_sdk::util::asynchronous::MapAsync;
-use std::time::Duration;
+use jet_margin_sdk::{
+    fixed_term::OrderParams,
+    solana::transaction::InverseSendTransactionBuilder,
+    util::{asynchronous::MapAsync, data::Concat},
+};
+use std::{sync::Arc, time::Duration};
 
 use crate::{
+    fixed_term::{self, create_fixed_term_market_margin_user, OrderAmount},
     margin_test_context,
-    setup_helper::{create_tokens, create_users},
+    pricing::TokenPricer,
+    setup_helper::{create_tokens, create_users, tokens},
     test_user::ONE,
 };
 
@@ -40,7 +46,7 @@ pub async fn unhealthy_accounts_load_test(
         mint_count,
         repricing_delay,
         repricing_scale,
-        keep_looping: iterate,
+        keep_looping,
         liquidator,
     } = scenario;
     ctx.margin.set_liquidator_metadata(liquidator, true).await?;
@@ -69,6 +75,86 @@ pub async fn unhealthy_accounts_load_test(
 
     println!("incrementally lowering prices of half of the assets");
     let assets_to_devalue = mints[0..mints.len() / 2].to_vec();
+    devalue_assets(
+        pricer,
+        assets_to_devalue,
+        keep_looping,
+        repricing_scale,
+        repricing_delay,
+    )
+    .await
+}
+
+pub async fn under_collateralized_fixed_term_borrow_orders(
+    scenario: UnhealthyAccountsLoadTestScenario,
+) -> Result<(), anyhow::Error> {
+    let ctx = margin_test_context!();
+    println!("creating fixed term market");
+    let manager = Arc::new(fixed_term::TestManager::full(&ctx).await.unwrap());
+    let client = manager.client.clone();
+    println!("creating collateral token");
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+    println!("creating users with collateral");
+    let user =
+        create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, 350_000)])
+            .await;
+
+    let UnhealthyAccountsLoadTestScenario {
+        user_count: _, //todo
+        mint_count: _, //todo
+        repricing_delay,
+        repricing_scale,
+        keep_looping,
+        liquidator,
+    } = scenario;
+    ctx.margin.set_liquidator_metadata(liquidator, true).await?;
+
+    // println!("creating users with collateral");
+    // let users = create_users(&ctx, user_count + 1).await?;
+    // let users = (0..(user_count+1)).map_async(|_| create_fixed_term_market_margin_user(ctx, vec![])).await;
+    // let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 1_000)],).await;
+    // println!("creating deposits");
+    // user.deposit(&collateral, 100 * ONE);
+    // users
+    //     .iter()
+    //     .map_async_chunked(16, |user| user.deposit(&collateral, 100 * ONE))
+    //     .await?;
+    println!("creating borrow orders");
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(
+        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000))
+            .await?,
+    )
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    println!("incrementally lowering prices of the collateral");
+    devalue_assets(
+        pricer,
+        vec![collateral],
+        keep_looping,
+        repricing_scale,
+        repricing_delay,
+    )
+    .await
+}
+
+async fn devalue_assets(
+    pricer: TokenPricer,
+    assets_to_devalue: Vec<Pubkey>,
+    keep_looping: bool,
+    repricing_scale: f64,
+    repricing_delay: usize,
+) -> anyhow::Result<()> {
     println!("for assets {assets_to_devalue:?}...");
     let mut price = 1.0;
     loop {
@@ -84,8 +170,23 @@ pub async fn unhealthy_accounts_load_test(
             // pricer.refresh_all_oracles().await?;
             pricer.set_prices(Vec::new(), true).await?;
         }
-        if !iterate {
+        if !keep_looping {
             return Ok(());
         }
+    }
+}
+
+// todo dedupe with unit tests
+fn underlying(quote: u64, rate_bps: u64) -> OrderParams {
+    let borrow_amount = OrderAmount::from_quote_amount_rate(quote, rate_bps);
+    OrderParams {
+        max_ticket_qty: borrow_amount.base,
+        max_underlying_token_qty: borrow_amount.quote,
+        limit_price: borrow_amount.price,
+        match_limit: 1,
+        post_only: false,
+        post_allowed: true,
+        auto_stake: true,
+        auto_roll: false,
     }
 }

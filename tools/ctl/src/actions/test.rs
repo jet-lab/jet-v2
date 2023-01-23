@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use anchor_lang::prelude::Rent;
 use anyhow::{bail, Result};
 use jet_margin_sdk::{
-    fixed_term::fixed_term_market_pda,
+    fixed_term::fixed_term_address,
     ix_builder::{
         derive_airspace,
         test_service::{derive_swap_pool, derive_token_mint},
@@ -194,7 +194,7 @@ async fn generate_fixed_term_markets_app_config_from_env(
 }
 
 fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-    fixed_term_market_pda(&[
+    fixed_term_address(&[
         jet_margin_sdk::jet_fixed_term::seeds::MARKET,
         airspace.as_ref(),
         token_mint.as_ref(),
@@ -202,7 +202,7 @@ fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubk
     ])
 }
 
-pub fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: i64) -> Pubkey {
+pub fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: u64) -> Pubkey {
     let mut seed = [0u8; 32];
     seed[..8].copy_from_slice(&tenor.to_le_bytes());
 

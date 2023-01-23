@@ -1,5 +1,4 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-// import axios from 'axios';
 import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { chunks, MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
@@ -27,7 +26,7 @@ export function useMarginActions() {
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
   const pools = useRecoilValue(Pools);
-  const markets = useRecoilValue(AllFixedTermMarketsAtom)
+  const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
   const walletTokens = useRecoilValue(WalletTokens);
@@ -198,7 +197,7 @@ export function useMarginActions() {
 
   // Borrow
   async function borrow(): Promise<[string | undefined, ActionResponse]> {
-    if (!pools || !currentPool || !walletTokens || !currentAccount || !accountPoolPosition  || !markets) {
+    if (!pools || !currentPool || !walletTokens || !currentAccount || !accountPoolPosition || !markets) {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
@@ -301,7 +300,7 @@ export function useMarginActions() {
   // Transfer
   async function transfer(
     fromAccount: MarginAccount,
-    toAccount: MarginAccount,
+    toAccount: MarginAccount
   ): Promise<[string | undefined, ActionResponse]> {
     if (!pools || !currentPool || !currentAccount || !fromAccount.walletTokens || !toAccount.walletTokens) {
       console.error('Accounts and/or pools not loaded');
@@ -321,12 +320,12 @@ export function useMarginActions() {
       await fromAccount.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
-        markets: markets.map(m => m.market),
+        markets: markets.map(m => m.market)
       });
       await toAccount.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
-        markets: markets.map(m => m.market),
+        markets: markets.map(m => m.market)
       });
 
       // toAccount deposit position

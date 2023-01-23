@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::fixed_term::FixedTermIxBuilder;
+use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, OrderBookAddresses};
 use serde::{Deserialize, Serialize};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
@@ -15,10 +15,10 @@ const MANAGER_VERSION: u64 = 0;
 #[derive(Debug, Clone, Parser, Serialize, Deserialize)]
 pub struct MarketParameters {
     #[clap(long)]
-    pub borrow_tenor: i64,
+    pub borrow_tenor: u64,
 
     #[clap(long)]
-    pub lend_tenor: i64,
+    pub lend_tenor: u64,
 
     #[clap(long)]
     pub origination_fee: u64,
@@ -90,6 +90,7 @@ pub async fn process_create_fixed_term_market<'a>(
         })?,
     ];
     let fixed_term_market = FixedTermIxBuilder::new_from_seed(
+        client.signer()?,
         &Pubkey::default(),
         &params.token_mint,
         seed,
@@ -97,6 +98,11 @@ pub async fn process_create_fixed_term_market<'a>(
         params.token_oracle,
         params.ticket_oracle,
         None,
+        OrderBookAddresses {
+            bids: bids.pubkey(),
+            asks: asks.pubkey(),
+            event_queue: eq.pubkey(),
+        },
     );
 
     let mut steps = vec![];
@@ -137,13 +143,7 @@ pub async fn process_create_fixed_term_market<'a>(
         );
         return Ok(Plan::default());
     }
-    let init_orderbook = fixed_term_market.initialize_orderbook(
-        payer,
-        eq.pubkey(),
-        bids.pubkey(),
-        asks.pubkey(),
-        params.min_order_size,
-    )?;
+    let init_orderbook = fixed_term_market.initialize_orderbook(payer, params.min_order_size);
     steps.push(format!(
         "initialize-order-book for fixed term market {}",
         fixed_term_market.market()

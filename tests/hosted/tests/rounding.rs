@@ -158,13 +158,13 @@ async fn rounding_poc() -> Result<()> {
         .unwrap();
 
     let mut clk: Clock = match ctx.rpc.get_clock().await {
-        Some(c) => c,
-        None => panic!("bad"),
+        Ok(c) => c,
+        _ => panic!("bad"),
     };
 
     // 1 second later...
-    clk.unix_timestamp = 1;
-    ctx.rpc.set_clock(clk);
+    clk.unix_timestamp += 1;
+    ctx.rpc.set_clock(clk).await.unwrap();
 
     user_a.refresh_all_pool_positions().await.unwrap();
     user_b.refresh_all_pool_positions().await.unwrap();

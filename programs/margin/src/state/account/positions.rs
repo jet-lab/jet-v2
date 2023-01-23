@@ -27,11 +27,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{
-    syscall::{sys, Sys},
-    ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
-};
-
+use crate::{ErrorCode, TokenKind};
 const POS_PRICE_VALID: u8 = 1;
 
 #[assert_size(24)]
@@ -84,41 +80,6 @@ impl PriceInfo {
 
     pub fn is_valid(&self) -> bool {
         self.is_valid == POS_PRICE_VALID
-    }
-}
-
-impl TryFrom<PriceChangeInfo> for PriceInfo {
-    type Error = anchor_lang::error::Error;
-
-    fn try_from(value: PriceChangeInfo) -> AnchorResult<Self> {
-        let clock = Clock::get()?;
-        let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
-
-        let twap = Number128::from_decimal(value.twap, value.exponent);
-        let confidence = Number128::from_decimal(value.confidence, value.exponent);
-
-        if twap == Number128::ZERO {
-            msg!("avg price cannot be zero");
-            return err!(ErrorCode::InvalidPrice);
-        }
-
-        let price = match (confidence, value.publish_time) {
-            (c, _) if (c / twap) > max_confidence => {
-                msg!("price confidence exceeding max");
-                PriceInfo::new_invalid()
-            }
-            (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
-                msg!(
-                    "price timestamp is too old/stale. published: {}, now: {}",
-                    publish_time,
-                    clock.unix_timestamp
-                );
-                PriceInfo::new_invalid()
-            }
-            _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),
-        };
-
-        Ok(price)
     }
 }
 
@@ -230,9 +191,9 @@ impl AccountPosition {
     }
 
     /// Update the balance for this position
-    pub fn set_balance(&mut self, balance: u64) {
+    pub fn set_balance(&mut self, balance: u64, timestamp: u64) {
         self.balance = balance;
-        self.balance_timestamp = sys().unix_timestamp();
+        self.balance_timestamp = timestamp;
         self.calculate_value();
     }
 
@@ -329,14 +290,14 @@ pub struct AccountPositionKey {
     pub mint: Pubkey,
 
     /// The array index where the data for this position is located
-    pub index: usize,
+    pub index: u64,
 }
 
 #[assert_size(7432)]
 #[derive(AnchorSerialize, AnchorDeserialize, Default, Pod, Zeroable, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct AccountPositionList {
-    pub length: usize,
+    pub length: u64,
     pub map: [AccountPositionKey; 32],
     pub positions: [AccountPosition; 32],
 }
@@ -344,15 +305,20 @@ pub struct AccountPositionList {
 impl AccountPositionList {
     /// Add a position to the position list.
     ///
-    /// Finds an empty slot in `map` and `positions`, and adds an empty position
-    /// to the slot.
+    /// If the position does not exist, Finds an empty slot in `map` and
+    /// `positions`, adds an empty position to the slot, and returns a mutable
+    /// reference to the position which must be initialized with the correct
+    /// data.
+    ///
+    /// If the position already exists, returns the key only, and no mutable
+    /// position.
     pub fn add(
         &mut self,
         mint: Pubkey,
-    ) -> AnchorResult<(AccountPositionKey, &mut AccountPosition)> {
-        // verify there's no existing position
-        if self.map.iter().any(|p| p.mint == mint) {
-            return err!(ErrorCode::PositionAlreadyRegistered);
+    ) -> AnchorResult<(AccountPositionKey, Option<&mut AccountPosition>)> {
+        // check for an existing position
+        if let Some(p) = self.map.iter().find(|p| p.mint == mint) {
+            return Ok((*p, None));
         }
 
         // find the first free space to store the position info
@@ -364,17 +330,21 @@ impl AccountPositionList {
             .ok_or_else(|| error!(ErrorCode::MaxPositions))?;
 
         // add the new entry to the sorted map
-        let key = AccountPositionKey { mint, index };
-        self.map[self.length] = key;
+        let key = AccountPositionKey {
+            mint,
+            index: index as u64,
+        };
 
+        let max_index = usize::try_from(self.length).unwrap();
+        self.map[max_index] = key;
+        self.map[..max_index + 1].sort_by_key(|p| p.mint);
         self.length += 1;
-        self.map[..self.length].sort_by_key(|p| p.mint);
 
         // mark position as not free
         free_position.token = mint;
 
         // return the allocated position to be initialized further
-        Ok((key, free_position))
+        Ok((key, Some(free_position)))
     }
 
     /// Remove a position from the margin account.
@@ -389,37 +359,39 @@ impl AccountPositionList {
             .ok_or(ErrorCode::PositionNotRegistered)?;
         // Get the map whose position to remove
         let map = self.map[map_index];
+        let position_index = usize::try_from(map.index).unwrap();
         // Take a copy of the position to be removed
-        let position = self.positions[map.index];
+        let position = self.positions[position_index];
         // Check that the position is correct
         if &position.address != account {
             return err!(ErrorCode::PositionNotRegistered);
         }
 
         // Remove the position
-        self.positions[map.index] = Zeroable::zeroed();
+        self.positions[position_index] = Zeroable::zeroed();
 
         // Move the map elements up by 1 to replace map position being removed
-        self.map.copy_within(map_index + 1..self.length, map_index);
+        let length = usize::try_from(self.length).unwrap();
+        self.map.copy_within(map_index + 1..length, map_index);
 
-        self.length -= 1;
         // Clear the map at the last slot of the array, as it is shifted up
-        self.map[self.length].mint = Pubkey::default();
-        self.map[self.length].index = 0;
+        self.map[length - 1].mint = Pubkey::default();
+        self.map[length - 1].index = 0;
+        self.length -= 1;
 
         Ok(position)
     }
 
     pub fn get(&self, mint: &Pubkey) -> Option<&AccountPosition> {
         let key = self.get_key(mint)?;
-        let position = &self.positions[key.index];
+        let position = &self.positions[usize::try_from(key.index).unwrap()];
 
         Some(position)
     }
 
     pub fn get_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
         let key = self.get_key(mint)?;
-        let position = &mut self.positions[key.index];
+        let position = &mut self.positions[usize::try_from(key.index).unwrap()];
 
         Some(position)
     }
@@ -429,7 +401,7 @@ impl AccountPositionList {
     }
 
     fn get_map_index(&self, mint: &Pubkey) -> Option<usize> {
-        self.map[..self.length]
+        self.map[..usize::try_from(self.length).unwrap()]
             .binary_search_by_key(mint, |p| p.mint)
             .ok()
     }

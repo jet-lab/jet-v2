@@ -1,5 +1,8 @@
 use anyhow::Result;
-use jet_margin_sdk::fixed_term::{event_queue_len, orderbook_slab_len, FixedTermIxBuilder};
+use jet_margin_sdk::{
+    fixed_term::{event_queue_len, orderbook_slab_len, FixedTermIxBuilder, OrderBookAddresses},
+    jet_fixed_term,
+};
 use jetctl::{
     actions::fixed_term::MarketParameters,
     client::{Client, ClientConfig, Plan},
@@ -99,11 +102,10 @@ fn map_seed(seed: Vec<u8>) -> [u8; 32] {
 
 async fn create_orderbook_accounts(
     client: &Client,
-    ix: &FixedTermIxBuilder,
     params: MarketParameters,
     queue_capacity: usize,
     book_capacity: usize,
-) -> Result<Plan> {
+) -> Result<(OrderBookAddresses, Plan)> {
     let eq = map_keypair_file(params.event_queue)?;
     let bids = map_keypair_file(params.bids)?;
     let asks = map_keypair_file(params.asks)?;
@@ -113,15 +115,36 @@ async fn create_orderbook_accounts(
             .rpc()
             .get_minimum_balance_for_rent_exemption(event_queue_len(queue_capacity))
             .await?;
-        ix.initialize_event_queue(&eq.pubkey(), queue_capacity, rent)?
+        solana_sdk::system_instruction::create_account(
+            &client.signer()?,
+            &eq.pubkey(),
+            event_queue_len(queue_capacity) as u64,
+            rent,
+            &jet_fixed_term::ID,
+        )
     };
 
     let rent = client
         .rpc()
         .get_minimum_balance_for_rent_exemption(orderbook_slab_len(book_capacity))
         .await?;
-    let init_bids = ix.initialize_orderbook_slab(&bids.pubkey(), book_capacity, rent)?;
-    let init_asks = ix.initialize_orderbook_slab(&asks.pubkey(), book_capacity, rent)?;
+    let payer = client.signer()?;
+
+    let init_bids = solana_sdk::system_instruction::create_account(
+        &payer,
+        &bids.pubkey(),
+        rent,
+        orderbook_slab_len(book_capacity) as u64,
+        &jet_fixed_term::ID,
+    );
+
+    let init_asks = solana_sdk::system_instruction::create_account(
+        &payer,
+        &asks.pubkey(),
+        rent,
+        orderbook_slab_len(book_capacity) as u64,
+        &jet_fixed_term::ID,
+    );
 
     let steps = [
         format!("initialize-event-queue {}", eq.pubkey()),
@@ -129,18 +152,27 @@ async fn create_orderbook_accounts(
         format!("initialize-asks-slab {}", asks.pubkey()),
     ];
 
-    Ok(client
-        .plan()?
-        .instructions(
-            [
-                Box::new(eq) as Box<dyn Signer>,
-                Box::new(bids),
-                Box::new(asks),
-            ],
-            steps,
-            [init_eq, init_bids, init_asks],
-        )
-        .build())
+    let orderbook = OrderBookAddresses {
+        bids: bids.pubkey(),
+        asks: asks.pubkey(),
+        event_queue: eq.pubkey(),
+    };
+
+    Ok((
+        orderbook,
+        client
+            .plan()?
+            .instructions(
+                [
+                    Box::new(eq) as Box<dyn Signer>,
+                    Box::new(bids),
+                    Box::new(asks),
+                ],
+                steps,
+                [init_eq, init_bids, init_asks],
+            )
+            .build(),
+    ))
 }
 
 #[tokio::main]
@@ -159,24 +191,9 @@ async fn main() -> Result<()> {
     airdrop_payer(&client).await?;
 
     // fund the ob accounts
-    let fixed_term_market = FixedTermIxBuilder::new_from_seed(
-        &Pubkey::default(),
-        &USDC,
-        map_seed(PARAMS.seed.clone()),
-        payer,
-        PARAMS.token_oracle,
-        PARAMS.ticket_oracle,
-        None,
-    )
-    .with_payer(&payer);
-    let init_ob_accs = create_orderbook_accounts(
-        &client,
-        &fixed_term_market,
-        PARAMS.clone(),
-        QUEUE_CAPACITY,
-        ORDERBOOK_CAPACITY,
-    )
-    .await?;
+    let (orderbook, init_ob_accs) =
+        create_orderbook_accounts(&client, PARAMS.clone(), QUEUE_CAPACITY, ORDERBOOK_CAPACITY)
+            .await?;
     client.execute(init_ob_accs).await?;
 
     // init a usdc market
@@ -185,13 +202,25 @@ async fn main() -> Result<()> {
             .await?;
     client.execute(create_market).await?;
 
+    let fixed_term_market = FixedTermIxBuilder::new_from_seed(
+        payer,
+        &Pubkey::default(),
+        &USDC,
+        map_seed(PARAMS.seed.clone()),
+        payer,
+        PARAMS.token_oracle,
+        PARAMS.ticket_oracle,
+        None,
+        orderbook,
+    );
+
     // no-matching market
     let pause = client
         .plan()?
         .instructions(
             [],
             ["pause-market"],
-            [fixed_term_market.pause_order_matching()?],
+            [fixed_term_market.pause_order_matching()],
         )
         .build();
     client.execute(pause).await?;

@@ -19,6 +19,7 @@ use std::collections::HashMap;
 
 use jet_control::TokenMetadataParams;
 use jet_fixed_term::orderbook::state::{event_queue_len, orderbook_slab_len};
+use jet_instructions::{fixed_term::derive_market, test_service::derive_token_info};
 use jet_margin::TokenOracle;
 use jet_test_service::TokenCreateParams;
 use serde::{Deserialize, Serialize};
@@ -30,6 +31,7 @@ use crate::{
     cat,
     fixed_term::FixedTermIxBuilder,
     ix_builder::{
+        fixed_term::OrderBookAddresses,
         get_metadata_address,
         test_service::{
             self, derive_pyth_price, derive_pyth_product, derive_ticket_mint, derive_token_mint,
@@ -82,10 +84,10 @@ pub struct AirspaceTokenConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct FixedTermMarketConfig {
     /// The tenor for borrows
-    pub borrow_tenor: i64,
+    pub borrow_tenor: u64,
 
     /// The tenor for lending
-    pub lend_tenor: i64,
+    pub lend_tenor: u64,
 
     /// The origination fee for borrowing in origination_fee::FEE_UNIT
     pub origination_fee: u64,
@@ -255,7 +257,7 @@ fn create_swap_pools_tx(config: &EnvironmentConfig) -> anyhow::Result<Vec<Transa
 fn verify_token_declared(config: &EnvironmentConfig, name: &str) -> anyhow::Result<()> {
     if !config.tokens.iter().any(|t| t.name == *name) {
         anyhow::bail!(
-            "configuring token {} in airspace, but not a global token",
+            "configuring token {} as a resource, but no such global token found",
             name
         );
     }
@@ -271,8 +273,13 @@ fn create_airspace_tx(
 
     for as_config in &config.airspaces {
         let as_admin = AirspaceAdmin::new(&as_config.name, config.authority, config.authority);
+        let create_ix = as_admin
+            .create_airspace(as_config.is_restricted)
+            .instructions
+            .pop()
+            .unwrap();
 
-        txs.push(as_admin.create_airspace(as_config.is_restricted));
+        txs.push(vec![if_not_initialized(as_admin.airspace, create_ix)].into());
 
         txs.extend(
             ADAPTERS
@@ -313,6 +320,12 @@ fn create_airspace_token_fixed_term_markets_tx(
         let key_bids = Keypair::new();
         let key_asks = Keypair::new();
 
+        let orderbook = OrderBookAddresses {
+            bids: key_bids.pubkey(),
+            asks: key_asks.pubkey(),
+            event_queue: key_eq.pubkey(),
+        };
+
         let len_eq = event_queue_len(EVENT_QUEUE_CAPACITY);
         let len_orders = orderbook_slab_len(ORDERBOOK_CAPACITY);
 
@@ -320,12 +333,9 @@ fn create_airspace_token_fixed_term_markets_tx(
         market_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
 
         let mint = derive_token_mint(&token.name);
-        let ticket_mint = derive_ticket_mint(&FixedTermIxBuilder::market_key(
-            &admin.airspace,
-            &mint,
-            market_seed,
-        ));
+        let ticket_mint = derive_ticket_mint(&derive_market(&admin.airspace, &mint, market_seed));
         let fixed_term_ix = FixedTermIxBuilder::new_from_seed(
+            config.authority,
             &admin.airspace,
             &mint,
             market_seed,
@@ -333,8 +343,8 @@ fn create_airspace_token_fixed_term_markets_tx(
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
             None,
-        )
-        .with_crank(&config.authority);
+            orderbook,
+        );
 
         txs.push(
             test_service::token_register(
@@ -392,22 +402,14 @@ fn create_airspace_token_fixed_term_markets_tx(
                     bm_config.lend_tenor,
                     bm_config.origination_fee,
                 ),
-                fixed_term_ix
-                    .initialize_orderbook(
-                        config.authority,
-                        key_eq.pubkey(),
-                        key_bids.pubkey(),
-                        key_asks.pubkey(),
-                        bm_config.min_order_size,
-                    )
-                    .unwrap(),
+                fixed_term_ix.initialize_orderbook(config.authority, bm_config.min_order_size),
             ],
             signers: vec![key_eq, key_bids, key_asks],
         });
 
         // Submit separately as it is large and causes tx to fail
         txs.push(TransactionBuilder {
-            instructions: vec![fixed_term_ix.authorize_crank(config.authority).unwrap()],
+            instructions: vec![fixed_term_ix.authorize_crank()],
             signers: vec![],
         });
 
@@ -415,11 +417,13 @@ fn create_airspace_token_fixed_term_markets_tx(
             txs.last_mut()
                 .unwrap()
                 .instructions
-                .push(fixed_term_ix.pause_order_matching().unwrap());
+                .push(fixed_term_ix.pause_order_matching());
         }
 
         txs.push(admin.register_fixed_term_market(
             mint,
+            derive_pyth_price(&ticket_mint),
+            derive_pyth_product(&ticket_mint),
             market_seed,
             tk_config.collateral_weight,
             tk_config.max_leverage,
@@ -494,8 +498,11 @@ fn create_token_tx(config: &EnvironmentConfig) -> Vec<TransactionBuilder> {
                 ),
             };
 
+            let mint = derive_token_mint(&desc.name);
+            let info = derive_token_info(&mint);
+
             TransactionBuilder {
-                instructions: vec![ix],
+                instructions: vec![if_not_initialized(info, ix)],
                 signers: vec![],
             }
         })

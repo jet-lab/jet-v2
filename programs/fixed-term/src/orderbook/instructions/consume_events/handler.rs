@@ -10,11 +10,11 @@ use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
-    events::{skip_err, OrderFilled, OrderRemoved, TermLoanCreated},
+    events::{skip_err, OrderFilled, OrderRemoved, TermDepositCreated, TermLoanCreated},
     margin::state::{TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
-    tickets::state::SplitTicket,
+    tickets::state::TermDeposit,
     FixedTermErrorCode,
 };
 
@@ -23,13 +23,13 @@ use super::{queue, ConsumeEvents, FillAccounts, OutAccounts, PreparedEvent};
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
     num_events: u32,
-    seeds: Vec<Vec<u8>>,
+    seed: Vec<u8>,
 ) -> Result<()> {
     let mut num_iters = 0;
-    for event in queue(&ctx, seeds)?.take(num_events as usize) {
+    for event in queue(&ctx, seed)?.take(num_events as usize) {
         match event? {
-            PreparedEvent::Fill(accounts, info) => handle_fill(&ctx, *accounts, &info),
-            PreparedEvent::Out(accounts, info) => handle_out(&ctx, *accounts, &info),
+            PreparedEvent::Fill(mut accounts, info) => handle_fill(&ctx, &mut accounts, &info),
+            PreparedEvent::Out(mut accounts, info) => handle_out(&ctx, &mut accounts, &info),
         }?;
 
         num_iters += 1;
@@ -52,24 +52,25 @@ pub fn handler<'info>(
     Ok(())
 }
 
+#[inline(never)]
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: FillAccounts<'info>,
+    accounts: &mut FillAccounts<'info>,
     fill: &FillInfo,
 ) -> Result<()> {
-    let manager = &ctx.accounts.market;
+    let market = &ctx.accounts.market;
     let FillAccounts {
         maker,
         maker_adapter,
         taker_adapter,
-        mut loan,
+        loan,
     } = accounts;
     let FillInfo {
         event,
         maker_info,
         taker_info,
     } = fill;
-    if let Some(mut adapter) = maker_adapter {
+    if let Some(adapter) = maker_adapter {
         if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
             skip_err!(
                 "Failed to push event to adapter {}. Error: {:?}",
@@ -78,7 +79,7 @@ fn handle_fill<'info>(
             );
         }
     }
-    if let Some(mut adapter) = taker_adapter {
+    if let Some(adapter) = taker_adapter {
         if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
             skip_err!(
                 "Failed to push event to adapter {}. Error: {:?}",
@@ -91,7 +92,6 @@ fn handle_fill<'info>(
         taker_side,
         quote_size,
         base_size,
-        maker_order_id,
         ..
     } = *event;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
@@ -99,25 +99,39 @@ fn handle_fill<'info>(
 
     match maker_side {
         Side::Bid => {
-            let maturation_timestamp = fill_timestamp.safe_add(manager.load()?.lend_tenor)?;
+            let maturation_timestamp = fill_timestamp.safe_add(market.load()?.lend_tenor as i64)?;
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                let principal = quote_size;
-                let interest = base_size.safe_sub(principal)?;
-                **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
-                    owner: maker.pubkey(),
-                    market: manager.key(),
-                    order_tag: maker_info.order_tag,
-                    maturation_timestamp,
-                    struck_timestamp: fill_timestamp,
-                    principal,
-                    interest,
-                };
+                let matures_at = fill_timestamp.safe_add(market.load()?.lend_tenor as i64)?;
+                let mut sequence_number = 0;
+
                 if maker_info.flags.contains(CallbackFlags::MARGIN) {
                     let mut margin_user = maker.margin_user()?;
                     margin_user.assets.reduce_order(quote_size);
-                    margin_user.assets.stake_tickets(base_size)?;
+                    sequence_number = margin_user.assets.new_deposit(base_size)?;
                     margin_user.emit_asset_balances();
                 }
+
+                let term_deposit = loan.as_mut().unwrap().auto_stake()?;
+                **term_deposit = TermDeposit {
+                    matures_at,
+                    sequence_number,
+                    principal: quote_size,
+                    amount: base_size,
+                    owner: maker.pubkey(),
+                    market: market.key(),
+                    payer: ctx.accounts.payer.key(),
+                };
+                emit!(TermDepositCreated {
+                    term_deposit: term_deposit.key(),
+                    authority: maker.pubkey(),
+                    payer: ctx.accounts.payer.key(),
+                    order_tag: Some(maker_info.order_tag.as_u128()),
+                    sequence_number,
+                    market: market.key(),
+                    maturation_timestamp,
+                    principal: quote_size,
+                    amount: base_size,
+                });
             } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
@@ -133,8 +147,10 @@ fn handle_fill<'info>(
 
             emit!(OrderFilled {
                 market: ctx.accounts.market.key(),
-                authority: maker_info.owner,
-                order_id: maker_order_id,
+                maker_authority: maker_info.owner,
+                taker_authority: taker_info.owner,
+                maker_order_tag: maker_info.order_tag.as_u128(),
+                taker_order_tag: taker_info.order_tag.as_u128(),
                 base_filled: base_size,
                 quote_filled: quote_size,
                 fill_timestamp,
@@ -145,13 +161,13 @@ fn handle_fill<'info>(
             });
         }
         Side::Ask => {
-            let mut emit_order_filled = true;
-            let maturation_timestamp = fill_timestamp.safe_add(manager.load()?.borrow_tenor)?;
+            let maturation_timestamp =
+                fill_timestamp.safe_add(market.load()?.borrow_tenor as i64)?;
             if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    let mut manager = manager.load_mut()?;
+                    let mut manager = market.load_mut()?;
                     let disburse = manager.loan_to_disburse(quote_size);
                     manager
                         .collected_fees
@@ -169,8 +185,9 @@ fn handle_fill<'info>(
                     let term_loan = loan.as_mut().unwrap().new_debt()?;
                     **term_loan = TermLoan {
                         sequence_number,
-                        borrower_account: margin_user.key(),
+                        margin_user: margin_user.key(),
                         market: ctx.accounts.market.key(),
+                        payer: ctx.accounts.payer.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: base_size,
@@ -179,11 +196,11 @@ fn handle_fill<'info>(
 
                     // TermLoanCreated includes OrderFill info, thus no OrderFill needed
                     // where TermLoanCreated is emitted.
-                    emit_order_filled = false;
                     emit!(TermLoanCreated {
                         term_loan: term_loan.key(),
                         authority: maker_info.owner,
-                        order_id: Some(maker_order_id),
+                        payer: ctx.accounts.payer.key(),
+                        order_tag: maker_info.order_tag.as_u128(),
                         sequence_number,
                         market: ctx.accounts.market.key(),
                         maturation_timestamp,
@@ -207,29 +224,30 @@ fn handle_fill<'info>(
                 )?;
             }
 
-            if emit_order_filled {
-                emit!(OrderFilled {
-                    market: ctx.accounts.market.key(),
-                    authority: maker_info.owner,
-                    order_id: maker_order_id,
-                    base_filled: base_size,
-                    quote_filled: quote_size,
-                    fill_timestamp,
-                    // We can be more specific with the type
-                    order_type: crate::events::OrderType::MarginBorrow,
-                    sequence_number: 0,
-                    maturation_timestamp
-                });
-            }
+            emit!(OrderFilled {
+                market: ctx.accounts.market.key(),
+                maker_authority: maker_info.owner,
+                taker_authority: taker_info.owner,
+                maker_order_tag: maker_info.order_tag.as_u128(),
+                taker_order_tag: taker_info.order_tag.as_u128(),
+                base_filled: base_size,
+                quote_filled: quote_size,
+                fill_timestamp,
+                // We can be more specific with the type
+                order_type: crate::events::OrderType::MarginBorrow,
+                sequence_number: 0,
+                maturation_timestamp
+            });
         }
     }
 
     Ok(())
 }
 
+#[inline(never)]
 fn handle_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: OutAccounts<'info>,
+    accounts: &mut OutAccounts<'info>,
     out: &OutInfo,
 ) -> Result<()> {
     let OutAccounts {
@@ -238,7 +256,7 @@ fn handle_out<'info>(
     } = accounts;
     let OutInfo { event, info } = out;
     // push to adapter if flagged
-    if let Some(mut adapter) = user_adapter_account {
+    if let Some(adapter) = user_adapter_account {
         if adapter.push_event(*event, Some(info), None).is_err() {
             // don't stop the event processor for a malfunctioning adapter
             // adapter users are responsible for the maintenance of their adapter
@@ -293,7 +311,7 @@ fn handle_out<'info>(
     emit!(OrderRemoved {
         market: ctx.accounts.market.key(),
         authority: info.owner,
-        order_id: *order_id,
+        order_tag: info.order_tag.as_u128(),
         base_removed: *base_size,
         quote_removed: quote_size,
     });

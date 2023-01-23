@@ -10,4 +10,4 @@ find . -name 'node_modules' -type d -prune -exec rm -rf {} \;
 
 yarn --cwd apps/react-app clean
 yarn --cwd packages/margin clean
-
+yarn --cwd packages/store clean

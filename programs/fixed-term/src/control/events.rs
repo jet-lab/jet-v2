@@ -8,8 +8,8 @@ pub struct MarketInitialized {
     pub underlying_token_mint: Pubkey,
     pub underlying_oracle: Pubkey,
     pub ticket_oracle: Pubkey,
-    pub borrow_tenor: i64,
-    pub lend_tenor: i64,
+    pub borrow_tenor: u64,
+    pub lend_tenor: u64,
 }
 
 #[event]
@@ -25,7 +25,7 @@ pub struct OrderbookInitialized {
 
 #[event]
 pub struct PositionRefreshed {
-    pub borrower_account: Pubkey,
+    pub margin_user: Pubkey,
 }
 
 #[event]

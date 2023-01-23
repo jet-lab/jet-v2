@@ -13,8 +13,9 @@ uint = "0.9"
 thiserror = "1.0.20"
 bytemuck = { version = "1.7", features = ["derive"] }
 static_assertions = "1.1.0"
+borsh = "0.9.1"
 
 # Traits
 num-traits = "0.2"
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-solana-program = "1.10"
+anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+solana-program = "1.14"

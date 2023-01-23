@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
@@ -13,6 +15,7 @@ pub const MARGIN_USER_VERSION: u8 = 0;
 
 /// An acocunt used to track margin users of the market
 #[account]
+#[repr(C, align(8))]
 #[derive(Debug)]
 pub struct MarginUser {
     /// used to determine if a migration step is needed before user actions are allowed
@@ -26,18 +29,16 @@ pub struct MarginUser {
     /// Token account used by the margin program to track the collateral value of positions
     /// which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin
-    pub collateral: Pubkey,
-    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
-    /// the address to send owed tokens
-    pub underlying_settlement: Pubkey,
-    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
-    /// the address to send owed tickets
-    pub ticket_settlement: Pubkey,
+    pub ticket_collateral: Pubkey,
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not tickets
     pub debt: Debt,
     /// Accounting used to track assets in custody of the fixed term market
     pub assets: Assets,
+    /// Settings for borrow order "auto rolling"
+    pub borrow_roll_config: AutoRollConfig,
+    /// Settings for lend order "auto rolling"
+    pub lend_roll_config: AutoRollConfig,
 }
 
 impl MarginUser {
@@ -66,7 +67,7 @@ impl MarginUser {
     fn derive_address(&self) -> Pubkey {
         Pubkey::find_program_address(
             &[
-                crate::seeds::MARGIN_BORROWER,
+                crate::seeds::MARGIN_USER,
                 self.market.as_ref(),
                 self.margin_account.as_ref(),
             ],
@@ -97,14 +98,22 @@ pub struct Debt {
     committed: u64,
 }
 
-pub type TermLoanSequenceNumber = u64;
+pub type SequenceNumber = u64;
 
 impl Debt {
     pub fn total(&self) -> u64 {
         self.pending.checked_add(self.committed).unwrap()
     }
 
-    pub fn next_term_loan_to_repay(&self) -> Option<TermLoanSequenceNumber> {
+    pub fn active_loans(&self) -> Range<SequenceNumber> {
+        self.next_unpaid_term_loan_seqno..self.next_new_term_loan_seqno
+    }
+
+    pub fn next_new_loan_seqno(&self) -> SequenceNumber {
+        self.next_new_term_loan_seqno
+    }
+
+    pub fn next_term_loan_to_repay(&self) -> Option<SequenceNumber> {
         if self.next_new_term_loan_seqno > self.next_unpaid_term_loan_seqno {
             Some(self.next_unpaid_term_loan_seqno)
         } else {
@@ -124,7 +133,7 @@ impl Debt {
         &mut self,
         amount_filled_as_taker: u64,
         maturation_timestamp: UnixTimestamp,
-    ) -> Result<TermLoanSequenceNumber> {
+    ) -> Result<SequenceNumber> {
         self.committed.try_add_assign(amount_filled_as_taker)?;
         if self.next_new_term_loan_seqno == self.next_unpaid_term_loan_seqno {
             self.next_term_loan_maturity = maturation_timestamp;
@@ -139,7 +148,7 @@ impl Debt {
         &mut self,
         amount: u64,
         maturation_timestamp: UnixTimestamp,
-    ) -> Result<TermLoanSequenceNumber> {
+    ) -> Result<SequenceNumber> {
         self.pending.try_sub_assign(amount)?;
         self.new_term_loan_without_posting(amount, maturation_timestamp)
     }
@@ -150,7 +159,7 @@ impl Debt {
 
     pub fn partially_repay_term_loan(
         &mut self,
-        sequence_number: TermLoanSequenceNumber,
+        sequence_number: SequenceNumber,
         amount_repaid: u64,
     ) -> Result<()> {
         if sequence_number != self.next_unpaid_term_loan_seqno {
@@ -164,7 +173,7 @@ impl Debt {
     // The term loan is fully repaid by this repayment, and the term loan account is being closed
     pub fn fully_repay_term_loan(
         &mut self,
-        sequence_number: TermLoanSequenceNumber,
+        sequence_number: SequenceNumber,
         amount_repaid: u64,
         next_term_loan: Result<Account<TermLoan>>,
     ) -> Result<()> {
@@ -207,6 +216,12 @@ pub struct Assets {
     pub entitled_tokens: u64,
     /// tickets to transfer into settlement account
     pub entitled_tickets: u64,
+
+    /// The sequence number for the next deposit
+    next_deposit_seqno: u64,
+
+    /// The sequence number for the oldest deposit that has yet to be redeemed
+    next_unredeemed_deposit_seqno: u64,
 
     /// The number of tickets locked up in ClaimTicket or SplitTicket
     tickets_staked: u64,
@@ -251,16 +266,24 @@ impl Assets {
     }
 
     /// make sure the order has already been accounted for before calling this method
-    pub fn stake_tickets(&mut self, tickets: u64) -> Result<()> {
-        self.tickets_staked.try_add_assign(tickets)
+    pub fn new_deposit(&mut self, tickets: u64) -> Result<SequenceNumber> {
+        let seqno = self.next_deposit_seqno;
+
+        self.next_deposit_seqno += 1;
+        self.tickets_staked.try_add_assign(tickets)?;
+
+        Ok(seqno)
     }
 
-    pub fn redeem_staked_tickets(&mut self, tickets: u64) {
-        if tickets >= self.tickets_staked {
-            self.tickets_staked = 0;
-        } else {
-            self.tickets_staked -= tickets;
+    pub fn redeem_deposit(&mut self, seqno: SequenceNumber, tickets: u64) -> Result<()> {
+        if seqno != self.next_unredeemed_deposit_seqno {
+            return Err(FixedTermErrorCode::TermDepositHasWrongSequenceNumber.into());
         }
+
+        self.next_unredeemed_deposit_seqno += 1;
+        self.tickets_staked = self.tickets_staked.saturating_sub(tickets);
+
+        Ok(())
     }
 
     /// represents the amount of collateral in staked tickets and open orders.
@@ -269,18 +292,35 @@ impl Assets {
     pub fn collateral(&self) -> Result<u64> {
         self.tickets_staked.safe_add(self.posted_quote)
     }
+
+    pub fn next_new_deposit_seqno(&self) -> SequenceNumber {
+        self.next_deposit_seqno
+    }
+
+    pub fn active_deposits(&self) -> Range<SequenceNumber> {
+        self.next_unredeemed_deposit_seqno..self.next_deposit_seqno
+    }
+}
+
+#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub struct AutoRollConfig {
+    /// the limit price at which orders may be placed by an authority
+    pub limit_price: u64,
 }
 
 #[account]
 #[derive(Debug)]
 pub struct TermLoan {
-    pub sequence_number: TermLoanSequenceNumber,
+    pub sequence_number: SequenceNumber,
 
     /// The user borrower account this term loan is assigned to
-    pub borrower_account: Pubkey,
+    pub margin_user: Pubkey,
 
     /// The market where the term loan was created
     pub market: Pubkey,
+
+    /// Which account recieves the rent when this PDA is destructed
+    pub payer: Pubkey,
 
     /// The `OrderTag` associated with the creation of this `TermLoan`
     pub order_tag: OrderTag,
@@ -293,12 +333,6 @@ pub struct TermLoan {
 
     /// Any boolean flags for this data type compressed to a single byte
     pub flags: TermLoanFlags,
-}
-
-impl TermLoan {
-    pub fn make_seeds<'a>(user: &'a [u8], bytes: &'a [u8]) -> [&'a [u8]; 3] {
-        [crate::seeds::TERM_LOAN, user, bytes]
-    }
 }
 
 bitflags! {

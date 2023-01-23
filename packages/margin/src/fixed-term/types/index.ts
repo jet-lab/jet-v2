@@ -1,1 +1,1 @@
-export { type JetMarket, IDL as JetMarketIdl } from "./JetMarket"
+export { type JetFixedTerm, IDL as JetFixedTermIdl } from "./JetFixedTerm"

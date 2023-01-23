@@ -20,8 +20,9 @@ use anchor_lang::prelude::*;
 use jet_program_common::Number128;
 
 use crate::{
-    events, ErrorCode, Liquidation, LiquidationState, MarginAccount,
-    LIQUIDATION_MAX_EQUITY_LOSS_BPS,
+    events,
+    syscall::{sys, Sys},
+    ErrorCode, Liquidation, LiquidationState, MarginAccount, LIQUIDATION_MAX_EQUITY_LOSS_BPS,
 };
 use jet_metadata::LiquidatorMetadata;
 
@@ -63,9 +64,10 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
     let liquidation = &ctx.accounts.liquidation;
     let liquidator = &ctx.accounts.liquidator;
     let mut account = ctx.accounts.margin_account.load_mut()?;
+    let timestamp = sys().unix_timestamp();
 
     // verify the account is subject to liquidation
-    account.verify_unhealthy_positions()?;
+    account.verify_unhealthy_positions(timestamp)?;
 
     // verify not already being liquidated
     match account.liquidation {
@@ -86,7 +88,7 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
         }
     }
 
-    let valuation = account.valuation()?;
+    let valuation = account.valuation(timestamp)?;
 
     let min_equity_change = (valuation.effective_collateral - valuation.required_collateral)
         * Number128::from_bps(LIQUIDATION_MAX_EQUITY_LOSS_BPS);

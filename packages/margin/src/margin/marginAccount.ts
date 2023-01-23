@@ -22,24 +22,12 @@ import {
   MarginAccountData,
   PositionKind
 } from "./state"
-import { MarginPrograms } from "./marginClient"
-import { findDerivedAccount } from "../utils/pda"
-import {
-  AssociatedToken,
-  bigIntToBn,
-  bnToNumber,
-  FixedTermMarket,
-  getTimestamp,
-  Number192,
-  refreshAllMarkets,
-  sendAll,
-  sendAndConfirm,
-  sendAndConfirmV0,
-  TokenAmount
-} from ".."
-import { Number128 } from "../utils/number128"
 import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
+import { AssociatedToken, TokenAmount, bigIntToBn, bnToNumber } from "../token"
+import { Number128, Number192, findDerivedAccount, getTimestamp, sendAll, sendAndConfirm, sendAndConfirmV0 } from "../utils"
+import { MarginPrograms } from "./marginClient"
+import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
 
 /** A description of a position associated with a [[MarginAccount]] and [[Pool]] */
 export interface PoolPosition {
@@ -142,7 +130,7 @@ export class MarginAccount {
   /** The owner of the [[MarginAccount]] */
   owner: PublicKey
   /** The address of the airspace this account is part of */
-  airspace: PublicKey
+  airspace?: PublicKey
   /** The parsed [[AccountPosition]] array of the margin account. */
   positions: AccountPosition[]
   /** The summarized [[PoolPosition]] array of pool deposits and borrows. */
@@ -216,7 +204,11 @@ export class MarginAccount {
   ) {
     this.owner = translateAddress(owner)
     this.address = MarginAccount.derive(programs, owner, seed)
-    this.airspace = PublicKey.default // TODO: populate from on-chain state
+    this.airspace = this.programs.config.airspaces?.length > 0 ? findDerivedAccount(
+      this.programs.config.airspaceProgramId,
+      "airspace",
+      this.programs.config.airspaces[0].name
+    ) : undefined;
     this.pools = pools
     this.walletTokens = walletTokens
     this.positions = this.getPositions()
@@ -298,7 +290,11 @@ export class MarginAccount {
    * @param tokenMint The mint address for the token to derive the config address for.
    */
   findTokenConfigAddress(tokenMint: Address): PublicKey {
-    return findDerivedAccount(this.programs.config.marginProgramId, "token-config", this.airspace, tokenMint)
+    if (this.airspace) {
+      return findDerivedAccount(this.programs.config.marginProgramId, "token-config", this.airspace, tokenMint)
+    }
+    return findDerivedAccount(this.programs.config.marginProgramId, "token-config", tokenMint)
+
   }
 
   /**
@@ -378,11 +374,13 @@ export class MarginAccount {
     const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
     const marginAccounts: MarginAccount[] = []
     for (let i = 0; i < infos.length; i++) {
-      const { account } = infos[i]
-      const seed = bnToNumber(new BN(account.userSeed, undefined, "le"))
-      const marginAccount = new MarginAccount(programs, provider, account.owner, seed, pools, walletTokens)
-      await marginAccount.refresh()
-      marginAccounts.push(marginAccount)
+      if (infos[i]) {
+        const { account } = infos[i]
+        const seed = bnToNumber(new BN(account.userSeed, undefined, "le"))
+        const marginAccount = new MarginAccount(programs, provider, account.owner, seed, pools, walletTokens)
+        await marginAccount.refresh()
+        marginAccounts.push(marginAccount)
+      }
     }
     return marginAccounts
   }
@@ -449,9 +447,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-              .div(collateralWeight.mul(warningRiskLevel))
-              .div(lamportPrice)
+            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+            .div(collateralWeight.mul(warningRiskLevel))
+            .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
@@ -1748,51 +1746,51 @@ export class MarginAccount {
     return await sendAll(this.provider, transactions)
   }
 
-    /**
-   * Create instructions to refresh [[MarginAccount]] pool positions in a prioritised manner so that additional
-   * borrows or withdraws can occur.
-   *
-   * @param {({
-    *     instructions: TransactionInstruction[]
-    *     pools: Record<any, Pool> | Pool[]
-    *     marginAccount: MarginAccount
-    *     markets: FixedTermMarket[]
-    *     marketAddresstoCreate?: PublicKey
-    *   })} {
-    *     instructions,
-    *     pools,
-    *     marginAccount
-    *   }
-    * @return {Promise<void>}
-    * @memberof Pool
-    */
-   async withPrioritisedPositionRefresh({
-     instructions,
-     pools,
-     markets,
-     marketAddress
-   }: {
-     instructions: TransactionInstruction[]
-     pools: Record<any, Pool> | Pool[]
-     markets: FixedTermMarket[],
-     marketAddress?: PublicKey
-   }): Promise<void> {
-     const poolsToRefresh: Pool[] = []
-     for (const pool of Object.values(pools)) {
-       const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
-       const depositPosition = this.getPositionNullable(pool.addresses.depositNoteMint)
-       const borrowPosition = this.getPositionNullable(pool.addresses.loanNoteMint)
-       if (pool.address === this.address) {
-         poolsToRefresh.push(pool)
-       } else if (borrowPosition && !borrowPosition.balance.eqn(0)) {
-         poolsToRefresh.push(pool)
-       } else if (assetCollateralWeight > 0 && depositPosition && !depositPosition.balance.eqn(0)) {
-         poolsToRefresh.push(pool)
-       }
-     }
-     for (const pool of poolsToRefresh) {
-       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount: this })
-     }
-     await refreshAllMarkets(markets, instructions, this, marketAddress)
-   }
+  /**
+ * Create instructions to refresh [[MarginAccount]] pool positions in a prioritised manner so that additional
+ * borrows or withdraws can occur.
+ *
+ * @param {({
+  *     instructions: TransactionInstruction[]
+  *     pools: Record<any, Pool> | Pool[]
+  *     marginAccount: MarginAccount
+  *     markets: FixedTermMarket[]
+  *     marketAddresstoCreate?: PublicKey
+  *   })} {
+  *     instructions,
+  *     pools,
+  *     marginAccount
+  *   }
+  * @return {Promise<void>}
+  * @memberof Pool
+  */
+  async withPrioritisedPositionRefresh({
+    instructions,
+    pools,
+    markets,
+    marketAddress
+  }: {
+    instructions: TransactionInstruction[]
+    pools: Record<any, Pool> | Pool[]
+    markets: FixedTermMarket[],
+    marketAddress?: PublicKey
+  }): Promise<void> {
+    const poolsToRefresh: Pool[] = []
+    for (const pool of Object.values(pools)) {
+      const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
+      const depositPosition = this.getPositionNullable(pool.addresses.depositNoteMint)
+      const borrowPosition = this.getPositionNullable(pool.addresses.loanNoteMint)
+      if (pool.address === this.address) {
+        poolsToRefresh.push(pool)
+      } else if (borrowPosition && !borrowPosition.balance.eqn(0)) {
+        poolsToRefresh.push(pool)
+      } else if (assetCollateralWeight > 0 && depositPosition && !depositPosition.balance.eqn(0)) {
+        poolsToRefresh.push(pool)
+      }
+    }
+    for (const pool of poolsToRefresh) {
+      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount: this })
+    }
+    await refreshAllMarkets(markets, instructions, this, marketAddress)
+  }
 }

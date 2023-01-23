@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::MarginUser,
+    margin::state::{AutoRollConfig, MarginUser},
     market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::lend_order::*,
@@ -19,17 +19,17 @@ pub struct MarginLendOrder<'info> {
     #[account(
         mut,
         constraint = margin_user.margin_account.key() == inner.authority.key(),
-        has_one = collateral @ FixedTermErrorCode::WrongCollateralAccount,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral: AccountInfo<'info>,
+    pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub collateral_mint: AccountInfo<'info>,
+    pub ticket_collateral_mint: AccountInfo<'info>,
 
     #[market(orderbook_mut)]
     #[token_program]
@@ -38,40 +38,65 @@ pub struct MarginLendOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
+fn order_flags(user: &Account<MarginUser>, params: &OrderParams) -> Result<CallbackFlags> {
+    let auto_roll = if params.auto_roll {
+        if user.borrow_roll_config == AutoRollConfig::default() {
+            msg!(
+                "Auto roll settings have not been configured for margin user [{}]",
+                user.key()
+            );
+            return err!(FixedTermErrorCode::InvalidAutoRollConfig);
+        }
+        CallbackFlags::AUTO_ROLL
+    } else {
+        CallbackFlags::default()
+    };
+    let auto_stake = if params.auto_stake {
+        CallbackFlags::AUTO_STAKE
+    } else {
+        CallbackFlags::empty()
+    };
+
+    Ok(CallbackFlags::MARGIN | auto_roll | auto_stake)
+}
+
+pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
+    let user = &mut ctx.accounts.margin_user;
+
     let (callback_info, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
         ctx.accounts.inner.authority.key(),
         Side::Bid,
         params,
-        ctx.accounts.margin_user.key(),
-        ctx.accounts.margin_user.key(),
+        user.key(),
+        user.key(),
         ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::MARGIN
-            | if params.auto_stake {
-                CallbackFlags::AUTO_STAKE
-            } else {
-                CallbackFlags::empty()
-            },
+        order_flags(user, &params)?,
     )?;
     let staked = ctx.accounts.inner.lend(
-        ctx.accounts.margin_user.key(),
-        &seed,
+        user.key(),
+        &user.assets.next_new_deposit_seqno().to_le_bytes(),
+        user.assets.next_new_deposit_seqno(),
         callback_info,
         &order_summary,
     )?;
-    ctx.accounts.margin_user.assets.stake_tickets(staked)?;
+
+    if staked > 0 {
+        ctx.accounts.margin_user.assets.new_deposit(staked)?;
+    }
+
     ctx.mint(
-        &ctx.accounts.collateral_mint,
-        &ctx.accounts.collateral,
+        &ctx.accounts.ticket_collateral_mint,
+        &ctx.accounts.ticket_collateral,
         staked + order_summary.quote_posted()?,
     )?;
     emit!(crate::events::OrderPlaced {
         market: ctx.accounts.inner.orderbook_mut.market.key(),
         authority: ctx.accounts.inner.authority.key(),
         margin_user: Some(ctx.accounts.margin_user.key()),
+        order_tag: callback_info.order_tag.as_u128(),
         order_summary: order_summary.summary(),
         auto_stake: params.auto_stake,
         post_only: params.post_only,

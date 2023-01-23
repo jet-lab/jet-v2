@@ -3,16 +3,18 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 
-use jet_margin::TokenKind;
-use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
+use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
+use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
+use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, WithSigner};
 use jet_margin_sdk::tokens::TokenPrice;
+use jet_margin_sdk::tx_builder::TokenDepositsConfig;
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signer;
+use solana_sdk::signature::{Signature, Signer};
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::create_wallet;
+use jet_simulation::{create_wallet, SolanaRpcClient};
 use tokio::try_join;
 
 use crate::margin_test_context;
@@ -66,9 +68,19 @@ pub async fn setup_token(
         confidence: 1_000_000,
         twap: 100_000_000,
     };
+    let deposit_config = TokenDepositsConfig {
+        oracle: jet_margin::TokenOracle::Pyth {
+            price: token_oracle.price,
+            product: token_oracle.product,
+        },
+        collateral_weight,
+    };
+
     try_join!(
         ctx.margin.create_pool(&setup),
-        ctx.tokens.set_price(&token, &price)
+        ctx.tokens.set_price(&token, &price),
+        ctx.margin
+            .configure_token_deposits(&token, Some(&deposit_config))
     )?;
 
     Ok(token)
@@ -172,6 +184,41 @@ pub async fn setup_user(
         .await?;
 
     Ok(test_user)
+}
+
+pub async fn register_deposit(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    airspace: Pubkey,
+    mint: Pubkey,
+) -> Result<Signature> {
+    let config_builder = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey());
+    config_builder
+        .configure_token(
+            mint,
+            Some(TokenConfigUpdate {
+                underlying_mint: mint,
+                admin: TokenAdmin::Margin {
+                    oracle: TokenOracle::Pyth {
+                        price: Pubkey::find_program_address(
+                            &[mint.as_ref(), b"oracle:price".as_ref()],
+                            &jet_metadata::ID,
+                        )
+                        .0,
+                        product: Pubkey::find_program_address(
+                            &[mint.as_ref(), b"oracle:product".as_ref()],
+                            &jet_metadata::ID,
+                        )
+                        .0,
+                    },
+                },
+                token_kind: TokenKind::Collateral,
+                value_modifier: 100,
+                max_staleness: 0,
+            }),
+        )
+        .with_signers(&[])
+        .send_and_confirm(rpc)
+        .await
 }
 
 /// Environment where no user has a balance

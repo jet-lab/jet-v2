@@ -11,6 +11,7 @@ use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_margin_pool::TokenChange;
 use jet_static_program_registry::orca_swap_v2;
+use spl_associated_token_account::get_associated_token_address;
 
 use crate::context::MarginTestContext;
 use crate::margin::MarginUser;
@@ -127,23 +128,15 @@ impl TestUser {
         change: TokenChange,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
-        let transit_src = self
-            .ctx
-            .tokens
-            .create_account(src, self.user.address())
-            .await?;
-        let transit_dst = self
-            .ctx
-            .tokens
-            .create_account(dst, self.user.address())
-            .await?;
+
+        self.create_deposit_position(src).await?;
+        self.create_deposit_position(dst).await?;
+
         self.user
             .swap(
                 &orca_swap_v2::id(),
                 src,
                 dst,
-                &transit_src,
-                &transit_dst,
                 pool,
                 change,
                 1, // at least 1 token back
@@ -194,6 +187,16 @@ impl TestUser {
             .into_iter()
             .map(|(tx2, tx1)| cat![tx1, tx2])
             .collect())
+    }
+
+    async fn create_deposit_position(&self, mint: &Pubkey) -> Result<()> {
+        let address = get_associated_token_address(self.user.address(), mint);
+
+        if self.ctx.rpc.get_account(&address).await?.is_none() {
+            self.user.create_deposit_position(mint).await?;
+        }
+
+        Ok(())
     }
 }
 

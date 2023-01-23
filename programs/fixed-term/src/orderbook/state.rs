@@ -81,8 +81,8 @@ impl<'info> OrderbookMut<'info> {
         self.market.load().unwrap().underlying_token_vault
     }
 
-    pub fn collateral_mint(&self) -> Pubkey {
-        self.market.load().unwrap().collateral_mint
+    pub fn ticket_collateral_mint(&self) -> Pubkey {
+        self.market.load().unwrap().ticket_collateral_mint
     }
 
     pub fn claims_mint(&self) -> Pubkey {
@@ -157,10 +157,11 @@ impl<'info> OrderbookMut<'info> {
             msg!("Given Order ID: [{}]", order_id);
             error!(FixedTermErrorCode::OrderNotFound)
         })?;
-        let info = slab.get_callback_info(handle);
+        let info = *slab.get_callback_info(handle);
 
         let info_owner = info.owner;
         let flags = info.flags;
+        let order_tag = info.order_tag.as_u128();
 
         // drop the refs so the orderbook can borrow the slab data
         drop(buf);
@@ -173,21 +174,42 @@ impl<'info> OrderbookMut<'info> {
             orderbook_params,
         )?;
 
+        let eq_buf = &mut self.event_queue.data.borrow_mut();
+        let mut event_queue =
+            agnostic_orderbook::state::event_queue::EventQueue::<CallbackInfo>::from_buffer(
+                eq_buf,
+                agnostic_orderbook::state::AccountTag::EventQueue,
+            )?;
+        event_queue
+            .push_back(
+                agnostic_orderbook::state::event_queue::OutEvent {
+                    tag: EventTag::Out as u8,
+                    side: side as u8,
+                    _padding: [0; 14],
+                    order_id,
+                    base_size: order_summary.total_base_qty,
+                },
+                Some(&info),
+                None,
+            )
+            .map_err(|_| error!(FixedTermErrorCode::FailedToPushEvent))?;
+
         emit!(OrderCancelled {
             market: self.market.key(),
             authority: owner,
-            order_id,
+            order_tag,
         });
 
         Ok((side, flags, order_summary))
     }
 }
 
+#[cfg_attr(feature = "cli", derive(serde::Serialize))]
 #[derive(
     AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Zeroable, Pod,
 )]
 #[repr(transparent)]
-pub struct OrderTag([u8; 16]);
+pub struct OrderTag(pub [u8; 16]);
 
 impl OrderTag {
     //todo maybe this means we don't need owner to be stored in the CallbackInfo
@@ -205,6 +227,10 @@ impl OrderTag {
 
     pub fn bytes(&self) -> &[u8; 16] {
         &self.0
+    }
+
+    pub fn as_u128(&self) -> u128 {
+        u128::from_le_bytes(self.0)
     }
 }
 
@@ -300,6 +326,9 @@ bitflags! {
 
         /// order placed by a MarginUser. margin user == fill_account == out_account
         const MARGIN     = 1 << 2;
+
+        /// is this order subject to auto roll
+        const AUTO_ROLL  = 1 << 3;
     }
 }
 
@@ -322,6 +351,8 @@ pub struct OrderParams {
     pub post_allowed: bool,
     /// Should the purchased tickets be automatically staked with the ticket program
     pub auto_stake: bool,
+    /// Should the resulting `TermLoan` or `TermDeposit` be subject to an auto roll
+    pub auto_roll: bool,
 }
 
 // todo remove?

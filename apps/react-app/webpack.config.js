@@ -20,9 +20,6 @@ module.exports = (_env, arg) => {
     }),
     new DefinePlugin({
       'process.env': JSON.stringify(dotenv.config().parsed || {})
-    }),
-    new FilterWarningsPlugin({
-      exclude: /__wbg_systeminstruction_free/
     })
   ];
 

@@ -4,7 +4,7 @@ use anyhow::Result;
 use hosted_tests::fixed_term::TestManager;
 use hosted_tests::margin::MarginClient;
 use hosted_tests::solana_test_context;
-use jet_margin_sdk::ix_builder::get_metadata_address;
+use jet_margin_sdk::ix_builder::{derive_airspace, get_metadata_address};
 use solana_sdk::signer::Signer;
 
 lazy_static::lazy_static! {
@@ -25,6 +25,7 @@ async fn main() -> Result<()> {
 
     let x = TestManager::new(
         ctx,
+        derive_airspace("default"),
         &keys::mint(),
         &keys::event_queue(),
         &keys::bids(),

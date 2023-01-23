@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+use anchor_spl::token::{Mint, Token, TokenAccount};
 use jet_margin::{AdapterResult, PositionChange};
 
 use crate::{
@@ -19,7 +19,7 @@ pub struct InitializeMarginUser<'info> {
     #[account(
         init,
         seeds = [
-            seeds::MARGIN_BORROWER,
+            seeds::MARGIN_USER,
             market.key().as_ref(),
             margin_account.key().as_ref(),
         ],
@@ -27,7 +27,7 @@ pub struct InitializeMarginUser<'info> {
         payer = payer,
         space = 8 + std::mem::size_of::<MarginUser>(),
     )]
-    pub borrower_account: Box<Account<'info, MarginUser>>,
+    pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// The signing authority for this user account
     #[account(
@@ -35,10 +35,10 @@ pub struct InitializeMarginUser<'info> {
     )]
     pub margin_account: Signer<'info>,
 
-    /// The Boheader account
+    /// The fixed-term header account
     #[account(
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
-        has_one = collateral_mint @ FixedTermErrorCode::WrongCollateralMint
+        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -47,7 +47,7 @@ pub struct InitializeMarginUser<'info> {
     #[account(init,
         seeds = [
             seeds::CLAIM_NOTES,
-            borrower_account.key().as_ref(),
+            margin_user.key().as_ref(),
         ],
         bump,
         token::mint = claims_mint,
@@ -59,18 +59,15 @@ pub struct InitializeMarginUser<'info> {
     /// Token account used by the margin program to track owned assets
     #[account(init,
         seeds = [
-            seeds::COLLATERAL_NOTES,
-            borrower_account.key().as_ref(),
+            seeds::TICKET_COLLATERAL_NOTES,
+            margin_user.key().as_ref(),
         ],
         bump,
-        token::mint = collateral_mint,
+        token::mint = ticket_collateral_mint,
         token::authority = market,
         payer = payer)]
-    pub collateral: Box<Account<'info, TokenAccount>>,
-    pub collateral_mint: Box<Account<'info, Mint>>,
-
-    pub underlying_settlement: Box<Account<'info, TokenAccount>>,
-    pub ticket_settlement: Box<Account<'info, TokenAccount>>,
+    pub ticket_collateral: Box<Account<'info, TokenAccount>>,
+    pub ticket_collateral_mint: Box<Account<'info, Mint>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -82,22 +79,11 @@ pub struct InitializeMarginUser<'info> {
     pub claims_metadata: AccountInfo<'info>,
 
     /// Token metadata account needed by the margin program to register the collateral position
-    pub collateral_metadata: AccountInfo<'info>,
+    pub ticket_collateral_metadata: AccountInfo<'info>,
 }
 
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
-    let user = &mut ctx.accounts.borrower_account;
-
-    require_eq!(
-        mint(&ctx.accounts.underlying_settlement.to_account_info())?,
-        ctx.accounts.market.load()?.underlying_token_mint,
-        FixedTermErrorCode::WrongUnderlyingTokenMint
-    );
-    require_eq!(
-        mint(&ctx.accounts.ticket_settlement.to_account_info())?,
-        ctx.accounts.market.load()?.ticket_mint,
-        FixedTermErrorCode::WrongTicketMint
-    );
+    let user = &mut ctx.accounts.margin_user;
 
     init! {
         user = MarginUser {
@@ -105,9 +91,9 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
             margin_account: ctx.accounts.margin_account.key(),
             market: ctx.accounts.market.key(),
             claims: ctx.accounts.claims.key(),
-            collateral: ctx.accounts.collateral.key(),
-            underlying_settlement: ctx.accounts.underlying_settlement.key(),
-            ticket_settlement: ctx.accounts.ticket_settlement.key(),
+            ticket_collateral: ctx.accounts.ticket_collateral.key(),
+            borrow_roll_config: Default::default(),
+            lend_roll_config: Default::default(),
         } ignoring {
             debt,
             assets,
@@ -116,10 +102,8 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
 
     emit!(MarginUserInitialized {
         market: ctx.accounts.market.key(),
-        borrower_account: ctx.accounts.borrower_account.key(),
+        margin_user: ctx.accounts.margin_user.key(),
         margin_account: ctx.accounts.margin_account.key(),
-        underlying_settlement: ctx.accounts.underlying_settlement.key(),
-        ticket_settlement: ctx.accounts.ticket_settlement.key(),
     });
 
     return_to_margin(
@@ -131,8 +115,10 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
                     vec![PositionChange::Register(ctx.accounts.claims.key())],
                 ),
                 (
-                    ctx.accounts.collateral_mint.key(),
-                    vec![PositionChange::Register(ctx.accounts.collateral.key())],
+                    ctx.accounts.ticket_collateral_mint.key(),
+                    vec![PositionChange::Register(
+                        ctx.accounts.ticket_collateral.key(),
+                    )],
                 ),
             ],
         },

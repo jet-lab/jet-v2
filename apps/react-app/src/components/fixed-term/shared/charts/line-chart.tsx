@@ -115,7 +115,7 @@ export const LineChart = ({
           if (y) {
             yValues.push({
               y,
-              valueOfY: yScale.invert(y),
+              valueOfY: yScale.invert(y) * 100,
               lineId: path.getAttribute('id') || ''
             });
           }
@@ -213,7 +213,7 @@ export const LineChart = ({
           <AxisLeft
             tickStroke="rgba(255,255,255,0.6)"
             hideAxisLine={true}
-            tickFormat={val => `${val.valueOf().toFixed(2)}%`}
+            tickFormat={val => `${(val.valueOf() * 100).toFixed(2)}%`}
             scale={yScale}
             tickLabelProps={() => ({
               fontSize: 10,

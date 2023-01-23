@@ -87,8 +87,12 @@ impl MarginClient {
         }
     }
 
+    pub fn airspace(&self) -> Pubkey {
+        self.tx_admin.airspace
+    }
+
     pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
-        let tx = MarginTxBuilder::new_with_airspace(
+        let tx = MarginTxBuilder::new(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             keypair.pubkey(),
@@ -116,9 +120,9 @@ impl MarginClient {
         let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            self.airspace(),
             *owner,
             seed,
-            keypair.pubkey(),
         );
 
         Ok(MarginUser {
@@ -467,8 +471,6 @@ impl MarginUser {
         program_id: &Pubkey,
         source_mint: &Pubkey,
         destination_mint: &Pubkey,
-        transit_source_account: &Pubkey,
-        transit_destination_account: &Pubkey,
         swap_pool: &SplSwapPool,
         change: TokenChange,
         minimum_amount_out: u64,
@@ -485,8 +487,6 @@ impl MarginUser {
                     .swap(
                         source_mint,
                         destination_mint,
-                        transit_source_account,
-                        transit_destination_account,
                         &swap_pool.pool,
                         &swap_pool.pool_mint,
                         &swap_pool.fee_account,

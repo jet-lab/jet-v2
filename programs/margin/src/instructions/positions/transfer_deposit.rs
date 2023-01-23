@@ -18,7 +18,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-use crate::{events, ErrorCode, MarginAccount, SignerSeeds};
+use crate::{
+    events,
+    syscall::{sys, Sys},
+    ErrorCode, MarginAccount, SignerSeeds,
+};
 
 // FIXME: no transfer support for liquidators
 
@@ -32,7 +36,7 @@ pub struct TransferDeposit<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The authority for the source account
-    pub source_owner: Signer<'info>,
+    pub source_owner: AccountInfo<'info>,
 
     /// The source account to transfer tokens from
     #[account(mut)]
@@ -75,7 +79,12 @@ pub fn transfer_deposit_handler(ctx: Context<TransferDeposit>, amount: u64) -> R
         let mut margin_account = ctx.accounts.margin_account.load_mut()?;
 
         source.reload()?;
-        margin_account.set_position_balance(&source.mint, &source.key(), source.amount)?
+        margin_account.set_position_balance(
+            &source.mint,
+            &source.key(),
+            source.amount,
+            sys().unix_timestamp(),
+        )?
     } else {
         token::transfer(
             CpiContext::new(
@@ -96,6 +105,7 @@ pub fn transfer_deposit_handler(ctx: Context<TransferDeposit>, amount: u64) -> R
             &destination.mint,
             &destination.key(),
             destination.amount,
+            sys().unix_timestamp(),
         )?
     };
 
