@@ -25,3 +25,5 @@ bytemuck = "1.7"
 
 spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 jet-program-common = { path = "../../libraries/rust/program-common" }
+jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
+orca-whirlpool = { package = "whirlpool", git = "https://github.com/jet-lab/whirlpools", branch = "update-anchor-25", features = ["cpi", "no-entrypoint"] }

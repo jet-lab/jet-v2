@@ -28,7 +28,7 @@ mod util;
 
 use instructions::*;
 
-pub use instructions::{SplSwapPoolCreateParams, TokenCreateParams};
+pub use instructions::{SplSwapPoolCreateParams, TokenCreateParams, WhirlpoolCreateParams};
 
 declare_id!("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy");
 
@@ -58,6 +58,9 @@ pub mod seeds {
 
     #[constant]
     pub const SWAP_POOL_TOKENS: &[u8] = b"swap-pool-tokens";
+
+    #[constant]
+    pub const POSITION: &[u8] = b"position";
 }
 
 #[program]
@@ -118,6 +121,14 @@ pub mod jet_test_service {
     /// Balance an SPL swap pool based on current oracle prices
     pub fn spl_swap_pool_balance(ctx: Context<SplSwapPoolBalance>) -> Result<()> {
         spl_swap_pool_balance_handler(ctx)
+    }
+
+    /// Create a SPL swap pool
+    pub fn orca_whirlpool_create(
+        ctx: Context<WhirlpoolCreate>,
+        params: WhirlpoolCreateParams,
+    ) -> Result<()> {
+        whirlpool_create_handler(ctx, params)
     }
 
     /// Invokes arbitrary program iff an account is not yet initialized.

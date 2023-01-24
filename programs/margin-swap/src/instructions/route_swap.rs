@@ -414,8 +414,8 @@ fn exec_swap_split<'info>(
                 &orca_whirlpool::id(),
                 &mut &accounts[..],
                 &[],
-                &mut bumps,
-                &mut reallocs,
+                &mut scratch.bumps,
+                &mut scratch.reallocs,
             )?;
             // We don't need to check the destination balance on this leg
             let dst_ata = next_account_info(remaining_accounts).unwrap();
@@ -437,8 +437,8 @@ fn exec_swap_split<'info>(
             let other_amount_threshold = max_u64;
             let sqrt_price_limit = min_u128;
             let amount_specified_is_input = false;
-            let a_to_b =false;
-   
+            let a_to_b = false;
+
             swap_accounts.swap(
                 src_ata,
                 dst_ata,
@@ -451,7 +451,7 @@ fn exec_swap_split<'info>(
             dst_ata_closing = token::accessor::amount(dst_ata)?;
 
             dst_ata.to_account_info()
-        },
+        }
         SwapRouteIdentifier::SaberStable => {
             let accounts = remaining_accounts.take(7).cloned().collect::<Vec<_>>();
             let swap_accounts = SaberSwapInfo::try_accounts(

@@ -26,3 +26,16 @@ pub struct SplSwapInfo {
     /// The allowance of price deviation before the pool may be rebalanced
     pub price_threshold: u16,
 }
+
+/// Information about a swap pool
+#[account]
+pub struct SwapInfo {
+    /// The address of the pool state
+    pub pool_state: Pubkey,
+
+    /// The magnitude of liquidity to provide the pool
+    pub liquidity_level: u8,
+
+    /// The allowance of price deviation before the pool may be rebalanced
+    pub price_threshold: u16,
+}
