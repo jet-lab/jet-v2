@@ -42,9 +42,9 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()>
         margin_user: &mut a.margin_user,
         ticket_collateral: &a.ticket_collateral,
         ticket_collateral_mint: &a.ticket_collateral_mint,
-        inner: &LendOrderAccounts {
+        inner: &mut LendOrderAccounts {
             authority: &a.inner.authority,
-            orderbook_mut: &a.inner.orderbook_mut,
+            orderbook_mut: &mut a.inner.orderbook_mut,
             ticket_settlement: &a.inner.ticket_settlement,
             lender_tokens: a.inner.lender_tokens.as_ref(),
             underlying_token_vault: &a.inner.underlying_token_vault,

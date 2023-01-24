@@ -7,7 +7,6 @@ use jet_program_proc_macros::MarketTokenManager;
 use crate::{
     control::state::{CrankAuthorization, Market},
     margin::state::{MarginUser, TermLoan},
-    orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
     tickets::state::TermDeposit,
     FixedTermErrorCode,
@@ -67,40 +66,56 @@ pub enum EventAccounts<'info> {
     Out(OutAccounts<'info>),
 }
 
-pub struct FillAccounts<'info> {
-    pub maker: UserAccount<'info>,
-    /// include if AUTO_STAKE or NEW_DEBT in callback
-    pub loan: Option<LoanAccount<'info>>,
-    pub maker_adapter: Option<EventQueue<'info>>,
-    pub taker_adapter: Option<EventQueue<'info>>,
+pub enum FillAccounts<'info> {
+    Margin(MarginFillAccounts<'info>),
+    Signer(FillAccount<'info>),
 }
 
-pub enum LoanAccount<'info> {
+pub struct MarginFillAccounts<'info> {
+    pub margin_user: AnchorAccount<'info, MarginUser, Mut>,
+    pub term_account: Option<TermAccount<'info>>,
+}
+
+pub enum FillAccount<'info> {
+    Token(AccountInfo<'info>),
+    TermDeposit(AnchorAccount<'info, TermDeposit, Mut>),
+}
+
+impl<'info> FillAccount<'info> {
+    pub fn as_token_account(&self) -> AccountInfo<'info> {
+        match self {
+            FillAccount::Token(info) => info.to_account_info(),
+            _ => panic!(),
+        }
+    }
+}
+
+pub enum TermAccount<'info> {
     /// Use if AUTO_STAKE is set in the maker's callback
-    AutoStake(AnchorAccount<'info, TermDeposit, Mut>), // (ticket, user/owner)
+    Deposit(AnchorAccount<'info, TermDeposit, Mut>), // (ticket, user/owner)
     /// Use if NEW_DEBT is set in the maker's callback
-    NewDebt(AnchorAccount<'info, TermLoan, Mut>), // (term loan, user)
+    Loan(AnchorAccount<'info, TermLoan, Mut>), // (term loan, user)
 }
 
-impl<'info> LoanAccount<'info> {
-    pub fn auto_stake(&mut self) -> Result<&mut AnchorAccount<'info, TermDeposit, Mut>> {
+impl<'info> TermAccount<'info> {
+    pub fn term_deposit(&mut self) -> Result<&mut AnchorAccount<'info, TermDeposit, Mut>> {
         match self {
-            LoanAccount::AutoStake(split_ticket) => Ok(split_ticket),
+            TermAccount::Deposit(term_deposit) => Ok(term_deposit),
             _ => panic!(),
         }
     }
 
-    pub fn new_debt(&mut self) -> Result<&mut AnchorAccount<'info, TermLoan, Mut>> {
+    pub fn term_loan(&mut self) -> Result<&mut AnchorAccount<'info, TermLoan, Mut>> {
         match self {
-            LoanAccount::NewDebt(term_loan) => Ok(term_loan),
+            TermAccount::Loan(term_loan) => Ok(term_loan),
             _ => panic!(),
         }
     }
 }
 
-pub struct OutAccounts<'info> {
-    pub user: UserAccount<'info>,
-    pub user_adapter_account: Option<EventQueue<'info>>,
+pub enum OutAccounts<'info> {
+    Margin(AnchorAccount<'info, MarginUser, Mut>),
+    Signer(AccountInfo<'info>),
 }
 
 pub struct UserAccount<'info>(AccountInfo<'info>);
@@ -110,12 +125,12 @@ impl<'info> UserAccount<'info> {
     }
 
     /// token account that will receive a deposit of underlying or tickets
-    pub fn as_token_account(&self) -> &AccountInfo<'info> {
-        &self.0
+    pub fn as_token_account(self) -> AccountInfo<'info> {
+        self.0
     }
 
-    pub fn margin_user(&self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
-        AnchorAccount::try_from(self.0.clone())
+    pub fn margin_user(self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
+        AnchorAccount::try_from(self.0)
     }
 
     pub fn pubkey(&self) -> Pubkey {

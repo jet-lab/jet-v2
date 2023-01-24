@@ -105,9 +105,9 @@ impl<'info> AutoRollLendOrder<'info> {
             margin_user: &mut self.margin_user,
             ticket_collateral: self.ticket_collateral.as_ref().as_ref(),
             ticket_collateral_mint: self.ticket_collateral_mint.as_ref().as_ref(),
-            inner: &LendOrderAccounts {
+            inner: &mut LendOrderAccounts {
                 authority: self.margin_account.as_ref(),
-                orderbook_mut: &self.orderbook_mut,
+                orderbook_mut: &mut self.orderbook_mut,
                 ticket_settlement: &self.new_deposit,
                 lender_tokens: &self.new_deposit, // not needed for this instruction, arbitrary account
                 underlying_token_vault: &self.underlying_token_vault,

@@ -328,8 +328,8 @@ fn parse_bid_asks(
 
                 output.insert(OrderEntry {
                     order_id: node.key,
-                    order_tag: ft_info.order_tag,
-                    owner: ft_info.owner,
+                    order_tag: ft_info.order_tag(),
+                    owner: ft_info.owner(),
                     price: ui_price(node.price()),
                     base_token_amount: node.base_quantity,
                     tenor,

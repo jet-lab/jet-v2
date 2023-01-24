@@ -59,14 +59,6 @@ pub struct InitTermDepositAccounts<'a, 'info> {
     pub system_program: &'a Program<'info, System>,
 }
 
-pub struct TermDepositBuilder<U, M, I, S, A> {
-    pub margin_user: U,
-    pub market: M,
-    pub info: I,
-    pub summary: S,
-    pub init_accounts: A,
-}
-
 pub struct TermDepositWriter {
     pub market: Pubkey,
     pub owner: Pubkey,

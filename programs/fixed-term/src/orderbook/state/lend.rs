@@ -8,13 +8,16 @@ use crate::{
     FixedTermErrorCode,
 };
 
-use super::{CallbackFlags, CallbackInfo, OrderParams, OrderbookMut, SensibleOrderSummary};
+use super::{
+    CallbackFlags, CallbackInfo, MarginCallbackInfo, OrderParams, OrderbookMut,
+    SensibleOrderSummary,
+};
 
 pub struct LendOrderAccounts<'a, 'info> {
     /// Authority accounted for as the owner of resulting orderbook bids and `TermDeposit` accounts
     pub authority: &'a AccountInfo<'info>,
 
-    pub orderbook_mut: &'a OrderbookMut<'info>,
+    pub orderbook_mut: &'a mut OrderbookMut<'info>,
 
     /// where to settle tickets on match:
     /// - TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled
@@ -38,15 +41,15 @@ pub struct LendOrderAccounts<'a, 'info> {
 
 impl<'a, 'info> LendOrderAccounts<'a, 'info> {
     pub fn lend_order(
-        &self,
+        &mut self,
         params: OrderParams,
         adapter: Option<Pubkey>,
         seed: Vec<u8>,
     ) -> Result<()> {
-        let (info, summary) = self.orderbook_mut.place_order(
-            self.authority.key(),
+        let (info, summary) = self.orderbook_mut.place_signer_order(
             Side::Bid,
             params,
+            self.authority.key(),
             if params.auto_stake {
                 self.authority.key()
             } else {
@@ -60,7 +63,15 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
                 CallbackFlags::empty()
             },
         )?;
-        self.lend(&summary, self.term_deposit(&info, &summary, seed)?, true)?;
+        self.lend(
+            &summary,
+            self.term_deposit(
+                &CallbackInfo::from_signer_info(info.clone()),
+                &summary,
+                seed,
+            )?,
+            true,
+        )?;
 
         emit!(crate::events::OrderPlaced {
             market: self.orderbook_mut.market.key(),
@@ -183,7 +194,7 @@ pub struct MarginLendAccounts<'a, 'info> {
     pub margin_user: &'a mut Account<'info, MarginUser>,
     pub ticket_collateral: &'a AccountInfo<'info>,
     pub ticket_collateral_mint: &'a AccountInfo<'info>,
-    pub inner: &'a LendOrderAccounts<'a, 'info>,
+    pub inner: &'a mut LendOrderAccounts<'a, 'info>,
 }
 
 impl<'a, 'info> MarginLendAccounts<'a, 'info> {
@@ -193,11 +204,10 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         adapter: Option<Pubkey>,
         requires_payment: bool,
     ) -> Result<()> {
-        let (info, summary) = self.inner.orderbook_mut.place_order(
-            self.inner.authority.key(),
+        let (info, summary) = self.inner.orderbook_mut.place_margin_order(
             Side::Bid,
             *params,
-            self.margin_user.key(),
+            self.inner.authority.key(),
             self.margin_user.key(),
             adapter,
             self.order_flags(params)?,
@@ -238,7 +248,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
 
     fn maybe_term_deposit(
         &self,
-        info: &CallbackInfo,
+        info: &MarginCallbackInfo,
         summary: &SensibleOrderSummary,
     ) -> Result<Option<TermDepositWriter>> {
         if info.flags.contains(CallbackFlags::AUTO_STAKE) {
@@ -289,7 +299,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
     fn emit_margin_lend_order(
         &self,
         params: &OrderParams,
-        info: &CallbackInfo,
+        info: &MarginCallbackInfo,
         summary: &SensibleOrderSummary,
     ) {
         emit!(crate::events::OrderPlaced {

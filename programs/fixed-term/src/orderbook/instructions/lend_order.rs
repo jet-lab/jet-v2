@@ -39,9 +39,9 @@ pub struct LendOrder<'info> {
 
 pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
     let accs = ctx.accounts;
-    let accounts = LendOrderAccounts {
+    let accounts = &mut LendOrderAccounts {
         authority: &accs.authority,
-        orderbook_mut: &accs.orderbook_mut,
+        orderbook_mut: &mut accs.orderbook_mut,
         ticket_settlement: &accs.ticket_settlement,
         lender_tokens: accs.lender_tokens.as_ref(),
         underlying_token_vault: &accs.underlying_token_vault,

@@ -1,29 +1,28 @@
+mod event_queue;
 mod lend;
+pub use event_queue::*;
 pub use lend::*;
 
-use crate::{
-    control::state::Market, events::OrderCancelled, utils::orderbook_accounts, FixedTermErrorCode,
-};
+use std::convert::TryInto;
+
 use agnostic_orderbook::{
-    instruction::cancel_order,
-    state::{critbit::Slab, get_side_from_order_id, Side},
-};
-use agnostic_orderbook::{
-    instruction::new_order,
+    instruction::{cancel_order, new_order},
     state::{
+        critbit::Slab,
         critbit::{InnerNode, LeafNode, SlabHeader},
-        event_queue::{EventQueueHeader, FillEvent, OutEvent},
-        OrderSummary, SelfTradeBehavior,
+        event_queue::{EventQueueHeader, FillEvent},
+        get_side_from_order_id, OrderSummary, SelfTradeBehavior, Side,
     },
 };
 use anchor_lang::{
     prelude::*,
     solana_program::{clock::UnixTimestamp, hash::hash},
 };
-use bytemuck::{CheckedBitPattern, NoUninit, Pod, Zeroable};
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
-use std::convert::TryInto;
+use bytemuck::{Pod, Zeroable};
+
+use crate::{
+    control::state::Market, events::OrderCancelled, utils::orderbook_accounts, FixedTermErrorCode,
+};
 
 /// The tick_size used in fp32 operations on the orderbook
 pub const TICK_SIZE: u64 = 1;
@@ -92,31 +91,13 @@ impl<'info> OrderbookMut<'info> {
         self.market.load().unwrap().claims_mint
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn place_order(
+    fn place_order(
         &self,
-        owner: Pubkey,
         side: Side,
         params: OrderParams,
-        fill: Pubkey,
-        out: Pubkey,
-        adapter: Option<Pubkey>,
-        flags: CallbackFlags,
-    ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
-        let mut manager = self.market.load_mut()?;
-        let callback_info = CallbackInfo::new(
-            self.market.key(),
-            owner,
-            fill,
-            out,
-            adapter.unwrap_or_default(),
-            Clock::get()?.unix_timestamp,
-            flags,
-            manager.nonce,
-        );
-        manager.nonce += 1;
-
-        let order_params = params.as_new_order_params(side, callback_info);
+        info: &UserCallbackInfo,
+    ) -> Result<SensibleOrderSummary> {
+        let order_params = params.as_new_order_params(side, info.into());
         let limit_price = order_params.limit_price;
         let order_summary = new_order::process(
             &crate::id(),
@@ -128,13 +109,56 @@ impl<'info> OrderbookMut<'info> {
             FixedTermErrorCode::OrderRejected
         );
 
-        Ok((
-            callback_info,
-            SensibleOrderSummary {
-                summary: order_summary,
-                limit_price,
-            },
-        ))
+        Ok(SensibleOrderSummary {
+            summary: order_summary,
+            limit_price,
+        })
+    }
+
+    /// Place an order as a `MarginUser`
+    pub fn place_margin_order(
+        &mut self,
+        side: Side,
+        params: OrderParams,
+        margin_account: Pubkey,
+        margin_user: Pubkey,
+        adapter: Option<Pubkey>,
+        flags: CallbackFlags,
+    ) -> Result<(MarginCallbackInfo, SensibleOrderSummary)> {
+        let info = MarginCallbackInfo {
+            order_tag: OrderTag::generate_from_market(&mut self.market, &margin_account)?,
+            margin_account,
+            margin_user,
+            adapter_account_key: adapter.unwrap_or(Default::default()),
+            order_submitted: Clock::get()?.unix_timestamp,
+            flags,
+        };
+        let summary = self.place_order(side, params, &UserCallbackInfo::Margin(info.clone()))?;
+        Ok((info, summary))
+    }
+
+    /// Place an order as a generic signing authority
+    pub fn place_signer_order(
+        &mut self,
+        side: Side,
+        params: OrderParams,
+        signer: Pubkey,
+        ticket_or_deposit_account: Pubkey,
+        token_account: Pubkey,
+        adapter: Option<Pubkey>,
+        flags: CallbackFlags,
+    ) -> Result<(SignerCallbackInfo, SensibleOrderSummary)> {
+        let info = SignerCallbackInfo {
+            order_tag: OrderTag::generate_from_market(&mut self.market, &signer)?,
+            signer,
+            ticket_or_deposit_account,
+            token_account,
+            adapter_account_key: adapter.unwrap_or(Default::default()),
+            order_submitted: Clock::get()?.unix_timestamp,
+            flags,
+        };
+        let summary = self.place_order(side, params, &UserCallbackInfo::Signer(info.clone()))?;
+        Ok((info, summary))
     }
 
     /// cancels an order within the aaob
@@ -160,11 +184,14 @@ impl<'info> OrderbookMut<'info> {
             msg!("Given Order ID: [{}]", order_id);
             error!(FixedTermErrorCode::OrderNotFound)
         })?;
-        let info = *slab.get_callback_info(handle);
+        let info: UserCallbackInfo = (*slab.get_callback_info(handle)).into();
 
-        let info_owner = info.owner;
-        let flags = info.flags;
-        let order_tag = info.order_tag.as_u128();
+        let (info_owner, flags, order_tag) = match info.clone() {
+            UserCallbackInfo::Margin(info) => {
+                (info.margin_account, info.flags, info.order_tag.as_u128())
+            }
+            UserCallbackInfo::Signer(info) => (info.signer, info.flags, info.order_tag.as_u128()),
+        };
 
         // drop the refs so the orderbook can borrow the slab data
         drop(buf);
@@ -192,7 +219,7 @@ impl<'info> OrderbookMut<'info> {
                     order_id,
                     base_size: order_summary.total_base_qty,
                 },
-                Some(&info),
+                Some(&CallbackInfo::from(&info)),
                 None,
             )
             .map_err(|_| error!(FixedTermErrorCode::FailedToPushEvent))?;
@@ -215,17 +242,28 @@ impl<'info> OrderbookMut<'info> {
 pub struct OrderTag(pub [u8; 16]);
 
 impl OrderTag {
+    /// Generates an order tag and mutates the market nonce
+    pub fn generate_from_market(
+        market_acc: &mut AccountLoader<Market>,
+        user: &Pubkey,
+    ) -> Result<Self> {
+        let market = &mut market_acc.load_mut()?;
+        let tag = Self::generate(market_acc.key().as_ref(), user.as_ref(), market.nonce);
+        market.nonce = market.nonce.wrapping_add(1);
+
+        Ok(tag)
+    }
     //todo maybe this means we don't need owner to be stored in the CallbackInfo
     /// To generate an OrderTag, the program takes the sha256 hash of the orderbook user account
     /// and market pubkeys, a nonce tracked by the orderbook user account, and drops the
     /// last 16 bytes to create a 16-byte array
-    pub fn generate(market_key_bytes: &[u8], user_key_bytes: &[u8], nonce: u64) -> OrderTag {
+    fn generate(market_key_bytes: &[u8], user_key_bytes: &[u8], nonce: u64) -> Self {
         let nonce_bytes = bytemuck::bytes_of(&nonce);
         let bytes: &[u8] = &[market_key_bytes, user_key_bytes, nonce_bytes].concat();
         let hash: [u8; 32] = hash(bytes).to_bytes();
         let tag_bytes: &[u8; 16] = &hash[..16].try_into().unwrap();
 
-        OrderTag(*tag_bytes)
+        Self(*tag_bytes)
     }
 
     pub fn bytes(&self) -> &[u8; 16] {
@@ -244,53 +282,30 @@ impl OrderTag {
 pub struct CallbackInfo {
     /// The order tag is generated by the program when submitting orders to the book
     /// Used to seed and track PDAs such as `TermLoan`
-    pub order_tag: OrderTag,
+    order_tag: OrderTag,
     /// If the order was submit through the margin program, this is the MarginUser
     /// else, this is the signer who authorized token transfer
     /// used to determine ownership of resulting order or TermDeposit
-    pub owner: Pubkey,
+    signer_or_margin_account: Pubkey,
     /// For auto-stake, this account will be set as the TermDeposit owner.
     /// Otherwise this is the token account to be deposited into.
-    pub fill_account: Pubkey,
+    ticket_or_deposit_account: Pubkey,
     /// margin user or token account to be deposited into on out
     /// the account that will be assigned ownership of any output resulting from
     /// an out. for margin orders this is the margin user. otherwise this is the
     /// token account to be deposited into.
-    pub out_account: Pubkey,
+    token_or_margin_user_account: Pubkey,
     /// Pubkey of the account that will receive the event information
-    pub adapter_account_key: Pubkey,
+    adapter_account_key: Pubkey,
     /// The unix timestamp for the slot that the order entered the aaob
-    pub order_submitted: [u8; 8],
+    order_submitted: [u8; 8],
     /// configuration used by callback execution
-    pub flags: CallbackFlags,
+    flags: CallbackFlags,
     _reserved: [u8; 14],
 }
 
 impl CallbackInfo {
     pub const LEN: usize = std::mem::size_of::<Self>();
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        market_key: Pubkey,
-        owner: Pubkey,
-        fill_account: Pubkey,
-        out_account: Pubkey,
-        adapter: Pubkey,
-        order_submitted: UnixTimestamp,
-        flags: CallbackFlags,
-        nonce: u64,
-    ) -> Self {
-        let order_tag = OrderTag::generate(market_key.as_ref(), fill_account.as_ref(), nonce);
-        Self {
-            owner,
-            fill_account,
-            out_account,
-            order_tag,
-            adapter_account_key: adapter,
-            order_submitted: order_submitted.to_le_bytes(),
-            flags,
-            _reserved: [0u8; 14],
-        }
-    }
 
     pub fn adapter(&self) -> Option<Pubkey> {
         let adapter = self.adapter_account_key;
@@ -304,13 +319,81 @@ impl CallbackInfo {
     pub fn order_submitted_timestamp(&self) -> UnixTimestamp {
         UnixTimestamp::from_le_bytes(self.order_submitted)
     }
+
+    pub fn from_signer_info(info: SignerCallbackInfo) -> Self {
+        Self::from(&UserCallbackInfo::Signer(info))
+    }
+
+    pub fn from_margin_info(info: MarginCallbackInfo) -> Self {
+        Self::from(&UserCallbackInfo::Margin(info))
+    }
+
+    pub fn owner(&self) -> Pubkey {
+        self.signer_or_margin_account
+    }
+
+    pub fn order_tag(&self) -> OrderTag {
+        self.order_tag
+    }
 }
 
 impl agnostic_orderbook::state::orderbook::CallbackInfo for CallbackInfo {
     type CallbackId = Pubkey;
 
     fn as_callback_id(&self) -> &Self::CallbackId {
-        &self.owner
+        &self.signer_or_margin_account
+    }
+}
+
+impl From<&UserCallbackInfo> for CallbackInfo {
+    fn from(info: &UserCallbackInfo) -> Self {
+        match info {
+            UserCallbackInfo::Margin(info) => Self {
+                order_tag: info.order_tag,
+                signer_or_margin_account: info.margin_account,
+                ticket_or_deposit_account: info.margin_user,
+                token_or_margin_user_account: info.margin_user,
+                adapter_account_key: info.adapter_account_key,
+                order_submitted: info.order_submitted.to_le_bytes(),
+                flags: info.flags,
+                _reserved: [0u8; 14],
+            },
+            UserCallbackInfo::Signer(info) => Self {
+                order_tag: info.order_tag,
+                signer_or_margin_account: info.signer,
+                ticket_or_deposit_account: info.ticket_or_deposit_account,
+                token_or_margin_user_account: info.token_account,
+                adapter_account_key: info.adapter_account_key,
+                order_submitted: info.order_submitted.to_le_bytes(),
+                flags: info.flags,
+                _reserved: [0u8; 14],
+            },
+        }
+    }
+}
+
+impl Into<UserCallbackInfo> for CallbackInfo {
+    fn into(self) -> UserCallbackInfo {
+        if self.flags.contains(CallbackFlags::MARGIN) {
+            UserCallbackInfo::Margin(MarginCallbackInfo {
+                order_tag: self.order_tag,
+                margin_account: self.signer_or_margin_account,
+                margin_user: self.token_or_margin_user_account,
+                adapter_account_key: self.adapter_account_key,
+                order_submitted: i64::from_le_bytes(self.order_submitted),
+                flags: self.flags,
+            })
+        } else {
+            UserCallbackInfo::Signer(SignerCallbackInfo {
+                order_tag: self.order_tag,
+                signer: self.signer_or_margin_account,
+                ticket_or_deposit_account: self.ticket_or_deposit_account,
+                token_account: self.token_or_margin_user_account,
+                adapter_account_key: self.adapter_account_key,
+                order_submitted: i64::from_le_bytes(self.order_submitted),
+                flags: self.flags,
+            })
+        }
     }
 }
 
@@ -331,6 +414,77 @@ bitflags! {
         /// is this order subject to auto roll
         const AUTO_ROLL  = 1 << 3;
     }
+}
+
+/// CallbackInfo specific to the type of order
+#[derive(Debug, Clone)]
+pub enum UserCallbackInfo {
+    /// The order was accounted by the MarginUser
+    Margin(MarginCallbackInfo),
+    /// The order was placed by a generic signing account
+    Signer(SignerCallbackInfo),
+}
+
+impl UserCallbackInfo {
+    /// Extracts the adapter pubkey
+    pub fn adapter(&self) -> &Pubkey {
+        match self {
+            Self::Margin(info) => &info.adapter_account_key,
+            Self::Signer(info) => &info.adapter_account_key,
+        }
+    }
+
+    pub fn margin(self) -> MarginCallbackInfo {
+        match self {
+            Self::Margin(info) => info,
+            _ => panic!(),
+        }
+    }
+
+    pub fn signer(self) -> SignerCallbackInfo {
+        match self {
+            Self::Signer(info) => info,
+            _ => panic!(),
+        }
+    }
+}
+
+/// CallbackInfo pertaining to an order placed through the margin instructions
+#[derive(Debug, Clone)]
+pub struct MarginCallbackInfo {
+    /// The order tag is generated by the program when submitting orders to the book
+    /// Used to seed and track PDAs such as `TermLoan`
+    pub order_tag: OrderTag,
+    /// The `MarginAccount` responsible for the order
+    pub margin_account: Pubkey,
+    /// The `MarginUser` account for the order
+    pub margin_user: Pubkey,
+    /// Pubkey of the account that will receive the event information
+    pub adapter_account_key: Pubkey,
+    /// The unix timestamp for the slot that the order entered the aaob
+    pub order_submitted: UnixTimestamp,
+    /// configuration used by callback execution
+    pub flags: CallbackFlags,
+}
+
+/// Callback information related to a generic signing account
+#[derive(Debug, Clone)]
+pub struct SignerCallbackInfo {
+    /// The order tag is generated by the program when submitting orders to the book
+    /// Used to seed and track PDAs such as `TermLoan`
+    pub order_tag: OrderTag,
+    /// The signing authority
+    pub signer: Pubkey,
+    /// The account to handle order fills. A token account or a `TermDeposit`
+    pub ticket_or_deposit_account: Pubkey,
+    /// The account to recompensate unused funds from orders leaving the book
+    pub token_account: Pubkey,
+    /// Pubkey of the account that will receive the event information
+    pub adapter_account_key: Pubkey,
+    /// The unix timestamp for the slot that the order entered the aaob
+    pub order_submitted: UnixTimestamp,
+    /// configuration used by callback execution
+    pub flags: CallbackFlags,
 }
 
 /// Parameters needed for order placement
@@ -430,231 +584,6 @@ impl SensibleOrderSummary {
     pub fn base_combined(&self) -> u64 {
         // self.base_posted() + self.base_filled()
         self.summary.total_base_qty
-    }
-}
-
-#[account(zero_copy)]
-pub struct EventAdapterMetadata {
-    /// Signing authority over this Adapter
-    pub owner: Pubkey,
-    /// The `Market` this adapter belongs to
-    pub market: Pubkey,
-    /// The `MarginUser` account this adapter is registered for
-    pub orderbook_user: Pubkey,
-}
-
-impl EventAdapterMetadata {
-    pub const LEN: usize = std::mem::size_of::<Self>();
-
-    pub fn space(num_events: u32) -> usize {
-        num_events as usize * (FillEvent::LEN + 2 * CallbackInfo::LEN)
-            + Self::LEN
-            + EventQueueHeader::LEN
-            + 16 // anchor discriminator and agnostic-orderbook tag
-    }
-}
-
-#[derive(FromPrimitive, Clone, Copy, CheckedBitPattern, NoUninit)]
-#[repr(u8)]
-pub(crate) enum EventTag {
-    Fill,
-    Out,
-}
-
-pub(crate) type GenericEvent = FillEvent;
-
-pub trait Event {
-    fn to_generic(&mut self) -> &GenericEvent;
-}
-
-impl Event for FillEvent {
-    fn to_generic(&mut self) -> &GenericEvent {
-        self.tag = EventTag::Fill as u8;
-        self
-    }
-}
-
-impl Event for OutEvent {
-    fn to_generic(&mut self) -> &GenericEvent {
-        self.tag = EventTag::Out as u8;
-        bytemuck::cast_ref(self)
-    }
-}
-
-pub enum OrderbookEvent {
-    Fill(FillInfo),
-    Out(OutInfo),
-}
-
-pub struct FillInfo {
-    pub event: FillEvent,
-    pub maker_info: CallbackInfo,
-    pub taker_info: CallbackInfo,
-}
-pub struct OutInfo {
-    pub event: OutEvent,
-    pub info: CallbackInfo,
-}
-
-/// todo: algebraic type parameter could provide compile time checks on use
-/// as market or user adapter
-#[derive(Clone)]
-pub struct EventQueue<'a> {
-    info: AccountInfo<'a>,
-    header: EventQueueHeader,
-    capacity: usize,
-    event_ptr: usize,
-    callback_ptr: usize,
-    is_adapter: bool,
-}
-
-impl<'a> Key for EventQueue<'a> {
-    fn key(&self) -> Pubkey {
-        self.info.key()
-    }
-}
-
-impl<'a> EventQueue<'a> {
-    const ADAPTER_OFFSET: usize = EventAdapterMetadata::LEN + 8;
-
-    pub fn deserialize_market(info: AccountInfo<'a>) -> Result<Self> {
-        require!(
-            info.owner == &crate::id(),
-            FixedTermErrorCode::WrongEventQueue
-        );
-        Self::deserialize(info, false)
-    }
-
-    pub fn deserialize_user_adapter(info: AccountInfo<'a>) -> Result<Self> {
-        require!(
-            info.owner != &crate::id(),
-            FixedTermErrorCode::UserDoesNotOwnAdapter
-        );
-        Self::deserialize(info, true)
-    }
-
-    fn deserialize(info: AccountInfo<'a>, is_adapter: bool) -> Result<Self> {
-        let adapter_offset = if is_adapter { Self::ADAPTER_OFFSET } else { 0 };
-        let buf = &info.data.borrow();
-        let capacity = (buf.len() - 8 - EventQueueHeader::LEN - adapter_offset)
-            / (FillEvent::LEN + 2 * CallbackInfo::LEN);
-
-        let header_ptr = 8 + adapter_offset;
-        let event_ptr = header_ptr + EventQueueHeader::LEN;
-        let callback_ptr = event_ptr + capacity * FillEvent::LEN;
-
-        let header = EventQueueHeader::deserialize(&mut &buf[header_ptr..])?;
-
-        Ok(Self {
-            info: info.clone(),
-            capacity,
-            event_ptr,
-            callback_ptr,
-            header,
-            is_adapter,
-        })
-    }
-
-    /// Pushes the given event to the back of the queue
-    pub fn push_event<E: Event>(
-        &mut self,
-        mut event: E,
-        maker_callback_info: Option<&CallbackInfo>,
-        taker_callback_info: Option<&CallbackInfo>,
-    ) -> std::result::Result<(), Error> {
-        let mut buf = self.info.data.borrow_mut();
-        let generic_event = event.to_generic();
-        let event_idx = (self.header.head as usize + self.header.count as usize) % self.capacity;
-
-        let events: &mut [FillEvent] =
-            bytemuck::cast_slice_mut(&mut buf[self.event_ptr..self.callback_ptr]);
-        events[event_idx] = *generic_event;
-
-        self.header.count += 1;
-
-        let callback_infos: &mut [CallbackInfo] =
-            bytemuck::cast_slice_mut(&mut buf[self.callback_ptr..]);
-        if let Some(c) = maker_callback_info {
-            callback_infos[event_idx * 2] = *c;
-        }
-
-        if let Some(c) = taker_callback_info {
-            callback_infos[event_idx * 2 + 1] = *c;
-        }
-
-        Ok(())
-    }
-
-    /// Attempts to remove the number of events from the top of the queue
-    pub fn pop_events(&mut self, num_events: u32) -> Result<()> {
-        let capped_number_of_entries_to_pop = std::cmp::min(self.header.count, num_events as u64);
-        self.header.count -= capped_number_of_entries_to_pop;
-        self.header.head =
-            (self.header.head + capped_number_of_entries_to_pop) % (self.capacity as u64);
-        Ok(())
-    }
-
-    fn get_event(&self, event_idx: usize) -> OrderbookEvent {
-        let buf = self.info.data.borrow();
-        let events: &[FillEvent] = bytemuck::cast_slice(&buf[self.event_ptr..self.callback_ptr]);
-        let callback: &[CallbackInfo] = bytemuck::cast_slice(&buf[self.callback_ptr..]);
-
-        let event = &events[event_idx];
-        match EventTag::from_u8(event.tag).unwrap() {
-            EventTag::Fill => OrderbookEvent::Fill(FillInfo {
-                event: *event,
-                maker_info: callback[2 * event_idx],
-                taker_info: callback[2 * event_idx + 1],
-            }),
-            EventTag::Out => OrderbookEvent::Out(OutInfo {
-                event: *bytemuck::cast_ref(event),
-                info: callback[2 * event_idx],
-            }),
-        }
-    }
-
-    pub fn iter(&self) -> QueueIterator<'a> {
-        QueueIterator {
-            queue: self.clone(),
-            current_index: 0,
-            remaining: self.header.count,
-        }
-    }
-}
-
-impl<'a> Drop for EventQueue<'a> {
-    fn drop(&mut self) {
-        let mut buf = self.info.data.borrow_mut();
-
-        let offset = match self.is_adapter {
-            true => Self::ADAPTER_OFFSET + 8,
-            false => 8,
-        };
-        self.header
-            .serialize(&mut (&mut buf[offset..] as &mut [u8]))
-            .unwrap();
-    }
-}
-
-/// Utility struct for iterating over a queue
-pub struct QueueIterator<'a> {
-    queue: EventQueue<'a>,
-    current_index: usize,
-    remaining: u64,
-}
-
-impl<'a> Iterator for QueueIterator<'a> {
-    type Item = OrderbookEvent;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining == 0 {
-            return None;
-        }
-        let event_idx =
-            (self.queue.header.head as usize + self.current_index) % self.queue.capacity;
-        self.current_index += 1;
-        self.remaining -= 1;
-        Some(self.queue.get_event(event_idx))
     }
 }
 
