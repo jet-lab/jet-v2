@@ -7,7 +7,44 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      all: ${{ steps.changes.outputs.all }}
+      ui: ${{ steps.changes.outputs.ui }}
+      programs: ${{ steps.changes.outputs.programs }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            all:
+              - '.github/**'
+              - 'config/**'
+              - 'deps/**'
+              - 'scripts/**'
+              - 'packages.json'
+              - 'turbo.json'
+              - '*.sh'
+            ui:
+              - 'apps/**'
+              - 'libraries/**'
+              - 'packages/**'
+              - 'programs/**'
+              - 'yarn.lock'
+            programs:
+              - 'Cargo.lock'
+              - 'programs/**'
+              - 'libraries/rust/**'
+              - 'tests/**'
+              - 'tools/**'
+              - '*.toml'
+  
   hosted-tests-localnet-batch1:
+    needs: [changes]
+    if: (needs.changes.outputs.programs == 'true' || needs.changes.outputs.all == 'true')
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
@@ -34,6 +71,8 @@ jobs:
 
 
   hosted-tests-localnet-batch2:
+    needs: [changes]
+    if: (needs.changes.outputs.programs == 'true' || needs.changes.outputs.all == 'true')
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
@@ -60,6 +99,8 @@ jobs:
 
 
   cargo-lint:
+    needs: [changes]
+    if: (needs.changes.outputs.programs == 'true' || needs.changes.outputs.all == 'true')
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
@@ -83,6 +124,8 @@ jobs:
 
 
   cargo-test:
+    needs: [changes]
+    if: (needs.changes.outputs.programs == 'true' || needs.changes.outputs.all == 'true')
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
@@ -110,7 +153,10 @@ jobs:
           files: lcov.info
           fail_ci_if_error: true
 
+
   e2e:
+    needs: [changes]
+    if: (needs.changes.outputs.ui == 'true' || needs.changes.outputs.all == 'true')
     runs-on: ubuntu-latest
     env:
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
