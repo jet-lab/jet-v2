@@ -38,6 +38,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
 use crate::margin_integrator::PositionRefresher;
+use crate::solana::transaction::WithSigner;
 use crate::util::data::Join;
 use crate::{
     ix_builder::*,
@@ -98,13 +99,11 @@ impl MarginTxBuilder {
         seed: u16,
         airspace: Pubkey,
     ) -> MarginTxBuilder {
-        let payer = signer
-            .as_ref()
-            .map(|s| s.pubkey())
-            .unwrap_or_else(|| rpc.payer().pubkey());
-        let ix = MarginIxBuilder::new_with_payer(airspace, owner, seed, payer);
-
-        let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey());
+        let mut ix = MarginIxBuilder::new(airspace, owner, seed).with_payer(rpc.payer().pubkey());
+        if let Some(signer) = signer.as_ref() {
+            ix = ix.with_authority(signer.pubkey());
+        }
+        let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey(), None);
 
         Self {
             rpc,
@@ -128,13 +127,11 @@ impl MarginTxBuilder {
         owner: Pubkey,
         seed: u16,
     ) -> MarginTxBuilder {
-        let payer = signer
-            .as_ref()
-            .map(|s| s.pubkey())
-            .unwrap_or_else(|| rpc.payer().pubkey());
-        let ix = MarginIxBuilder::new_with_payer(airspace, owner, seed, payer);
-
-        let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey());
+        let mut ix = MarginIxBuilder::new(airspace, owner, seed).with_payer(rpc.payer().pubkey());
+        if let Some(signer) = signer.as_ref() {
+            ix = ix.with_authority(signer.pubkey());
+        }
+        let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey(), None);
 
         Self {
             rpc,
@@ -143,6 +140,14 @@ impl MarginTxBuilder {
             signer,
             is_liquidator: true,
         }
+    }
+
+    /// Creates a variant of the builder that has a signer other than the payer.
+    pub fn with_signer(mut self, signer: Keypair) -> Self {
+        self.ix = self.ix.with_authority(signer.pubkey());
+        self.signer = Some(signer);
+
+        self
     }
 
     async fn create_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
@@ -177,6 +182,14 @@ impl MarginTxBuilder {
     /// The address of the transaction signer
     pub fn signer(&self) -> Pubkey {
         self.signer.as_ref().unwrap().pubkey()
+    }
+
+    /// The address of the transaction signer
+    fn signers(&self) -> Vec<Keypair> {
+        match &self.signer {
+            Some(s) => vec![clone(s)],
+            None => vec![],
+        }
     }
 
     /// The owner of the margin account
@@ -219,7 +232,7 @@ impl MarginTxBuilder {
         let instructions = vec![
             self.ix
                 .close_position(pool.deposit_note_mint, deposit_account),
-            self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer)),
+            self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer())),
         ];
         self.create_transaction(&instructions).await
     }
@@ -239,7 +252,7 @@ impl MarginTxBuilder {
                 self.ix.get_token_account_address(&pool.deposit_note_mint),
             ),
             TokenKind::Claim => {
-                self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
+                self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer()))
             }
             TokenKind::AdapterCollateral => panic!("pools do not issue AdapterCollateral"),
         };
@@ -260,7 +273,7 @@ impl MarginTxBuilder {
             .map(|p| {
                 if p.adapter == JetMarginPool::id() && p.kind() == TokenKind::Claim {
                     let pool = MarginPoolIxBuilder::new(*loan_to_token.get(&p.token).unwrap());
-                    self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
+                    self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer()))
                 } else {
                     self.ix.close_position(p.token, p.address)
                 }
@@ -512,10 +525,7 @@ impl MarginTxBuilder {
         };
 
         // Add liquidation instruction
-        txs.instructions.push(
-            self.ix
-                .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
-        );
+        txs.instructions.push(self.ix.liquidate_begin());
         txs.signers.push(clone(self.signer.as_ref().unwrap()));
 
         Ok(txs)
@@ -523,12 +533,7 @@ impl MarginTxBuilder {
 
     /// Transaction to end liquidating user account
     pub async fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Result<Transaction> {
-        let self_key = self
-            .signer
-            .as_ref()
-            .map(|s| s.pubkey())
-            .unwrap_or(*self.owner());
-        self.create_transaction(&[self.ix.liquidate_end(self_key, original_liquidator)])
+        self.create_transaction(&[self.ix.liquidate_end(original_liquidator)])
             .await
     }
 
@@ -568,7 +573,7 @@ impl MarginTxBuilder {
     }
 
     /// Refresh metadata for all positions in the user account
-    pub async fn refresh_all_position_metadata(&self) -> Result<Vec<Transaction>> {
+    pub async fn refresh_all_position_metadata(&self) -> Result<Vec<TransactionBuilder>> {
         let instructions = self
             .get_account_state()
             .await?
@@ -581,10 +586,11 @@ impl MarginTxBuilder {
                     false => self.ix.refresh_position_metadata(&position.token),
                     true => self.ix.refresh_position_config(&position.token),
                 }
+                .with_signers(&self.signers())
             })
             .collect::<Vec<_>>();
 
-        self.get_chunk_transactions(12, instructions).await
+        Ok(instructions)
     }
 
     /// Create a new token account that accepts deposits, registered as a position
@@ -654,21 +660,6 @@ impl MarginTxBuilder {
                 &mut &account.data[..],
             )?)),
         }
-    }
-
-    async fn get_chunk_transactions(
-        &self,
-        chunk_size: usize,
-        instructions: Vec<Instruction>,
-    ) -> Result<Vec<Transaction>> {
-        futures::future::join_all(
-            instructions
-                .chunks(chunk_size)
-                .map(|c| self.create_unsigned_transaction(c)),
-        )
-        .await
-        .into_iter()
-        .collect()
     }
 
     /// Append instructions to refresh pool positions to instructions
@@ -799,7 +790,7 @@ impl MarginTxBuilder {
         Ok(if let Some(position) = search_result {
             position.address
         } else {
-            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer);
+            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer());
             let wrapped_ix = self.adapter_invoke_ix(pools_ix);
             instructions.push(wrapped_ix);
 
@@ -809,9 +800,7 @@ impl MarginTxBuilder {
 
     fn adapter_invoke_ix(&self, inner: Instruction) -> Instruction {
         match self.is_liquidator {
-            true => self
-                .ix
-                .liquidator_invoke(inner, &self.signer.as_ref().unwrap().pubkey()),
+            true => self.ix.liquidator_invoke(inner),
             false => self.ix.adapter_invoke(inner),
         }
     }

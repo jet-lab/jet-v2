@@ -8,6 +8,7 @@ log = "0.4"
 solana-sdk = "1.14"
 
 anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-spl =  { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 
 spl-token = "3"
 spl-token-swap = "2"

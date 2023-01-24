@@ -2459,6 +2459,7 @@ version = "0.1.0"
 dependencies = [
  "agnostic-orderbook",
  "anchor-lang",
+ "anchor-spl",
  "jet-airspace",
  "jet-control",
  "jet-fixed-term",

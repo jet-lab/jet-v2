@@ -81,7 +81,8 @@ impl AirspaceAdmin {
         config: &MarginPoolConfiguration,
     ) -> TransactionBuilder {
         let mut instructions = vec![];
-        let margin_config_ix_builder = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let margin_config_ix_builder =
+            MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
 
         // FIXME: remove control legacy
         let ctrl_ix_builder = ControlIxBuilder::new_for_authority(self.authority, self.payer);
@@ -132,7 +133,8 @@ impl AirspaceAdmin {
         token_mint: Pubkey,
         config: Option<TokenDepositsConfig>,
     ) -> TransactionBuilder {
-        let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let margin_config_ix =
+            MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
         let config_update = config.map(|config| TokenConfigUpdate {
             underlying_mint: token_mint,
             token_kind: TokenKind::Collateral,
@@ -152,7 +154,8 @@ impl AirspaceAdmin {
         adapter_program_id: Pubkey,
         is_adapter: bool,
     ) -> TransactionBuilder {
-        let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let margin_config_ix =
+            MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
 
         vec![margin_config_ix.configure_adapter(adapter_program_id, is_adapter)].into()
     }
@@ -163,7 +166,8 @@ impl AirspaceAdmin {
         liquidator: Pubkey,
         is_liquidator: bool,
     ) -> TransactionBuilder {
-        let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let margin_config_ix =
+            MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
 
         // FIXME: remove control legacy
         let ctrl_ix = ControlIxBuilder::new(self.payer);
@@ -185,7 +189,8 @@ impl AirspaceAdmin {
         collateral_weight: u16,
         max_leverage: u16,
     ) -> TransactionBuilder {
-        let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let margin_config_ix =
+            MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
         let market = derive_market(&self.airspace, &token_mint, seed);
         let claims_mint = FixedTermIxBuilder::claims_mint(&market);
         let collateral_mint = FixedTermIxBuilder::collateral_mint(&market);

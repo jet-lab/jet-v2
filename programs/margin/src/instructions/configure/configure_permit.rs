@@ -18,11 +18,12 @@
 use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
+use jet_program_common::serialization::StorageSpace;
 
-use crate::{events::LiquidatorConfigured, seeds::LIQUIDATOR_CONFIG_SEED, LiquidatorConfig};
+use crate::{events::PermitConfigured, seeds::PERMIT_SEED, Permissions, Permit};
 
 #[derive(Accounts)]
-pub struct ConfigureLiquidator<'info> {
+pub struct ConfigurePermit<'info> {
     /// The authority allowed to make changes to configuration
     pub authority: Signer<'info>,
 
@@ -34,43 +35,50 @@ pub struct ConfigureLiquidator<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    /// The liquidator being configured
-    pub liquidator: AccountInfo<'info>,
+    /// The owner being configured
+    pub owner: AccountInfo<'info>,
 
     /// The config account to be modified
     #[account(init_if_needed,
               seeds = [
-                LIQUIDATOR_CONFIG_SEED,
+                PERMIT_SEED,
                 airspace.key().as_ref(),
-                liquidator.key().as_ref()
+                owner.key().as_ref()
               ],
               bump,
               payer = payer,
-              space = LiquidatorConfig::SPACE,
+              space = Permit::SPACE,
     )]
-    pub liquidator_config: Account<'info, LiquidatorConfig>,
+    pub permit: Account<'info, Permit>,
 
     pub system_program: Program<'info, System>,
 }
 
-pub fn configure_liquidator_handler(
-    ctx: Context<ConfigureLiquidator>,
-    is_liquidator: bool,
+pub fn configure_permit(
+    ctx: Context<ConfigurePermit>,
+    test: bool,
+    flag: Permissions,
 ) -> Result<()> {
-    let config = &mut ctx.accounts.liquidator_config;
+    let permit = &mut ctx.accounts.permit;
 
-    emit!(LiquidatorConfigured {
+    permit.owner = ctx.accounts.owner.key();
+    permit.airspace = ctx.accounts.airspace.key();
+
+    if test {
+        permit.permissions |= flag;
+    } else {
+        permit.permissions.remove(flag);
+    }
+
+    emit!(PermitConfigured {
         airspace: ctx.accounts.airspace.key(),
-        liquidator: ctx.accounts.liquidator.key(),
-        is_liquidator
+        owner: ctx.accounts.owner.key(),
+        permissions: permit.permissions,
     });
 
-    if !is_liquidator {
-        return config.close(ctx.accounts.payer.to_account_info());
-    };
-
-    config.liquidator = ctx.accounts.liquidator.key();
-    config.airspace = ctx.accounts.airspace.key();
+    if permit.permissions.is_empty() {
+        return permit.close(ctx.accounts.payer.to_account_info());
+    }
 
     Ok(())
 }

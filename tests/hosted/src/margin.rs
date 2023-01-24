@@ -29,12 +29,14 @@ use anyhow::{bail, Error};
 use jet_margin::{AccountPosition, MarginAccount, TokenKind};
 use jet_margin_sdk::ix_builder::test_service::if_not_initialized;
 use jet_margin_sdk::ix_builder::{
-    derive_airspace, derive_permit, get_control_authority_address, get_metadata_address,
-    AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder, MarginPoolConfiguration,
-    MarginPoolIxBuilder,
+    derive_airspace, derive_margin_permit, derive_permit, get_control_authority_address,
+    get_metadata_address, AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder,
+    MarginPoolConfiguration, MarginPoolIxBuilder,
 };
 use jet_margin_sdk::solana::keypair::clone;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
+use jet_margin_sdk::solana::transaction::{
+    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder, WithSigner,
+};
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
@@ -65,21 +67,24 @@ pub struct MarginClient {
     rpc: Arc<dyn SolanaRpcClient>,
     tx_admin: AirspaceAdmin,
     airspace: AirspaceIxBuilder,
+    airspace_authority: Keypair,
 }
 
 impl MarginClient {
-    pub fn new(rpc: Arc<dyn SolanaRpcClient>, airspace_seed: &str) -> Self {
+    pub fn new(
+        rpc: Arc<dyn SolanaRpcClient>,
+        airspace_seed: &str,
+        airspace_authority: Option<Keypair>,
+    ) -> Self {
         let payer = rpc.payer().pubkey();
+        let airspace_authority = airspace_authority.unwrap_or_else(|| clone(rpc.payer()));
 
         Self {
-            tx_admin: AirspaceAdmin::new(airspace_seed, payer, payer),
-            airspace: AirspaceIxBuilder::new(airspace_seed, payer, payer),
+            tx_admin: AirspaceAdmin::new(airspace_seed, payer, airspace_authority.pubkey()),
+            airspace: AirspaceIxBuilder::new(airspace_seed, payer, airspace_authority.pubkey()),
             rpc,
+            airspace_authority,
         }
-    }
-
-    pub fn airspace(&self) -> Pubkey {
-        self.tx_admin.airspace
     }
 
     pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
@@ -96,6 +101,10 @@ impl MarginClient {
             signer: clone(keypair),
             rpc: self.rpc.clone(),
         })
+    }
+
+    pub fn airspace(&self) -> Pubkey {
+        self.airspace.address()
     }
 
     pub fn liquidator(
@@ -219,11 +228,10 @@ impl MarginClient {
         token_mint: &Pubkey,
         config: Option<&TokenDepositsConfig>,
     ) -> Result<(), Error> {
-        self.rpc
-            .send_and_confirm(
-                self.tx_admin
-                    .configure_margin_token_deposits(*token_mint, config.cloned()),
-            )
+        self.tx_admin
+            .configure_margin_token_deposits(*token_mint, config.cloned())
+            .with_signer(clone(&self.airspace_authority))
+            .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
     }
@@ -273,11 +281,19 @@ impl MarginClient {
     ) -> Result<(), Error> {
         let control_ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
             .set_liquidator(&liquidator, is_liquidator);
-        let margin_ix =
-            MarginConfigIxBuilder::new(self.tx_admin.airspace, self.rpc.payer().pubkey())
-                .configure_liquidator(liquidator, is_liquidator);
+        let margin_ix = MarginConfigIxBuilder::new(
+            self.tx_admin.airspace,
+            self.rpc.payer().pubkey(),
+            Some(self.airspace_authority.pubkey()),
+        )
+        .configure_liquidator(liquidator, is_liquidator);
 
-        send_and_confirm(&self.rpc, &[control_ix, margin_ix], &[]).await?;
+        send_and_confirm(
+            &self.rpc,
+            &[control_ix, margin_ix],
+            &[&self.airspace_authority],
+        )
+        .await?;
 
         Ok(())
     }
@@ -389,9 +405,15 @@ impl MarginUser {
             .await
     }
 
-    pub async fn refresh_all_position_metadata(&self) -> Result<(), Error> {
-        self.send_confirm_all_tx(self.tx.refresh_all_position_metadata().await?)
+    pub async fn refresh_all_position_metadata(&self, refresher: &Keypair) -> Result<(), Error> {
+        self.tx
+            .clone()
+            .with_signer(clone(refresher))
+            .refresh_all_position_metadata()
+            .await?
+            .send_and_confirm_condensed(&self.rpc)
             .await
+            .map(|_| ())
     }
 
     pub async fn deposit(
