@@ -80,8 +80,8 @@ impl<I: UserNetworkInterface> FixedTermMarketClient<I> {
                     airspace: state.market.airspace,
                     token: state.market.underlying_token_mint,
                     ticket: state.market.ticket_mint,
-                    borrow_tenor: state.market.borrow_tenor as u64,
-                    lend_tenor: state.market.lend_tenor as u64,
+                    borrow_tenor: state.market.borrow_tenor,
+                    lend_tenor: state.market.lend_tenor,
                     origination_fee,
                 })
             });
@@ -512,8 +512,8 @@ impl<I: UserNetworkInterface> MarginAccountMarketClient<I> {
         self.client.state().get(&self.builder.market()).unwrap()
     }
 
-    fn limit_price_for_rate(&self, interest_rate: u64) -> u64 {
-        util::rate_to_price(interest_rate, self.market.borrow_tenor as u64)
+    fn limit_price_for_rate(&self, interest_rate: u32) -> u64 {
+        util::rate_to_price(interest_rate as u64, self.market.borrow_tenor)
     }
 }
 
