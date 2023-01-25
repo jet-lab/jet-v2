@@ -32,9 +32,9 @@ pub fn handler<'info>(
     seed: Vec<u8>,
 ) -> Result<()> {
     let mut num_iters = 0;
-    let mut queue = queue(&ctx, seed)?;
-    for _ in 0..num_events {
-        match &mut queue.next().unwrap()? {
+
+    for event in queue(&ctx, seed)?.take(num_events as usize) {
+        match event? {
             PreparedEvent::Fill(accounts, info) => handle_fill(&ctx, accounts, info)?,
             PreparedEvent::Out(accounts, info) => handle_out(&ctx, accounts, info)?,
         }
@@ -69,8 +69,8 @@ pub fn handler<'info>(
 #[inline(never)]
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: &mut FillAccounts<'info>,
-    fill: &FillInfo,
+    accounts: FillAccounts<'info>,
+    fill: FillInfo,
 ) -> Result<()> {
     match accounts {
         FillAccounts::Margin(accs) => {
@@ -83,8 +83,8 @@ fn handle_fill<'info>(
 #[inline(never)]
 fn handle_margin_fill<'info>(
     market: &AccountLoader<'info, Market>,
-    accounts: &mut MarginFillAccounts<'info>,
-    info: &FillInfo,
+    mut accounts: MarginFillAccounts<'info>,
+    info: FillInfo,
     payer: Pubkey,
 ) -> Result<()> {
     let FillInfo {
@@ -98,7 +98,7 @@ fn handle_margin_fill<'info>(
         quote_size,
         base_size,
         ..
-    } = *event;
+    } = event;
 
     let mut market = market.load_mut()?;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
@@ -141,7 +141,7 @@ fn handle_margin_fill<'info>(
         Side::Ask => {
             let tenor = market.borrow_tenor;
             user.assets.reduce_order(quote_size);
-            let sequence_number = if let Some(term_account) = &mut accounts.term_account {
+            let sequence_number = if let Some(term_account) = accounts.term_account {
                 let disperse = market.loan_to_disburse(quote_size);
                 market.collected_fees.try_add_assign(disperse)?;
                 user.assets.entitled_tokens.try_add_assign(disperse)?;
@@ -155,8 +155,8 @@ fn handle_margin_fill<'info>(
                     .new_term_loan_from_fill(base_size, maturation_timestamp)?;
                 let flags = TermLoanFlags::empty();
 
-                let loan = term_account.term_loan()?;
-                **loan = TermLoan {
+                let mut loan = term_account.term_loan()?;
+                *loan = TermLoan {
                     sequence_number,
                     margin_user: user.key(),
                     market: user.market,
@@ -224,8 +224,8 @@ fn handle_margin_fill<'info>(
 #[inline(never)]
 fn handle_signer_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    account: &mut FillAccount<'info>,
-    info: &FillInfo,
+    account: FillAccount<'info>,
+    info: FillInfo,
 ) -> Result<()> {
     let FillInfo {
         event,
@@ -238,7 +238,7 @@ fn handle_signer_fill<'info>(
         quote_size,
         base_size,
         ..
-    } = *event;
+    } = event;
 
     let market = ctx.accounts.market.load_mut()?;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
@@ -247,7 +247,7 @@ fn handle_signer_fill<'info>(
     let (order_type, tenor) = match maker_side {
         Side::Bid => {
             match account {
-                FillAccount::TermDeposit(deposit) => {
+                FillAccount::TermDeposit(mut deposit) => {
                     TermDepositWriter {
                         market: ctx.accounts.market.key(),
                         owner: info.signer,
@@ -260,7 +260,7 @@ fn handle_signer_fill<'info>(
                         flags: info.flags.into(),
                         seed: vec![], // account initialized by queue iterator
                     }
-                    .write(deposit)?;
+                    .write(&mut deposit)?;
                 }
                 FillAccount::Token(token_account) => {
                     ctx.mint(&ctx.accounts.ticket_mint, token_account, base_size)?
@@ -311,8 +311,8 @@ fn handle_signer_fill<'info>(
 #[inline(never)]
 fn handle_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: &mut OutAccounts<'info>,
-    out: &OutInfo,
+    accounts: OutAccounts<'info>,
+    out: OutInfo,
 ) -> Result<()> {
     match accounts {
         OutAccounts::Margin(user) => handle_margin_out(ctx, user, out),
@@ -323,8 +323,8 @@ fn handle_out<'info>(
 #[inline(never)]
 fn handle_margin_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    user: &mut AnchorAccount<'info, MarginUser, Mut>,
-    out: &OutInfo,
+    mut user: AnchorAccount<'info, MarginUser, Mut>,
+    out: OutInfo,
 ) -> Result<()> {
     let OutInfo { event, info } = out;
     let OutEvent {
@@ -332,7 +332,7 @@ fn handle_margin_out<'info>(
         order_id,
         base_size,
         ..
-    } = *event;
+    } = event;
 
     let info = info.clone().unwrap_margin();
     let price = (order_id >> 64) as u64;
@@ -368,8 +368,8 @@ fn handle_margin_out<'info>(
 #[inline(never)]
 fn handle_signer_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    user: &mut AccountInfo<'info>,
-    out: &OutInfo,
+    user: AccountInfo<'info>,
+    out: OutInfo,
 ) -> Result<()> {
     let OutInfo { event, info } = out;
     let OutEvent {
@@ -377,7 +377,7 @@ fn handle_signer_out<'info>(
         order_id,
         base_size,
         ..
-    } = *event;
+    } = event;
 
     let info = info.clone().unwrap_signer();
     let price = (order_id >> 64) as u64;

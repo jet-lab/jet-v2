@@ -106,7 +106,7 @@ impl<'info> TermAccount<'info> {
         }
     }
 
-    pub fn term_loan(&mut self) -> Result<&mut AnchorAccount<'info, TermLoan, Mut>> {
+    pub fn term_loan(self) -> Result<AnchorAccount<'info, TermLoan, Mut>> {
         match self {
             TermAccount::Loan(term_loan) => Ok(term_loan),
             _ => panic!(),

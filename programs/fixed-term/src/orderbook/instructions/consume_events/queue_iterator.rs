@@ -45,6 +45,7 @@ pub struct EventIterator<'a, 'info> {
 impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
     type Item = Result<PreparedEvent<'info>>;
 
+    #[inline(never)]
     fn next(&mut self) -> Option<Result<PreparedEvent<'info>>> {
         let event = self.queue.next()?;
         Some(self.join_with_accounts(event))
@@ -58,6 +59,7 @@ pub enum PreparedEvent<'info> {
 }
 
 impl<'a, 'info> EventIterator<'a, 'info> {
+    #[inline(never)]
     fn join_with_accounts(&mut self, event: OrderbookEvent) -> Result<PreparedEvent<'info>> {
         Ok(match event {
             OrderbookEvent::Fill(fill) => {
@@ -67,6 +69,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         })
     }
 
+    #[inline(never)]
     pub fn extract_fill_accounts(&mut self, fill: &FillInfo) -> Result<FillAccounts<'info>> {
         self.try_update_fill_adapters(fill)?;
 
@@ -123,6 +126,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         Ok(accounts)
     }
 
+    #[inline(never)]
     pub fn extract_out_accounts(&mut self, out: &OutInfo) -> Result<OutAccounts<'info>> {
         self.try_update_out_adapter(out)?;
         let accounts = match &out.info {
@@ -141,6 +145,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         self.seed[0] = self.seed[0].wrapping_add(1);
     }
 
+    #[inline(never)]
     pub fn try_update_fill_adapters(&mut self, fill: &FillInfo) -> Result<()> {
         self.accounts
             .maybe_adapter_if_needed(fill.maker_info.adapter())?
@@ -161,6 +166,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         Ok(())
     }
 
+    #[inline(never)]
     pub fn try_update_out_adapter(&mut self, out: &OutInfo) -> Result<()> {
         self.accounts
             .maybe_adapter_if_needed(out.info.adapter())?
