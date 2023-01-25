@@ -94,7 +94,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                         &[
                             crate::seeds::TERM_LOAN,
                             self.market.as_ref(),
-                            &info.margin_account.as_ref(),
+                            info.margin_account.as_ref(),
                             &seed,
                         ],
                     )?))
@@ -116,10 +116,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                         &TermDeposit::seeds(self.market.as_ref(), info.signer.as_ref(), &seed),
                     )?)
                 } else {
-                    FillAccount::Token(
-                        self.accounts
-                            .next_token_account(&info.ticket_or_deposit_account)?,
-                    )
+                    FillAccount::Token(self.accounts.next_token_account(&info.ticket_account)?)
                 })
             }
         };

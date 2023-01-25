@@ -63,7 +63,6 @@ pub struct TermDepositWriter {
     pub market: Pubkey,
     pub owner: Pubkey,
     pub payer: Pubkey,
-    pub margin_user: Option<Pubkey>,
     pub order_tag: u128,
     pub tenor: u64,
     pub sequence_number: u64,
@@ -80,11 +79,7 @@ impl TermDepositWriter {
             init_accs.deposit,
             init_accs.payer,
             init_accs.system_program,
-            &TermDeposit::seeds(
-                self.market.as_ref(),
-                self.margin_user.unwrap_or(self.owner).as_ref(),
-                &self.seed,
-            ),
+            &TermDeposit::seeds(self.market.as_ref(), self.owner.as_ref(), &self.seed),
         )?;
         self.write(deposit)
     }

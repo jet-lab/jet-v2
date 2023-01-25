@@ -756,7 +756,7 @@ impl FixedTermIxBuilder {
             ticket_collateral_mint: self.ticket_collateral,
             inner: self.lend_order_accounts(
                 margin_account,
-                Some(self.term_deposit_key(&margin_user.address, &deposit_seqno.to_le_bytes())),
+                Some(self.term_deposit_key(&margin_account, &deposit_seqno.to_le_bytes())),
                 None,
                 lender_tokens,
                 params,

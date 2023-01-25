@@ -13,7 +13,6 @@ use crate::{
 #[derive(Accounts, MarketTokenManager)]
 pub struct MarginRedeemDeposit<'info> {
     #[account(mut,
-        address = inner.owner.key(),
 		constraint = margin_user.margin_account == inner.owner.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
         has_one = ticket_collateral,
 	)]

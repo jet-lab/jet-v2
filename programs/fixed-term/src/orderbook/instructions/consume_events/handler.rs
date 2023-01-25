@@ -56,6 +56,13 @@ pub fn handler<'info>(
         },
     )?;
 
+    println!("in program");
+    dbg!(crate::orderbook::state::EventQueue::deserialize_market(
+        ctx.accounts.event_queue.to_account_info()
+    )?
+    .iter()
+    .count());
+
     Ok(())
 }
 
@@ -96,7 +103,7 @@ fn handle_margin_fill<'info>(
     let mut market = market.load_mut()?;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let user = &mut accounts.margin_user;
-    let info = maker_info.clone().margin();
+    let info = maker_info.clone().unwrap_margin();
 
     let (order_type, sequence_number, tenor) = match maker_side {
         // maker has loaned tokens to the taker
@@ -108,7 +115,6 @@ fn handle_margin_fill<'info>(
                     market: user.market,
                     owner: user.margin_account,
                     payer,
-                    margin_user: Some(user.key()),
                     order_tag: info.order_tag.as_u128(),
                     tenor,
                     sequence_number,
@@ -236,7 +242,7 @@ fn handle_signer_fill<'info>(
 
     let market = ctx.accounts.market.load_mut()?;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
-    let info = maker_info.clone().signer();
+    let info = maker_info.clone().unwrap_signer();
 
     let (order_type, tenor) = match maker_side {
         Side::Bid => {
@@ -246,7 +252,6 @@ fn handle_signer_fill<'info>(
                         market: ctx.accounts.market.key(),
                         owner: info.signer,
                         payer: ctx.accounts.payer.key(),
-                        margin_user: None,
                         order_tag: info.order_tag.as_u128(),
                         tenor: market.lend_tenor,
                         sequence_number: 0,
@@ -329,7 +334,7 @@ fn handle_margin_out<'info>(
         ..
     } = *event;
 
-    let info = info.clone().margin();
+    let info = info.clone().unwrap_margin();
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
@@ -374,7 +379,7 @@ fn handle_signer_out<'info>(
         ..
     } = *event;
 
-    let info = info.clone().signer();
+    let info = info.clone().unwrap_signer();
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;

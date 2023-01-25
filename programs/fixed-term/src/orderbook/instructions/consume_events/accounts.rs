@@ -66,6 +66,7 @@ pub enum EventAccounts<'info> {
     Out(OutAccounts<'info>),
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum FillAccounts<'info> {
     Margin(MarginFillAccounts<'info>),
     Signer(FillAccount<'info>),
@@ -113,6 +114,7 @@ impl<'info> TermAccount<'info> {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum OutAccounts<'info> {
     Margin(AnchorAccount<'info, MarginUser, Mut>),
     Signer(AccountInfo<'info>),

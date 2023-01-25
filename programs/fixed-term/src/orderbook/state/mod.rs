@@ -129,7 +129,7 @@ impl<'info> OrderbookMut<'info> {
             order_tag: OrderTag::generate_from_market(&mut self.market, &margin_account)?,
             margin_account,
             margin_user,
-            adapter_account_key: adapter.unwrap_or(Default::default()),
+            adapter_account_key: adapter.unwrap_or_default(),
             order_submitted: Clock::get()?.unix_timestamp,
             flags,
         };
@@ -138,12 +138,13 @@ impl<'info> OrderbookMut<'info> {
     }
 
     /// Place an order as a generic signing authority
+    #[allow(clippy::too_many_arguments)]
     pub fn place_signer_order(
         &mut self,
         side: Side,
         params: OrderParams,
         signer: Pubkey,
-        ticket_or_deposit_account: Pubkey,
+        ticket_account: Pubkey,
         token_account: Pubkey,
         adapter: Option<Pubkey>,
         flags: CallbackFlags,
@@ -151,9 +152,9 @@ impl<'info> OrderbookMut<'info> {
         let info = SignerCallbackInfo {
             order_tag: OrderTag::generate_from_market(&mut self.market, &signer)?,
             signer,
-            ticket_or_deposit_account,
+            ticket_account,
             token_account,
-            adapter_account_key: adapter.unwrap_or(Default::default()),
+            adapter_account_key: adapter.unwrap_or_default(),
             order_submitted: Clock::get()?.unix_timestamp,
             flags,
         };
@@ -287,9 +288,9 @@ pub struct CallbackInfo {
     /// else, this is the signer who authorized token transfer
     /// used to determine ownership of resulting order or TermDeposit
     signer_or_margin_account: Pubkey,
-    /// For auto-stake, this account will be set as the TermDeposit owner.
-    /// Otherwise this is the token account to be deposited into.
-    ticket_or_deposit_account: Pubkey,
+    /// In the case of a generic signing user, this is the ticket account to mint
+    /// towards on order fills
+    ticket_account: Pubkey,
     /// margin user or token account to be deposited into on out
     /// the account that will be assigned ownership of any output resulting from
     /// an out. for margin orders this is the margin user. otherwise this is the
@@ -332,6 +333,10 @@ impl CallbackInfo {
         self.signer_or_margin_account
     }
 
+    pub fn flags(&self) -> CallbackFlags {
+        self.flags
+    }
+
     pub fn order_tag(&self) -> OrderTag {
         self.order_tag
     }
@@ -345,13 +350,13 @@ impl agnostic_orderbook::state::orderbook::CallbackInfo for CallbackInfo {
     }
 }
 
-impl From<&UserCallbackInfo> for CallbackInfo {
-    fn from(info: &UserCallbackInfo) -> Self {
-        match info {
+impl<'a, T: Into<&'a UserCallbackInfo>> From<T> for CallbackInfo {
+    fn from(info: T) -> Self {
+        match info.into() {
             UserCallbackInfo::Margin(info) => Self {
                 order_tag: info.order_tag,
                 signer_or_margin_account: info.margin_account,
-                ticket_or_deposit_account: info.margin_user,
+                ticket_account: info.margin_user,
                 token_or_margin_user_account: info.margin_user,
                 adapter_account_key: info.adapter_account_key,
                 order_submitted: info.order_submitted.to_le_bytes(),
@@ -361,38 +366,13 @@ impl From<&UserCallbackInfo> for CallbackInfo {
             UserCallbackInfo::Signer(info) => Self {
                 order_tag: info.order_tag,
                 signer_or_margin_account: info.signer,
-                ticket_or_deposit_account: info.ticket_or_deposit_account,
+                ticket_account: info.ticket_account,
                 token_or_margin_user_account: info.token_account,
                 adapter_account_key: info.adapter_account_key,
                 order_submitted: info.order_submitted.to_le_bytes(),
                 flags: info.flags,
                 _reserved: [0u8; 14],
             },
-        }
-    }
-}
-
-impl Into<UserCallbackInfo> for CallbackInfo {
-    fn into(self) -> UserCallbackInfo {
-        if self.flags.contains(CallbackFlags::MARGIN) {
-            UserCallbackInfo::Margin(MarginCallbackInfo {
-                order_tag: self.order_tag,
-                margin_account: self.signer_or_margin_account,
-                margin_user: self.token_or_margin_user_account,
-                adapter_account_key: self.adapter_account_key,
-                order_submitted: i64::from_le_bytes(self.order_submitted),
-                flags: self.flags,
-            })
-        } else {
-            UserCallbackInfo::Signer(SignerCallbackInfo {
-                order_tag: self.order_tag,
-                signer: self.signer_or_margin_account,
-                ticket_or_deposit_account: self.ticket_or_deposit_account,
-                token_account: self.token_or_margin_user_account,
-                adapter_account_key: self.adapter_account_key,
-                order_submitted: i64::from_le_bytes(self.order_submitted),
-                flags: self.flags,
-            })
         }
     }
 }
@@ -434,17 +414,28 @@ impl UserCallbackInfo {
         }
     }
 
-    pub fn margin(self) -> MarginCallbackInfo {
+    pub fn unwrap_margin(self) -> MarginCallbackInfo {
         match self {
             Self::Margin(info) => info,
             _ => panic!(),
         }
     }
 
-    pub fn signer(self) -> SignerCallbackInfo {
+    pub fn unwrap_signer(self) -> SignerCallbackInfo {
         match self {
             Self::Signer(info) => info,
             _ => panic!(),
+        }
+    }
+}
+
+impl<T: Into<CallbackInfo>> From<T> for UserCallbackInfo {
+    fn from(info: T) -> Self {
+        let info: CallbackInfo = info.into();
+        if info.flags.contains(CallbackFlags::MARGIN) {
+            UserCallbackInfo::Margin(info.into())
+        } else {
+            UserCallbackInfo::Signer(info.into())
         }
     }
 }
@@ -467,6 +458,20 @@ pub struct MarginCallbackInfo {
     pub flags: CallbackFlags,
 }
 
+impl<T: Into<CallbackInfo>> From<T> for MarginCallbackInfo {
+    fn from(info: T) -> Self {
+        let info: CallbackInfo = info.into();
+        Self {
+            order_tag: info.order_tag,
+            margin_account: info.signer_or_margin_account,
+            margin_user: info.token_or_margin_user_account,
+            adapter_account_key: info.adapter_account_key,
+            order_submitted: i64::from_le_bytes(info.order_submitted),
+            flags: info.flags,
+        }
+    }
+}
+
 /// Callback information related to a generic signing account
 #[derive(Debug, Clone)]
 pub struct SignerCallbackInfo {
@@ -475,8 +480,8 @@ pub struct SignerCallbackInfo {
     pub order_tag: OrderTag,
     /// The signing authority
     pub signer: Pubkey,
-    /// The account to handle order fills. A token account or a `TermDeposit`
-    pub ticket_or_deposit_account: Pubkey,
+    /// The account to handle order fills if order is not set to make a `TermDeposit`
+    pub ticket_account: Pubkey,
     /// The account to recompensate unused funds from orders leaving the book
     pub token_account: Pubkey,
     /// Pubkey of the account that will receive the event information
@@ -485,6 +490,21 @@ pub struct SignerCallbackInfo {
     pub order_submitted: UnixTimestamp,
     /// configuration used by callback execution
     pub flags: CallbackFlags,
+}
+
+impl<T: Into<CallbackInfo>> From<T> for SignerCallbackInfo {
+    fn from(info: T) -> Self {
+        let info: CallbackInfo = info.into();
+        Self {
+            order_tag: info.order_tag,
+            signer: info.signer_or_margin_account,
+            ticket_account: info.ticket_account,
+            token_account: info.token_or_margin_user_account,
+            adapter_account_key: info.adapter_account_key,
+            order_submitted: i64::from_le_bytes(info.order_submitted),
+            flags: info.flags,
+        }
+    }
 }
 
 /// Parameters needed for order placement

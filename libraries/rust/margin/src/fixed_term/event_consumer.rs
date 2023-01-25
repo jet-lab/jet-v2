@@ -5,7 +5,7 @@ use std::{
 };
 
 use agnostic_orderbook::state::{
-    event_queue::{EventQueue, EventRef, FillEventRef, OutEventRef},
+    event_queue::{EventQueue, EventRef, FillEvent, FillEventRef, OutEventRef},
     AccountTag,
 };
 use anchor_lang::AccountDeserialize;
@@ -18,14 +18,16 @@ use thiserror::Error;
 use jet_fixed_term::{
     control::state::Market,
     margin::state::MarginUser,
-    orderbook::state::{CallbackFlags, CallbackInfo},
+    orderbook::state::{
+        CallbackFlags, CallbackInfo, MarginCallbackInfo, SignerCallbackInfo, UserCallbackInfo,
+    },
 };
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use tracing::instrument;
 
 use crate::util::no_dupe_queue::AsyncNoDupeQueue;
 
-use super::FixedTermIxBuilder;
+use super::{FixedTermIxBuilder, OwnedEventQueue};
 
 const MAX_EVENTS_PER_TX: usize = 8;
 
@@ -39,6 +41,9 @@ pub enum EventConsumerError {
 
     #[error("the event queue is not readable: {0}")]
     InvalidEventQueue(Pubkey),
+
+    #[error("failed to fetch user: {0}")]
+    InvalidUserKey(Pubkey),
 }
 
 /// Utility for running consume-events for fixed term markets
@@ -175,6 +180,8 @@ impl EventConsumer {
             if let Some(account) = account {
                 market_state.queue = account.data;
 
+                dbg!("in sync");
+                dbg!(market_state.pending_events()?);
                 tracing::trace!(?market, "sync queue {}", market_state.market.event_queue);
             } else {
                 tracing::error!(?market, "queue account missing");
@@ -223,18 +230,14 @@ impl EventConsumer {
     }
 
     /// Count the events waiting to be consumed in a market
-    pub fn pending_events(&self, market: &Pubkey) -> Result<u64, EventConsumerError> {
+    pub fn pending_events(&self, market: &Pubkey) -> Result<usize, EventConsumerError> {
         let map = self.markets.lock().unwrap();
         let state = match map.get(market) {
             Some(state) => state.lock().unwrap(),
             None => return Ok(0),
         };
 
-        let mut queue_buf = state.queue.clone();
-        let queue = EventQueue::<CallbackInfo>::from_buffer(&mut queue_buf, AccountTag::EventQueue)
-            .map_err(|_| EventConsumerError::InvalidEventQueue(state.market.event_queue))?;
-
-        Ok(queue.len())
+        state.pending_events()
     }
 }
 
@@ -252,11 +255,8 @@ struct MarketState {
 impl MarketState {
     #[instrument(skip(self, rpc), fields(market = %self.market_address))]
     async fn consume_next(&mut self, rpc: &dyn SolanaRpcClient) -> Result<(), EventConsumerError> {
-        let mut queue =
-            EventQueue::<CallbackInfo>::from_buffer(&mut self.queue, AccountTag::EventQueue)
-                .map_err(|_| EventConsumerError::InvalidEventQueue(self.market.event_queue))?;
+        let mut queue: OwnedEventQueue = self.queue.clone().into();
 
-        let seed = make_seed();
         let payer = rpc.payer().pubkey();
         let payer_key = rpc.payer();
         let recent_blockhash = rpc.get_latest_blockhash().await?;
@@ -264,16 +264,29 @@ impl MarketState {
         let mut consume_tx = Transaction::default();
         let mut margin_accounts_to_settle = Vec::new();
 
-        for event in queue.iter() {
+        for event in queue
+            .inner()
+            .map_err(|_| EventConsumerError::InvalidEventQueue(self.market.event_queue))?
+            .iter()
+        {
+            let mut seed = make_seed();
             match event {
                 EventRef::Out(OutEventRef { callback_info, .. }) => {
-                    if callback_info.flags.contains(CallbackFlags::MARGIN) {
-                        margin_accounts_to_settle.push(callback_info.owner)
+                    match UserCallbackInfo::from(*callback_info) {
+                        UserCallbackInfo::Margin(info) => {
+                            margin_accounts_to_settle.push(info.margin_account);
+                            consume_params.push(EventAccounts::Out(OutAccounts {
+                                out_account: info.margin_user,
+                                user_queue: maybe_adapter!(info),
+                            }))
+                        }
+                        UserCallbackInfo::Signer(info) => {
+                            consume_params.push(EventAccounts::Out(OutAccounts {
+                                out_account: info.token_account,
+                                user_queue: maybe_adapter!(info),
+                            }))
+                        }
                     }
-                    consume_params.push(EventAccounts::Out(OutAccounts {
-                        out_account: callback_info.out_account,
-                        user_queue: callback_info.adapter(),
-                    }))
                 }
 
                 EventRef::Fill(FillEventRef {
@@ -282,87 +295,25 @@ impl MarketState {
                     event,
                     ..
                 }) => {
-                    let fill_account = maker_callback_info.fill_account;
-                    let mut loan_account = None;
-                    if maker_callback_info.flags.contains(CallbackFlags::MARGIN) {
-                        margin_accounts_to_settle.push(maker_callback_info.owner)
-                    }
+                    let fill_accounts = match UserCallbackInfo::from(*maker_callback_info) {
+                        UserCallbackInfo::Margin(info) => {
+                            margin_accounts_to_settle.push(info.margin_account);
 
-                    if maker_callback_info
-                        .flags
-                        .contains(CallbackFlags::AUTO_STAKE)
-                    {
-                        // If auto-stake is enabled for lending, then consuming the event
-                        // requires passing in the right address for the `TermDeposit` account
-                        // to be created now that the loan has been filled
-
-                        if let Some(maker_user) = self.users.get_mut(&fill_account) {
-                            // In this case, the maker is using a margin account, so we derive
-                            // the deposit account based on a sequence number in the account state
-                            let seed = maker_user
-                                .assets
-                                .new_deposit(event.base_size)
-                                .unwrap()
-                                .to_le_bytes();
-
-                            loan_account =
-                                Some(self.builder.term_deposit_key(&fill_account, &seed));
-                        } else {
-                            // In this case the maker doesn't have a margin account, so we derive
-                            // the deposit account based on the random seed for this transaction
-                            loan_account = Some(
-                                self.builder
-                                    .term_deposit_key(&maker_callback_info.owner, &seed),
-                            );
+                            FillAccounts {
+                                user_accounts: self
+                                    .margin_fill_accounts(&mut seed, event, &info)?,
+                                maker_queue: maybe_adapter!(info),
+                                taker_queue: taker_callback_info.adapter(),
+                            }
                         }
+                        UserCallbackInfo::Signer(info) => FillAccounts {
+                            user_accounts: self.signer_fill_accounts(&seed, &info),
+                            maker_queue: maybe_adapter!(info),
+                            taker_queue: taker_callback_info.adapter(),
+                        },
+                    };
 
-                        tracing::debug!(
-                            owner = ?maker_callback_info.owner,
-                            "prepare to fill auto-stake for lender to: {}",
-                            loan_account.as_ref().unwrap()
-                        );
-                    } else if maker_callback_info.flags.contains(CallbackFlags::NEW_DEBT) {
-                        // If this fill is issuing debt, then consuming requires passing in
-                        // the address for the `TermLoan` account to be created for tracking
-                        // the user debt
-
-                        if let Some(maker_user) = self.users.get_mut(&fill_account) {
-                            // In this case, the maker is using a margin account, so we
-                            // derive the new `TermLoan` account based on the debt sequence
-                            // number in the account state
-                            let matures_at = self.market.borrow_tenor
-                                + SystemTime::now()
-                                    .duration_since(SystemTime::UNIX_EPOCH)
-                                    .unwrap()
-                                    .as_secs();
-
-                            let seed = maker_user
-                                .debt
-                                .new_term_loan_from_fill(event.quote_size, matures_at as i64)
-                                .unwrap()
-                                .to_le_bytes();
-
-                            loan_account = Some(self.builder.term_loan_key(&fill_account, &seed));
-
-                            tracing::debug!(
-                                owner = ?maker_callback_info.owner,
-                                "prepare to fill debt for borrower to: {}",
-                                loan_account.as_ref().unwrap()
-                            );
-                        } else {
-                            tracing::error!(
-                                "unexpected debt fill with non-margin account: {}",
-                                maker_callback_info.fill_account
-                            );
-                        }
-                    }
-
-                    consume_params.push(EventAccounts::Fill(FillAccounts {
-                        fill_account: maker_callback_info.fill_account,
-                        maker_queue: maker_callback_info.adapter(),
-                        taker_queue: taker_callback_info.adapter(),
-                        deposit_account: loan_account,
-                    }))
+                    consume_params.push(EventAccounts::Fill(fill_accounts))
                 }
             }
 
@@ -394,13 +345,118 @@ impl MarketState {
             return Ok(());
         }
 
-        queue.pop_n(consume_params.len() as u64);
+        self.pop_events(consume_params.len())?;
+
         rpc.send_and_confirm_transaction(&consume_tx).await?;
         if let Some(sink) = self.margin_accounts_to_settle.as_ref() {
             sink.push_many(margin_accounts_to_settle).await;
         }
 
+        println!("in consume next");
+        dbg!(self.pending_events()?);
+
         Ok(())
+    }
+
+    fn margin_fill_accounts(
+        &mut self,
+        seed: &mut Vec<u8>,
+        event: &FillEvent,
+        info: &MarginCallbackInfo,
+    ) -> Result<UserFillAccounts, EventConsumerError> {
+        let term_account = if info.flags.contains(CallbackFlags::AUTO_STAKE) {
+            // If auto-stake is enabled for lending, then consuming the event
+            // requires passing in the right address for the `TermDeposit` account
+            // to be created now that the loan has been filled
+            *seed = self
+                .users
+                .get_mut(&info.margin_user)
+                .ok_or(EventConsumerError::InvalidUserKey(info.margin_user))?
+                .assets
+                .new_deposit(event.base_size)
+                .unwrap()
+                .to_le_bytes()
+                .to_vec();
+
+            let deposit = self.builder.term_deposit_key(&info.margin_account, seed);
+            tracing::debug!(
+                owner = ?info.margin_account,
+                "prepare to fill auto-stake for lender to: {}",
+                deposit
+            );
+            Some(deposit)
+        } else if info.flags.contains(CallbackFlags::NEW_DEBT) {
+            // If this fill is issuing debt, then consuming requires passing in
+            // the address for the `TermLoan` account to be created for tracking
+            // the user debt
+            if let Some(maker_user) = self.users.get_mut(&info.margin_user) {
+                // In this case, the maker is using a margin account, so we
+                // derive the new `TermLoan` account based on the debt sequence
+                // number in the account state
+                let matures_at = self.market.borrow_tenor
+                    + SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs();
+
+                *seed = maker_user
+                    .debt
+                    .new_term_loan_from_fill(event.quote_size, matures_at as i64)
+                    .unwrap()
+                    .to_le_bytes()
+                    .to_vec();
+
+                let loan_account = Some(self.builder.term_loan_key(&info.margin_account, seed));
+
+                tracing::debug!(
+                    owner = ?info.margin_account,
+                    "prepare to fill debt for borrower to: {}",
+                    loan_account.as_ref().unwrap()
+                );
+                loan_account
+            } else {
+                tracing::error!(
+                    "unexpected debt fill with non-margin user account: {}",
+                    info.margin_user
+                );
+                None
+            }
+        } else {
+            None
+        };
+
+        Ok(UserFillAccounts::Margin(MarginFillAccounts {
+            margin_user: info.margin_user,
+            term_account,
+        }))
+    }
+    fn signer_fill_accounts(&mut self, seed: &[u8], info: &SignerCallbackInfo) -> UserFillAccounts {
+        let fill = if info.flags.contains(CallbackFlags::AUTO_STAKE) {
+            let deposit = self.builder.term_deposit_key(&info.signer, seed);
+            tracing::debug!(
+                owner = ?info.signer,
+                "prepare to fill auto-stake for lender to: {}",
+                deposit
+            );
+            deposit
+        } else {
+            info.ticket_account
+        };
+        UserFillAccounts::Signer(SignerFillAccount(fill))
+    }
+
+    fn pop_events(&mut self, num: usize) -> Result<(), EventConsumerError> {
+        EventQueue::<CallbackInfo>::from_buffer(&mut self.queue, AccountTag::EventQueue)
+            .map(|mut q| q.pop_n(num as u64))
+            .map_err(|_| EventConsumerError::InvalidEventQueue(self.market.event_queue))
+    }
+
+    fn pending_events(&self) -> Result<usize, EventConsumerError> {
+        Ok(OwnedEventQueue::from(self.queue.clone())
+            .inner()
+            .map_err(|_| EventConsumerError::InvalidEventQueue(self.market.event_queue))
+            .iter()
+            .len())
     }
 }
 
@@ -430,21 +486,43 @@ impl From<&EventAccounts> for Vec<Pubkey> {
 
 #[derive(Clone, Copy)]
 struct FillAccounts {
-    fill_account: Pubkey,
-    deposit_account: Option<Pubkey>,
+    user_accounts: UserFillAccounts,
     maker_queue: Option<Pubkey>,
     taker_queue: Option<Pubkey>,
 }
 
+#[derive(Clone, Copy)]
+enum UserFillAccounts {
+    Margin(MarginFillAccounts),
+    Signer(SignerFillAccount),
+}
+
+#[derive(Clone, Copy)]
+struct MarginFillAccounts {
+    margin_user: Pubkey,
+    term_account: Option<Pubkey>,
+}
+
+#[derive(Clone, Copy)]
+struct SignerFillAccount(Pubkey);
+
 impl From<&FillAccounts> for Vec<Pubkey> {
     fn from(fill: &FillAccounts) -> Vec<Pubkey> {
-        let mut accounts = vec![fill.fill_account];
+        let mut keys = vec![];
+        keys.extend([fill.maker_queue, fill.taker_queue].iter().flatten());
 
-        accounts.extend(fill.deposit_account);
-        accounts.extend(fill.maker_queue);
-        accounts.extend(fill.taker_queue);
+        match fill.user_accounts {
+            UserFillAccounts::Margin(accs) => {
+                keys.extend(
+                    [accs.margin_user]
+                        .iter()
+                        .chain([accs.term_account].iter().flatten()),
+                );
+            }
+            UserFillAccounts::Signer(acc) => keys.push(acc.0),
+        }
 
-        accounts
+        keys
     }
 }
 
@@ -456,9 +534,26 @@ struct OutAccounts {
 
 impl From<&OutAccounts> for Vec<Pubkey> {
     fn from(out: &OutAccounts) -> Vec<Pubkey> {
-        let mut accounts = vec![out.out_account];
+        let mut accounts = vec![];
 
-        accounts.extend(out.user_queue);
+        accounts.extend(
+            [out.user_queue]
+                .iter()
+                .flatten()
+                .chain([out.out_account].iter()),
+        );
+
         accounts
     }
 }
+
+macro_rules! maybe_adapter {
+    ($it:expr) => {
+        if $it.adapter_account_key == Pubkey::default() {
+            None
+        } else {
+            Some($it.adapter_account_key)
+        }
+    };
+}
+use maybe_adapter;

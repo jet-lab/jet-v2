@@ -13,7 +13,7 @@ use hosted_tests::{
 };
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
-    orderbook::state::{CallbackFlags, OrderParams},
+    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams},
 };
 use jet_margin_sdk::{
     cat,
@@ -272,7 +272,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
 
     assert!(manager.load_orderbook().await?.bids()?.first().is_none());
     assert_eq!(order.base_quantity, cancel_event.event.base_size);
-    assert_eq!(cancel_event.callback_info.owner, bob.proxy.pubkey());
+    assert_eq!(cancel_event.callback_info.owner(), bob.proxy.pubkey());
     assert_eq!(cancel_event.event.order_id, order.key);
 
     // test order pausing
@@ -792,6 +792,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(1_201, borrower.claims().await?);
 
     manager.consume_events().await?;
+    // assert!(false);
     manager.expect_and_execute_settlement(&[&lender]).await?;
 
     // todo improve the rounding situation to make this 1_000
@@ -937,7 +938,7 @@ async fn auto_roll_flags() -> Result<()> {
         .await?;
 
     let posted_info = manager.load_orderbook().await?.asks_order_callback(0)?;
-    assert!(posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
+    assert!(posted_info.flags().contains(CallbackFlags::AUTO_ROLL));
 
     params.auto_roll = false;
     vec![
@@ -954,7 +955,7 @@ async fn auto_roll_flags() -> Result<()> {
     .await?;
 
     let posted_info = manager.load_orderbook().await?.asks_order_callback(1)?;
-    assert!(!posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
+    assert!(!posted_info.flags().contains(CallbackFlags::AUTO_ROLL));
 
     Ok(())
 }
@@ -1047,9 +1048,9 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     assert_eq!(market_balance_pre, market_balance_post);
 
     let order_info = manager.load_orderbook().await?.bids_order_callback(0)?;
-    assert_eq!(order_info.owner, lender.proxy.pubkey());
+    assert_eq!(order_info.owner(), lender.proxy.pubkey());
     assert_eq!(
-        order_info.fill_account,
+        MarginCallbackInfo::from(order_info).margin_user,
         manager
             .ix_builder
             .margin_user(lender.proxy.pubkey())
