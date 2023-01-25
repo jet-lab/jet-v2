@@ -1,7 +1,7 @@
 import { MarginAccount } from '@jet-lab/margin';
 import { FixedTermMarket } from '@jet-lab/margin';
-import { OpenOrders, OpenPositions } from './types';
 import useSWR from 'swr';
+import { OpenOrders, OpenPositions } from './types';
 
 export const useOrdersForUser = (market?: FixedTermMarket, account?: MarginAccount) => {
   const path = `fixed/open-orders/${market?.address}/${account?.address}`;

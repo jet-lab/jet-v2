@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@jet-lab/margin": "*",
-    "swr": "^2.0.0"
+    "bn.js": "^5.2.1",
+    "swr": "^2.0.0",
+    "zustand": "^4.3.2"
   },
   "devDependencies": {
     "typescript": "^4.9.4"

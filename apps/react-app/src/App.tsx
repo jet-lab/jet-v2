@@ -16,6 +16,7 @@ import { Navbar } from '@components/misc/Navbar/Navbar';
 import { Modals } from '@components/modals/Modals';
 import { TermsPrivacy } from '@components/misc/TermsPrivacy';
 import '@styles/App.less';
+import { useJetStore } from '@jet-lab/store';
 
 const AccountsView = lazy(() => import('@views/AccountsView'));
 const PoolsView = lazy(() => import('@views/PoolsView'));
@@ -41,6 +42,9 @@ export const App = (): JSX.Element => {
     ],
     [isDebug]
   );
+
+  const pools = useJetStore(state => state.pools)
+  console.log(pools)
 
   return (
     <BrowserRouter>
