@@ -716,21 +716,17 @@ impl FixedTermIxBuilder {
         params: OrderParams,
         seed: &[u8],
     ) -> jet_fixed_term::accounts::LendOrder {
-        let lender_tickets = match lender_tickets {
-            Some(vault) => vault,
-            None => get_associated_token_address(&authority, &self.ticket_mint),
-        };
         let lender_tokens = match lender_tokens {
             Some(vault) => vault,
             None => get_associated_token_address(&authority, &self.underlying_mint),
         };
-        let deposit = term_deposit.unwrap_or_else(|| self.term_deposit_key(&authority, seed));
         jet_fixed_term::accounts::LendOrder {
             authority,
             ticket_settlement: if params.auto_stake {
-                deposit
+                term_deposit.unwrap_or_else(|| self.term_deposit_key(&authority, seed))
             } else {
                 lender_tickets
+                    .unwrap_or_else(|| get_associated_token_address(&authority, &self.ticket_mint))
             },
             lender_tokens,
             underlying_token_vault: self.underlying_token_vault,

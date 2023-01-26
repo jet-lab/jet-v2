@@ -6,8 +6,8 @@ use crate::{
     events::skip_err,
     margin::state::{MarginUser, TermLoan},
     orderbook::state::{
-        CallbackFlags, EventQueue, FillInfo, MaybePushAdapterEvent, OrderbookEvent, OutInfo,
-        QueueIterator, UserCallbackInfo,
+        CallbackFlags, EventQueue, FillInfo, OrderbookEvent, OutInfo, QueueIterator,
+        TryPushAdapterEvent, UserCallbackInfo,
     },
     serialization::{AnchorAccount, Mut, RemainingAccounts},
     tickets::state::TermDeposit,
@@ -148,16 +148,16 @@ impl<'a, 'info> EventIterator<'a, 'info> {
     #[inline(never)]
     pub fn try_update_fill_adapters(&mut self, fill: &FillInfo) -> Result<()> {
         self.accounts
-            .maybe_adapter_if_needed(fill.maker_info.adapter())?
-            .maybe_push_event(
+            .maybe_adapter(fill.maker_info.adapter())?
+            .try_push_event(
                 fill.event,
                 Some(&(&fill.maker_info).into()),
                 Some(&(&fill.taker_info).into()),
             );
 
         self.accounts
-            .maybe_adapter_if_needed(fill.taker_info.adapter())?
-            .maybe_push_event(
+            .maybe_adapter(fill.taker_info.adapter())?
+            .try_push_event(
                 fill.event,
                 Some(&(&fill.maker_info).into()),
                 Some(&(&fill.taker_info).into()),
@@ -169,8 +169,8 @@ impl<'a, 'info> EventIterator<'a, 'info> {
     #[inline(never)]
     pub fn try_update_out_adapter(&mut self, out: &OutInfo) -> Result<()> {
         self.accounts
-            .maybe_adapter_if_needed(out.info.adapter())?
-            .maybe_push_event(out.event, Some(&(&out.info).into()), None);
+            .maybe_adapter(out.info.adapter())?
+            .try_push_event(out.event, Some(&(&out.info).into()), None);
 
         Ok(())
     }
@@ -198,10 +198,7 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
         self.next_user_account(*key).map(|a| a.margin_user())?
     }
 
-    fn maybe_adapter_if_needed(
-        &mut self,
-        adapter_key: &Pubkey,
-    ) -> Result<Option<EventQueue<'info>>> {
+    fn maybe_adapter(&mut self, adapter_key: &Pubkey) -> Result<Option<EventQueue<'info>>> {
         if adapter_key != &Pubkey::default() {
             match self.next_adapter() {
                 Ok(adapter) => {

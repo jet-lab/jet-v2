@@ -234,8 +234,8 @@ impl<'a> Iterator for QueueIterator<'a> {
     }
 }
 
-pub trait MaybePushAdapterEvent {
-    fn maybe_push_event<E: Event>(
+pub trait TryPushAdapterEvent {
+    fn try_push_event<E: Event>(
         &mut self,
         event: E,
         maker: Option<&CallbackInfo>,
@@ -243,8 +243,8 @@ pub trait MaybePushAdapterEvent {
     );
 }
 
-impl<'info> MaybePushAdapterEvent for Option<EventQueue<'info>> {
-    fn maybe_push_event<E: Event>(
+impl<'info> TryPushAdapterEvent for Option<EventQueue<'info>> {
+    fn try_push_event<E: Event>(
         &mut self,
         event: E,
         maker: Option<&CallbackInfo>,

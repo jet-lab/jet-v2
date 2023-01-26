@@ -56,13 +56,6 @@ pub fn handler<'info>(
         },
     )?;
 
-    println!("in program");
-    dbg!(crate::orderbook::state::EventQueue::deserialize_market(
-        ctx.accounts.event_queue.to_account_info()
-    )?
-    .iter()
-    .count());
-
     Ok(())
 }
 
@@ -100,7 +93,6 @@ fn handle_margin_fill<'info>(
         ..
     } = event;
 
-    let mut market = market.load_mut()?;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let user = &mut accounts.margin_user;
     let info = maker_info.clone().unwrap_margin();
@@ -108,7 +100,7 @@ fn handle_margin_fill<'info>(
     let (order_type, sequence_number, tenor) = match maker_side {
         // maker has loaned tokens to the taker
         Side::Bid => {
-            let tenor = market.lend_tenor;
+            let tenor = market.load()?.lend_tenor;
             let sequence_number = if let Some(term_account) = &mut accounts.term_account {
                 let sequence_number = user.assets.new_deposit(base_size)?;
                 TermDepositWriter {
@@ -139,17 +131,14 @@ fn handle_margin_fill<'info>(
 
         // maker has borrowed tokens from the maker
         Side::Ask => {
-            let tenor = market.borrow_tenor;
             user.assets.reduce_order(quote_size);
+            let tenor = market.load()?.borrow_tenor;
             let sequence_number = if let Some(term_account) = accounts.term_account {
-                let disperse = market.loan_to_disburse(quote_size);
-                market.collected_fees.try_add_assign(disperse)?;
+                let disperse = market.load()?.loan_to_disburse(quote_size);
+                market.load_mut()?.collected_fees.try_add_assign(disperse)?;
                 user.assets.entitled_tokens.try_add_assign(disperse)?;
 
-                let maturation_timestamp = market
-                    .borrow_tenor
-                    .safe_add(Clock::get()?.unix_timestamp as u64)?
-                    as i64;
+                let maturation_timestamp = Clock::get()?.unix_timestamp.safe_add(tenor as i64)?;
                 let sequence_number = user
                     .debt
                     .new_term_loan_from_fill(base_size, maturation_timestamp)?;
@@ -240,12 +229,12 @@ fn handle_signer_fill<'info>(
         ..
     } = event;
 
-    let market = ctx.accounts.market.load_mut()?;
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let info = maker_info.clone().unwrap_signer();
 
     let (order_type, tenor) = match maker_side {
         Side::Bid => {
+            let tenor = ctx.accounts.market.load()?.lend_tenor;
             match account {
                 FillAccount::TermDeposit(mut deposit) => {
                     TermDepositWriter {
@@ -253,7 +242,7 @@ fn handle_signer_fill<'info>(
                         owner: info.signer,
                         payer: ctx.accounts.payer.key(),
                         order_tag: info.order_tag.as_u128(),
-                        tenor: market.lend_tenor,
+                        tenor,
                         sequence_number: 0,
                         amount: base_size,
                         principal: quote_size,
@@ -267,7 +256,7 @@ fn handle_signer_fill<'info>(
                 }
             }
 
-            (OrderType::Lend, market.lend_tenor)
+            (OrderType::Lend, tenor)
         }
         Side::Ask => {
             ctx.withdraw(
@@ -276,7 +265,10 @@ fn handle_signer_fill<'info>(
                 quote_size,
             )?;
 
-            (OrderType::SellTickets, market.borrow_tenor)
+            (
+                OrderType::SellTickets,
+                ctx.accounts.market.load()?.borrow_tenor,
+            )
         }
     };
 
