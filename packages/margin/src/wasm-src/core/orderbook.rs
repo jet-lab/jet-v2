@@ -402,12 +402,25 @@ impl OrderbookModel {
                 f64::NAN
             };
 
+            let posted_base_qty = remaining_base_qty;
+            let posted_quote_qty = side.base_to_quote(remaining_base_qty, limit_price).unwrap();
+
+            let posted_vwap = if posted_quote_qty > 0 {
+                posted_quote_qty as f64 / posted_base_qty as f64
+            } else {
+                f64::NAN
+            };
+            let posted_vwar = if posted_vwap.is_normal() {
+                price_to_rate(f64_to_fp32(posted_vwap), self.tenor) as f64 / 10_000_f64
+            } else {
+                f64::NAN
+            };
+
             maker_sim.depth = depth;
-            maker_sim.posted_quote_qty =
-                side.base_to_quote(remaining_base_qty, limit_price).unwrap();
-            maker_sim.posted_base_qty = remaining_base_qty;
-            maker_sim.posted_vwap = fp32_to_f64(limit_price);
-            maker_sim.posted_vwar = price_to_rate(limit_price, self.tenor) as f64 / 10_000_f64;
+            maker_sim.posted_quote_qty = posted_quote_qty;
+            maker_sim.posted_base_qty = posted_base_qty;
+            maker_sim.posted_vwap = posted_vwap;
+            maker_sim.posted_vwar = posted_vwar;
             maker_sim.preceding_quote_qty = preceding_quote_qty;
             maker_sim.preceding_base_qty = preceding_base_qty;
             maker_sim.preceding_vwap = preceding_vwap;
