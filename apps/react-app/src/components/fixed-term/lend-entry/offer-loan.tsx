@@ -160,9 +160,9 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <InputNumber
             className="input-rate"
             onChange={debounce(e => {
-              setBasisPoints(new BN(e * 100));
+              setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
             }, 300)}
-            placeholder={'1.5'}
+            placeholder={'6.50'}
             type="number"
             step={0.01}
             min={0}
