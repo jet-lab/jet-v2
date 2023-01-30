@@ -92,9 +92,9 @@ pub struct TokenInfo {
 
     #[serde_as(as = "DisplayFromStr")]
     pub mint: Pubkey,
-    
+
     #[serde_as(as = "DisplayFromStr")]
-    pub oracle: Pubkey
+    pub oracle: Pubkey,
 }
 
 #[serde_as]
@@ -211,7 +211,7 @@ impl JetAppConfig {
                     precision: token_def.token.precision,
                     faucet: token_def.token.faucet,
                     faucet_limit: token_def.token.faucet_limit,
-                    oracle: derive_pyth_price(&token_def.config.mint)
+                    oracle: derive_pyth_price(&token_def.config.mint),
                 },
             );
         }

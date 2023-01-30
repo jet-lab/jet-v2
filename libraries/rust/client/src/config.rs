@@ -23,7 +23,7 @@ pub struct AirspaceInfoOld {
     pub fixed_term_markets: HashMap<String, MarketInfoOld>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct MarketInfoOld {
     /// The address of the market
     pub market: String,

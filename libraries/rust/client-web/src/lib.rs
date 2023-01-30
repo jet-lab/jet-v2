@@ -59,9 +59,7 @@ impl JetWebClient {
             .map_err(|e| js_sys::Error::new(&e.to_string()))
             .unwrap();
 
-        let config: JetAppConfig;
-
-        if legacy_config {
+        let config = if legacy_config {
             let legacy_config: JetAppConfigOld = config_response
                 .json()
                 .await
@@ -81,20 +79,21 @@ impl JetWebClient {
                         .into_iter()
                         .map(|market| Pubkey::from_str(&market.market).unwrap())
                         .collect(),
-                }).collect();
+                })
+                .collect();
 
-            config = JetAppConfig {
+            JetAppConfig {
                 tokens: tokens_as_vec,
                 airspaces,
                 exchanges: vec![],
             }
         } else {
-            config = config_response
+            config_response
                 .json()
                 .await
                 .map_err(|e| js_sys::Error::new(&e.to_string()))
-                .unwrap();
-        }
+                .unwrap()
+        };
 
         let adapter = JsNetworkAdapter::new(adapter, user_address);
 
@@ -141,7 +140,7 @@ impl From<jet_client::ClientError<JsNetworkAdapter>> for ClientError {
                 Self { value: error }
             }
             rust_err => Self {
-                value: js_sys::Error::new(&format!("sdk error: {}", rust_err.to_string())).into(),
+                value: js_sys::Error::new(&format!("sdk error: {}", rust_err)),
             },
         }
     }
