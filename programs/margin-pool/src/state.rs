@@ -19,12 +19,15 @@ use std::cmp::Ordering;
 use std::convert::TryFrom;
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-use jet_program_common::Number;
+use jet_program_common::{Number, BPS_EXPONENT};
 use pyth_sdk_solana::PriceFeed;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use crate::{util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange};
+use crate::{
+    util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange,
+    MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS,
+};
 
 /// Account containing information about a margin pool, which
 /// services lending/borrowing operations.
@@ -179,6 +182,10 @@ impl MarginPool {
         self.loan_notes = self.loan_notes.checked_add(amount.notes).unwrap();
 
         *self.total_borrowed_mut() += Number::from(amount.tokens);
+
+        if self.utilization_rate().as_u64(BPS_EXPONENT) > MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS {
+            return Err(ErrorCode::ExceedsMaxBorrowUtilRatio.into());
+        }
 
         Ok(())
     }
@@ -652,6 +659,49 @@ mod tests {
     use serde_test::{assert_ser_tokens, Token};
 
     #[test]
+    fn test_max_borrow_constraint_ok() -> Result<()> {
+        let mut margin_pool = MarginPool::default();
+        margin_pool.config.flags = PoolFlags::ALLOW_LENDING.bits();
+
+        margin_pool.deposit(&FullAmount {
+            tokens: 1_000_000,
+            notes: 1_000_000,
+        });
+
+        // Assumes MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS == 95 bps
+        margin_pool.borrow(&FullAmount {
+            tokens: 950_000,
+            notes: 855_000,
+        })?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_max_borrow_constraint_err() -> Result<()> {
+        let mut margin_pool = MarginPool::default();
+        margin_pool.config.flags = PoolFlags::ALLOW_LENDING.bits();
+
+        margin_pool.deposit(&FullAmount {
+            tokens: 1_000_000,
+            notes: 1_000_000,
+        });
+
+        // Assumes MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS == 95 bps
+        assert_eq!(
+            margin_pool
+                .borrow(&FullAmount {
+                    tokens: 950_100,
+                    notes: 855_090,
+                })
+                .unwrap_err(),
+            ErrorCode::ExceedsMaxBorrowUtilRatio.into()
+        );
+
+        Ok(())
+    }
+
+    #[test]
     fn test_deposit_note_rounding() -> Result<()> {
         let mut margin_pool = MarginPool::default();
 
@@ -805,8 +855,8 @@ mod tests {
 
         // Deposit funds so there is liquidity
         margin_pool.deposit(&FullAmount {
-            tokens: 1_000_000,
-            notes: 1_000_000,
+            tokens: 2_000_000,
+            notes: 2_000_000,
         });
 
         margin_pool.borrow(&FullAmount {
@@ -851,8 +901,8 @@ mod tests {
         margin_pool.config.flags = PoolFlags::ALLOW_LENDING.bits();
 
         margin_pool.deposit(&FullAmount {
-            tokens: 1_000_000,
-            notes: 1_000_000,
+            tokens: 2_000_000,
+            notes: 2_000_000,
         });
 
         margin_pool.borrow(&FullAmount {
