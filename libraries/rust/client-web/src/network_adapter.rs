@@ -229,7 +229,6 @@ fn js_reflect_get_u64(obj: &JsValue, key: &str) -> Result<u64, js_sys::Error> {
         let float_value = js_value
             .as_f64()
             .ok_or_else(|| js_sys::Error::new(&format!("'{key}' is not a number")))?;
-
         Ok(float_value as u64)
     }
 }
