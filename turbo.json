@@ -12,6 +12,9 @@
     "dev": {
       "cache": false
     },
+    "@jet-lab/jet-client-web#build": {
+      "dependsOn": ["^build"]
+    },
     "@jet-lab/margin#build": {
       "dependsOn": ["^build"]
     },

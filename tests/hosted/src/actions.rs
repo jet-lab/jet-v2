@@ -152,7 +152,7 @@ pub async fn offer_loan(
     account
         .fixed_term(&market.address)
         .unwrap()
-        .offer_loan(amount, rate)
+        .offer_loan(amount, rate as u32)
         .await?;
 
     account.sync().await.unwrap();
@@ -204,7 +204,7 @@ pub async fn request_loan(
     account
         .fixed_term(&market.address)
         .unwrap()
-        .request_loan(amount, rate)
+        .request_loan(amount, rate as u32)
         .await?;
 
     account.sync().await.unwrap();

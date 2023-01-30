@@ -6,7 +6,7 @@ use jet_margin_sdk::{
     fixed_term::fixed_term_address,
     ix_builder::{
         derive_airspace,
-        test_service::{derive_swap_pool, derive_token_mint},
+        test_service::{derive_swap_pool, derive_token_mint, derive_pyth_price},
     },
     test_service::{
         init_environment, AirspaceConfig, EnvironmentConfig, SwapPoolsConfig, TokenDescription,
@@ -157,6 +157,7 @@ fn generate_token_app_config_from_env(env: &EnvironmentConfig) -> HashMap<String
                 precision: desc.precision,
                 faucet: None,
                 faucet_limit: None,
+                oracle: derive_pyth_price(&derive_token_mint(&desc.name))
             },
         )
     }))

@@ -5,8 +5,10 @@ use wasm_bindgen::prelude::*;
 use solana_sdk::{hash::Hash, pubkey::Pubkey};
 
 use jet_client::{
-    config::JetAppConfig, state::tokens::TokenAccount, test_service::TestServiceClient, JetClient,
-    NetworkKind,
+    config::{AirspaceInfo, JetAppConfig, JetAppConfigOld, TokenInfo},
+    state::tokens::TokenAccount,
+    test_service::TestServiceClient,
+    JetClient, NetworkKind,
 };
 
 /// Bindings for the @soalana/web3.js library
@@ -30,6 +32,7 @@ impl JetWebClient {
     pub async fn connect(
         user_address: Pubkey,
         adapter: SolanaNetworkAdapter,
+        legacy_config: bool,
     ) -> Result<JetWebClient, JsError> {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
@@ -55,11 +58,43 @@ impl JetWebClient {
             .await
             .map_err(|e| js_sys::Error::new(&e.to_string()))
             .unwrap();
-        let config = config_response
-            .json()
-            .await
-            .map_err(|e| js_sys::Error::new(&e.to_string()))
-            .unwrap();
+
+        let config: JetAppConfig;
+
+        if legacy_config {
+            let legacy_config: JetAppConfigOld = config_response
+                .json()
+                .await
+                .map_err(|e| js_sys::Error::new(&e.to_string()))
+                .unwrap();
+
+            let tokens_as_vec: Vec<TokenInfo> = legacy_config.tokens.values().cloned().collect();
+            let airspaces = legacy_config
+                .airspaces
+                .into_iter()
+                .map(|airspace| AirspaceInfo {
+                    name: airspace.name,
+                    tokens: airspace.tokens,
+                    fixed_term_markets: airspace
+                        .fixed_term_markets
+                        .values()
+                        .into_iter()
+                        .map(|market| Pubkey::from_str(&market.market).unwrap())
+                        .collect(),
+                }).collect();
+
+            config = JetAppConfig {
+                tokens: tokens_as_vec,
+                airspaces,
+                exchanges: vec![],
+            }
+        } else {
+            config = config_response
+                .json()
+                .await
+                .map_err(|e| js_sys::Error::new(&e.to_string()))
+                .unwrap();
+        }
 
         let adapter = JsNetworkAdapter::new(adapter, user_address);
 
@@ -163,4 +198,20 @@ impl TestServiceWebClient {
     pub async fn token_request(&self, mint: &Pubkey, amount: u64) -> Result<(), ClientError> {
         Ok(self.inner.token_request(mint, amount).await?)
     }
+}
+
+#[wasm_bindgen(start, js_name = initModule)]
+pub fn init_module() {
+    console_error_panic_hook::set_once();
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+#[macro_export]
+macro_rules! console_log {
+    ($($t:tt)*) => ($crate::log(&format_args!($($t)*).to_string()))
 }

@@ -14,13 +14,13 @@ impl MarginAccountFixedTermMarketWebClient {
     #[wasm_bindgen(js_name = offerLoan)]
     pub async fn offer_loan(&self, amount: u64, rate: f64) -> Result<(), ClientError> {
         let rate_bps = f64_to_bps(rate);
-        Ok(self.0.offer_loan(amount, rate_bps).await?)
+        Ok(self.0.offer_loan(amount, rate_bps as u32).await?)
     }
 
     #[wasm_bindgen(js_name = requestLoan)]
     pub async fn request_loan(&self, amount: u64, rate: f64) -> Result<(), ClientError> {
         let rate_bps = f64_to_bps(rate);
-        Ok(self.0.request_loan(amount, rate_bps).await?)
+        Ok(self.0.request_loan(amount, rate_bps as u32).await?)
     }
 
     #[wasm_bindgen(js_name = lendNow)]

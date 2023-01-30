@@ -28,7 +28,7 @@
     }
   },
   "include": [
-    "src/**/*", "./public", "@jet-lab/fixed_term",
+    "src/**/*", "./public",
     "@jet-lab/margin", "@jet-lab/jet-client-web"
   ],
   "exclude": ["node_modules"]

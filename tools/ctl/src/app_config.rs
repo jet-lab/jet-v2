@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{bail, Context, Result};
-use jet_margin_sdk::fixed_term::Market;
+use jet_margin_sdk::{fixed_term::Market, ix_builder::test_service::derive_pyth_price};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -92,6 +92,9 @@ pub struct TokenInfo {
 
     #[serde_as(as = "DisplayFromStr")]
     pub mint: Pubkey,
+    
+    #[serde_as(as = "DisplayFromStr")]
+    pub oracle: Pubkey
 }
 
 #[serde_as]
@@ -208,6 +211,7 @@ impl JetAppConfig {
                     precision: token_def.token.precision,
                     faucet: token_def.token.faucet,
                     faucet_limit: token_def.token.faucet_limit,
+                    oracle: derive_pyth_price(&token_def.config.mint)
                 },
             );
         }

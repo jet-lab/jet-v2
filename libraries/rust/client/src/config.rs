@@ -1,7 +1,38 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use solana_sdk::pubkey::Pubkey;
+
+// TODO - Legacy types, remove when the config is update in local, dev and production environment
+#[serde_as]
+#[derive(Serialize, Deserialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct JetAppConfigOld {
+    pub tokens: HashMap<String, TokenInfo>,
+    pub airspaces: Vec<AirspaceInfoOld>,
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AirspaceInfoOld {
+    pub name: String,
+    pub tokens: Vec<String>,
+    pub fixed_term_markets: HashMap<String, MarketInfoOld>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct MarketInfoOld {
+    /// The address of the market
+    pub market: String,
+
+    /// The airspace the market is a part of
+    pub airspace: String,
+}
+
+// END LEGACY TYPES
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Default, Clone)]
