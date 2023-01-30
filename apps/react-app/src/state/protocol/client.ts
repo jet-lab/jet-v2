@@ -43,9 +43,7 @@ class SolanaConnectionAdapter {
     try {
       const {
         value: { blockhash, lastValidBlockHeight }
-      } = await this.connection.<<<<<<< update-wasm-lib
-100
- 
+      } = await this.connection.
 getLatestBlockhashAndContext();
 
       const transactions = transactionDatas.map(txData => {

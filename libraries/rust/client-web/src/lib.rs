@@ -53,6 +53,12 @@ impl JetWebClient {
             NetworkKind::Localnet => gloo_net::http::Request::get("/localnet.config.json"),
         };
 
+        if network_kind == NetworkKind::Localnet {
+            console_log::init_with_level(log::Level::Debug).unwrap();
+        } else {
+            console_log::init_with_level(log::Level::Warn).unwrap();
+        }
+
         let config_response = config_request
             .send()
             .await

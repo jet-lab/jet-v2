@@ -82,9 +82,8 @@ pub async fn sync_configs<I: UserNetworkInterface>(
 pub async fn sync_margin_accounts<I: UserNetworkInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
-    let addresses = states.cache.addresses_of::<MarginAccount>();
-
-    load_margin_accounts(states, &addresses).await
+    load_user_margin_accounts(states).await?;
+    Ok(())
 }
 
 /// Load state for the given list of margin accounts

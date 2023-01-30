@@ -14,7 +14,7 @@ pub struct MarginWebClient(pub(crate) MarginClient<JsNetworkAdapter>);
 
 #[wasm_bindgen]
 impl MarginWebClient {
-    pub async fn accounts(&self) -> Result<JsValue, ClientError> {
+    pub fn accounts(&self) -> Result<JsValue, ClientError> {
         let accounts = self
             .0
             .accounts()
