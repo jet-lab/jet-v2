@@ -21,8 +21,9 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
+use jet_program_common::BPS_EXPONENT;
 
-use crate::{events, state::*, ChangeKind, TokenChange};
+use crate::{events, state::*, ChangeKind, TokenChange, MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -109,6 +110,10 @@ pub fn margin_borrow_handler(
     let borrow_amount =
         pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Borrow)?;
     pool.borrow(&borrow_amount)?;
+
+    if pool.utilization_rate().as_u64(BPS_EXPONENT) > MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS {
+        return Err(ErrorCode::ExceedsMaxBorrowUtilRatio.into());
+    }
 
     // Then record a deposit of the same borrowed tokens
     let deposit_amount =

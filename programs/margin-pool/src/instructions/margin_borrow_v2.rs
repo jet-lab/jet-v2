@@ -21,9 +21,10 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount, Transfer};
 
 use jet_margin::MarginAccount;
+use jet_program_common::BPS_EXPONENT;
 
-use crate::ErrorCode;
 use crate::{events, state::*, ChangeKind, TokenChange};
+use crate::{ErrorCode, MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS};
 
 #[derive(Accounts)]
 pub struct MarginBorrowV2<'info> {
@@ -105,6 +106,10 @@ pub fn margin_borrow_v2_handler(ctx: Context<MarginBorrowV2>, amount: u64) -> Re
     let borrow_amount =
         pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Borrow)?;
     pool.borrow(&borrow_amount)?;
+
+    if pool.utilization_rate().as_u64(BPS_EXPONENT) > MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS {
+        return Err(ErrorCode::ExceedsMaxBorrowUtilRatio.into());
+    }
 
     // Finish by minting the loan notes
     let pool = &ctx.accounts.margin_pool;
