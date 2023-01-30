@@ -105,7 +105,7 @@ async fn simple_pool_lend_borrow_workflow() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn max_pool_util_ratio_after_borrow() -> anyhow::Result<()> {
-    let ctx = TestContext::new("simple-pool-lend-borrow", &default_test_setup()).await;
+    let ctx = TestContext::new("max-pool-util-ratio-after-borrow", &default_test_setup()).await;
 
     // derive mints for default config tokens
     let usdc = Token::from_context(&ctx, "USDC");
