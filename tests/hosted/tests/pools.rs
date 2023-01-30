@@ -164,7 +164,8 @@ async fn max_pool_util_ratio_after_borrow() -> anyhow::Result<()> {
         .unwrap();
 
     // User should not be able to borrow beyond the bound of 95% utilisation
-    let excess_borrow_result = pool_borrow(&account_a, &tsol, tsol.amount((1_000.0 - 10.0) * 0.951)).await;
+    let excess_borrow_result =
+        pool_borrow(&account_a, &tsol, tsol.amount((1_000.0 - 10.0) * 0.951)).await;
 
     assert_program_error(
         jet_margin_pool::ErrorCode::ExceedsMaxBorrowUtilRatio,
@@ -172,7 +173,9 @@ async fn max_pool_util_ratio_after_borrow() -> anyhow::Result<()> {
     );
 
     // But this should be okay (technically 0.95 should work, but rounding)
-    pool_borrow(&account_a, &tsol, tsol.amount((1_000.0 - 10.0) * 0.949)).await.unwrap();
+    pool_borrow(&account_a, &tsol, tsol.amount((1_000.0 - 10.0) * 0.949))
+        .await
+        .unwrap();
 
     Ok(())
 }
