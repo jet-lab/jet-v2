@@ -33,7 +33,8 @@ pub mod authority {
     declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 }
 
-const MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS: u64 = 9500;
+/// Defines the maximum utilisation ratio up to which a borrow from a pool will be allowed.
+pub const MAX_POOL_UTIL_RATIO_AFTER_BORROW_BPS: u64 = 9500;
 
 #[program]
 mod jet_margin_pool {
