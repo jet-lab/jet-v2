@@ -34,9 +34,9 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  totalRepayAmount?: string;
-  totalInterest?: string;
-  totalEffectiveRate?: number;
+  postedRepayAmount?: string;
+  postedInterest?: string;
+  postedRate?: number;
   matchedAmount?: string;
   matchedInterest?: string;
   matchedRate?: number;
@@ -116,17 +116,17 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
     const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
     const matchRate = sim.filled_vwar;
-    const totalRepayAmount = new TokenAmount(bigIntToBn(sim.full_base_qty), token.decimals);
-    const totalBorrowAmount = new TokenAmount(bigIntToBn(sim.full_quote_qty), token.decimals);
-    const totalRate = sim.full_vwar;
+    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
+    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
+    const postedRate = sim.posted_vwar;
 
     setForecast({
       matchedAmount: matchRepayAmount.uiTokens,
       matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
       matchedRate: matchRate,
-      totalRepayAmount: totalRepayAmount.uiTokens,
-      totalInterest: totalRepayAmount.sub(totalBorrowAmount).uiTokens,
-      totalEffectiveRate: totalRate,
+      postedRepayAmount: postedRepayAmount.uiTokens,
+      postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
+      postedRate,
       selfMatch: sim.self_match
     });
   }
@@ -160,9 +160,9 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <InputNumber
             className="input-rate"
             onChange={debounce(e => {
-              setBasisPoints(new BN(e * 100));
+              setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
             }, 300)}
-            placeholder={'1.5'}
+            placeholder={'6.50'}
             type="number"
             step={0.01}
             min={0}
@@ -192,25 +192,25 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           </span>
         </div>
         <div className="stat-line">
-          <span>Total Repayment Amount</span>
-          {forecast?.totalRepayAmount && (
+          <span>Posted Repayment Amount</span>
+          {forecast?.postedRepayAmount && (
             <span>
-              {forecast?.totalRepayAmount}
+              {forecast?.postedRepayAmount}
               {token.symbol}
             </span>
           )}
         </div>
         <div className="stat-line">
-          <span>Total Interest</span>
-          {forecast?.totalInterest && (
+          <span>Posted Interest</span>
+          {forecast?.postedInterest && (
             <span>
-              {forecast?.totalInterest} {token.symbol}
+              {forecast?.postedInterest} {token.symbol}
             </span>
           )}
         </div>
         <div className="stat-line">
-          <span>Total Effective Rate</span>
-          <RateDisplay rate={forecast?.totalEffectiveRate} />
+          <span>Posted Rate</span>
+          <RateDisplay rate={forecast?.postedRate} />
         </div>
         <div className="stat-line">
           <span>Matched Repayment Amount</span>

@@ -27,7 +27,7 @@ const getBorrowColumns = (token: MarginTokenConfig) => [
     title: 'Rate',
     dataIndex: 'rate',
     key: 'rate',
-    render: (rate: number) => `${rate}%`
+    render: (rate: number) => `${100 * rate}%`
   }
 ];
 
