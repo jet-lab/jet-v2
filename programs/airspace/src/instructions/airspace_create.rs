@@ -39,7 +39,7 @@ pub struct AirspaceCreate<'info> {
 
 pub fn airspace_create_handler(
     ctx: Context<AirspaceCreate>,
-    _seed: String,
+    seed: String,
     is_restricted: bool,
     authority: Pubkey,
 ) -> Result<()> {
@@ -50,6 +50,7 @@ pub fn airspace_create_handler(
 
     emit!(AirspaceCreated {
         airspace: airspace.key(),
+        seed,
         authority,
         is_restricted
     });
