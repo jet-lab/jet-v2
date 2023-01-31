@@ -537,9 +537,10 @@ export class MarginAccount {
     }
 
     // Max borrow
-    const utilThreshold = MarginAccount.MAX_POOL_UTIL_RATIO_AFTER_BORROW;
+    const vault = pool.vault;
     const borrows = pool.borrowedTokens;
-    const effectiveVaultForBorrow = borrows.muln((1 - utilThreshold) / utilThreshold);
+    const u = MarginAccount.MAX_POOL_UTIL_RATIO_AFTER_BORROW;
+    const effectiveVaultForBorrow = vault.muln(u).sub(borrows.muln(1 - u));
 
     let borrow = this.valuation.availableSetupCollateral
       .div(
