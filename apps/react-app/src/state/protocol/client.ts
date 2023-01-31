@@ -3,12 +3,19 @@ import { atom, useRecoilValue, useSetRecoilState } from 'recoil';
 import { Connection, PublicKey, AccountInfo, VersionedTransaction } from '@solana/web3.js';
 import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
 import { Cluster, rpcNodes, PreferredRpcNode } from '../../state/settings/settings';
-import { JetWebClient, Pubkey, initModule } from '@jet-lab/jet-client-web';
+import { JetWebClient, Pubkey, initModule, MarginWebClient, MarginAccountWebClient } from '@jet-lab/jet-client-web';
 
 initModule()
 
+interface ExtendedMargin extends MarginWebClient {
+  accounts: () => MarginAccountWebClient[]
+}
+interface ExtendedJetClient extends JetWebClient {
+  margin: () => ExtendedMargin
+}
+
 // Client object for interacting with the protocol
-export const ProtocolClient = atom<JetWebClient | undefined>({
+export const ProtocolClient = atom<ExtendedJetClient | undefined>({
   key: 'protocolClient',
   default: undefined
 });
@@ -97,8 +104,11 @@ export function useProtocolClientSyncer() {
 
   async function createClient() {
     const adapter = new SolanaConnectionAdapter(wallet, connection);
-    const webClient = adapter.userAddress && await JetWebClient.connect(adapter.userAddress, adapter, true)
-    setProtocolClient(webClient);
+    const webClient: ExtendedJetClient | undefined = adapter.userAddress && await JetWebClient.connect(adapter.userAddress, adapter, true)
+
+    if (webClient) {
+      setProtocolClient(webClient);
+    }
   }
 
   useEffect(() => {

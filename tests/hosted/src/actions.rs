@@ -172,7 +172,7 @@ pub async fn offer_loan_no_auto_stake(
     let params = OrderParams {
         max_ticket_qty: u64::MAX,
         max_underlying_token_qty: amount,
-        limit_price: rate_to_price(rate as u64, market.borrow_tenor),
+        limit_price: rate_to_price(rate, market.borrow_tenor),
         match_limit: u64::MAX,
         post_only: false,
         post_allowed: true,
