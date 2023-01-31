@@ -53,10 +53,16 @@ impl JetWebClient {
             NetworkKind::Localnet => gloo_net::http::Request::get("/localnet.config.json"),
         };
 
-        if network_kind == NetworkKind::Localnet {
-            console_log::init_with_level(log::Level::Debug).unwrap();
-        } else {
-            console_log::init_with_level(log::Level::Warn).unwrap();
+        if {
+            if network_kind == NetworkKind::Localnet {
+                console_log::init_with_level(log::Level::Debug)
+            } else {
+                console_log::init_with_level(log::Level::Warn)
+            }
+        }
+        .is_err()
+        {
+            console_log!("Unable to initialize console log, might already be initialized");
         }
 
         let config_response = config_request
