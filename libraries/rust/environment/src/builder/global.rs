@@ -4,7 +4,7 @@ use jet_instructions::{
     airspace::{derive_governor_id, AirspaceIxBuilder},
     control::{get_control_authority_address, ControlIxBuilder},
     get_metadata_address,
-    margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle},
+    margin::{derive_adapter_config, TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle},
     test_service::{
         self, derive_pyth_price, derive_pyth_product, derive_token_info, derive_token_mint,
         TokenCreateParams,
@@ -16,7 +16,7 @@ use super::{
     filter_initializers, fixed_term, margin::configure_margin_token, margin_pool, Builder,
     BuilderError, NetworkKind, TokenContext,
 };
-use crate::config::{AirspaceConfig, EnvironmentConfig, TokenDescription};
+use crate::config::{AirspaceConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS};
 
 pub async fn configure_environment<I: NetworkUserInterface>(
     builder: &mut Builder<I>,
@@ -52,7 +52,7 @@ pub async fn configure_environment<I: NetworkUserInterface>(
 
     // airspaces
     for airspace in &config.airspaces {
-        init_airspace(builder, &oracle_authority, airspace).await?;
+        configure_airspace(builder, &oracle_authority, airspace).await?;
     }
 
     // swap pools
@@ -61,7 +61,7 @@ pub async fn configure_environment<I: NetworkUserInterface>(
     Ok(())
 }
 
-pub(crate) async fn init_airspace<I: NetworkUserInterface>(
+pub(crate) async fn configure_airspace<I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     oracle_authority: &Pubkey,
     config: &AirspaceConfig,
@@ -78,6 +78,8 @@ pub(crate) async fn init_airspace<I: NetworkUserInterface>(
         create_test_tokens(builder, oracle_authority, &config.tokens).await?;
     }
 
+    register_airspace_adapters(builder, &as_ix.address(), DEFAULT_MARGIN_ADAPTERS).await?;
+
     configure_tokens(
         builder,
         &as_ix.address(),
@@ -86,6 +88,29 @@ pub(crate) async fn init_airspace<I: NetworkUserInterface>(
         &config.tokens,
     )
     .await?;
+
+    Ok(())
+}
+
+async fn register_airspace_adapters<'a, I: NetworkUserInterface>(
+    builder: &mut Builder<I>,
+    airspace: &Pubkey,
+    adapters: impl IntoIterator<Item = &'a Pubkey>,
+) -> Result<(), BuilderError> {
+    builder.propose(
+        filter_initializers(
+            builder,
+            adapters.into_iter().map(|addr| {
+                (
+                    derive_adapter_config(airspace, addr),
+                    builder
+                        .margin_config_ix(airspace)
+                        .configure_adapter(*addr, true),
+                )
+            }),
+        )
+        .await?,
+    );
 
     Ok(())
 }

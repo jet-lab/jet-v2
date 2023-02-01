@@ -2,8 +2,8 @@ import { Address } from "@project-serum/anchor"
 import axios from "axios"
 
 export const MARGIN_CONFIG_URL_BASE = "https://storage.googleapis.com/jet-app-config/"
-export const MARGIN_CONFIG_MAINNET_URL = "https://storage.googleapis.com/jet-app-config/config.json"
-export const MARGIN_CONFIG_DEVNET_URL = "https://storage.googleapis.com/jet-app-config/devnet.json"
+export const MARGIN_CONFIG_MAINNET_URL = MARGIN_CONFIG_URL_BASE + "mainnet.legacy.json"
+export const MARGIN_CONFIG_DEVNET_URL = MARGIN_CONFIG_URL_BASE + "devnet.legacy.json"
 
 export type MarginCluster = "localnet" | "devnet" | "mainnet-beta" | MarginConfig
 
