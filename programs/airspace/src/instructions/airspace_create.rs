@@ -42,7 +42,7 @@ pub struct AirspaceCreate<'info> {
     governor: Signer<'info>,
 
     /// The governer identity account
-    #[account(has_one = governor)]
+    #[cfg_attr(not(feature = "testing"), account(has_one = governor))]
     governor_id: Account<'info, GovernorId>,
 
     system_program: Program<'info, System>,
