@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 
+use jet_instructions::margin_pool::MarginPoolIxBuilder;
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
 use jet_margin_sdk::solana::keypair::clone;
@@ -76,12 +77,12 @@ pub async fn setup_token(
         },
         collateral_weight,
     };
-
+    let deposit_token_mint = MarginPoolIxBuilder::new(token).deposit_note_mint;
     try_join!(
         ctx.margin.create_pool(&setup),
         ctx.tokens.set_price(&token, &price),
         ctx.margin
-            .configure_token_deposits(&token, Some(&deposit_config))
+            .configure_token_deposits(&token, &deposit_token_mint, Some(&deposit_config))
     )?;
 
     Ok(token)

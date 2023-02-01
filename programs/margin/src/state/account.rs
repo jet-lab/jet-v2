@@ -156,8 +156,9 @@ impl MarginAccount {
         self.liquidator != Pubkey::default()
     }
 
-    pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
+    pub fn initialize(&mut self, airspace: Pubkey, owner: Pubkey, seed: u16, bump_seed: u8) {
         self.version = MARGIN_ACCOUNT_VERSION;
+        self.airspace = airspace;
         self.owner = owner;
         self.bump_seed = [bump_seed];
         self.user_seed = seed.to_le_bytes();

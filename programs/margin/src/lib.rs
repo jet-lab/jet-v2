@@ -619,6 +619,10 @@ pub enum ErrorCode {
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
 
+    /// 141042 - Submit the incorrect LiquidationState to the instruction
+    #[msg("liquidationState does not match given margin account")]
+    WrongLiquidationState,
+
     /// 141050 - The airspace does not match
     #[msg("attempting to mix entities from different airspaces")]
     WrongAirspace = 135_050,

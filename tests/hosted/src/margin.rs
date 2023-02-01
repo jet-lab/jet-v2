@@ -27,7 +27,7 @@ use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::{bail, Error};
 
 use jet_instructions::margin_swap::MarginSwapRouteIxBuilder;
-use jet_margin::{AccountPosition, MarginAccount, TokenKind};
+use jet_margin::{AccountPosition, MarginAccount, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::ix_builder::test_service::if_not_initialized;
 use jet_margin_sdk::ix_builder::{
     derive_airspace, derive_margin_permit, derive_permit, get_control_authority_address,
@@ -231,11 +231,12 @@ impl MarginClient {
 
     pub async fn configure_token_deposits(
         &self,
-        token_mint: &Pubkey,
+        deposit_token_mint: &Pubkey,
+        underlying_mint: &Pubkey,
         config: Option<&TokenDepositsConfig>,
     ) -> Result<(), Error> {
         self.tx_admin
-            .configure_margin_token_deposits(*token_mint, config.cloned())
+            .configure_margin_token_deposits(*deposit_token_mint, *underlying_mint, config.cloned())
             .with_signer(clone(&self.airspace_authority))
             .send_and_confirm(&self.rpc)
             .await?;

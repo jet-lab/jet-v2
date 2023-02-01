@@ -18,9 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use jet_metadata::PositionTokenMetadata;
-
-use crate::{events, util::Require, Approver, MarginAccount};
+use crate::{events, util::Require, Approver, ErrorCode, MarginAccount, TokenConfig};
 
 #[derive(Accounts)]
 pub struct RegisterPosition<'info> {
@@ -32,15 +30,15 @@ pub struct RegisterPosition<'info> {
     pub payer: Signer<'info>,
 
     /// The margin account to register position type with
-    #[account(mut)]
+    #[account(mut,
+        constraint = margin_account.load()?.airspace == config.airspace)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The mint for the position token being registered
     pub position_token_mint: Account<'info, Mint>,
 
-    /// The metadata account that references the correct oracle for the token
-    #[account(has_one = position_token_mint)]
-    pub metadata: Account<'info, PositionTokenMetadata>,
+    /// The margin config for the token
+    pub config: Account<'info, TokenConfig>,
 
     /// The token account to store hold the position assets in the custody of the
     /// margin account.
@@ -62,7 +60,7 @@ pub struct RegisterPosition<'info> {
 }
 
 pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
-    let metadata = &ctx.accounts.metadata;
+    let config = &ctx.accounts.config;
     let mut account = ctx.accounts.margin_account.load_mut()?;
     let position_token = &ctx.accounts.position_token_mint;
     let address = ctx.accounts.token_account.key();
@@ -72,10 +70,12 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
         position_token.key(),
         position_token.decimals,
         address,
-        metadata.adapter_program,
-        metadata.token_kind.into(),
-        metadata.value_modifier,
-        metadata.max_staleness,
+        config
+            .adapter_program()
+            .ok_or_else(|| error!(ErrorCode::InvalidConfig))?,
+        config.token_kind,
+        config.value_modifier,
+        config.max_staleness,
         &[Approver::MarginAccountAuthority],
     )?;
 

@@ -32,6 +32,8 @@ use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
 pub use jet_margin::ID as MARGIN_PROGRAM;
 pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 
+use crate::airspace::derive_permit;
+
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
 #[derive(Clone)]
@@ -110,11 +112,11 @@ impl MarginIxBuilder {
     pub fn create_account(&self) -> Instruction {
         let accounts = ix_account::CreateAccount {
             owner: self.owner,
+            permit: derive_permit(&self.airspace, &self.owner),
             payer: self.payer(),
             margin_account: self.address,
             system_program: SYSTEM_PROGAM_ID,
         };
-
         Instruction {
             program_id: JetMargin::id(),
             data: ix_data::CreateAccount { seed: self.seed }.data(),
@@ -170,15 +172,15 @@ impl MarginIxBuilder {
     pub fn register_position(&self, position_token_mint: Pubkey) -> Instruction {
         let token_account = derive_position_token_account(&self.address, &position_token_mint);
 
-        let (metadata, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
+        let config = MarginConfigIxBuilder::new(self.airspace, self.payer(), None)
+            .derive_token_config(&position_token_mint);
 
         let accounts = ix_account::RegisterPosition {
             authority: self.authority(),
             payer: self.payer(),
             margin_account: self.address,
             position_token_mint,
-            metadata,
+            config,
             token_account,
             token_program: spl_token::ID,
             system_program: System::id(),

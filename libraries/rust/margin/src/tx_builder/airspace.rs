@@ -130,13 +130,14 @@ impl AirspaceAdmin {
     /// Configure deposits for a given token (when placed directly into a margin account)
     pub fn configure_margin_token_deposits(
         &self,
-        token_mint: Pubkey,
+        deposit_token_mint: Pubkey,
+        underlying_mint: Pubkey,
         config: Option<TokenDepositsConfig>,
     ) -> TransactionBuilder {
         let margin_config_ix =
             MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
         let config_update = config.map(|config| TokenConfigUpdate {
-            underlying_mint: token_mint,
+            underlying_mint,
             token_kind: TokenKind::Collateral,
             value_modifier: config.collateral_weight,
             max_staleness: 0,
@@ -145,7 +146,7 @@ impl AirspaceAdmin {
             },
         });
 
-        vec![margin_config_ix.configure_token(token_mint, config_update)].into()
+        vec![margin_config_ix.configure_token(deposit_token_mint, config_update)].into()
     }
 
     /// Configure an adapter that can be invoked through a margin account

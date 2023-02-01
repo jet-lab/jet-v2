@@ -217,6 +217,8 @@ impl TestContext {
 
     pub async fn create_user(&self) -> Result<JetSimulationClient, Error> {
         let wallet = self.create_wallet(1_000).await?;
+        self.issue_permit(wallet.pubkey()).await?;
+
         let client = SimulationClient::new(self.inner.rpc.clone(), Some(wallet));
 
         Ok(JetSimulationClient::new(
@@ -253,6 +255,17 @@ impl TestContext {
                 exponent,
             },
         )
+        .await
+    }
+
+    pub async fn issue_permit(&self, owner: Pubkey) -> Result<Signature, Error> {
+        AirspaceAdmin::new(
+            &self.config.airspaces[0].name,
+            self.rpc().payer().pubkey(),
+            self.rpc().payer().pubkey(),
+        )
+        .issue_user_permit(owner)
+        .send_and_confirm(self.rpc())
         .await
     }
 }

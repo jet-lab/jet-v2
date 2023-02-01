@@ -68,6 +68,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     for pool_info in pools {
         ctx.margin
             .configure_token_deposits(
+                &MarginPoolIxBuilder::new(pool_info.token).deposit_note_mint,
                 &pool_info.token,
                 Some(&TokenDepositsConfig {
                     oracle: jet_margin::TokenOracle::Pyth {
