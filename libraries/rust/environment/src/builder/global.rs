@@ -67,11 +67,11 @@ pub(crate) async fn configure_airspace<I: NetworkUserInterface>(
     config: &AirspaceConfig,
 ) -> Result<(), BuilderError> {
     let payer = builder.payer();
-    let as_ix = AirspaceIxBuilder::new(&config.name, payer, builder.authority);
+    let as_ix = AirspaceIxBuilder::new(&config.name, payer, builder.proposal_authority());
 
     if !builder.account_exists(&as_ix.address()).await? {
         log::info!("create airspace '{}' as {}", &config.name, as_ix.address());
-        builder.propose([as_ix.create(config.is_restricted)]);
+        builder.propose([as_ix.create(builder.proposal_authority(), config.is_restricted)]);
     }
 
     if builder.network == NetworkKind::Localnet {

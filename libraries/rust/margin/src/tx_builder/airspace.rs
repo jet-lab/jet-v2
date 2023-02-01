@@ -53,8 +53,8 @@ impl AirspaceAdmin {
     }
 
     /// Create this airspace
-    pub fn create_airspace(&self, is_restricted: bool) -> TransactionBuilder {
-        vec![self.as_ix.create(is_restricted)].into()
+    pub fn create_airspace(&self, authority: Pubkey, is_restricted: bool) -> TransactionBuilder {
+        vec![self.as_ix.create(authority, is_restricted)].into()
     }
 
     /// Create a permit for a user to be allowed to use this airspace

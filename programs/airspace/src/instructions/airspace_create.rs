@@ -17,13 +17,17 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{events::AirspaceCreated, seeds::AIRSPACE, state::Airspace};
+use crate::{
+    events::AirspaceCreated,
+    seeds::AIRSPACE,
+    state::{Airspace, GovernorId},
+};
 
 #[derive(Accounts)]
 #[instruction(seed: String)]
 pub struct AirspaceCreate<'info> {
     #[account(mut)]
-    payer: Signer<'info>,
+    payer: AccountInfo<'info>,
 
     /// The airspace account to be created
     #[account(init,
@@ -33,6 +37,13 @@ pub struct AirspaceCreate<'info> {
               space = Airspace::SIZE
     )]
     airspace: Account<'info, Airspace>,
+
+    /// The current governor
+    governor: Signer<'info>,
+
+    /// The governer identity account
+    #[account(has_one = governor)]
+    governor_id: Account<'info, GovernorId>,
 
     system_program: Program<'info, System>,
 }
