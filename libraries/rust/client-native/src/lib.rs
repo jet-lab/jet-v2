@@ -163,7 +163,6 @@ impl Debug for SolanaClient {
     }
 }
 
-
 #[async_trait(?Send)]
 impl NetworkUserInterface for SolanaClient {
     type Error = solana_client::client_error::ClientError;

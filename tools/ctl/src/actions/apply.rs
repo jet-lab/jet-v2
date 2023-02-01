@@ -1,13 +1,11 @@
 use std::path::PathBuf;
 
-use anyhow::{Result};
+use anyhow::Result;
 use jet_environment::builder::{configure_environment, Builder};
 use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
 use solana_sdk::signer::Signer;
 
-use crate::{
-    client::{Client, NetworkKind, Plan},
-};
+use crate::client::{Client, NetworkKind, Plan};
 
 pub async fn process_apply(client: &Client, config_path: PathBuf) -> Result<Plan> {
     let config = jet_environment::config::read_env_config_dir(&config_path)?;

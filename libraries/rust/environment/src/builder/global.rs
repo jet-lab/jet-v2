@@ -202,9 +202,10 @@ async fn create_test_tokens<'a, I: NetworkUserInterface>(
                 log::info!("register SOL token");
 
                 (
-                derive_token_info(&spl_token::native_mint::ID),
-                test_service::token_init_native(&payer, oracle_authority),
-            )},
+                    derive_token_info(&spl_token::native_mint::ID),
+                    test_service::token_init_native(&payer, oracle_authority),
+                )
+            }
 
             _ => {
                 let amount_one = 10u64.pow(desc.decimals.into());
@@ -213,7 +214,11 @@ async fn create_test_tokens<'a, I: NetworkUserInterface>(
                     .map(|x| x * amount_one)
                     .unwrap_or(u64::MAX);
 
-                log::info!("create token {} with faucet limit {}", &desc.name, max_amount);
+                log::info!(
+                    "create token {} with faucet limit {}",
+                    &desc.name,
+                    max_amount
+                );
 
                 (
                     derive_token_mint(&desc.name),

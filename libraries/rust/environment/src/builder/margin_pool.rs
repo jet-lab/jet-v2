@@ -58,7 +58,7 @@ pub(crate) async fn configure_for_token<I: NetworkUserInterface>(
                     collateral_weight: token.desc.collateral_weight,
                     max_leverage: token.desc.max_leverage,
                 }),
-                parameters: Some(pool_config.clone()),
+                parameters: Some(*pool_config),
             },
         ));
     }

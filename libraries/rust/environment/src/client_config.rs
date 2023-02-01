@@ -191,7 +191,7 @@ pub mod legacy {
             let mut fixed_term_markets = HashMap::new();
 
             for market_address in &airspace.fixed_term_markets {
-                let Some(market_info) = network.get_anchor_account::<Market>(&market_address).await? else {
+                let Some(market_info) = network.get_anchor_account::<Market>(market_address).await? else {
                     return Err(ConfigError::MissingMarket(*market_address));
                 };
 
@@ -199,10 +199,12 @@ pub mod legacy {
                     .tokens
                     .iter()
                     .find(|t| t.mint == market_info.underlying_token_mint)
-                    .expect(&format!(
-                        "no matching token {} for market {market_address}",
-                        market_info.underlying_token_mint
-                    ));
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "no matching token {} for market {market_address}",
+                            market_info.underlying_token_mint
+                        )
+                    });
                 let name = format!("{}_{}", token.name, market_info.borrow_tenor);
 
                 fixed_term_markets.insert(
