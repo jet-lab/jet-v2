@@ -69,14 +69,14 @@ pub struct SplSwapPoolCreate<'info> {
               ],
               bump,
               space = 1 + spl_token_swap::state::SwapV1::LEN,
-              owner = spl_token_swap::ID,
+              owner = swap_program.key(),
               payer = payer
     )]
     pool_state: AccountInfo<'info>,
 
     #[account(seeds = [pool_state.key().as_ref()],
               bump,
-              seeds::program = spl_token_swap::ID
+              seeds::program = swap_program
     )]
     pool_authority: AccountInfo<'info>,
 

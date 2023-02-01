@@ -34,7 +34,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
     token: &TokenContext,
     config: &FixedTermMarketConfig,
 ) -> Result<(), BuilderError> {
-    let payer = builder.interface.signer();
+    let payer = builder.payer();
 
     let market_address =
         derive_market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
@@ -242,7 +242,7 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     let mut seed = [0u8; 32];
     seed[..8].copy_from_slice(&config.borrow_tenor.to_le_bytes());
 
-    let payer = builder.interface.signer();
+    let payer = builder.payer();
     let ix_builder = FixedTermIxBuilder::new_from_seed(
         payer,
         &token.airspace,

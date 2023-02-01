@@ -1,4 +1,4 @@
-use std::{any::Any, fmt::Debug};
+use std::{any::Any, fmt::Debug, str::FromStr};
 
 use spl_governance::state::{
     native_treasury::get_native_treasury_address,
@@ -11,7 +11,7 @@ use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use jet_instructions::{
     control::ControlIxBuilder,
     margin::{derive_token_config, MarginConfigIxBuilder},
-    test_service::if_not_initialized,
+    test_service::{derive_token_mint, if_not_initialized},
 };
 use jet_margin::TokenConfig;
 use jet_solana_client::{
@@ -19,15 +19,16 @@ use jet_solana_client::{
     NetworkUserInterfaceExt,
 };
 
-use crate::config::TokenDescription;
+use crate::config::{EnvironmentConfig, TokenDescription};
 
-mod fixed_term;
-mod global;
-mod margin;
-mod margin_pool;
-mod spl_swap;
+pub(crate) mod fixed_term;
+pub(crate) mod global;
+pub(crate) mod margin;
+pub(crate) mod margin_pool;
+pub(crate) mod swap;
 
 pub use global::configure_environment;
+pub use swap::resolve_swap_program;
 
 /// Descriptions for errors while building the configuration instructions
 #[derive(Error, Debug)]
@@ -43,6 +44,12 @@ pub enum BuilderError {
 
     #[error("missing mint field for token {0}")]
     MissingMint(String),
+
+    #[error("no definition for token {0}")]
+    UnknownToken(String),
+
+    #[error("unknown swap program '{0}'")]
+    UnknownSwapProgram(String),
 
     #[error(
         "connected to the wrong network for the given config: {actual:?} (expected {expected:?})"
@@ -122,16 +129,20 @@ impl<I: NetworkUserInterface> Builder<I> {
         self.proposal_context = Some(context);
     }
 
+    pub fn payer(&self) -> Pubkey {
+        self.interface.signer()
+    }
+
     pub fn proposal_payer(&self) -> Pubkey {
         match &self.proposal_context {
-            None => self.interface.signer(),
+            None => self.payer(),
             Some(ctx) => get_native_treasury_address(&ctx.program, &ctx.governance),
         }
     }
 
     pub fn proposal_authority(&self) -> Pubkey {
         match &self.proposal_context {
-            None => self.interface.signer(),
+            None => self.payer(),
             Some(ctx) => ctx.governance,
         }
     }
@@ -161,7 +172,7 @@ impl<I: NetworkUserInterface> Builder<I> {
     }
 
     pub fn propose(&mut self, instructions: impl IntoIterator<Item = Instruction>) {
-        let payer = self.interface.signer();
+        let payer = self.payer();
 
         let instructions = match &mut self.proposal_context {
             None => instructions.into_iter().collect::<Vec<_>>(),
@@ -243,4 +254,28 @@ pub(crate) async fn filter_initializers<I: NetworkUserInterface>(
             (!exists[idx]).then_some(ix)
         })
         .collect())
+}
+
+pub(crate) fn resolve_token_mint(
+    env: &EnvironmentConfig,
+    name: &str,
+) -> Result<Pubkey, BuilderError> {
+    if let Ok(address) = Pubkey::from_str(name) {
+        return Ok(address);
+    }
+
+    for airspace in &env.airspaces {
+        for token in &airspace.tokens {
+            if token.name != name {
+                continue;
+            }
+
+            match token.mint {
+                Some(mint) => return Ok(mint),
+                None => return Ok(derive_token_mint(name)),
+            }
+        }
+    }
+
+    Err(BuilderError::UnknownToken(name.to_owned()))
 }

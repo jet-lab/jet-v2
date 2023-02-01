@@ -240,27 +240,6 @@ pub enum FixedTermCommand {
 
 #[serde_as]
 #[derive(Debug, Subcommand, Deserialize)]
-#[serde(tag = "test-action")]
-pub enum TestCommand {
-    /// Initialize a test environment
-    InitEnv {
-        /// A config file specifying the resources to be intiailized
-        config_path: PathBuf,
-    },
-
-    /// Generate the application config from a test environment
-    GenerateAppConfig {
-        /// The config path used to initialize the environment
-        config_path: PathBuf,
-
-        /// The output file path for the generated config
-        #[clap(long, short = 'o')]
-        output: PathBuf,
-    },
-}
-
-#[serde_as]
-#[derive(Debug, Subcommand, Deserialize)]
 #[serde(tag = "action")]
 pub enum Command {
     /// Deploy a program via governance/multisig
@@ -322,12 +301,6 @@ pub enum Command {
         #[clap(subcommand)]
         subcmd: FixedTermCommand,
     },
-
-    /// Test management
-    Test {
-        #[clap(subcommand)]
-        subcmd: TestCommand,
-    },
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
@@ -369,7 +342,6 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         Command::Margin { subcmd } => run_margin_command(&client, subcmd).await?,
         Command::MarginPool { subcmd } => run_margin_pool_command(&client, subcmd).await?,
         Command::Fixed { subcmd } => run_fixed_command(&client, subcmd).await?,
-        Command::Test { subcmd } => run_test_command(&client, subcmd).await?,
     };
 
     if let Some(proposal_id) = opts.target_proposal {
@@ -488,18 +460,5 @@ async fn run_fixed_command(client: &Client, command: FixedTermCommand) -> Result
         FixedTermCommand::CreateMarket(params) => {
             actions::fixed_term::process_create_fixed_term_market(client, params).await
         }
-    }
-}
-
-async fn run_test_command(client: &Client, command: TestCommand) -> Result<Plan> {
-    match command {
-        TestCommand::InitEnv { config_path } => {
-            actions::test::process_init_env(client, config_path).await
-        }
-
-        TestCommand::GenerateAppConfig {
-            config_path,
-            output,
-        } => actions::test::process_generate_app_config(client, config_path, output).await,
     }
 }

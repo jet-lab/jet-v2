@@ -23,7 +23,7 @@ use jet_instructions::test_service::{
     derive_pyth_price, derive_token_mint, token_update_pyth_price,
 };
 use jet_margin_pool::{MarginPoolConfig, PoolFlags};
-use jet_margin_sdk::ix_builder::test_service::derive_swap_pool;
+use jet_margin_sdk::ix_builder::test_service::derive_spl_swap_pool;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder};
 use jet_margin_sdk::test_service::minimal_environment;
@@ -377,7 +377,7 @@ impl TestContextSetupInfo {
 
                     DexInfo {
                         program: ORCA_V2,
-                        address: derive_swap_pool(&token_a, &token_b).state,
+                        address: derive_spl_swap_pool(&ORCA_V2, &token_a, &token_b).state,
                         token_a,
                         token_b,
                     }

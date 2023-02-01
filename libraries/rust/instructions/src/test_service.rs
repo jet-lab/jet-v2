@@ -158,13 +158,14 @@ pub fn token_update_pyth_price(
 
 /// Create a swap pool
 pub fn spl_swap_pool_create(
+    swap_program: &Pubkey,
     payer: &Pubkey,
     token_a: &Pubkey,
     token_b: &Pubkey,
     liquidity_level: u8,
     price_threshold: u16,
 ) -> Instruction {
-    let addrs = derive_swap_pool(token_a, token_b);
+    let addrs = derive_spl_swap_pool(swap_program, token_a, token_b);
     let accounts = jet_test_service::accounts::SplSwapPoolCreate {
         payer: *payer,
         mint_a: *token_a,
@@ -178,7 +179,7 @@ pub fn spl_swap_pool_create(
         pool_token_a: addrs.token_a_account,
         pool_token_b: addrs.token_b_account,
         pool_fees: addrs.fees,
-        swap_program: spl_token_swap::ID,
+        swap_program: *swap_program,
         token_program: spl_token::ID,
         system_program: system_program::ID,
         rent: sysvar::rent::ID,
@@ -201,13 +202,14 @@ pub fn spl_swap_pool_create(
 
 /// Balance an SPL swap pool
 pub fn spl_swap_pool_balance(
+    swap_program: &Pubkey,
     token_a: &Pubkey,
     token_b: &Pubkey,
     scratch_a: &Pubkey,
     scratch_b: &Pubkey,
     payer: &Pubkey,
 ) -> Instruction {
-    let pool = derive_swap_pool(token_a, token_b);
+    let pool = derive_spl_swap_pool(swap_program, token_a, token_b);
 
     let accounts = jet_test_service::accounts::SplSwapPoolBalance {
         payer: *payer,
@@ -226,7 +228,7 @@ pub fn spl_swap_pool_balance(
         pool_token_a: pool.token_a_account,
         pool_token_b: pool.token_b_account,
         pool_fees: pool.fees,
-        swap_program: spl_token_swap::ID,
+        swap_program: *swap_program,
         token_program: spl_token::ID,
         system_program: system_program::ID,
         rent: sysvar::rent::ID,
@@ -290,7 +292,11 @@ pub fn derive_ticket_mint(market: &Pubkey) -> Pubkey {
 }
 
 /// Get the addresses for a swap pool
-pub fn derive_swap_pool(token_a: &Pubkey, token_b: &Pubkey) -> SwapPoolAddress {
+pub fn derive_spl_swap_pool(
+    program: &Pubkey,
+    token_a: &Pubkey,
+    token_b: &Pubkey,
+) -> SwapPoolAddress {
     let info = Pubkey::find_program_address(
         &[SWAP_POOL_INFO, token_a.as_ref(), token_b.as_ref()],
         &jet_test_service::ID,
@@ -301,7 +307,7 @@ pub fn derive_swap_pool(token_a: &Pubkey, token_b: &Pubkey) -> SwapPoolAddress {
         &jet_test_service::ID,
     )
     .0;
-    let (authority, nonce) = Pubkey::find_program_address(&[state.as_ref()], &spl_token_swap::ID);
+    let (authority, nonce) = Pubkey::find_program_address(&[state.as_ref()], program);
     let token_a_account = Pubkey::find_program_address(
         &[SWAP_POOL_TOKENS, state.as_ref(), token_a.as_ref()],
         &jet_test_service::ID,

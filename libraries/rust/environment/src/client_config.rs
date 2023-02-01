@@ -3,14 +3,17 @@ use std::collections::HashSet;
 use jet_instructions::{
     airspace::derive_airspace,
     fixed_term::derive_market_from_tenor,
-    test_service::{derive_pyth_price, derive_token_mint},
+    test_service::{derive_pyth_price, derive_spl_swap_pool, derive_token_mint},
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use solana_sdk::pubkey::Pubkey;
 
-use crate::config::{AirspaceConfig, EnvironmentConfig, TokenDescription};
+use crate::{
+    builder::{resolve_token_mint, swap::resolve_swap_program, BuilderError},
+    config::{AirspaceConfig, EnvironmentConfig, TokenDescription},
+};
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -30,8 +33,10 @@ impl JetAppConfig {
     }
 }
 
-impl From<EnvironmentConfig> for JetAppConfig {
-    fn from(env: EnvironmentConfig) -> Self {
+impl TryFrom<EnvironmentConfig> for JetAppConfig {
+    type Error = BuilderError;
+
+    fn try_from(env: EnvironmentConfig) -> Result<Self, Self::Error> {
         let mut seen = HashSet::new();
         let mut tokens = vec![];
         let mut airspaces = vec![];
@@ -49,14 +54,32 @@ impl From<EnvironmentConfig> for JetAppConfig {
             airspaces.push(airspace.clone().into());
         }
 
-        // FIXME: fix swap pools
-        let exchanges = vec![];
+        let exchanges = env
+            .exchanges
+            .iter()
+            .map(|dex| {
+                let base = resolve_token_mint(&env, &dex.base)?;
+                let quote = resolve_token_mint(&env, &dex.quote)?;
+                let program = resolve_swap_program(env.network, &dex.program)?;
 
-        Self {
+                let address = dex
+                    .state
+                    .unwrap_or_else(|| derive_spl_swap_pool(&program, &base, &quote).state);
+
+                Ok(DexInfo {
+                    program,
+                    address,
+                    base,
+                    quote,
+                })
+            })
+            .collect::<Result<_, BuilderError>>()?;
+
+        Ok(Self {
             tokens,
             airspaces,
             exchanges,
-        }
+        })
     }
 }
 

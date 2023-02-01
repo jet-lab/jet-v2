@@ -29,7 +29,7 @@ pub async fn configure_environment<I: NetworkUserInterface>(
         });
     }
 
-    let payer = builder.interface.signer();
+    let payer = builder.payer();
     let as_ix = AirspaceIxBuilder::new("", payer, builder.authority);
     let ctrl_ix = ControlIxBuilder::new_for_authority(builder.authority, payer);
 
@@ -56,7 +56,7 @@ pub async fn configure_environment<I: NetworkUserInterface>(
     }
 
     // swap pools
-    super::spl_swap::create_swap_pools(builder, config).await?;
+    super::swap::create_swap_pools(builder, config).await?;
 
     Ok(())
 }
@@ -66,7 +66,7 @@ pub(crate) async fn init_airspace<I: NetworkUserInterface>(
     oracle_authority: &Pubkey,
     config: &AirspaceConfig,
 ) -> Result<(), BuilderError> {
-    let payer = builder.interface.signer();
+    let payer = builder.payer();
     let as_ix = AirspaceIxBuilder::new(&config.name, payer, builder.authority);
 
     if !builder.account_exists(&as_ix.address()).await? {
@@ -94,7 +94,7 @@ pub(crate) async fn register_global_margin_adapters<'a, I: NetworkUserInterface>
     builder: &mut Builder<I>,
     adapters: impl IntoIterator<Item = &'a Pubkey>,
 ) -> Result<(), BuilderError> {
-    let payer = builder.interface.signer();
+    let payer = builder.payer();
     let ctrl_ix = ControlIxBuilder::new_for_authority(builder.authority, payer);
 
     let ixns = filter_initializers(
@@ -191,7 +191,7 @@ async fn create_test_tokens<'a, I: NetworkUserInterface>(
     oracle_authority: &Pubkey,
     tokens: impl IntoIterator<Item = &'a TokenDescription>,
 ) -> Result<(), BuilderError> {
-    let payer = builder.interface.signer();
+    let payer = builder.payer();
 
     let ixns = filter_initializers(
         builder,
