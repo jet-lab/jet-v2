@@ -1,19 +1,37 @@
 use std::collections::HashSet;
 
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
+use thiserror::Error;
+
+use solana_sdk::pubkey::Pubkey;
+
 use jet_instructions::{
     airspace::derive_airspace,
     fixed_term::derive_market_from_tenor,
     test_service::{derive_pyth_price, derive_spl_swap_pool, derive_token_mint},
 };
-use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
-
-use solana_sdk::pubkey::Pubkey;
+use jet_solana_client::{ExtError, NetworkUserInterface, NetworkUserInterfaceExt};
 
 use crate::{
     builder::{resolve_token_mint, swap::resolve_swap_program, BuilderError},
     config::{AirspaceConfig, EnvironmentConfig, TokenDescription},
 };
+
+#[derive(Error, Debug)]
+pub enum ConfigError<I: NetworkUserInterface> {
+    #[error("ext error: {0}")]
+    Ext(#[from] ExtError<I>),
+
+    #[error("builder error: {0}")]
+    Builder(#[from] BuilderError),
+
+    #[error("could not read market {0} on the network")]
+    MissingMarket(Pubkey),
+
+    #[error("could not read mint {0} on the network")]
+    InvalidMint(Pubkey),
+}
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -33,10 +51,11 @@ impl JetAppConfig {
     }
 }
 
-impl TryFrom<EnvironmentConfig> for JetAppConfig {
-    type Error = BuilderError;
-
-    fn try_from(env: EnvironmentConfig) -> Result<Self, Self::Error> {
+impl JetAppConfig {
+    pub async fn from_env_config<I: NetworkUserInterface>(
+        env: EnvironmentConfig,
+        network: &I,
+    ) -> Result<Self, ConfigError<I>> {
         let mut seen = HashSet::new();
         let mut tokens = vec![];
         let mut airspaces = vec![];
@@ -48,7 +67,7 @@ impl TryFrom<EnvironmentConfig> for JetAppConfig {
                 }
 
                 seen.insert(token.name.clone());
-                tokens.push(token.clone().into());
+                tokens.push(TokenInfo::from_desc(network, token).await?);
             }
 
             airspaces.push(airspace.clone().into());
@@ -105,7 +124,7 @@ impl From<AirspaceConfig> for AirspaceInfo {
                 .tokens
                 .iter()
                 .flat_map(|token| {
-                    let mint = TokenInfo::from(token.clone()).mint;
+                    let mint = token.mint.unwrap_or_else(|| derive_token_mint(&token.name));
 
                     token
                         .fixed_term_markets
@@ -143,19 +162,32 @@ pub struct TokenInfo {
     pub oracle: Pubkey,
 }
 
-impl From<TokenDescription> for TokenInfo {
-    fn from(desc: TokenDescription) -> Self {
+impl TokenInfo {
+    async fn from_desc<I: NetworkUserInterface>(
+        network: &I,
+        desc: &TokenDescription,
+    ) -> Result<Self, ConfigError<I>> {
         let mint = desc.mint.unwrap_or_else(|| derive_token_mint(&desc.name));
         let oracle = desc.pyth_price.unwrap_or_else(|| derive_pyth_price(&mint));
+        let decimals = match desc.decimals {
+            Some(d) => d,
+            None => {
+                let Some(mint) = network.get_mint(&mint).await? else {
+                    return Err(ConfigError::InvalidMint(mint));
+                };
 
-        Self {
+                mint.decimals
+            }
+        };
+
+        Ok(Self {
             mint,
             oracle,
-            symbol: desc.symbol,
-            name: desc.name,
-            decimals: desc.decimals,
+            symbol: desc.symbol.clone(),
+            name: desc.name.clone(),
+            decimals: decimals,
             precision: desc.precision,
-        }
+        })
     }
 }
 
@@ -179,23 +211,13 @@ pub struct DexInfo {
 #[doc(hidden)]
 pub mod legacy {
     use std::collections::HashMap;
-    use thiserror::Error;
 
     use jet_instructions::fixed_term::Market;
-    use jet_solana_client::{ExtError, NetworkUserInterface, NetworkUserInterfaceExt};
+    use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
     use crate::programs::ORCA_V2;
 
     use super::*;
-
-    #[derive(Error, Debug)]
-    pub enum ConfigError<I: NetworkUserInterface> {
-        #[error("ext error: {0}")]
-        Ext(#[from] ExtError<I>),
-
-        #[error("could not read market {0} on the network")]
-        MissingMarket(Pubkey),
-    }
 
     pub async fn from_config<I: NetworkUserInterface>(
         network: &I,

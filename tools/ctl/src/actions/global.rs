@@ -77,7 +77,8 @@ pub async fn process_generate_app_config(
     output_path: &Path,
 ) -> Result<Plan> {
     let config = jet_environment::config::read_env_config_dir(config_dir)?;
-    let app_config = JetAppConfig::try_from(config.clone())?;
+    let app_config =
+        JetAppConfig::from_env_config(config.clone(), &client.network_interface()).await?;
     let legacy_app_config = jet_environment::client_config::legacy::from_config(
         &client.network_interface(),
         &app_config,

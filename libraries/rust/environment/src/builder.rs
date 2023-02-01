@@ -45,6 +45,9 @@ pub enum BuilderError {
     #[error("missing mint field for token {0}")]
     MissingMint(String),
 
+    #[error("missing decimals field for token {0}")]
+    MissingDecimals(String),
+
     #[error("no definition for token {0}")]
     UnknownToken(String),
 

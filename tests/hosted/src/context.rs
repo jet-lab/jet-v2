@@ -281,7 +281,7 @@ pub fn default_test_setup() -> TestContextSetupInfo {
             TokenDescription {
                 name: "TSOL".to_string(),
                 symbol: "TSOL".to_string(),
-                decimals: 9,
+                decimals: Some(9),
                 collateral_weight: 100,
                 max_leverage: 20_00,
                 margin_pool: Some(DEFAULT_POOL_CONFIG),
@@ -291,7 +291,7 @@ pub fn default_test_setup() -> TestContextSetupInfo {
             TokenDescription {
                 name: "USDC".to_string(),
                 symbol: "".to_string(),
-                decimals: 6,
+                decimals: Some(6),
                 collateral_weight: 100,
                 max_leverage: 20_00,
                 margin_pool: Some(DEFAULT_POOL_CONFIG),
@@ -348,8 +348,8 @@ impl TestContextSetupInfo {
                     TokenInfo {
                         symbol: t.name.clone(),
                         name: t.name.clone(),
-                        precision: t.decimals,
-                        decimals: t.decimals,
+                        precision: t.decimals.unwrap(),
+                        decimals: t.decimals.unwrap(),
                         oracle: derive_pyth_price(&mint),
                         mint,
                     }

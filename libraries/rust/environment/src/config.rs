@@ -78,7 +78,8 @@ pub struct TokenDescription {
     pub name: String,
 
     /// The number of decimals the token should have
-    pub decimals: u8,
+    #[serde(default)]
+    pub decimals: Option<u8>,
 
     /// The decimal precision when displaying token values
     pub precision: u8,
@@ -285,6 +286,10 @@ fn read_dex_config_file(path: &Path) -> Result<Vec<DexConfig>, ConfigError> {
     #[derive(Serialize, Deserialize)]
     struct DexConfigFile {
         dex: Vec<DexConfig>,
+    }
+
+    if !path.exists() {
+        return Ok(vec![]);
     }
 
     let file_content = std::fs::read_to_string(path).map_err(|error| ConfigError::IoError {

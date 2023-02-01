@@ -95,7 +95,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
                     &TokenCreateParams {
                         authority: builder.authority,
                         oracle_authority: token.oracle_authority,
-                        decimals: token.desc.decimals,
+                        decimals: token.desc.decimals.unwrap(),
                         max_amount: u64::MAX,
                         source_symbol: token.desc.symbol.clone(),
                         price_ratio: config.ticket_price.unwrap_or(1.0),

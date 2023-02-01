@@ -127,6 +127,21 @@ pub trait NetworkUserInterfaceExt: NetworkUserInterface {
         }
     }
 
+    async fn get_mint(
+        &self,
+        address: &Pubkey,
+    ) -> Result<Option<spl_token::state::Mint>, ExtError<Self>> {
+        match self.get_account(address).await? {
+            None => Ok(None),
+            Some(account) => spl_token::state::Mint::unpack(&account.data)
+                .map(Some)
+                .map_err(|e| ExtError::Unpack {
+                    address: *address,
+                    error: e,
+                }),
+        }
+    }
+
     async fn get_anchor_accounts<T: AccountDeserialize>(
         &self,
         addresses: &[Pubkey],

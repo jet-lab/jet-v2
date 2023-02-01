@@ -8,7 +8,7 @@ name = "jetctl"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = { version = "1.0", features = ["backtrace"] }
 borsh = "0.9"
 chrono = "0.4"
 bs58 = "0.4"

@@ -220,49 +220,56 @@ async fn create_test_tokens<'a, I: NetworkUserInterface>(
 
     let ixns = filter_initializers(
         builder,
-        tokens.into_iter().map(|desc| match &*desc.symbol {
-            // SOL is a bit of a special case, since we want to have an oracle for it but
-            // the mint already exists
-            "SOL" => {
-                log::info!("register SOL token");
+        tokens
+            .into_iter()
+            .map(|desc| match &*desc.symbol {
+                // SOL is a bit of a special case, since we want to have an oracle for it but
+                // the mint already exists
+                "SOL" => {
+                    log::info!("register SOL token");
 
-                (
-                    derive_token_info(&spl_token::native_mint::ID),
-                    test_service::token_init_native(&payer, oracle_authority),
-                )
-            }
+                    Ok((
+                        derive_token_info(&spl_token::native_mint::ID),
+                        test_service::token_init_native(&payer, oracle_authority),
+                    ))
+                }
 
-            _ => {
-                let amount_one = 10u64.pow(desc.decimals.into());
-                let max_amount = desc
-                    .max_test_amount
-                    .map(|x| x * amount_one)
-                    .unwrap_or(u64::MAX);
+                _ => {
+                    let decimals = match desc.decimals {
+                        Some(d) => d,
+                        None => return Err(BuilderError::MissingDecimals(desc.name.clone())),
+                    };
+                    let amount_one = 10u64.pow(decimals.into());
+                    let max_amount = desc
+                        .max_test_amount
+                        .map(|x| x * amount_one)
+                        .unwrap_or(u64::MAX);
 
-                log::info!(
-                    "create token {} with faucet limit {}",
-                    &desc.name,
-                    max_amount
-                );
+                    log::info!(
+                        "create token {} with faucet limit {}",
+                        &desc.name,
+                        max_amount
+                    );
 
-                (
-                    derive_token_mint(&desc.name),
-                    test_service::token_create(
-                        &payer,
-                        &TokenCreateParams {
-                            symbol: desc.symbol.clone(),
-                            name: desc.name.clone(),
-                            decimals: desc.decimals,
-                            authority: builder.authority,
-                            oracle_authority: *oracle_authority,
-                            source_symbol: desc.symbol.clone(),
-                            price_ratio: 1.0,
-                            max_amount,
-                        },
-                    ),
-                )
-            }
-        }),
+                    Ok((
+                        derive_token_mint(&desc.name),
+                        test_service::token_create(
+                            &payer,
+                            &TokenCreateParams {
+                                symbol: desc.symbol.clone(),
+                                name: desc.name.clone(),
+                                authority: builder.authority,
+                                oracle_authority: *oracle_authority,
+                                source_symbol: desc.symbol.clone(),
+                                price_ratio: 1.0,
+                                decimals,
+                                max_amount,
+                            },
+                        ),
+                    ))
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?,
     )
     .await?;
 

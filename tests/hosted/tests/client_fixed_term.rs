@@ -29,7 +29,7 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
             TokenDescription {
                 name: "TSOL".to_string(),
                 symbol: "TSOL".to_string(),
-                decimals: 9,
+                decimals: Some(9),
                 collateral_weight: 100,
                 max_leverage: 20_00,
                 margin_pool: Some(DEFAULT_POOL_CONFIG),
@@ -39,7 +39,7 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
             TokenDescription {
                 name: "USDC".to_string(),
                 symbol: "".to_string(),
-                decimals: 6,
+                decimals: Some(6),
                 collateral_weight: 100,
                 max_leverage: 20_00,
                 margin_pool: Some(DEFAULT_POOL_CONFIG),
