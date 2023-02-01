@@ -183,9 +183,9 @@ impl TokenInfo {
         Ok(Self {
             mint,
             oracle,
+            decimals,
             symbol: desc.symbol.clone(),
             name: desc.name.clone(),
-            decimals: decimals,
             precision: desc.precision,
         })
     }
