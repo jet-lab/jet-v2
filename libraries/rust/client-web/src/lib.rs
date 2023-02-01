@@ -48,20 +48,18 @@ impl JetWebClient {
         let network_kind = NetworkKind::from_genesis_hash(&network_genesis_hash);
         let config_request = match network_kind {
             NetworkKind::Mainnet | NetworkKind::Devnet => {
-                gloo_net::http::Request::get(JetAppConfig::DEFAULT_URL)
+                reqwest::Client::new().get(JetAppConfig::DEFAULT_URL)
             }
-            NetworkKind::Localnet => gloo_net::http::Request::get("/localnet.config.json"),
+            NetworkKind::Localnet => reqwest::Client::new().get("/localnet.config.json"),
         };
 
-        if {
-            if network_kind == NetworkKind::Localnet {
-                console_log::init_with_level(log::Level::Debug)
-            } else {
-                console_log::init_with_level(log::Level::Warn)
-            }
-        }
-        .is_err()
-        {
+        let log_level = if network_kind == NetworkKind::Localnet {
+            log::Level::Debug
+        } else {
+            log::Level::Warn
+        };
+
+        if console_log::init_with_level(log_level).is_err() {
             console_log!("Unable to initialize console log, might already be initialized");
         }
 
