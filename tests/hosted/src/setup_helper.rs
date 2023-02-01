@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 
-use jet_instructions::margin_pool::MarginPoolIxBuilder;
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
 use jet_margin_sdk::solana::keypair::clone;
@@ -77,12 +76,11 @@ pub async fn setup_token(
         },
         collateral_weight,
     };
-    let deposit_token_mint = MarginPoolIxBuilder::new(token).deposit_note_mint;
     try_join!(
         ctx.margin.create_pool(&setup),
         ctx.tokens.set_price(&token, &price),
         ctx.margin
-            .configure_token_deposits(&token, &deposit_token_mint, Some(&deposit_config))
+            .configure_token_deposits(&token, Some(&deposit_config))
     )?;
 
     Ok(token)
@@ -149,6 +147,9 @@ pub async fn setup_user(
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
     let user = ctx.margin.user(&wallet, 0)?;
+
+    // Add an airspace permit for the user
+    ctx.issue_permit(wallet.pubkey()).await?;
 
     // Initialize the margin accounts for each user
     user.create_account().await?;

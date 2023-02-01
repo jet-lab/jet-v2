@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use anyhow::Error;
 
-use jet_instructions::margin_pool::MarginPoolIxBuilder;
 use jet_margin_sdk::{
     swap::spl_swap::SplSwapPool, tokens::TokenPrice, tx_builder::TokenDepositsConfig,
 };
@@ -92,7 +91,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     for pool_info in pools {
         ctx.margin
             .configure_token_deposits(
-                &MarginPoolIxBuilder::new(pool_info.token).deposit_note_mint,
                 &pool_info.token,
                 Some(&TokenDepositsConfig {
                     oracle: jet_margin::TokenOracle::Pyth {

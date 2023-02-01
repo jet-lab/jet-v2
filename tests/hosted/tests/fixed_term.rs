@@ -326,7 +326,7 @@ async fn margin_repay() -> Result<()> {
                 None,
                 wallet.pubkey(),
                 0,
-                margin.airspace,
+                margin.airspace(),
             )),
             Arc::new(
                 FixedTermPositionRefresher::new(

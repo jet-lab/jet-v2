@@ -1,3 +1,4 @@
+use jet_instructions::airspace::derive_airspace;
 use std::{collections::VecDeque, error::Error as StdError, sync::Mutex};
 use thiserror::Error;
 
@@ -69,8 +70,12 @@ impl<I: NetworkUserInterface> ClientState<I> {
         self.network.signer()
     }
 
-    pub fn airspace(&self) -> Pubkey {
-        self.state.config.airspace
+    pub fn airspace(&self) -> String {
+        self.state.config.airspace.clone()
+    }
+
+    pub fn airspace_address(&self) -> Pubkey {
+        derive_airspace(&self.state.config.airspace)
     }
 
     pub fn state(&self) -> &AccountStates<I> {

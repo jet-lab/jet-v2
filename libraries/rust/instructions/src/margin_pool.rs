@@ -56,7 +56,7 @@ impl MarginPoolIxBuilder {
     ///
     /// `token_mint` - The token mint which whose tokens the pool stores
     pub fn new(token_mint: Pubkey) -> Self {
-        let address = derive_margin_pool(&Pubkey::default(), &token_mint);
+        let address = derive_margin_pool(&Default::default(), &token_mint);
 
         let (vault, _) = Pubkey::find_program_address(
             &[address.as_ref(), b"vault".as_ref()],

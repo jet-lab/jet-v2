@@ -99,13 +99,14 @@ impl MarginTxBuilder {
         signer: Option<Keypair>,
         owner: Pubkey,
         seed: u16,
-        airspace: Pubkey,
+        airspace: String,
     ) -> MarginTxBuilder {
         let mut ix = MarginIxBuilder::new(airspace, owner, seed).with_payer(rpc.payer().pubkey());
         if let Some(signer) = signer.as_ref() {
             ix = ix.with_authority(signer.pubkey());
         }
-        let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey(), None);
+        let config_ix =
+            MarginConfigIxBuilder::new(ix.airspace_address(), rpc.payer().pubkey(), None);
 
         Self {
             rpc,
@@ -125,7 +126,7 @@ impl MarginTxBuilder {
     pub fn new_liquidator(
         rpc: Arc<dyn SolanaRpcClient>,
         signer: Option<Keypair>,
-        airspace: Pubkey,
+        airspace: String,
         owner: Pubkey,
         seed: u16,
     ) -> MarginTxBuilder {
@@ -210,8 +211,8 @@ impl MarginTxBuilder {
     }
 
     /// The address of the associated airspace
-    pub fn airspace(&self) -> &Pubkey {
-        &self.ix.airspace
+    pub fn airspace(&self) -> Pubkey {
+        self.ix.airspace_address()
     }
 
     /// Transaction to create a new margin account for the user
@@ -483,7 +484,7 @@ impl MarginTxBuilder {
         };
         let inner_swap_ix = pool_spl_swap(
             &swap_info,
-            self.airspace(),
+            &self.airspace(),
             &self.ix.address,
             source_token_mint,
             destination_token_mint,

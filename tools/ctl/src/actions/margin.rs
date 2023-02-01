@@ -138,7 +138,7 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
 
     for (address, account) in margin_accounts {
         let ix = MarginIxBuilder::new(
-            Pubkey::default(), // FIXME: read airspace from margin account
+            Default::default(), // FIXME: read airspace from margin account
             account.owner,
             u16::from_le_bytes(account.user_seed),
         )
@@ -200,7 +200,7 @@ pub async fn process_update_balances(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Pubkey::default(), // FIXME: read airspace from margin account
+        Default::default(), // FIXME: read airspace from margin account
         account.owner,
         u16::from_le_bytes(account.user_seed),
     )
@@ -232,7 +232,7 @@ pub async fn process_transfer_position(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Pubkey::default(), // FIXME: read airspace from margin account
+        Default::default(), // FIXME: read airspace from margin account
         source.owner,
         u16::from_le_bytes(source.user_seed),
     )

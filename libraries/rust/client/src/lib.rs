@@ -42,7 +42,7 @@ impl<I: NetworkUserInterface> JetClient<I> {
 
     /// The airspace this client is associated with
     pub fn airspace(&self) -> Pubkey {
-        self.client.airspace()
+        self.client.airspace_address()
     }
 
     /// Get the state management object for this client

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use solana_sdk::pubkey::Pubkey;
 
-use jet_instructions::margin_pool::derive_margin_pool;
+use jet_instructions::{airspace::derive_airspace, margin_pool::derive_margin_pool};
 use jet_margin_pool::MarginPool;
 use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
@@ -15,7 +15,10 @@ pub trait MarginPoolCacheExt {
 
 impl<I> MarginPoolCacheExt for AccountStates<I> {
     fn get_pool(&self, token: &Pubkey) -> Option<Arc<MarginPool>> {
-        self.get::<MarginPool>(&derive_margin_pool(&self.config.airspace, token))
+        self.get::<MarginPool>(&derive_margin_pool(
+            &derive_airspace(&self.config.airspace),
+            token,
+        ))
     }
 }
 
@@ -25,7 +28,7 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
         .config
         .tokens
         .iter()
-        .map(|info| derive_margin_pool(&states.config.airspace, &info.mint))
+        .map(|info| derive_margin_pool(&derive_airspace(&states.config.airspace), &info.mint))
         .collect::<Vec<_>>();
 
     let accounts = states

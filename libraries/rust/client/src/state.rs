@@ -6,8 +6,6 @@ use std::{
 
 use solana_sdk::pubkey::Pubkey;
 
-use jet_instructions::airspace::derive_airspace;
-
 use crate::{
     client::ClientResult,
     config::{DexInfo, JetAppConfig, TokenInfo},
@@ -41,7 +39,7 @@ impl<I: NetworkUserInterface> AccountStates<I> {
             })?;
 
         let config = StateConfig {
-            airspace: derive_airspace(&airspace),
+            airspace,
             tokens: airspace_config
                 .tokens
                 .clone()
@@ -95,7 +93,7 @@ impl<I> std::ops::Deref for AccountStates<I> {
 
 #[derive(Debug)]
 pub struct StateConfig {
-    pub airspace: Pubkey,
+    pub airspace: String,
     pub tokens: Vec<TokenInfo>,
     pub fixed_term_markets: Vec<Pubkey>,
     pub exchanges: Vec<DexInfo>,

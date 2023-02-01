@@ -1,6 +1,9 @@
 use solana_sdk::pubkey::Pubkey;
 
-use jet_instructions::margin::{derive_margin_account, derive_token_config};
+use jet_instructions::{
+    airspace::derive_airspace,
+    margin::{derive_margin_account, derive_token_config},
+};
 use jet_margin::{MarginAccount, TokenAdmin, TokenConfig, TokenOracle};
 use jet_margin_pool::MarginPool;
 use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
@@ -43,7 +46,7 @@ pub async fn sync_configs<I: NetworkUserInterface>(
     // derive all the config addresses
     let configs = tokens
         .iter()
-        .map(|token| derive_token_config(&states.config.airspace, token))
+        .map(|token| derive_token_config(&derive_airspace(&states.config.airspace), token))
         .collect::<Vec<_>>();
 
     let accounts = states
@@ -123,7 +126,7 @@ pub async fn load_user_margin_accounts<I: NetworkUserInterface>(
     const MAX_DERIVED_ACCOUNTS_TO_CHECK: u16 = 32;
 
     let user = states.network.signer();
-    let airspace = states.config.airspace;
+    let airspace = derive_airspace(&states.config.airspace);
     let possible_accounts = (0..MAX_DERIVED_ACCOUNTS_TO_CHECK)
         .map(|seed| derive_margin_account(&airspace, &user, seed))
         .collect::<Vec<_>>();

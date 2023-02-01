@@ -95,7 +95,7 @@ impl MarginClient {
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             keypair.pubkey(),
             seed,
-            self.tx_admin.airspace,
+            self.tx_admin.airspace(),
         );
 
         Ok(MarginUser {
@@ -105,7 +105,11 @@ impl MarginClient {
         })
     }
 
-    pub fn airspace(&self) -> Pubkey {
+    pub fn airspace(&self) -> String {
+        self.airspace.seed()
+    }
+
+    pub fn airspace_address(&self) -> Pubkey {
         self.airspace.address()
     }
 
@@ -229,14 +233,14 @@ impl MarginClient {
         Ok(())
     }
 
+    /// Configure deposits for a given token (when placed directly into a margin account)
     pub async fn configure_token_deposits(
         &self,
-        deposit_token_mint: &Pubkey,
         underlying_mint: &Pubkey,
         config: Option<&TokenDepositsConfig>,
     ) -> Result<(), Error> {
         self.tx_admin
-            .configure_margin_token_deposits(*deposit_token_mint, *underlying_mint, config.cloned())
+            .configure_margin_token_deposits(*underlying_mint, config.cloned())
             .with_signer(clone(&self.airspace_authority))
             .send_and_confirm(&self.rpc)
             .await?;
@@ -289,7 +293,7 @@ impl MarginClient {
         let control_ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
             .set_liquidator(&liquidator, is_liquidator);
         let margin_ix = MarginConfigIxBuilder::new(
-            self.tx_admin.airspace,
+            self.tx_admin.airspace_address(),
             self.rpc.payer().pubkey(),
             Some(self.airspace_authority.pubkey()),
         )
@@ -381,13 +385,6 @@ impl MarginUser {
     }
 
     pub async fn create_account(&self) -> Result<(), Error> {
-        let permit_account = derive_permit(self.tx.airspace(), &self.signer());
-
-        if self.rpc.get_account(&permit_account).await?.is_none() {
-            let airspace = AirspaceIxBuilder::new("default", self.signer(), self.signer());
-            self.rpc
-                .send_and_confirm(vec![airspace.permit_create(self.signer())].into());
-        }
         self.send_confirm_tx(self.tx.create_account().await?).await
     }
 
