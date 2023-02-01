@@ -20,7 +20,7 @@ testing = [
     "jet-fixed-term/testing",
     "jet-margin-pool/testing"
 ]
-devnet = []
+devnet = ["jet-program-common/devnet"]
 
 [dependencies]
 solana-program = "1.14"

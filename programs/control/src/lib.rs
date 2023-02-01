@@ -16,8 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-#[cfg(not(feature = "testing"))]
-use anchor_lang::solana_program::pubkey;
 
 use jet_margin_pool::MarginPoolConfig;
 
