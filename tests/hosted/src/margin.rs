@@ -262,25 +262,28 @@ impl MarginClient {
 
     /// Create a new margin pool for a token
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
-        let ix =
-            ControlIxBuilder::new(self.rpc.payer().pubkey()).create_margin_pool(&setup_info.token);
+        self.tx_admin
+            .create_margin_pool(setup_info.token)
+            .send_and_confirm(&self.rpc)
+            .await?;
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
-
-        self.configure_margin_pool(
-            &setup_info.token,
-            &MarginPoolConfiguration {
-                pyth_price: Some(setup_info.oracle.price),
-                pyth_product: Some(setup_info.oracle.product),
-                metadata: Some(TokenMetadataParams {
-                    token_kind: jet_metadata::TokenKind::Collateral,
-                    collateral_weight: setup_info.collateral_weight,
-                    max_leverage: setup_info.max_leverage,
-                }),
-                parameters: Some(setup_info.config),
-            },
-        )
-        .await?;
+        self.tx_admin
+            .configure_margin_pool(
+                setup_info.token,
+                &MarginPoolConfiguration {
+                    pyth_price: Some(setup_info.oracle.price),
+                    pyth_product: Some(setup_info.oracle.product),
+                    metadata: Some(TokenMetadataParams {
+                        token_kind: jet_metadata::TokenKind::Collateral,
+                        collateral_weight: setup_info.collateral_weight,
+                        max_leverage: setup_info.max_leverage,
+                    }),
+                    parameters: Some(setup_info.config),
+                },
+            )
+            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
+            .send_and_confirm(&self.rpc)
+            .await?;
 
         Ok(())
     }

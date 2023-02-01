@@ -660,21 +660,34 @@ impl TestManager {
 
 #[async_trait]
 pub trait GenerateProxy {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self>
+    async fn generate(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+        owner: &Keypair,
+    ) -> Result<Self>
     where
         Self: Sized;
 }
 
 #[async_trait]
 impl GenerateProxy for NoProxy {
-    async fn generate(_manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
+    async fn generate(
+        _ctx: Arc<MarginTestContext>,
+        _manager: Arc<TestManager>,
+        owner: &Keypair,
+    ) -> Result<Self> {
         Ok(NoProxy(owner.pubkey()))
     }
 }
 
 #[async_trait]
 impl GenerateProxy for MarginIxBuilder {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
+    async fn generate(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+        owner: &Keypair,
+    ) -> Result<Self> {
+        ctx.issue_permit(owner.pubkey()).await?;
         let margin = MarginIxBuilder::new(manager.airspace.clone(), owner.pubkey(), 0);
         manager
             .sign_send_transaction(&[margin.create_account()], Some(&[owner]))
@@ -718,14 +731,17 @@ impl<P: Proxy> FixedTermUser<P> {
 }
 
 impl<P: Proxy + GenerateProxy> FixedTermUser<P> {
-    pub async fn new(manager: Arc<TestManager>) -> Result<Self> {
+    pub async fn new(ctx: Arc<MarginTestContext>, manager: Arc<TestManager>) -> Result<Self> {
         let owner = create_wallet(&manager.client, 10 * LAMPORTS_PER_SOL).await?;
-        let proxy = P::generate(manager.clone(), &owner).await?;
+        let proxy = P::generate(ctx.clone(), manager.clone(), &owner).await?;
         Self::new_with_proxy(manager, owner, proxy)
     }
 
-    pub async fn new_funded(manager: Arc<TestManager>) -> Result<Self> {
-        let user = Self::new(manager).await?;
+    pub async fn new_funded(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+    ) -> Result<Self> {
+        let user = Self::new(ctx.clone(), manager).await?;
         user.fund().await?;
         Ok(user)
     }

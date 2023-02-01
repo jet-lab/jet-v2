@@ -101,6 +101,11 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
     let user_b = ctx.margin.user(&wallet_b, 0)?;
     let user_c = ctx.margin.user(&wallet_c, 0)?;
 
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
+    ctx.issue_permit(wallet_c.pubkey()).await?;
+
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
     user_b.create_account().await?;
