@@ -2451,6 +2451,7 @@ dependencies = [
  "borsh 0.9.3",
  "bytemuck",
  "itertools 0.10.5",
+ "jet-airspace",
  "jet-margin",
  "jet-program-common",
  "jet-program-proc-macros",

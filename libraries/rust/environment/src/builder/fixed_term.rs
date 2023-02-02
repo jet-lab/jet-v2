@@ -266,32 +266,38 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     let rent = Rent::default();
 
     // Intialize event/orderbook data accounts
-    builder.setup([TransactionBuilder {
-        instructions: vec![
-            system_instruction::create_account(
+    builder.setup([
+        TransactionBuilder {
+            instructions: vec![system_instruction::create_account(
                 &payer,
                 &key_eq.pubkey(),
                 rent.minimum_balance(len_eq),
                 len_eq as u64,
                 &jet_fixed_term::ID,
-            ),
-            system_instruction::create_account(
+            )],
+            signers: vec![key_eq],
+        },
+        TransactionBuilder {
+            instructions: vec![system_instruction::create_account(
                 &payer,
                 &key_bids.pubkey(),
                 rent.minimum_balance(len_orders),
                 len_orders as u64,
                 &jet_fixed_term::ID,
-            ),
-            system_instruction::create_account(
+            )],
+            signers: vec![key_bids],
+        },
+        TransactionBuilder {
+            instructions: vec![system_instruction::create_account(
                 &payer,
                 &key_asks.pubkey(),
                 rent.minimum_balance(len_orders),
                 len_orders as u64,
                 &jet_fixed_term::ID,
-            ),
-        ],
-        signers: vec![key_eq, key_asks, key_bids],
-    }]);
+            )],
+            signers: vec![key_asks],
+        },
+    ]);
 
     builder.propose([
         ix_builder.initialize_market(

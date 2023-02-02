@@ -23,7 +23,9 @@ pub use jet_fixed_term::{
     ID,
 };
 
-use crate::{margin::derive_token_config, test_service::if_not_initialized};
+use crate::{
+    airspace::derive_governor_id, margin::derive_token_config, test_service::if_not_initialized,
+};
 
 pub use jet_fixed_term::ID as FIXED_TERM_PROGRAM;
 
@@ -935,6 +937,23 @@ impl FixedTermIxBuilder {
     pub fn jet_fixed_term_id() -> Pubkey {
         jet_fixed_term::ID
     }
+}
+
+pub fn recover_uninitialized(
+    governor: Pubkey,
+    uninitialized: Pubkey,
+    recipient: Pubkey,
+) -> Instruction {
+    let data = jet_fixed_term::instruction::RecoverUninitialized {}.data();
+    let accounts = jet_fixed_term::accounts::RecoverUninitialized {
+        governor,
+        governor_id: derive_governor_id(),
+        uninitialized,
+        recipient,
+    }
+    .to_account_metas(None);
+
+    Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
 }
 
 pub fn derive_market(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {

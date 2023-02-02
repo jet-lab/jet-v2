@@ -236,6 +236,9 @@ pub enum MarginPoolCommand {
 pub enum FixedTermCommand {
     /// Create a new fixed term market
     CreateMarket(MarketParameters),
+
+    /// Recover unintialized account rent
+    RecoverUninitialized { recipient: Pubkey },
 }
 
 #[serde_as]
@@ -317,6 +320,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         opts.compute_budget,
     )?;
     let client = Client::new(client_config).await?;
+    let skip_proposal_conversion = matches!(&opts.command, Command::Apply { .. });
 
     let mut plan = match opts.command {
         Command::ProgramDeploy { program_id, buffer } => {
@@ -329,7 +333,13 @@ pub async fn run(opts: CliOpts) -> Result<()> {
             .await?
         }
         Command::Apply { config_path } => {
-            actions::apply::process_apply(&client, config_path).await?
+            actions::apply::process_apply(
+                &client,
+                config_path,
+                opts.target_proposal,
+                opts.target_proposal_option,
+            )
+            .await?
         }
         Command::GenerateAppConfig { config_dir, output } => {
             actions::global::process_generate_app_config(&client, &config_dir, &output).await?
@@ -345,18 +355,20 @@ pub async fn run(opts: CliOpts) -> Result<()> {
     };
 
     if let Some(proposal_id) = opts.target_proposal {
-        println!(
-            "targeting a proposal {proposal_id}, {} transactions will be added",
-            plan.entries.len()
-        );
+        if !skip_proposal_conversion {
+            println!(
+                "targeting a proposal {proposal_id}, {} transactions will be added",
+                plan.entries.len()
+            );
 
-        plan = governance::convert_plan_to_proposal(
-            &client,
-            plan,
-            proposal_id,
-            opts.target_proposal_option,
-        )
-        .await?;
+            plan = governance::convert_plan_to_proposal(
+                &client,
+                plan,
+                proposal_id,
+                opts.target_proposal_option,
+            )
+            .await?;
+        }
     }
 
     client.execute(plan).await?;
@@ -459,6 +471,10 @@ async fn run_fixed_command(client: &Client, command: FixedTermCommand) -> Result
     match command {
         FixedTermCommand::CreateMarket(params) => {
             actions::fixed_term::process_create_fixed_term_market(client, params).await
+        }
+
+        FixedTermCommand::RecoverUninitialized { recipient } => {
+            actions::fixed_term::process_recover_uninitialized(client, recipient).await
         }
     }
 }

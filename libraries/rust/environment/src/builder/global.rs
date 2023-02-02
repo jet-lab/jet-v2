@@ -66,15 +66,18 @@ pub(crate) async fn configure_airspace<I: NetworkUserInterface>(
     oracle_authority: &Pubkey,
     config: &AirspaceConfig,
 ) -> Result<(), BuilderError> {
-    let payer = builder.payer();
-    let as_ix = AirspaceIxBuilder::new(&config.name, payer, builder.proposal_authority());
+    let as_ix = AirspaceIxBuilder::new(
+        &config.name,
+        builder.proposal_payer(),
+        builder.proposal_authority(),
+    );
 
     if !builder.account_exists(&as_ix.address()).await? {
         log::info!("create airspace '{}' as {}", &config.name, as_ix.address());
         builder.propose([as_ix.create(builder.proposal_authority(), config.is_restricted)]);
     }
 
-    if builder.network == NetworkKind::Localnet {
+    if builder.network != NetworkKind::Mainnet {
         create_test_tokens(builder, oracle_authority, &config.tokens).await?;
     }
 
@@ -119,8 +122,8 @@ pub(crate) async fn register_global_margin_adapters<'a, I: NetworkUserInterface>
     builder: &mut Builder<I>,
     adapters: impl IntoIterator<Item = &'a Pubkey>,
 ) -> Result<(), BuilderError> {
-    let payer = builder.payer();
-    let ctrl_ix = ControlIxBuilder::new_for_authority(builder.authority, payer);
+    let ctrl_ix =
+        ControlIxBuilder::new_for_authority(builder.proposal_authority(), builder.proposal_payer());
 
     let ixns = filter_initializers(
         builder,

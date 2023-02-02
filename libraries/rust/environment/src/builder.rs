@@ -178,7 +178,10 @@ impl<I: NetworkUserInterface> Builder<I> {
         let payer = self.payer();
 
         let instructions = match &mut self.proposal_context {
-            None => instructions.into_iter().collect::<Vec<_>>(),
+            None => instructions
+                .into_iter()
+                .map(TransactionBuilder::from)
+                .collect::<Vec<_>>(),
             Some(ctx) => instructions
                 .into_iter()
                 .map(|ix| {
@@ -212,12 +215,12 @@ impl<I: NetworkUserInterface> Builder<I> {
                     );
 
                     ctx.tx_next_index += 1;
-                    add_ix
+                    TransactionBuilder::from(add_ix)
                 })
                 .collect::<Vec<_>>(),
         };
 
-        self.propose_tx.push(instructions.into());
+        self.propose_tx.extend(instructions);
     }
 
     pub(crate) fn margin_config_ix(&self, airspace: &Pubkey) -> MarginConfigIxBuilder {

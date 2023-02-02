@@ -38,7 +38,7 @@ pub struct CreateMarginPool<'info> {
     requester: Signer<'info>,
 
     #[account(mut)]
-    payer: AccountInfo<'info>,
+    payer: Signer<'info>,
 
     authority: Account<'info, Authority>,
 
@@ -133,7 +133,7 @@ impl<'info> CreateMarginPool<'info> {
                 key_account: self.token_mint.to_account_info(),
                 metadata_account: self.token_metadata.to_account_info(),
                 authority: self.authority.to_account_info(),
-                payer: self.requester.to_account_info(),
+                payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
         )
@@ -156,7 +156,7 @@ impl<'info> CreateMarginPool<'info> {
                 key_account: self.deposit_note_mint.to_account_info(),
                 metadata_account: self.deposit_note_metadata.to_account_info(),
                 authority: self.authority.to_account_info(),
-                payer: self.requester.to_account_info(),
+                payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
         )
@@ -179,7 +179,7 @@ impl<'info> CreateMarginPool<'info> {
                 key_account: self.loan_note_mint.to_account_info(),
                 metadata_account: self.loan_note_metadata.to_account_info(),
                 authority: self.authority.to_account_info(),
-                payer: self.requester.to_account_info(),
+                payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
         )

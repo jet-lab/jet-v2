@@ -42,6 +42,7 @@ jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
 jet-program-common = { path = "../../libraries/rust/program-common" }
 
 jet-margin = { path = "../margin", features = ["no-entrypoint"] }
+jet-airspace = { path = "../airspace", features = ["no-entrypoint"] }
 
 [dev-dependencies]
 serde_json = "1.0"

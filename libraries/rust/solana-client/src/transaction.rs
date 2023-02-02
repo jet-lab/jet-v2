@@ -116,7 +116,7 @@ impl WithSigner for TransactionBuilder {
     }
 }
 
-const MAX_TX_SIZE: usize = 1232;
+const MAX_TX_SIZE: usize = 1024;
 
 /// Combines all the instructions within each of the TransactionBuilders into the smallest
 ///  possible number of TransactionBuilders that don't violate the rules:

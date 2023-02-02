@@ -27,7 +27,7 @@ use crate::{
 #[instruction(seed: String)]
 pub struct AirspaceCreate<'info> {
     #[account(mut)]
-    payer: AccountInfo<'info>,
+    payer: Signer<'info>,
 
     /// The airspace account to be created
     #[account(init,
