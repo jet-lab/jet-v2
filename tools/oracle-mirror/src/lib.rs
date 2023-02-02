@@ -374,7 +374,9 @@ impl RunningProcessIdFile {
 
     fn new() -> Self {
         let pid = std::process::id();
-        std::fs::write(Self::PATH, pid.to_string()).unwrap();
+        if std::fs::write(Self::PATH, pid.to_string()).is_err() {
+            eprintln!("Unable to create oracle mirror PID file");
+        };
 
         Self
     }
