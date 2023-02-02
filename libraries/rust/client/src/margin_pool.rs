@@ -9,7 +9,7 @@ use jet_margin_pool::TokenChange;
 use crate::{
     client::{ClientResult, ClientState},
     margin::MarginAccountClient,
-    UserNetworkInterface,
+    NetworkUserInterface,
 };
 
 /// Client for interacting with a margin pool, from the perspective of a margin account
@@ -20,7 +20,7 @@ pub struct MarginAccountPoolClient<I> {
     pub(crate) account: MarginAccountClient<I>,
 }
 
-impl<I: UserNetworkInterface> MarginAccountPoolClient<I> {
+impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
     pub fn new(account: MarginAccountClient<I>, token: &Pubkey) -> Self {
         let builder = MarginPoolIxBuilder::new(*token);
 
@@ -335,7 +335,7 @@ impl<I: UserNetworkInterface> MarginAccountPoolClient<I> {
     }
 }
 
-pub(crate) fn instruction_for_refresh<I: UserNetworkInterface>(
+pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
     account: &MarginAccountClient<I>,
     token: &Pubkey,
     refreshing_tokens: &mut HashSet<Pubkey>,

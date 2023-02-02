@@ -236,27 +236,9 @@ pub enum MarginPoolCommand {
 pub enum FixedTermCommand {
     /// Create a new fixed term market
     CreateMarket(MarketParameters),
-}
 
-#[serde_as]
-#[derive(Debug, Subcommand, Deserialize)]
-#[serde(tag = "test-action")]
-pub enum TestCommand {
-    /// Initialize a test environment
-    InitEnv {
-        /// A config file specifying the resources to be intiailized
-        config_path: PathBuf,
-    },
-
-    /// Generate the application config from a test environment
-    GenerateAppConfig {
-        /// The config path used to initialize the environment
-        config_path: PathBuf,
-
-        /// The output file path for the generated config
-        #[clap(long, short = 'o')]
-        output: PathBuf,
-    },
+    /// Recover unintialized account rent
+    RecoverUninitialized { recipient: Pubkey },
 }
 
 #[serde_as]
@@ -322,15 +304,11 @@ pub enum Command {
         #[clap(subcommand)]
         subcmd: FixedTermCommand,
     },
-
-    /// Test management
-    Test {
-        #[clap(subcommand)]
-        subcmd: TestCommand,
-    },
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
+    let _ = env_logger::builder().is_test(false).try_init();
+
     let rpc_endpoint = opts
         .rpc_endpoint
         .map(solana_clap_utils::input_validators::normalize_to_url_if_moniker);
@@ -342,6 +320,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         opts.compute_budget,
     )?;
     let client = Client::new(client_config).await?;
+    let skip_proposal_conversion = matches!(&opts.command, Command::Apply { .. });
 
     let mut plan = match opts.command {
         Command::ProgramDeploy { program_id, buffer } => {
@@ -354,7 +333,13 @@ pub async fn run(opts: CliOpts) -> Result<()> {
             .await?
         }
         Command::Apply { config_path } => {
-            actions::apply::process_apply(&client, config_path).await?
+            actions::apply::process_apply(
+                &client,
+                config_path,
+                opts.target_proposal,
+                opts.target_proposal_option,
+            )
+            .await?
         }
         Command::GenerateAppConfig { config_dir, output } => {
             actions::global::process_generate_app_config(&client, &config_dir, &output).await?
@@ -367,22 +352,23 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         Command::Margin { subcmd } => run_margin_command(&client, subcmd).await?,
         Command::MarginPool { subcmd } => run_margin_pool_command(&client, subcmd).await?,
         Command::Fixed { subcmd } => run_fixed_command(&client, subcmd).await?,
-        Command::Test { subcmd } => run_test_command(&client, subcmd).await?,
     };
 
     if let Some(proposal_id) = opts.target_proposal {
-        println!(
-            "targeting a proposal {proposal_id}, {} transactions will be added",
-            plan.entries.len()
-        );
+        if !skip_proposal_conversion {
+            println!(
+                "targeting a proposal {proposal_id}, {} transactions will be added",
+                plan.entries.len()
+            );
 
-        plan = governance::convert_plan_to_proposal(
-            &client,
-            plan,
-            proposal_id,
-            opts.target_proposal_option,
-        )
-        .await?;
+            plan = governance::convert_plan_to_proposal(
+                &client,
+                plan,
+                proposal_id,
+                opts.target_proposal_option,
+            )
+            .await?;
+        }
     }
 
     client.execute(plan).await?;
@@ -486,18 +472,9 @@ async fn run_fixed_command(client: &Client, command: FixedTermCommand) -> Result
         FixedTermCommand::CreateMarket(params) => {
             actions::fixed_term::process_create_fixed_term_market(client, params).await
         }
-    }
-}
 
-async fn run_test_command(client: &Client, command: TestCommand) -> Result<Plan> {
-    match command {
-        TestCommand::InitEnv { config_path } => {
-            actions::test::process_init_env(client, config_path).await
+        FixedTermCommand::RecoverUninitialized { recipient } => {
+            actions::fixed_term::process_recover_uninitialized(client, recipient).await
         }
-
-        TestCommand::GenerateAppConfig {
-            config_path,
-            output,
-        } => actions::test::process_generate_app_config(client, config_path, output).await,
     }
 }

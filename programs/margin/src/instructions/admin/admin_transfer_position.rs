@@ -18,6 +18,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
+use jet_program_common::GOVERNOR_ID;
+
 use crate::{
     events::TransferPosition,
     syscall::{sys, Sys},
@@ -27,7 +29,7 @@ use crate::{
 #[derive(Accounts)]
 pub struct AdminTransferPosition<'info> {
     /// The administrative authority
-    #[account(address = super::ADMINISTRATOR)]
+    #[account(address = GOVERNOR_ID)]
     pub authority: Signer<'info>,
 
     /// The target margin account to move a position into

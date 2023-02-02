@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 use bitflags::bitflags;
 use bytemuck::Contiguous;
 
-use crate::ErrorCode;
+use crate::{ErrorCode, TokenConfigUpdate};
 
 /// Description of the token's usage
 #[derive(AnchorSerialize, AnchorDeserialize, Contiguous, Eq, PartialEq, Clone, Copy, Debug)]
@@ -83,6 +83,16 @@ pub struct TokenConfig {
 
     /// The maximum staleness (seconds) that's acceptable for balances of this token
     pub max_staleness: u64,
+}
+
+impl PartialEq<TokenConfigUpdate> for TokenConfig {
+    fn eq(&self, other: &TokenConfigUpdate) -> bool {
+        self.underlying_mint == other.underlying_mint
+            && self.admin == other.admin
+            && self.token_kind == other.token_kind
+            && self.value_modifier == other.value_modifier
+            && self.max_staleness == other.max_staleness
+    }
 }
 
 impl TokenConfig {

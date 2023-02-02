@@ -3,12 +3,13 @@ use solana_sdk::pubkey::Pubkey;
 use jet_instructions::margin::{derive_margin_account, derive_token_config};
 use jet_margin::{MarginAccount, TokenAdmin, TokenConfig, TokenOracle};
 use jet_margin_pool::MarginPool;
+use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
 use super::{fixed_term::MarketState, oracles::PriceOracleState, tokens::Mint, AccountStates};
-use crate::{client::ClientResult, state::tokens, ClientInterfaceExt, UserNetworkInterface};
+use crate::{client::ClientResult, state::tokens};
 
 /// Refresh state for all currently loaded margin accounts
-pub async fn sync<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
     sync_configs(states).await?;
     sync_margin_accounts(states).await?;
 
@@ -16,7 +17,7 @@ pub async fn sync<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientR
 }
 
 /// Reload all state for the margin configurations
-pub async fn sync_configs<I: UserNetworkInterface>(
+pub async fn sync_configs<I: NetworkUserInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
     let mut tokens = states
@@ -79,7 +80,7 @@ pub async fn sync_configs<I: UserNetworkInterface>(
 }
 
 /// Sync all latest state for all previouly loaded margin accounts
-pub async fn sync_margin_accounts<I: UserNetworkInterface>(
+pub async fn sync_margin_accounts<I: NetworkUserInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
     let addresses = states.cache.addresses_of::<MarginAccount>();
@@ -88,7 +89,7 @@ pub async fn sync_margin_accounts<I: UserNetworkInterface>(
 }
 
 /// Load state for the given list of margin accounts
-pub async fn load_margin_accounts<I: UserNetworkInterface>(
+pub async fn load_margin_accounts<I: NetworkUserInterface>(
     states: &AccountStates<I>,
     addresses: &[Pubkey],
 ) -> ClientResult<I, ()> {
@@ -115,7 +116,7 @@ pub async fn load_margin_accounts<I: UserNetworkInterface>(
 ///
 /// This is currently limited to only finding the first 32 addresses associated
 /// with the user based on the account seed value.
-pub async fn load_user_margin_accounts<I: UserNetworkInterface>(
+pub async fn load_user_margin_accounts<I: NetworkUserInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
     // Currently limited to check a fixed set of accounts due to performance reasons,

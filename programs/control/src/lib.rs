@@ -16,8 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-#[cfg(not(feature = "testing"))]
-use anchor_lang::solana_program::pubkey;
 
 use jet_margin_pool::MarginPoolConfig;
 
@@ -28,9 +26,6 @@ pub use instructions::TokenMetadataParams;
 pub mod events;
 
 declare_id!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
-
-#[cfg(not(feature = "testing"))]
-static ROOT_AUTHORITY: Pubkey = pubkey!("2J2K1wHK3U8bsow1shUZJvEx1L2og2h5T5JGPqBS1uKA");
 
 pub mod seeds {
     use super::constant;

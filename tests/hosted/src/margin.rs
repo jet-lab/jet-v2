@@ -81,7 +81,7 @@ impl MarginClient {
 
         Self {
             tx_admin: AirspaceAdmin::new(airspace_seed, payer, airspace_authority.pubkey()),
-            airspace: AirspaceIxBuilder::new(airspace_seed, payer, airspace_authority.pubkey()),
+            airspace: AirspaceIxBuilder::new(airspace_seed, payer, payer),
             rpc,
             airspace_authority,
         }
@@ -180,7 +180,11 @@ impl MarginClient {
     }
 
     pub fn create_airspace_ix(&self, is_restricted: bool) -> Instruction {
-        if_not_initialized(self.airspace.address(), self.airspace.create(is_restricted))
+        if_not_initialized(
+            self.airspace.address(),
+            self.airspace
+                .create(self.airspace_authority.pubkey(), is_restricted),
+        )
     }
 
     pub async fn create_authority_if_missing(&self) -> Result<(), Error> {

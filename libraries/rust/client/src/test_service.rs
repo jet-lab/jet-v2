@@ -6,7 +6,7 @@ use jet_instructions::test_service;
 
 use crate::{
     client::{ClientResult, ClientState},
-    UserNetworkInterface,
+    NetworkUserInterface,
 };
 
 /// Client for interacting with the test-service program
@@ -15,7 +15,7 @@ pub struct TestServiceClient<I> {
     client: Arc<ClientState<I>>,
 }
 
-impl<I: UserNetworkInterface> TestServiceClient<I> {
+impl<I: NetworkUserInterface> TestServiceClient<I> {
     pub(crate) fn new(client: Arc<ClientState<I>>) -> Self {
         Self { client }
     }

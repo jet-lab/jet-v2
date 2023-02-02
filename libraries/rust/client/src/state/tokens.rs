@@ -3,14 +3,16 @@ use std::collections::HashSet;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
+use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+
 use super::AccountStates;
-use crate::{client::ClientResult, ClientError, ClientInterfaceExt, UserNetworkInterface};
+use crate::{client::ClientResult, ClientError};
 
 pub type TokenAccount = spl_token::state::Account;
 pub type Mint = spl_token::state::Mint;
 
 /// Sync latest state for all token accounts
-pub async fn sync<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
     sync_mints(states).await?;
     sync_accounts(states).await?;
 
@@ -18,7 +20,7 @@ pub async fn sync<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientR
 }
 
 /// Sync all the mints
-pub async fn sync_mints<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync_mints<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
     let mut address_set: HashSet<_> =
         HashSet::from_iter(states.config.tokens.iter().map(|t| t.mint));
 
@@ -46,7 +48,7 @@ pub async fn sync_mints<I: UserNetworkInterface>(states: &AccountStates<I>) -> C
 }
 
 /// Sync all the previously loaded token accounts
-pub async fn sync_accounts<I: UserNetworkInterface>(
+pub async fn sync_accounts<I: NetworkUserInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
     let mut address_set = HashSet::new();
@@ -67,7 +69,7 @@ pub async fn sync_accounts<I: UserNetworkInterface>(
 }
 
 /// Load token accounts into the state cache
-pub async fn load_accounts<I: UserNetworkInterface>(
+pub async fn load_accounts<I: NetworkUserInterface>(
     states: &AccountStates<I>,
     addresses: &[Pubkey],
 ) -> ClientResult<I, ()> {

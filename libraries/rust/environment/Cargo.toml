@@ -1,0 +1,26 @@
+[package]
+name = "jet-environment"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = "1"
+log = "0.4"
+
+toml = "0.5"
+serde_with = "1.5"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
+solana-sdk = "1.14"
+spl-token = { version = "3", features = ["no-entrypoint"] }
+spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
+
+spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
+
+jet-solana-client = { path = "../solana-client" }
+jet-instructions = { path = "../instructions" }
+jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"]}
+jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint"]}
+jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"]}
+jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"]}

@@ -1,7 +1,6 @@
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
 };
 
@@ -9,6 +8,8 @@ use anchor_lang::{AccountDeserialize, Discriminator};
 use anyhow::{bail, Result};
 use clap::Parser;
 
+use jet_environment::builder::resolve_swap_program;
+use jet_solana_client::network::NetworkKind;
 use solana_clap_utils::input_validators::normalize_to_url_if_moniker;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::{
@@ -18,9 +19,9 @@ use solana_client::{
 };
 use solana_sdk::{
     account::ReadableAccount, commitment_config::CommitmentConfig,
-    compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction,
-    program_pack::Pack, pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer,
-    system_instruction, sysvar::rent::Rent, transaction::Transaction,
+    compute_budget::ComputeBudgetInstruction, instruction::Instruction, program_pack::Pack, pubkey,
+    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction, sysvar::rent::Rent,
+    transaction::Transaction,
 };
 
 use pyth_sdk_solana::state::ProductAccount;
@@ -29,9 +30,6 @@ use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
 
 const PYTH_DEVNET_PROGRAM: Pubkey = pubkey!("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s");
 const PYTH_MAINNET_PROGRAM: Pubkey = pubkey!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH");
-
-const MAINNET_HASH: &str = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
-const DEVNET_HASH: &str = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 
 #[derive(Parser, Debug)]
 pub struct CliOpts {
@@ -85,8 +83,10 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         RpcClient::new_with_commitment(target_endpoint, CommitmentConfig::processed()),
     )) as Arc<dyn SolanaRpcClient>;
 
+    let swap_program = get_spl_program(&target_client).await?;
+
     let oracle_list = discover_oracles(&source_client, &target_client).await?;
-    let pool_list = discover_pools(&target_sdk_client, &oracle_list).await?;
+    let pool_list = discover_pools(&target_sdk_client, &oracle_list, swap_program).await?;
 
     let mut id_file = None;
 
@@ -148,8 +148,12 @@ async fn sync_pool_balances(
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
         }
 
+        let network = get_network_kind_from_rpc(target).await?;
+        let swap_program = resolve_swap_program(network, "orca-spl-swap")?;
+
         instructions.push(
             jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
+                &swap_program,
                 token_a,
                 token_b,
                 &scratch_a,
@@ -244,14 +248,11 @@ async fn sync_oracles(
 async fn discover_pools(
     target: &Arc<dyn SolanaRpcClient>,
     oracles: &[OracleInfo],
+    program: Pubkey,
 ) -> Result<Vec<(Pubkey, Pubkey)>> {
     let supported_mints = HashSet::from_iter(oracles.iter().map(|o| o.target_mint));
-    let result = jet_margin_sdk::spl_swap::SplSwapPool::get_pools(
-        target,
-        &supported_mints,
-        spl_token_swap::ID,
-    )
-    .await?;
+    let result =
+        jet_margin_sdk::spl_swap::SplSwapPool::get_pools(target, &supported_mints, program).await?;
 
     println!("found {} pools", result.len());
 
@@ -328,8 +329,13 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
     Ok(oracle_matches)
 }
 
+async fn get_spl_program(rpc: &RpcClient) -> Result<Pubkey> {
+    let network = get_network_kind_from_rpc(rpc).await?;
+    Ok(resolve_swap_program(network, "orca-spl-swap")?)
+}
+
 async fn get_pyth_program_id(rpc: &RpcClient) -> Result<Pubkey> {
-    let network_kind = NetworkKind::get_from_rpc(rpc).await?;
+    let network_kind = get_network_kind_from_rpc(rpc).await?;
 
     Ok(match network_kind {
         NetworkKind::Mainnet => PYTH_MAINNET_PROGRAM,
@@ -338,26 +344,9 @@ async fn get_pyth_program_id(rpc: &RpcClient) -> Result<Pubkey> {
     })
 }
 
-#[derive(Debug, Eq, PartialEq)]
-enum NetworkKind {
-    Mainnet,
-    Devnet,
-    Localnet,
-}
-
-impl NetworkKind {
-    async fn get_from_rpc(rpc: &RpcClient) -> Result<Self> {
-        let mainnet_hash = Hash::from_str(MAINNET_HASH).unwrap();
-        let devnet_hash = Hash::from_str(DEVNET_HASH).unwrap();
-
-        let network_hash = rpc.get_genesis_hash().await?;
-
-        Ok(match network_hash {
-            hash if hash == mainnet_hash => NetworkKind::Mainnet,
-            hash if hash == devnet_hash => NetworkKind::Devnet,
-            _ => NetworkKind::Localnet,
-        })
-    }
+async fn get_network_kind_from_rpc(rpc: &RpcClient) -> Result<NetworkKind> {
+    let network_hash = rpc.get_genesis_hash().await?;
+    Ok(NetworkKind::from_genesis_hash(&network_hash))
 }
 
 fn parse_interval_duration(arg: &str) -> Result<humantime::Duration> {

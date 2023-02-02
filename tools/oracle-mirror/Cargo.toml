@@ -23,3 +23,5 @@ anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-simulation = { path = "../../libraries/rust/simulation" }
+jet-environment = { path = "../../libraries/rust/environment" }
+jet-solana-client = { path = "../../libraries/rust/solana-client" }

@@ -18,12 +18,14 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
+use jet_program_common::GOVERNOR_ID;
+
 use crate::{events::LoanTransferred, MarginPool};
 
 #[derive(Accounts)]
 pub struct AdminTransferLoan<'info> {
     /// The administrative authority
-    #[account(address = super::ADMINISTRATOR)]
+    #[account(address = GOVERNOR_ID)]
     pub authority: Signer<'info>,
 
     /// The margin pool with the loan

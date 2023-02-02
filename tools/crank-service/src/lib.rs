@@ -1,9 +1,13 @@
-use std::{fs::read_to_string, path::PathBuf, sync::Arc, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
 
 use anyhow::Result;
 use clap::Parser;
 
-use jetctl::actions::test::{derive_market_from_tenor_seed, TestEnvConfig};
+use jet_environment::client_config::JetAppConfig;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file, signer::Signer};
@@ -14,7 +18,6 @@ use jet_margin_sdk::{
         settler::settle_margin_users_loop,
         FixedTermIxBuilder,
     },
-    ix_builder::{derive_airspace, test_service::derive_token_mint},
     util::no_dupe_queue::AsyncNoDupeQueue,
 };
 use jet_simulation::solana_rpc_api::RpcConnection;
@@ -27,7 +30,7 @@ static LOCALNET_URL: &str = "http://127.0.0.1:8899";
 pub struct CliOpts {
     /// The filepath to the config file with market information
     #[clap(long, short = 'c')]
-    pub config_path: String,
+    pub config_path: PathBuf,
 
     /// The keypair to use for signing transactions
     #[clap(long, short = 'k')]
@@ -116,23 +119,13 @@ pub async fn run(opts: CliOpts) -> Result<()> {
     }
 }
 
-fn read_config(path: &str) -> Result<Vec<Pubkey>> {
-    let cfg = read_to_string(path)?;
-    Ok(toml::from_str::<TestEnvConfig>(&cfg)?
-        .airspace
-        .into_iter()
-        .flat_map(|a| {
-            a.tokens
-                .iter()
-                .flat_map(|(token_name, info)| {
-                    info.fixed_term_markets.iter().map(|m| {
-                        let airspace = derive_airspace(&a.name);
-                        let token = derive_token_mint(token_name);
+fn read_config(path: impl AsRef<Path>) -> Result<Vec<Pubkey>> {
+    let app_json = std::fs::read_to_string(path)?;
+    let app_config = serde_json::from_str::<JetAppConfig>(&app_json)?;
 
-                        derive_market_from_tenor_seed(&airspace, &token, m.borrow_tenor)
-                    })
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>())
+    Ok(app_config
+        .airspaces
+        .iter()
+        .flat_map(|airspace| airspace.fixed_term_markets.iter().cloned())
+        .collect())
 }

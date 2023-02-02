@@ -53,8 +53,8 @@ impl AirspaceAdmin {
     }
 
     /// Create this airspace
-    pub fn create_airspace(&self, is_restricted: bool) -> TransactionBuilder {
-        vec![self.as_ix.create(is_restricted)].into()
+    pub fn create_airspace(&self, authority: Pubkey, is_restricted: bool) -> TransactionBuilder {
+        vec![self.as_ix.create(authority, is_restricted)].into()
     }
 
     /// Create a permit for a user to be allowed to use this airspace
@@ -193,7 +193,7 @@ impl AirspaceAdmin {
             MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
         let market = derive_market(&self.airspace, &token_mint, seed);
         let claims_mint = FixedTermIxBuilder::claims_mint(&market);
-        let collateral_mint = FixedTermIxBuilder::collateral_mint(&market);
+        let collateral_mint = FixedTermIxBuilder::ticket_collateral_mint(&market);
         let ticket_mint = derive_ticket_mint(&market);
 
         let claims_update = TokenConfigUpdate {

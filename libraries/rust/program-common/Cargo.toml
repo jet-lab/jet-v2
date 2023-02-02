@@ -8,6 +8,9 @@ license = "AGPL-3.0-or-later"
 homepage = "https://jetprotocol.io"
 repository = "https://github.com/jet-lab/jet-v2"
 
+[features]
+devnet = []
+
 [dependencies]
 uint = "0.9"
 thiserror = "1.0.20"

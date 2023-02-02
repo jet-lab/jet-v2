@@ -14,4 +14,5 @@ solana-client = "1.10"
 solana-sdk = "1.10"
 
 jet-client = { path = "../client" }
+jet-solana-client = { path = "../solana-client" }
 jet-simulation = { path = "../simulation" }

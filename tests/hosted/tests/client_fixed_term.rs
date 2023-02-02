@@ -5,8 +5,8 @@ use jet_client::fixed_term::MarketInfo;
 
 use jet_client::margin::MarginAccountClient;
 use jet_client_native::{JetSimulationClient, SimulationClient};
+use jet_environment::config::{FixedTermMarketConfig, TokenDescription};
 use jet_instructions::fixed_term::FixedTermIxBuilder;
-use jet_margin_sdk::test_service::{AirspaceTokenConfig, FixedTermMarketConfig};
 
 use hosted_tests::actions::*;
 use hosted_tests::context::{TestContext, TestContextSetupInfo, DEFAULT_POOL_CONFIG};
@@ -26,38 +26,41 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
     let setup_config = TestContextSetupInfo {
         is_restricted: false,
         tokens: vec![
-            (
-                "TSOL",
-                9,
-                AirspaceTokenConfig {
-                    collateral_weight: 100,
-                    max_leverage: 20_00,
-                    margin_pool_config: Some(DEFAULT_POOL_CONFIG),
-                    fixed_term_markets: vec![],
-                },
-            ),
-            (
-                "USDC",
-                6,
-                AirspaceTokenConfig {
-                    collateral_weight: 100,
-                    max_leverage: 20_00,
-                    margin_pool_config: Some(DEFAULT_POOL_CONFIG),
-                    fixed_term_markets: vec![FixedTermMarketConfig {
-                        borrow_tenor: tenor,
-                        lend_tenor: tenor,
-                        origination_fee: 0,
-                        min_order_size: 1_000_000,
-                        paused: false,
-                        ticket_price: "0.9".to_string(),
-                    }],
-                },
-            ),
+            TokenDescription {
+                name: "TSOL".to_string(),
+                symbol: "TSOL".to_string(),
+                decimals: Some(9),
+                collateral_weight: 100,
+                max_leverage: 20_00,
+                margin_pool: Some(DEFAULT_POOL_CONFIG),
+                fixed_term_markets: vec![],
+                ..Default::default()
+            },
+            TokenDescription {
+                name: "USDC".to_string(),
+                symbol: "".to_string(),
+                decimals: Some(6),
+                collateral_weight: 100,
+                max_leverage: 20_00,
+                margin_pool: Some(DEFAULT_POOL_CONFIG),
+                fixed_term_markets: vec![FixedTermMarketConfig {
+                    borrow_tenor: tenor,
+                    lend_tenor: tenor,
+                    origination_fee: 0,
+                    min_order_size: 1_000_000,
+                    paused: false,
+                    ticket_price: Some(0.9),
+                    ticket_collateral_weight: 90,
+                    ticket_pyth_price: None,
+                    ticket_pyth_product: None,
+                }],
+                ..Default::default()
+            },
         ],
         spl_swap_pools: vec!["TSOL/USDC"],
     };
 
-    let ctx = TestContext::new(name, &setup_config).await;
+    let ctx = TestContext::new(name, &setup_config).await.unwrap();
 
     // derive mints for tokens
     let usdc = Token::from_context(&ctx, "USDC");
