@@ -75,9 +75,9 @@ export const PreferredRpcNode = atom({
 
 // Connection cluster
 export type ClusterOption = 'localnet' | 'devnet' | 'mainnet-beta';
-export const Cluster = atom({
+export const Cluster = atom<ClusterOption>({
   key: 'cluster',
-  default: 'mainnet-beta' as ClusterOption,
+  default: 'mainnet-beta',
   effects: [localStorageEffect('jetAppCluster')]
 });
 

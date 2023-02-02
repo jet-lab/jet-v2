@@ -94,7 +94,7 @@ export const useFixedTermSync = (): void => {
   useEffect(() => {
     if (networkState === 'connected' && config?.fixedTermMarketProgramId) {
       const program = new Program(JetFixedTermIdl, config.fixedTermMarketProgramId, provider);
-      const airspace = config.airspaces.find(airspace => airspace.name === 'default');
+      const airspace = config.airspaces.find(airspace => airspace.name === 'default') || config.airspaces[0];
       if (airspace) {
         loadFixedTermMarkets(airspace, program, new PublicKey(config.marginProgramId));
       }

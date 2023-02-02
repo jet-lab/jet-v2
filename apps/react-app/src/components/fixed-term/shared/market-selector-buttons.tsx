@@ -29,7 +29,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
 
   const token = selectedMarket?.token;
   useEffect(() => {
-    if (marginAccount?.address && selectedMarket.token) {
+    if (marginAccount?.address && selectedMarket?.token) {
       getOwedTokens(selectedMarket, marginAccount, provider, setOwedTokens);
     }
   }, [marginAccount?.address]);
