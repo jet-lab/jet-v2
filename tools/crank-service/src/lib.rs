@@ -86,7 +86,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
     let payer = keypair.pubkey();
     let rpc = Arc::new(RpcConnection::new(
         keypair,
-        RpcClient::new(LOCALNET_URL.to_string()),
+        RpcClient::new(opts.url.unwrap_or_else(|| LOCALNET_URL.to_string())),
     ));
     let targets = read_config(&opts.config_path)?;
 
