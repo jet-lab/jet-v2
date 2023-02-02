@@ -25,6 +25,7 @@ use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
     program_pack::Pack,
+    signature::Keypair,
     signer::Signer,
     transaction::Transaction,
 };
@@ -143,7 +144,10 @@ impl Client {
                 self.config.rpc_url.clone(),
                 CommitmentConfig::processed(),
             ),
-            self.config.signer.as_ref().unwrap().clone(),
+            self.config
+                .signer
+                .clone()
+                .unwrap_or_else(|| Arc::new(Keypair::new())),
         )
     }
 
