@@ -354,15 +354,7 @@ impl TestManager {
                 break;
             }
             self.event_consumer.consume().await?;
-
-            println!("post consume");
-            dbg!(self.event_consumer.pending_events(&market)?);
-
             self.event_consumer.sync_queues().await?;
-
-            println!("post sync");
-            dbg!(self.event_consumer.pending_events(&market)?);
-            // break;
         }
         Ok(())
     }

@@ -63,9 +63,14 @@ impl<'a, 'info> EventIterator<'a, 'info> {
     fn join_with_accounts(&mut self, event: OrderbookEvent) -> Result<PreparedEvent<'info>> {
         Ok(match event {
             OrderbookEvent::Fill(fill) => {
+                msg!("event fill");
                 PreparedEvent::Fill(self.extract_fill_accounts(&fill)?, fill)
             }
-            OrderbookEvent::Out(out) => PreparedEvent::Out(self.extract_out_accounts(&out)?, out),
+            OrderbookEvent::Out(out) => {
+                msg!("event out");
+
+                PreparedEvent::Out(self.extract_out_accounts(&out)?, out)
+            }
         })
     }
 
@@ -75,8 +80,10 @@ impl<'a, 'info> EventIterator<'a, 'info> {
 
         let accounts = match &fill.maker_info {
             UserCallbackInfo::Margin(info) => FillAccounts::Margin({
+                msg!("fill margin user");
                 let margin_user = self.accounts.next_margin_user(&info.margin_user)?;
                 let term_account = if info.flags.contains(CallbackFlags::AUTO_STAKE) {
+                    msg!("fill margin deposit");
                     let seed = margin_user.assets.next_new_deposit_seqno().to_le_bytes();
                     Some(TermAccount::Deposit(
                         self.accounts.init_next::<TermDeposit>(
@@ -90,6 +97,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                         )?,
                     ))
                 } else if info.flags.contains(CallbackFlags::NEW_DEBT) {
+                    msg!("fill margin loan");
                     let seed = margin_user.debt.next_new_loan_seqno().to_le_bytes();
                     Some(TermAccount::Loan(self.accounts.init_next::<TermLoan>(
                         self.payer.to_account_info(),
@@ -113,12 +121,14 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                 FillAccounts::Signer(if info.flags.contains(CallbackFlags::AUTO_STAKE) {
                     let mut seed = [0u8; 8];
                     self.next_seed(&mut seed);
+                    msg!("fill signer deposit");
                     FillAccount::TermDeposit(self.accounts.init_next::<TermDeposit>(
                         self.payer.to_account_info(),
                         self.system_program.to_account_info(),
                         &TermDeposit::seeds(self.market.as_ref(), info.signer.as_ref(), &seed),
                     )?)
                 } else {
+                    msg!("fill signer token");
                     FillAccount::Token(self.accounts.next_token_account(&info.ticket_account)?)
                 })
             }
@@ -131,9 +141,11 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         self.try_update_out_adapter(out)?;
         let accounts = match &out.info {
             UserCallbackInfo::Margin(info) => {
+                msg!("out margin user");
                 OutAccounts::Margin(self.accounts.next_margin_user(&info.margin_user)?)
             }
             UserCallbackInfo::Signer(info) => {
+                msg!("out signer token");
                 OutAccounts::Signer(self.accounts.next_token_account(&info.signer)?)
             }
         };
@@ -154,7 +166,6 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                 Some(&(&fill.maker_info).into()),
                 Some(&(&fill.taker_info).into()),
             );
-
         self.accounts
             .maybe_adapter(fill.taker_info.adapter())?
             .try_push_event(
@@ -191,6 +202,7 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
     }
 
     fn next_token_account(&mut self, key: &Pubkey) -> Result<AccountInfo<'info>> {
+        msg!("next token");
         self.next_user_account(*key).map(|a| a.as_token_account())
     }
 

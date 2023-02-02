@@ -180,8 +180,6 @@ impl EventConsumer {
             if let Some(account) = account {
                 market_state.queue = account.data;
 
-                dbg!("in sync");
-                dbg!(market_state.pending_events()?);
                 tracing::trace!(?market, "sync queue {}", market_state.market.event_queue);
             } else {
                 tracing::error!(?market, "queue account missing");
@@ -211,20 +209,24 @@ impl EventConsumer {
             })
             .collect::<Vec<_>>();
 
-        let results = futures::future::join_all(tasks).await;
+        let _results = futures::future::join_all(tasks)
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, (Pubkey, EventConsumerError)>>()
+            .map_err(|(_, e)| e)?;
 
-        for result in &results {
-            if let Err((market, e)) = result {
-                tracing::error!(?market, "failed consuming events because: {e}",);
-            }
-        }
+        // for result in &results {
+        //     if let Err((market, e)) = result {
+        //         tracing::error!(?market, "failed consuming events because: {e}",);
+        //     }
+        // }
 
-        if tracing::enabled!(tracing::Level::DEBUG) {
-            let success = results.iter().filter(|r| r.is_ok()).count();
-            let failed = results.len() - success;
+        // if tracing::enabled!(tracing::Level::DEBUG) {
+        //     let success = results.iter().filter(|r| r.is_ok()).count();
+        //     let failed = results.len() - success;
 
-            tracing::debug!(success, failed, "attempted consume events")
-        }
+        //     tracing::debug!(success, failed, "attempted consume events")
+        // }
 
         Ok(())
     }
@@ -271,30 +273,13 @@ impl MarketState {
         {
             let mut seed = make_seed();
             match event {
-                EventRef::Out(OutEventRef { callback_info, .. }) => {
-                    match UserCallbackInfo::from(*callback_info) {
-                        UserCallbackInfo::Margin(info) => {
-                            margin_accounts_to_settle.push(info.margin_account);
-                            consume_params.push(EventAccounts::Out(OutAccounts {
-                                out_account: info.margin_user,
-                                user_queue: maybe_adapter!(info),
-                            }))
-                        }
-                        UserCallbackInfo::Signer(info) => {
-                            consume_params.push(EventAccounts::Out(OutAccounts {
-                                out_account: info.token_account,
-                                user_queue: maybe_adapter!(info),
-                            }))
-                        }
-                    }
-                }
-
                 EventRef::Fill(FillEventRef {
                     maker_callback_info,
                     taker_callback_info,
                     event,
                     ..
                 }) => {
+                    println!("event fill");
                     let fill_accounts = match UserCallbackInfo::from(*maker_callback_info) {
                         UserCallbackInfo::Margin(info) => {
                             margin_accounts_to_settle.push(info.margin_account);
@@ -312,8 +297,26 @@ impl MarketState {
                             taker_queue: taker_callback_info.adapter(),
                         },
                     };
-
                     consume_params.push(EventAccounts::Fill(fill_accounts))
+                }
+                EventRef::Out(OutEventRef { callback_info, .. }) => {
+                    println!("event out");
+
+                    match UserCallbackInfo::from(*callback_info) {
+                        UserCallbackInfo::Margin(info) => {
+                            margin_accounts_to_settle.push(info.margin_account);
+                            consume_params.push(EventAccounts::Out(OutAccounts {
+                                out_account: info.margin_user,
+                                user_queue: maybe_adapter!(info),
+                            }))
+                        }
+                        UserCallbackInfo::Signer(info) => {
+                            consume_params.push(EventAccounts::Out(OutAccounts {
+                                out_account: info.token_account,
+                                user_queue: maybe_adapter!(info),
+                            }))
+                        }
+                    }
                 }
             }
 
@@ -351,9 +354,6 @@ impl MarketState {
         if let Some(sink) = self.margin_accounts_to_settle.as_ref() {
             sink.push_many(margin_accounts_to_settle).await;
         }
-
-        println!("in consume next");
-        dbg!(self.pending_events()?);
 
         Ok(())
     }
@@ -509,17 +509,30 @@ struct SignerFillAccount(Pubkey);
 impl From<&FillAccounts> for Vec<Pubkey> {
     fn from(fill: &FillAccounts) -> Vec<Pubkey> {
         let mut keys = vec![];
-        keys.extend([fill.maker_queue, fill.taker_queue].iter().flatten());
+
+        if let Some(queue) = fill.maker_queue {
+            println!("fill maker queue");
+            keys.push(queue);
+        }
+        if let Some(queue) = fill.taker_queue {
+            println!("fill taker queue");
+            keys.push(queue);
+        }
 
         match fill.user_accounts {
             UserFillAccounts::Margin(accs) => {
-                keys.extend(
-                    [accs.margin_user]
-                        .iter()
-                        .chain([accs.term_account].iter().flatten()),
-                );
+                println!("fill margin user");
+                keys.push(accs.margin_user);
+                if let Some(acc) = accs.term_account {
+                    println!("fill margin term acc");
+
+                    keys.push(acc);
+                }
             }
-            UserFillAccounts::Signer(acc) => keys.push(acc.0),
+            UserFillAccounts::Signer(acc) => {
+                println!("fill signer");
+                keys.push(acc.0)
+            }
         }
 
         keys
@@ -536,12 +549,12 @@ impl From<&OutAccounts> for Vec<Pubkey> {
     fn from(out: &OutAccounts) -> Vec<Pubkey> {
         let mut accounts = vec![];
 
-        accounts.extend(
-            [out.user_queue]
-                .iter()
-                .flatten()
-                .chain([out.out_account].iter()),
-        );
+        if let Some(queue) = out.user_queue {
+            println!("out queue");
+            accounts.push(queue);
+        }
+        println!("out acc");
+        accounts.push(out.out_account);
 
         accounts
     }

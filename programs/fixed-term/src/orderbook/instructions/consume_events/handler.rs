@@ -95,7 +95,7 @@ fn handle_margin_fill<'info>(
 
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let user = &mut accounts.margin_user;
-    let info = maker_info.clone().unwrap_margin();
+    let info = maker_info.unwrap_margin();
 
     let (order_type, sequence_number, tenor) = match maker_side {
         // maker has loaned tokens to the taker
@@ -230,7 +230,7 @@ fn handle_signer_fill<'info>(
     } = event;
 
     let maker_side = Side::from_u8(taker_side).unwrap().opposite();
-    let info = maker_info.clone().unwrap_signer();
+    let info = maker_info.unwrap_signer();
 
     let (order_type, tenor) = match maker_side {
         Side::Bid => {
@@ -326,7 +326,7 @@ fn handle_margin_out<'info>(
         ..
     } = event;
 
-    let info = info.clone().unwrap_margin();
+    let info = info.unwrap_margin();
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
@@ -371,7 +371,7 @@ fn handle_signer_out<'info>(
         ..
     } = event;
 
-    let info = info.clone().unwrap_signer();
+    let info = info.unwrap_signer();
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
