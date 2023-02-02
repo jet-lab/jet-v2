@@ -1,6 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
+use jet_airspace::state::Airspace;
+
+#[cfg(not(feature = "testing"))]
+use crate::FixedTermErrorCode;
+
 use crate::{
     control::{events::MarketInitialized, state::Market},
     seeds,
@@ -108,8 +113,8 @@ pub struct InitializeMarket<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
-    pub airspace: AccountInfo<'info>,
+    #[cfg_attr(not(feature = "testing"), account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization))]
+    pub airspace: Account<'info, Airspace>,
 
     /// The oracle for the underlying asset price
     /// CHECK: determined by caller

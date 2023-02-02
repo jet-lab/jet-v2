@@ -1,5 +1,10 @@
 use anchor_lang::prelude::*;
 
+use jet_airspace::state::Airspace;
+
+#[cfg(not(feature = "testing"))]
+use crate::FixedTermErrorCode;
+
 use crate::control::state::CrankAuthorization;
 
 #[derive(Accounts)]
@@ -12,8 +17,8 @@ pub struct RevokeCrank<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority)] todo
-    pub airspace: AccountInfo<'info>,
+    #[cfg_attr(not(feature = "testing"), account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization))]
+    pub airspace: Account<'info, Airspace>,
 
     #[account(mut)]
     pub receiver: AccountInfo<'info>,
