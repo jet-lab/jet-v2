@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
 
+use jet_airspace::state::Airspace;
+
 use crate::control::state::{CrankAuthorization, Market};
+#[cfg(not(feature = "testing"))]
+use crate::FixedTermErrorCode;
 
 #[derive(Accounts)]
 pub struct AuthorizeCrank<'info> {
@@ -28,8 +32,8 @@ pub struct AuthorizeCrank<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
-    pub airspace: AccountInfo<'info>,
+    #[cfg_attr(not(feature = "testing"), account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization))]
+    pub airspace: Account<'info, Airspace>,
 
     /// The address paying the rent for the account
     #[account(mut)]
