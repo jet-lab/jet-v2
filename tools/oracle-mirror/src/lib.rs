@@ -52,6 +52,10 @@ pub struct CliOpts {
            default_value_t = default_interval_duration()
     )]
     pub interval: humantime::Duration,
+
+    /// Don't try to sync the oracles
+    #[clap(long)]
+    pub no_oracle_sync: bool,
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
@@ -91,7 +95,9 @@ pub async fn run(opts: CliOpts) -> Result<()> {
     let mut id_file = None;
 
     loop {
-        sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
+        if !opts.no_oracle_sync {
+            sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
+        }
         sync_pool_balances(&target_client, &signer, &pool_list).await?;
 
         if id_file.is_none() {

@@ -1,5 +1,6 @@
 import { Address } from "@project-serum/anchor"
 import axios from "axios"
+import { SPLSwapPool } from "./pool"
 
 export const MARGIN_CONFIG_URL_BASE = "https://storage.googleapis.com/jet-app-config/"
 export const MARGIN_CONFIG_MAINNET_URL = MARGIN_CONFIG_URL_BASE + "mainnet.legacy.json"
@@ -24,6 +25,7 @@ export interface MarginConfig {
   tokens: Record<string, MarginTokenConfig>
   markets: Record<string, MarginMarketConfig>
   airspaces: AirspaceConfig[]
+  exchanges?: Record<string, SPLSwapPool>
 }
 
 export interface AirspaceConfig {
@@ -89,6 +91,8 @@ export interface MarginMarketConfig {
 export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
   let response =
     cluster == "devnet" ? await axios.get(MARGIN_CONFIG_DEVNET_URL) : await axios.get(MARGIN_CONFIG_MAINNET_URL)
+
+    console.log(response.data);
 
   if (response.data[cluster]) {
     return response.data[cluster]

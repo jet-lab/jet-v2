@@ -166,7 +166,12 @@ pub struct DexConfig {
     /// The program that does token exchanging
     pub program: String,
 
+    /// A description for this DEX market/pool
+    #[serde(default)]
+    pub description: Option<String>,
+
     /// The address of the primary state account used for the token exchange
+    #[serde(default)]
     pub state: Option<Pubkey>,
 
     /// The primary token in the pair that can be exchanged

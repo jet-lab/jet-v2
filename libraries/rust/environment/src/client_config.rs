@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use thiserror::Error;
 
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{program_error::ProgramError, pubkey::Pubkey};
 
 use jet_instructions::{
     airspace::derive_airspace,
@@ -25,6 +25,9 @@ pub enum ConfigError<I: NetworkUserInterface> {
 
     #[error("builder error: {0}")]
     Builder(#[from] BuilderError),
+
+    #[error("unpack error: {0}")]
+    UnpackError(ProgramError),
 
     #[error("could not read market {0} on the network")]
     MissingMarket(Pubkey),
@@ -85,7 +88,13 @@ impl JetAppConfig {
                     .state
                     .unwrap_or_else(|| derive_spl_swap_pool(&program, &base, &quote).state);
 
+                let description = dex
+                    .description
+                    .clone()
+                    .unwrap_or_else(|| format!("{}/{}", &dex.base, &dex.quote));
+
                 Ok(DexInfo {
+                    description,
                     program,
                     address,
                     base,
@@ -195,6 +204,8 @@ impl TokenInfo {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DexInfo {
+    description: String,
+
     #[serde_as(as = "DisplayFromStr")]
     pub program: Pubkey,
 
@@ -212,7 +223,7 @@ pub struct DexInfo {
 pub mod legacy {
     use std::collections::HashMap;
 
-    use jet_instructions::fixed_term::Market;
+    use jet_instructions::{fixed_term::Market, margin_swap::derive_spl_swap_authority};
     use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
     use crate::programs::ORCA_V2;
@@ -269,6 +280,41 @@ pub mod legacy {
             });
         }
 
+        let mut exchanges = HashMap::new();
+
+        for dex in &config.exchanges {
+            let swap_state = match network.get_account(&dex.address).await? {
+                None => {
+                    log::error!(
+                        "missing swap account {} for {}",
+                        dex.address,
+                        dex.description
+                    );
+                    continue;
+                }
+
+                Some(d) => spl_token_swap::state::SwapVersion::unpack(&d.data)
+                    .map_err(|e| ConfigError::UnpackError(e))?,
+            };
+
+            exchanges.insert(
+                dex.description.clone(),
+                SplSwapInfo {
+                    swap_pool: dex.address,
+                    authority: derive_spl_swap_authority(&dex.program, &dex.address),
+                    pool_mint: *swap_state.pool_mint(),
+                    token_a: *swap_state.token_a_account(),
+                    token_b: *swap_state.token_b_account(),
+                    token_mint_a: *swap_state.token_a_mint(),
+                    token_mint_b: *swap_state.token_b_mint(),
+                    fee_account: *swap_state.pool_fee_account(),
+                    swap_fees: 0.0065,
+                    swap_program: dex.program,
+                    swap_type: "constantProduct".to_string(),
+                },
+            );
+        }
+
         Ok(JetAppConfig {
             airspace_program_id: jet_instructions::airspace::AIRSPACE_PROGRAM,
             fixed_term_market_program_id: jet_instructions::fixed_term::FIXED_TERM_PROGRAM,
@@ -284,7 +330,7 @@ pub mod legacy {
             url: String::new(),
             tokens,
             airspaces,
-            swap_pools: vec![],
+            exchanges,
         })
     }
 
@@ -330,7 +376,7 @@ pub mod legacy {
 
         pub tokens: HashMap<String, TokenInfo>,
         pub airspaces: Vec<AirspaceInfo>,
-        pub swap_pools: Vec<SwapPoolInfo>,
+        pub exchanges: HashMap<String, SplSwapInfo>,
     }
 
     #[serde_as]
@@ -379,23 +425,6 @@ pub mod legacy {
     #[serde_as]
     #[derive(Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct SwapPoolInfo {
-        #[serde_as(as = "DisplayFromStr")]
-        pub swap_program: Pubkey,
-
-        #[serde_as(as = "DisplayFromStr")]
-        pub pool_state: Pubkey,
-
-        #[serde_as(as = "DisplayFromStr")]
-        pub token_a: Pubkey,
-
-        #[serde_as(as = "DisplayFromStr")]
-        pub token_b: Pubkey,
-    }
-
-    #[serde_as]
-    #[derive(Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
     pub struct FixedTermMarketInfo {
         pub symbol: String,
 
@@ -404,5 +433,40 @@ pub mod legacy {
 
         #[serde(flatten)]
         pub market_info: Market,
+    }
+
+    #[serde_as]
+    #[derive(Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SplSwapInfo {
+        #[serde_as(as = "DisplayFromStr")]
+        pub swap_pool: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub authority: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub pool_mint: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub token_mint_a: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub token_mint_b: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub token_a: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub token_b: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub fee_account: Pubkey,
+
+        #[serde_as(as = "DisplayFromStr")]
+        pub swap_program: Pubkey,
+
+        pub swap_fees: f64,
+        pub swap_type: String,
     }
 }

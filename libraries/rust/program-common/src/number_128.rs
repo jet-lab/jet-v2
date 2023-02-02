@@ -48,6 +48,15 @@ impl Number128 {
     pub const MIN: Self = Self(i128::MIN);
     pub const BITS: u32 = i128::BITS;
 
+    /// Get the absolute value
+    pub fn abs(&self) -> Self {
+        if *self < Self::ZERO {
+            return *self * Number128::from_decimal(-1, 0);
+        }
+
+        *self
+    }
+
     /// Convert this number to fit in a u64
     ///
     /// The precision of the number in the u64 is based on the

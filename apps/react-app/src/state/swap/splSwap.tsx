@@ -1,13 +1,14 @@
 import { useEffect } from 'react';
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { SPLSwapPool, TokenAmount } from '@jet-lab/margin';
-import { Cluster, ClusterOption } from '../settings/settings';
+import { Cluster } from '../settings/settings';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL, CurrentSwapOutput } from '../actions/actions';
 import { useProvider } from '@utils/jet/provider';
-import orcaPools from '@jet-lab/margin/src/margin/swap/orca-swap-pools.json';
-import orcaPoolsDevnet from '@jet-lab/margin/src/margin/swap/orca-swap-pools-devnet.json';
 import { CurrentPool } from '../pools/pools';
 import { getSwapPoolPrice } from '@utils/actions/swap';
+
+import orcaPools from '@jet-lab/margin/src/margin/swap/orca-swap-pools.json';
+import { MainConfig } from '@state/config/marginConfig';
 
 // Market
 export const SplSwapPools = atom({
@@ -43,6 +44,7 @@ export const SwapPoolTokenAmounts = atom({
 export function useSplSwapSyncer() {
   const cluster = useRecoilValue(Cluster);
   const { provider } = useProvider();
+  const config = useRecoilValue(MainConfig);
   const currentPool = useRecoilValue(CurrentPool);
   const outputToken = useRecoilValue(CurrentSwapOutput);
   const [swapPools, setSwapPools] = useRecoilState(SplSwapPools);
@@ -53,10 +55,15 @@ export function useSplSwapSyncer() {
 
   // Setup swap pools on init
   useEffect(() => {
-    const swapPools = cluster === 'devnet' ? orcaPoolsDevnet : orcaPools;
-    // @ts-ignore
-    setSwapPools(swapPools);
-  }, [cluster, setSwapPools]);
+    if (cluster === 'devnet') {
+      if (config && config.exchanges) {
+        setSwapPools(config.exchanges);
+      }
+    } else {
+      // @ts-ignore
+      setSwapPools(orcaPools);
+    }
+  }, [config, setSwapPools]);
 
   // Set the swap pool when input or output tokens change
   useEffect(() => {
@@ -131,16 +138,9 @@ export function useSplSwapSyncer() {
 }
 
 // Check if a given pair has a corresponding Orca pool
-export function hasOrcaPool(cluster: ClusterOption, inputSymbol: string, outputSymbol: string) {
+export function hasOrcaPool(swapPools: Record<string, SPLSwapPool>, inputSymbol: string, outputSymbol: string) {
   const pair = `${inputSymbol}/${outputSymbol}`;
   const inversePair = `${outputSymbol}/${inputSymbol}`;
 
-  if (cluster === 'localnet') {
-    return false;
-  }
-
-  return (
-    Object.keys(cluster === 'devnet' ? orcaPoolsDevnet : orcaPools).includes(inversePair) ||
-    Object.keys(cluster === 'devnet' ? orcaPoolsDevnet : orcaPools).includes(pair)
-  );
+  return Object.keys(swapPools).includes(pair) || Object.keys(swapPools).includes(inversePair);
 }
