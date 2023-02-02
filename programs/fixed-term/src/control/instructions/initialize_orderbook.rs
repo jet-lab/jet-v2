@@ -3,9 +3,6 @@ use anchor_lang::prelude::*;
 use agnostic_orderbook::state::market_state::MarketState;
 use jet_airspace::state::Airspace;
 
-#[cfg(not(feature = "testing"))]
-use crate::FixedTermErrorCode;
-
 use crate::{
     control::{events::OrderbookInitialized, state::Market},
     orderbook::state::{CallbackInfo, TICK_SIZE},
