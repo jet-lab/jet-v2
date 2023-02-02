@@ -25,8 +25,7 @@ const StateSyncer = lazy(() => import('@state/StateSyncer'));
 const FixedLendView = lazy(() => import('@views/FixedLendView'));
 const FixedBorrowView = lazy(() => import('@views/FixedBorrowView'));
 
-export const isDebug =
-  window.location.href.includes('?debug-environment=true') && window.location.href.includes('localhost');
+const isDebug = window.location.href.includes('localhost');
 
 export const App = (): JSX.Element => {
   const wallets = useMemo(

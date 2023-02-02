@@ -75,7 +75,6 @@ export const PreferredRpcNode = atom({
 
 // Connection cluster
 export type ClusterOption = 'localnet' | 'devnet' | 'mainnet-beta';
-export const clusterOptions: ClusterOption[] = ['devnet', 'mainnet-beta'];
 export const Cluster = atom({
   key: 'cluster',
   default: 'mainnet-beta' as ClusterOption,
