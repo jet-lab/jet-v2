@@ -168,6 +168,7 @@ impl TestContext {
                 .iter()
                 .map(|(a, b)| DexConfig {
                     program: "spl-swap".to_string(),
+                    description: None,
                     state: None,
                     base: a.clone(),
                     quote: b.clone(),

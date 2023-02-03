@@ -115,6 +115,14 @@ with-validator() {
     $@
 }
 
+with-resumed-validator() {
+    start-validator
+    if [[ ${SOLANA_LOGS:-false} == true ]]; then
+        solana -ul logs &
+    fi
+    $@
+}
+
 kill_validator() {
     set +e
     [ -z $VALIDATOR_PID ] || (

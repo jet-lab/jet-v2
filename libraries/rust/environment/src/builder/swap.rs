@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use solana_sdk::pubkey::Pubkey;
 
-use jet_instructions::test_service::spl_swap_pool_create;
+use jet_instructions::test_service::{derive_spl_swap_pool, spl_swap_pool_create};
 use jet_solana_client::{network::NetworkKind, NetworkUserInterface};
 
 use crate::{
@@ -31,6 +31,10 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     config: &EnvironmentConfig,
 ) -> Result<(), BuilderError> {
+    if builder.network == NetworkKind::Mainnet {
+        return Ok(());
+    }
+
     for pool in &config.exchanges {
         if pool.program != "spl-swap" {
             log::warn!("ignoring unknown swap program {}", pool.program);
@@ -42,6 +46,11 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
         let token_b = resolve_token_mint(config, &pool.quote)?;
 
         let swap_program = resolve_swap_program(builder.network, &pool.program)?;
+        let swap_info = derive_spl_swap_pool(&swap_program, &token_a, &token_b);
+
+        if builder.account_exists(&swap_info.state).await? {
+            continue;
+        }
 
         builder.setup([spl_swap_pool_create(
             &swap_program,

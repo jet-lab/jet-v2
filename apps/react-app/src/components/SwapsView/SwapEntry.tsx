@@ -27,13 +27,14 @@ import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/Connecti
 import { ArrowRight } from '@components/modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import SwapIcon from '@assets/icons/function-swap.svg';
-import { CurrentSplSwapPool, hasOrcaPool, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
+import { CurrentSplSwapPool, hasOrcaPool, SplSwapPools, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
 import debounce from 'lodash.debounce';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
   const cluster = useRecoilValue(Cluster);
+  const splSwapPools = useRecoilValue(SplSwapPools);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
@@ -312,7 +313,7 @@ export function SwapEntry(): JSX.Element {
       !outputToken || currentPool.symbol === outputToken.symbol || currentPool.symbol === outputToken.symbol;
     if (pools && canFindOutput) {
       let output = Object.values(pools.tokenPools).filter(pool => {
-        if (pool.symbol !== currentPool?.symbol && hasOrcaPool(cluster, currentPool.symbol, pool.symbol)) {
+        if (pool.symbol !== currentPool?.symbol && hasOrcaPool(splSwapPools, currentPool.symbol, pool.symbol)) {
           return true;
         } else {
           return false;
@@ -408,7 +409,7 @@ export function SwapEntry(): JSX.Element {
             tokenOptions={poolOptions.filter(pool => {
               if (
                 pool.symbol !== currentPool?.symbol &&
-                hasOrcaPool(cluster, currentPool?.symbol ?? '', pool.symbol ?? '')
+                hasOrcaPool(splSwapPools, currentPool?.symbol ?? '', pool.symbol ?? '')
               ) {
                 return true;
               } else {
