@@ -111,3 +111,22 @@ export function createDummyArray(size: number, idString: string) {
   }
   return dummyArray;
 }
+
+
+export const copyToClipboard = (str: string) => {
+  if (navigator.clipboard) {
+    // Clipboard API is only available on secure origins
+    navigator.clipboard.writeText(str)
+} else {
+    const textArea = document.createElement("textarea");
+    textArea.value = str;
+    document.body.appendChild(textArea);
+    textArea.focus(); textArea.select();
+    try {
+        document.execCommand('copy')
+    } catch (err) {
+        console.error('Unable to copy to clipboard', err)
+    }
+    document.body.removeChild(textArea)
+}
+}

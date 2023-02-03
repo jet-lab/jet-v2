@@ -2825,3 +2825,21 @@ html {
     }
   }
 }
+
+.pool-details-address {
+  display: flex;
+  transition: all 0.3s;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  cursor: pointer;
+  align-items: center;
+   & svg {
+    margin-right: 8px;
+   }
+  &.copied {
+    background: @jet-green-3;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+}
