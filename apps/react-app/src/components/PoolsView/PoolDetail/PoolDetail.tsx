@@ -143,7 +143,7 @@ export function PoolDetail(): JSX.Element {
           )}
           {currentPool && (
             <>
-              <Text className="info-element small-accent-text">Pool Address</Text>
+              <Text className="info-element small-accent-text">Token Address</Text>
               <div className={`pool-detail-body-half-section flex align-start justify-center column`}>
                 <CopyableField content={currentPool.addresses.tokenMint.toBase58()} />
               </div>
