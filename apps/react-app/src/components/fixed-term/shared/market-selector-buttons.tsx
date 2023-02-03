@@ -5,19 +5,20 @@ import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useProvider } from '@utils/jet/provider';
 import { Button } from 'antd';
 import BN from 'bn.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { getOwedTokens, redeemDeposits, settleNow, submitRepay } from './market-selector-actions';
 
 interface IMarketSelectorButtonProps {
   marginAccount?: MarginAccount;
   markets: MarketAndconfig[];
-  selectedMarket: MarketAndconfig;
+  selectedMarket?: MarketAndconfig;
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
-  const { data } = useOpenPositions(selectedMarket?.market, marginAccount);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const cluster = useRecoilValue(Cluster);
+  const apiEndpoint = useMemo(() => cluster === 'mainnet-beta' ? process.env.DATA_API : cluster === 'devnet' ? process.env.DEV_DATA_API : cluster === 'localnet' ? process.env.LOCAL_DATA_API : '', [cluster])
+  const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market, marginAccount);
+  const blockExplorer = useRecoilValue(BlockExplorer);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
 

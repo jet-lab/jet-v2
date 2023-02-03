@@ -63,7 +63,7 @@ export function useSplSwapSyncer() {
       // @ts-ignore
       setSwapPools(orcaPools);
     }
-  }, [config, setSwapPools]);
+  }, [config]);
 
   // Set the swap pool when input or output tokens change
   useEffect(() => {
@@ -101,7 +101,7 @@ export function useSplSwapSyncer() {
 
     // Get pool prices and set a timer to refresh them
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPool?.symbol, outputToken?.symbol, swapPools, setCurrentSwapPool, setSwapFees, setSwapPoolTokenAmounts]);
+  }, [currentPool?.symbol, outputToken?.symbol, swapPools]);
 
   // Fetch prices on pool pair change
   // Re-fetch on actionRefresh
