@@ -21,10 +21,8 @@ export const CopyableField = ({ content }: CopyableField) => {
             setCopied(false)
         }, 1000)
     }
-    return <div className={`pool-detail-body-half-section flex align-start justify-center column`}>
-        <div className={`pool-details-address ${copied ? 'copied' : ''}`} onClick={onClick}>
+    return <div className={`pool-details-address ${copied ? 'copied' : ''}`} onClick={onClick}>
             <CopyOutlined />
             <Text>{formatPubkey(content)}</Text>
         </div>
-    </div>
 }
