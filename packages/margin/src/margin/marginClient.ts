@@ -314,39 +314,6 @@ export class MarginClient {
     return null
   }
 
-  static async getTransactionHistory(
-    provider: AnchorProvider,
-    pubKey: PublicKey,
-    mints: Mints,
-    config: MarginConfig,
-    pageSize = 100
-  ): Promise<AccountTransaction[]> {
-    const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
-    const jetTransactions: ParsedTransactionWithMeta[] = []
-    let page = 0
-    let processed = 0
-    while (processed < signatures.length) {
-      const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
-      const transactions = await provider.connection.getParsedTransactions(
-        paginatedSignatures.map(s => s.signature),
-        {
-          commitment: "confirmed",
-          maxSupportedTransactionVersion: 0
-        }
-      )
-      const filteredTxs = MarginClient.filterTransactions(transactions, config)
-      jetTransactions.push(...filteredTxs)
-      page++
-      processed += paginatedSignatures.length
-    }
-
-    const parsedTransactions = await Promise.all(
-      jetTransactions.map(async (t, idx) => await MarginClient.getTransactionData(t, mints, config, idx, provider))
-    )
-    const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
-    return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
-  }
-
   // Blackbox history on mainnet only
   static async getBlackboxTx(config: MarginConfig, flightLog: FlightLog): Promise<AccountTransaction | null> {
     const tx: Partial<AccountTransaction> = {}
@@ -416,28 +383,19 @@ export class MarginClient {
   }
 
   static async getBlackBoxHistory(pubKey: PublicKey, cluster: MarginCluster): Promise<AccountTransaction[]> {
-    const flightLogURL = `https://blackbox.jetprotocol.io/margin/accounts/activity/${pubKey}`
+    const url =
+      cluster === "mainnet-beta"
+        ? process.env.DATA_API
+        : cluster === "devnet"
+        ? process.env.DEV_DATA_API
+        : cluster === "localnet"
+        ? process.env.LOCAL_DATA_API
+        : ""
+    const flightLogURL = `${url}/margin/accounts/activity/${pubKey}`
 
     const response = await axios.get(flightLogURL)
     const jetTransactions: FlightLog[] = await response.data
     const config = await MarginClient.getConfig(cluster)
-
-    // let page = 0
-    // let processed = 0
-    // while (processed < signatures.length) {
-    //   const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
-    //   const transactions = await provider.connection.getParsedTransactions(
-    //     paginatedSignatures.map(s => s.signature),
-    //     {
-    //       commitment: "confirmed",
-    //       maxSupportedTransactionVersion: 0
-    //     }
-    //   )
-    //   const filteredTxs = MarginClient.filterTransactions(transactions, config)
-    //   jetTransactions.push(...filteredTxs)
-    //   page++
-    //   processed += paginatedSignatures.length
-    // }
 
     const parsedTransactions = await Promise.all(
       jetTransactions.map(async (t, _) => await MarginClient.getBlackboxTx(config, t))
