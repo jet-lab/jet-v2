@@ -4,7 +4,6 @@ import { Dictionary } from '../state/settings/localization/localization';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
 import { PoolsTable } from '@components/PoolsView/PoolsTable/PoolsTable';
 import { PoolDetail } from '@components/PoolsView/PoolDetail/PoolDetail';
-import { Radar } from '@components/PoolsView/Radar';
 import { PoolsRowOrder, PoolsViewOrder } from '@state/views/views';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
@@ -21,10 +20,9 @@ function PoolsView(): JSX.Element {
     document.title = `${dictionary.poolsView.title} | Jet Protocol`;
   }, [dictionary.poolsView.title]);
 
-  // Row of Pool Detail and Radar components
+  // Row of Pool Detail components
   const rowComponents: Record<string, JSX.Element> = {
     poolDetail: <PoolDetail key="poolDetail" />,
-    radar: <Radar key="radar" />
   };
   const poolsRow = (): JSX.Element => {
     const poolsRowComponents: JSX.Element[] = [];
