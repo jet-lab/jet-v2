@@ -21,7 +21,7 @@ export function SnapshotHead(): JSX.Element {
   const walletFavoriteAccounts = publicKey ? favoriteAccounts[publicKey.toString()] ?? [] : [];
   const [newAccountModalOpen, setNewAccountModalOpen] = useRecoilState(NewAccountModal);
 
-  const currentAccount = useRecoilValue(CurrentAccount)
+  const currentAccount = useRecoilValue(CurrentAccount);
   // const setEditAccountModalOpen = useSetRecoilState(EditAccountModal);
   const { Text } = Typography;
   const walletFavoriteAccountsItems = walletFavoriteAccounts.map(key => {
@@ -86,7 +86,11 @@ export function SnapshotHead(): JSX.Element {
         <StarFilled />
         {renderFavoriteAccountTabs()}
       </div>
-      {currentAccount && <div className='flex-centered'><CopyableField content={currentAccount.address.toBase58()} /></div>}
+      {currentAccount && (
+        <div className="flex-centered">
+          <CopyableField content={currentAccount.address.toBase58()} />
+        </div>
+      )}
       <div className="account-snapshot-head-accounts flex-centered">
         <Button
           className={`function-btn ${newAccountModalOpen ? 'active' : ''}`}
