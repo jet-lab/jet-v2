@@ -62,11 +62,13 @@ pub enum OrderbookEvent {
     Out(OutInfo),
 }
 
+#[derive(Debug)]
 pub struct FillInfo {
     pub event: FillEvent,
     pub maker_info: UserCallbackInfo,
     pub taker_info: UserCallbackInfo,
 }
+#[derive(Debug)]
 pub struct OutInfo {
     pub event: OutEvent,
     pub info: UserCallbackInfo,

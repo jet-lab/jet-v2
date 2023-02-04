@@ -266,6 +266,11 @@ impl MarketState {
         let mut consume_tx = Transaction::default();
         let mut margin_accounts_to_settle = Vec::new();
 
+        tracing::trace!(
+            "processing queue of length {}",
+            queue.inner().unwrap().len()
+        );
+
         for event in queue
             .inner()
             .map_err(|_| EventConsumerError::InvalidEventQueue(self.market.event_queue))?
@@ -279,8 +284,13 @@ impl MarketState {
                     event,
                     ..
                 }) => {
-                    println!("event fill");
-                    let fill_accounts = match UserCallbackInfo::from(*maker_callback_info) {
+                    let maker_user_callback_info = UserCallbackInfo::from(*maker_callback_info);
+                    tracing::trace!(
+                        "prepare to handle fill event: {:#?}",
+                        &maker_user_callback_info
+                    );
+
+                    let fill_accounts = match maker_user_callback_info {
                         UserCallbackInfo::Margin(info) => {
                             margin_accounts_to_settle.push(info.margin_account);
 
@@ -297,26 +307,30 @@ impl MarketState {
                             taker_queue: taker_callback_info.adapter(),
                         },
                     };
+
+                    tracing::trace!("add accounts for fill: {:#?}", &fill_accounts);
                     consume_params.push(EventAccounts::Fill(fill_accounts))
                 }
                 EventRef::Out(OutEventRef { callback_info, .. }) => {
-                    println!("event out");
+                    let user_callback_info = UserCallbackInfo::from(*callback_info);
+                    tracing::trace!("prepare to handle out event: {:#?}", &user_callback_info);
 
-                    match UserCallbackInfo::from(*callback_info) {
+                    let out_accounts = match user_callback_info {
                         UserCallbackInfo::Margin(info) => {
                             margin_accounts_to_settle.push(info.margin_account);
-                            consume_params.push(EventAccounts::Out(OutAccounts {
+                            OutAccounts {
                                 out_account: info.margin_user,
                                 user_queue: maybe_adapter!(info),
-                            }))
+                            }
                         }
-                        UserCallbackInfo::Signer(info) => {
-                            consume_params.push(EventAccounts::Out(OutAccounts {
-                                out_account: info.token_account,
-                                user_queue: maybe_adapter!(info),
-                            }))
-                        }
-                    }
+                        UserCallbackInfo::Signer(info) => OutAccounts {
+                            out_account: info.token_account,
+                            user_queue: maybe_adapter!(info),
+                        },
+                    };
+
+                    tracing::trace!("add accounts for out: {:#?}", &out_accounts);
+                    consume_params.push(EventAccounts::Out(out_accounts))
                 }
             }
 
@@ -440,6 +454,11 @@ impl MarketState {
             );
             deposit
         } else {
+            tracing::debug!(
+                owner = ?info.signer,
+                "prepare to fill tickets for lender to: {}",
+                info.ticket_account
+            );
             info.ticket_account
         };
         UserFillAccounts::Signer(SignerFillAccount(fill))
@@ -454,9 +473,8 @@ impl MarketState {
     fn pending_events(&self) -> Result<usize, EventConsumerError> {
         Ok(OwnedEventQueue::from(self.queue.clone())
             .inner()
-            .map_err(|_| EventConsumerError::InvalidEventQueue(self.market.event_queue))
-            .iter()
-            .len())
+            .map_err(|_| EventConsumerError::InvalidEventQueue(self.market.event_queue))?
+            .len() as usize)
     }
 }
 
@@ -484,26 +502,26 @@ impl From<&EventAccounts> for Vec<Pubkey> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct FillAccounts {
     user_accounts: UserFillAccounts,
     maker_queue: Option<Pubkey>,
     taker_queue: Option<Pubkey>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 enum UserFillAccounts {
     Margin(MarginFillAccounts),
     Signer(SignerFillAccount),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct MarginFillAccounts {
     margin_user: Pubkey,
     term_account: Option<Pubkey>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct SignerFillAccount(Pubkey);
 
 impl From<&FillAccounts> for Vec<Pubkey> {
@@ -511,35 +529,27 @@ impl From<&FillAccounts> for Vec<Pubkey> {
         let mut keys = vec![];
 
         if let Some(queue) = fill.maker_queue {
-            println!("fill maker queue");
             keys.push(queue);
         }
         if let Some(queue) = fill.taker_queue {
-            println!("fill taker queue");
             keys.push(queue);
         }
 
         match fill.user_accounts {
             UserFillAccounts::Margin(accs) => {
-                println!("fill margin user");
                 keys.push(accs.margin_user);
                 if let Some(acc) = accs.term_account {
-                    println!("fill margin term acc");
-
                     keys.push(acc);
                 }
             }
-            UserFillAccounts::Signer(acc) => {
-                println!("fill signer");
-                keys.push(acc.0)
-            }
+            UserFillAccounts::Signer(acc) => keys.push(acc.0),
         }
 
         keys
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct OutAccounts {
     out_account: Pubkey,
     user_queue: Option<Pubkey>,
@@ -550,10 +560,8 @@ impl From<&OutAccounts> for Vec<Pubkey> {
         let mut accounts = vec![];
 
         if let Some(queue) = out.user_queue {
-            println!("out queue");
             accounts.push(queue);
         }
-        println!("out acc");
         accounts.push(out.out_account);
 
         accounts

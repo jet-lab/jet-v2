@@ -237,7 +237,7 @@ impl<'info> OrderbookMut<'info> {
 
 #[cfg_attr(feature = "cli", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-    AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Zeroable, Pod,
+    AnchorSerialize, AnchorDeserialize, Clone, Copy, Default, PartialEq, Eq, Zeroable, Pod,
 )]
 #[repr(transparent)]
 pub struct OrderTag(pub [u8; 16]);
@@ -273,6 +273,18 @@ impl OrderTag {
 
     pub fn as_u128(&self) -> u128 {
         u128::from_le_bytes(self.0)
+    }
+}
+
+impl std::fmt::Debug for OrderTag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", bs58::encode(&self.0).into_string())
+    }
+}
+
+impl std::fmt::Display for OrderTag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", bs58::encode(&self.0).into_string())
     }
 }
 

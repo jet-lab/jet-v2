@@ -146,7 +146,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             }
             UserCallbackInfo::Signer(info) => {
                 msg!("out signer token");
-                OutAccounts::Signer(self.accounts.next_token_account(&info.signer)?)
+                OutAccounts::Signer(self.accounts.next_token_account(&info.token_account)?)
             }
         };
 
