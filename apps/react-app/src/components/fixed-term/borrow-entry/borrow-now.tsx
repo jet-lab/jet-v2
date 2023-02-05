@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { bigIntToBn, bnToBigInt, borrowNow, MarketAndconfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
+import { bigIntToBn, bnToBigInt, borrowNow, MarketAndConfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -20,7 +20,7 @@ import { RateDisplay } from '../shared/rate-display';
 interface RequestLoanProps {
   decimals: number;
   token: MarginTokenConfig;
-  marketAndConfig: MarketAndconfig;
+  marketAndConfig: MarketAndConfig;
   marginConfig: MarginConfig;
 }
 

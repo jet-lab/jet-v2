@@ -3,7 +3,7 @@ import { formatDuration, intervalToDuration } from 'date-fns';
 import {
   bigIntToBn,
   bnToBigInt,
-  MarketAndconfig,
+  MarketAndConfig,
   offerLoan,
   OrderbookModel,
   rate_to_price,
@@ -29,7 +29,7 @@ import { RateDisplay } from '../shared/rate-display';
 interface RequestLoanProps {
   decimals: number;
   token: MarginTokenConfig;
-  marketAndConfig: MarketAndconfig;
+  marketAndConfig: MarketAndConfig;
   marginConfig: MarginConfig;
 }
 

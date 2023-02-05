@@ -1,4 +1,4 @@
-import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, MarketAndconfig, OrderbookModel } from '@jet-lab/margin';
+import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, MarketAndConfig, OrderbookModel } from '@jet-lab/margin';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -9,7 +9,7 @@ import { useProvider } from '@utils/jet/provider';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useLocation } from 'react-router-dom';
 
-export const AllFixedTermMarketsAtom = atom<Array<MarketAndconfig>>({
+export const AllFixedTermMarketsAtom = atom<Array<MarketAndConfig>>({
   key: 'allFixedTermMarkets',
   default: [],
   dangerouslyAllowMutability: true
@@ -21,7 +21,7 @@ export const SelectedFixedTermMarketAtom = atom<number>({
   dangerouslyAllowMutability: true
 });
 
-export const FixedTermMarketAtom = selector<MarketAndconfig | null>({
+export const FixedTermMarketAtom = selector<MarketAndConfig | null>({
   key: 'fixedTermMarketAtom',
   get: ({ get }) => {
     const list = get(AllFixedTermMarketsAtom);
@@ -74,7 +74,7 @@ export const useFixedTermSync = (): void => {
     program: Program<JetFixedTerm>,
     marginProgramId: PublicKey
   ) => {
-    const markets: Array<MarketAndconfig> = [];
+    const markets: Array<MarketAndConfig> = [];
     await Promise.all(
       Object.entries(airspace.fixedTermMarkets).map(async ([name, marketConfig]) => {
         try {

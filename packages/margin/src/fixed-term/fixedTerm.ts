@@ -488,7 +488,7 @@ export class FixedTermMarket {
 
     const model = new OrderbookModel(BigInt(tenor))
     model.refresh(bidsBuf, asksBuf)
-    
+
     this.orderbookModel = model
 
     return model
@@ -558,7 +558,7 @@ export class FixedTermMarket {
   }
 }
 
-export interface MarketAndconfig {
+export interface MarketAndConfig {
   market: FixedTermMarket
   config: FixedTermMarketConfig
   token: MarginTokenConfig

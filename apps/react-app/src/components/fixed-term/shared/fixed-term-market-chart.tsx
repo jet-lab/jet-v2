@@ -14,12 +14,12 @@ import {
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { useMemo } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
-import { MarketAndconfig } from '@jet-lab/margin';
+import { MarketAndConfig } from '@jet-lab/margin';
 interface FixedChart {
   type: 'bids' | 'asks';
 }
 
-const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndconfig | null) => {
+const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | null) => {
   if (!market?.config?.symbol) return '';
   switch (currentTab) {
     case 'borrow-now':

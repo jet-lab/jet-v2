@@ -4,7 +4,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import formatDistanceToNowStrict from 'date-fns/formatDistanceToNowStrict';
 import BN from 'bn.js';
-import { cancelOrder, MarketAndconfig } from '@jet-lab/margin';
+import { cancelOrder, MarketAndConfig } from '@jet-lab/margin';
 import { useMemo } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
 import { getExplorerUrl } from '@utils/ui';
@@ -12,7 +12,7 @@ import { OpenOrder } from '@jet-lab/store/dist/types';
 import { notify } from '@utils/notify';
 
 interface GetPostOrderColumnes {
-  market: MarketAndconfig;
+  market: MarketAndConfig;
   marginAccount: MarginAccount;
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
@@ -70,7 +70,7 @@ const getPostOrderColumns = ({
 ];
 
 const cancel = async (
-  market: MarketAndconfig,
+  market: MarketAndConfig,
   marginAccount: MarginAccount,
   provider: AnchorProvider,
   order: OpenOrder,
@@ -111,7 +111,7 @@ export const PostedOrdersTable = ({
   markets
 }: {
   data: OpenOrder[];
-  market: MarketAndconfig;
+  market: MarketAndConfig;
   marginAccount: MarginAccount;
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';

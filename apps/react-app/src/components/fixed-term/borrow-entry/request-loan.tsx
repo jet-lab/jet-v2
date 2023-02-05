@@ -1,7 +1,7 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import {
-  MarketAndconfig,
+  MarketAndConfig,
   OrderbookModel,
   bnToBigInt,
   rate_to_price,
@@ -29,7 +29,7 @@ import { RateDisplay } from '../shared/rate-display';
 interface RequestLoanProps {
   decimals: number;
   token: MarginTokenConfig;
-  marketAndConfig: MarketAndconfig;
+  marketAndConfig: MarketAndConfig;
   marginConfig: MarginConfig;
 }
 
