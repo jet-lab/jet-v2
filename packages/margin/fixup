@@ -9,11 +9,11 @@ esac
 
 replace() {
     if [[ "$PLATFORM" == "OSX" || "$PLATFORM" == "BSD" ]]; then
-        sed -i "" "$1" "$2"
+        sed -i '' "s/wasm.__wbg_systeminstruction_free(ptr);//" src/wasm/index_bg.js
     elif [ "$PLATFORM" == "LINUX" ]; then
         sed -i "$1" "$2"
     fi
 }
 
 # See https://github.com/pyth-network/pyth-crosschain/blob/main/Dockerfile.wasm#L26
-replace  "/^\s*wasm.__wbg_systeminstruction_free(ptr);$/d" src/wasm/index_bg.js
+replace "/^\s*wasm.__wbg_systeminstruction_free(ptr);$/d" src/wasm/index_bg.js
