@@ -28,7 +28,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
           showSearch={true}
           suffixIcon={<AngleDown className="jet-icon" />}
           filterOption={(val, opt) => {
-            return opt?.name && opt.name.indexOf(val) !== -1;
+            return opt?.name && opt.name.toLowerCase().indexOf(val.toLowerCase()) !== -1;
           }}
           onChange={value => setSelectedMarket(value - 1)}>
           {markets.map((market, index) => (
