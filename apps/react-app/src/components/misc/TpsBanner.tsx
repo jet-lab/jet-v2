@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Cluster, PreferredRpcNode, rpcNodes } from '@state/settings/settings';
+import { PreferredRpcNode, rpcNodes } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { useProvider } from '@utils/jet/provider';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Alert } from 'antd';
 import { NetworkStateAtom } from '@state/network/network-state';
+import { useJetStore } from '@jet-lab/store';
 
 // Banner to show user that the Solana network is running slowly
 export function TpsBanner(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const { provider } = useProvider();
   const rpcNode = useRecoilValue(PreferredRpcNode);
   const dictionary = useRecoilValue(Dictionary);

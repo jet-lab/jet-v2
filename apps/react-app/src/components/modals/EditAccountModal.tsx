@@ -4,18 +4,18 @@ import axios from 'axios';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { SendingTransaction } from '@state/actions/actions';
 import { EditAccountModal as EditAccountModalOpen } from '@state/modals/modals';
-import { Cluster } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { CurrentAccountAddress, CurrentAccount, AccountNames } from '@state/user/accounts';
 import { notify } from '@utils/notify';
 import { Input, Modal, Typography } from 'antd';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Modal for editing account information
 export function EditAccountModal(): JSX.Element {
   const editAccountModalOpen = useRecoilValue(EditAccountModalOpen);
   const resetEditAccountModal = useResetRecoilState(EditAccountModalOpen);
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { publicKey } = useWallet();
   const currentAccount = useRecoilValue(CurrentAccount);

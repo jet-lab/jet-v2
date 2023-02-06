@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSetRecoilState, useResetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SendingTransaction } from '@state/actions/actions';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { AccountNames, Accounts, useAccountFromName } from '@state/user/accounts';
 import { CurrentPool } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
@@ -19,10 +19,11 @@ import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import ArrowDown from '@assets/icons/arrow-down.svg';
 import { ArrowRight } from './ArrowRight';
+import { useJetStore } from '@jet-lab/store';
 
 // Modal to transfer collateral from one marginAccount to another
 export function TransferModal(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const { currencyAbbrev } = useCurrencyFormatting();

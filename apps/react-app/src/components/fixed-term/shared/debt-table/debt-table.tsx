@@ -5,12 +5,12 @@ import { Tabs } from 'antd';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { LoadingOutlined } from '@ant-design/icons';
-import { useOrdersForUser } from '@jet-lab/store';
+import { useJetStore, useOrdersForUser } from '@jet-lab/store';
 import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { useEffect, useMemo } from 'react';
 import { notify } from '@utils/notify';
 import { useProvider } from '@utils/jet/provider';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { PostedOrdersTable } from './posted-order-table';
 import { TokenAmount } from '@jet-lab/margin';
 import BN from 'bn.js';
@@ -48,7 +48,7 @@ export function DebtTable() {
   const market = markets[selectedMarket];
   const { provider } = useProvider();
   const blockExplorer = useRecoilValue(BlockExplorer);
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const pools = useRecoilValue(Pools);
 
   const apiEndpoint = useMemo(

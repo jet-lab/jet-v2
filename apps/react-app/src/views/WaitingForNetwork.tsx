@@ -1,14 +1,13 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { useRecoilValue } from 'recoil';
+import { useJetStore } from '@jet-lab/store';
 import { NetworkState } from '../state/network/network-state';
-import { Cluster } from '../state/settings/settings';
 
 interface WaitingForNetwork {
   networkState: NetworkState;
 }
 
 export const WaitingForNetworkView = ({ networkState }: WaitingForNetwork) => {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
 
   return networkState === 'loading' ? (
     <div className="centered-loading-container">

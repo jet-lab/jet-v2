@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { feesBuffer, MarginPrograms } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
-import { Cluster, BlockExplorer } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
 import { NewAccountModal as NewAccountModalState } from '@state/modals/modals';
 import { AccountNames, Accounts } from '@state/user/accounts';
@@ -17,10 +17,11 @@ import { getExplorerUrl } from '@utils/ui';
 import { Input, Modal, Tooltip, Typography } from 'antd';
 import { NetworkStateAtom } from '../../state/network/network-state';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const { programs } = useProvider();

@@ -11,8 +11,8 @@ import { TokenInputAmount, ActionRefresh } from '@state/actions/actions';
 import { useProvider } from './provider';
 import { NOTIFICATION_DURATION } from '../notify';
 import { message } from 'antd';
-import { Cluster } from '@state/settings/settings';
 import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
+import { useJetStore } from '@jet-lab/store';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -20,9 +20,8 @@ export enum ActionResponse {
   Cancelled = 'CANCELLED'
 }
 export function useMarginActions() {
-  // const cluster = useRecoilValue(Cluster);
   const config = useRecoilValue(MainConfig);
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
   const pools = useRecoilValue(Pools);

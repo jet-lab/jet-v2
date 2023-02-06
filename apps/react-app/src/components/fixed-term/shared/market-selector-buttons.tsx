@@ -1,7 +1,7 @@
 import { MarginAccount, MarketAndconfig, TokenAmount } from '@jet-lab/margin';
-import { useOpenPositions } from '@jet-lab/store';
+import { useJetStore, useOpenPositions } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { useProvider } from '@utils/jet/provider';
 import { Button } from 'antd';
 import BN from 'bn.js';
@@ -15,7 +15,7 @@ interface IMarketSelectorButtonProps {
   selectedMarket?: MarketAndconfig;
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'

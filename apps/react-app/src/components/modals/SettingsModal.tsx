@@ -6,7 +6,6 @@ import {
   Explorer,
   BlockExplorer,
   blockExplorers,
-  Cluster,
   RpcNodes,
   rpcNodeOptions,
   PreferredRpcNode,
@@ -20,6 +19,7 @@ import { getPing } from '@utils/ui';
 import { Input, Modal, Radio, Select, Typography } from 'antd';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Modal for changing app preferences
 export function SettingsModal(): JSX.Element {
@@ -27,7 +27,10 @@ export function SettingsModal(): JSX.Element {
   const settingsModalOpen = useRecoilValue(SettingsModalState);
   const resetSettingsModalOpen = useResetRecoilState(SettingsModalState);
   // Cluster
-  const [cluster, setCluster] = useRecoilState(Cluster);
+  const { cluster, updateSetting } = useJetStore(state => ({
+    cluster: state.settings.cluster,
+    updateSetting: state.updateSetting
+  }));
   const [clusterSetting, setClusterSetting] = useState(cluster);
   // Rpc Node
   const [rpcNodes, setRpcNodes] = useRecoilState(RpcNodes);
@@ -75,7 +78,7 @@ export function SettingsModal(): JSX.Element {
       setPreferredNode(preferredNodeSetting);
     }
     if (clusterSetting !== cluster) {
-      setCluster(clusterSetting);
+      updateSetting('cluster', clusterSetting);
     }
     if (fiatCurrencySetting !== fiatCurrency) {
       setFiatCurrency(fiatCurrencySetting);

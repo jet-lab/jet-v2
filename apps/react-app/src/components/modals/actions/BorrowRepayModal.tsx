@@ -3,7 +3,7 @@ import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue 
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SendingTransaction } from '@state/actions/actions';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentPool } from '@state/pools/pools';
@@ -18,10 +18,11 @@ import { useProjectedRisk, useRiskStyle } from '@utils/risk';
 import { ArrowRight } from './ArrowRight';
 import { Button, Modal, Switch, Tabs, Typography } from 'antd';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
+import { useJetStore } from '@jet-lab/store';
 
 // Modal to Borrow / Repay using the current Pool
 export function BorrowRepayModal(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const { currencyAbbrev } = useCurrencyFormatting();

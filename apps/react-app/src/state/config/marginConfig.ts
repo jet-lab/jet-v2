@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import axios from 'axios';
-import { atom, useRecoilValue, useSetRecoilState } from 'recoil';
+import { atom, useSetRecoilState } from 'recoil';
 import { MarginClient, MarginConfig } from '@jet-lab/margin';
-import { Cluster } from '../settings/settings';
+import { useJetStore } from '@jet-lab/store';
 
 // Pool config instantiation at app init
 export const MainConfig = atom<MarginConfig | undefined>({
@@ -12,7 +12,7 @@ export const MainConfig = atom<MarginConfig | undefined>({
 
 // A syncer to be called so that we can have dependent atom state
 export function useMainConfigSyncer() {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const setMainConfig = useSetRecoilState(MainConfig);
 
   async function getLocalnetConfig() {

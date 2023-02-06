@@ -1,7 +1,7 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Dictionary } from '@state/settings/localization/localization';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { WalletModal } from '@state/modals/modals';
 import { SendingTransaction } from '@state/actions/actions';
 import { CurrentPool } from '@state/pools/pools';
@@ -10,12 +10,13 @@ import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
 import { Button } from 'antd';
 import { CloudFilled } from '@ant-design/icons';
+import { useJetStore } from '@jet-lab/store';
 
 // Button for airdropping a token to the user's Solana wallet (if on devnet)
 export function AirdropButton(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const { connected } = useWallet();
   const currentPool = useRecoilValue(CurrentPool);
   const { airdrop } = useMarginActions();

@@ -3,7 +3,7 @@ import { CSVDownload } from 'react-csv';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { AccountTransaction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
-import { BlockExplorer, Cluster, PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
+import { BlockExplorer, PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
 import { AccountsViewOrder } from '@state/views/views';
 import { WalletTokens } from '@state/user/walletTokens';
 import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '@state/user/accounts';
@@ -17,10 +17,11 @@ import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { ActionIcon } from '@components/misc/ActionIcon';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Table to show margin account's transaction history
 export function FullAccountHistory(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const preferredTimeDisplay = useRecoilValue(PreferredTimeDisplay);

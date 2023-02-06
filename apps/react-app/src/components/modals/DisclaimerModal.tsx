@@ -3,12 +3,13 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import reactStringReplace from 'react-string-replace';
 import { Dictionary } from '@state/settings/localization/localization';
-import { Cluster, DisclaimersAccepted } from '@state/settings/settings';
+import { DisclaimersAccepted } from '@state/settings/settings';
 import { Button, Checkbox, Modal, Typography } from 'antd';
+import { useJetStore } from '@jet-lab/store';
 
 // Disclaimer modal if the current wallet hasn't accepted terms/conditions yet
 export function DisclaimerModal(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { publicKey } = useWallet();
   const [disclaimersAccepted, setDisclaimersAccepted] = useRecoilState(DisclaimersAccepted);

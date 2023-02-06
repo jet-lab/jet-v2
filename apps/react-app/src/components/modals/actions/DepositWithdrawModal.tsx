@@ -2,7 +2,7 @@ import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue 
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentPool } from '@state/pools/pools';
@@ -19,10 +19,11 @@ import { ArrowRight } from './ArrowRight';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 import { Button, Modal, Tabs, Typography } from 'antd';
 import { useEffect } from 'react';
+import { useJetStore } from '@jet-lab/store';
 
 // Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const { currencyAbbrev } = useCurrencyFormatting();

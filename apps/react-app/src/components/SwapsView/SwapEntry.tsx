@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilState, useResetRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
 import { SwapsRowOrder } from '@state/views/views';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '@state/pools/pools';
@@ -30,10 +30,11 @@ import SwapIcon from '@assets/icons/function-swap.svg';
 import { CurrentSplSwapPool, hasOrcaPool, SplSwapPools, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const splSwapPools = useRecoilValue(SplSwapPools);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);

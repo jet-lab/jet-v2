@@ -4,13 +4,14 @@ import { Connection, ConfirmOptions } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Wallet } from '@project-serum/anchor';
 import { MarginClient } from '@jet-lab/margin';
-import { Cluster, rpcNodes, PreferredRpcNode } from '@state/settings/settings';
+import { rpcNodes, PreferredRpcNode } from '@state/settings/settings';
 import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
+import { useJetStore } from '@jet-lab/store';
 
 // Anchor connection / provider hook
 export function useProvider() {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const node = useRecoilValue(PreferredRpcNode);
   const networkStatus = useRecoilValue(NetworkStateAtom);
   const endpoint =

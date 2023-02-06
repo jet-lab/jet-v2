@@ -9,13 +9,14 @@ import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { BlockExplorer } from '@state/settings/settings';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useEffect, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
+import { useJetStore } from '@jet-lab/store';
 
 interface RequestLoanProps {
   decimals: number;
@@ -35,7 +36,6 @@ interface Forecast {
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const cluster = useRecoilValue(Cluster);
   const pools = useRecoilValue(Pools);
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
@@ -44,6 +44,8 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
+
+  const cluster = useJetStore(state => state.settings.cluster);
 
   const disabled =
     !marginAccount ||
