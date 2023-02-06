@@ -9,7 +9,7 @@ esac
 
 replace() {
     if [[ "$PLATFORM" == "OSX" || "$PLATFORM" == "BSD" ]]; then
-        sed -i "" "$1" "$2"
+        sed -i.bak "s/wasm.__wbg_systeminstruction_free(ptr);//" src/wasm/index_bg.js
     elif [ "$PLATFORM" == "LINUX" ]; then
         sed -i "$1" "$2"
     fi
