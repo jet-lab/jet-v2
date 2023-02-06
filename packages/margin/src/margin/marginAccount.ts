@@ -36,6 +36,7 @@ import {
 } from "../utils"
 import { MarginPrograms } from "./marginClient"
 import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
+import { Airspace } from "./airspace"
 
 /** A description of a position associated with a [[MarginAccount]] and [[Pool]] */
 export interface PoolPosition {
@@ -140,7 +141,7 @@ export class MarginAccount {
   /** The owner of the [[MarginAccount]] */
   owner: PublicKey
   /** The address of the airspace this account is part of */
-  airspace?: PublicKey
+  airspace: PublicKey
   /** The parsed [[AccountPosition]] array of the margin account. */
   positions: AccountPosition[]
   /** The summarized [[PoolPosition]] array of pool deposits and borrows. */
@@ -152,16 +153,12 @@ export class MarginAccount {
   get liquidator() {
     return this.info?.marginAccount.liquidator
   }
-  /** @deprecated Please use `marginAccount.info.liquidation` instead */
-  get liquidaton() {
-    return this.info?.marginAccount.liquidation
-  }
   /**
-   * Returns true if a [[LiquidationData]] account exists and is associated with the [[MarginAccount]].
+   * Returns true if a liquidator address is associated with the [[MarginAccount]].
    * Certain actions are not allowed while liquidation is in progress.
    */
   get isBeingLiquidated() {
-    return this.info && !this.info.marginAccount.liquidation.equals(PublicKey.default)
+    return this.info && !this.info.marginAccount.liquidator.equals(PublicKey.default)
   }
 
   /** A qualitative measure of the the health of a margin account.
@@ -209,15 +206,15 @@ export class MarginAccount {
     public provider: AnchorProvider,
     owner: Address,
     public seed: number,
+    public airspaceAddress?: Address,
     public pools?: Record<string, Pool>,
     public walletTokens?: MarginWalletTokens
   ) {
     this.owner = translateAddress(owner)
     this.address = MarginAccount.derive(programs, owner, seed)
-    this.airspace =
-      this.programs.config.airspaces?.length > 0
-        ? findDerivedAccount(this.programs.config.airspaceProgramId, "airspace", this.programs.config.airspaces[0].name)
-        : undefined
+    this.airspace = airspaceAddress
+      ? translateAddress(airspaceAddress)
+      : findDerivedAccount(this.programs.config.airspaceProgramId, "airspace", this.programs.config.airspaces[0].name)
     this.pools = pools
     this.walletTokens = walletTokens
     this.positions = this.getPositions()
@@ -258,6 +255,15 @@ export class MarginAccount {
   findLiquidationAddress(liquidator: Address): PublicKey {
     return findDerivedAccount(this.programs.config.marginProgramId, this.address, liquidator)
   }
+  /**
+   * Derive the address of an active [[LiquidationState]] account.
+   *
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  findLiquidationStateAddress(): PublicKey {
+    return findDerivedAccount(this.programs.config.marginProgramId, "liquidation", this.address, this.liquidator!)
+  }
 
   /**
    * Derive the address of a metadata account.
@@ -274,6 +280,21 @@ export class MarginAccount {
   findMetadataAddress(account: Address): PublicKey {
     const accountAddress = translateAddress(account)
     return findDerivedAccount(this.programs.config.metadataProgramId, accountAddress)
+  }
+
+  /**
+   * Derive the address of an airspace permit account.
+   *
+   * ## Remarks
+   *
+   * All margin accounts are associated with an airspace. The permit determines
+   * actions a signer is allowed to take within an airspace.
+   *
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  findAirspacePermitAddress(): PublicKey {
+    return findDerivedAccount(this.programs.config.airspaceProgramId, "airspace-permit", this.airspace!, this.owner)
   }
 
   /**
@@ -319,6 +340,7 @@ export class MarginAccount {
   static async load({
     programs,
     provider,
+    airspaceAddress,
     pools,
     walletTokens,
     owner,
@@ -326,12 +348,13 @@ export class MarginAccount {
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
+    airspaceAddress?: Address
     pools?: Record<string, Pool>
     walletTokens?: MarginWalletTokens
     owner: Address
     seed: number
   }): Promise<MarginAccount> {
-    const marginAccount = new MarginAccount(programs, provider, owner, seed, pools, walletTokens)
+    const marginAccount = new MarginAccount(programs, provider, owner, seed, airspaceAddress, pools, walletTokens)
     await marginAccount.refresh()
     return marginAccount
   }
@@ -385,7 +408,15 @@ export class MarginAccount {
       if (infos[i]) {
         const { account } = infos[i]
         const seed = bnToNumber(new BN(account.userSeed, undefined, "le"))
-        const marginAccount = new MarginAccount(programs, provider, account.owner, seed, pools, walletTokens)
+        const marginAccount = new MarginAccount(
+          programs,
+          provider,
+          account.owner,
+          seed,
+          account.airspace,
+          pools,
+          walletTokens
+        )
         await marginAccount.refresh()
         marginAccounts.push(marginAccount)
       }
@@ -401,10 +432,10 @@ export class MarginAccount {
     } else {
       // Account is being liquidated
       let liquidationData: LiquidationData | undefined = undefined
-      if (!marginAccount.liquidation.equals(PublicKey.default)) {
+      if (!marginAccount.liquidator.equals(PublicKey.default)) {
         liquidationData =
-          (await this.programs.margin.account.liquidationState.fetchNullable(marginAccount.liquidation))?.state ??
-          undefined
+          (await this.programs.margin.account.LiquidationState.fetchNullable(this.findLiquidationStateAddress()))
+            ?.state ?? undefined
       }
       this.info = {
         marginAccount,
@@ -892,6 +923,7 @@ export class MarginAccount {
     provider,
     owner,
     seed,
+    airspaceAddress,
     pools,
     walletTokens
   }: {
@@ -899,13 +931,14 @@ export class MarginAccount {
     provider: AnchorProvider
     owner: Address
     seed?: number
+    airspaceAddress?: Address
     pools?: Record<string, Pool>
     walletTokens?: MarginWalletTokens
   }): Promise<MarginAccount> {
     if (seed === undefined) {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
     }
-    const marginAccount = new MarginAccount(programs, provider, owner, seed, pools, walletTokens)
+    const marginAccount = new MarginAccount(programs, provider, owner, seed, airspaceAddress, pools, walletTokens)
     await marginAccount.createAccount()
     return marginAccount
   }
@@ -1000,16 +1033,39 @@ export class MarginAccount {
    */
   async withCreateAccount(instructions: TransactionInstruction[]): Promise<void> {
     if (!(await this.exists())) {
-      const ix = await this.programs.margin.methods
+      const permit = this.findAirspacePermitAddress()
+      const permitExists = await this.provider.connection.getAccountInfo(permit)
+
+      if (!permitExists) {
+        const airspace = await Airspace.load(this.programs.airspace, this.airspace)
+        if (airspace.info!.isRestricted) {
+          throw Error("Permit cannot be created for a restricted airspace")
+        }
+        const issuerId = airspace.derivePermitIssuerId(this.owner)
+        const permitIx = await this.programs.airspace.methods
+          .airspacePermitCreate(this.owner)
+          .accounts({
+            payer: this.provider.wallet.publicKey,
+            authority: this.owner,
+            airspace: this.airspace,
+            permit,
+            issuerId,
+            systemProgram: SystemProgram.programId
+          })
+          .instruction()
+        instructions.push(permitIx)
+      }
+      const createIx = await this.programs.margin.methods
         .createAccount(this.seed)
         .accounts({
           owner: this.owner,
+          permit,
           payer: this.provider.wallet.publicKey,
           marginAccount: this.address,
           systemProgram: SystemProgram.programId
         })
         .instruction()
-      instructions.push(ix)
+      instructions.push(createIx)
     }
   }
 
@@ -1324,7 +1380,7 @@ export class MarginAccount {
     positionTokenMint: Address
   }): Promise<PublicKey> {
     const tokenAccount = this.findPositionTokenAddress(positionTokenMint)
-    const metadata = this.findMetadataAddress(positionTokenMint)
+    const config = this.findTokenConfigAddress(positionTokenMint)
 
     const ix = await this.programs.margin.methods
       .registerPosition()
@@ -1333,7 +1389,7 @@ export class MarginAccount {
         payer: this.provider.wallet.publicKey,
         marginAccount: this.address,
         positionTokenMint: positionTokenMint,
-        metadata,
+        config,
         tokenAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY,
@@ -1570,7 +1626,7 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   async withLiquidateEnd(instructions: TransactionInstruction[]): Promise<void> {
-    const liquidation = this.info?.marginAccount.liquidation
+    const liquidation = this.findLiquidationStateAddress()
     const authority = this.provider.wallet.publicKey
     assert(liquidation)
     assert(authority)

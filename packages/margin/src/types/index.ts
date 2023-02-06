@@ -1,3 +1,4 @@
+export { type JetAirspace, IDL as JetAirspaceIdl } from "./jetAirspace"
 export { type JetControl, IDL as JetControlIdl } from "./jetControl"
 export { type JetMargin, IDL as JetMarginIdl } from "./jetMargin"
 export { type JetMetadata, IDL as JetMetadataIdl } from "./jetMetadata"
