@@ -16,7 +16,17 @@ interface IMarketSelectorButtonProps {
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
   const cluster = useRecoilValue(Cluster);
-  const apiEndpoint = useMemo(() => cluster === 'mainnet-beta' ? process.env.DATA_API : cluster === 'devnet' ? process.env.DEV_DATA_API : cluster === 'localnet' ? process.env.LOCAL_DATA_API : '', [cluster])
+  const apiEndpoint = useMemo(
+    () =>
+      cluster === 'mainnet-beta'
+        ? process.env.DATA_API
+        : cluster === 'devnet'
+        ? process.env.DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.LOCAL_DATA_API
+        : '',
+    [cluster]
+  );
   const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market, marginAccount);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const { provider } = useProvider();

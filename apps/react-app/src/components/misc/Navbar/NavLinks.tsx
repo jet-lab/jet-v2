@@ -7,12 +7,7 @@ import { useChangeView } from '@utils/ui';
 import { Tooltip, Typography } from 'antd';
 import { Cluster } from '@state/settings/settings';
 
-type Route =
-  | '/'
-  | '/swaps'
-  | '/accounts'
-  | '/fixed-lend'
-  | '/fixed-borrow';
+type Route = '/' | '/swaps' | '/accounts' | '/fixed-lend' | '/fixed-borrow';
 interface Link {
   title: string;
   route: Route;
@@ -30,7 +25,7 @@ export function NavLinks(): JSX.Element {
     { title: dictionary.swapsView.title, route: '/swaps', disabled: false, hidden: false },
     { title: dictionary.accountsView.title, route: '/accounts', disabled: false, hidden: false },
     { title: 'Lend', route: '/fixed-lend', disabled: false, hidden: cluster === 'mainnet-beta' },
-    { title: 'Borrow', route: '/fixed-borrow', disabled: false, hidden: cluster === 'mainnet-beta' },
+    { title: 'Borrow', route: '/fixed-borrow', disabled: false, hidden: cluster === 'mainnet-beta' }
   ];
 
   if (cluster !== 'mainnet-beta') {
@@ -47,7 +42,7 @@ export function NavLinks(): JSX.Element {
         </Tooltip>
       );
     } else if (link.hidden) {
-      return null
+      return null;
     }
 
     return navLink;
