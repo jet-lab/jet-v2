@@ -2,10 +2,12 @@ import { useEffect, useMemo } from 'react';
 import { atom, useRecoilValue, selector, selectorFamily, useSetRecoilState } from 'recoil';
 import { PoolManager as MarginPoolManager, Pool } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
-import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
 import { useProvider } from '@utils/jet/provider';
 import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
+import { useJetStore } from '@jet-lab/store';
+import { PoolData } from '@jet-lab/store/dist/slices/pools';
+import { ActionRefresh } from '@state/actions/actions';
 
 // Our app's interface for interacting with margin pools
 export interface JetMarginPools {
@@ -108,8 +110,9 @@ export function usePoolsSyncer() {
   const { programs, provider } = useProvider();
   const setPoolManager = useSetRecoilState(PoolManager);
   const setPools = useSetRecoilState(Pools);
-  const actionRefresh = useRecoilValue(ActionRefresh);
   const networkState = useRecoilValue(NetworkStateAtom);
+  const initAllPools = useJetStore(state => state.initAllPools);
+  const actionRefresh = useRecoilValue(ActionRefresh);
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
@@ -118,14 +121,26 @@ export function usePoolsSyncer() {
       const tokenPools = await poolManager.loadAll();
       let totalSupply = 0;
       let totalBorrowed = 0;
-      for (const token of Object.values(tokenPools)) {
-        const tokenPrice = tokenPools[token.symbol].tokenPrice;
-        const vault = tokenPools[token.symbol].vault.tokens;
-        const borrowedTokens = tokenPools[token.symbol].borrowedTokens.tokens;
+      const poolsToInit: Record<string, PoolData> = {};
+      for (const pool of Object.values(tokenPools)) {
+        const tokenPrice = tokenPools[pool.symbol].tokenPrice;
+        const vault = tokenPools[pool.symbol].vault.tokens;
+        const borrowedTokens = tokenPools[pool.symbol].borrowedTokens.tokens;
 
         totalSupply += vault * tokenPrice;
         totalBorrowed += borrowedTokens * tokenPrice;
+        const address = pool.address.toBase58();
+        poolsToInit[address] = {
+          address: address,
+          borrowed_tokens: borrowedTokens,
+          deposit_tokens: vault,
+          symbol: pool.symbol,
+          token_mint: pool.tokenMint.toBase58(),
+          decimals: pool.decimals
+        };
       }
+
+      initAllPools(poolsToInit);
 
       setPools({
         totalSupply,
@@ -134,16 +149,15 @@ export function usePoolsSyncer() {
       });
     }
 
-    let poolsInterval: NodeJS.Timer;
     if (programs && provider && networkState === 'connected') {
       const poolManager = new MarginPoolManager(programs, provider);
       setPoolManager(poolManager);
 
       // Use manager to fetch pools on an interval
       getPools(poolManager);
-      poolsInterval = setInterval(async () => getPools(poolManager), ACTION_REFRESH_INTERVAL);
     }
-    return () => clearInterval(poolsInterval);
+
+    // TODO remove resetting pools upon action
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs, provider.connection, actionRefresh, networkState]);
 }
