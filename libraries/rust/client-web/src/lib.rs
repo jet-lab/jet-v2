@@ -1,12 +1,15 @@
 use std::str::FromStr;
 
-use wasm_bindgen::prelude::*;
+use serde_json::Value;
+use wasm_bindgen::{prelude::*, JsCast};
 
 use solana_sdk::{hash::Hash, pubkey::Pubkey};
 
 use jet_client::{
-    config::JetAppConfig, state::tokens::TokenAccount, test_service::TestServiceClient, JetClient,
-    NetworkKind,
+    config::{AirspaceInfo, JetAppConfig, JetAppConfigOld, TokenInfo},
+    state::tokens::TokenAccount,
+    test_service::TestServiceClient,
+    JetClient, NetworkKind,
 };
 
 /// Bindings for the @soalana/web3.js library
@@ -19,6 +22,8 @@ pub mod margin;
 pub mod margin_pool;
 
 use network_adapter::{JsNetworkAdapter, SolanaNetworkAdapter};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{Request, RequestInit, RequestMode, Response};
 
 #[wasm_bindgen]
 pub struct JetWebClient {
@@ -30,6 +35,7 @@ impl JetWebClient {
     pub async fn connect(
         user_address: Pubkey,
         adapter: SolanaNetworkAdapter,
+        legacy_config: bool,
     ) -> Result<JetWebClient, JsError> {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
@@ -43,23 +49,70 @@ impl JetWebClient {
             .unwrap();
 
         let network_kind = NetworkKind::from_genesis_hash(&network_genesis_hash);
-        let config_request = match network_kind {
-            NetworkKind::Mainnet | NetworkKind::Devnet => {
-                gloo_net::http::Request::get(JetAppConfig::DEFAULT_URL)
-            }
-            NetworkKind::Localnet => gloo_net::http::Request::get("/localnet.config.json"),
+        let config_url = match network_kind {
+            NetworkKind::Mainnet | NetworkKind::Devnet => JetAppConfig::DEFAULT_URL,
+            NetworkKind::Localnet => "/localnet.config.json",
+        };
+        let config_request = {
+            let mut opts = RequestInit::new();
+            opts.method("GET");
+            opts.mode(RequestMode::Cors);
+
+            Request::new_with_str_and_init(config_url, &opts).unwrap()
         };
 
-        let config_response = config_request
-            .send()
-            .await
-            .map_err(|e| js_sys::Error::new(&e.to_string()))
-            .unwrap();
-        let config = config_response
-            .json()
-            .await
-            .map_err(|e| js_sys::Error::new(&e.to_string()))
-            .unwrap();
+        let log_level = if network_kind == NetworkKind::Localnet {
+            log::Level::Debug
+        } else {
+            log::Level::Warn
+        };
+
+        if console_log::init_with_level(log_level).is_err() {
+            console_log!("Unable to initialize console log, might already be initialized");
+        }
+
+        let config_response = {
+            let window = web_sys::window().unwrap();
+            let resp_value = JsFuture::from(window.fetch_with_request(&config_request))
+                .await
+                .unwrap();
+
+            // `resp_value` is a `Response` object.
+            assert!(resp_value.is_instance_of::<Response>());
+            let resp: Response = resp_value.dyn_into().unwrap();
+
+            // Convert this other `Promise` into a rust `Future`.
+            let json = JsFuture::from(resp.json().unwrap()).await.unwrap();
+            serde_wasm_bindgen::from_value::<Value>(json).unwrap()
+        };
+
+        let config = if legacy_config {
+            let legacy_config: JetAppConfigOld = serde_json::from_value(config_response).unwrap();
+
+            let tokens_as_vec: Vec<TokenInfo> = legacy_config.tokens.values().cloned().collect();
+            let airspaces = legacy_config
+                .airspaces
+                .into_iter()
+                .map(|airspace| AirspaceInfo {
+                    name: airspace.name,
+                    tokens: airspace.tokens,
+                    fixed_term_markets: airspace
+                        .fixed_term_markets
+                        .values()
+                        .into_iter()
+                        .map(|market| Pubkey::from_str(&market.market).unwrap())
+                        .collect(),
+                })
+                .collect();
+
+            JetAppConfig {
+                tokens: tokens_as_vec,
+                airspaces,
+                exchanges: vec![],
+            }
+        } else {
+            serde_json::from_value(config_response).unwrap()
+        };
 
         let adapter = JsNetworkAdapter::new(adapter, user_address);
 
@@ -106,7 +159,7 @@ impl From<jet_client::ClientError<JsNetworkAdapter>> for ClientError {
                 Self { value: error }
             }
             rust_err => Self {
-                value: js_sys::Error::new(&format!("sdk error: {}", rust_err.to_string())).into(),
+                value: js_sys::Error::new(&format!("sdk error: {}", rust_err)),
             },
         }
     }
@@ -163,4 +216,20 @@ impl TestServiceWebClient {
     pub async fn token_request(&self, mint: &Pubkey, amount: u64) -> Result<(), ClientError> {
         Ok(self.inner.token_request(mint, amount).await?)
     }
+}
+
+#[wasm_bindgen(start, js_name = initModule)]
+pub fn init_module() {
+    console_error_panic_hook::set_once();
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+#[macro_export]
+macro_rules! console_log {
+    ($($t:tt)*) => ($crate::log(&format_args!($($t)*).to_string()))
 }

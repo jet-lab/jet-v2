@@ -18,6 +18,7 @@
 use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
+use jet_program_common::serialization::StorageSpace;
 
 use crate::{events::AdapterConfigured, seeds::ADAPTER_CONFIG_SEED, AdapterConfig};
 

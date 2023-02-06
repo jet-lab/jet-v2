@@ -57,7 +57,12 @@ impl SolanaTestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, anyhow::Error> {
-        jet_simulation::create_wallet(&self.rpc, sol_amount * LAMPORTS_PER_SOL).await
+        init_wallet(
+            &self.rpc,
+            self.generate_key(),
+            sol_amount * LAMPORTS_PER_SOL,
+        )
+        .await
     }
 }
 
@@ -176,4 +181,23 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         .unwrap();
 
     Arc::new(rpc)
+}
+
+pub async fn init_wallet(
+    rpc: &std::sync::Arc<dyn SolanaRpcClient>,
+    wallet: Keypair,
+    lamports: u64,
+) -> Result<solana_sdk::signature::Keypair, anyhow::Error> {
+    let tx = solana_sdk::system_transaction::create_account(
+        rpc.payer(),
+        &wallet,
+        rpc.get_latest_blockhash().await?,
+        lamports,
+        0,
+        &solana_sdk::system_program::ID,
+    );
+
+    rpc.send_and_confirm_transaction(&tx).await?;
+
+    Ok(wallet)
 }

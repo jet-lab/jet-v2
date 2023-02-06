@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 
 use jet_metadata::PositionTokenMetadata;
 
-use crate::{events, MarginAccount};
+use crate::{events, MarginAccount, Permissions, Permit};
 
 #[derive(Accounts)]
 pub struct RefreshPositionMetadata<'info> {
@@ -29,10 +29,21 @@ pub struct RefreshPositionMetadata<'info> {
 
     /// The metadata account for the token, which has been updated
     pub metadata: Account<'info, PositionTokenMetadata>,
+
+    /// permit that authorizes the refresher
+    pub permit: Account<'info, Permit>,
+
+    /// account that is authorized to refresh position metadata
+    pub refresher: Signer<'info>,
 }
 
 /// Refresh the metadata for a position
 pub fn refresh_position_metadata_handler(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
+    ctx.accounts.permit.validate(
+        Pubkey::default(), // FIXME: airspace must come from the margin account once they are airspace-scoped
+        ctx.accounts.refresher.key(),
+        Permissions::REFRESH_POSITION_CONFIG,
+    )?;
     let metadata = &ctx.accounts.metadata;
     let mut account = ctx.accounts.margin_account.load_mut()?;
 

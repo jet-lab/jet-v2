@@ -3,6 +3,9 @@ name = "jet-client-web"
 version = "0.1.0"
 edition = "2021"
 
+[package.metadata.wasm-pack.profile.release] 
+wasm-opt = false
+
 [lib]
 crate-type = ["cdylib"]
 
@@ -11,14 +14,29 @@ async-trait = "0.1"
 wasm-bindgen = "0.2.83"
 wasm-bindgen-futures = "0.4"
 wasm-bindgen-derive = "0.1"
+serde-wasm-bindgen = "0.4"
 js-sys = "0.3"
-web-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "Headers",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+    "Window",
+    "FormData",
+    "Blob",
+    "BlobPropertyBag",
+    "ServiceWorkerGlobalScope",
+    "RequestCredentials",
+    "File",
+    "ReadableStream"
+]}
 console_error_panic_hook = "0.1"
+console_log = "0.2"
+log = "0.4"
 
 serde_json = "1"
 bincode = "1"
-
-gloo-net = "0.2.4"
 
 solana-sdk = "1.10"
 spl-token = "3"

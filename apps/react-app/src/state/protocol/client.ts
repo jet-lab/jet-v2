@@ -1,18 +1,27 @@
 import { useMemo, useEffect } from 'react';
 import { atom, useRecoilValue, useSetRecoilState } from 'recoil';
-import { Connection, ConfirmOptions, PublicKey, AccountInfo, VersionedTransaction } from '@solana/web3.js';
+import { Connection, PublicKey, AccountInfo, VersionedTransaction } from '@solana/web3.js';
 import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
 import { Cluster, rpcNodes, PreferredRpcNode } from '../../state/settings/settings';
-import { JetWebClient, Pubkey } from '@jet-lab/jet-client-web';
+import { JetWebClient, Pubkey, initModule, MarginWebClient, MarginAccountWebClient } from '@jet-lab/jet-client-web';
+
+initModule()
+
+interface ExtendedMargin extends MarginWebClient {
+  accounts: () => MarginAccountWebClient[]
+}
+interface ExtendedJetClient extends JetWebClient {
+  margin: () => ExtendedMargin
+}
 
 // Client object for interacting with the protocol
-export const ProtocolClient = atom({
+export const ProtocolClient = atom<ExtendedJetClient | undefined>({
   key: 'protocolClient',
-  default: undefined as JetWebClient | undefined
+  default: undefined
 });
 
 class SolanaConnectionAdapter {
-  userAddress: Pubkey;
+  userAddress?: Pubkey;
 
   constructor(public wallet: WalletContextState, public connection: Connection) {
     if (wallet.publicKey) {
@@ -40,9 +49,9 @@ class SolanaConnectionAdapter {
   async send(transactionDatas: Uint8Array[]): Promise<string[]> {
     try {
       const {
-        context: { slot: minContextSlot },
         value: { blockhash, lastValidBlockHeight }
-      } = await this.connection.getLatestBlockhashAndContext();
+      } = await this.connection.
+getLatestBlockhashAndContext();
 
       const transactions = transactionDatas.map(txData => {
         let tx = VersionedTransaction.deserialize(txData);
@@ -95,9 +104,11 @@ export function useProtocolClientSyncer() {
 
   async function createClient() {
     const adapter = new SolanaConnectionAdapter(wallet, connection);
-    const webClient = await JetWebClient.connect(adapter.userAddress, adapter);
+    const webClient: ExtendedJetClient | undefined = adapter.userAddress && await JetWebClient.connect(adapter.userAddress, adapter, true)
 
-    setProtocolClient(webClient);
+    if (webClient) {
+      setProtocolClient(webClient);
+    }
   }
 
   useEffect(() => {

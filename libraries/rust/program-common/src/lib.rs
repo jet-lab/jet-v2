@@ -3,6 +3,7 @@ mod functions;
 mod number;
 mod number_128;
 
+pub mod serialization;
 pub mod traits;
 
 #[doc(inline)]

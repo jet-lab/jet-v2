@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{AccountPosition, Liquidation, TokenConfigUpdate, Valuation};
+use crate::{AccountPosition, Liquidation, Permissions, TokenConfigUpdate, Valuation};
 
 event_groups! {
     PositionEvent {
@@ -129,10 +129,10 @@ pub struct AdapterConfigured {
 }
 
 #[event]
-pub struct LiquidatorConfigured {
+pub struct PermitConfigured {
     pub airspace: Pubkey,
-    pub liquidator: Pubkey,
-    pub is_liquidator: bool,
+    pub owner: Pubkey,
+    pub permissions: Permissions,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]

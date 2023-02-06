@@ -137,12 +137,12 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
     println!("found {} margin accounts", margin_accounts.len());
 
     for (address, account) in margin_accounts {
-        let ix = MarginIxBuilder::new_with_payer(
+        let ix = MarginIxBuilder::new(
             Pubkey::default(), // FIXME: read airspace from margin account
             account.owner,
             u16::from_le_bytes(account.user_seed),
-            client.signer()?,
-        );
+        )
+        .with_authority(client.signer()?);
 
         if let Some(position) = account.get_position(&deposit_token) {
             position_count += 1;
@@ -199,12 +199,12 @@ pub async fn process_update_balances(
         .read_anchor_account::<MarginAccount>(&margin_account_address)
         .await?;
 
-    let ix = MarginIxBuilder::new_with_payer(
+    let ix = MarginIxBuilder::new(
         Pubkey::default(), // FIXME: read airspace from margin account
         account.owner,
         u16::from_le_bytes(account.user_seed),
-        client.signer()?,
-    );
+    )
+    .with_authority(client.signer()?);
     let mut steps = vec![];
     let mut instructions = vec![];
 
@@ -231,12 +231,12 @@ pub async fn process_transfer_position(
         .read_anchor_account::<MarginAccount>(&source_account)
         .await?;
 
-    let ix = MarginIxBuilder::new_with_payer(
+    let ix = MarginIxBuilder::new(
         Pubkey::default(), // FIXME: read airspace from margin account
         source.owner,
         u16::from_le_bytes(source.user_seed),
-        resolve_payer(client)?,
-    );
+    )
+    .with_authority(resolve_payer(client)?);
     let pool_ix = MarginPoolIxBuilder::new(token);
     let position_token_mint = pool_ix.deposit_note_mint;
     let amount = match amount {

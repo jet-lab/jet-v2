@@ -66,7 +66,7 @@ impl JsNetworkAdapter {
     ) -> Result<Vec<Signature>, js_sys::Error> {
         let serialized = transactions
             .iter()
-            .map(|tx| bincode::serialize(tx))
+            .map(bincode::serialize)
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
@@ -86,9 +86,9 @@ impl JsNetworkAdapter {
             .map(|element| {
                 element
                     .as_string()
-                    .ok_or(js_sys::Error::new(
-                        "send did not return transaction signature string",
-                    ))
+                    .ok_or_else(|| {
+                        js_sys::Error::new("send did not return transaction signature string")
+                    })
                     .and_then(|string| {
                         Signature::from_str(&string).map_err(|_| {
                             js_sys::Error::new(&format!("could not parse signature: {string}"))
@@ -141,12 +141,9 @@ impl UserNetworkInterface for JsNetworkAdapter {
             .map(|addr| solana_web3::PublicKey::new(addr.as_ref()))
             .collect();
         let js_account_list_obj = self.js_obj.get_accounts(js_address_list).await?;
-        let js_account_list =
-            js_account_list_obj
-                .dyn_ref::<js_sys::Array>()
-                .ok_or(js_sys::Error::new(
-                    "did not receive array value from get_accounts",
-                ))?;
+        let js_account_list = js_account_list_obj
+            .dyn_ref::<js_sys::Array>()
+            .ok_or_else(|| js_sys::Error::new("did not receive array value from get_accounts"))?;
 
         js_account_list
             .iter()
@@ -191,8 +188,8 @@ impl UserNetworkInterface for JsNetworkAdapter {
 
         let mut results = vec![];
 
-        results.extend(signatures.into_iter().map(|s| Ok(s)));
-        results.extend(error.map(|e| Err(e)));
+        results.extend(signatures.into_iter().map(Ok));
+        results.extend(error.map(Err));
 
         results
     }
@@ -204,7 +201,7 @@ fn js_reflect_get_string(obj: &JsValue, key: &str) -> Result<String, js_sys::Err
 
     js_value
         .as_string()
-        .ok_or(js_sys::Error::new(&format!("'{key}' is not a string")))
+        .ok_or_else(|| js_sys::Error::new(&format!("'{key}' is not a string")))
 }
 
 fn js_reflect_get_bool(obj: &JsValue, key: &str) -> Result<bool, js_sys::Error> {
@@ -213,7 +210,7 @@ fn js_reflect_get_bool(obj: &JsValue, key: &str) -> Result<bool, js_sys::Error> 
 
     js_value
         .as_bool()
-        .ok_or(js_sys::Error::new(&format!("'{key}' is not a bool")))
+        .ok_or_else(|| js_sys::Error::new(&format!("'{key}' is not a bool")))
 }
 
 fn js_reflect_get_u64(obj: &JsValue, key: &str) -> Result<u64, js_sys::Error> {
@@ -231,8 +228,7 @@ fn js_reflect_get_u64(obj: &JsValue, key: &str) -> Result<u64, js_sys::Error> {
     } else {
         let float_value = js_value
             .as_f64()
-            .ok_or(js_sys::Error::new(&format!("'{key}' is not a number")))?;
-
+            .ok_or_else(|| js_sys::Error::new(&format!("'{key}' is not a number")))?;
         Ok(float_value as u64)
     }
 }
@@ -244,7 +240,7 @@ fn js_reflect_get_bytes(obj: &JsValue, key: &str) -> Result<Vec<u8>, js_sys::Err
     if let Some(array) = js_value.dyn_ref::<Uint8Array>() {
         Ok(array.to_vec())
     } else {
-        return Err(js_sys::Error::new("type not a byte buffer/array"));
+        Err(js_sys::Error::new("type not a byte buffer/array"))
     }
 }
 
@@ -262,10 +258,8 @@ fn js_reflect_get_pubkey(obj: &JsValue, key: &str) -> Result<Pubkey, js_sys::Err
 
         Ok(Pubkey::new(&buffer))
     } else if let Some(string) = js_value.as_string() {
-        return Ok(
-            Pubkey::from_str(&string).map_err(|_| js_sys::Error::new("could not parse pubkey"))?
-        );
+        Ok(Pubkey::from_str(&string).map_err(|_| js_sys::Error::new("could not parse pubkey"))?)
     } else {
-        return Err(js_sys::Error::new("type not a pubkey"));
+        Err(js_sys::Error::new("type not a pubkey"))
     }
 }
