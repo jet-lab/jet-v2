@@ -36,6 +36,7 @@ pub struct LiquidateEnd<'info> {
     /// Account to persist the state of the liquidation
     #[account(mut,
         has_one = margin_account @ ErrorCode::WrongLiquidationState,
+        close = authority,
     )]
     pub liquidation: AccountLoader<'info, LiquidationState>,
 }
