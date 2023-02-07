@@ -4,7 +4,6 @@ import { Skeleton, Typography } from 'antd';
 
 // Renders the available liquidity to accompany the pie chart
 export const AvailableLiquidity = ({ pool }: WithPoolData) => {
-  console.log('rendering');
   const { currencyAbbrev } = useCurrencyFormatting();
   let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
   if (pool) {

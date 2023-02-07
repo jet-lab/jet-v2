@@ -72,9 +72,11 @@ export function PoolDetail(): JSX.Element {
           </div>
           <div className="pie-chart-section pool-detail-body-half-section flex-centered">
             <PieChart
-              percentage={selectedPool ? selectedPool.borrowed_tokens / selectedPool.deposit_tokens : 0}
-              text={dictionary.poolsView.utilizationRate.toUpperCase()}
-              term="utilizationRate"
+              percentage={
+                selectedPool.deposit_tokens
+                  ? Math.round((selectedPool.borrowed_tokens / selectedPool.deposit_tokens) * 100)
+                  : 0
+              }
             />
             <div className="pie-chart-section-info flex align-start justify-center column">
               <div className="flex column">
