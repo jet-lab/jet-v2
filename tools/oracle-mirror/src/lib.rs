@@ -154,8 +154,7 @@ async fn sync_pool_balances(
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
         }
 
-        let network = get_network_kind_from_rpc(target).await?;
-        let swap_program = resolve_swap_program(network, "orca-spl-swap")?;
+        let swap_program = get_spl_program(target).await?;
 
         instructions.push(
             jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
@@ -337,7 +336,7 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
 
 async fn get_spl_program(rpc: &RpcClient) -> Result<Pubkey> {
     let network = get_network_kind_from_rpc(rpc).await?;
-    Ok(resolve_swap_program(network, "orca-spl-swap")?)
+    resolve_swap_program(network, "orca-spl-swap").map_err(|e| anyhow::anyhow!("{:?}", e))
 }
 
 async fn get_pyth_program_id(rpc: &RpcClient) -> Result<Pubkey> {

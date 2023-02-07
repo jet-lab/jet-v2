@@ -1,0 +1,12 @@
+{
+    "name": "@jet-lab/jet-client-web",
+    "version": "0.1.0",
+    "type": "module",
+    "module": "./lib/jet_client_web.js",
+    "types": "./lib/jet_client_web.d.ts",
+    "scripts": {
+        "compile-wasm": "wasm-pack build --target bundler --release --out-dir ../../../packages/wasm/lib ../../libraries/rust/client-web",
+        "build": "yarn compile-wasm && ./fixup"
+    },
+    "files": ["dist/*"]
+}

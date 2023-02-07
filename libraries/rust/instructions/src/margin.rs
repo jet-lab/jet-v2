@@ -16,7 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_spl::associated_token::get_associated_token_address;
-use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
@@ -28,9 +27,10 @@ use anchor_lang::{system_program, InstructionData};
 use jet_margin::accounts as ix_account;
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
-pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
+use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
 
 pub use jet_margin::ID as MARGIN_PROGRAM;
+pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
