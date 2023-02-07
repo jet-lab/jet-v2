@@ -52,6 +52,10 @@ pub struct CliOpts {
            default_value_t = default_interval_duration()
     )]
     pub interval: humantime::Duration,
+
+    /// Don't try to sync the oracles
+    #[clap(long)]
+    pub no_oracle_sync: bool,
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
@@ -83,13 +87,17 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         RpcClient::new_with_commitment(target_endpoint, CommitmentConfig::processed()),
     )) as Arc<dyn SolanaRpcClient>;
 
+    let swap_program = get_spl_program(&target_client).await?;
+
     let oracle_list = discover_oracles(&source_client, &target_client).await?;
-    let pool_list = discover_pools(&target_sdk_client, &oracle_list).await?;
+    let pool_list = discover_pools(&target_sdk_client, &oracle_list, swap_program).await?;
 
     let mut id_file = None;
 
     loop {
-        sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
+        if !opts.no_oracle_sync {
+            sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
+        }
         sync_pool_balances(&target_client, &signer, &pool_list).await?;
 
         if id_file.is_none() {
@@ -146,7 +154,7 @@ async fn sync_pool_balances(
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
         }
 
-        let swap_program = get_spl_program(target, "orca-spl-swap").await?;
+        let swap_program = get_spl_program(target).await?;
 
         instructions.push(
             jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
@@ -245,14 +253,11 @@ async fn sync_oracles(
 async fn discover_pools(
     target: &Arc<dyn SolanaRpcClient>,
     oracles: &[OracleInfo],
+    program: Pubkey,
 ) -> Result<Vec<(Pubkey, Pubkey)>> {
     let supported_mints = HashSet::from_iter(oracles.iter().map(|o| o.target_mint));
-    let result = jet_margin_sdk::spl_swap::SplSwapPool::get_pools(
-        target,
-        &supported_mints,
-        spl_token_swap::ID,
-    )
-    .await?;
+    let result =
+        jet_margin_sdk::spl_swap::SplSwapPool::get_pools(target, &supported_mints, program).await?;
 
     println!("found {} pools", result.len());
 
@@ -329,8 +334,13 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
     Ok(oracle_matches)
 }
 
+async fn get_spl_program(rpc: &RpcClient) -> Result<Pubkey> {
+    let network = get_network_kind_from_rpc(rpc).await?;
+    resolve_swap_program(network, "orca-spl-swap").map_err(|e| anyhow::anyhow!("{:?}", e))
+}
+
 async fn get_pyth_program_id(rpc: &RpcClient) -> Result<Pubkey> {
-    let network_kind = NetworkKind::from_genesis_hash(&rpc.get_genesis_hash().await?);
+    let network_kind = get_network_kind_from_rpc(rpc).await?;
 
     Ok(match network_kind {
         NetworkKind::Mainnet => PYTH_MAINNET_PROGRAM,
@@ -339,9 +349,9 @@ async fn get_pyth_program_id(rpc: &RpcClient) -> Result<Pubkey> {
     })
 }
 
-async fn get_spl_program(rpc: &RpcClient, name: &str) -> Result<Pubkey> {
-    let network = NetworkKind::from_genesis_hash(&rpc.get_genesis_hash().await?);
-    resolve_swap_program(network, name).map_err(|e| anyhow::anyhow!("{:?}", e))
+async fn get_network_kind_from_rpc(rpc: &RpcClient) -> Result<NetworkKind> {
+    let network_hash = rpc.get_genesis_hash().await?;
+    Ok(NetworkKind::from_genesis_hash(&network_hash))
 }
 
 fn parse_interval_duration(arg: &str) -> Result<humantime::Duration> {
@@ -369,7 +379,9 @@ impl RunningProcessIdFile {
 
     fn new() -> Self {
         let pid = std::process::id();
-        std::fs::write(Self::PATH, pid.to_string()).unwrap();
+        if std::fs::write(Self::PATH, pid.to_string()).is_err() {
+            eprintln!("Unable to create oracle mirror PID file");
+        };
 
         Self
     }
