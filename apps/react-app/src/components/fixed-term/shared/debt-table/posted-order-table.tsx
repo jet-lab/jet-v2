@@ -53,7 +53,7 @@ const getPostOrderColumns = ({
     title: 'Rate',
     dataIndex: 'rate',
     key: 'rate',
-    render: (rate: number) => `${rate}%`
+    render: (rate: number) => `${100 * rate}%`
   },
   {
     title: 'Cancel',

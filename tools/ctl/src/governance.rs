@@ -82,8 +82,6 @@ pub async fn convert_plan_to_proposal(
     let proposal = get_proposal_state(client, &proposal_address).await?;
     let mut tx_next_index = proposal.options[proposal_option as usize].transactions_next_index;
 
-    validate_proposal(&proposal)?;
-
     Ok(Plan {
         unordered: false,
         entries: plan
@@ -443,12 +441,4 @@ async fn get_borsh_account<T: AnchorDeserialize>(rpc: &RpcClient, address: &Pubk
             std::any::type_name::<T>()
         )
     })
-}
-
-fn validate_proposal(proposal: &ProposalV2) -> Result<()> {
-    if proposal.governance != JET_ENG_GOVERNANCE {
-        bail!("proposal provided does not target the correct authority");
-    }
-
-    Ok(())
 }

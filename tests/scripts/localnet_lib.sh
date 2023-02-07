@@ -86,7 +86,7 @@ start-crank-service() {
 
     log_filter="jet_margin_sdk=debug"
     env RUST_LOG=$log_filter cargo run --bin jet-fixed-terms-crank-service -- \
-        --config-path localnet.toml \
+        --config-path apps/react-app/public/localnet.config.json \
         --log-path .localnet/crank.log \
         &
 }
@@ -100,8 +100,8 @@ resume-validator() {
 
 start-new-validator() {
     start-validator -r
-    cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
-    cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o apps/react-app/public/localnet.config.json
+    cargo run --bin jetctl -- apply -ul --no-confirm config/localnet/
+    cargo run --bin jetctl -- generate-app-config -ul --no-confirm config/localnet/ -o apps/react-app/public/localnet.config.json
     start-crank-service
     start-oracle
     wait $VALIDATOR_PID
@@ -109,6 +109,14 @@ start-new-validator() {
 
 with-validator() {
     start-validator -r
+    if [[ ${SOLANA_LOGS:-false} == true ]]; then
+        solana -ul logs &
+    fi
+    $@
+}
+
+with-resumed-validator() {
+    start-validator
     if [[ ${SOLANA_LOGS:-false} == true ]]; then
         solana -ul logs &
     fi

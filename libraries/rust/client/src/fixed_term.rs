@@ -17,7 +17,7 @@ use crate::{
     client::{ClientResult, ClientState},
     margin::MarginAccountClient,
     state::fixed_term::{MarketState, OrderEntry, UserState},
-    UserNetworkInterface,
+    NetworkUserInterface,
 };
 
 use self::interest_pricing::f64_to_fp32;
@@ -56,7 +56,7 @@ pub struct FixedTermMarketClient<I> {
     client: Arc<ClientState<I>>,
 }
 
-impl<I: UserNetworkInterface> FixedTermMarketClient<I> {
+impl<I: NetworkUserInterface> FixedTermMarketClient<I> {
     pub(crate) fn new(inner: Arc<ClientState<I>>) -> Self {
         Self { client: inner }
     }
@@ -99,7 +99,7 @@ pub struct MarginAccountMarketClient<I> {
     pub(crate) market: Market,
 }
 
-impl<I: UserNetworkInterface> MarginAccountMarketClient<I> {
+impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     pub fn from_address(
         account: MarginAccountClient<I>,
         market_address: &Pubkey,
@@ -517,7 +517,7 @@ impl<I: UserNetworkInterface> MarginAccountMarketClient<I> {
     }
 }
 
-pub(crate) fn instruction_for_refresh<I: UserNetworkInterface>(
+pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
     account: &MarginAccountClient<I>,
     token: &Pubkey,
     refreshing_tokens: &mut HashSet<Pubkey>,

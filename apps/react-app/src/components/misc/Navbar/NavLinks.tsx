@@ -5,32 +5,30 @@ import { NavDrawerOpen } from '@state/views/views';
 import { SendingTransaction } from '@state/actions/actions';
 import { useChangeView } from '@utils/ui';
 import { Tooltip, Typography } from 'antd';
-import { isDebug } from '../../../App';
+import { Cluster } from '@state/settings/settings';
 
-type Route =
-  | '/'
-  | '/swaps'
-  | '/accounts'
-  | '/fixed-lend?debug-environment=true'
-  | '/fixed-borrow?debug-environment=true';
+type Route = '/' | '/swaps' | '/accounts' | '/fixed-lend' | '/fixed-borrow';
 interface Link {
   title: string;
   route: Route;
   disabled: boolean;
+  hidden: boolean;
 }
 
 // All navigation links
 export function NavLinks(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
+  const cluster = useRecoilValue(Cluster);
+
   const navLinks: Link[] = [
-    { title: dictionary.poolsView.title, route: '/', disabled: false },
-    { title: dictionary.swapsView.title, route: '/swaps', disabled: false },
-    { title: dictionary.accountsView.title, route: '/accounts', disabled: false }
+    { title: dictionary.poolsView.title, route: '/', disabled: false, hidden: false },
+    { title: dictionary.swapsView.title, route: '/swaps', disabled: false, hidden: false },
+    { title: dictionary.accountsView.title, route: '/accounts', disabled: false, hidden: false },
+    { title: 'Lend', route: '/fixed-lend', disabled: false, hidden: cluster === 'mainnet-beta' },
+    { title: 'Borrow', route: '/fixed-borrow', disabled: false, hidden: cluster === 'mainnet-beta' }
   ];
 
-  if (isDebug) {
-    navLinks.push({ title: 'Lend', route: '/fixed-lend?debug-environment=true', disabled: false });
-    navLinks.push({ title: 'Borrow', route: '/fixed-borrow?debug-environment=true', disabled: false });
+  if (cluster !== 'mainnet-beta') {
   }
 
   const navLinkComponents = navLinks.map(link => {
@@ -43,6 +41,8 @@ export function NavLinks(): JSX.Element {
           {navLink}
         </Tooltip>
       );
+    } else if (link.hidden) {
+      return null;
     }
 
     return navLink;

@@ -274,7 +274,9 @@ impl TestManager {
     }
 
     pub async fn with_crank(self) -> Result<Self> {
-        let auth_crank = self.ix_builder.authorize_crank();
+        let auth_crank = self
+            .ix_builder
+            .authorize_crank(self.client.payer().pubkey());
 
         self.sign_send_transaction(&[auth_crank], None).await?;
         Ok(self)

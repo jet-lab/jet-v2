@@ -1,5 +1,7 @@
-use agnostic_orderbook::state::market_state::MarketState;
 use anchor_lang::prelude::*;
+
+use agnostic_orderbook::state::market_state::MarketState;
+use jet_airspace::state::Airspace;
 
 use crate::{
     control::{events::OrderbookInitialized, state::Market},
@@ -54,8 +56,8 @@ pub struct InitializeOrderbook<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
-    pub airspace: AccountInfo<'info>,
+    #[cfg_attr(not(feature = "testing"), account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization))]
+    pub airspace: Account<'info, Airspace>,
 
     /// The account paying rent for PDA initialization
     #[account(mut)]

@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use async_trait::async_trait;
-use jet_client::UserNetworkInterface;
 use js_sys::{BigInt, Reflect, Uint8Array};
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -9,6 +8,8 @@ use solana_sdk::{
     account::Account, hash::Hash, pubkey::Pubkey, signature::Signature,
     transaction::VersionedTransaction,
 };
+
+use jet_solana_client::NetworkUserInterface;
 
 use super::solana_web3;
 
@@ -113,7 +114,7 @@ impl JsNetworkAdapter {
 }
 
 #[async_trait(?Send)]
-impl UserNetworkInterface for JsNetworkAdapter {
+impl NetworkUserInterface for JsNetworkAdapter {
     type Error = js_sys::Error;
 
     fn signer(&self) -> Pubkey {
@@ -122,6 +123,16 @@ impl UserNetworkInterface for JsNetworkAdapter {
 
     fn get_current_time(&self) -> i64 {
         js_sys::Date::now() as i64
+    }
+
+    async fn get_genesis_hash(&self) -> Result<Hash, Self::Error> {
+        let js_hash_obj = self.js_obj.get_genesis_hash().await?;
+        let Some(hash_string) = js_hash_obj.as_string() else {
+            return Err(js_sys::Error::new("genesis hash returned non-string result"));
+        };
+
+        Hash::from_str(&hash_string)
+            .map_err(|_| js_sys::Error::new("blockhash string not parseble"))
     }
 
     async fn get_latest_blockhash(&self) -> Result<Hash, Self::Error> {
@@ -183,6 +194,7 @@ impl UserNetworkInterface for JsNetworkAdapter {
     async fn send_unordered(
         &self,
         transactions: &[VersionedTransaction],
+        _blockhash: Option<Hash>,
     ) -> Vec<Result<Signature, Self::Error>> {
         let (signatures, error) = self.send_ordered(transactions).await;
 

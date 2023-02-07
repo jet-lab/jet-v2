@@ -21,12 +21,12 @@ use jet_fixed_term::{
 };
 use jet_instructions::fixed_term::{derive_margin_user, derive_term_deposit, derive_term_loan};
 use jet_margin::MarginAccount;
+use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
 use super::AccountStates;
 use crate::{
     client::ClientResult,
     fixed_term::util::{f64_to_price, price_to_rate, ui_price},
-    ClientInterfaceExt, UserNetworkInterface,
 };
 
 pub type FixedTermUser = MarginUser;
@@ -118,7 +118,7 @@ impl std::ops::Deref for UserState {
     }
 }
 
-pub async fn sync<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
     sync_markets(states).await?;
     sync_user_accounts(states).await?;
 
@@ -126,7 +126,7 @@ pub async fn sync<I: UserNetworkInterface>(states: &AccountStates<I>) -> ClientR
 }
 
 /// Sync latest state for all fixed term lending markets
-pub async fn sync_markets<I: UserNetworkInterface>(
+pub async fn sync_markets<I: NetworkUserInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
     let manager_accounts = states
@@ -179,7 +179,7 @@ pub async fn sync_markets<I: UserNetworkInterface>(
 /// Sync latest state for all fixed term user data
 ///
 /// The user data for all loaded margin accounts are fetched
-pub async fn sync_user_accounts<I: UserNetworkInterface>(
+pub async fn sync_user_accounts<I: NetworkUserInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
     let margin_accounts = states.addresses_of::<MarginAccount>();
@@ -210,7 +210,7 @@ pub async fn sync_user_accounts<I: UserNetworkInterface>(
     Ok(())
 }
 
-async fn sync_user_debt_assets<I: UserNetworkInterface>(
+async fn sync_user_debt_assets<I: NetworkUserInterface>(
     states: &AccountStates<I>,
 ) -> ClientResult<I, ()> {
     let loans: Vec<Arc<TermLoan>> = load_user_positions(
@@ -261,7 +261,7 @@ async fn load_user_positions<I, T, FR, FD>(
     derive_addr: FD,
 ) -> ClientResult<I, Vec<Arc<T>>>
 where
-    I: UserNetworkInterface,
+    I: NetworkUserInterface,
     T: Any + Send + Sync + AccountDeserialize,
     FR: Fn(&MarginUser) -> Range<u64>,
     FD: Fn(&Pubkey, &MarginUser, u64) -> Pubkey,

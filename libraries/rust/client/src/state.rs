@@ -11,7 +11,7 @@ use jet_instructions::airspace::derive_airspace;
 use crate::{
     client::ClientResult,
     config::{DexInfo, JetAppConfig, TokenInfo},
-    ClientError, UserNetworkInterface,
+    ClientError, NetworkUserInterface,
 };
 
 pub mod fixed_term;
@@ -29,7 +29,7 @@ pub struct AccountStates<I> {
     cache: AccountCache,
 }
 
-impl<I: UserNetworkInterface> AccountStates<I> {
+impl<I: NetworkUserInterface> AccountStates<I> {
     /// Initialize an empty local state, which can synchronize data from the given interface
     pub fn new(network: I, app_config: JetAppConfig, airspace: String) -> ClientResult<I, Self> {
         let airspace_config = app_config

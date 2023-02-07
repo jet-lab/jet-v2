@@ -21,6 +21,7 @@ tsconfig.tsbuildinfo
 !.gitkeep
 !package.json
 localnet.config.json
+localnet.config.legacy.json
 
 .env
 .localnet

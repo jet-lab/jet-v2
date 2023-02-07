@@ -16,7 +16,7 @@ export const PoolsViewOrder = atom({
 });
 export const PoolsRowOrder = atom({
   key: 'PoolsRowOrder',
-  default: ['poolDetail', 'radar'] as string[],
+  default: ['poolDetail'] as string[],
   effects: [localStorageEffect('jetAppPoolsRowOrder')],
   dangerouslyAllowMutability: true
 });

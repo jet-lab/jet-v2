@@ -3,6 +3,7 @@ use std::sync::Arc;
 use solana_sdk::pubkey::Pubkey;
 use spl_token_swap::state::SwapV1;
 
+use jet_environment::programs::ORCA_V2;
 use jet_instructions::margin_swap::{pool_spl_swap, SplSwap};
 use jet_margin_pool::ChangeKind;
 
@@ -10,8 +11,7 @@ use crate::{
     bail,
     client::{ClientResult, ClientState},
     margin::MarginAccountClient,
-    programs::ORCA_V2,
-    UserNetworkInterface,
+    NetworkUserInterface,
 };
 
 /// Client for interacting with swap protocols, from the perspective of a margin account
@@ -20,7 +20,7 @@ pub struct MarginAccountSwapsClient<I> {
     account: MarginAccountClient<I>,
 }
 
-impl<I: UserNetworkInterface> MarginAccountSwapsClient<I> {
+impl<I: NetworkUserInterface> MarginAccountSwapsClient<I> {
     pub fn new(account: MarginAccountClient<I>) -> Self {
         Self {
             client: account.client.clone(),

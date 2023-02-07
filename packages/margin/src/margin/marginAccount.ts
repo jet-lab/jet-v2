@@ -115,6 +115,8 @@ export class MarginAccount {
   /** The maximum risk indicator allowed by the library when setting up a  */
   static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(50), -2)
 
+  static readonly MAX_POOL_UTIL_RATIO_AFTER_BORROW = 0.95
+
   /** The raw accounts associated with the margin account. */
   info?: {
     /** The decoded [[MarginAccountData]]. */
@@ -535,6 +537,11 @@ export class MarginAccount {
     }
 
     // Max borrow
+    const vault = pool.vault;
+    const borrows = pool.borrowedTokens;
+    const u = MarginAccount.MAX_POOL_UTIL_RATIO_AFTER_BORROW;
+    const effectiveVaultForBorrow = vault.muln(u).sub(borrows.muln(1 - u));
+
     let borrow = this.valuation.availableSetupCollateral
       .div(
         Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))).sub(
@@ -543,7 +550,7 @@ export class MarginAccount {
       )
       .div(lamportPrice)
       .toTokenAmount(pool.decimals)
-    borrow = TokenAmount.min(borrow, pool.vault)
+    borrow = TokenAmount.min(borrow, effectiveVaultForBorrow)
     borrow = TokenAmount.max(borrow, zero)
 
     // Max repay

@@ -1,21 +1,19 @@
 use std::{collections::VecDeque, error::Error as StdError, sync::Mutex};
-
-use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
-};
 use thiserror::Error;
 
 use solana_sdk::{hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Signature};
-
-use crate::{
-    config::JetAppConfig, solana::transaction::ToTransaction, state::AccountStates,
-    ClientInterfaceExt, UserNetworkInterface,
+use spl_associated_token_account::{
+    get_associated_token_address, instruction::create_associated_token_account,
 };
+
+use jet_solana_client::{ExtError, NetworkUserInterface};
+
+use crate::{config::JetAppConfig, solana::transaction::ToTransaction, state::AccountStates};
 
 pub type ClientResult<I, T> = std::result::Result<T, ClientError<I>>;
 
 #[derive(Error)]
-pub enum ClientError<I: UserNetworkInterface> {
+pub enum ClientError<I: NetworkUserInterface> {
     #[error("interface error")]
     Interface(I::Error),
     #[error("decode error: {0}")]
@@ -24,7 +22,7 @@ pub enum ClientError<I: UserNetworkInterface> {
     Unexpected(String),
 }
 
-impl<I: UserNetworkInterface> std::fmt::Debug for ClientError<I> {
+impl<I: NetworkUserInterface> std::fmt::Debug for ClientError<I> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Interface(_) => write!(f, "interface error"),
@@ -34,7 +32,17 @@ impl<I: UserNetworkInterface> std::fmt::Debug for ClientError<I> {
     }
 }
 
-impl<I: UserNetworkInterface> From<bincode::Error> for ClientError<I> {
+impl<I: NetworkUserInterface> From<ExtError<I>> for ClientError<I> {
+    fn from(e: ExtError<I>) -> Self {
+        match e {
+            ExtError::Interface(err) => Self::Interface(err),
+            ExtError::Unpack { error, .. } => Self::Deserialize(Box::new(error)),
+            ExtError::Deserialize { error, .. } => Self::Deserialize(Box::new(error)),
+        }
+    }
+}
+
+impl<I: NetworkUserInterface> From<bincode::Error> for ClientError<I> {
     fn from(err: bincode::Error) -> Self {
         Self::Unexpected(format!("unexpected encoding error: {err:?}"))
     }
@@ -48,7 +56,7 @@ pub struct ClientState<I> {
     tx_log: Mutex<VecDeque<Signature>>,
 }
 
-impl<I: UserNetworkInterface> ClientState<I> {
+impl<I: NetworkUserInterface> ClientState<I> {
     pub fn new(network: I, config: JetAppConfig, airspace: String) -> ClientResult<I, Self> {
         Ok(Self {
             state: AccountStates::new(network.clone(), config, airspace)?,
@@ -70,7 +78,10 @@ impl<I: UserNetworkInterface> ClientState<I> {
     }
 
     pub async fn account_exists(&self, address: &Pubkey) -> ClientResult<I, bool> {
-        Ok(self.network.get_account(address).await?.is_some())
+        self.network
+            .account_exists(address)
+            .await
+            .map_err(|e| ClientError::Interface(e))
     }
 
     pub async fn get_latest_blockhash(&self) -> ClientResult<I, Hash> {
@@ -122,7 +133,10 @@ impl<I: UserNetworkInterface> ClientState<I> {
             .map(|tx| tx.to_transaction(&self.signer(), recent_blockhash))
             .collect::<Vec<_>>();
 
-        let results = self.network.send_unordered(&txs).await;
+        let results = self
+            .network
+            .send_unordered(&txs, Some(recent_blockhash))
+            .await;
 
         Ok(results
             .into_iter()

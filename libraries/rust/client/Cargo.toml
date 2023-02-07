@@ -36,8 +36,10 @@ anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
+jet-solana-client = { path = "../solana-client" }
 jet-program-common = { path = "../program-common" }
 jet-instructions = { path = "../instructions" }
+jet-environment = { path = "../environment" }
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint", "cli"] }
 jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }

@@ -68,7 +68,7 @@ pub struct SplSwapPoolBalance<'info> {
 
     #[account(seeds = [pool_state.key().as_ref()],
               bump,
-              seeds::program = spl_token_swap::ID
+              seeds::program = swap_program
     )]
     pool_authority: AccountInfo<'info>,
 

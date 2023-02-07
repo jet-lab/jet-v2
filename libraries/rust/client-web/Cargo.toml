@@ -42,4 +42,5 @@ solana-sdk = "1.10"
 spl-token = "3"
 
 jet-client = { path = "../client" }
+jet-solana-client = { path = "../solana-client" }
 #jet-margin-sdk = { path = "../margin" }

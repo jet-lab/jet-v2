@@ -6,6 +6,8 @@ use jet_margin_pool::ChangeKind;
 
 use super::{margin::derive_position_token_account, margin_pool::MarginPoolIxBuilder};
 
+pub use jet_margin_swap::ID as MARGIN_SWAP_PROGRAM;
+
 /// Instruction for using an SPL swap with tokens in a margin pool
 #[allow(clippy::too_many_arguments)]
 pub fn pool_spl_swap(

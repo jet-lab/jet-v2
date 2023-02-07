@@ -13,7 +13,7 @@ feature_groups! {
         mod rounding;
         mod sanity;
         mod swap;
-        mod client_sanity;
+        mod pools;
         mod client_fixed_term;
     }
 }
