@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { atom, useRecoilValue, selector, selectorFamily, useSetRecoilState } from 'recoil';
+import { atom, useRecoilValue, selector, useSetRecoilState } from 'recoil';
 import { PoolManager as MarginPoolManager, Pool } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
 import { useProvider } from '@utils/jet/provider';
@@ -7,7 +7,6 @@ import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useJetStore } from '@jet-lab/store';
 import { PoolData } from '@jet-lab/store/dist/slices/pools';
-import { ActionRefresh } from '@state/actions/actions';
 
 // Our app's interface for interacting with margin pools
 export interface JetMarginPools {
@@ -69,30 +68,6 @@ export const PoolOptions = selector<PoolOption[]>({
   },
   dangerouslyAllowMutability: true
 });
-// Returns filtered pools from a query string
-export const FilteredPools = selectorFamily<Pool[], string>({
-  key: 'filteredPools',
-  get:
-    (filterText: string) =>
-    ({ get }) => {
-      const pools = get(Pools);
-      if (!pools) {
-        return [];
-      }
-
-      const filteredPools = Object.values(pools?.tokenPools).filter((pool: Pool) => !!pool.symbol);
-      if (!filterText) {
-        return filteredPools;
-      } else {
-        return filteredPools.filter(
-          pool =>
-            pool.symbol?.toLowerCase().includes(filterText.toLowerCase()) ||
-            pool.name?.toLowerCase().includes(filterText.toLocaleLowerCase())
-        );
-      }
-    },
-  dangerouslyAllowMutability: true
-});
 
 // Get a pool from a given pool name
 export function usePoolFromName(poolName: string | undefined): Pool | undefined {
@@ -112,7 +87,6 @@ export function usePoolsSyncer() {
   const setPools = useSetRecoilState(Pools);
   const networkState = useRecoilValue(NetworkStateAtom);
   const initAllPools = useJetStore(state => state.initAllPools);
-  const actionRefresh = useRecoilValue(ActionRefresh);
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
@@ -131,8 +105,19 @@ export function usePoolsSyncer() {
         totalBorrowed += borrowedTokens * tokenPrice;
         const address = pool.address.toBase58();
 
+        const pool_rate_config = {
+          utilizationRate1: Number(pool.info?.marginPool.config.utilizationRate1),
+          utilizationRate2: Number(pool.info?.marginPool.config.utilizationRate2),
+          borrowRate0: Number(pool.info?.marginPool.config.borrowRate0),
+          borrowRate1: Number(pool.info?.marginPool.config.borrowRate1),
+          borrowRate2: Number(pool.info?.marginPool.config.borrowRate2),
+          borrowRate3: Number(pool.info?.marginPool.config.borrowRate3),
+          managementFeeRate: Number(pool.info?.marginPool.config.managementFeeRate)
+        };
+
         poolsToInit[address] = {
           address: address,
+          name: pool.name,
           borrowed_tokens: borrowedTokens,
           deposit_tokens: vault,
           symbol: pool.symbol,
@@ -140,7 +125,10 @@ export function usePoolsSyncer() {
           decimals: pool.decimals,
           precision: pool.precision,
           collateral_weight: pool.depositNoteMetadata.valueModifier.toNumber(),
-          collateral_factor: pool.loanNoteMetadata.valueModifier.toNumber()
+          collateral_factor: pool.loanNoteMetadata.valueModifier.toNumber(),
+          pool_rate_config,
+          lending_rate: pool.depositApy,
+          borrow_rate: pool.borrowApr
         };
       }
 
@@ -163,5 +151,5 @@ export function usePoolsSyncer() {
 
     // TODO remove resetting pools upon action
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programs, provider.connection, actionRefresh, networkState]);
+  }, [programs, provider.connection, networkState]);
 }

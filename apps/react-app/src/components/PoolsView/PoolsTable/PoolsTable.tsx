@@ -1,26 +1,27 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { PoolsViewOrder } from '@state/views/views';
-import { FilteredPools, PoolOptions } from '@state/pools/pools';
-import { createDummyArray } from '@utils/ui';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
-import { Input, Typography } from 'antd';
+import { Typography } from 'antd';
 import { PoolRow } from './PoolRow';
-import { SearchOutlined } from '@ant-design/icons';
-import debounce from 'lodash.debounce';
+import { createDummyArray } from '@utils/ui';
+import { useJetStore } from '@jet-lab/store';
 
 // Table to display all Jet lending/borrowing pools
 export function PoolsTable(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const [poolsViewOrder, setPoolsViewOrder] = useRecoilState(PoolsViewOrder);
-  const [filterText, setFilterText] = useState('');
-  const filteredPools = useRecoilValue(FilteredPools(filterText));
-  const poolOptions = useRecoilValue(PoolOptions);
-  const placeholderArrayLength = Object.keys(poolOptions).length > 0 ? Object.keys(poolOptions).length : 4;
-  const poolsArray = filteredPools.length ? filteredPools : createDummyArray(placeholderArrayLength, 'symbol');
+  const { pools } = useJetStore(({ pools, prices, selectedPoolKey, selectPool }) => ({
+    pools,
+    prices,
+    selectedPoolKey,
+    selectPool
+  }));
   const { Paragraph, Text } = Typography;
+
+  const poolsArray: string[] = useMemo(() => (pools ? Object.keys(pools) : createDummyArray(4, 'symbol')), [pools]);
 
   // Align columns
   const alignLeft: React.CSSProperties = { textAlign: 'left' };
@@ -30,14 +31,6 @@ export function PoolsTable(): JSX.Element {
     <div className="pools-table view-element">
       <div className="pools-table-head flex align-center justify-between">
         <Paragraph strong>{dictionary.poolsView.poolsTable.allAssets}</Paragraph>
-        <div className="account-table-search">
-          <SearchOutlined />
-          <Input
-            type="text"
-            placeholder={dictionary.poolsView.poolsTable.searchExample}
-            onChange={debounce(e => setFilterText(e.target.value), 300)}
-          />
-        </div>
       </div>
       <div className="ant-table">
         <table style={{ tableLayout: 'auto' }}>
@@ -71,7 +64,7 @@ export function PoolsTable(): JSX.Element {
           </thead>
           <tbody className="ant-table-tbody">
             {poolsArray.map(pool => (
-              <PoolRow key={pool.symbol} pool={pool} />
+              <PoolRow key={pool} address={pool} />
             ))}
           </tbody>
         </table>

@@ -19,7 +19,7 @@ import { UtilizationRate } from './UtilizationRate';
 const { Title, Paragraph, Text } = Typography;
 
 export interface WithPoolData {
-  selectedPool?: PoolData;
+  pool?: PoolData;
 }
 
 // Component that shows extra details on the selectedPool
@@ -32,8 +32,8 @@ export function PoolDetail(): JSX.Element {
     selectedPoolKey: state.selectedPoolKey
   }));
 
-  const selectedPool = useMemo(() => pools[selectedPoolKey], [selectedPoolKey]);
-  const selectedPoolPrice = useMemo(() => prices && prices[selectedPool?.token_mint]?.price, [selectedPool]);
+  const selectedPool = useMemo(() => pools[selectedPoolKey], [selectedPoolKey, pools]);
+  const selectedPoolPrice = useMemo(() => prices && prices[selectedPool?.token_mint]?.price, [selectedPool, prices]);
 
   return (
     <div className="pool-detail view-element flex align-center justify-start column">
@@ -49,26 +49,26 @@ export function PoolDetail(): JSX.Element {
           </div>
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Text className="small-accent-text">{dictionary.common.currentPrice}</Text>
-            <CurrentPrice price={selectedPoolPrice} selectedPool={selectedPool} />
+            <CurrentPrice price={selectedPoolPrice} pool={selectedPool} />
           </div>
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Info term="collateralWeight">
               <Text className="info-element small-accent-text">{dictionary.poolsView.collateralWeight}</Text>
             </Info>
-            <CollateralWeight selectedPool={selectedPool} />
+            <CollateralWeight pool={selectedPool} />
           </div>
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Info term="requiredCollateralFactor">
               <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
             </Info>
-            <CollateralFactor selectedPool={selectedPool} />
+            <CollateralFactor pool={selectedPool} />
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">
           <div className="pool-detail-body-half-section flex-centered column">
             <Text className="small-accent-text">{dictionary.poolsView.poolDetail.poolSize}</Text>
-            <PoolSize selectedPool={selectedPool} />
-            <UtilizationRate selectedPool={selectedPool} />
+            <PoolSize pool={selectedPool} />
+            <UtilizationRate pool={selectedPool} />
           </div>
           <div className="pie-chart-section pool-detail-body-half-section flex-centered">
             <PieChart
@@ -79,11 +79,11 @@ export function PoolDetail(): JSX.Element {
             <div className="pie-chart-section-info flex align-start justify-center column">
               <div className="flex column">
                 <Text className="small-accent-text">{dictionary.poolsView.availableLiquidity}</Text>
-                <AvailableLiquidity selectedPool={selectedPool} />
+                <AvailableLiquidity pool={selectedPool} />
               </div>
               <div className="pie-chart-section-info flex column">
                 <Text className="small-accent-text">{dictionary.poolsView.totalBorrowed}</Text>
-                <TotalBorrowed selectedPool={selectedPool} />
+                <TotalBorrowed pool={selectedPool} />
               </div>
             </div>
           </div>

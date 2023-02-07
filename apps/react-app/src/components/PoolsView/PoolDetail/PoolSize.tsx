@@ -3,10 +3,10 @@ import { WithPoolData } from './PoolDetail';
 import { Skeleton, Typography } from 'antd';
 
 export // Renders the pool size for the current pool
-const PoolSize = ({ selectedPool }: WithPoolData) => {
+const PoolSize = ({ pool }: WithPoolData) => {
   const { currencyAbbrev } = useCurrencyFormatting();
-  if (selectedPool) {
-    const totalValueAbbrev = currencyAbbrev(selectedPool.deposit_tokens, selectedPool.precision, false, undefined);
+  if (pool) {
+    const totalValueAbbrev = currencyAbbrev(pool.deposit_tokens, pool.precision, false, undefined);
     return <Typography.Title className="green-text">{`${totalValueAbbrev}`}</Typography.Title>;
   }
 

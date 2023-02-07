@@ -4,7 +4,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { BlockExplorer } from '@state/settings/settings';
 import { WalletModal } from '@state/modals/modals';
 import { SendingTransaction } from '@state/actions/actions';
-import { CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
 import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
@@ -18,7 +18,12 @@ export function AirdropButton(): JSX.Element {
   const blockExplorer = useRecoilValue(BlockExplorer);
   const cluster = useJetStore(state => state.settings.cluster);
   const { connected } = useWallet();
-  const currentPool = useRecoilValue(CurrentPool);
+  const pools = useRecoilValue(Pools);
+
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const currentPool = pools
+    ? Object.values(pools.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey)
+    : undefined;
   const { airdrop } = useMarginActions();
   const setWalletModalOpen = useSetRecoilState(WalletModal);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);

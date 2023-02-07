@@ -2,16 +2,15 @@ import { StateCreator } from 'zustand';
 import { PRICE_UPDATE, TOKEN_PRICE_UPDATE } from '../events';
 import { JetStore } from '../store';
 
+export interface PriceInfo {
+  price: number;
+  ema: number;
+  confidence: number;
+  timestamp: Date;
+}
+
 export interface PricesSlice {
-  prices?: Record<
-    string,
-    {
-      price: number;
-      ema: number;
-      confidence: number;
-      timestamp: Date;
-    }
-  >;
+  prices?: Record<string, PriceInfo>;
   updatePrices: (update: PRICE_UPDATE) => void;
 }
 
@@ -28,8 +27,6 @@ export const createPricesSlice: StateCreator<JetStore, [['zustand/devtools', nev
                 confidence: parseInt(data.price.conf) * 10 ** data.price.expo,
                 timestamp: new Date(data.price.publish_time * 1000)
               };
-            } else {
-              console.log(data);
             }
             return acc;
           },
