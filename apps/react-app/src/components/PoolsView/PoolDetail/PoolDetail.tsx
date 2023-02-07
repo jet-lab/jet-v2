@@ -1,7 +1,6 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { PoolsRowOrder } from '@state/views/views';
-import { Pools, CurrentPool } from '@state/pools/pools';
 import { useCurrencyFormatting } from '@utils/currency';
 import { formatRate } from '@utils/format';
 import { PieChart } from './PieChart';
@@ -10,99 +9,116 @@ import { AirdropButton } from './AirdropButton';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
+<<<<<<< HEAD
 import { CopyableField } from '@components/misc/CopyableField';
+=======
+import { useJetStore } from '@jet-lab/store';
+import { PoolData } from '@jet-lab/store/dist/slices/pools';
+import { useMemo } from 'react';
+const { Title, Paragraph, Text } = Typography;
+>>>>>>> 1006a0b6 (hooked pool details with state)
 
-// Component that shows extra details on the currentPool
+interface WithPoolData {
+  selectedPool?: PoolData;
+}
+
+// Renders the collateral weight for the current pool
+function CollateralWeight({ selectedPool }: WithPoolData) {
+  if (selectedPool) {
+    return <Text>{formatRate(selectedPool.collateral_weight)}</Text>;
+  }
+  return <Skeleton paragraph={false} active style={{ width: 100 }} />;
+}
+
+// Renders the current price of the current pool
+const CurrentPrice = ({ selectedPool, price }: WithPoolData & { price?: number }) => {
+  const { currencyFormatter } = useCurrencyFormatting();
+  if (selectedPool && price) {
+    return <Text>{`1 ${selectedPool.symbol} = ${currencyFormatter(price, true)}`}</Text>;
+  }
+
+  return <Skeleton paragraph={false} active style={{ width: 100 }} />;
+};
+
+// Renders the utilization rate of the current pool
+const UtilizationRate = ({ selectedPool }: WithPoolData) => {
+  const dictionary = useRecoilValue(Dictionary);
+  let rateString = '—%';
+  if (selectedPool && selectedPool.deposit_tokens > 0) {
+    rateString = formatRate(selectedPool.borrowed_tokens / selectedPool.deposit_tokens);
+  }
+  return <Text type="secondary" italic>{`${dictionary.poolsView.utilizationRate} ${rateString}`}</Text>;
+};
+
+// Renders the required collateral factor for the current pool
+const CollateralFactor = ({ selectedPool }: WithPoolData) =>
+  selectedPool ? (
+    <Text>{selectedPool.collateral_factor}</Text>
+  ) : (
+    <Skeleton paragraph={false} active style={{ width: 100 }} />
+  );
+
+// Renders the total borrowed to accompany the pie chart
+const TotalBorrowed = ({ selectedPool }: { selectedPool: PoolData }) => {
+  const { currencyAbbrev } = useCurrencyFormatting();
+  let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
+  if (selectedPool) {
+    const borrowedAbbrev = currencyAbbrev(selectedPool.borrowed_tokens, selectedPool.precision, false, undefined);
+    render = (
+      <div className="pie-chart-section-info-item">
+        <Text type="danger">{borrowedAbbrev}</Text>
+      </div>
+    );
+  }
+
+  return render;
+};
+
+// Renders the pool size for the current pool
+const PoolSize = ({ selectedPool }: { selectedPool: PoolData }) => {
+  const { currencyAbbrev } = useCurrencyFormatting();
+  if (selectedPool) {
+    const totalValueAbbrev = currencyAbbrev(selectedPool.deposit_tokens, selectedPool.precision, false, undefined);
+    return <Title className="green-text">{`${totalValueAbbrev}`}</Title>;
+  }
+
+  return <Skeleton className="align-center" paragraph={false} active style={{ margin: '10px 0' }} />;
+};
+
+// Renders the available liquidity to accompany the pie chart
+const AvailableLiquidity = ({ selectedPool }: { selectedPool: PoolData }) => {
+  const { currencyAbbrev } = useCurrencyFormatting();
+  let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
+  if (selectedPool) {
+    const vaultAbbrev = currencyAbbrev(
+      selectedPool.deposit_tokens - selectedPool.borrowed_tokens,
+      selectedPool.precision,
+      false,
+      undefined
+    );
+    render = (
+      <div className="pie-chart-section-info-item">
+        <Text type="success">{vaultAbbrev}</Text>
+      </div>
+    );
+  }
+
+  return render;
+};
+
+// Component that shows extra details on the selectedPool
 export function PoolDetail(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const [poolsRowOrder, setPoolsRowOrder] = useRecoilState(PoolsRowOrder);
-  const pools = useRecoilValue(Pools);
-  const currentPool = useRecoilValue(CurrentPool);
-  const init = pools && currentPool;
-  const { Title, Paragraph, Text } = Typography;
 
-  // Renders the current price of the current pool
-  function renderCurrentPrice() {
-    let render = <Skeleton paragraph={false} active style={{ width: 100 }} />;
-    if (init) {
-      render = <Text>{`1 ${currentPool.symbol} = ${currencyFormatter(currentPool.tokenPrice, true)}`}</Text>;
-    }
+  const { prices, selectedPoolKey, pools } = useJetStore(state => ({
+    pools: state.pools,
+    prices: state.prices,
+    selectedPoolKey: state.selectedPoolKey
+  }));
 
-    return render;
-  }
-
-  // Renders the collateral weight for the current pool
-  function renderCollateralWeight() {
-    let render = <Skeleton paragraph={false} active style={{ width: 100 }} />;
-    if (init) {
-      render = <Text>{formatRate(currentPool.depositNoteMetadata.valueModifier.toNumber())}</Text>;
-    }
-
-    return render;
-  }
-
-  // Renders the required collateral factor for the current pool
-  function renderRequiredCollateralFactor() {
-    let render = <Skeleton paragraph={false} active style={{ width: 100 }} />;
-    if (init) {
-      render = <Text>{currentPool.loanNoteMetadata.valueModifier.toNumber()}</Text>;
-    }
-
-    return render;
-  }
-
-  // Renders the pool size for the current pool
-  function renderPoolSize() {
-    let render = <Skeleton className="align-center" paragraph={false} active style={{ margin: '10px 0' }} />;
-    if (init) {
-      const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, currentPool.precision, false, undefined);
-      render = <Title className="green-text">{`${totalValueAbbrev}`}</Title>;
-    }
-
-    return render;
-  }
-
-  // Renders the available liquidity to accompany the pie chart
-  function renderAvailableLiquidity() {
-    let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
-    if (init) {
-      const vaultAbbrev = currencyAbbrev(currentPool.vault.tokens, currentPool.precision, false, undefined);
-      render = (
-        <div className="pie-chart-section-info-item">
-          <Text type="success">{vaultAbbrev}</Text>
-        </div>
-      );
-    }
-
-    return render;
-  }
-
-  // Renders the total borrowed to accompany the pie chart
-  function renderTotalBorrowed() {
-    let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
-    if (init) {
-      const borrowedAbbrev = currencyAbbrev(currentPool.borrowedTokens.tokens, currentPool.precision, false, undefined);
-      render = (
-        <div className="pie-chart-section-info-item">
-          <Text type="danger">{borrowedAbbrev}</Text>
-        </div>
-      );
-    }
-
-    return render;
-  }
-
-  // Renders the utilization rate of the current pool
-  function renderUtilizationRate() {
-    let rateString = '—%';
-    if (init) {
-      rateString = formatRate(currentPool.utilizationRate);
-    }
-
-    const render = <Text type="secondary" italic>{`${dictionary.poolsView.utilizationRate} ${rateString}`}</Text>;
-    return render;
-  }
+  const selectedPool = useMemo(() => pools[selectedPoolKey], [selectedPoolKey]);
+  const selectedPoolPrice = useMemo(() => prices && prices[selectedPool.token_mint].price, [selectedPool]);
 
   return (
     <div className="pool-detail view-element flex align-center justify-start column">
@@ -113,47 +129,47 @@ export function PoolDetail(): JSX.Element {
       <div className="pool-detail-body flex align-start justify-center">
         <div className="pool-detail-body-half flex-align-start justify-center column">
           <div className="pool-detail-body-half-section pool-detail-title flex align-center justify-start">
-            <TokenLogo height={30} symbol={currentPool?.symbol} />
-            <Title className="pool-detail-header">{currentPool?.name ?? ''}</Title>
+            <TokenLogo height={30} symbol={selectedPool?.symbol} />
+            <Title className="pool-detail-header">{selectedPool?.symbol ?? ''}</Title>
             <AirdropButton />
           </div>
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Text className="small-accent-text">{dictionary.common.currentPrice}</Text>
-            {renderCurrentPrice()}
+            <CurrentPrice price={selectedPoolPrice} selectedPool={selectedPool} />
           </div>
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Info term="collateralWeight">
               <Text className="info-element small-accent-text">{dictionary.poolsView.collateralWeight}</Text>
             </Info>
-            {renderCollateralWeight()}
+            <CollateralWeight selectedPool={selectedPool} />
           </div>
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Info term="requiredCollateralFactor">
               <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
             </Info>
-            {renderRequiredCollateralFactor()}
+            <CollateralFactor selectedPool={selectedPool} />
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">
           <div className="pool-detail-body-half-section flex-centered column">
             <Text className="small-accent-text">{dictionary.poolsView.poolDetail.poolSize}</Text>
-            {renderPoolSize()}
-            {renderUtilizationRate()}
+            <PoolSize selectedPool={selectedPool} />
+            <UtilizationRate selectedPool={selectedPool} />
           </div>
           <div className="pie-chart-section pool-detail-body-half-section flex-centered">
             <PieChart
-              percentage={init ? currentPool.utilizationRate : 0}
+              percentage={selectedPool ? selectedPool.borrowed_tokens / selectedPool.deposit_tokens : 0}
               text={dictionary.poolsView.utilizationRate.toUpperCase()}
               term="utilizationRate"
             />
             <div className="pie-chart-section-info flex align-start justify-center column">
               <div className="flex column">
                 <Text className="small-accent-text">{dictionary.poolsView.availableLiquidity}</Text>
-                {renderAvailableLiquidity()}
+                <AvailableLiquidity selectedPool={selectedPool} />
               </div>
               <div className="pie-chart-section-info flex column">
                 <Text className="small-accent-text">{dictionary.poolsView.totalBorrowed}</Text>
-                {renderTotalBorrowed()}
+                <TotalBorrowed selectedPool={selectedPool} />
               </div>
             </div>
           </div>

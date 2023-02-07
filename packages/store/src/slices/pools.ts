@@ -4,6 +4,7 @@ import { JetStore } from '../store';
 
 export interface PoolsSlice {
   pools: Record<string, PoolData>;
+  selectedPoolKey: string;
   updatePool: (update: PoolDataUpdate) => void;
   initAllPools: (update: Record<string, PoolData>) => void;
 }
@@ -15,6 +16,10 @@ export interface PoolData {
   symbol: string;
   token_mint: string;
   decimals: number;
+  selected?: boolean;
+  precision: number;
+  collateral_weight: number;
+  collateral_factor: number;
   // deposit_notes: number;
   // accrued_until: Date;
 }
@@ -29,6 +34,7 @@ export interface PoolDataUpdate {
 
 export const createPoolsSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], PoolsSlice> = set => ({
   pools: {},
+  selectedPoolKey: '',
   updatePool: (update: PoolDataUpdate) => {
     return set(
       state => {
@@ -49,11 +55,15 @@ export const createPoolsSlice: StateCreator<JetStore, [['zustand/devtools', neve
     );
   },
   initAllPools: (update: Record<string, PoolData>) => {
+    // on init select first pool if no other pool is selected
+    const keys = Object.keys(update);
     return set(
-      () => ({
-        pools: update
+      state => ({
+        ...state,
+        pools: update,
+        selectedPoolKey: keys.includes(String(state.selectedPoolKey)) ? state.selectedPoolKey : keys[0]
       }),
-      false,
+      true,
       'INIT_POOLS'
     );
   }

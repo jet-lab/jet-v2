@@ -130,13 +130,17 @@ export function usePoolsSyncer() {
         totalSupply += vault * tokenPrice;
         totalBorrowed += borrowedTokens * tokenPrice;
         const address = pool.address.toBase58();
+
         poolsToInit[address] = {
           address: address,
           borrowed_tokens: borrowedTokens,
           deposit_tokens: vault,
           symbol: pool.symbol,
           token_mint: pool.tokenMint.toBase58(),
-          decimals: pool.decimals
+          decimals: pool.decimals,
+          precision: pool.precision,
+          collateral_weight: pool.depositNoteMetadata.valueModifier.toNumber(),
+          collateral_factor: pool.loanNoteMetadata.valueModifier.toNumber()
         };
       }
 
