@@ -264,6 +264,7 @@ impl MarginClient {
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
         self.tx_admin
             .create_margin_pool(setup_info.token)
+            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
             .send_and_confirm(&self.rpc)
             .await?;
 

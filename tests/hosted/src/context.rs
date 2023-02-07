@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
+use jet_margin_sdk::tx_builder::AirspaceAdmin;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
 use jet_client::NetworkKind;
@@ -16,7 +17,7 @@ use jet_environment::{
     },
     programs::ORCA_V2,
 };
-use jet_instructions::airspace::derive_airspace;
+use jet_instructions::airspace::{derive_airspace, AirspaceIxBuilder};
 use jet_instructions::fixed_term::derive_market_from_tenor;
 use jet_instructions::margin::MarginConfigIxBuilder;
 use jet_instructions::test_service::{
