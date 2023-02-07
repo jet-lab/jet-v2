@@ -9,14 +9,11 @@ import { AirdropButton } from './AirdropButton';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
-<<<<<<< HEAD
-import { CopyableField } from '@components/misc/CopyableField';
-=======
 import { useJetStore } from '@jet-lab/store';
 import { PoolData } from '@jet-lab/store/dist/slices/pools';
 import { useMemo } from 'react';
+import { CopyableField } from '@components/misc/CopyableField';
 const { Title, Paragraph, Text } = Typography;
->>>>>>> 1006a0b6 (hooked pool details with state)
 
 interface WithPoolData {
   selectedPool?: PoolData;
@@ -174,21 +171,21 @@ export function PoolDetail(): JSX.Element {
             </div>
           </div>
         </div>
-        <div className='pool-detail-body-half flex-align-start justify-center column'>
+        <div className="pool-detail-body-half flex-align-start justify-center column">
           <div className="pool-detail-body-half-section column">
-            {currentPool && (
+            {selectedPool && (
               <>
                 <Text className="info-element small-accent-text">Pool Address</Text>
                 <div className={`pool-detail-body-half-section flex align-start justify-center column`}>
-                  <CopyableField content={currentPool.address.toBase58()} />
+                  <CopyableField content={selectedPool.address} />
                 </div>
               </>
             )}
-            {currentPool && (
+            {selectedPool && (
               <>
                 <Text className="info-element small-accent-text">Token Address</Text>
                 <div className={`pool-detail-body-half-section flex align-start justify-start column`}>
-                  <CopyableField content={currentPool.addresses.tokenMint.toBase58()} />
+                  <CopyableField content={selectedPool.token_mint} />
                 </div>
               </>
             )}
