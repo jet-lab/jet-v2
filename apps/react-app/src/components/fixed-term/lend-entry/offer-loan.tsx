@@ -3,6 +3,7 @@ import { formatDuration, intervalToDuration } from 'date-fns';
 import {
   bigIntToBn,
   bnToBigInt,
+  FixedTermProductModel,
   MarketAndConfig,
   offerLoan,
   OrderbookModel,
@@ -41,6 +42,7 @@ interface Forecast {
   matchedInterest?: string;
   matchedRate?: number;
   selfMatch: boolean;
+  riskIndicator?: number;
 }
 
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -109,9 +111,24 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     const sim = model.simulateMaker('lend', amount, limitPrice, marginAccount?.address.toBytes());
 
     if (sim.self_match) {
-      // TODO Integrate with forecast panel
-      console.log('WARNING Order would be rejected for self-matching');
+      // FIXME Integrate with forecast panel
+      console.log('ERROR Order would be rejected for self-matching');
     }
+
+    let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
+    if (correspondingPool == undefined) {
+      console.log('ERROR `correspondingPool` must be defined.');
+      return;
+    }
+
+    const productModel = marginAccount? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool) : undefined;
+    const setupCheckEstimate = productModel?.makerAccountForecast("lend", sim, "setup");
+    if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
+      // FIXME Disable form submission
+      console.log("WARNING Trade violates setup check and should not be allowed")
+    }
+
+    const valuationEstimate = productModel?.makerAccountForecast("lend", sim);
 
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
     const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
@@ -127,7 +144,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       postedRepayAmount: postedRepayAmount.uiTokens,
       postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
       postedRate,
-      selfMatch: sim.self_match
+      selfMatch: sim.self_match,
+      riskIndicator: valuationEstimate?.riskIndicator,
     });
   }
 
@@ -233,7 +251,14 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Matched Effective Rate</span>
           <RateDisplay rate={forecast?.matchedRate} />
         </div>
-        <div className="stat-line">Risk Level</div>
+        <div className="stat-line">
+          <span>Risk Indicator</span>
+          {forecast && (
+            <span>
+              {forecast.riskIndicator}
+            </span>
+          )}
+        </div>
         <div className="stat-line">
           <span>Auto Roll</span>
           <span>Off</span>
