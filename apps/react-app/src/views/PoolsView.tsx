@@ -22,7 +22,7 @@ function PoolsView(): JSX.Element {
   // Pools view with ordered components
   const viewComponents: Record<string, JSX.Element> = {
     accountSnapshot: <AccountSnapshot key="accountSnapshot" />,
-    poolsRow: <PoolDetail />,
+    poolsRow: <PoolDetail key="pools-details" />,
     poolsTable: <PoolsTable key="poolsTable" />
   };
   const PoolsView = (): JSX.Element => {
