@@ -1,2 +1,5 @@
 /// generic processing of arbitrary data
-pub mod data;
+pub(crate) mod data;
+
+/// general math-related functions
+pub mod math;

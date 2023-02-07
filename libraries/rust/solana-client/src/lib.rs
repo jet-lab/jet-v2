@@ -18,7 +18,7 @@ mod util;
 /// wallet that can sign transactions to be sent to the network.
 #[async_trait(?Send)]
 pub trait NetworkUserInterface: Clone + 'static {
-    type Error: Any + std::fmt::Debug + Send + Sync;
+    type Error: Any + std::fmt::Debug;
 
     /// The signing address used by this interface when sending transactions
     fn signer(&self) -> Pubkey;

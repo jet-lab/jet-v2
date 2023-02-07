@@ -34,7 +34,7 @@ pub use swap::resolve_swap_program;
 #[derive(Error, Debug)]
 pub enum BuilderError {
     #[error("error using network interface: {0:?}")]
-    InterfaceError(Box<dyn Any + Send + Sync>),
+    InterfaceError(Box<dyn Any>),
 
     #[error("missing pyth_price field for token {0}")]
     MissingPythPrice(String),

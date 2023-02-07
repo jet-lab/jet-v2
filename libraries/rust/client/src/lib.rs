@@ -21,7 +21,7 @@ mod solana;
 pub mod state;
 pub mod swaps;
 pub mod test_service;
-mod util;
+pub mod util;
 
 pub use client::{ClientError, ClientResult};
 pub use jet_solana_client::network::NetworkKind;

@@ -3,6 +3,7 @@ import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { chunks, MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
+import { ProtocolClient } from '@state/protocol/client';
 import { Pools, CurrentPool } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
@@ -21,6 +22,7 @@ export enum ActionResponse {
 }
 export function useMarginActions() {
   // const cluster = useRecoilValue(Cluster);
+  const client = useRecoilValue(ProtocolClient);
   const config = useRecoilValue(MainConfig);
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
