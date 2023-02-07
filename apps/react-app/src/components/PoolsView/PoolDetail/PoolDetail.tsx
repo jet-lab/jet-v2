@@ -1,12 +1,10 @@
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
-import { PoolsRowOrder } from '@state/views/views';
 import { useCurrencyFormatting } from '@utils/currency';
 import { formatRate } from '@utils/format';
 import { PieChart } from './PieChart';
 import { TokenLogo } from '@components/misc/TokenLogo';
 import { AirdropButton } from './AirdropButton';
-import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
 import { useJetStore } from '@jet-lab/store';
@@ -106,7 +104,6 @@ const AvailableLiquidity = ({ selectedPool }: { selectedPool: PoolData }) => {
 // Component that shows extra details on the selectedPool
 export function PoolDetail(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const [poolsRowOrder, setPoolsRowOrder] = useRecoilState(PoolsRowOrder);
 
   const { prices, selectedPoolKey, pools } = useJetStore(state => ({
     pools: state.pools,
@@ -120,7 +117,6 @@ export function PoolDetail(): JSX.Element {
   return (
     <div className="pool-detail view-element flex align-center justify-start column">
       <div className="pool-detail-head flex align-center justify-start">
-        <ReorderArrows component="poolDetail" order={poolsRowOrder} setOrder={setPoolsRowOrder} />
         <Paragraph strong>{dictionary.poolsView.poolDetail.title}</Paragraph>
       </div>
       <div className="pool-detail-body flex align-start justify-center">

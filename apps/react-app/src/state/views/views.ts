@@ -14,12 +14,6 @@ export const PoolsViewOrder = atom({
   effects: [localStorageEffect('jetAppPoolsViewOrder')],
   dangerouslyAllowMutability: true
 });
-export const PoolsRowOrder = atom({
-  key: 'PoolsRowOrder',
-  default: ['poolDetail'] as string[],
-  effects: [localStorageEffect('jetAppPoolsRowOrder')],
-  dangerouslyAllowMutability: true
-});
 
 // Swaps View component order
 export const SwapsViewOrder = atom({
