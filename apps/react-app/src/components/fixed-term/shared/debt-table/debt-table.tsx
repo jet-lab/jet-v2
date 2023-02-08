@@ -112,7 +112,7 @@ export function DebtTable() {
                     market={markets[selectedMarket]}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={explorer}
+                    explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />
@@ -137,7 +137,7 @@ export function DebtTable() {
                     provider={provider}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={explorer}
+                    explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />
@@ -162,7 +162,7 @@ export function DebtTable() {
                     market={markets[selectedMarket]}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={explorer}
+                    explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />

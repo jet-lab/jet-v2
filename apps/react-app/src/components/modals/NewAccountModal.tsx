@@ -91,7 +91,7 @@ export function NewAccountModal(): JSX.Element {
         dictionary.notifications.newAccount.failedTitle,
         dictionary.notifications.newAccount.failedDescription,
         'error',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
     }
     setSendingTransaction(false);

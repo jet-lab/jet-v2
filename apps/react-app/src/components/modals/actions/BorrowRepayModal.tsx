@@ -87,7 +87,7 @@ export function BorrowRepayModal(): JSX.Element {
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'error',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
     }
     setSendingTransaction(false);

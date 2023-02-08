@@ -39,18 +39,18 @@ export const OpenDepositsTable = ({
   marginAccount,
   provider,
   cluster,
-  blockExplorer
+  explorer
 }: {
   data: Deposit[];
   market: MarketAndconfig;
   marginAccount: MarginAccount;
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }) => {
-  const columns = useMemo(() => getDepositsColumns(market), [market, marginAccount, provider, cluster, blockExplorer]);
+  const columns = useMemo(() => getDepositsColumns(market), [market, marginAccount, provider, cluster, explorer]);
   return (
     <Table
       rowKey="address"
