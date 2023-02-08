@@ -3,7 +3,6 @@ import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { chunks, MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
-import { ProtocolClient } from '@state/protocol/client';
 import { Pools, CurrentPool } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
@@ -22,7 +21,6 @@ export enum ActionResponse {
 }
 export function useMarginActions() {
   // const cluster = useRecoilValue(Cluster);
-  const client = useRecoilValue(ProtocolClient);
   const config = useRecoilValue(MainConfig);
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
@@ -127,11 +125,11 @@ export function useMarginActions() {
       await actionRefresh();
       return [undefined, ActionResponse.Success];
     } catch (err: any) {
-      console.error(err);
+      console.table(err);
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -177,6 +175,7 @@ export function useMarginActions() {
     const change = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts.withdraw)
       ? PoolTokenChange.setTo(0)
       : PoolTokenChange.setTo(accountPoolPosition.depositBalance.sub(tokenInputAmount));
+
     try {
       const txId = await currentPool.withdraw({
         marginAccount: currentAccount,
@@ -192,7 +191,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -218,7 +217,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -251,7 +250,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -294,7 +293,7 @@ export function useMarginActions() {
         message.warning(dictionary.actions.swap.warningMessages.maxSlippageExceeded, NOTIFICATION_DURATION);
         return [undefined, undefined];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -358,7 +357,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }

@@ -12,12 +12,6 @@ export const NewAccountModal = atom({
   default: false as boolean
 });
 
-// Edit account modal
-export const EditAccountModal = atom({
-  key: 'editAccountModal',
-  default: false as boolean
-});
-
 // Settings modal
 export const SettingsModal = atom({
   key: 'settingsModal',
