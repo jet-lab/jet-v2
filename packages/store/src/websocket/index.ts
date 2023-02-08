@@ -1,10 +1,32 @@
-import { APPLICATION_WS_EVENTS, JET_WS_EVENTS } from './events';
-import { PoolDataUpdate } from './slices/pools';
-import { useJetStore } from './store';
+import { Cluster } from 'slices/settings';
+import { APPLICATION_WS_EVENTS, JET_WS_EVENTS } from '../events';
+import { PoolDataUpdate } from '../slices/pools';
+import { useJetStore } from '../store';
 
-export const initWebsocket = () => {
+let ws: WebSocket;
+export const initWebsocket = (cluster?: Cluster) => {
+  if (ws) {
+    ws.close();
+  }
+
   try {
-    const ws = new WebSocket(`${process.env.WS_API}`);
+    let endpoint: string | undefined;
+    switch (cluster) {
+      case 'devnet':
+        endpoint = process.env.DEV_WS_API;
+        break;
+      case 'localnet':
+        endpoint = process.env.LOCAL_WS_API;
+        break;
+      case 'mainnet-beta':
+        endpoint = process.env.WS_API;
+        break;
+    }
+    if (!endpoint) throw `No websocket environment variable set up.`;
+
+    console.log('initialising websocket for ', cluster, endpoint);
+
+    ws = new WebSocket(endpoint);
 
     ws.onopen = () => {
       const subscriptionEvent: APPLICATION_WS_EVENTS = {
