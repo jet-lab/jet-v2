@@ -100,8 +100,8 @@ pub struct DexInfo {
     pub address: Pubkey,
 
     #[serde_as(as = "DisplayFromStr")]
-    pub token_a: Pubkey,
+    pub base: Pubkey,
 
     #[serde_as(as = "DisplayFromStr")]
-    pub token_b: Pubkey,
+    pub quote: Pubkey,
 }
