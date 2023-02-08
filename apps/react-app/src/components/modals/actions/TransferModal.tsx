@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useSetRecoilState, useResetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SendingTransaction } from '@state/actions/actions';
-import { BlockExplorer } from '@state/settings/settings';
 import { AccountNames, Accounts, useAccountFromName } from '@state/user/accounts';
 import { CurrentPool } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
@@ -23,9 +22,8 @@ import { useJetStore } from '@jet-lab/store';
 
 // Modal to transfer collateral from one marginAccount to another
 export function TransferModal(): JSX.Element {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { transfer } = useMarginActions();
   const accounts = useRecoilValue(Accounts);
@@ -76,7 +74,7 @@ export function TransferModal(): JSX.Element {
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'success',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
       resetTokenInputString();
       resetCurrentAction();

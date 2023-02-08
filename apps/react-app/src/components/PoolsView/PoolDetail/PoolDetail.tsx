@@ -34,6 +34,7 @@ export function PoolDetail(): JSX.Element {
 
   const selectedPool = useMemo(() => pools[selectedPoolKey], [selectedPoolKey, pools]);
   const selectedPoolPrice = useMemo(() => prices && prices[selectedPool?.token_mint]?.price, [selectedPool, prices]);
+  if (!selectedPool) return <></>;
 
   return (
     <div className="pool-detail view-element flex align-center justify-start column">

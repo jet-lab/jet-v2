@@ -2,16 +2,17 @@ import { useMemo, useEffect } from 'react';
 import { atom, useRecoilValue, useSetRecoilState } from 'recoil';
 import { Connection, PublicKey, AccountInfo, VersionedTransaction } from '@solana/web3.js';
 import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
-import { Cluster, rpcNodes, PreferredRpcNode } from '../../state/settings/settings';
+import { rpcNodes, PreferredRpcNode } from '../../state/settings/settings';
 import { JetWebClient, Pubkey, initModule, MarginWebClient, MarginAccountWebClient } from '@jet-lab/jet-client-web';
+import { useJetStore } from '@jet-lab/store';
 
-initModule()
+initModule();
 
 interface ExtendedMargin extends MarginWebClient {
-  accounts: () => MarginAccountWebClient[]
+  accounts: () => MarginAccountWebClient[];
 }
 interface ExtendedJetClient extends JetWebClient {
-  margin: () => ExtendedMargin
+  margin: () => ExtendedMargin;
 }
 
 // Client object for interacting with the protocol
@@ -50,8 +51,7 @@ class SolanaConnectionAdapter {
     try {
       const {
         value: { blockhash, lastValidBlockHeight }
-      } = await this.connection.
-getLatestBlockhashAndContext();
+      } = await this.connection.getLatestBlockhashAndContext();
 
       const transactions = transactionDatas.map(txData => {
         let tx = VersionedTransaction.deserialize(txData);
@@ -63,7 +63,7 @@ getLatestBlockhashAndContext();
       const signed = [];
 
       if (!this.wallet.signTransaction) {
-        console.log("wallet missing signer function");
+        console.log('wallet missing signer function');
         return [];
       }
 
@@ -91,7 +91,7 @@ getLatestBlockhashAndContext();
 
 // Create client for using protocol
 export function useProtocolClientSyncer() {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const node = useRecoilValue(PreferredRpcNode);
   const setProtocolClient = useSetRecoilState(ProtocolClient);
 
@@ -104,7 +104,9 @@ export function useProtocolClientSyncer() {
 
   async function createClient() {
     const adapter = new SolanaConnectionAdapter(wallet, connection);
-    const webClient: ExtendedJetClient | undefined = adapter.userAddress && await JetWebClient.connect(adapter.userAddress, adapter, true)
+    const webClient: ExtendedJetClient | undefined =
+      adapter.userAddress &&
+      (await JetWebClient.connect(adapter.userAddress, adapter, cluster === 'localnet' ? false : true));
 
     if (webClient) {
       setProtocolClient(webClient);

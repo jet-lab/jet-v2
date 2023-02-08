@@ -4,7 +4,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { feesBuffer, MarginPrograms } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
-import { BlockExplorer } from '@state/settings/settings';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
 import { NewAccountModal as NewAccountModalState } from '@state/modals/modals';
 import { AccountNames, Accounts } from '@state/user/accounts';
@@ -21,9 +20,8 @@ import { useJetStore } from '@jet-lab/store';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const { programs } = useProvider();
   const { publicKey } = useWallet();
   const newAccountModalOpen = useRecoilValue(NewAccountModalState);
@@ -76,7 +74,7 @@ export function NewAccountModal(): JSX.Element {
         dictionary.notifications.newAccount.successTitle,
         dictionary.notifications.newAccount.successDescription.replaceAll('{{ACCOUNT_NAME}}', accountName ?? ''),
         'success',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
 
       // Reset modal

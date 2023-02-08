@@ -128,11 +128,6 @@ export const blockExplorers: Record<Explorer, Record<string, string>> = {
     url: 'https://solanabeach.io/transaction/'
   }
 };
-export const BlockExplorer = atom({
-  key: 'blockExplorer',
-  default: 'solscan' as Explorer,
-  effects: [localStorageEffect('jetAppPreferredExplorer')]
-});
 
 // Unix / Local Time
 export type TimeDisplay = 'local' | 'utc';

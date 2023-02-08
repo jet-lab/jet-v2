@@ -1,7 +1,6 @@
 import { MarginAccount, MarketAndconfig, TokenAmount } from '@jet-lab/margin';
 import { useJetStore, useOpenPositions } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
-import { BlockExplorer } from '@state/settings/settings';
 import { useProvider } from '@utils/jet/provider';
 import { Button } from 'antd';
 import BN from 'bn.js';
@@ -15,7 +14,7 @@ interface IMarketSelectorButtonProps {
   selectedMarket?: MarketAndconfig;
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
@@ -28,7 +27,6 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
     [cluster]
   );
   const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market, marginAccount);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
 
@@ -73,7 +71,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                   provider,
                   depositsToClaim,
                   cluster,
-                  blockExplorer,
+                  explorer,
                   pools.tokenPools,
                   markets.map(m => m.market)
                 );
@@ -94,7 +92,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                 provider,
                 setOwedTokens,
                 cluster,
-                blockExplorer,
+                explorer,
                 pools,
                 owedTokens
               )
@@ -129,7 +127,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                 markets.map(m => m.market),
                 selectedMarket,
                 cluster,
-                blockExplorer
+                explorer
               )
             }>
             Repay Now

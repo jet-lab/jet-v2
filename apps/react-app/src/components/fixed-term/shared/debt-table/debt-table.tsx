@@ -10,7 +10,6 @@ import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fix
 import { useEffect, useMemo } from 'react';
 import { notify } from '@utils/notify';
 import { useProvider } from '@utils/jet/provider';
-import { BlockExplorer } from '@state/settings/settings';
 import { PostedOrdersTable } from './posted-order-table';
 import { TokenAmount } from '@jet-lab/margin';
 import BN from 'bn.js';
@@ -47,8 +46,7 @@ export function DebtTable() {
   const selectedMarket = useRecoilValue(SelectedFixedTermMarketAtom);
   const market = markets[selectedMarket];
   const { provider } = useProvider();
-  const blockExplorer = useRecoilValue(BlockExplorer);
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const pools = useRecoilValue(Pools);
 
   const apiEndpoint = useMemo(
@@ -114,7 +112,7 @@ export function DebtTable() {
                     market={markets[selectedMarket]}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={blockExplorer}
+                    blockExplorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />
@@ -139,7 +137,7 @@ export function DebtTable() {
                     provider={provider}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={blockExplorer}
+                    blockExplorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />
@@ -164,7 +162,7 @@ export function DebtTable() {
                     market={markets[selectedMarket]}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={blockExplorer}
+                    blockExplorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />

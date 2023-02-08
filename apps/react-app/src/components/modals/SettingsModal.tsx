@@ -4,7 +4,6 @@ import { Dictionary, uiDictionary, PreferredLanguage } from '@state/settings/loc
 import { SettingsModal as SettingsModalState } from '@state/modals/modals';
 import {
   Explorer,
-  BlockExplorer,
   blockExplorers,
   RpcNodes,
   rpcNodeOptions,
@@ -27,24 +26,23 @@ export function SettingsModal(): JSX.Element {
   const settingsModalOpen = useRecoilValue(SettingsModalState);
   const resetSettingsModalOpen = useResetRecoilState(SettingsModalState);
   // Cluster
-  const { cluster, updateSetting } = useJetStore(state => ({
-    cluster: state.settings.cluster,
-    updateSetting: state.updateSetting
+  const { settings, updateSettings } = useJetStore(state => ({
+    settings: state.settings,
+    updateSettings: state.updateSettings
   }));
-  const [clusterSetting, setClusterSetting] = useState(cluster);
+  const [clusterSetting, setClusterSetting] = useState(settings.cluster);
   // Rpc Node
   const [rpcNodes, setRpcNodes] = useRecoilState(RpcNodes);
   const [preferredNode, setPreferredNode] = useRecoilState(PreferredRpcNode);
   const [preferredNodeSetting, setPreferredNodeSetting] = useState(preferredNode);
-  const nodeIndexer = cluster === 'mainnet-beta' ? 'mainnetBeta' : 'devnet';
+  const nodeIndexer = settings.cluster === 'mainnet-beta' ? 'mainnetBeta' : 'devnet';
   const [customNodeInput, setCustomNodeInput] = useState(rpcNodes.custom[nodeIndexer]);
   const [customNodeInputError, setCustomNodeInputError] = useState('');
   // Fiat Currency
   const [fiatCurrency, setFiatCurrency] = useRecoilState(FiatCurrency);
   const [fiatCurrencySetting, setFiatCurrencySetting] = useState(fiatCurrency);
   // Explorer
-  const [explorer, setExplorer] = useRecoilState(BlockExplorer);
-  const [explorerSetting, setExplorerSetting] = useState(explorer);
+  const [explorerSetting, setExplorerSetting] = useState(settings.explorer);
   // Language
   const [preferredLanguage, setPreferredLanguage] = useRecoilState(PreferredLanguage);
   const [preferredLanguageSetting, setPreferredLanguageSetting] = useState(preferredLanguage);
@@ -63,7 +61,7 @@ export function SettingsModal(): JSX.Element {
     if (preferredNodeSetting === 'custom') {
       const ping = await getPing(customNodeInput);
       if (ping) {
-        localStorage.setItem(`jetCustomNode-${cluster}`, customNodeInput);
+        localStorage.setItem(`jetCustomNode-${settings.cluster}`, customNodeInput);
         rpcNodes.custom[nodeIndexer] = customNodeInput;
         rpcNodes.custom[`${nodeIndexer}Ping`] = ping;
         setCustomNodeInputError('');
@@ -74,17 +72,17 @@ export function SettingsModal(): JSX.Element {
         return;
       }
     }
+
+    updateSettings({
+      cluster: clusterSetting,
+      explorer: explorerSetting
+    });
+
     if (preferredNodeSetting !== preferredNode) {
       setPreferredNode(preferredNodeSetting);
     }
-    if (clusterSetting !== cluster) {
-      updateSetting('cluster', clusterSetting);
-    }
     if (fiatCurrencySetting !== fiatCurrency) {
       setFiatCurrency(fiatCurrencySetting);
-    }
-    if (explorerSetting !== explorer) {
-      setExplorer(explorerSetting);
     }
     if (preferredLanguageSetting !== preferredLanguage) {
       setPreferredLanguage(preferredLanguageSetting);
@@ -104,9 +102,9 @@ export function SettingsModal(): JSX.Element {
     setPreferredNodeSetting(preferredNode);
     setCustomNodeInput(rpcNodes.custom[nodeIndexer]);
     setCustomNodeInputError('');
-    setClusterSetting(cluster);
+    setClusterSetting(settings.cluster);
     setFiatCurrencySetting(fiatCurrency);
-    setExplorerSetting(explorer);
+    setExplorerSetting(settings.explorer);
     setPreferredLanguageSetting(preferredLanguage);
     setPreferredTimeDisplaySetting(preferredTimeDisplay);
     setPreferDayMonthYearSetting(preferDayMonthYear);
@@ -118,9 +116,9 @@ export function SettingsModal(): JSX.Element {
     if (
       customNodeInput !== rpcNodes.custom[nodeIndexer] ||
       preferredNodeSetting !== preferredNode ||
-      clusterSetting !== cluster ||
+      clusterSetting !== settings.cluster ||
       fiatCurrencySetting !== fiatCurrency ||
-      explorerSetting !== explorer ||
+      explorerSetting !== settings.explorer ||
       preferredLanguageSetting !== preferredLanguage ||
       preferredTimeDisplaySetting !== preferredTimeDisplay ||
       preferDayMonthYearSetting !== preferDayMonthYear

@@ -1,16 +1,22 @@
 import { StateCreator } from 'zustand';
 import { JetStore } from '../store';
 
+type Explorer = 'solanaExplorer' | 'solscan' | 'solanaBeach';
+type Cluster = 'localnet' | 'devnet' | 'mainnet-beta';
+
+interface Settings {
+  cluster: Cluster;
+  explorer: Explorer;
+}
 export interface SettingsSlice {
-  settings: {
-    cluster: 'localnet' | 'devnet' | 'mainnet-beta';
-  };
-  updateSetting: (setting: string, value: string) => void;
+  settings: Settings;
+  updateSettings: (payload: Settings) => void;
 }
 export const createSettingsSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], SettingsSlice> = set => ({
   settings: {
-    cluster: 'mainnet-beta'
+    cluster: 'mainnet-beta',
+    explorer: 'solanaExplorer'
   },
-  updateSetting: (setting: string, value: string) =>
-    set(state => ({ settings: { ...state.settings, [setting]: value } }), false, 'UPDATE_SETTINGS')
+  updateSettings: (payload: Partial<Settings>) =>
+    set(state => ({ settings: { ...state.settings, ...payload } }), false, 'UPDATE_SETTINGS')
 });

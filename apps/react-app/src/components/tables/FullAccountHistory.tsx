@@ -3,7 +3,7 @@ import { CSVDownload } from 'react-csv';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { AccountTransaction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
-import { BlockExplorer, PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
+import { PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
 import { AccountsViewOrder } from '@state/views/views';
 import { WalletTokens } from '@state/user/walletTokens';
 import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '@state/user/accounts';
@@ -21,9 +21,8 @@ import { useJetStore } from '@jet-lab/store';
 
 // Table to show margin account's transaction history
 export function FullAccountHistory(): JSX.Element {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const preferredTimeDisplay = useRecoilValue(PreferredTimeDisplay);
   const preferDayMonthYear = useRecoilValue(PreferDayMonthYear);
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
@@ -224,7 +223,7 @@ export function FullAccountHistory(): JSX.Element {
                 rowKey={row => `${row.tokenSymbol}-${Math.random()}`}
                 rowClassName={(_transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
                 onRow={(transaction: AccountTransaction) => ({
-                  onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, blockExplorer))
+                  onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, explorer))
                 })}
                 locale={{ emptyText: dictionary.accountsView.noAccountHistory }}
               />

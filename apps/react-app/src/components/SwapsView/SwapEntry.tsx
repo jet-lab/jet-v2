@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useRecoilState, useResetRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
 import { SwapsRowOrder } from '@state/views/views';
-import { BlockExplorer } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '@state/pools/pools';
@@ -34,10 +33,9 @@ import { useJetStore } from '@jet-lab/store';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const splSwapPools = useRecoilValue(SplSwapPools);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { splTokenSwap } = useMarginActions();
@@ -271,7 +269,7 @@ export function SwapEntry(): JSX.Element {
           .replaceAll('{{ASSET}}', currentPool.symbol)
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'success',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
       resetTokenInputString();
     } else if (resp === ActionResponse.Cancelled) {

@@ -2,7 +2,6 @@ import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue 
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
-import { BlockExplorer } from '@state/settings/settings';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentPool } from '@state/pools/pools';
@@ -23,9 +22,8 @@ import { useJetStore } from '@jet-lab/store';
 
 // Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { deposit, withdraw } = useMarginActions();
   const walletTokens = useRecoilValue(WalletTokens);
@@ -70,7 +68,7 @@ export function DepositWithdrawModal(): JSX.Element {
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'success',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
       resetTokenInputString();
       resetCurrentAction();

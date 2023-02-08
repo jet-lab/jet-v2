@@ -9,7 +9,6 @@ import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
-import { BlockExplorer } from '@state/settings/settings';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useEffect, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
@@ -39,13 +38,12 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const pools = useRecoilValue(Pools);
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
 
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
 
   const disabled =
     !marginAccount ||
@@ -96,7 +94,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         'Lend Successful',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
         'success',
-        getExplorerUrl(signature, cluster, blockExplorer)
+        getExplorerUrl(signature, cluster, explorer)
       );
       refreshOrderBooks();
     } catch (e: any) {
@@ -104,7 +102,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         'Lend Order Failed',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
         'error',
-        getExplorerUrl(e.signature, cluster, blockExplorer)
+        getExplorerUrl(e.signature, cluster, explorer)
       );
       throw e;
     }
