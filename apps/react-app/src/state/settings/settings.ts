@@ -77,8 +77,7 @@ export const PreferredRpcNode = atom({
 export type ClusterOption = 'localnet' | 'devnet' | 'mainnet-beta';
 export const Cluster = atom<ClusterOption>({
   key: 'cluster',
-  default: 'mainnet-beta',
-  effects: [localStorageEffect('jetAppCluster')]
+  default: 'mainnet-beta'
 });
 
 // Fiat Currency

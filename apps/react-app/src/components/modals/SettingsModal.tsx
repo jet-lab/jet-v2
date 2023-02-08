@@ -27,7 +27,7 @@ export function SettingsModal(): JSX.Element {
   const settingsModalOpen = useRecoilValue(SettingsModalState);
   const resetSettingsModalOpen = useResetRecoilState(SettingsModalState);
   // Cluster
-  const [cluster, setCluster] = useRecoilState(Cluster);
+  const cluster = useRecoilValue(Cluster);
   const [clusterSetting, setClusterSetting] = useState(cluster);
   // Rpc Node
   const [rpcNodes, setRpcNodes] = useRecoilState(RpcNodes);
@@ -60,7 +60,6 @@ export function SettingsModal(): JSX.Element {
     if (preferredNodeSetting === 'custom') {
       const ping = await getPing(customNodeInput);
       if (ping) {
-        localStorage.setItem(`jetCustomNode-${cluster}`, customNodeInput);
         rpcNodes.custom[nodeIndexer] = customNodeInput;
         rpcNodes.custom[`${nodeIndexer}Ping`] = ping;
         setCustomNodeInputError('');
@@ -73,9 +72,6 @@ export function SettingsModal(): JSX.Element {
     }
     if (preferredNodeSetting !== preferredNode) {
       setPreferredNode(preferredNodeSetting);
-    }
-    if (clusterSetting !== cluster) {
-      setCluster(clusterSetting);
     }
     if (fiatCurrencySetting !== fiatCurrency) {
       setFiatCurrency(fiatCurrencySetting);
@@ -204,16 +200,6 @@ export function SettingsModal(): JSX.Element {
           </Select>
           {renderCustomInput()}
           <Text type="danger">{customNodeInputError}</Text>
-        </div>
-        <div className="setting flex align-start justify-center column">
-          <Text strong className="setting-title">
-            {dictionary.settingsModal.cluster.network.toUpperCase()}
-          </Text>
-          <Radio.Group value={clusterSetting} onChange={e => setClusterSetting(e.target.value)}>
-            <Radio value="mainnet-beta">{dictionary.settingsModal.cluster.mainnetBeta}</Radio>
-            <Radio value="devnet">{dictionary.settingsModal.cluster.devnet}</Radio>
-            <Radio value="localnet">{dictionary.settingsModal.cluster.localnet}</Radio>
-          </Radio.Group>
         </div>
         <div className="setting flex align-start justify-center column">
           <Text strong className="setting-title">
