@@ -291,7 +291,8 @@ export function SwapEntry(): JSX.Element {
             .replaceAll('{{ACTION}}', swapTitle)
             .replaceAll('{{ASSET}}', currentPool.symbol)
             .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
-          'error'
+          'error',
+          txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
         );
       }
     setSendingTransaction(false);

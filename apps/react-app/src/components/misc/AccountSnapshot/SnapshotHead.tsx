@@ -22,7 +22,6 @@ export function SnapshotHead(): JSX.Element {
   const [newAccountModalOpen, setNewAccountModalOpen] = useRecoilState(NewAccountModal);
 
   const currentAccount = useRecoilValue(CurrentAccount);
-  // const setEditAccountModalOpen = useSetRecoilState(EditAccountModal);
   const { Text } = Typography;
   const walletFavoriteAccountsItems = walletFavoriteAccounts.map(key => {
     const name = accountNames[key] ?? '';

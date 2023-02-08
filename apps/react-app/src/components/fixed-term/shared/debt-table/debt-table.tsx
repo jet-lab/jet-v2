@@ -79,7 +79,7 @@ export function DebtTable() {
       notify(
         'Error fetching data',
         'There was an unexpected error fetching your orders data, please try again soon',
-        'error'
+        'warning'
       );
   }, [ordersError, positionsError]);
 
