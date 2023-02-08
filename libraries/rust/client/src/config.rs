@@ -1,38 +1,7 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use solana_sdk::pubkey::Pubkey;
-
-// TODO - Legacy types, remove when the config is update in local, dev and production environment
-#[serde_as]
-#[derive(Serialize, Deserialize, Default, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct JetAppConfigOld {
-    pub tokens: HashMap<String, TokenInfo>,
-    pub airspaces: Vec<AirspaceInfoOld>,
-}
-
-#[serde_as]
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct AirspaceInfoOld {
-    pub name: String,
-    pub tokens: Vec<String>,
-    pub fixed_term_markets: HashMap<String, MarketInfoOld>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
-pub struct MarketInfoOld {
-    /// The address of the market
-    pub market: String,
-
-    /// The airspace the market is a part of
-    pub airspace: String,
-}
-
-// END LEGACY TYPES
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -46,7 +15,7 @@ pub struct JetAppConfig {
 impl JetAppConfig {
     pub const DEFAULT_URL: &'static str =
         "https://storage.googleapis.com/jet-app-config/config.json";
-
+    pub const DEVNET_CONFIG_URL: &'static str = "https://storage.googleapis.com/jet-app-config/devnet.json";
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
         serde_json::from_str(json)
     }

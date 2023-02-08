@@ -6,7 +6,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 use solana_sdk::{hash::Hash, pubkey::Pubkey};
 
 use jet_client::{
-    config::{AirspaceInfo, JetAppConfig, JetAppConfigOld, TokenInfo},
+    config::JetAppConfig,
     state::tokens::TokenAccount,
     test_service::TestServiceClient,
     JetClient, NetworkKind,
@@ -35,7 +35,7 @@ impl JetWebClient {
     pub async fn connect(
         user_address: Pubkey,
         adapter: SolanaNetworkAdapter,
-        legacy_config: bool,
+        airspace_name: &str
     ) -> Result<JetWebClient, JsError> {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
@@ -50,7 +50,8 @@ impl JetWebClient {
 
         let network_kind = NetworkKind::from_genesis_hash(&network_genesis_hash);
         let config_url = match network_kind {
-            NetworkKind::Mainnet | NetworkKind::Devnet => JetAppConfig::DEFAULT_URL,
+            NetworkKind::Devnet => JetAppConfig::DEVNET_CONFIG_URL,
+            NetworkKind::Mainnet => JetAppConfig::DEFAULT_URL,
             NetworkKind::Localnet => "/localnet.config.json",
         };
         let config_request = {
@@ -61,10 +62,9 @@ impl JetWebClient {
             Request::new_with_str_and_init(config_url, &opts).unwrap()
         };
 
-        let log_level = if network_kind == NetworkKind::Localnet {
-            log::Level::Debug
-        } else {
-            log::Level::Warn
+        let log_level = match network_kind {
+            NetworkKind::Localnet | NetworkKind::Devnet => log::Level::Debug,
+            NetworkKind::Mainnet => log::Level::Warn
         };
 
         if console_log::init_with_level(log_level).is_err() {
@@ -86,38 +86,12 @@ impl JetWebClient {
             serde_wasm_bindgen::from_value::<Value>(json).unwrap()
         };
 
-        let config = if legacy_config {
-            let legacy_config: JetAppConfigOld = serde_json::from_value(config_response).unwrap();
-
-            let tokens_as_vec: Vec<TokenInfo> = legacy_config.tokens.values().cloned().collect();
-            let airspaces = legacy_config
-                .airspaces
-                .into_iter()
-                .map(|airspace| AirspaceInfo {
-                    name: airspace.name,
-                    tokens: airspace.tokens,
-                    fixed_term_markets: airspace
-                        .fixed_term_markets
-                        .values()
-                        .into_iter()
-                        .map(|market| Pubkey::from_str(&market.market).unwrap())
-                        .collect(),
-                })
-                .collect();
-
-            JetAppConfig {
-                tokens: tokens_as_vec,
-                airspaces,
-                exchanges: vec![],
-            }
-        } else {
-            serde_json::from_value(config_response).unwrap()
-        };
+        let config = serde_json::from_value(config_response).unwrap();
 
         let adapter = JsNetworkAdapter::new(adapter, user_address);
 
         Ok(Self {
-            client: JetClient::new(adapter, config, "default")?,
+            client: JetClient::new(adapter, config, airspace_name)?,
         })
     }
 

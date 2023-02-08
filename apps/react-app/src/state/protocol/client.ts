@@ -106,8 +106,10 @@ export function useProtocolClientSyncer() {
     const adapter = new SolanaConnectionAdapter(wallet, connection);
     const webClient: ExtendedJetClient | undefined =
       adapter.userAddress &&
-      (await JetWebClient.connect(adapter.userAddress, adapter, cluster === 'localnet' ? false : true));
+      (await JetWebClient.connect(adapter.userAddress, adapter, cluster === 'devnet' ? 'devnet0' : 'default'));
 
+    await webClient?.state().syncAccounts();
+    console.log(webClient?.margin().accounts());
     if (webClient) {
       setProtocolClient(webClient);
     }
