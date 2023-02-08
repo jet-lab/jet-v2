@@ -20,12 +20,6 @@ export interface PoolOption {
   symbol: string | undefined;
 }
 
-// Pool Manager instantiation at app init
-const PoolManager = atom({
-  key: 'poolManager',
-  default: undefined as MarginPoolManager | undefined,
-  dangerouslyAllowMutability: true
-});
 // Overall state of all pools, fetched on init and on an ACTION_REFRESH_INTERVAL
 export const Pools = atom({
   key: 'pools',
@@ -83,7 +77,6 @@ export function usePoolFromName(poolName: string | undefined): Pool | undefined 
 // A syncer to be called so that we can have dependent atom state
 export function usePoolsSyncer() {
   const { programs, provider } = useProvider();
-  const setPoolManager = useSetRecoilState(PoolManager);
   const setPools = useSetRecoilState(Pools);
   const networkState = useRecoilValue(NetworkStateAtom);
   const initAllPools = useJetStore(state => state.initAllPools);
@@ -143,9 +136,6 @@ export function usePoolsSyncer() {
 
     if (programs && provider && networkState === 'connected') {
       const poolManager = new MarginPoolManager(programs, provider);
-      setPoolManager(poolManager);
-
-      // Use manager to fetch pools on an interval
       getPools(poolManager);
     }
 
