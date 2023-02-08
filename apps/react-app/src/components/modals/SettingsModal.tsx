@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
-import { Dictionary, uiDictionary, PreferredLanguage } from '@state/settings/localization/localization';
+import { Dictionary } from '@state/settings/localization/localization';
 import { SettingsModal as SettingsModalState } from '@state/modals/modals';
 import {
   Explorer,
@@ -43,9 +43,7 @@ export function SettingsModal(): JSX.Element {
   const [fiatCurrencySetting, setFiatCurrencySetting] = useState(fiatCurrency);
   // Explorer
   const [explorerSetting, setExplorerSetting] = useState(settings.explorer);
-  // Language
-  const [preferredLanguage, setPreferredLanguage] = useRecoilState(PreferredLanguage);
-  const [preferredLanguageSetting, setPreferredLanguageSetting] = useState(preferredLanguage);
+
   // Time Display
   const [preferredTimeDisplay, setPreferredTimeDisplay] = useRecoilState(PreferredTimeDisplay);
   const [preferredTimeDisplaySetting, setPreferredTimeDisplaySetting] = useState(preferredTimeDisplay);
@@ -84,9 +82,6 @@ export function SettingsModal(): JSX.Element {
     if (fiatCurrencySetting !== fiatCurrency) {
       setFiatCurrency(fiatCurrencySetting);
     }
-    if (preferredLanguageSetting !== preferredLanguage) {
-      setPreferredLanguage(preferredLanguageSetting);
-    }
     if (preferredTimeDisplaySetting !== preferredTimeDisplay) {
       setPreferredTimeDisplay(preferredTimeDisplaySetting);
     }
@@ -105,7 +100,6 @@ export function SettingsModal(): JSX.Element {
     setClusterSetting(settings.cluster);
     setFiatCurrencySetting(fiatCurrency);
     setExplorerSetting(settings.explorer);
-    setPreferredLanguageSetting(preferredLanguage);
     setPreferredTimeDisplaySetting(preferredTimeDisplay);
     setPreferDayMonthYearSetting(preferDayMonthYear);
     resetSettingsModalOpen();
@@ -119,7 +113,6 @@ export function SettingsModal(): JSX.Element {
       clusterSetting !== settings.cluster ||
       fiatCurrencySetting !== fiatCurrency ||
       explorerSetting !== settings.explorer ||
-      preferredLanguageSetting !== preferredLanguage ||
       preferredTimeDisplaySetting !== preferredTimeDisplay ||
       preferDayMonthYearSetting !== preferDayMonthYear
     ) {
@@ -230,21 +223,6 @@ export function SettingsModal(): JSX.Element {
               </Radio>
             ))}
           </Radio.Group>
-        </div>
-        <div className="setting flex align-start justify-center column">
-          <Text strong className="setting-title">
-            {dictionary.settingsModal.language.title.toUpperCase()}
-          </Text>
-          <Select
-            value={preferredLanguageSetting}
-            suffixIcon={<AngleDown className="jet-icon" />}
-            onChange={value => setPreferredLanguageSetting(value)}>
-            {Object.keys(uiDictionary).map(lang => (
-              <Option key={lang} value={lang}>
-                {uiDictionary[lang].language}
-              </Option>
-            ))}
-          </Select>
         </div>
         <div className="setting flex align-start justify-center column">
           <Text strong className="setting-title">
