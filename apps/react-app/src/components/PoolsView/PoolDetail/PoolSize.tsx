@@ -6,7 +6,12 @@ export // Renders the pool size for the current pool
 const PoolSize = ({ pool }: WithPoolData) => {
   const { currencyAbbrev } = useCurrencyFormatting();
   if (pool) {
-    const totalValueAbbrev = currencyAbbrev(pool.deposit_tokens, pool.precision, false, undefined);
+    const totalValueAbbrev = currencyAbbrev(
+      pool.deposit_tokens + pool.borrowed_tokens,
+      pool.precision,
+      false,
+      undefined
+    );
     return <Typography.Title className="green-text">{`${totalValueAbbrev}`}</Typography.Title>;
   }
 

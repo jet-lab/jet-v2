@@ -75,7 +75,10 @@ export function PoolDetail(): JSX.Element {
             <PieChart
               percentage={
                 selectedPool.deposit_tokens
-                  ? Math.round((selectedPool.borrowed_tokens / selectedPool.deposit_tokens) * 100)
+                  ? Math.round(
+                      (selectedPool.borrowed_tokens / (selectedPool.deposit_tokens + selectedPool.borrowed_tokens)) *
+                        100
+                    )
                   : 0
               }
             />

@@ -6,7 +6,7 @@ import { Typography } from 'antd';
 export const UtilizationRate = ({ pool }: WithPoolData) => {
   let rateString = '—%';
   if (pool && pool.deposit_tokens > 0) {
-    rateString = formatRate(pool.borrowed_tokens / pool.deposit_tokens);
+    rateString = formatRate(pool.borrowed_tokens / (pool.deposit_tokens + pool.borrowed_tokens));
   }
   return <Typography.Text type="secondary" italic>{`Utilization Rate ${rateString}`}</Typography.Text>;
 };

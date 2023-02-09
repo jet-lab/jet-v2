@@ -7,7 +7,7 @@ export const UtilizationRate = ({ pool }: WithPoolData) => {
   if (pool) {
     return (
       <Typography.Text>
-        {pool.deposit_tokens ? formatRate(pool.borrowed_tokens / pool.deposit_tokens) : '-'}
+        {pool.deposit_tokens ? formatRate(pool.borrowed_tokens / (pool.deposit_tokens + pool.borrowed_tokens)) : '-'}
       </Typography.Text>
     );
   }
