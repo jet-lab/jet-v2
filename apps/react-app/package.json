@@ -26,7 +26,7 @@
     "@jet-lab/jet-client-web": "*",
     "@orca-so/stablecurve": "^1.0.6",
     "@solana/spl-token": "0.3.6",
-    "@solana/wallet-adapter-react": "^0.15.23",
+    "@solana/wallet-adapter-react": "^0.15.28",
     "@solana/wallet-adapter-wallets": "^0.19.5",
     "@solana/web3.js": "1.66.2",
     "@visx/axis": "^2.14.0",

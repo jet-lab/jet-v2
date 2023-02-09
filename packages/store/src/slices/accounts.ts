@@ -23,6 +23,8 @@ export interface AccountsSlice {
 export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], AccountsSlice> = set => ({
   accounts: {},
   selectedWallet: null,
-  connectWallet: wallet => set(() => ({ selectedWallet: wallet }), false, 'CONNECT_WALLET'),
+  connectWallet: async wallet => {
+    set(() => ({ selectedWallet: wallet }), false, 'CONNECT_WALLET');
+  },
   disconnectWallet: () => set(() => ({ selectedWallet: null }), false, 'DISCONNECT_WALLET')
 });
