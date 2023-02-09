@@ -155,7 +155,7 @@ jobs:
       - name: Install Solana
         # if: steps.cachedeps.outputs.cache-hit != 'true'
         # run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.13.7/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.13.6/install)"
 
       - run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 

@@ -1,18 +1,6 @@
 version: '3'
 
 services:
-  # solana:
-  #   image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
-  #   ports:
-  #     - "8899:8899"
-  #     - "8900:8900"
-  #   environment:
-  #     - HOME
-  #     - SOLANA_MAINNET_RPC
-  #     - REACT_APP_IP_REGISTRY
-  #     - REACT_APP_RPC_DEV_TOKEN
-  #     - REACT_APP_RPC_TOKEN
-  #     - REACT_APP_LOGROCKET_PROJECT
   mongodb:
     image: mongo:5
     environment:
