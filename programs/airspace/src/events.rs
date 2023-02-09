@@ -20,6 +20,7 @@ use anchor_lang::prelude::*;
 #[event]
 pub struct AirspaceCreated {
     pub airspace: Pubkey,
+    pub seed: String,
     pub authority: Pubkey,
     pub is_restricted: bool,
 }

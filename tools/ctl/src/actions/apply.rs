@@ -1,72 +1,77 @@
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anchor_lang::prelude::Pubkey;
+use anyhow::{bail, Result};
+use jet_environment::builder::{configure_environment, Builder, ProposalContext};
+use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
+use solana_sdk::signer::Signer;
 
 use crate::{
-    client::{Client, Plan},
-    config::{ConfigType, TokenDefinition},
+    client::{Client, NetworkKind, Plan},
+    governance::{get_proposal_state, JET_GOVERNANCE_PROGRAM},
 };
 
-use super::margin_pool::ConfigurePoolCliOptions;
+pub async fn process_apply(
+    client: &Client,
+    config_path: PathBuf,
+    proposal: Option<Pubkey>,
+    proposal_option: u8,
+) -> Result<Plan> {
+    let config = jet_environment::config::read_env_config_dir(&config_path)?;
 
-pub async fn process_apply(client: &Client, config_path: PathBuf) -> Result<Plan> {
-    let path_metadata = config_path.metadata()?;
+    let authority = match client.network_kind {
+        NetworkKind::Mainnet => GOVERNOR_MAINNET,
+        NetworkKind::Devnet => GOVERNOR_DEVNET,
+        NetworkKind::Localnet => client.signer()?,
+    };
 
-    if path_metadata.is_dir() {
-        process_apply_directory(client, config_path).await
-    } else {
-        process_apply_file(client, config_path).await
-    }
-}
+    let mut builder = Builder::new(client.network_interface(), authority)
+        .await
+        .unwrap();
 
-async fn process_apply_directory(client: &Client, directory: PathBuf) -> Result<Plan> {
-    let mut plan = Plan::default();
-    let mut dir_contents = tokio::fs::read_dir(directory).await?;
+    match (client.network_kind, proposal) {
+        (NetworkKind::Localnet, None) => (),
+        (_, None) => bail!("must target a proposal for effecting changes on public networks"),
+        (_, Some(proposal_id)) => {
+            let proposal = get_proposal_state(client, &proposal_id).await?;
+            let tx_next_index = proposal.options[proposal_option as usize].transactions_next_index;
 
-    while let Some(entry) = dir_contents.next_entry().await? {
-        if !entry.metadata().await?.is_file() {
-            continue;
+            if proposal.governance != authority {
+                bail!(
+                    "the proposal does not assume the right authority, got {} but expected {}",
+                    proposal.governance,
+                    authority
+                );
+            }
+
+            builder.set_proposal_context(ProposalContext {
+                program: JET_GOVERNANCE_PROGRAM,
+                proposal: proposal_id,
+                governance: proposal.governance,
+                option: proposal_option,
+                proposal_owner_record: proposal.token_owner_record,
+                tx_next_index,
+            });
         }
-
-        plan.entries.extend(
-            process_apply_file(client, entry.path())
-                .await
-                .with_context(|| format!("while processing file {:?}", entry.path()))?
-                .entries,
-        );
     }
 
-    Ok(plan)
-}
+    configure_environment(&mut builder, &config).await.unwrap();
 
-async fn process_apply_file(client: &Client, config_file: PathBuf) -> Result<Plan> {
-    let config = crate::config::read_config_file(config_file).await?;
+    let blueprint = builder.build();
+    let mut plan = client.plan()?;
 
-    match config {
-        ConfigType::Token(token_def) => process_apply_token_def(client, token_def).await,
-        _ => Ok(Plan::default()),
+    for setup_tx in blueprint.setup {
+        let signers = setup_tx
+            .signers
+            .into_iter()
+            .map(|k| Box::new(k) as Box<dyn Signer>);
+
+        plan = plan.instructions(signers, [""], setup_tx.instructions);
     }
-}
 
-async fn process_apply_token_def(client: &Client, token_def: TokenDefinition) -> Result<Plan> {
-    let mut plan = Plan::default();
+    for propose_tx in blueprint.propose {
+        plan = plan.instructions([], [""], propose_tx.instructions);
+    }
 
-    plan.entries.extend(
-        super::margin_pool::process_create_pool(client, token_def.config.mint)
-            .await?
-            .entries,
-    );
-    plan.entries.extend(
-        super::margin_pool::process_configure_pool(
-            client,
-            ConfigurePoolCliOptions {
-                token_config: token_def.config,
-                margin_pool: token_def.margin_pool,
-            },
-        )
-        .await?
-        .entries,
-    );
-
-    Ok(plan)
+    Ok(plan.build())
 }

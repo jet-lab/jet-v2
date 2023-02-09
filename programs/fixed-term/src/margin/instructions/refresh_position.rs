@@ -1,6 +1,9 @@
+use std::convert::TryInto;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo};
+use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange};
+use pyth_sdk_solana::PriceFeed;
 
 use crate::{
     control::{events::PositionRefreshed, state::Market},
@@ -37,27 +40,15 @@ pub struct RefreshPosition<'info> {
 }
 
 pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
-    let market = ctx.accounts.market.load()?;
-    let mut claim_changes = vec![PositionChange::Flags(
-        AdapterPositionFlags::PAST_DUE,
-        ctx.accounts.margin_user.debt.is_past_due(),
-    )];
-    let mut collateral_changes = vec![];
-
-    // always try to update the price, but conditionally permit position updates if price fails
-    // so we can continue to mark positions as past due even if there is an oracle failure
-    match load_price(&ctx.accounts.underlying_oracle) {
-        Ok(price) => claim_changes.push(price),
-        Err(e) if expect_price => Err(e)?,
-        Err(e) => msg!("skipping underlying price update due to error: {:?}", e),
-    }
-    match load_price(&ctx.accounts.ticket_oracle) {
-        Ok(price) => {
-            collateral_changes.push(price);
-        }
-        Err(e) if expect_price => Err(e)?,
-        Err(e) => msg!("skipping ticket price update due to error: {:?}", e),
-    }
+    let adapter_result = refresh_positions_deserialized(
+        RefreshPositionsDeserialized {
+            market: &*ctx.accounts.market.load()?,
+            ticket_oracle: load_price(&ctx.accounts.ticket_oracle),
+            underlying_oracle: load_price(&ctx.accounts.underlying_oracle),
+            margin_user: &ctx.accounts.margin_user,
+        },
+        expect_price,
+    )?;
 
     emit!(PositionRefreshed {
         margin_user: ctx.accounts.margin_user.key(),
@@ -65,28 +56,54 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
 
     return_to_margin(
         &ctx.accounts.margin_account.to_account_info(),
-        &AdapterResult {
-            position_changes: vec![
-                (market.claims_mint, claim_changes),
-                (market.ticket_collateral_mint, collateral_changes),
-            ],
-        },
+        &adapter_result,
     )
 }
 
-fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
-    let oracle = pyth_sdk_solana::load_price_feed_from_account_info(oracle_info).map_err(|e| {
+/// Exposes a simpler interface to the refresh positions logic. This enables
+/// other runtimes to execute program behavior without needing to duplicate the
+/// logic. Specifically, this is needed for the liquidator.
+pub struct RefreshPositionsDeserialized<'a> {
+    pub market: &'a Market,
+    pub ticket_oracle: Result<PriceFeed>,
+    pub underlying_oracle: Result<PriceFeed>,
+    pub margin_user: &'a MarginUser,
+}
+pub fn refresh_positions_deserialized(
+    accounts: RefreshPositionsDeserialized,
+    expect_price: bool,
+) -> Result<AdapterResult> {
+    let market = accounts.market;
+    let mut claim_changes = vec![PositionChange::Flags(
+        AdapterPositionFlags::PAST_DUE,
+        accounts.margin_user.debt.is_past_due(),
+    )];
+    let mut collateral_changes = vec![];
+
+    // always try to update the price, but conditionally permit position updates if price fails
+    // so we can continue to mark positions as past due even if there is an oracle failure
+    match accounts.underlying_oracle {
+        Ok(price) => claim_changes.push(PositionChange::Price(price.try_into()?)),
+        Err(e) if expect_price => Err(e)?,
+        Err(e) => msg!("skipping underlying price update due to error: {:?}", e),
+    }
+    match accounts.ticket_oracle {
+        Ok(price) => collateral_changes.push(PositionChange::Price(price.try_into()?)),
+        Err(e) if expect_price => Err(e)?,
+        Err(e) => msg!("skipping ticket price update due to error: {:?}", e),
+    }
+
+    Ok(AdapterResult {
+        position_changes: vec![
+            (market.claims_mint, claim_changes),
+            (market.ticket_collateral_mint, collateral_changes),
+        ],
+    })
+}
+
+fn load_price(oracle_info: &AccountInfo) -> Result<PriceFeed> {
+    pyth_sdk_solana::load_price_feed_from_account_info(oracle_info).map_err(|e| {
         msg!("oracle error in account {}: {:?}", oracle_info.key, e);
         error!(FixedTermErrorCode::OracleError)
-    })?;
-    // Price will be checked by the margin program
-    let price = oracle.get_price_unchecked();
-    let ema_price = oracle.get_price_unchecked();
-    Ok(PositionChange::Price(PriceChangeInfo {
-        publish_time: price.publish_time,
-        exponent: price.expo,
-        value: price.price,
-        confidence: price.conf,
-        twap: ema_price.price,
-    }))
+    })
 }

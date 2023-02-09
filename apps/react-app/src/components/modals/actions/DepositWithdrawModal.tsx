@@ -60,6 +60,7 @@ export function DepositWithdrawModal(): JSX.Element {
   async function depositWithdraw() {
     setSendingTransaction(true);
     const [txId, resp] = currentAction === 'deposit' ? await deposit() : await withdraw();
+
     if (resp === ActionResponse.Success) {
       notify(
         dictionary.notifications.actions.successTitle.replaceAll('{{ACTION}}', currentAction ?? ''),
@@ -88,7 +89,8 @@ export function DepositWithdrawModal(): JSX.Element {
           .replaceAll('{{ACTION}}', currentAction ?? '')
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
-        'error'
+        'error',
+        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
       );
     }
     setSendingTransaction(false);

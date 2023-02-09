@@ -125,11 +125,11 @@ export function useMarginActions() {
       await actionRefresh();
       return [undefined, ActionResponse.Success];
     } catch (err: any) {
-      console.error(err);
+      console.table(err);
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -175,6 +175,7 @@ export function useMarginActions() {
     const change = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts.withdraw)
       ? PoolTokenChange.setTo(0)
       : PoolTokenChange.setTo(accountPoolPosition.depositBalance.sub(tokenInputAmount));
+
     try {
       const txId = await currentPool.withdraw({
         marginAccount: currentAccount,
@@ -190,7 +191,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -216,7 +217,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -249,7 +250,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -292,7 +293,7 @@ export function useMarginActions() {
         message.warning(dictionary.actions.swap.warningMessages.maxSlippageExceeded, NOTIFICATION_DURATION);
         return [undefined, undefined];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }
@@ -356,7 +357,7 @@ export function useMarginActions() {
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
       } else {
-        return [undefined, ActionResponse.Failed];
+        return [err.signature, ActionResponse.Failed];
       }
     }
   }

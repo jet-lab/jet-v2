@@ -89,6 +89,7 @@ Run
 
 ```bash
 yarn
+yarn --cwd packages build
 yarn dev
 ```
 

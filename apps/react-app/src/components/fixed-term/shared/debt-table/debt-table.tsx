@@ -49,26 +49,42 @@ export function DebtTable() {
   const { provider } = useProvider();
   const blockExplorer = useRecoilValue(BlockExplorer);
   const cluster = useRecoilValue(Cluster);
-  const pools = useRecoilValue(Pools)
+  const pools = useRecoilValue(Pools);
 
-  const { data: ordersData, error: ordersError, isLoading: ordersLoading } = useOrdersForUser(market?.market, account);
+  const apiEndpoint = useMemo(
+    () =>
+      cluster === 'mainnet-beta'
+        ? process.env.DATA_API
+        : cluster === 'devnet'
+        ? process.env.DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.LOCAL_DATA_API
+        : '',
+    [cluster]
+  );
+
+  const {
+    data: ordersData,
+    error: ordersError,
+    isLoading: ordersLoading
+  } = useOrdersForUser(String(apiEndpoint), market?.market, account);
   const {
     data: positionsData,
     error: positionsError,
     isLoading: positionsLoading
-  } = useOpenPositions(market?.market, account);
+  } = useOpenPositions(String(apiEndpoint), market?.market, account);
 
   useEffect(() => {
     if (ordersError || positionsError)
       notify(
         'Error fetching data',
         'There was an unexpected error fetching your orders data, please try again soon',
-        'error'
+        'warning'
       );
   }, [ordersError, positionsError]);
 
   if (!pools) {
-    return null
+    return null;
   }
 
   return (
@@ -117,7 +133,16 @@ export function DebtTable() {
                 ordersLoading || !account ? (
                   <LoadingOutlined />
                 ) : (
-                  <OpenDepositsTable data={positionsData.deposits} market={markets[selectedMarket]} />
+                  <OpenDepositsTable
+                    data={positionsData.deposits}
+                    market={markets[selectedMarket]}
+                    provider={provider}
+                    marginAccount={account}
+                    cluster={cluster}
+                    blockExplorer={blockExplorer}
+                    pools={pools.tokenPools}
+                    markets={markets.map(m => m.market)}
+                  />
                 )
             },
             {

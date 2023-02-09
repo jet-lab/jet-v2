@@ -3,10 +3,11 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Dictionary } from '@state/settings/localization/localization';
 import { NewAccountModal } from '@state/modals/modals';
 import { WalletTokens } from '@state/user/walletTokens';
-import { AccountNames, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
+import { AccountNames, CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
 import { Typography, Button, Dropdown, Tabs } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
+import { CopyableField } from '../CopyableField';
 
 // Head of the Account Snapshot, where user can select/edit/create their margin accounts
 export function SnapshotHead(): JSX.Element {
@@ -19,7 +20,8 @@ export function SnapshotHead(): JSX.Element {
   const [favoriteAccounts, setFavoriteAccounts] = useRecoilState(FavoriteAccounts);
   const walletFavoriteAccounts = publicKey ? favoriteAccounts[publicKey.toString()] ?? [] : [];
   const [newAccountModalOpen, setNewAccountModalOpen] = useRecoilState(NewAccountModal);
-  // const setEditAccountModalOpen = useSetRecoilState(EditAccountModal);
+
+  const currentAccount = useRecoilValue(CurrentAccount);
   const { Text } = Typography;
   const walletFavoriteAccountsItems = walletFavoriteAccounts.map(key => {
     const name = accountNames[key] ?? '';
@@ -83,6 +85,11 @@ export function SnapshotHead(): JSX.Element {
         <StarFilled />
         {renderFavoriteAccountTabs()}
       </div>
+      {currentAccount && (
+        <div className="flex-centered">
+          <CopyableField content={currentAccount.address.toBase58()} />
+        </div>
+      )}
       <div className="account-snapshot-head-accounts flex-centered">
         <Button
           className={`function-btn ${newAccountModalOpen ? 'active' : ''}`}

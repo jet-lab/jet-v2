@@ -16,12 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_control::TokenMetadataParams;
 use jet_margin_pool::MarginPoolConfig;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
 use super::get_metadata_address;
 use super::margin_pool::MarginPoolIxBuilder;
+
+pub use jet_control::TokenMetadataParams;
+
+pub use jet_control::ID as CONTROL_PROGRAM;
 
 /// A builder for [`jet_control::instruction`] instructions.
 pub struct ControlIxBuilder {
@@ -98,7 +101,8 @@ impl ControlIxBuilder {
     pub fn create_margin_pool(&self, token: &Pubkey) -> Instruction {
         let pool_builder = MarginPoolIxBuilder::new(*token);
         let accounts = jet_control::accounts::CreateMarginPool {
-            requester: self.payer,
+            requester: self.requester,
+            payer: self.payer,
             authority: get_control_authority_address(),
 
             margin_pool: pool_builder.address,

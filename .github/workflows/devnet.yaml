@@ -101,7 +101,7 @@ jobs:
           yarn install
           cargo fmt -- --check
           cargo clippy --all-targets -- -Dwarnings
-          anchor build --skip-lint -- --features testing devnet
+          anchor build --skip-lint -- --features devnet
 
       - name: Deploy Metadata
         run: |
@@ -132,6 +132,16 @@ jobs:
         run: |
           solana program deploy -u d --program-id JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc target/deploy/jet_fixed_term.so
           anchor idl upgrade -f ./target/idl/jet_fixed_term.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
+
+      - name: Deploy Airspace
+        run: |
+          solana program deploy -u d --program-id JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi target/deploy/jet_airspace.so
+          anchor idl upgrade -f ./target/idl/jet_airspace.json JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi --provider.cluster devnet
+
+      - name: Deploy Test Service
+        run: |
+          solana program deploy -u d --program-id JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy target/deploy/jet_test_service.so
+          anchor idl upgrade -f ./target/idl/jet_test_service.json JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy --provider.cluster devnet
 
       - name: Build Programs for Testing
         run: |

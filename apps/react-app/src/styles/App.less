@@ -1401,25 +1401,25 @@ html {
         height: 50px;
         padding: 0 @spacing-base;
         background: @header-bg;
-  
+
         &-info {
           margin: @spacing-xs;
-  
+
           h2 {
             margin: 0 @spacing-xs;
             text-transform: unset;
           }
         }
       }
-  
+
       &-container {
         width: 100%;
         padding: @spacing-xs;
-  
+
         * {
           font-family: 'Lato', Helvetica, Arial, sans-serif !important;
         }
-  
+
         text {
           fill: @secondary-5;
         }
@@ -1846,7 +1846,6 @@ html {
     .pool-detail {
       position: relative;
       width: calc(100% - (@spacing-sm * 2));
-      max-width: 600px;
       margin: @spacing-base @spacing-sm;
 
       &-title {
@@ -1914,6 +1913,18 @@ html {
 
             h1 {
               margin: 0 0 0 @spacing-sm;
+            }
+          }
+
+          &:last-of-type {
+            &::before {
+              content: '';
+              position: absolute;
+              top: 20px;
+              left: 0px;
+              width: 1px;
+              height: 200px;
+              background: @primary-2;
             }
           }
 
@@ -2415,7 +2426,7 @@ html {
       }
 
       .ant-select-selection-item {
-        font-size: 2em;
+        font-size: 1.7em;
         text-transform: uppercase;
       }
 
@@ -2824,4 +2835,34 @@ html {
       padding: 0 8px;
     }
   }
+}
+
+.pool-details-address {
+  display: flex;
+  transition: all 0.3s;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  cursor: pointer;
+  align-items: center;
+  & svg {
+    margin-right: 8px;
+  }
+  &.copied {
+    background: @jet-green-3;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+}
+
+.ant-modal-close {
+  z-index: 100;
+}
+
+.ant-notification-notice-error .ant-notification-notice-description::after {
+  content: 'View logs.';
+  text-decoration: underline;
+  margin-left: 8px;
+  font-weight: bold;
+  text-transform: uppercase;
 }

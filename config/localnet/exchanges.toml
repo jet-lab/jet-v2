@@ -1,0 +1,9 @@
+[[dex]]
+program = "spl-swap"
+base = "BTC"
+quote = "USDC"
+
+[[dex]]
+program = "spl-swap"
+base = "BTC"
+quote = "USDT"

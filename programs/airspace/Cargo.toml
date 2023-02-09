@@ -15,7 +15,10 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 testing = []
+devnet = ["jet-program-common/devnet"]
 
 [dependencies]
 solana-program = "1.14"
 anchor-lang = { version = "0.26", features = ["init-if-needed"] }
+
+jet-program-common = { path = "../../libraries/rust/program-common" }

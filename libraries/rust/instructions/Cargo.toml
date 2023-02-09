@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = "0.4"
 solana-sdk = "1.14"
 thiserror = "1"
+
 anchor-lang = "0.26"
+anchor-spl = "0.26"
 
 spl-token = "3"
 spl-token-swap = "2"

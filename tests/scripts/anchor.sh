@@ -6,8 +6,8 @@ if [[ ${SOLANA_LOGS:-false} == true ]]; then
 	solana -ul logs &
 fi
 
-cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
-cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o apps/react-app/public/localnet.config.json
+cargo run --bin jetctl -- apply -ul --no-confirm config/localnet/
+cargo run --bin jetctl -- generate-app-config -ul --no-confirm config/localnet -o apps/react-app/public/localnet.config.json
 cargo run --bin jet-oracle-mirror -- -s ${SOLANA_MAINNET_RPC:='https://solana-api.projectserum.com'} -tl &
 
 echo "waiting for oracles ..."
@@ -21,4 +21,7 @@ echo "waiting for oracles ..."
 	echo "oracles ready!"
 
 cp apps/react-app/public/localnet.config.json apps/react-app/build/localnet.config.json
+
+cp apps/react-app/public/localnet.config.legacy.json apps/react-app/build/localnet.config.legacy.json
+
 yarn --cwd apps/react-app e2e:ci

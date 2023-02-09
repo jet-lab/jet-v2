@@ -10,6 +10,7 @@ import { AirdropButton } from './AirdropButton';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
+import { CopyableField } from '@components/misc/CopyableField';
 
 // Component that shows extra details on the currentPool
 export function PoolDetail(): JSX.Element {
@@ -155,6 +156,26 @@ export function PoolDetail(): JSX.Element {
                 {renderTotalBorrowed()}
               </div>
             </div>
+          </div>
+        </div>
+        <div className='pool-detail-body-half flex-align-start justify-center column'>
+          <div className="pool-detail-body-half-section column">
+            {currentPool && (
+              <>
+                <Text className="info-element small-accent-text">Pool Address</Text>
+                <div className={`pool-detail-body-half-section flex align-start justify-center column`}>
+                  <CopyableField content={currentPool.address.toBase58()} />
+                </div>
+              </>
+            )}
+            {currentPool && (
+              <>
+                <Text className="info-element small-accent-text">Token Address</Text>
+                <div className={`pool-detail-body-half-section flex align-start justify-start column`}>
+                  <CopyableField content={currentPool.addresses.tokenMint.toBase58()} />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

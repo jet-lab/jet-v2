@@ -45,6 +45,7 @@ pub trait SolanaRpcClient: Send + Sync {
     fn as_any(&self) -> &dyn std::any::Any;
     async fn get_account(&self, address: &Pubkey) -> Result<Option<Account>>;
     async fn get_multiple_accounts(&self, pubkeys: &[Pubkey]) -> Result<Vec<Option<Account>>>;
+    async fn get_genesis_hash(&self) -> Result<Hash>;
     async fn get_latest_blockhash(&self) -> Result<Hash>;
     async fn get_minimum_balance_for_rent_exemption(&self, length: usize) -> Result<u64>;
     async fn send_transaction(&self, transaction: &Transaction) -> Result<Signature>;
@@ -257,6 +258,13 @@ impl SolanaRpcClient for RpcConnection {
         let account = *account;
         let _ = ctx.rpc.request_airdrop(&account, amount).await?;
         Ok(())
+    }
+
+    async fn get_genesis_hash(&self) -> Result<Hash> {
+        let ctx = self.0.clone();
+        let hash = ctx.rpc.get_genesis_hash().await?;
+
+        Ok(hash)
     }
 
     async fn get_latest_blockhash(&self) -> Result<Hash> {

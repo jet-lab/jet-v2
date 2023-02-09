@@ -77,8 +77,8 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
         data: sample.points.map(point => {
           return {
             x: Number(BigInt(point.cumulative_quote) / BigInt(10 ** decimals)),
-            y: point.cumulative_rate,
-          }
+            y: point.cumulative_rate
+          };
         })
       };
 

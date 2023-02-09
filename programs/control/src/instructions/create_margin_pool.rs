@@ -25,15 +25,21 @@ use jet_metadata::cpi::accounts::{CreateEntry, SetEntry};
 use jet_metadata::program::JetMetadata;
 use jet_metadata::{PositionTokenMetadata, TokenKind, TokenMetadata};
 
+#[cfg(not(feature = "testing"))]
+use jet_program_common::GOVERNOR_ID;
+
 use crate::events;
 
 use super::Authority;
 
 #[derive(Accounts)]
 pub struct CreateMarginPool<'info> {
-    #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
-    #[account(mut)]
+    #[cfg_attr(not(feature = "testing"), account(address = GOVERNOR_ID))]
     requester: Signer<'info>,
+
+    #[account(mut)]
+    payer: Signer<'info>,
+
     authority: Account<'info, Authority>,
 
     /// CHECK:
@@ -75,7 +81,7 @@ pub struct CreateMarginPool<'info> {
               ],
               bump,
               space = TokenAccount::LEN,
-              payer = requester,
+              payer = payer,
               owner = Token::id()
     )]
     fee_destination: AccountInfo<'info>,
@@ -98,7 +104,7 @@ impl<'info> CreateMarginPool<'info> {
                 loan_note_mint: self.loan_note_mint.to_account_info(),
                 token_mint: self.token_mint.to_account_info(),
                 authority: self.authority.to_account_info(),
-                payer: self.requester.to_account_info(),
+                payer: self.payer.to_account_info(),
                 token_program: self.token_program.to_account_info(),
                 system_program: self.system_program.to_account_info(),
                 rent: self.rent.to_account_info(),
@@ -127,7 +133,7 @@ impl<'info> CreateMarginPool<'info> {
                 key_account: self.token_mint.to_account_info(),
                 metadata_account: self.token_metadata.to_account_info(),
                 authority: self.authority.to_account_info(),
-                payer: self.requester.to_account_info(),
+                payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
         )
@@ -150,7 +156,7 @@ impl<'info> CreateMarginPool<'info> {
                 key_account: self.deposit_note_mint.to_account_info(),
                 metadata_account: self.deposit_note_metadata.to_account_info(),
                 authority: self.authority.to_account_info(),
-                payer: self.requester.to_account_info(),
+                payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
         )
@@ -173,7 +179,7 @@ impl<'info> CreateMarginPool<'info> {
                 key_account: self.loan_note_mint.to_account_info(),
                 metadata_account: self.loan_note_metadata.to_account_info(),
                 authority: self.authority.to_account_info(),
-                payer: self.requester.to_account_info(),
+                payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
         )

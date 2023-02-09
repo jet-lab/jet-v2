@@ -15,6 +15,8 @@ feature_groups! {
         mod sanity;
         mod route_swap;
         mod swap;
+        mod pools;
+        mod client_fixed_term;
     }
 }
 

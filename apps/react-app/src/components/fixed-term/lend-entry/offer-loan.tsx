@@ -1,6 +1,14 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { bigIntToBn, bnToBigInt, MarketAndconfig, offerLoan, OrderbookModel, rate_to_price, TokenAmount } from '@jet-lab/margin';
+import {
+  bigIntToBn,
+  bnToBigInt,
+  MarketAndconfig,
+  offerLoan,
+  OrderbookModel,
+  rate_to_price,
+  TokenAmount
+} from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -16,6 +24,7 @@ import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import debounce from 'lodash.debounce';
+import { RateDisplay } from '../shared/rate-display';
 
 interface RequestLoanProps {
   decimals: number;
@@ -25,14 +34,14 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  totalRepayAmount?: string
-  totalInterest?: string
-  totalEffectiveRate?: number
-  matchedAmount?: string
-  matchedInterest?: string
-  matchedRate?: number
+  postedRepayAmount?: string;
+  postedInterest?: string;
+  postedRate?: number;
+  matchedAmount?: string;
+  matchedInterest?: string;
+  matchedRate?: number;
+  selfMatch: boolean;
 }
-
 
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
@@ -46,7 +55,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [basisPoints, setBasisPoints] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
-  const [forecast, setForecast] = useState<Forecast>()
+  const [forecast, setForecast] = useState<Forecast>();
 
   const disabled =
     !marginAccount ||
@@ -54,7 +63,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !currentPool ||
     !pools ||
     basisPoints.lte(new BN(0)) ||
-    amount.lte(new BN(0));
+    amount.lte(new BN(0)) ||
+    forecast?.selfMatch;
 
   const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
@@ -93,52 +103,41 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     }
   };
 
-
   // Simulation demo logic
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
-    if (model.wouldMatch("lend", limitPrice)) {
-      const fillSim = model.simulateFills("lend", amount, limitPrice);
-      const repayAmount = new TokenAmount(bigIntToBn(fillSim.filled_base_qty), token.decimals)
-      const lendAmount = new TokenAmount(bigIntToBn(fillSim.filled_quote_qty), token.decimals)        
-      if (fillSim.unfilled_base_qty > 10) { // NOTE Smaller quantities are not posted.
-        setForecast({
-          matchedAmount: repayAmount.uiTokens,
-          matchedInterest: repayAmount.sub(lendAmount).uiTokens,
-          matchedRate: fillSim.vwar
-        })
-      } else {
-        setForecast({
-          totalRepayAmount: repayAmount.uiTokens,
-          totalInterest: repayAmount.sub(lendAmount).uiTokens,
-          totalEffectiveRate: fillSim.vwar,
-          matchedAmount: repayAmount.uiTokens,
-          matchedInterest: repayAmount.sub(lendAmount).uiTokens,
-          matchedRate: fillSim.vwar
-        })
-      }
-    } else {
-      const queueSim = model.simulateQueuing("lend", limitPrice);
-      if (queueSim.depth > 0) {
-        console.log("Order would post without fills into the the book");
-        console.log(queueSim);
-      } else {
-        console.log("Order would post without fills to the top of the book");
-        console.log(queueSim);
-      }
+    const sim = model.simulateMaker('lend', amount, limitPrice, marginAccount?.address.toBytes());
+
+    if (sim.self_match) {
+      // TODO Integrate with forecast panel
+      console.log('WARNING Order would be rejected for self-matching');
     }
+
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
+    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+    const matchRate = sim.filled_vwar;
+    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
+    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
+    const postedRate = sim.posted_vwar;
+
+    setForecast({
+      matchedAmount: matchRepayAmount.uiTokens,
+      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+      matchedRate: matchRate,
+      postedRepayAmount: postedRepayAmount.uiTokens,
+      postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
+      postedRate,
+      selfMatch: sim.self_match
+    });
   }
 
   useEffect(() => {
     if (amount.eqn(0) || basisPoints.eqn(0)) return;
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(
-        bnToBigInt(basisPoints),
-        BigInt(marketAndConfig.config.borrowTenor)
-      )
+      rate_to_price(bnToBigInt(basisPoints), BigInt(marketAndConfig.config.borrowTenor))
     );
-  }, [amount, basisPoints])
+  }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
 
   return (
@@ -161,9 +160,9 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <InputNumber
             className="input-rate"
             onChange={debounce(e => {
-              setBasisPoints(new BN(e * 100));
+              setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
             }, 300)}
-            placeholder={'1.5'}
+            placeholder={'6.50'}
             type="number"
             step={0.01}
             min={0}
@@ -193,38 +192,46 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           </span>
         </div>
         <div className="stat-line">
-          <span>Total Repayment Amount</span>
-          {forecast?.totalRepayAmount && <span>
-            { forecast?.totalRepayAmount }
-            {token.symbol}
-          </span>}
+          <span>Posted Repayment Amount</span>
+          {forecast?.postedRepayAmount && (
+            <span>
+              {forecast?.postedRepayAmount}
+              {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
-          <span>Total Interest</span>
-          { forecast?.totalInterest && <span>
-            {forecast?.totalInterest} {token.symbol}
-          </span>}
+          <span>Posted Interest</span>
+          {forecast?.postedInterest && (
+            <span>
+              {forecast?.postedInterest} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
-          <span>Total Effective Rate</span>
-          { forecast?.totalEffectiveRate && <span>{(forecast.totalEffectiveRate * 100).toFixed(3)}%</span>}
+          <span>Posted Rate</span>
+          <RateDisplay rate={forecast?.postedRate} />
         </div>
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
-          { forecast?.matchedAmount && <span>
-            {forecast.matchedAmount}
-            {token.symbol}
-          </span>}
+          {forecast?.matchedAmount && (
+            <span>
+              {forecast.matchedAmount}
+              {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Matched Interest</span>
-          {forecast?.matchedInterest && <span>
-            {forecast.matchedInterest} {token.symbol}
-          </span>}
+          {forecast?.matchedInterest && (
+            <span>
+              {forecast.matchedInterest} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Matched Effective Rate</span>
-          {forecast?.matchedRate && <span>{(forecast.matchedRate * 100).toFixed(3)}%</span>}
+          <RateDisplay rate={forecast?.matchedRate} />
         </div>
         <div className="stat-line">Risk Level</div>
         <div className="stat-line">

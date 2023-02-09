@@ -186,7 +186,7 @@ mod test {
     use anchor_lang::solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT;
     use itertools::Itertools;
 
-    use crate::syscall::thread_local_mock::mock_stack_height;
+    use crate::mock_sys;
 
     use super::*;
 
@@ -196,7 +196,7 @@ mod test {
     fn never_report_if_none_marked() {
         let subject = Invocation::default();
         for i in 0..MAX_DEPTH {
-            mock_stack_height(Some(i as usize));
+            mock_sys!(stack_height = i as usize);
             assert!(!subject.directly_invoked())
         }
     }
@@ -206,26 +206,26 @@ mod test {
     fn happy_path() {
         let mut subject = Invocation::default();
         // mark start
-        mock_stack_height(Some(1));
+        mock_sys!(stack_height = 1);
         subject.start();
 
         // actual invocation
         assert!(!subject.directly_invoked());
-        mock_stack_height(Some(2));
+        mock_sys!(stack_height = 2);
         assert!(subject.directly_invoked());
 
         // too nested levels
-        mock_stack_height(Some(3));
+        mock_sys!(stack_height = 3);
         assert!(!subject.directly_invoked());
-        mock_stack_height(Some(4));
+        mock_sys!(stack_height = 4);
         assert!(!subject.directly_invoked());
-        mock_stack_height(Some(5));
+        mock_sys!(stack_height = 5);
         assert!(!subject.directly_invoked());
 
         // same level as actual after done
-        mock_stack_height(Some(1));
+        mock_sys!(stack_height = 1);
         subject.end();
-        mock_stack_height(Some(2));
+        mock_sys!(stack_height = 2);
         assert!(!subject.directly_invoked());
     }
 
@@ -236,19 +236,19 @@ mod test {
     fn check_all_heights_with_one_mark() {
         for mark_at in 0..MAX_DEPTH + 1 {
             let mut subject = Invocation::default();
-            mock_stack_height(Some(mark_at as usize));
+            mock_sys!(stack_height = mark_at as usize);
             subject.start();
             for check_at in 0..MAX_DEPTH + 1 {
-                mock_stack_height(Some(check_at as usize));
+                mock_sys!(stack_height = check_at as usize);
                 assert_eq!(
                     mark_at.checked_add(1).unwrap() == check_at,
                     subject.directly_invoked()
                 )
             }
-            mock_stack_height(Some(mark_at as usize));
+            mock_sys!(stack_height = mark_at as usize);
             subject.end();
             for check_at in 0..MAX_DEPTH + 1 {
-                mock_stack_height(Some(check_at as usize));
+                mock_sys!(stack_height = check_at as usize);
                 assert!(!subject.directly_invoked());
             }
         }
@@ -262,28 +262,28 @@ mod test {
             for combo in (0..MAX_DEPTH + 1).into_iter().combinations(size.into()) {
                 let mut subject = Invocation::default();
                 for depth in combo.clone() {
-                    mock_stack_height(Some(depth as usize));
+                    mock_sys!(stack_height = depth as usize);
                     assert!(!subject.directly_invoked())
                 }
                 for depth in combo.clone() {
-                    mock_stack_height(Some(depth as usize));
+                    mock_sys!(stack_height = depth as usize);
                     subject.start();
                 }
                 for depth in 0..MAX_DEPTH + 1 {
-                    mock_stack_height(Some(depth as usize));
+                    mock_sys!(stack_height = depth as usize);
                     assert_eq!(
                         depth != 0 && combo.contains(&(depth - 1)),
                         subject.directly_invoked()
                     )
                 }
                 for depth in combo {
-                    mock_stack_height(Some(depth as usize));
+                    mock_sys!(stack_height = depth as usize);
                     subject.end();
-                    mock_stack_height(Some((depth + 1) as usize));
+                    mock_sys!(stack_height = depth as usize + 1);
                     assert!(!subject.directly_invoked())
                 }
                 for depth in 0..MAX_DEPTH + 1 {
-                    mock_stack_height(Some(depth as usize));
+                    mock_sys!(stack_height = depth as usize);
                     assert!(!subject.directly_invoked())
                 }
             }

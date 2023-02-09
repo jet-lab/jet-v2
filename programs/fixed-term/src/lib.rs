@@ -178,6 +178,10 @@ pub mod jet_fixed_term {
         instructions::modify_market::handler(ctx, data, offset)
     }
 
+    pub fn recover_uninitialized(ctx: Context<RecoverUninitialized>) -> Result<()> {
+        instructions::recover_uninitialized::handler(ctx)
+    }
+
     /// Pause matching of orders placed in the orderbook
     pub fn pause_order_matching(ctx: Context<PauseOrderMatching>) -> Result<()> {
         instructions::pause_order_matching::handler(ctx)

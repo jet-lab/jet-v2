@@ -24,7 +24,6 @@ export function Modals(): JSX.Element {
   const WalletModalOpen = useRecoilValue(WalletModalState);
   const currentAction = useRecoilValue(CurrentAction);
   const newAccountModalOpen = useRecoilValue(NewAccountModalState);
-  // const editAccountModalOpen = useRecoilValue(EditAccountModalState);
   const settingsModalOpen = useRecoilValue(SettingsModalState);
   const notificationsModalOpen = useRecoilValue(NotificationsModalState);
 
@@ -35,7 +34,6 @@ export function Modals(): JSX.Element {
       WalletModalOpen ||
       currentAction ||
       newAccountModalOpen ||
-      // editAccountModalOpen ||
       settingsModalOpen ||
       notificationsModalOpen
     ) {
@@ -43,15 +41,7 @@ export function Modals(): JSX.Element {
     } else {
       document.body.style.overflowY = 'unset';
     }
-  }, [
-    geobanned,
-    WalletModalOpen,
-    currentAction,
-    newAccountModalOpen,
-    // editAccountModalOpen,
-    settingsModalOpen,
-    notificationsModalOpen
-  ]);
+  }, [geobanned, WalletModalOpen, currentAction, newAccountModalOpen, settingsModalOpen, notificationsModalOpen]);
 
   return (
     <>
@@ -62,7 +52,6 @@ export function Modals(): JSX.Element {
       <BorrowRepayModal />
       <TransferModal />
       <NewAccountModal />
-      {/* <EditAccountModal /> */}
       <SettingsModal />
       <NotificationsModal />
     </>

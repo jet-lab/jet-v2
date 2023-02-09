@@ -503,11 +503,15 @@ pub mod jet_margin {
     ///
     /// The account storing the configuration will be funded if not already. If a `None` is provided as
     /// the updated configuration, then the account will be defunded.
-    pub fn configure_liquidator(
-        ctx: Context<ConfigureLiquidator>,
-        is_liquidator: bool,
+    pub fn configure_liquidator(ctx: Context<ConfigurePermit>, is_liquidator: bool) -> Result<()> {
+        configure_permit(ctx, is_liquidator, Permissions::LIQUIDATE)
+    }
+
+    pub fn configure_position_config_refresher(
+        ctx: Context<ConfigurePermit>,
+        may_refresh: bool,
     ) -> Result<()> {
-        configure_liquidator_handler(ctx, is_liquidator)
+        configure_permit(ctx, may_refresh, Permissions::REFRESH_POSITION_CONFIG)
     }
 
     /// Allow governing address to transfer any position from one margin account to another
@@ -623,9 +627,17 @@ pub enum ErrorCode {
     #[msg("attempting to use or set invalid configuration")]
     InvalidConfig = 135_051,
 
-    /// 141051 - Attempting to use or set an oracle that is not valid
+    /// 141052 - Attempting to use or set an oracle that is not valid
     #[msg("attempting to use or set invalid configuration")]
     InvalidOracle = 135_052,
+
+    /// 141060
+    #[msg("the permit does not authorize this action")]
+    InsufficientPermissions = 135_060,
+
+    /// 141061
+    #[msg("the permit is not owned by the current user")]
+    PermitNotOwned = 135_061,
 }
 
 /// Writes the result of position changes from an adapter invocation.

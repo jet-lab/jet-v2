@@ -10,14 +10,14 @@ name = "jet_margin_pool"
 path = "src/lib.rs"
 
 [features]
-no-entrypoint = []
+no-entrypoint = ["serde"]
 no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 testing = ["jet-margin/testing", "jet-metadata/testing"]
-cli = ["no-entrypoint", "serde"]
-devnet = []
+cli = ["no-entrypoint"]
+devnet = ["jet-program-common/devnet"]
 
 [dependencies]
 bytemuck = "1.7"

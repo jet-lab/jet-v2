@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { bigIntToBn, lendNow, MarketAndconfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
+import { bigIntToBn, bnToBigInt, lendNow, MarketAndconfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -11,10 +11,11 @@ import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
+import { RateDisplay } from '../shared/rate-display';
 
 interface RequestLoanProps {
   decimals: number;
@@ -24,9 +25,11 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  repayAmount: string
-  interest: string
-  effectiveRate: number
+  repayAmount: string;
+  interest: string;
+  effectiveRate: number;
+  selfMatch: boolean;
+  fulfilled: boolean;
 }
 
 export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -40,9 +43,39 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const [amount, setAmount] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
-  const [forecast, setForecast] = useState<Forecast>()
+  const [forecast, setForecast] = useState<Forecast>();
 
-  const disabled = !marginAccount || !wallet.publicKey || !currentPool || !pools || amount.lte(new BN(0));
+  const disabled =
+    !marginAccount ||
+    !wallet.publicKey ||
+    !currentPool ||
+    !pools ||
+    amount.lte(new BN(0)) ||
+    !forecast?.effectiveRate ||
+    forecast.selfMatch ||
+    !forecast.fulfilled;
+
+  const handleForecast = (amount: BN) => {
+    if (bnToBigInt(amount) === BigInt(0)) {
+      setForecast(undefined);
+      return;
+    }
+    const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
+    try {
+      const sim = orderbookModel.simulateTaker('lend', bnToBigInt(amount), undefined);
+      const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
+      const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+      setForecast({
+        repayAmount: repayAmount.uiTokens,
+        interest: repayAmount.sub(lendAmount).uiTokens,
+        effectiveRate: sim.filled_vwar,
+        selfMatch: sim.self_match,
+        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   const marketLendOrder = async () => {
     let signature: string;
@@ -75,6 +108,10 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     }
   };
 
+  useEffect(() => {
+    handleForecast(amount);
+  }, [amount, marginAccount?.address, marketAndConfig]);
+
   return (
     <div className="fixed-term order-entry-body">
       <div className="lend-now fixed-order-entry-fields">
@@ -83,25 +120,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <InputNumber
             className="input-amount"
             onChange={debounce(e => {
-              const amount = BigInt(e * 10 ** decimals);
-              if (amount === BigInt(0)) {
-                setForecast(undefined)
-                return
-              }
-              const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
-              try {
-                const sim = orderbookModel.simulateFills("lend", amount, undefined);
-                setAmount(new BN(e * 10 ** decimals));
-                const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals)
-                const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals)
-                setForecast({
-                  repayAmount: repayAmount.uiTokens,
-                  interest: repayAmount.sub(lendAmount).uiTokens,
-                  effectiveRate: sim.vwar
-                })
-              } catch (e) {
-                console.log(e)
-              }
+              setAmount(new BN(e * 10 ** decimals));
             }, 300)}
             placeholder={'10,000'}
             min={0}
@@ -133,15 +152,23 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         </div>
         <div className="stat-line">
           <span>Repayment Amount</span>
-          { forecast?.repayAmount && <span>{forecast.repayAmount} {token.symbol}</span>}
+          {forecast?.repayAmount && (
+            <span>
+              {forecast.repayAmount} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          { forecast?.interest && <span>{forecast.interest} {token.symbol}</span>}
+          {forecast?.interest && (
+            <span>
+              {forecast.interest} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
-          { forecast?.effectiveRate && <span>{(forecast.effectiveRate * 100).toFixed(3)}%</span>}
+          <RateDisplay rate={forecast?.effectiveRate} />
         </div>
         <div className="stat-line">Risk Level</div>
         <div className="stat-line">
