@@ -8,9 +8,9 @@ name = "jetctl"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = { version = "1.0", features = ["backtrace"] }
 borsh = "0.9"
-chrono = "0.4"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 bs58 = "0.4"
 flate2 = "1.0"
 heck = "0.4"
@@ -21,6 +21,7 @@ bincode = "1"
 tokio = { version = "1.0", features = ["time", "rt"] }
 lazy_static = "1.4.0"
 shellexpand = "2.1.0"
+env_logger = "0.9"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "1.5"
@@ -31,8 +32,8 @@ indicatif = "0.16"
 clap = { version = "3.2", features = ["derive", "env"] }
 comfy-table = "6"
 
-anchor-syn = { git = "https://github.com/coral-xyz/anchor", branch = "master", features = ["idl"] }
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-syn = { version = "0.26", features = ["idl"] }
+anchor-lang = "0.26"
 spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
 pyth-sdk-solana = "0.7"
 
@@ -42,7 +43,7 @@ solana-cli-config = "1.14"
 solana-client = "1.14"
 solana-sdk = "1.14"
 spl-token = "3"
-spl-token-swap = "2.1"
+spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 
 # not used directly, but indirectly to enable ledger support via `solana-clap-utils`
 solana-remote-wallet = "1.14"
@@ -50,3 +51,6 @@ solana-remote-wallet = "1.14"
 serum_dex = "0.5"
 jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
+jet-environment = { path = "../../libraries/rust/environment" }
+jet-client-native = { path = "../../libraries/rust/client-native" }
+jet-solana-client = { path = "../../libraries/rust/solana-client" }

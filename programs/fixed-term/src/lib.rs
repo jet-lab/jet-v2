@@ -103,6 +103,9 @@
 //! When using a `jet-margin` account to post a collateralized borrow order, an [`TermLoan`](struct@crate::orderbook::state::debt::TermLoan) is created to track
 //! amounts owed to the program. `TermLoan`s are either repaid manually by the user, or handled by an off-chain liquidator.
 
+// Allow this until fixed upstream
+#![allow(clippy::result_large_err)]
+
 /// Program instructions and structs related to authoritative control of the program state
 pub mod control;
 /// Program instructions, methods and structs related to the use of margin accounts with the fixed-term program
@@ -173,6 +176,10 @@ pub mod jet_fixed_term {
     /// Authority use only
     pub fn modify_market(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: u32) -> Result<()> {
         instructions::modify_market::handler(ctx, data, offset)
+    }
+
+    pub fn recover_uninitialized(ctx: Context<RecoverUninitialized>) -> Result<()> {
+        instructions::recover_uninitialized::handler(ctx)
     }
 
     /// Pause matching of orders placed in the orderbook

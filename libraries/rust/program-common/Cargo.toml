@@ -8,6 +8,9 @@ license = "AGPL-3.0-or-later"
 homepage = "https://jetprotocol.io"
 repository = "https://github.com/jet-lab/jet-v2"
 
+[features]
+devnet = []
+
 [dependencies]
 uint = "0.9"
 thiserror = "1.0.20"
@@ -17,5 +20,5 @@ borsh = "0.9.1"
 
 # Traits
 num-traits = "0.2"
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-lang = "0.26"
 solana-program = "1.14"

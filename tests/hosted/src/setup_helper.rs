@@ -5,13 +5,14 @@ use anyhow::{Error, Result};
 
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
+use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, WithSigner};
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::tx_builder::TokenDepositsConfig;
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Signature, Signer};
+use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_simulation::{create_wallet, SolanaRpcClient};
@@ -19,7 +20,7 @@ use tokio::try_join;
 
 use crate::margin_test_context;
 use crate::pricing::TokenPricer;
-use crate::swap::{create_swap_pools, SwapRegistry};
+use crate::spl_swap::{create_swap_pools, SwapRegistry};
 use crate::test_user::{TestLiquidator, TestUser};
 use crate::{context::MarginTestContext, margin::MarginPoolSetupInfo};
 
@@ -189,9 +190,14 @@ pub async fn setup_user(
 pub async fn register_deposit(
     rpc: &Arc<dyn SolanaRpcClient>,
     airspace: Pubkey,
+    airspace_authority: &Keypair,
     mint: Pubkey,
 ) -> Result<Signature> {
-    let config_builder = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey());
+    let config_builder = MarginConfigIxBuilder::new(
+        airspace,
+        rpc.payer().pubkey(),
+        Some(airspace_authority.pubkey()),
+    );
     config_builder
         .configure_token(
             mint,
@@ -216,7 +222,7 @@ pub async fn register_deposit(
                 max_staleness: 0,
             }),
         )
-        .with_signers(&[])
+        .with_signers(&[clone(airspace_authority)])
         .send_and_confirm(rpc)
         .await
 }

@@ -17,8 +17,8 @@ interface GetPostOrderColumnes {
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
   blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
-  pools: Record<string, Pool>
-  markets: FixedTermMarket[]
+  pools: Record<string, Pool>;
+  markets: FixedTermMarket[];
 }
 const getPostOrderColumns = ({
   market,
@@ -53,7 +53,7 @@ const getPostOrderColumns = ({
     title: 'Rate',
     dataIndex: 'rate',
     key: 'rate',
-    render: (rate: number) => `${rate}%`
+    render: (rate: number) => `${100 * rate}%`
   },
   {
     title: 'Cancel',
@@ -116,8 +116,8 @@ export const PostedOrdersTable = ({
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
   blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
-  pools: Record<string, Pool>
-  markets: FixedTermMarket[]
+  pools: Record<string, Pool>;
+  markets: FixedTermMarket[];
 }) => {
   const columns = useMemo(
     () =>
@@ -128,7 +128,7 @@ export const PostedOrdersTable = ({
         cluster,
         blockExplorer,
         pools,
-        markets,
+        markets
       }),
     [market, marginAccount, provider, cluster, blockExplorer]
   );

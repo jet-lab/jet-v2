@@ -23,7 +23,11 @@ pub use jet_fixed_term::{
     ID,
 };
 
-use crate::{get_metadata_address, test_service::if_not_initialized};
+use crate::{
+    airspace::derive_governor_id, margin::derive_token_config, test_service::if_not_initialized,
+};
+
+pub use jet_fixed_term::ID as FIXED_TERM_PROGRAM;
 
 #[derive(Clone, Debug)]
 pub struct FixedTermIxBuilder {
@@ -140,7 +144,7 @@ impl FixedTermIxBuilder {
             payer,
             *airspace,
             *mint,
-            Self::market_key(airspace, mint, seed),
+            derive_market(airspace, mint, seed),
             authority,
             underlying_oracle,
             ticket_oracle,
@@ -209,7 +213,7 @@ impl FixedTermIxBuilder {
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.event_queue,
-            crank_authorization: self.crank_authorization(),
+            crank_authorization: self.crank_authorization(&self.payer),
             crank: self.payer,
             payer: self.payer,
             system_program: solana_sdk::system_program::ID,
@@ -359,8 +363,11 @@ impl FixedTermIxBuilder {
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
-            claims_metadata: get_metadata_address(&self.claims),
-            ticket_collateral_metadata: get_metadata_address(&self.ticket_collateral),
+            claims_metadata: derive_token_config(&self.airspace, &self.claims),
+            ticket_collateral_metadata: derive_token_config(
+                &self.airspace,
+                &self.ticket_collateral,
+            ),
         }
         .to_account_metas(None);
         Instruction::new_with_bytes(
@@ -770,12 +777,12 @@ impl FixedTermIxBuilder {
         Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
-    pub fn authorize_crank(&self) -> Instruction {
+    pub fn authorize_crank(&self, crank: Pubkey) -> Instruction {
         let data = jet_fixed_term::instruction::AuthorizeCrank {}.data();
         let accounts = jet_fixed_term::accounts::AuthorizeCrank {
-            crank: self.payer,
+            crank,
             market: self.market,
-            crank_authorization: self.crank_authorization(),
+            crank_authorization: self.crank_authorization(&crank),
             authority: self.authority,
             airspace: self.airspace,
             payer: self.payer,
@@ -790,17 +797,21 @@ impl FixedTermIxBuilder {
         source_authority: &Pubkey,
         payer: &Pubkey,
         margin_account: &Pubkey,
-        term_loan_seed: &[u8],
-        next_term_loan_seed: &[u8],
+        source_account: &Pubkey,
+        term_loan_seqno: u64,
         amount: u64,
     ) -> Instruction {
         let margin_user = self.margin_user(*margin_account);
         let data = jet_fixed_term::instruction::Repay { amount }.data();
         let accounts = jet_fixed_term::accounts::Repay {
             margin_user: margin_user.address,
-            term_loan: self.term_loan_key(&margin_user.address, term_loan_seed),
-            next_term_loan: self.term_loan_key(&margin_user.address, next_term_loan_seed),
-            source: get_associated_token_address(source_authority, &self.underlying_mint),
+            term_loan: derive_term_loan(&self.market, &margin_user.address, term_loan_seqno),
+            next_term_loan: derive_term_loan(
+                &self.market,
+                &margin_user.address,
+                term_loan_seqno + 1,
+            ),
+            source: *source_account,
             payer: *payer,
             source_authority: *source_authority,
             underlying_token_vault: self.underlying_token_vault,
@@ -865,20 +876,11 @@ impl FixedTermIxBuilder {
         }
     }
 
-    pub fn market_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-        fixed_term_address(&[
-            jet_fixed_term::seeds::MARKET,
-            airspace.as_ref(),
-            mint.as_ref(),
-            &seed,
-        ])
-    }
-
     pub fn claims_mint(market_key: &Pubkey) -> Pubkey {
         fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, market_key.as_ref()])
     }
 
-    pub fn collateral_mint(market_key: &Pubkey) -> Pubkey {
+    pub fn ticket_collateral_mint(market_key: &Pubkey) -> Pubkey {
         fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
             market_key.as_ref(),
@@ -920,12 +922,12 @@ impl FixedTermIxBuilder {
             margin_user.as_ref(),
         ])
     }
-    pub fn crank_authorization(&self) -> Pubkey {
+    pub fn crank_authorization(&self, crank: &Pubkey) -> Pubkey {
         Pubkey::find_program_address(
             &[
                 jet_fixed_term::seeds::CRANK_AUTHORIZATION,
                 self.market.as_ref(),
-                self.payer.as_ref(),
+                crank.as_ref(),
             ],
             &jet_fixed_term::ID,
         )
@@ -937,11 +939,62 @@ impl FixedTermIxBuilder {
     }
 }
 
+pub fn recover_uninitialized(
+    governor: Pubkey,
+    uninitialized: Pubkey,
+    recipient: Pubkey,
+) -> Instruction {
+    let data = jet_fixed_term::instruction::RecoverUninitialized {}.data();
+    let accounts = jet_fixed_term::accounts::RecoverUninitialized {
+        governor,
+        governor_id: derive_governor_id(),
+        uninitialized,
+        recipient,
+    }
+    .to_account_metas(None);
+
+    Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
+}
+
+pub fn derive_market(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
+    fixed_term_address(&[
+        jet_fixed_term::seeds::MARKET,
+        airspace.as_ref(),
+        mint.as_ref(),
+        &seed,
+    ])
+}
+
+pub fn derive_market_from_tenor(airspace: &Pubkey, token_mint: &Pubkey, tenor: u64) -> Pubkey {
+    let mut seed = [0u8; 32];
+    seed[..8].copy_from_slice(&tenor.to_le_bytes());
+
+    derive_market(airspace, token_mint, seed)
+}
+
 pub fn derive_margin_user(market: &Pubkey, margin_account: &Pubkey) -> Pubkey {
     fixed_term_address(&[
         jet_fixed_term::seeds::MARGIN_USER,
         market.as_ref(),
         margin_account.as_ref(),
+    ])
+}
+
+pub fn derive_term_loan(market: &Pubkey, margin_user: &Pubkey, debt_seqno: u64) -> Pubkey {
+    fixed_term_address(&[
+        jet_fixed_term::seeds::TERM_LOAN,
+        market.as_ref(),
+        margin_user.as_ref(),
+        &debt_seqno.to_le_bytes(),
+    ])
+}
+
+pub fn derive_term_deposit(market: &Pubkey, owner: &Pubkey, deposit_seqno: u64) -> Pubkey {
+    fixed_term_address(&[
+        jet_fixed_term::seeds::TERM_DEPOSIT,
+        market.as_ref(),
+        owner.as_ref(),
+        &deposit_seqno.to_le_bytes(),
     ])
 }
 

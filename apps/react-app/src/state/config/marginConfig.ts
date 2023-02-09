@@ -16,7 +16,7 @@ export function useMainConfigSyncer() {
   const setMainConfig = useSetRecoilState(MainConfig);
 
   async function getLocalnetConfig() {
-    let response = await axios.get('/localnet.config.json');
+    let response = await axios.get('/localnet.config.legacy.json');
     return await response.data;
   }
 

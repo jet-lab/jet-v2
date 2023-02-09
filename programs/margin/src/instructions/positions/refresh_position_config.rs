@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{events, MarginAccount, TokenConfig};
+use crate::{events, MarginAccount, Permissions, Permit, TokenConfig};
 
 #[derive(Accounts)]
 pub struct RefreshPositionConfig<'info> {
@@ -27,10 +27,21 @@ pub struct RefreshPositionConfig<'info> {
 
     /// The config account for the token, which has been updated
     pub config: Account<'info, TokenConfig>,
+
+    /// permit that authorizes the refresher
+    pub permit: Account<'info, Permit>,
+
+    /// account that is authorized to refresh position metadata
+    pub refresher: Signer<'info>,
 }
 
 /// Refresh the metadata for a position
 pub fn refresh_position_config_handler(ctx: Context<RefreshPositionConfig>) -> Result<()> {
+    ctx.accounts.permit.validate(
+        Pubkey::default(), // FIXME: airspace must come from the margin account once they are airspace-scoped
+        ctx.accounts.refresher.key(),
+        Permissions::REFRESH_POSITION_CONFIG,
+    )?;
     let config = &ctx.accounts.config;
     let mut account = ctx.accounts.margin_account.load_mut()?;
 

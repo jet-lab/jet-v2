@@ -17,7 +17,11 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{events::AirspaceCreated, seeds::AIRSPACE, state::Airspace};
+use crate::{
+    events::AirspaceCreated,
+    seeds::AIRSPACE,
+    state::{Airspace, GovernorId},
+};
 
 #[derive(Accounts)]
 #[instruction(seed: String)]
@@ -34,12 +38,19 @@ pub struct AirspaceCreate<'info> {
     )]
     airspace: Account<'info, Airspace>,
 
+    /// The current governor
+    governor: Signer<'info>,
+
+    /// The governer identity account
+    #[cfg_attr(not(feature = "testing"), account(has_one = governor))]
+    governor_id: Account<'info, GovernorId>,
+
     system_program: Program<'info, System>,
 }
 
 pub fn airspace_create_handler(
     ctx: Context<AirspaceCreate>,
-    _seed: String,
+    seed: String,
     is_restricted: bool,
     authority: Pubkey,
 ) -> Result<()> {
@@ -50,6 +61,7 @@ pub fn airspace_create_handler(
 
     emit!(AirspaceCreated {
         airspace: airspace.key(),
+        seed,
         authority,
         is_restricted
     });

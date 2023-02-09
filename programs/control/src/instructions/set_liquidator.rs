@@ -22,13 +22,16 @@ use jet_metadata::cpi::accounts::{CreateEntry, RemoveEntry, SetEntry};
 use jet_metadata::program::JetMetadata;
 use jet_metadata::LiquidatorMetadata;
 
+#[cfg(not(feature = "testing"))]
+use jet_program_common::GOVERNOR_ID;
+
 use crate::events;
 
 use super::Authority;
 
 #[derive(Accounts)]
 pub struct SetLiquidator<'info> {
-    #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
+    #[cfg_attr(not(feature = "testing"), account(address = GOVERNOR_ID))]
     pub requester: Signer<'info>,
     pub authority: Account<'info, Authority>,
 

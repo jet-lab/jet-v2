@@ -22,8 +22,7 @@ use anchor_spl::token::{self, MintTo, Token, TokenAccount, Transfer};
 
 use jet_margin::MarginAccount;
 
-use crate::ErrorCode;
-use crate::{events, state::*, ChangeKind, TokenChange};
+use crate::{events, state::*, ChangeKind, ErrorCode, TokenChange};
 
 #[derive(Accounts)]
 pub struct MarginBorrowV2<'info> {

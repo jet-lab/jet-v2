@@ -15,8 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Allow this until fixed upstream
+#![allow(clippy::result_large_err)]
+
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::pubkey;
 
 declare_id!("JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi");
 
@@ -41,10 +43,6 @@ pub mod seeds {
     #[constant]
     pub const AIRSPACE_PERMIT: &[u8] = b"airspace-permit";
 }
-
-/// The default protocol governing address
-#[constant]
-pub const GOVERNOR_DEFAULT: Pubkey = pubkey!("7R6FjP2HfXAgKQjURC4tCBrUmRQLCgEUeX2berrfU4ox");
 
 #[program]
 pub mod jet_airspace {

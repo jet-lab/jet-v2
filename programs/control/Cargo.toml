@@ -20,12 +20,14 @@ testing = [
     "jet-fixed-term/testing",
     "jet-margin-pool/testing"
 ]
-devnet = []
+devnet = ["jet-program-common/devnet"]
 
 [dependencies]
 solana-program = "1.14"
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-lang = "0.26"
+anchor-spl = "0.26"
+
+jet-program-common = { path = "../../libraries/rust/program-common" }
 
 jet-metadata = { path = "../metadata", features = ["cpi"] }
 jet-fixed-term = { path = "../fixed-term", features = ["cpi"] }

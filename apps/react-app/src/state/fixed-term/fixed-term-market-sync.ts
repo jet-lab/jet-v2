@@ -47,16 +47,17 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   key: 'allFixedTermMarketOrderBooks',
   get: async ({ get }) => {
     const list = get(AllFixedTermMarketsAtom);
-    return await Promise.all(
+    const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
         const model = await market.market.fetchOrderbook(tenor);
         return {
           name: market.name,
-          orderbook: model,
+          orderbook: model
         };
       })
     );
+    return markets.sort((a, b) => b.name.localeCompare(a.name));
   }
 });
 
@@ -87,13 +88,13 @@ export const useFixedTermSync = (): void => {
         }
       })
     );
-    setMarkets(markets);
+    setMarkets(markets.sort((a, b) => b.name.localeCompare(a.name)));
   };
 
   useEffect(() => {
     if (networkState === 'connected' && config?.fixedTermMarketProgramId) {
       const program = new Program(JetFixedTermIdl, config.fixedTermMarketProgramId, provider);
-      const airspace = config.airspaces.find(airspace => airspace.name === 'default');
+      const airspace = config.airspaces.find(airspace => airspace.name === 'default') || config.airspaces[0];
       if (airspace) {
         loadFixedTermMarkets(airspace, program, new PublicKey(config.marginProgramId));
       }

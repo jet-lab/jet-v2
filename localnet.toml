@@ -56,6 +56,15 @@ ticket_price = "0.9"
 origination_fee = 10
 
 [[airspace.tokens.USDC.fixed_term_markets]]
+borrow_tenor = 120
+lend_tenor = 180
+min_order_size = 10
+paused = false
+ticket_price = "0.9"
+origination_fee = 10
+
+
+[[airspace.tokens.USDC.fixed_term_markets]]
 borrow_tenor = 604800
 lend_tenor = 610000
 min_order_size = 10

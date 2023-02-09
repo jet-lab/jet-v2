@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use jet_airspace::state::Airspace;
+
 use crate::{
     control::{events::ToggleOrderMatching, state::Market},
     orderbook::state::CallbackInfo,
@@ -23,8 +25,8 @@ pub struct PauseOrderMatching<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization)] fixme airspace
-    pub airspace: AccountInfo<'info>,
+    #[cfg_attr(not(feature = "testing"), account(has_one = authority @ FixedTermErrorCode::WrongAirspaceAuthorization))]
+    pub airspace: Account<'info, Airspace>,
 }
 
 pub fn handler(ctx: Context<PauseOrderMatching>) -> Result<()> {

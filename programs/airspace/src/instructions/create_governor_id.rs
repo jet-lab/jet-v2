@@ -17,7 +17,9 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{seeds::GOVERNOR_ID, state::GovernorId, GOVERNOR_DEFAULT};
+use jet_program_common::GOVERNOR_ID;
+
+use crate::state::GovernorId;
 
 #[derive(Accounts)]
 pub struct CreateGovernorId<'info> {
@@ -26,7 +28,7 @@ pub struct CreateGovernorId<'info> {
 
     /// The governer identity account
     #[account(init_if_needed,
-              seeds = [GOVERNOR_ID],
+              seeds = [crate::seeds::GOVERNOR_ID],
               bump,
               payer = payer,
               space = GovernorId::SIZE
@@ -45,7 +47,7 @@ pub fn create_governor_id_handler(ctx: Context<CreateGovernorId>) -> Result<()> 
             governor_id.governor = ctx.accounts.payer.key();
         } else {
             // In production/mainnet, governor has hardcoded default
-            governor_id.governor = GOVERNOR_DEFAULT;
+            governor_id.governor = GOVERNOR_ID;
         }
     }
 

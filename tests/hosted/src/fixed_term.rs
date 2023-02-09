@@ -10,8 +10,7 @@ use agnostic_orderbook::state::{
     orderbook::OrderBookState,
     AccountTag, OrderSummary,
 };
-use anchor_lang::Discriminator;
-use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
+use anchor_lang::AccountDeserialize;
 use anchor_spl::token::TokenAccount;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
@@ -25,6 +24,8 @@ use jet_fixed_term::{
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
+use jet_instructions::{fixed_term::derive_market, margin::MarginConfigIxBuilder};
+use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
@@ -45,7 +46,6 @@ use jet_margin_sdk::{
     },
     util::no_dupe_queue::AsyncNoDupeQueue,
 };
-use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_program_common::Fp32;
 use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::{
@@ -57,7 +57,7 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
-    system_instruction, system_program,
+    system_instruction,
     transaction::Transaction,
 };
 use spl_associated_token_account::{
@@ -133,7 +133,7 @@ impl Clone for TestManager {
             ),
             keys: self.keys.clone(),
             keygen: self.keygen.clone(),
-            margin_accounts_to_settle: Default::default(),
+            margin_accounts_to_settle: AsyncNoDupeQueue::new(),
             airspace: self.airspace,
         }
     }
@@ -147,12 +147,7 @@ impl TestManager {
             .await?;
         let ticket_mint = fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_MINT,
-            FixedTermIxBuilder::market_key(
-                &Pubkey::default(), //todo airspace
-                &mint.pubkey(),
-                MARKET_SEED,
-            )
-            .as_ref(),
+            derive_market(&client.margin.airspace(), &mint.pubkey(), MARKET_SEED).as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&ticket_mint)
@@ -170,7 +165,7 @@ impl TestManager {
         .await?
         .with_crank()
         .await?
-        .with_margin()
+        .with_margin(&client.airspace_authority)
         .await
     }
 
@@ -199,8 +194,7 @@ impl TestManager {
 
         let ix_builder = FixedTermIxBuilder::new_from_seed(
             payer.pubkey(),
-            // &airspace,
-            &Pubkey::default(), //todo airspace (i get a weird error in metadata program when this is set correctly)
+            &airspace,
             &mint.pubkey(),
             MARKET_SEED,
             payer.pubkey(),
@@ -280,7 +274,9 @@ impl TestManager {
     }
 
     pub async fn with_crank(self) -> Result<Self> {
-        let auth_crank = self.ix_builder.authorize_crank();
+        let auth_crank = self
+            .ix_builder
+            .authorize_crank(self.client.payer().pubkey());
 
         self.sign_send_transaction(&[auth_crank], None).await?;
         Ok(self)
@@ -288,13 +284,26 @@ impl TestManager {
 
     /// set up metadata authorization for margin to invoke fixed term and
     /// register relevant positions.
-    pub async fn with_margin(self) -> Result<Self> {
+    pub async fn with_margin(self, airspace_authority: &Keypair) -> Result<Self> {
         self.create_authority_if_missing().await?;
         self.register_adapter_if_unregistered(&jet_fixed_term::ID)
             .await?;
-        self.register_tickets_position_metadatata().await?;
-        register_deposit(&self.client, self.airspace, self.ix_builder.token_mint()).await?;
-        register_deposit(&self.client, self.airspace, self.ix_builder.ticket_mint()).await?;
+        self.register_tickets_position_metadatata(airspace_authority)
+            .await?;
+        register_deposit(
+            &self.client,
+            self.airspace,
+            airspace_authority,
+            self.ix_builder.token_mint(),
+        )
+        .await?;
+        register_deposit(
+            &self.client,
+            self.airspace,
+            airspace_authority,
+            self.ix_builder.ticket_mint(),
+        )
+        .await?;
 
         Ok(self)
     }
@@ -471,13 +480,17 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_tickets_position_metadatata(&self) -> Result<()> {
+    pub async fn register_tickets_position_metadatata(
+        &self,
+        airspace_authority: &Keypair,
+    ) -> Result<()> {
         let market = self.load_market().await?;
         self.register_tickets_position_metadatata_impl(
             market.claims_mint,
             market.underlying_token_mint,
             TokenKind::Claim,
             10_00,
+            airspace_authority,
         )
         .await?;
         self.register_tickets_position_metadatata_impl(
@@ -485,6 +498,7 @@ impl TestManager {
             market.ticket_mint,
             TokenKind::AdapterCollateral,
             1_00,
+            airspace_authority,
         )
         .await?;
 
@@ -497,51 +511,28 @@ impl TestManager {
         underlying_token_mint: Pubkey,
         token_kind: TokenKind,
         value_modifier: u16,
+        airspace_authority: &Keypair,
     ) -> Result<()> {
-        let pos_data = PositionTokenMetadata {
-            position_token_mint,
-            underlying_token_mint,
-            adapter_program: jet_fixed_term::ID,
-            token_kind,
-            value_modifier,
-            max_staleness: 1_000,
-        };
-        let address = get_metadata_address(&position_token_mint);
+        let margin_config_ix = MarginConfigIxBuilder::new(
+            self.airspace,
+            self.client.payer().pubkey(),
+            Some(airspace_authority.pubkey()),
+        );
 
-        let create = Instruction {
-            program_id: jet_metadata::ID,
-            accounts: jet_metadata::accounts::CreateEntry {
-                key_account: position_token_mint,
-                metadata_account: address,
-                authority: get_control_authority_address(),
-                payer: self.client.payer().pubkey(),
-                system_program: system_program::ID,
-            }
-            .to_account_metas(None),
-            data: jet_metadata::instruction::CreateEntry {
-                seed: String::new(),
-                space: 8 + std::mem::size_of::<PositionTokenMetadata>() as u64,
-            }
-            .data(),
-        };
-        let mut metadata = PositionTokenMetadata::discriminator().to_vec();
-        pos_data.serialize(&mut metadata)?;
-
-        let set = Instruction {
-            program_id: jet_metadata::ID,
-            accounts: jet_metadata::accounts::SetEntry {
-                metadata_account: address,
-                authority: get_control_authority_address(),
-            }
-            .to_account_metas(None),
-            data: jet_metadata::instruction::SetEntry {
-                offset: 0,
-                data: metadata,
-            }
-            .data(),
-        };
-
-        self.sign_send_transaction(&[create, set], None).await?;
+        self.sign_send_transaction(
+            &[margin_config_ix.configure_token(
+                position_token_mint,
+                Some(TokenConfigUpdate {
+                    underlying_mint: underlying_token_mint,
+                    admin: TokenAdmin::Adapter(jet_fixed_term::ID),
+                    token_kind,
+                    value_modifier,
+                    max_staleness: 0,
+                }),
+            )],
+            Some(&[airspace_authority]),
+        )
+        .await?;
 
         Ok(())
     }
@@ -925,12 +916,16 @@ impl<P: Proxy> FixedTermUser<P> {
 
             loan.payer
         };
+        let source = get_associated_token_address(
+            &self.proxy.pubkey(),
+            &self.manager.ix_builder.token_mint(),
+        );
         let repay = self.manager.ix_builder.margin_repay(
             &self.proxy.pubkey(),
             &payer,
             &self.proxy.pubkey(),
-            &term_loan_seqno.to_le_bytes(),
-            &(term_loan_seqno + 1).to_le_bytes(),
+            &source,
+            term_loan_seqno,
             amount,
         );
 

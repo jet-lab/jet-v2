@@ -4,7 +4,6 @@ use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
-use tokio::sync::OnceCell;
 
 use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
 use jet_simulation::TestRuntime;
@@ -58,7 +57,12 @@ impl SolanaTestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, anyhow::Error> {
-        jet_simulation::create_wallet(&self.rpc, sol_amount * LAMPORTS_PER_SOL).await
+        init_wallet(
+            &self.rpc,
+            self.generate_key(),
+            sol_amount * LAMPORTS_PER_SOL,
+        )
+        .await
     }
 }
 
@@ -135,13 +139,8 @@ async fn localnet_runtime() -> Arc<dyn SolanaRpcClient> {
 }
 
 async fn simulation_runtime() -> Arc<dyn SolanaRpcClient> {
-    SIMULATION
-        .get_or_init(build_simulation_runtime)
-        .await
-        .clone()
+    build_simulation_runtime().await
 }
-
-static SIMULATION: OnceCell<Arc<dyn SolanaRpcClient>> = OnceCell::const_new();
 
 async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
     let _ = env_logger::builder().is_test(false).try_init();
@@ -170,7 +169,11 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         (
             spl_associated_token_account::ID,
             spl_associated_token_account::processor::process_instruction
-        )
+        ),
+        (
+            saber_program::id(),
+            saber_program::processor::Processor::process
+        ),
     ];
 
     let payer_key = Keypair::new();
@@ -182,4 +185,23 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         .unwrap();
 
     Arc::new(rpc)
+}
+
+pub async fn init_wallet(
+    rpc: &std::sync::Arc<dyn SolanaRpcClient>,
+    wallet: Keypair,
+    lamports: u64,
+) -> Result<solana_sdk::signature::Keypair, anyhow::Error> {
+    let tx = solana_sdk::system_transaction::create_account(
+        rpc.payer(),
+        &wallet,
+        rpc.get_latest_blockhash().await?,
+        lamports,
+        0,
+        &solana_sdk::system_program::ID,
+    );
+
+    rpc.send_and_confirm_transaction(&tx).await?;
+
+    Ok(wallet)
 }

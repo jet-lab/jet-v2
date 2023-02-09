@@ -20,6 +20,8 @@ use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
 use jet_airspace::seeds::{AIRSPACE, AIRSPACE_PERMIT, AIRSPACE_PERMIT_ISSUER, GOVERNOR_ID};
 
+pub use jet_airspace::ID as AIRSPACE_PROGRAM;
+
 /// A builder for [`jet_airspace::instruction`] instructions.
 pub struct AirspaceIxBuilder {
     /// The user address that will pay for the transactions
@@ -57,7 +59,7 @@ impl AirspaceIxBuilder {
     /// Create the governor identity account
     pub fn create_governor_id(&self) -> Instruction {
         let accounts = jet_airspace::accounts::CreateGovernorId {
-            payer: self.authority,
+            payer: self.payer,
             governor_id: derive_governor_id(),
             system_program: system_program::ID,
         }
@@ -94,11 +96,14 @@ impl AirspaceIxBuilder {
     ///
     /// # Params
     ///
+    /// `authority` - The address to set as the authority in the airspace
     /// `is_restricted` - If true, the airspace requires specific issuers to enable user access
-    pub fn create(&self, is_restricted: bool) -> Instruction {
+    pub fn create(&self, authority: Pubkey, is_restricted: bool) -> Instruction {
         let accounts = jet_airspace::accounts::AirspaceCreate {
             payer: self.payer,
             airspace: self.address,
+            governor: self.authority,
+            governor_id: derive_governor_id(),
             system_program: system_program::ID,
         }
         .to_account_metas(None);
@@ -109,7 +114,7 @@ impl AirspaceIxBuilder {
             data: jet_airspace::instruction::AirspaceCreate {
                 seed: self.seed.clone(),
                 is_restricted,
-                authority: self.authority,
+                authority,
             }
             .data(),
         }

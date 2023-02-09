@@ -16,9 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
+use bitflags::bitflags;
 use bytemuck::Contiguous;
 
-use crate::ErrorCode;
+use crate::{ErrorCode, TokenConfigUpdate};
 
 /// Description of the token's usage
 #[derive(AnchorSerialize, AnchorDeserialize, Contiguous, Eq, PartialEq, Clone, Copy, Debug)]
@@ -84,6 +85,16 @@ pub struct TokenConfig {
     pub max_staleness: u64,
 }
 
+impl PartialEq<TokenConfigUpdate> for TokenConfig {
+    fn eq(&self, other: &TokenConfigUpdate) -> bool {
+        self.underlying_mint == other.underlying_mint
+            && self.admin == other.admin
+            && self.token_kind == other.token_kind
+            && self.value_modifier == other.value_modifier
+            && self.max_staleness == other.max_staleness
+    }
+}
+
 impl TokenConfig {
     pub const SPACE: usize = 8 + 2 + std::mem::size_of::<Self>();
 
@@ -138,19 +149,63 @@ pub enum TokenAdmin {
     Adapter(Pubkey),
 }
 
-/// Configuration for allowed liquidators
+/// Configuration enabling a signer to execute permissioned actions
 #[account]
 #[derive(Default, Debug, Eq, PartialEq)]
-pub struct LiquidatorConfig {
-    /// The airspace this liquidator is being configured to act within
+pub struct Permit {
+    /// Airspace where the permit is valid.
     pub airspace: Pubkey,
 
-    /// The address of the liquidator allowed to act
-    pub liquidator: Pubkey,
+    /// Address which may sign to perform the permitted actions.
+    pub owner: Pubkey,
+
+    /// Actions which may be performed with the signature of the owner.
+    pub permissions: Permissions,
 }
 
-impl LiquidatorConfig {
-    pub const SPACE: usize = 8 + std::mem::size_of::<Self>();
+impl Permit {
+    pub fn validate(
+        &self,
+        airspace: Pubkey,
+        owner: Pubkey,
+        permissions: Permissions,
+    ) -> Result<()> {
+        // FIXME: pubkey default is not acceptable once airspaces are in use
+        if airspace != self.airspace
+            && !(cfg!(feature = "testing") && airspace == Pubkey::default())
+        {
+            msg!(
+                "provided airspace: {airspace} - permit's airspace: {}",
+                self.airspace
+            );
+            return err!(ErrorCode::WrongAirspace);
+        }
+        if owner != self.owner {
+            msg!("provided owner: {owner} - permit's owner: {}", self.owner);
+            return err!(ErrorCode::PermitNotOwned);
+        }
+        if !self.permissions.contains(permissions) {
+            msg!("permissions: {:?}", self.permissions);
+            return err!(ErrorCode::InsufficientPermissions);
+        }
+
+        Ok(())
+    }
+}
+
+bitflags! {
+    /// Actions in the margin program that require special approval from an
+    /// airspace authority before an address is authorized to sign for the
+    /// instruction performing this action.
+    #[derive(Default, AnchorSerialize, AnchorDeserialize)]
+    #[repr(transparent)]
+    pub struct Permissions: u32 {
+        /// Liquidate margin accounts in this airspace.
+        const LIQUIDATE                 = 1 << 0;
+
+        /// Execute update_position_metadata for margin accounts in this airspace.
+        const REFRESH_POSITION_CONFIG   = 1 << 1;
+    }
 }
 
 /// Configuration for allowed adapters
@@ -162,8 +217,4 @@ pub struct AdapterConfig {
 
     /// The program address allowed to be called as an adapter
     pub adapter_program: Pubkey,
-}
-
-impl AdapterConfig {
-    pub const SPACE: usize = 8 + std::mem::size_of::<Self>();
 }

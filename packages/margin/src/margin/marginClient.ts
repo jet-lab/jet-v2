@@ -382,6 +382,11 @@ export class MarginClient {
     let token1 = inputTokenConfig as MarginTokenConfig
     let token2 = outputTokenConfig
 
+    // token1 can be undefined if there are old logs that have tokens that have been offboarded
+    if (!token1) {
+      return null
+    }
+
     let token1Amount = new TokenAmount(
       new BN(Math.round(flightLog.token1_amount * Math.pow(10, token1.decimals))),
       token1.decimals

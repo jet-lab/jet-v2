@@ -27,11 +27,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{
-    syscall::{sys, Sys},
-    ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
-};
-
+use crate::{ErrorCode, TokenKind};
 const POS_PRICE_VALID: u8 = 1;
 
 #[assert_size(24)]
@@ -84,41 +80,6 @@ impl PriceInfo {
 
     pub fn is_valid(&self) -> bool {
         self.is_valid == POS_PRICE_VALID
-    }
-}
-
-impl TryFrom<PriceChangeInfo> for PriceInfo {
-    type Error = anchor_lang::error::Error;
-
-    fn try_from(value: PriceChangeInfo) -> AnchorResult<Self> {
-        let clock = Clock::get()?;
-        let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
-
-        let twap = Number128::from_decimal(value.twap, value.exponent);
-        let confidence = Number128::from_decimal(value.confidence, value.exponent);
-
-        if twap == Number128::ZERO {
-            msg!("avg price cannot be zero");
-            return err!(ErrorCode::InvalidPrice);
-        }
-
-        let price = match (confidence, value.publish_time) {
-            (c, _) if (c / twap) > max_confidence => {
-                msg!("price confidence exceeding max");
-                PriceInfo::new_invalid()
-            }
-            (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
-                msg!(
-                    "price timestamp is too old/stale. published: {}, now: {}",
-                    publish_time,
-                    clock.unix_timestamp
-                );
-                PriceInfo::new_invalid()
-            }
-            _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),
-        };
-
-        Ok(price)
     }
 }
 
@@ -230,9 +191,9 @@ impl AccountPosition {
     }
 
     /// Update the balance for this position
-    pub fn set_balance(&mut self, balance: u64) {
+    pub fn set_balance(&mut self, balance: u64, timestamp: u64) {
         self.balance = balance;
-        self.balance_timestamp = sys().unix_timestamp();
+        self.balance_timestamp = timestamp;
         self.calculate_value();
     }
 
@@ -344,15 +305,20 @@ pub struct AccountPositionList {
 impl AccountPositionList {
     /// Add a position to the position list.
     ///
-    /// Finds an empty slot in `map` and `positions`, and adds an empty position
-    /// to the slot.
+    /// If the position does not exist, Finds an empty slot in `map` and
+    /// `positions`, adds an empty position to the slot, and returns a mutable
+    /// reference to the position which must be initialized with the correct
+    /// data.
+    ///
+    /// If the position already exists, returns the key only, and no mutable
+    /// position.
     pub fn add(
         &mut self,
         mint: Pubkey,
-    ) -> AnchorResult<(AccountPositionKey, &mut AccountPosition)> {
-        // verify there's no existing position
-        if self.map.iter().any(|p| p.mint == mint) {
-            return err!(ErrorCode::PositionAlreadyRegistered);
+    ) -> AnchorResult<(AccountPositionKey, Option<&mut AccountPosition>)> {
+        // check for an existing position
+        if let Some(p) = self.map.iter().find(|p| p.mint == mint) {
+            return Ok((*p, None));
         }
 
         // find the first free space to store the position info
@@ -378,7 +344,7 @@ impl AccountPositionList {
         free_position.token = mint;
 
         // return the allocated position to be initialized further
-        Ok((key, free_position))
+        Ok((key, Some(free_position)))
     }
 
     /// Remove a position from the margin account.

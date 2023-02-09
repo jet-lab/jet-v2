@@ -7,7 +7,7 @@ const cypressConfig = {
     env: {
       hideXHR: true
     },
-    baseUrl: 'http://localhost:3000?debug-environment=true',
+    baseUrl: 'http://localhost:3000',
     defaultCommandTimeout: 60000,
     testIsolation: false
   }

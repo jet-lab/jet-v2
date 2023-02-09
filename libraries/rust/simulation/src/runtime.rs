@@ -18,6 +18,7 @@ use solana_runtime::{
 use solana_sdk::{
     account::{Account, ReadableAccount},
     clock::Clock,
+    commitment_config::CommitmentConfig,
     compute_budget,
     entrypoint::SUCCESS,
     feature_set::FeatureSet,
@@ -29,6 +30,7 @@ use solana_sdk::{
     pubkey::Pubkey,
     rent::Rent,
     signature::{Keypair, Signature},
+    slot_history::Slot,
     sysvar::Sysvar,
     transaction::{SanitizedTransaction, Transaction, TransactionError},
 };
@@ -216,6 +218,21 @@ fn global_instruction_handler(
 
     let (program_id, accounts, instruction_data) =
         unsafe { solana_sdk::entrypoint::deserialize(&mut memory.as_slice_mut()[0]) };
+
+    for account in &accounts {
+        let signer_text = account.is_signer.then_some("SIGNER").unwrap_or_default();
+        let mut_text = account.is_writable.then_some("MUTABLE").unwrap_or_default();
+
+        log::debug!(
+            "Loaded Account {}: {} lamports, {} bytes, {} {}",
+            account.key,
+            account.lamports(),
+            account.data_len(),
+            mut_text,
+            signer_text
+        );
+    }
+
     let result = program_entrypoint(program_id, &accounts, instruction_data);
     match result {
         Ok(()) => {
@@ -435,6 +452,9 @@ pub struct TestRuntimeRpcClient {
 
 #[async_trait]
 impl SolanaRpcClient for TestRuntimeRpcClient {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self as &dyn std::any::Any
+    }
     async fn get_account(&self, address: &Pubkey) -> anyhow::Result<Option<Account>> {
         Ok(self.bank.get_account(address).map(|a| a.into()))
     }
@@ -447,6 +467,10 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
             .iter()
             .map(|addr| self.bank.get_account(addr).map(|a| a.into()))
             .collect())
+    }
+
+    async fn get_genesis_hash(&self) -> anyhow::Result<Hash> {
+        Ok(self.bank.last_blockhash())
     }
 
     async fn get_latest_blockhash(&self) -> anyhow::Result<Hash> {
@@ -466,28 +490,9 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
         let signature = transaction.signatures[0];
         let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
 
-        for (i, address) in tx.message().account_keys().iter().enumerate() {
-            let account = self.bank.get_account(address).unwrap_or_default();
-            let signer_text = match tx.message().is_signer(i) {
-                true => "SIGNER",
-                _ => "",
-            };
-            let mut_text = match tx.message().is_writable(i) {
-                true => "MUTABLE",
-                _ => "",
-            };
-
-            log::debug!(
-                "Load Account {}: {} lamports, {} bytes, {} {}",
-                address,
-                account.lamports(),
-                account.data().len(),
-                mut_text,
-                signer_text
-            );
-        }
-
         log::info!("processing transaction {}", transaction.signatures[0]);
+        transaction.verify()?;
+
         let sim_result = self.bank.simulate_transaction_unchecked(tx);
 
         match sim_result.result {
@@ -568,6 +573,11 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
     async fn set_clock(&self, new_clock: Clock) -> anyhow::Result<()> {
         self.bank.set_sysvar_for_tests(&new_clock);
         Ok(())
+    }
+
+    async fn get_slot(&self, _commitment_config: Option<CommitmentConfig>) -> anyhow::Result<Slot> {
+        // just return the slot from the latest updated clock
+        Ok(self.get_clock().await?.slot)
     }
 
     fn payer(&self) -> &Keypair {

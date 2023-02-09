@@ -88,14 +88,15 @@ impl<'a> AnchorParser<'a> {
             .await
             .with_context(|| anyhow!("getting idl for {program_id}"))?;
 
-        let idl_account_obj: IdlAccount = AnchorDeserialize::deserialize(&mut &account_data[8..])?;
-        let mut decoder = flate2::read::ZlibDecoder::new(&idl_account_obj.data[..]);
+        let idl_account: IdlAccount = AnchorDeserialize::deserialize(&mut &account_data[8..])?;
+        let len: usize = idl_account.data.len();
+        let mut decoder = flate2::read::ZlibDecoder::new(&account_data[44..44 + len]);
         let mut uncompressed = vec![];
         decoder.read_to_end(&mut uncompressed)?;
 
         let idl = serde_json::from_slice(&uncompressed).with_context(|| {
             anyhow!(
-                "deserializing IDL account {idl_account} ({} bytes)",
+                "deserializing IDL account {idl_account:?} ({} bytes)",
                 account_data.len()
             )
         })?;

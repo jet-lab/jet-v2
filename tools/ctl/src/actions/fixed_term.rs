@@ -1,12 +1,15 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, OrderBookAddresses};
+use jet_margin_sdk::fixed_term::{
+    recover_uninitialized, FixedTermIxBuilder, OrderBookAddresses, FIXED_TERM_PROGRAM,
+};
+use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
 use serde::{Deserialize, Serialize};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 
 use crate::{
-    client::{Client, Plan},
+    client::{Client, NetworkKind, Plan},
     governance::resolve_payer,
 };
 
@@ -62,6 +65,34 @@ fn map_seed(seed: Vec<u8>) -> [u8; 32] {
     }
 
     buf
+}
+
+pub async fn process_recover_uninitialized(client: &Client, recipient: Pubkey) -> Result<Plan> {
+    let ft_accounts = client
+        .rpc()
+        .get_program_accounts(&FIXED_TERM_PROGRAM)
+        .await?;
+    let mut plan = client.plan()?;
+
+    let governor = match client.network_kind {
+        NetworkKind::Localnet => client.signer()?,
+        NetworkKind::Devnet => GOVERNOR_DEVNET,
+        NetworkKind::Mainnet => GOVERNOR_MAINNET,
+    };
+
+    for (address, account) in ft_accounts {
+        if account.data[..8] != [0u8; 8] {
+            continue;
+        }
+
+        plan = plan.instructions(
+            [],
+            [format!("recover {address}")],
+            [recover_uninitialized(governor, address, recipient)],
+        );
+    }
+
+    Ok(plan.build())
 }
 
 pub async fn process_create_fixed_term_market<'a>(

@@ -20,6 +20,7 @@ use anchor_lang::prelude::*;
 use jet_metadata::MarginAdapterMetadata;
 
 use crate::adapter::{self, InvokeAdapter};
+use crate::syscall::{sys, Sys};
 use crate::{events, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
@@ -73,7 +74,7 @@ pub fn adapter_invoke_handler<'info>(
     ctx.accounts
         .margin_account
         .load()?
-        .verify_healthy_positions()?;
+        .verify_healthy_positions(sys().unix_timestamp())?;
 
     Ok(())
 }
