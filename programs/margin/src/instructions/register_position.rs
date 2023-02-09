@@ -18,7 +18,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use crate::{events, util::Require, Approver, ErrorCode, MarginAccount, TokenConfig};
+use crate::{
+    events, util::Require, Approver, ErrorCode, MarginAccount, PositionConfigUpdate, TokenConfig,
+};
 
 #[derive(Accounts)]
 pub struct RegisterPosition<'info> {
@@ -67,15 +69,14 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     account.verify_authority(ctx.accounts.authority.key())?;
 
     let key = account.register_position(
-        position_token.key(),
-        position_token.decimals,
-        address,
-        config
-            .adapter_program()
-            .ok_or_else(|| error!(ErrorCode::InvalidConfig))?,
-        config.token_kind,
-        config.value_modifier,
-        config.max_staleness,
+        PositionConfigUpdate::new_from_config(
+            config,
+            position_token.decimals,
+            address,
+            config
+                .adapter_program()
+                .ok_or_else(|| error!(ErrorCode::InvalidConfig))?,
+        ),
         &[Approver::MarginAccountAuthority],
     )?;
 

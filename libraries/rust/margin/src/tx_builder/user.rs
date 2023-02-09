@@ -864,7 +864,7 @@ impl MarginTxBuilder {
         Ok(if let Some(position) = search_result {
             position.address
         } else {
-            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer());
+            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer(), self.airspace());
             let wrapped_ix = self.adapter_invoke_ix(pools_ix);
             instructions.push(wrapped_ix);
 

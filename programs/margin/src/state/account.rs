@@ -177,29 +177,26 @@ impl MarginAccount {
     #[allow(clippy::too_many_arguments)]
     pub fn register_position(
         &mut self,
-        token: Pubkey,
-        decimals: u8,
-        address: Pubkey,
-        adapter: Pubkey,
-        kind: TokenKind,
-        value_modifier: u16,
-        max_staleness: u64,
+        config: PositionConfigUpdate,
         approvals: &[Approver],
     ) -> AnchorResult<AccountPositionKey> {
         if !self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
             return err!(ErrorCode::MaxPositions);
         }
+        if self.airspace != config.airspace {
+            return err!(ErrorCode::WrongAirspace);
+        }
 
-        let (key, free_position) = self.position_list_mut().add(token)?;
+        let (key, free_position) = self.position_list_mut().add(config.mint)?;
 
         if let Some(free_position) = free_position {
-            free_position.exponent = -(decimals as i16);
-            free_position.address = address;
-            free_position.adapter = adapter;
-            free_position.kind = kind.into_integer();
+            free_position.exponent = -(config.decimals as i16);
+            free_position.address = config.address;
+            free_position.adapter = config.adapter;
+            free_position.kind = config.kind.into_integer();
             free_position.balance = 0;
-            free_position.value_modifier = value_modifier;
-            free_position.max_staleness = max_staleness;
+            free_position.value_modifier = config.value_modifier;
+            free_position.max_staleness = config.max_staleness;
 
             if !free_position.may_be_registered_or_closed(approvals) {
                 msg!(
@@ -656,13 +653,16 @@ mod tests {
         let key = crate::id();
         let approvals = &[Approver::MarginAccountAuthority];
         acc.register_position(
-            key,
-            2,
-            key,
-            key,
-            TokenKind::Collateral,
-            5000,
-            1000,
+            PositionConfigUpdate {
+                mint: key,
+                decimals: 2,
+                airspace: Default::default(),
+                address: key,
+                adapter: key,
+                kind: TokenKind::Collateral,
+                value_modifier: 5000,
+                max_staleness: 1000,
+            },
             approvals,
         )
         .unwrap();
@@ -866,39 +866,48 @@ mod tests {
 
         margin_account
             .register_position(
-                token_a,
-                6,
-                address_a,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_a,
+                    decimals: 6,
+                    airspace: Default::default(),
+                    address: address_a,
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 user_approval,
             )
             .unwrap();
 
         margin_account
             .register_position(
-                token_b,
-                6,
-                address_b,
-                adapter,
-                TokenKind::Claim,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_b,
+                    decimals: 6,
+                    address: address_b,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Claim,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 adapter_approval,
             )
             .unwrap();
 
         margin_account
             .register_position(
-                token_c,
-                6,
-                address_c,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_c,
+                    decimals: 6,
+                    address: address_c,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 user_approval,
             )
             .unwrap();
@@ -923,13 +932,16 @@ mod tests {
 
         margin_account
             .register_position(
-                token_e,
-                9,
-                address_e,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                100,
+                PositionConfigUpdate {
+                    mint: token_e,
+                    decimals: 9,
+                    address: address_e,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 100,
+                },
                 user_approval,
             )
             .unwrap();
@@ -937,13 +949,16 @@ mod tests {
 
         margin_account
             .register_position(
-                token_d,
-                9,
-                address_d,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                100,
+                PositionConfigUpdate {
+                    mint: token_d,
+                    decimals: 9,
+                    address: address_d,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 100,
+                },
                 user_approval,
             )
             .unwrap();
@@ -991,49 +1006,61 @@ mod tests {
 
         margin_account
             .register_position(
-                token_a,
-                6,
-                address_a,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_a,
+                    decimals: 6,
+                    address: address_a,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[],
             )
             .unwrap_err();
         margin_account
             .register_position(
-                token_b,
-                6,
-                address_b,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_b,
+                    decimals: 6,
+                    address: address_b,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::MarginAccountAuthority],
             )
             .unwrap_err();
         margin_account
             .register_position(
-                token_c,
-                6,
-                address_c,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_c,
+                    decimals: 6,
+                    address: address_c,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::Adapter(adapter)],
             )
             .unwrap_err();
         margin_account
             .register_position(
-                token_d,
-                6,
-                address_d,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_d,
+                    decimals: 6,
+                    address: address_d,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
             )
             .unwrap();
@@ -1058,13 +1085,16 @@ mod tests {
 
         margin_account
             .register_position(
-                token,
-                6,
-                address,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token,
+                    decimals: 6,
+                    address,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
             )
             .unwrap();
@@ -1118,7 +1148,19 @@ mod tests {
             _ => (),
         }
 
-        acc.register_position(key, 2, key, key, kind, 10000, 0, &approvals)?;
+        acc.register_position(
+            PositionConfigUpdate {
+                mint: key,
+                decimals: 2,
+                address: key,
+                airspace: Default::default(),
+                adapter: key,
+                kind,
+                value_modifier: 10000,
+                max_staleness: 0,
+            },
+            &approvals,
+        )?;
 
         Ok(key)
     }

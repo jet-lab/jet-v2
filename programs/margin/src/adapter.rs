@@ -22,7 +22,6 @@ use anchor_lang::{
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::{Mint, TokenAccount};
-use jet_metadata::PositionTokenMetadata;
 use jet_program_common::Number128;
 use solana_program::clock::UnixTimestamp;
 
@@ -30,8 +29,9 @@ use crate::{
     events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
     syscall::{sys, Sys},
     util::{log_on_error, Require},
-    AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, PriceInfo,
-    SignerSeeds, TokenConfig, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount,
+    PositionConfigUpdate, PriceInfo, SignerSeeds, TokenConfig, MAX_ORACLE_CONFIDENCE,
+    MAX_ORACLE_STALENESS,
 };
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
@@ -330,8 +330,6 @@ fn register_position(
     token_account_address: Pubkey,
 ) -> Result<AccountPositionKey> {
     let mut token_config: Option<Account<TokenConfig>> = None;
-    let mut metadata: Result<Account<PositionTokenMetadata>> =
-        err!(ErrorCode::PositionNotRegisterable);
     let mut token_account: Result<Account<TokenAccount>> = err!(ErrorCode::PositionNotRegisterable);
     let mut mint: Result<Account<Mint>> = err!(ErrorCode::PositionNotRegisterable);
     for info in remaining_accounts {
@@ -339,13 +337,6 @@ fn register_position(
             token_account = Ok(Account::<TokenAccount>::try_from(info)?);
         } else if info.key == &mint_address {
             mint = Ok(Account::<Mint>::try_from(info)?);
-        } else if info.owner == &PositionTokenMetadata::owner() {
-            // TODO: remove backwards compat
-            if let Ok(ptm) = Account::<PositionTokenMetadata>::try_from(info) {
-                if ptm.position_token_mint == mint_address {
-                    metadata = Ok(ptm);
-                }
-            }
         } else if info.owner == &TokenConfig::owner() {
             if let Ok(config) = Account::<TokenConfig>::try_from(info) {
                 if config.mint == mint_address {
@@ -369,32 +360,18 @@ fn register_position(
 
     let key = match token_config {
         Some(config) => margin_account.register_position(
-            mint.key(),
-            mint.decimals,
-            token_account.key(),
-            config.adapter_program().unwrap_or_default(),
-            config.token_kind,
-            config.value_modifier,
-            config.max_staleness,
+            PositionConfigUpdate::new_from_config(
+                &config,
+                mint.decimals,
+                token_account.key(),
+                config.adapter_program().unwrap_or_default(),
+            ),
             approvals,
         )?,
         // TODO: remove backwards compat
         None => {
-            let metadata = log_on_error!(
-                metadata,
-                "position token metadata not found for mint {:?}",
-                mint_address
-            )?;
-            margin_account.register_position(
-                mint.key(),
-                mint.decimals,
-                token_account.key(),
-                metadata.adapter_program,
-                metadata.token_kind.into(),
-                metadata.value_modifier,
-                metadata.max_staleness,
-                approvals,
-            )?
+            msg!("a TokenConfig is necessary to register a margin position");
+            return err!(ErrorCode::PositionNotRegisterable);
         }
     };
 
