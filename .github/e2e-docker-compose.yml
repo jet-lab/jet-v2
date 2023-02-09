@@ -18,11 +18,15 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
+    ports:
+      - 27017:27017
   postgres:
     image: postgres:15
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=password123
+    ports:
+      - 5432:5432
   api:
     image: nevi/jet-margin-blackbox
     environment:
