@@ -89,7 +89,7 @@ impl<'a> AnchorParser<'a> {
             .with_context(|| anyhow!("getting idl for {program_id}"))?;
 
         let idl_account: IdlAccount = AnchorDeserialize::deserialize(&mut &account_data[8..])?;
-        let len: usize = idl_account.data_len.try_into().unwrap();
+        let len: usize = idl_account.data.len();
         let mut decoder = flate2::read::ZlibDecoder::new(&account_data[44..44 + len]);
         let mut uncompressed = vec![];
         decoder.read_to_end(&mut uncompressed)?;

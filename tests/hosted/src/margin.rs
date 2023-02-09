@@ -26,6 +26,7 @@ use anchor_lang::{
 use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::{bail, Error};
 
+use jet_instructions::margin_swap::MarginSwapRouteIxBuilder;
 use jet_margin::{AccountPosition, MarginAccount, TokenKind};
 use jet_margin_sdk::ix_builder::test_service::if_not_initialized;
 use jet_margin_sdk::ix_builder::{
@@ -33,11 +34,12 @@ use jet_margin_sdk::ix_builder::{
     get_metadata_address, AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder,
     MarginPoolConfiguration, MarginPoolIxBuilder,
 };
+use jet_margin_sdk::lookup_tables::LookupTable;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{
     InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder, WithSigner,
 };
-use jet_margin_sdk::spl_swap::SplSwapPool;
+use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signature, Signer};
@@ -502,6 +504,27 @@ impl MarginUser {
             )
             .await
             .map(|_| ())
+    }
+
+    /// Execute a swap route
+    pub async fn route_swap(
+        &self,
+        builder: &MarginSwapRouteIxBuilder,
+        account_lookup_tables: &[Pubkey],
+    ) -> Result<(), Error> {
+        // If there are lookup tables, use them
+        if account_lookup_tables.is_empty() {
+            self.rpc
+                .send_and_confirm_condensed_in_order(self.tx.route_swap(builder).await?)
+                .await?;
+        } else {
+            let versioned_tx = self
+                .tx
+                .route_swap_with_lookup(builder, account_lookup_tables, &self.signer)
+                .await?;
+            LookupTable::send_versioned_transaction(&self.rpc, &versioned_tx).await?;
+        }
+        Ok(())
     }
 
     pub async fn positions(&self) -> Result<Vec<AccountPosition>, Error> {

@@ -20,7 +20,7 @@ use tokio::try_join;
 
 use crate::margin_test_context;
 use crate::pricing::TokenPricer;
-use crate::swap::{create_swap_pools, SwapRegistry};
+use crate::spl_swap::{create_swap_pools, SwapRegistry};
 use crate::test_user::{TestLiquidator, TestUser};
 use crate::{context::MarginTestContext, margin::MarginPoolSetupInfo};
 

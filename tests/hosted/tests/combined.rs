@@ -5,6 +5,7 @@ feature_groups! {
     "batch1" {
         mod liquidate;
         mod liquidate_with_swap;
+        mod lookup_table;
     }
     "batch2" {
         mod fixed_term;
@@ -12,6 +13,7 @@ feature_groups! {
         mod pool_overpayment;
         mod rounding;
         mod sanity;
+        mod route_swap;
         mod swap;
         mod pools;
         mod client_fixed_term;
