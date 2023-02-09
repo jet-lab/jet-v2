@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@jet-lab/jet-client-web": "*",
-    "@solana/wallet-adapter-react": "^0.15.28",
+    "@solana/wallet-adapter-react": "^0.15.23",
     "@solana/web3.js": "^1.73.2",
     "bn.js": "^5.2.1",
     "swr": "^2.0.0",
