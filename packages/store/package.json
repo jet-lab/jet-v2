@@ -14,7 +14,6 @@
     "clean": "rm -rf ./dist & rm -rf .turbo & rm -f tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@jet-lab/margin": "*",
     "bn.js": "^5.2.1",
     "swr": "^2.0.0",
     "zustand": "^4.3.2"
