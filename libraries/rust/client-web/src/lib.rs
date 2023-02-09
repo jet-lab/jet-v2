@@ -35,7 +35,7 @@ impl JetWebClient {
     pub async fn connect(
         user_address: Pubkey,
         adapter: SolanaNetworkAdapter,
-        airspace_name: &str
+        airspace_name: &str,
     ) -> Result<JetWebClient, JsError> {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
@@ -64,7 +64,7 @@ impl JetWebClient {
 
         let log_level = match network_kind {
             NetworkKind::Localnet | NetworkKind::Devnet => log::Level::Debug,
-            NetworkKind::Mainnet => log::Level::Warn
+            NetworkKind::Mainnet => log::Level::Warn,
         };
 
         if console_log::init_with_level(log_level).is_err() {
