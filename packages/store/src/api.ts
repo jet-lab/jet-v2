@@ -7,9 +7,9 @@ export const useOrdersForUser = (market?: FixedTermMarket, account?: MarginAccou
   const path = `fixed/open-orders/${market?.address}/${account?.address}`;
   return useSWR<OpenOrders>(path, async () => {
     if (account && market) {
-      return fetch(`${process.env.DATA_API}/${path}`).then(r => r.json());
+      return fetch(`${process.env.LOCAL_DATA_API}/${path}`).then(r => r.json());
     } else {
-      return null
+      return null;
     }
   });
 };
@@ -18,9 +18,9 @@ export const useOpenPositions = (market?: FixedTermMarket, account?: MarginAccou
   const path = `fixed/open-positions/${market?.address}/${account?.address}`;
   return useSWR<OpenPositions>(path, async () => {
     if (account && market) {
-      return fetch(`${process.env.DATA_API}/${path}`).then(r => r.json());
+      return fetch(`${process.env.LOCAL_DATA_API}/${path}`).then(r => r.json());
     } else {
-      return null
+      return null;
     }
   });
 };
