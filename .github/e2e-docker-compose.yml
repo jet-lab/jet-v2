@@ -33,7 +33,7 @@ services:
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
       - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
     ports:
-      - "3002:3002"
+      - 3002:3002
   poller:
     image: nevi/jet-margin-eventpoller
     environment:

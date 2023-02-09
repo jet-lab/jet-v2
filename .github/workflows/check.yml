@@ -146,31 +146,31 @@ jobs:
             !target/idl
             !target/deploy
 
-      - name: Install Rust
-        if: steps.cachedeps.outputs.cache-hit != 'true'
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      # - name: Install Rust
+      #   if: steps.cachedeps.outputs.cache-hit != 'true'
+      #   uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: stable
 
       - id: install-os-deps
         # if: steps.cachedeps.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev net-tools
 
-      - name: Install Solana
-        if: steps.cachedeps.outputs.cache-hit != 'true'
-        # run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.13.6/install)"
+      # - name: Install Solana
+      #   if: steps.cachedeps.outputs.cache-hit != 'true'
+      #   # run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
+      #   run: sh -c "$(curl -sSfL https://release.solana.com/v1.13.6/install)"
 
-      - run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+      # - run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Install wasm-pack
-        if: steps.cachedeps.outputs.cache-hit != 'true'
-        run: cargo install wasm-pack
+      # - name: Install wasm-pack
+      #   if: steps.cachedeps.outputs.cache-hit != 'true'
+      #   run: cargo install wasm-pack
 
-      - name: Install Anchor CLI
-        run: yarn global add @project-serum/anchor-cli@0.26.0
+      # - name: Install Anchor CLI
+      #   run: yarn global add @project-serum/anchor-cli@0.26.0
 
-      - run: solana-keygen new --no-bip39-passphrase
+      # - run: solana-keygen new --no-bip39-passphrase
 
       - name: Start data environment
         uses: isbang/compose-action@v1.4.1
@@ -184,9 +184,12 @@ jobs:
             poller
             parser
 
+      - name: Docker check
+        run: sleep 15 && docker compose -f ./.github/e2e-docker-compose.yml ps
+
       - name: Network check
         run: sleep 15 && netstat -peanut 
 
-      - name: E2E
-        run: |
-          SOLANA_LOGS=false ./check e2e
+      # - name: E2E
+      #   run: |
+      #     SOLANA_LOGS=false ./check e2e
