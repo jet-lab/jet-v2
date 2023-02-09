@@ -198,8 +198,6 @@ export function BorrowRepayModal(): JSX.Element {
     resetTokenInputString();
     resetTokenInputAmount();
   }
-
-  currentAccount?.refresh();
   // Only return the modal if we're borrowing or repaying
   if (
     currentAccount &&
