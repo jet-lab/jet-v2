@@ -379,8 +379,8 @@ impl TestContextSetupInfo {
                     DexInfo {
                         program: ORCA_V2,
                         address: derive_spl_swap_pool(&ORCA_V2, &token_a, &token_b).state,
-                        token_a,
-                        token_b,
+                        base: token_a,
+                        quote: token_b,
                     }
                 })
                 .collect(),

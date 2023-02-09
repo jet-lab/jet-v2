@@ -1,0 +1,19 @@
+#!/bin/bash
+
+case "$OSTYPE" in
+    darwin*)  PLATFORM="OSX" ;;
+    linux*)   PLATFORM="LINUX" ;;
+    bsd*)     PLATFORM="BSD" ;;
+    *)        PLATFORM="UNKNOWN" ;;
+esac
+
+replace() {
+    if [[ "$PLATFORM" == "OSX" || "$PLATFORM" == "BSD" ]]; then
+        sed -i "" "$1" "$2"
+    elif [ "$PLATFORM" == "LINUX" ]; then
+        sed -i "$1" "$2"
+    fi
+}
+
+# See https://github.com/pyth-network/pyth-crosschain/blob/main/Dockerfile.wasm#L26
+replace  "/^\s*wasm.__wbg_systeminstruction_free(ptr);$/d" lib/jet_client_web_bg.js

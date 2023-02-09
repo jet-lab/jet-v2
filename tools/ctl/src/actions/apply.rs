@@ -55,7 +55,7 @@ pub async fn process_apply(
         }
     }
 
-    configure_environment(&mut builder, &config).await?;
+    configure_environment(&mut builder, &config).await.unwrap();
 
     let blueprint = builder.build();
     let mut plan = client.plan()?;

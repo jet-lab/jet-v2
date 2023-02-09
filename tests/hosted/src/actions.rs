@@ -172,7 +172,7 @@ pub async fn offer_loan_no_auto_stake(
     let params = OrderParams {
         max_ticket_qty: u64::MAX,
         max_underlying_token_qty: amount,
-        limit_price: rate_to_price(rate as u64, market.borrow_tenor),
+        limit_price: rate_to_price(rate, market.borrow_tenor),
         match_limit: u64::MAX,
         post_only: false,
         post_allowed: true,
@@ -337,9 +337,9 @@ pub fn amount_to_f64(token: &Token, amount: u64) -> f64 {
     amount as f64 / one
 }
 
-fn f64_rate_to_bps(f: f64) -> u32 {
+fn f64_rate_to_bps(f: f64) -> u64 {
     let bps = f * 100.0;
     assert!(bps <= u32::MAX as f64);
     assert!(bps >= 0.0);
-    bps.round() as u32
+    bps.round() as u64
 }

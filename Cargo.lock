@@ -2360,6 +2360,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "jet-client-web"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "console_error_panic_hook",
+ "console_log",
+ "jet-client",
+ "jet-solana-client",
+ "js-sys",
+ "log",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "solana-sdk",
+ "spl-token 3.5.0",
+ "wasm-bindgen",
+ "wasm-bindgen-derive",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "jet-control"
 version = "1.0.0"
 dependencies = [
@@ -6333,6 +6355,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eaf9f5aceeec8be17c128b2e93e031fb8a4d469bb9c4ae2d7dc1888b26887268"
 dependencies = [
  "cfg-if",
+ "serde",
+ "serde_json",
  "wasm-bindgen-macro",
 ]
 
@@ -6349,6 +6373,19 @@ dependencies = [
  "quote 1.0.23",
  "syn 1.0.107",
  "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8e47e0127013d7b679535a9dc33395b50ac4695c640008227eb857d5f23c4de"
+dependencies = [
+ "js-sys",
+ "proc-macro2 1.0.50",
+ "quote 1.0.23",
+ "syn 1.0.107",
+ "wasm-bindgen",
 ]
 
 [[package]]
