@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { PreferredRpcNode, rpcNodes } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { useProvider } from '@utils/jet/provider';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -9,12 +8,10 @@ import { useJetStore } from '@jet-lab/store';
 
 // Banner to show user that the Solana network is running slowly
 export function TpsBanner(): JSX.Element {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const { cluster, rpc } = useJetStore(state => ({ cluster: state.settings.cluster, rpc: state.settings.rpc }));
   const { provider } = useProvider();
-  const rpcNode = useRecoilValue(PreferredRpcNode);
   const dictionary = useRecoilValue(Dictionary);
-  const nodeIndexer = cluster === 'mainnet-beta' ? 'mainnetBeta' : 'devnet';
-  const ping = rpcNodes[rpcNode][`${nodeIndexer}Ping`];
+  const ping = rpc.pings[cluster];
   const [tps, setTps] = useState<number | undefined>(undefined);
   const unusuallySlow = (tps && tps < 1500) || ping > 750;
   const criticallySlow = (tps && tps < 1000) || ping > 1500;

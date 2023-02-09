@@ -8,6 +8,7 @@ import { formatPubkey } from '@utils/format';
 import { notify } from '@utils/notify';
 import { Button } from 'antd';
 import WalletIcon from '@assets/icons/wallet-icon.svg';
+import { useJetStore } from '@jet-lab/store';
 
 // Button for connecting and disconnecting the user's wallet to the app
 export function WalletButton(props: { mobile?: boolean }): JSX.Element {
@@ -16,6 +17,7 @@ export function WalletButton(props: { mobile?: boolean }): JSX.Element {
   const resetWalletTokens = useResetRecoilState(WalletTokens);
   const resetAccounts = useResetRecoilState(Accounts);
   const setWalletModalOpen = useSetRecoilState(WalletModal);
+  const disconnectWallet = useJetStore(state => state.disconnectWallet);
 
   // If not connected open modal otherwise disconnect, reset and notify
   async function handleClick() {
@@ -26,6 +28,7 @@ export function WalletButton(props: { mobile?: boolean }): JSX.Element {
       const pubKey = publicKey;
       // Disconnect the wallet
       await disconnect();
+      disconnectWallet();
       // Reset relevant state
       resetWalletTokens();
       resetAccounts();

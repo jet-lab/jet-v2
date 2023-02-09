@@ -4,20 +4,15 @@ import { Connection, ConfirmOptions } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Wallet } from '@project-serum/anchor';
 import { MarginClient } from '@jet-lab/margin';
-import { rpcNodes, PreferredRpcNode } from '@state/settings/settings';
 import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useJetStore } from '@jet-lab/store';
 
 // Anchor connection / provider hook
 export function useProvider() {
-  const cluster = useJetStore(state => state.settings.cluster);
-  const node = useRecoilValue(PreferredRpcNode);
+  const { cluster, rpc } = useJetStore(state => ({ cluster: state.settings.cluster, rpc: state.settings.rpc }));
   const networkStatus = useRecoilValue(NetworkStateAtom);
-  const endpoint =
-    cluster === 'localnet'
-      ? 'http://localhost:8899'
-      : rpcNodes[node][cluster === 'mainnet-beta' ? 'mainnetBeta' : cluster];
+  const endpoint = rpc[cluster];
   const connection = useMemo(() => new Connection(endpoint, 'recent'), [endpoint]);
   const config = useRecoilValue(MainConfig);
   const wallet = useWallet();
