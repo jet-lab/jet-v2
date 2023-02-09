@@ -6,7 +6,7 @@ import { Button, Select } from 'antd';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import {
   MarginAccount,
   repay,
@@ -42,7 +42,7 @@ const settleNow = async (
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
   blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
   pools: JetMarginPools,
-  amount: TokenAmount,
+  amount: TokenAmount
 ) => {
   const token = markets[selectedMarket].token;
   if (!marginAccount || !token) return;
@@ -82,7 +82,7 @@ const submitRepay = async (
   markets: FixedTermMarket[],
   market: MarketAndconfig,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
+  blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach'
 ) => {
   let tx = 'failed_before_tx';
   try {
@@ -93,7 +93,7 @@ const submitRepay = async (
       termLoans,
       pools,
       markets,
-      market,
+      market
     });
     notify(
       'Repay Successful',
@@ -112,18 +112,23 @@ const submitRepay = async (
   }
 };
 
-const getOwedTokens = async (mint: Address, marginAccount: PublicKey, provider: AnchorProvider, setOwedTokens: Dispatch<SetStateAction<TokenAmount>>) => {
+const getOwedTokens = async (
+  mint: Address,
+  marginAccount: PublicKey,
+  provider: AnchorProvider,
+  setOwedTokens: Dispatch<SetStateAction<TokenAmount>>
+) => {
   const pda = AssociatedToken.derive(mint, marginAccount);
-      try {
-        const exists = await provider.connection.getAccountInfo(pda)
-        if (exists) {
-          const { value } = await provider.connection.getTokenAccountBalance(pda)
-          setOwedTokens(new TokenAmount(new BN(value.amount), value.decimals));
-        }
-      } catch (e) {
-        console.log(e)
-      }
-}
+  try {
+    const exists = await provider.connection.getAccountInfo(pda);
+    if (exists) {
+      const { value } = await provider.connection.getTokenAccountBalance(pda);
+      setOwedTokens(new TokenAmount(new BN(value.amount), value.decimals));
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
 
 export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) => {
   const [order, setOrder] = useRecoilState(type === 'asks' ? FixedLendViewOrder : FixedBorrowViewOrder);
@@ -134,6 +139,18 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
   const { provider } = useProvider();
   const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedTermMarketAtom);
   const pools = useRecoilValue(Pools);
+
+  const apiEndpoint = useMemo(
+    () =>
+      cluster === 'mainnet-beta'
+        ? process.env.DATA_API
+        : cluster === 'devnet'
+        ? process.env.DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.LOCAL_DATA_API
+        : '',
+    [cluster]
+  );
 
   const [repayAmount, setRepayAmount] = useState('0');
 
@@ -147,7 +164,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
     }
   }, [marginAccount?.address]);
 
-  const { data } = useOpenPositions(markets[selectedMarket]?.market, marginAccount);
+  const { data } = useOpenPositions(String(apiEndpoint), markets[selectedMarket]?.market, marginAccount);
 
   const token = markets[selectedMarket]?.token;
 
@@ -188,7 +205,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
                     cluster,
                     blockExplorer,
                     pools,
-                    owedTokens,
+                    owedTokens
                   )
                 }>
                 Settle Now
@@ -224,7 +241,7 @@ export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) 
                     markets.map(m => m.market),
                     markets[selectedMarket],
                     cluster,
-                    blockExplorer,
+                    blockExplorer
                   )
                 }>
                 Repay Now

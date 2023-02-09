@@ -49,14 +49,30 @@ export function DebtTable() {
   const { provider } = useProvider();
   const blockExplorer = useRecoilValue(BlockExplorer);
   const cluster = useRecoilValue(Cluster);
-  const pools = useRecoilValue(Pools)
+  const pools = useRecoilValue(Pools);
 
-  const { data: ordersData, error: ordersError, isLoading: ordersLoading } = useOrdersForUser(market?.market, account);
+  const apiEndpoint = useMemo(
+    () =>
+      cluster === 'mainnet-beta'
+        ? process.env.DATA_API
+        : cluster === 'devnet'
+        ? process.env.DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.LOCAL_DATA_API
+        : '',
+    [cluster]
+  );
+
+  const {
+    data: ordersData,
+    error: ordersError,
+    isLoading: ordersLoading
+  } = useOrdersForUser(String(apiEndpoint), market?.market, account);
   const {
     data: positionsData,
     error: positionsError,
     isLoading: positionsLoading
-  } = useOpenPositions(market?.market, account);
+  } = useOpenPositions(String(apiEndpoint), market?.market, account);
 
   useEffect(() => {
     if (ordersError || positionsError)
@@ -68,7 +84,7 @@ export function DebtTable() {
   }, [ordersError, positionsError]);
 
   if (!pools) {
-    return null
+    return null;
   }
 
   return (
