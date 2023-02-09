@@ -25,4 +25,9 @@ export const initJetClient = async (wallet: WalletContextState) => {
   jetClient =
     adapter.userAddress &&
     (await JetWebClient.connect(adapter.userAddress, adapter, cluster === 'devnet' ? 'devnet0' : 'default'));
+
+  await jetClient?.state().syncAccounts();
+
+  const accounts = jetClient?.margin().accounts();
+  console.log(accounts);
 };
