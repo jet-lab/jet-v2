@@ -6,7 +6,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 use solana_sdk::{hash::Hash, pubkey::Pubkey};
 
 use jet_client::{
-    config::JetAppConfig,
+    config::{CONFIG_URL_DEVNET, CONFIG_URL_MAINNET},
     state::tokens::TokenAccount,
     test_service::TestServiceClient,
     JetClient, NetworkKind,
@@ -50,8 +50,8 @@ impl JetWebClient {
 
         let network_kind = NetworkKind::from_genesis_hash(&network_genesis_hash);
         let config_url = match network_kind {
-            NetworkKind::Devnet => JetAppConfig::DEVNET_CONFIG_URL,
-            NetworkKind::Mainnet => JetAppConfig::DEFAULT_URL,
+            NetworkKind::Mainnet => CONFIG_URL_MAINNET,
+            NetworkKind::Devnet => CONFIG_URL_DEVNET,
             NetworkKind::Localnet => "/localnet.config.json",
         };
         let config_request = {

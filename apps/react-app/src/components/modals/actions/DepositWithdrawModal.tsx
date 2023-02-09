@@ -60,6 +60,7 @@ export function DepositWithdrawModal(): JSX.Element {
     setSendingTransaction(true);
     const [txId, resp] = currentAction === 'deposit' ? await deposit() : await withdraw();
 
+
     if (resp === ActionResponse.Success) {
       notify(
         dictionary.notifications.actions.successTitle.replaceAll('{{ACTION}}', currentAction ?? ''),

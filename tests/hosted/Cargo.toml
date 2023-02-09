@@ -29,7 +29,6 @@ env_logger = "0.9"
 solana-clap-utils = "1.14"
 serde_json = "1"
 
-
 tokio = { version = "1", features = ["macros", "time"] }
 serial_test = "0.6.0"
 
@@ -39,12 +38,14 @@ solana-cli-config = "1.14"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-lang = "0.26"
+anchor-spl = "0.26"
 
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
 spl-token = "3.1.0"
 spl-associated-token-account = "1.0"
+saber-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
+saber-program = { package = "stable-swap", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
 pyth-sdk-solana = "0.7"
 
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["no-entrypoint", "testing"] }

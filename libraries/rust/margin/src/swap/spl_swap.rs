@@ -22,11 +22,15 @@ use std::{
     sync::Arc,
 };
 
-use anchor_lang::AccountDeserialize;
-use anyhow::Result;
+use anchor_lang::ToAccountMetas;
+use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
+use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
+
+use crate::ix_builder::SwapAccounts;
+
+use super::find_mint;
 
 /// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
 /// [`jet_margin_swap`].
@@ -82,13 +86,13 @@ impl SplSwapPool {
                 continue;
             }
 
-            let (_mint_a, _mint_b) = match (
-                supported_mints.get(&swap.token_a_mint),
-                supported_mints.get(&swap.token_b_mint),
-            ) {
-                (Some(a), Some(b)) => (a, b),
-                _ => continue,
-            };
+            if supported_mints
+                .get(&swap.token_a_mint)
+                .and_then(|_| supported_mints.get(&swap.token_b_mint))
+                .is_none()
+            {
+                continue;
+            }
 
             // Get the pool tokens minted as a proxy of size
             let Ok(pool_mint) = find_mint(rpc, &swap.pool_mint).await else {
@@ -140,14 +144,28 @@ impl SplSwapPool {
     }
 }
 
-// helper function to find mint account
-async fn find_mint(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    address: &Pubkey,
-) -> Result<anchor_spl::token::Mint> {
-    let account = rpc.get_account(address).await?.unwrap();
-    let data = &mut &account.data[..];
-    let account = anchor_spl::token::Mint::try_deserialize_unchecked(data)?;
+impl SwapAccounts for SplSwapPool {
+    fn to_account_meta(&self) -> Vec<AccountMeta> {
+        let (swap_authority, _) =
+            Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
 
-    Ok(account)
+        ix_accounts::SplSwapInfo {
+            swap_pool: self.pool,
+            authority: swap_authority,
+            vault_a: self.token_a,
+            vault_b: self.token_b,
+            token_mint: self.pool_mint,
+            fee_account: self.fee_account,
+            swap_program: self.program,
+        }
+        .to_account_metas(None)
+    }
+
+    fn pool_tokens(&self) -> (Pubkey, Pubkey) {
+        (self.mint_a, self.mint_b)
+    }
+
+    fn route_type(&self) -> SwapRouteIdentifier {
+        SwapRouteIdentifier::Spl
+    }
 }
