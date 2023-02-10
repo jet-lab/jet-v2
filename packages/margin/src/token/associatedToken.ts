@@ -107,8 +107,6 @@ export class AssociatedToken {
         throw new TokenInvalidOwnerError("The owner of a token account doesn't match the expected owner")
       }
 
-      console.log(account.info.mint.toBase58(), mintAddress.toBase58())
-
       if (!account.info.mint.equals(mintAddress)) {
         throw new TokenInvalidMintError("The mint of a token account doesn't match the expected mint")
       }

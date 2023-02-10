@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { atom, useRecoilValue, selector, useSetRecoilState } from 'recoil';
 import { PoolManager as MarginPoolManager, Pool } from '@jet-lab/margin';
 import { useProvider } from '@utils/jet/provider';
@@ -43,35 +43,31 @@ export const PoolOptions = selector<PoolOption[]>({
   dangerouslyAllowMutability: true
 });
 
-// Get a pool from a given pool name
-export function usePoolFromName(poolName: string | undefined): Pool | undefined {
-  const pools = useRecoilValue(Pools);
-  return useMemo(() => {
-    if (pools && poolName) {
-      return pools.tokenPools[poolName];
-    }
-    return undefined;
-  }, [poolName, pools]);
-}
-
 // A syncer to be called so that we can have dependent atom state
 export function usePoolsSyncer() {
   const { programs, provider } = useProvider();
   const setPools = useSetRecoilState(Pools);
   const networkState = useRecoilValue(NetworkStateAtom);
-  const initAllPools = useJetStore(state => state.initAllPools);
+  const state = useJetStore();
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
     // Use pool manager to load pools state
+
+    let isLoading = false;
     async function getPools() {
       if (!programs) return;
-      console.log(programs.connection.rpcEndpoint, programs.config.tokens);
+
       const poolManager = new MarginPoolManager(programs, provider);
       const tokenPools = await poolManager.loadAll();
+
+      if (isLoading) {
+        return;
+      }
       let totalSupply = 0;
       let totalBorrowed = 0;
       const poolsToInit: Record<string, PoolData> = {};
+
       for (const pool of Object.values(tokenPools)) {
         const tokenPrice = tokenPools[pool.symbol].tokenPrice;
         const vault = tokenPools[pool.symbol].vault.tokens;
@@ -108,7 +104,7 @@ export function usePoolsSyncer() {
         };
       }
 
-      initAllPools(poolsToInit);
+      state.initAllPools(poolsToInit);
 
       setPools({
         totalSupply,
@@ -121,6 +117,9 @@ export function usePoolsSyncer() {
       getPools();
     }
 
+    return () => {
+      isLoading = true;
+    };
     // TODO remove resetting pools upon action
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs?.config, networkState]);
