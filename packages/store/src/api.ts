@@ -9,7 +9,7 @@ export const useOrdersForUser = (apiEndpoint: string, market?: FixedTermMarket, 
     if (account && market) {
       return fetch(`${apiEndpoint}/${path}`).then(r => r.json());
     } else {
-      return null
+      return null;
     }
   });
 };
@@ -20,7 +20,7 @@ export const useOpenPositions = (apiEndpoint: string, market?: FixedTermMarket, 
     if (account && market) {
       return fetch(`${apiEndpoint}/${path}`).then(r => r.json());
     } else {
-      return null
+      return null;
     }
   });
 };
