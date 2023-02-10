@@ -16,6 +16,6 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-lang = "0.26"
+anchor-spl = "0.26"
 jet-margin = { path = "../../programs/margin", features = ["cpi"] }

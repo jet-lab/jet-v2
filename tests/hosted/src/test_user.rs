@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use jet_margin_sdk::cat;
+use jet_margin_sdk::ix_builder::MarginSwapRouteIxBuilder;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
 use solana_sdk::pubkey::Pubkey;
@@ -15,7 +16,7 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::context::MarginTestContext;
 use crate::margin::MarginUser;
-use crate::swap::SwapRegistry;
+use crate::spl_swap::SwapRegistry;
 use crate::tokens::TokenManager;
 
 pub const ONE: u64 = 1_000_000_000;
@@ -118,6 +119,30 @@ impl TestUser {
         self.user
             .withdraw(mint, &token_account, TokenChange::shift(amount))
             .await
+    }
+
+    pub async fn route_swap(
+        &self,
+        swaps: &SwapRegistry,
+        src: &Pubkey,
+        dst: &Pubkey,
+        change: TokenChange,
+    ) -> Result<()> {
+        let pool = swaps.get(src).unwrap().get(dst).unwrap();
+
+        let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+            jet_margin_sdk::ix_builder::SwapContext::MarginPool,
+            *self.user.address(),
+            *src,
+            *dst,
+            change,
+            1, // at least 1 token back
+        )?;
+        swap_builder.add_swap_leg(pool, 0)?;
+        swap_builder.finalize()?;
+        self.user.route_swap(&swap_builder, &[]).await?;
+
+        Ok(())
     }
 
     pub async fn swap(

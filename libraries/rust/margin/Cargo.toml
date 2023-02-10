@@ -23,15 +23,22 @@ tracing = "0.1"
 tokio = { version = "1", features = ["rt"] }
 rand = { version = "0.8.5" }
 serde = { version = "1", features = ["derive"] }
+# Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
+serde_json = "1"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
 pyth-sdk-solana = "0.7"
 solana-sdk = "1.14"
+# Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
+solana-client = "1.14"
+# Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
+solana-transaction-status = "1.14"
+solana-address-lookup-table-program = "1.14"
 
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
-anchor-client = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-lang = "0.26"
+anchor-spl = "0.26"
+anchor-client = "0.26"
 
 jet-simulation = { path = "../simulation" }
 jet-program-common = { path = "../program-common" }
@@ -47,8 +54,9 @@ jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entr
 
 # Token swaps
 spl-token = "3"
-spl-token-swap = "2"
+spl-token-swap = { version = "2", features = ["no-entrypoint"] }
 spl-associated-token-account = "1"
+saber-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
 
 [dev-dependencies]
 jet-static-program-registry = { path = "../static-program-registry" }

@@ -58,7 +58,7 @@ pub mod margin_integrator;
 /// things that should be provided by the solana sdk, but are not
 pub mod solana;
 /// Utilities for swap adapters
-pub mod spl_swap;
+pub mod swap;
 /// Utilities for tokens and token prices
 pub mod tokens;
 /// Transaction builder
@@ -68,6 +68,9 @@ pub mod util;
 
 /// jet-fixed-term-market sdk
 pub mod fixed_term;
+
+/// Lookup tables
+pub mod lookup_tables;
 
 /// Utilities for test environments
 pub mod test_service;

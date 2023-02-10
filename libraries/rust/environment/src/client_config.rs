@@ -46,9 +46,6 @@ pub struct JetAppConfig {
 }
 
 impl JetAppConfig {
-    pub const DEFAULT_URL: &'static str =
-        "https://storage.googleapis.com/jet-app-config/config.json";
-
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
         serde_json::from_str(json)
     }
@@ -204,7 +201,7 @@ impl TokenInfo {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DexInfo {
-    description: String,
+    pub description: String,
 
     #[serde_as(as = "DisplayFromStr")]
     pub program: Pubkey,

@@ -18,6 +18,7 @@ use solana_runtime::{
 use solana_sdk::{
     account::{Account, ReadableAccount},
     clock::Clock,
+    commitment_config::CommitmentConfig,
     compute_budget,
     entrypoint::SUCCESS,
     feature_set::FeatureSet,
@@ -29,6 +30,7 @@ use solana_sdk::{
     pubkey::Pubkey,
     rent::Rent,
     signature::{Keypair, Signature},
+    slot_history::Slot,
     sysvar::Sysvar,
     transaction::{SanitizedTransaction, Transaction, TransactionError},
 };
@@ -450,6 +452,9 @@ pub struct TestRuntimeRpcClient {
 
 #[async_trait]
 impl SolanaRpcClient for TestRuntimeRpcClient {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self as &dyn std::any::Any
+    }
     async fn get_account(&self, address: &Pubkey) -> anyhow::Result<Option<Account>> {
         Ok(self.bank.get_account(address).map(|a| a.into()))
     }
@@ -568,6 +573,11 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
     async fn set_clock(&self, new_clock: Clock) -> anyhow::Result<()> {
         self.bank.set_sysvar_for_tests(&new_clock);
         Ok(())
+    }
+
+    async fn get_slot(&self, _commitment_config: Option<CommitmentConfig>) -> anyhow::Result<Slot> {
+        // just return the slot from the latest updated clock
+        Ok(self.get_clock().await?.slot)
     }
 
     fn payer(&self) -> &Keypair {

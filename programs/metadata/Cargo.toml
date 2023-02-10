@@ -18,5 +18,5 @@ testing = []
 devnet = []
 
 [dependencies]
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-lang = "0.26"
 solana-program = "1.14"

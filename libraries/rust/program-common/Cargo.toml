@@ -20,5 +20,5 @@ borsh = "0.9.1"
 
 # Traits
 num-traits = "0.2"
-anchor-lang = { git = "https://github.com/coral-xyz/anchor", branch = "master" }
+anchor-lang = "0.26"
 solana-program = "1.14"
