@@ -123,10 +123,10 @@ jobs:
         uses: actions/checkout@v3
 
       - id: cachedeps
-        name: Get anchor cache
+        name: Get cache
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/yarn.lock') }}
           path: |
             ~/.cache/act
             ~/.cache/solana
@@ -137,6 +137,10 @@ jobs:
             target/
             !target/idl
             !target/deploy
+          restore-keys: |
+            ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-e2e-
+            ${{ runner.os }}-
 
       - name: Install Rust
         if: steps.cachedeps.outputs.cache-hit != 'true'
@@ -145,7 +149,6 @@ jobs:
           toolchain: stable
 
       - id: install-os-deps
-        if: steps.cachedeps.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev net-tools
 
       - name: Install Solana
@@ -153,11 +156,11 @@ jobs:
         # run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
         run: sh -c "$(curl -sSfL https://release.solana.com/v1.13.6/install)"
 
-      - run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
       - name: Install wasm-pack
         if: steps.cachedeps.outputs.cache-hit != 'true'
         run: cargo install wasm-pack
+
+      - run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Install Anchor CLI
         run: yarn global add @project-serum/anchor-cli@0.26.0
