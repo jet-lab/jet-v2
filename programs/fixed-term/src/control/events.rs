@@ -33,3 +33,10 @@ pub struct ToggleOrderMatching {
     pub market: Pubkey,
     pub is_orderbook_paused: bool,
 }
+
+#[event]
+pub struct FeesWithdrawn {
+    pub market: Pubkey,
+    pub fee_destination: Pubkey,
+    pub collected_fees: u64,
+}
