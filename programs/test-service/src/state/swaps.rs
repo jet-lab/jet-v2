@@ -27,11 +27,11 @@ pub struct SplSwapInfo {
     pub price_threshold: u16,
 }
 
-/// Information about a swap pool
+/// Information about a whirlpool
 #[account]
-pub struct SwapInfo {
+pub struct WhirlpoolSwapInfo {
     /// The address of the pool state
-    pub pool_state: Pubkey,
+    pub whirlpool: Pubkey,
 
     /// The magnitude of liquidity to provide the pool
     pub liquidity_level: u8,

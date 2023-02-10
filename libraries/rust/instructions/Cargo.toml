@@ -24,3 +24,4 @@ jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+orca-whirlpool = { package = "whirlpool", git = "https://github.com/jet-lab/whirlpools", branch = "update-anchor-25", features = ["cpi", "no-entrypoint"] }

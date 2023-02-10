@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::seeds::{POSITION, SWAP_POOL_INFO};
-use crate::state::{SwapInfo, TokenInfo};
+use crate::state::{TokenInfo, WhirlpoolSwapInfo};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use orca_whirlpool::cpi::accounts::{
@@ -69,23 +69,28 @@ pub struct WhirlpoolCreate<'info> {
     #[account(mut)]
     mint_b: Box<Account<'info, Mint>>,
 
-    #[account(constraint = info_a.mint == mint_a.key())]
+    #[account(constraint = info_a.mint == mint_a.key(),
+              constraint = info_a.pyth_price == pyth_price_a.key()
+    )]
     info_a: Box<Account<'info, TokenInfo>>,
 
-    #[account(constraint = info_b.mint == mint_b.key())]
+    #[account(constraint = info_b.mint == mint_b.key(),
+              constraint = info_b.pyth_price == pyth_price_b.key()
+    )]
     info_b: Box<Account<'info, TokenInfo>>,
 
-    #[account(init,
+    pyth_price_a: AccountInfo<'info>,
+    pyth_price_b: AccountInfo<'info>,
+
+    #[account(has_one = whirlpool,
         seeds = [
           SWAP_POOL_INFO,
           mint_a.key().as_ref(),
           mint_b.key().as_ref()
         ],
         bump,
-        space = 8 + std::mem::size_of::<SwapInfo>(),
-        payer = payer
     )]
-    pool_info: Box<Account<'info, SwapInfo>>,
+    pool_info: Box<Account<'info, WhirlpoolSwapInfo>>,
 
     #[account(mut,
         token::mint = mint_a,
@@ -356,7 +361,7 @@ pub fn whirlpool_create_handler(
     params: WhirlpoolCreateParams,
 ) -> Result<()> {
     let pool_info = &mut ctx.accounts.pool_info;
-    pool_info.pool_state = ctx.accounts.whirlpool.key();
+    pool_info.whirlpool = ctx.accounts.whirlpool.key();
     pool_info.liquidity_level = params.liquidity_level;
     pool_info.price_threshold = params.price_threshold;
 

@@ -60,6 +60,9 @@ pub mod seeds {
     pub const SWAP_POOL_TOKENS: &[u8] = b"swap-pool-tokens";
 
     #[constant]
+    pub const WHIRLPOOL: &[u8] = b"whirlpool";
+
+    #[constant]
     pub const POSITION: &[u8] = b"position";
 }
 

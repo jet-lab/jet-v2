@@ -29,9 +29,9 @@ use solana_sdk::{
 use jet_test_service::{
     seeds::{
         SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS, TOKEN_INFO, TOKEN_MINT,
-        TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
+        TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT, WHIRLPOOL,
     },
-    SplSwapPoolCreateParams, TokenCreateParams,
+    SplSwapPoolCreateParams, TokenCreateParams, WhirlpoolCreateParams,
 };
 
 /// Get instruction to create a token as described
@@ -247,23 +247,52 @@ pub fn orca_whirlpool_create(
     token_b: &Pubkey,
     liquidity_level: u8,
     price_threshold: u16,
+    default_protocol_fee_rate: u16,
+    tick_spacing: u16,
+    fee_rate: u16,
+    init_sqrt_price: u128,
+    reward_index: u8,
 ) -> Instruction {
     let addrs = derive_swap_pool(token_a, token_b);
-    let accounts = jet_test_service::accounts::SplSwapPoolCreate {
+    let whirlpool_config_addr = todo!();
+    let tick_spacing_addr = todo!();
+    let addrss = derive_whirlpool(token_a, token_b, whirlpool_config_addr, tick_spacing_addr);
+
+    // todo - create token accounts for whirlpool vault
+    // ix:
+    // 1. derive - init whirlpool config
+    // 2. derive - init fee tier
+    // 3. derive - init pool
+    // 4. derive - init reward
+    // 5. derive - init tick arrays
+    // 6. derive - open position // may need position metadata ix
+    let accounts = jet_test_service::accounts::WhirlpoolCreate {
         payer: *payer,
         mint_a: *token_a,
         mint_b: *token_b,
         info_a: derive_token_info(token_a),
         info_b: derive_token_info(token_b),
+        pyth_price_a: derive_pyth_price(token_a),
+        pyth_price_b: derive_pyth_price(token_b),
         pool_info: addrs.info,
-        pool_state: addrs.state,
-        pool_authority: addrs.authority,
-        pool_mint: addrs.mint,
-        pool_token_a: addrs.token_a_account,
-        pool_token_b: addrs.token_b_account,
-        pool_fees: addrs.fees,
-        swap_program: spl_token_swap::ID,
+        token_owner_a: todo!(),
+        token_owner_b: todo!(),
+        token_vault_a: todo!(),
+        token_vault_b: todo!(),
+        whirlpool_config: todo!(),
+        fee_tier: todo!(),
+        whirlpool: todo!(),
+        reward_mint: todo!(),
+        reward_vault: todo!(),
+        tick_array: todo!(),
+        tick_array_lower: todo!(),
+        tick_array_upper: todo!(),
+        position: todo!(),
+        position_mint: todo!(),
+        position_token_account: todo!(),
+        swap_program: orca_whirlpool::ID,
         token_program: spl_token::ID,
+        associated_token_program: spl_associated_token_account::ID,
         system_program: system_program::ID,
         rent: sysvar::rent::ID,
     }
@@ -272,11 +301,15 @@ pub fn orca_whirlpool_create(
     Instruction {
         program_id: jet_test_service::ID,
         accounts,
-        data: jet_test_service::instruction::SplSwapPoolCreate {
-            params: SplSwapPoolCreateParams {
+        data: jet_test_service::instruction::OrcaWhirlpoolCreate {
+            params: WhirlpoolCreateParams {
                 liquidity_level,
                 price_threshold,
-                nonce: addrs.nonce,
+                default_protocol_fee_rate,
+                tick_spacing,
+                fee_rate,
+                init_sqrt_price,
+                reward_index,
             },
         }
         .data(),
@@ -403,7 +436,6 @@ pub fn derive_swap_pool(token_a: &Pubkey, token_b: &Pubkey) -> SwapPoolAddress {
         &jet_test_service::ID,
     )
     .0;
-
     SwapPoolAddress {
         info,
         state,
@@ -441,4 +473,115 @@ pub struct SwapPoolAddress {
 
     /// The pool nonce
     pub nonce: u8,
+}
+
+/// Get the addresses for a whirlpool
+pub fn derive_whirlpool(
+    token_a: &Pubkey,
+    token_b: &Pubkey,
+    whirlpools_config: &Pubkey,
+    tick_spacing: &Pubkey,
+) -> WhirlpoolAddress {
+    let info = Pubkey::find_program_address(
+        &[SWAP_POOL_INFO, token_a.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let whirlpool = Pubkey::find_program_address(
+        &[
+            WHIRLPOOL,
+            whirlpools_config.as_ref(),
+            token_a.as_ref(),
+            token_b.as_ref(),
+            tick_spacing.as_ref(),
+        ],
+        &jet_test_service::ID,
+    )
+    .0;
+    let authority = Pubkey::find_program_address(&[whirlpool.as_ref()], &spl_token_swap::ID).0;
+    let token_a_account = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, whirlpool.as_ref(), token_a.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let token_b_account = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, whirlpool.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let mint =
+        Pubkey::find_program_address(&[SWAP_POOL_MINT, whirlpool.as_ref()], &jet_test_service::ID).0;
+    let fees = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, whirlpool.as_ref(), mint.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+
+    WhirlpoolAddress {
+        info,
+        whirlpool,
+        authority,
+        token_a_account,
+        token_b_account,
+        mint,
+        whirlpool_config: todo!(),
+        fee_tier: todo!(),
+        reward_mint: todo!(),
+        reward_vault: todo!(),
+        tick_array_0: todo!(),
+        tick_array_1: todo!(),
+        tick_array_2: todo!(),
+        position: todo!(),
+        fees: todo!(),
+    }
+}
+
+
+/// Set of addresses for a test whirlpool
+pub struct WhirlpoolAddress {
+    /// The test-service state about the pool
+    pub info: Pubkey,
+
+    /// The address of the whirlpool state
+    pub whirlpool: Pubkey,
+
+    /// The authority
+    pub authority: Pubkey,
+
+    /// The token A vault
+    pub token_a_account: Pubkey,
+
+    /// The token B vault
+    pub token_b_account: Pubkey,
+
+    /// The LP token
+    pub mint: Pubkey,
+
+    // The whirlpool config account
+    whirlpool_config: Pubkey,
+    
+    // The fee tier account for configurating whirlpool
+    fee_tier: Pubkey,
+    
+    // The reward mint
+    reward_mint: Pubkey,
+    
+    // The reward vault
+    reward_vault: Pubkey,
+    
+    // The tick array account
+    tick_array_0: Pubkey,
+    
+    // The tick array account
+    tick_array_1: Pubkey,
+    
+    // The tick array account
+    tick_array_2: Pubkey,
+    
+    // The user position account
+    position: Pubkey,
+    
+    /// The account to collect fees
+    pub fees: Pubkey,
+
 }
