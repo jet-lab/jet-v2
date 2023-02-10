@@ -1,4 +1,4 @@
-import { MarginTokenConfig, MarketAndconfig, TokenAmount } from '@jet-lab/margin';
+import { MarginTokenConfig, MarketAndConfig, TokenAmount } from '@jet-lab/margin';
 import { Loan } from '@jet-lab/store';
 import { Table } from 'antd';
 import BN from 'bn.js';
@@ -31,7 +31,7 @@ const getBorrowColumns = (token: MarginTokenConfig) => [
   }
 ];
 
-export const OpenBorrowsTable = ({ data, market }: { data: Loan[]; market: MarketAndconfig }) => {
+export const OpenBorrowsTable = ({ data, market }: { data: Loan[]; market: MarketAndConfig }) => {
   return (
     <Table
       rowKey="id"

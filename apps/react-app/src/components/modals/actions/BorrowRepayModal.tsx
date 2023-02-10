@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SendingTransaction } from '@state/actions/actions';
-import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
 import { Pools } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
@@ -15,7 +14,7 @@ import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
 import { notify } from '@utils/notify';
 import { useProjectedRisk, useRiskStyle } from '@utils/risk';
 import { ArrowRight } from './ArrowRight';
-import { Button, Modal, Switch, Tabs, Typography } from 'antd';
+import { Button, Modal, Tabs, Typography } from 'antd';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 import { useJetStore } from '@jet-lab/store';
 
@@ -25,7 +24,6 @@ export function BorrowRepayModal(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { borrow, repay } = useMarginActions();
-  const walletTokens = useRecoilValue(WalletTokens);
   const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -36,7 +34,6 @@ export function BorrowRepayModal(): JSX.Element {
   const [currentAction, setCurrentAction] = useRecoilState(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const currentAccount = useRecoilValue(CurrentAccount);
-  const [accountRepay, setAccountRepay] = useState(false);
   const accountPoolPosition = currentPool ? currentAccount?.poolPositions[currentPool.symbol] : undefined;
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setTokenInputString = useSetRecoilState(TokenInputString);
@@ -63,7 +60,7 @@ export function BorrowRepayModal(): JSX.Element {
   // Borrow / Repay
   async function borrowRepay() {
     setSendingTransaction(true);
-    const [txId, resp] = currentAction === 'borrow' ? await borrow() : await repay(accountRepay);
+    const [txId, resp] = currentAction === 'borrow' ? await borrow() : await repay(true);
     if (resp === ActionResponse.Success) {
       notify(
         dictionary.notifications.actions.successTitle.replaceAll('{{ACTION}}', displayRepayFromDepositAsRepay()),
@@ -168,23 +165,6 @@ export function BorrowRepayModal(): JSX.Element {
     return render;
   }
 
-  // Renders the wallet balance for current pool token
-  function renderWalletBalance() {
-    let render = <></>;
-    if (walletTokens && currentPool) {
-      const walletBalance = walletTokens.map[currentPool.symbol].amount.uiTokens;
-      render = (
-        <Paragraph
-          onClick={() => (!disabled && currentAction === 'repay' ? setTokenInputString(walletBalance) : null)}
-          className={!disabled && currentAction === 'repay' ? 'token-balance' : 'secondary-text'}>
-          {walletBalance + ' ' + currentPool.symbol}
-        </Paragraph>
-      );
-    }
-
-    return render;
-  }
-
   // Renders the account balance for current pool token
   function renderAccountBalance() {
     let render = <></>;
@@ -224,7 +204,6 @@ export function BorrowRepayModal(): JSX.Element {
     resetTokenInputString();
     resetTokenInputAmount();
   }
-
   // Only return the modal if we're borrowing or repaying
   if (
     currentAccount &&
@@ -238,17 +217,10 @@ export function BorrowRepayModal(): JSX.Element {
           items={tabItems}
         />
         <div className="wallet-balance flex align-center justify-between">
-          <Text className="small-accent-text">
-            {dictionary.common[
-              currentAction === 'borrow' || accountRepay ? 'accountBalance' : 'walletBalance'
-            ].toUpperCase()}
-          </Text>
-          {currentAction === 'borrow' || accountRepay ? renderAccountBalance() : renderWalletBalance()}
+          <Text className="small-accent-text">{dictionary.common['accountBalance'].toUpperCase()}</Text>
+          {renderAccountBalance()}
         </div>
-        <TokenInput
-          account={currentAction === 'borrow' || accountRepay ? currentAccount : undefined}
-          onPressEnter={borrowRepay}
-        />
+        <TokenInput account={currentAccount} onPressEnter={borrowRepay} />
         <div className="action-info flex-centered column">
           <div className="action-info-item flex align-center justify-between">
             <Paragraph type="secondary">{dictionary.common.loanBalance}</Paragraph>
@@ -271,20 +243,6 @@ export function BorrowRepayModal(): JSX.Element {
               {renderAffectedRiskLevel()}
             </div>
           </div>
-          {currentAction === 'repay' || currentAction === 'repayFromDeposit' ? (
-            <div className="action-info-item flex align-center justify-between">
-              <Paragraph type="secondary">{dictionary.actions.repay.repayFromWallet}</Paragraph>
-              <Switch
-                onClick={() => {
-                  setAccountRepay(!accountRepay);
-                  setCurrentAction(accountRepay ? 'repay' : 'repayFromDeposit');
-                }}
-                checked={!accountRepay}
-              />
-            </div>
-          ) : (
-            <></>
-          )}
         </div>
         <Button
           block

@@ -80,16 +80,9 @@ export const withdraw = (symbol: string, amount: number) => {
   cy.contains('withdraw successful');
 };
 
-export const repay = (symbol: string, amount: number, fromDeposit: boolean) => {
+export const repay = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`).click();
   cy.get(`.account-snapshot-footer button`).contains('Repay').click();
-  const isRepayFromWallet = cy.get('button.ant-switch').should('have.class', 'ant-switch-checked');
-  if (fromDeposit && isRepayFromWallet) {
-    isRepayFromWallet.click();
-  }
-  cy.contains('Repay From Wallet')
-    .siblings()
-    .should(fromDeposit ? 'not.have.class' : 'have.class', 'ant-switch-checked');
   cy.get('.ant-modal-content input.ant-input').as('input');
   cy.get('@input').should('not.be.disabled');
   cy.get('@input').click();

@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { bigIntToBn, bnToBigInt, lendNow, MarketAndconfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
+import { bigIntToBn, bnToBigInt, FixedTermProductModel, lendNow, MarketAndConfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -20,7 +20,7 @@ import { useJetStore } from '@jet-lab/store';
 interface RequestLoanProps {
   decimals: number;
   token: MarginTokenConfig;
-  marketAndConfig: MarketAndconfig;
+  marketAndConfig: MarketAndConfig;
   marginConfig: MarginConfig;
 }
 
@@ -30,6 +30,7 @@ interface Forecast {
   effectiveRate: number;
   selfMatch: boolean;
   fulfilled: boolean;
+  riskIndicator?: number;
 }
 
 export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -68,6 +69,22 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
     try {
       const sim = orderbookModel.simulateTaker('lend', bnToBigInt(amount), undefined);
+
+      let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
+      if (correspondingPool == undefined) {
+        console.log('ERROR `correspondingPool` must be defined.');
+        return;
+      }
+
+      const productModel = marginAccount? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool) : undefined;
+      const setupCheckEstimate = productModel?.takerAccountForecast("lend", sim, "setup");
+      if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
+        // FIXME Disable form submission
+        console.log("WARNING Trade violates setup check and should not be allowed")
+      }
+
+      const valuationEstimate = productModel?.takerAccountForecast("lend", sim);
+
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
       setForecast({
@@ -75,7 +92,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         interest: repayAmount.sub(lendAmount).uiTokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
-        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches
+        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches,
+        riskIndicator: valuationEstimate?.riskIndicator,
       });
     } catch (e) {
       console.log(e);
@@ -175,7 +193,14 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <span>Interest Rate</span>
           <RateDisplay rate={forecast?.effectiveRate} />
         </div>
-        <div className="stat-line">Risk Level</div>
+        <div className="stat-line">
+          <span>Risk Indicator</span>
+          {forecast && (
+            <span>
+              {forecast.riskIndicator}
+            </span>
+          )}
+        </div>
         <div className="stat-line">
           <span>Auto Roll</span>
           <span>Off</span>

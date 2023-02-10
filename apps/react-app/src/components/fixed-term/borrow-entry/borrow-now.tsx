@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { bigIntToBn, bnToBigInt, borrowNow, MarketAndconfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
+import { bigIntToBn, bnToBigInt, borrowNow, FixedTermProductModel, MarketAndConfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -20,7 +20,7 @@ import { useJetStore } from '@jet-lab/store';
 interface RequestLoanProps {
   decimals: number;
   token: MarginTokenConfig;
-  marketAndConfig: MarketAndconfig;
+  marketAndConfig: MarketAndConfig;
   marginConfig: MarginConfig;
 }
 
@@ -30,6 +30,7 @@ interface Forecast {
   effectiveRate: number;
   selfMatch: boolean;
   fulfilled: boolean;
+  riskIndicator?: number;
 }
 
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -74,9 +75,26 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         marginAccount?.address.toBytes()
       );
       if (sim.self_match) {
-        // TODO Integrate with forecast panel
-        console.log('WARNING Order would be rejected for self-matching');
+        // FIXME Integrate with forecast panel
+        console.log('ERROR Order would be rejected for self-matching');
+        return;
       }
+
+      let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
+      if (correspondingPool == undefined) {
+        console.log('ERROR `correspondingPool` must be defined.');
+        return;
+      }
+
+      const productModel = marginAccount? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool) : undefined;
+      const setupCheckEstimate = productModel?.takerAccountForecast("borrow", sim, "setup");
+      if (setupCheckEstimate !== undefined && setupCheckEstimate.riskIndicator >= 1.0) {
+        // FIXME Disable form submission
+        console.log("WARNING Trade violates setup check and should not be allowed");
+      }
+
+      const valuationEstimate = productModel?.takerAccountForecast("borrow", sim);
+
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
       setForecast({
@@ -84,7 +102,8 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         interest: repayAmount.sub(borrowedAmount).uiTokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
-        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches // allow 1 lamport rounding per match
+        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
+        riskIndicator: valuationEstimate?.riskIndicator,
       });
     } catch (e) {
       console.log(e);
@@ -184,7 +203,14 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Interest Rate</span>
           <RateDisplay rate={forecast?.effectiveRate} />
         </div>
-        <div className="stat-line">Risk Level</div>
+        <div className="stat-line">
+          <span>Risk Indicator</span>
+          {forecast && (
+            <span>
+              {forecast.riskIndicator}
+            </span>
+          )}
+        </div>
         <div className="stat-line">
           <span>Auto Roll</span>
           <span>Off</span>
