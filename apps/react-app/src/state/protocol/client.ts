@@ -104,7 +104,7 @@ export function useProtocolClientSyncer() {
 
   async function createClient() {
     const adapter = new SolanaConnectionAdapter(wallet, connection);
-    const webClient: ExtendedJetClient | undefined = adapter.userAddress && await JetWebClient.connect(adapter.userAddress, adapter, true)
+    const webClient: ExtendedJetClient | undefined = adapter.userAddress && await JetWebClient.connect(adapter.userAddress, adapter)
 
     if (webClient) {
       setProtocolClient(webClient);

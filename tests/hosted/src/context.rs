@@ -378,6 +378,7 @@ impl TestContextSetupInfo {
 
                     DexInfo {
                         program: ORCA_V2,
+                        description: format!("{}/{}", token_a, token_b),
                         address: derive_spl_swap_pool(&ORCA_V2, &token_a, &token_b).state,
                         base: token_a,
                         quote: token_b,
