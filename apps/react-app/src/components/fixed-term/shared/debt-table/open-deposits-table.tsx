@@ -1,11 +1,11 @@
-import { FixedTermMarket, MarginAccount, MarketAndconfig, Pool, TokenAmount } from '@jet-lab/margin';
+import { FixedTermMarket, MarginAccount, MarketAndConfig, Pool, TokenAmount } from '@jet-lab/margin';
 import { Deposit } from '@jet-lab/store';
 import { Table } from 'antd';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useMemo } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
-const getDepositsColumns = (market: MarketAndconfig) => [
+const getDepositsColumns = (market: MarketAndConfig) => [
   {
     title: 'Created',
     dataIndex: 'created_timestamp',
@@ -42,7 +42,7 @@ export const OpenDepositsTable = ({
   blockExplorer
 }: {
   data: Deposit[];
-  market: MarketAndconfig;
+  market: MarketAndConfig;
   marginAccount: MarginAccount;
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
