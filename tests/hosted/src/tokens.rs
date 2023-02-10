@@ -414,6 +414,19 @@ impl TokenManager {
         Ok(state.amount)
     }
 
+    /// Get the mint by its pubkey
+    pub async fn get_mint(&self, account: &Pubkey) -> Result<spl_token::state::Mint, Error> {
+        let account_data = self.ctx.rpc.get_account(account).await?;
+
+        if account_data.is_none() {
+            bail!("account {} does not exist", account);
+        }
+
+        let state = spl_token::state::Mint::unpack(&account_data.unwrap().data)?;
+
+        Ok(state)
+    }
+
     async fn set_pod_metadata<T: bytemuck::Pod>(
         &self,
         address: &Pubkey,

@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Allow this until fixed upstream
+#![allow(clippy::result_large_err)]
+
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token;
@@ -30,6 +33,11 @@ declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");
 
 mod instructions;
 use instructions::*;
+
+/// The maximum swap split percentage
+pub const ROUTE_SWAP_MAX_SPLIT: u8 = 90;
+/// The minimum swap split percentage
+pub const ROUTE_SWAP_MIN_SPLIT: u8 = 100 - ROUTE_SWAP_MAX_SPLIT;
 
 #[program]
 mod jet_margin_swap {
@@ -47,6 +55,42 @@ mod jet_margin_swap {
             withdrawal_amount,
             minimum_amount_out,
         )
+    }
+
+    /// Route a swap to one or more venues
+    pub fn route_swap<'info>(
+        ctx: Context<'_, '_, '_, 'info, RouteSwap<'info>>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        swap_routes: [SwapRouteDetail; 3],
+    ) -> Result<()> {
+        route_swap_handler(ctx, amount_in, minimum_amount_out, swap_routes)
+    }
+
+    /// Route a swap to one or more venues by using margin pools
+    pub fn route_swap_pool<'info>(
+        ctx: Context<'_, '_, '_, 'info, RouteSwapPool<'info>>,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
+        minimum_amount_out: u64,
+        swap_routes: [SwapRouteDetail; 3],
+    ) -> Result<()> {
+        route_swap_pool_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+            swap_routes,
+        )
+    }
+
+    pub fn spl_token_swap(_ctx: Context<SplSwapInfo>) -> Result<()> {
+        Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
+    }
+
+    /// Swap using Saber for stable pools
+    pub fn saber_stable_swap(_ctx: Context<SaberSwapInfo>) -> Result<()> {
+        Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
     }
 }
 
@@ -69,4 +113,72 @@ pub struct MarginPoolInfo<'info> {
 pub enum ErrorCode {
     #[msg("Zero tokens have been withdrawn from a pool for the swap")]
     NoSwapTokensWithdrawn,
+
+    #[msg("An invalid swap route has been provided")]
+    InvalidSwapRoute,
+
+    #[msg("An invalid swap route parameter has been provided")]
+    InvalidSwapRouteParam,
+
+    #[msg("The swap exceeds the maximum slippage tolerance")]
+    SlippageExceeded,
+
+    #[msg("The instruction should not be called directly, use route_swap")]
+    DisallowedDirectInstruction,
+
+    #[msg("Token swaps having a split should deposit into the same account")]
+    InvalidSplitDestination,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub enum SwapRouteIdentifier {
+    Empty = 0,
+    Spl,
+    Whirlpool,
+    SaberStable,
+}
+
+impl Default for SwapRouteIdentifier {
+    fn default() -> Self {
+        Self::Empty
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub struct SwapRouteDetail {
+    pub route_a: SwapRouteIdentifier,
+    pub route_b: SwapRouteIdentifier,
+    pub destination_mint: Pubkey,
+    pub split: u8,
+}
+
+impl Default for SwapRouteDetail {
+    fn default() -> Self {
+        Self {
+            route_a: SwapRouteIdentifier::Empty,
+            route_b: SwapRouteIdentifier::Empty,
+            destination_mint: Default::default(),
+            split: 0,
+        }
+    }
+}
+
+impl SwapRouteDetail {
+    pub fn validate(&self) -> Result<bool> {
+        use SwapRouteIdentifier::*;
+        // There's an anchor bug that gets triggered when using these consts
+        // const MIN: u8 = ROUTE_SWAP_MIN_SPLIT - 1;
+        // const MAX: u8 = ROUTE_SWAP_MAX_SPLIT + 1;
+        match (self.route_a, self.route_b, self.split) {
+            (Empty, Empty, _) => Ok(false),
+            (_, Empty, 0) => Ok(true),
+            // We limit splits to 95%, thus 96+ or 4- are not allowed
+            (Empty, _, _) | (_, _, 0..=9) | (_, _, 91..) => {
+                Err(error!(ErrorCode::InvalidSwapRouteParam))
+            }
+            _ => Ok(true),
+        }
+    }
 }

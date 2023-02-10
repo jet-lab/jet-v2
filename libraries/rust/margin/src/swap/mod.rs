@@ -15,12 +15,26 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod margin_spl_swap;
-mod route_swap;
-mod saber_swap;
-mod spl_token_swap;
+//! The swap module interacts with supported swap protocols
 
-pub use margin_spl_swap::*;
-pub use route_swap::*;
-pub use saber_swap::*;
-pub use spl_token_swap::*;
+use std::sync::Arc;
+
+use anchor_lang::AccountDeserialize;
+use anyhow::Result;
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use solana_sdk::pubkey::Pubkey;
+
+pub mod saber_swap;
+pub mod spl_swap;
+
+// helper function to find mint account
+pub(super) async fn find_mint(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    address: &Pubkey,
+) -> Result<anchor_spl::token::Mint> {
+    let account = rpc.get_account(address).await?.unwrap();
+    let data = &mut &account.data[..];
+    let account = anchor_spl::token::Mint::try_deserialize_unchecked(data)?;
+
+    Ok(account)
+}

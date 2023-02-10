@@ -24,11 +24,12 @@ use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use solana_sdk::transaction::Transaction;
+use solana_sdk::transaction::{Transaction, VersionedTransaction};
 
 use anchor_lang::{AccountDeserialize, Id};
 
@@ -37,6 +38,7 @@ use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
+use crate::lookup_tables::LookupTable;
 use crate::margin_integrator::PositionRefresher;
 use crate::solana::transaction::WithSigner;
 use crate::util::data::Join;
@@ -496,6 +498,77 @@ impl MarginTxBuilder {
         instructions.push(self.ix.update_position_balance(destination_position));
 
         self.create_transaction_builder(&instructions)
+    }
+
+    /// Transaction to swap tokens in a chain of up to 3 legs.
+    ///
+    /// The function accepts the instruction route builder which is expected to be finalized.
+    pub async fn route_swap_with_lookup(
+        &self,
+        builder: &MarginSwapRouteIxBuilder,
+        account_lookup_tables: &[Pubkey],
+        signer: &Keypair,
+    ) -> Result<VersionedTransaction> {
+        // We can't get the instruction if not finalized, get it to check.
+        let inner_swap_ix = builder.get_instruction()?;
+
+        let mut instructions = self.setup_swap(builder).await?;
+
+        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
+
+        let tx = LookupTable::use_lookup_tables(
+            &self.rpc,
+            account_lookup_tables,
+            &instructions,
+            &[signer],
+        )
+        .await?;
+        Ok(tx)
+    }
+
+    /// Transaction to swap tokens in a chain of up to 3 legs.
+    ///
+    /// The function accepts the instruction route builder which is expected to be finalized.
+    pub async fn route_swap(
+        &self,
+        builder: &MarginSwapRouteIxBuilder,
+    ) -> Result<Vec<TransactionBuilder>> {
+        // We can't get the instruction if not finalized, get it to check.
+        let inner_swap_ix = builder.get_instruction()?;
+
+        let setup_instructions = self.setup_swap(builder).await?;
+        let transactions = vec![
+            self.create_transaction_builder(&setup_instructions)?,
+            self.create_transaction_builder(&[
+                ComputeBudgetInstruction::set_compute_unit_limit(800000),
+                self.adapter_invoke_ix(inner_swap_ix),
+            ])?,
+        ];
+
+        Ok(transactions)
+    }
+
+    async fn setup_swap(&self, builder: &MarginSwapRouteIxBuilder) -> Result<Vec<Instruction>> {
+        let mut setup_instructions = vec![];
+        for deposit_note_mint in builder.get_pool_note_mints() {
+            self.get_or_create_position(&mut setup_instructions, deposit_note_mint)
+                .await?;
+        }
+        for token_mint in builder.get_spl_token_mints() {
+            // Check if an ATA exists before creating it
+            // TODO: if swapping using margin tokens, we could register positions
+            let ata = get_associated_token_address(self.address(), token_mint);
+            if self.rpc.get_account(&ata).await?.is_none() {
+                let ix = spl_associated_token_account::instruction::create_associated_token_account(
+                    &self.signer(),
+                    self.address(),
+                    token_mint,
+                    &spl_token::id(),
+                );
+                setup_instructions.push(ix);
+            }
+        }
+        Ok(setup_instructions)
     }
 
     /// Transaction to begin liquidating user account.
