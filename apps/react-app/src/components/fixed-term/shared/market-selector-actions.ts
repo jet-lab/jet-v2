@@ -2,7 +2,7 @@ import {
   AssociatedToken,
   FixedTermMarket,
   MarginAccount,
-  MarketAndconfig,
+  MarketAndConfig,
   Pool,
   redeem,
   repay,
@@ -24,7 +24,7 @@ export const submitRepay = async (
   termLoans: Loan[],
   pools: Record<string, Pool>,
   markets: FixedTermMarket[],
-  market: MarketAndconfig,
+  market: MarketAndConfig,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
   blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach'
 ) => {
@@ -57,7 +57,7 @@ export const submitRepay = async (
 };
 
 export const getOwedTokens = async (
-  market: MarketAndconfig,
+  market: MarketAndConfig,
   marginAccount: MarginAccount,
   provider: AnchorProvider,
   setOwedTokens: Dispatch<SetStateAction<TokenAmount>>
@@ -77,8 +77,8 @@ export const getOwedTokens = async (
 
 export const settleNow = async (
   marginAccount: MarginAccount,
-  markets: MarketAndconfig[],
-  selectedMarket: MarketAndconfig,
+  markets: MarketAndConfig[],
+  selectedMarket: MarketAndConfig,
   provider: AnchorProvider,
   setOwedTokens: Dispatch<SetStateAction<TokenAmount>>,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
@@ -116,7 +116,7 @@ export const settleNow = async (
 };
 
 export const redeemDeposits = async (
-  market: MarketAndconfig,
+  market: MarketAndConfig,
   marginAccount: MarginAccount,
   provider: AnchorProvider,
   deposits: Deposit[],

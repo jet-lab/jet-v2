@@ -1,4 +1,4 @@
-import { MarginAccount, MarketAndconfig, TokenAmount } from '@jet-lab/margin';
+import { MarginAccount, MarketAndConfig, TokenAmount } from '@jet-lab/margin';
 import { useOpenPositions } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
@@ -11,8 +11,8 @@ import { getOwedTokens, redeemDeposits, settleNow, submitRepay } from './market-
 
 interface IMarketSelectorButtonProps {
   marginAccount?: MarginAccount;
-  markets: MarketAndconfig[];
-  selectedMarket?: MarketAndconfig;
+  markets: MarketAndConfig[];
+  selectedMarket?: MarketAndConfig;
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
   const cluster = useRecoilValue(Cluster);

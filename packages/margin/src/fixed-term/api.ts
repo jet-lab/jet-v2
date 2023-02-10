@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { FixedTermMarket, MarketAndconfig } from "./fixedTerm"
+import { FixedTermMarket, MarketAndConfig } from "./fixedTerm"
 import { Address, AnchorProvider, BN } from "@project-serum/anchor"
 import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../margin"
 import { AssociatedToken } from "../token"
@@ -38,7 +38,7 @@ export const withCreateFixedTermMarketAccounts = async ({
 
 // MARKET MAKER ORDERS
 interface ICreateLendOrder {
-  market: MarketAndconfig
+  market: MarketAndConfig
   provider: AnchorProvider
   marginAccount: MarginAccount
   walletAddress: PublicKey
@@ -115,7 +115,7 @@ export const offerLoan = async ({
 }
 
 interface ICreateBorrowOrder {
-  market: MarketAndconfig
+  market: MarketAndConfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   walletAddress: PublicKey
@@ -185,7 +185,7 @@ export const requestLoan = async ({
 }
 
 interface ICancelOrder {
-  market: MarketAndconfig
+  market: MarketAndConfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   orderId: BN,
@@ -217,7 +217,7 @@ export const cancelOrder = async ({ market, marginAccount, provider, orderId, po
 // MARKET TAKER ORDERS
 
 interface IBorrowNow {
-  market: MarketAndconfig
+  market: MarketAndConfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   walletAddress: PublicKey
@@ -299,7 +299,7 @@ export const borrowNow = async ({
 }
 
 interface ILendNow {
-  market: MarketAndconfig
+  market: MarketAndConfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   walletAddress: PublicKey
@@ -371,8 +371,8 @@ export const lendNow = async ({
 }
 
 interface ISettle {
-  markets: MarketAndconfig[]
-  selectedMarket: MarketAndconfig
+  markets: MarketAndConfig[]
+  selectedMarket: MarketAndConfig
   marginAccount: MarginAccount
   provider: AnchorProvider
   pools: Record<string, Pool>
@@ -421,7 +421,7 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
 interface IRepay {
   amount: BN,
   marginAccount: MarginAccount,
-  market: MarketAndconfig,
+  market: MarketAndConfig,
   provider: AnchorProvider,
   termLoans: Array<{
     address: Address,
@@ -518,7 +518,7 @@ interface IRedeem {
   marginAccount: MarginAccount
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
-  market: MarketAndconfig
+  market: MarketAndConfig
   provider: AnchorProvider
   deposits: Array<{
     id: number
