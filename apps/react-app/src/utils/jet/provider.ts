@@ -31,5 +31,6 @@ export function useProvider() {
     () => (config && networkStatus === 'connected' ? MarginClient.getPrograms(provider, config) : undefined),
     [config, provider, networkStatus]
   );
+
   return { programs, provider };
 }

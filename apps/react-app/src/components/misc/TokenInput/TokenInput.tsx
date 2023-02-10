@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
 import { feesBuffer, MarginAccount, TokenAmount, PoolAction, Pool } from '@jet-lab/margin';
-import { CurrentPool, PoolOption, usePoolFromName } from '@state/pools/pools';
+import { PoolOption, Pools } from '@state/pools/pools';
 import {
   CurrentAction,
   MaxTradeAmounts,
@@ -22,6 +22,7 @@ import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
 import { fromLocaleString } from '@utils/format';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Main component for token inputs when the user takes one of the main actions (deposit, borrow, etc)
 export function TokenInput(props: {
@@ -48,9 +49,13 @@ export function TokenInput(props: {
   const currentAccount = useRecoilValue(CurrentAccount);
   const account = props.account ?? currentAccount;
   // The pool being interacted with (or specified externally)
-  const currentPool = useRecoilValue(CurrentPool);
-  const poolFromToken = usePoolFromName(props.poolSymbol);
-  const tokenPool = poolFromToken ?? currentPool;
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const tokenPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const currentAction = useRecoilValue(CurrentAction);
   // If an action was specified, reference that action otherwise reference the currentAction
   const tokenAction = props.action ?? currentAction;
@@ -131,13 +136,14 @@ export function TokenInput(props: {
 
     let maxInput = zeroInputAmount;
     const poolPosition = account.poolPositions[tokenPool.symbol];
+
     if (poolPosition) {
       const maxInputTradeAmounts = poolPosition.maxTradeAmounts;
       setMaxTradeAmounts(maxInputTradeAmounts);
 
       // If user is depositing or swapping with jupiter, reference their wallet
       if (tokenAction === 'deposit') {
-        maxInput = walletTokens ? walletTokens.map[tokenPool.symbol].amount : zeroInputAmount;
+        maxInput = walletTokens ? walletTokens.map[tokenPool.symbol]?.amount : zeroInputAmount;
         // If SOL, need to save some for fees
         if (tokenPool.symbol === 'SOL') {
           maxInput = maxInput.subb(feesBuffer);

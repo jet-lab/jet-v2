@@ -16,9 +16,9 @@ import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
-import { CurrentPool, Pools } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
@@ -46,8 +46,13 @@ interface Forecast {
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
-  const currentPool = useRecoilValue(CurrentPool);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const wallet = useWallet();
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));

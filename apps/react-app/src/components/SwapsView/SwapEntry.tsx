@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useRecoilState, useResetRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useEffect, useMemo, useState } from 'react';
+import { useRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
 import { SwapsRowOrder } from '@state/views/views';
 import { Dictionary } from '@state/settings/localization/localization';
 import { CurrentAccount } from '@state/user/accounts';
-import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '@state/pools/pools';
+import { Pools, PoolOptions } from '@state/pools/pools';
 import {
   CurrentAction,
   CurrentSwapOutput,
@@ -46,8 +46,15 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
-  const currentPool = useRecoilValue(CurrentPool);
+  const { selectedPoolKey, selectPool } = useJetStore(state => ({
+    selectedPoolKey: state.selectedPoolKey,
+    selectPool: state.selectPool
+  }));
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const poolPrecision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
   const overallInputBalance = poolPosition ? poolPosition.depositBalance.tokens - poolPosition.loanBalance.tokens : 0;
@@ -378,7 +385,7 @@ export function SwapEntry(): JSX.Element {
             onClick={() => {
               if (outputToken) {
                 const outputString = swapOutputTokens?.uiTokens ?? '0';
-                setCurrentPoolSymbol(outputToken.symbol);
+                selectPool(outputToken.address.toBase58());
                 setOutputToken(currentPool);
                 // Allow UI to update and then adjust amounts
                 setSwitchingAssets(true);

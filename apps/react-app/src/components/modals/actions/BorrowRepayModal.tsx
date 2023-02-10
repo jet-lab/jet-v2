@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SendingTransaction } from '@state/actions/actions';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
-import { CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { useTokenInputDisabledMessage } from '@utils/actions/tokenInput';
 import { useCurrencyFormatting } from '@utils/currency';
@@ -26,7 +26,13 @@ export function BorrowRepayModal(): JSX.Element {
   const { currencyAbbrev } = useCurrencyFormatting();
   const { borrow, repay } = useMarginActions();
   const walletTokens = useRecoilValue(WalletTokens);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const [currentAction, setCurrentAction] = useRecoilState(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const currentAccount = useRecoilValue(CurrentAccount);

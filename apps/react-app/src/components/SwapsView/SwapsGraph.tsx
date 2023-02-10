@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
 import { BN } from '@project-serum/anchor';
@@ -7,7 +7,6 @@ import { SwapsRowOrder } from '@state/views/views';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
-import { CurrentPool } from '@state/pools/pools';
 import { generateSwapPrices, getOutputTokenAmount } from '@utils/actions/swap';
 import { useCurrencyFormatting } from '@utils/currency';
 import { fromLocaleString } from '@utils/format';
@@ -16,6 +15,8 @@ import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/Connecti
 import ApexCharts from 'apexcharts';
 import { Typography } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
+import { useJetStore } from '@jet-lab/store';
+import { Pools } from '@state/pools/pools';
 
 // Graph for displaying pricing and slippage data for current swap pair
 export function SwapsGraph(): JSX.Element {
@@ -23,7 +24,13 @@ export function SwapsGraph(): JSX.Element {
   const currentAccount = useRecoilValue(CurrentAccount);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const outputToken = useRecoilValue(CurrentSwapOutput);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);

@@ -3,7 +3,7 @@ import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { chunks, MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
-import { Pools, CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
 import { Dictionary } from '@state/settings/localization/localization';
@@ -13,6 +13,7 @@ import { NOTIFICATION_DURATION } from '../notify';
 import { message } from 'antd';
 import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { useJetStore } from '@jet-lab/store';
+import { useMemo } from 'react';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -24,9 +25,14 @@ export function useMarginActions() {
   const cluster = useJetStore(state => state.settings.cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
-  const pools = useRecoilValue(Pools);
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const wallet = useWallet();
   const walletTokens = useRecoilValue(WalletTokens);
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -82,7 +88,7 @@ export function useMarginActions() {
 
   // Create Account
   async function createAccount(): Promise<[string | undefined, ActionResponse]> {
-    if (!programs || !pools || !currentPool || !walletTokens || !wallet.publicKey) {
+    if (!programs || !pools || !walletTokens || !wallet.publicKey) {
       console.error('Pools not loaded');
       throw new Error();
     }

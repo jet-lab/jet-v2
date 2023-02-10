@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSetRecoilState, useResetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SendingTransaction } from '@state/actions/actions';
 import { AccountNames, Accounts, useAccountFromName } from '@state/user/accounts';
-import { CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { ActionResponse } from '@utils/jet/marginActions';
 import { useTokenInputDisabledMessage } from '@utils/actions/tokenInput';
@@ -27,7 +27,13 @@ export function TransferModal(): JSX.Element {
   const { currencyAbbrev } = useCurrencyFormatting();
   const { transfer } = useMarginActions();
   const accounts = useRecoilValue(Accounts);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const precision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const currentAction = useRecoilValue(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);

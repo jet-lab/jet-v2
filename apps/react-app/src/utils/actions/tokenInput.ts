@@ -3,19 +3,26 @@ import { feesBuffer, MarginAccount } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { WalletTokens } from '@state/user/walletTokens';
 import { AccountNames, CurrentAccount } from '@state/user/accounts';
-import { Pools, CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount } from '@state/actions/actions';
 import { NewAccountModal } from '@state/modals/modals';
 import { formatRiskIndicator } from '../format';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useJetStore } from '@jet-lab/store';
+import { useMemo } from 'react';
 
 // Check if user input should be disabled and return the relevant message
 export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const dictionary = useRecoilValue(Dictionary);
   const walletTokens = useRecoilValue(WalletTokens);
   const accountNames = useRecoilValue(AccountNames);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
-  const currentPool = useRecoilValue(CurrentPool);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const currentAccount = useRecoilValue(CurrentAccount);
   const marginAccount = account ?? currentAccount;
   const currentAction = useRecoilValue(CurrentAction);
@@ -113,7 +120,13 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
 // Check if user input should be warned
 export function useTokenInputWarningMessage(account?: MarginAccount | undefined): string {
   const dictionary = useRecoilValue(Dictionary);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const currentAccount = useRecoilValue(CurrentAccount);
   const marginAccount = account ?? currentAccount;
   const currentAction = useRecoilValue(CurrentAction);
@@ -153,7 +166,13 @@ export function useTokenInputWarningMessage(account?: MarginAccount | undefined)
 // Check if user input is dangerous / would cause error
 export function useTokenInputErrorMessage(account?: MarginAccount | undefined, projectedRisk?: number): string {
   const dictionary = useRecoilValue(Dictionary);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const currentAction = useRecoilValue(CurrentAction);
   const walletTokens = useRecoilValue(WalletTokens);
   const currentAccount = useRecoilValue(CurrentAccount);

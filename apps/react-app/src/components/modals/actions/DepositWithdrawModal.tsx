@@ -4,7 +4,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
-import { CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { useTokenInputDisabledMessage } from '@utils/actions/tokenInput';
 import { useCurrencyFormatting } from '@utils/currency';
@@ -17,17 +17,24 @@ import { useMarginActions } from '@utils/jet/marginActions';
 import { ArrowRight } from './ArrowRight';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 import { Button, Modal, Tabs, Typography } from 'antd';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useJetStore } from '@jet-lab/store';
 
 // Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
   const { cluster, explorer } = useJetStore(state => state.settings);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
+
   const dictionary = useRecoilValue(Dictionary);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { deposit, withdraw } = useMarginActions();
   const walletTokens = useRecoilValue(WalletTokens);
-  const currentPool = useRecoilValue(CurrentPool);
   const [currentAction, setCurrentAction] = useRecoilState(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -59,7 +66,6 @@ export function DepositWithdrawModal(): JSX.Element {
   async function depositWithdraw() {
     setSendingTransaction(true);
     const [txId, resp] = currentAction === 'deposit' ? await deposit() : await withdraw();
-
 
     if (resp === ActionResponse.Success) {
       notify(

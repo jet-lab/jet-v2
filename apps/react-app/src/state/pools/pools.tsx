@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { atom, useRecoilValue, selector, useSetRecoilState } from 'recoil';
 import { PoolManager as MarginPoolManager, Pool } from '@jet-lab/margin';
-import { localStorageEffect } from '../effects/localStorageEffect';
 import { useProvider } from '@utils/jet/provider';
 import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
@@ -26,26 +25,7 @@ export const Pools = atom({
   default: undefined as JetMarginPools | undefined,
   dangerouslyAllowMutability: true
 });
-// Track the current pool by its symbol, so it's lightweight
-// and we can reference this value to select the entire state
-export const CurrentPoolSymbol = atom({
-  key: 'currentPoolSymbol',
-  default: 'BTC',
-  effects: [localStorageEffect('jetAppCurrentPool')]
-});
 
-// Select the current pool's state
-export const CurrentPool = selector<Pool | undefined>({
-  key: 'currentPool',
-  get: ({ get }) => {
-    const pools = get(Pools);
-    const symbol = get(CurrentPoolSymbol);
-
-    const currentPool = pools?.tokenPools[symbol];
-    return currentPool;
-  },
-  dangerouslyAllowMutability: true
-});
 // Return a simple list of pool options to choose from
 export const PoolOptions = selector<PoolOption[]>({
   key: 'poolOptions',
@@ -84,7 +64,10 @@ export function usePoolsSyncer() {
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
     // Use pool manager to load pools state
-    async function getPools(poolManager: MarginPoolManager) {
+    async function getPools() {
+      if (!programs) return;
+      console.log(programs.connection.rpcEndpoint, programs.config.tokens);
+      const poolManager = new MarginPoolManager(programs, provider);
       const tokenPools = await poolManager.loadAll();
       let totalSupply = 0;
       let totalBorrowed = 0;
@@ -135,11 +118,10 @@ export function usePoolsSyncer() {
     }
 
     if (programs && provider && networkState === 'connected') {
-      const poolManager = new MarginPoolManager(programs, provider);
-      getPools(poolManager);
+      getPools();
     }
 
     // TODO remove resetting pools upon action
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programs, provider.connection, networkState]);
+  }, [programs?.config, networkState]);
 }
