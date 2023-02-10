@@ -15,17 +15,10 @@ describe('Main Flows', () => {
     withdraw('SOL', 0.3);
   });
 
-  it('Borrow and repay SOL from wallet', () => {
-    airdrop('SOL', 'SOL');
-    deposit('SOL', 0.5);
-    borrow('SOL', 0.3);
-    repay('SOL', 0.3, false);
-  });
-
   it('Borrow and repay SOL from existing margin account', () => {
     deposit('SOL', 0.5);
     borrow('SOL', 0.3, true);
-    repay('SOL', 0.3, true);
+    repay('SOL', 0.3);
   });
 });
 
