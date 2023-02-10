@@ -1,6 +1,14 @@
 import { airdrop, borrow, deposit, loadPageAndCreateAccount } from '../support/actions';
 
 describe('Fixed Term Market', () => {
+  it('can get data from the API endpoint', () => {
+    const res = cy.request('http://localhost:3002/health').as('status');
+    cy.get('@status').should((response: any) => {
+      expect(response.body).to.have.property('database', 'Ready');
+      expect(response).to.have.property('headers');
+      expect(response).to.have.property('duration');
+    });
+  });
   it('creates a market maker account', () => {
     loadPageAndCreateAccount();
   });
