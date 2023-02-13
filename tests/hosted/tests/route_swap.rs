@@ -137,6 +137,10 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     let user_a = ctx.margin.user(&wallet_a, 0)?;
     let user_b = ctx.margin.user(&wallet_b, 0)?;
 
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
+
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
     user_b.create_account().await?;
@@ -380,6 +384,10 @@ async fn single_leg_swap_margin(
     let user_a = ctx.margin.user(&wallet_a, 0)?;
     let user_b = ctx.margin.user(&wallet_b, 0)?;
 
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
+
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
     user_b.create_account().await?;
@@ -490,6 +498,10 @@ async fn single_leg_swap(
 ) -> Result<(), anyhow::Error> {
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
     let user_a = ctx.margin.user(&wallet_a, 0)?;
+
+    // issue permits for the user
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+
     user_a.create_account().await?;
 
     ctx.tokens

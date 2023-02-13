@@ -1,33 +1,45 @@
+import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { AccountInfo, PublicKey } from "@solana/web3.js"
-import BN from "bn.js"
 import { findDerivedAccount, Number128 } from "../utils"
+import { Airspace } from "./airspace"
 import { MarginPrograms } from "./marginClient"
-import { PositionTokenMetadataInfo, TokenKind } from "./metadata"
-import { PositionKind } from "./state"
+import { TokenKind } from "./metadata"
+import { PositionKind, TokenConfigInfo } from "./state"
 
-export class PositionTokenMetadata {
+export class TokenConfig {
   private programs: MarginPrograms
   tokenMint: PublicKey
   address: PublicKey
-  info: PositionTokenMetadataInfo | undefined
+  info: TokenConfigInfo | undefined
 
   valueModifier: Number128 = Number128.ZERO
   tokenKind: PositionKind = PositionKind.NoValue
 
-  static derive(programs: MarginPrograms, tokenMint: PublicKey) {
-    return findDerivedAccount(programs.config.metadataProgramId, tokenMint)
+  static derive(programs: MarginPrograms, airspace: Address | undefined, tokenMint: PublicKey) {
+    airspace = airspace
+      ? translateAddress(airspace)
+      : Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name)
+    return findDerivedAccount(programs.config.marginProgramId, "token-config", tokenMint)
   }
 
-  constructor({ programs, tokenMint }: { programs: MarginPrograms; tokenMint: PublicKey }) {
+  constructor({
+    programs,
+    airspace,
+    tokenMint
+  }: {
+    programs: MarginPrograms
+    airspace: Address | undefined
+    tokenMint: PublicKey
+  }) {
     this.programs = programs
     this.tokenMint = tokenMint
-    this.address = PositionTokenMetadata.derive(programs, tokenMint)
+    this.address = TokenConfig.derive(programs, airspace, tokenMint)
   }
 
-  static async load(programs: MarginPrograms, tokenMint: PublicKey) {
-    const metadata = new PositionTokenMetadata({ programs, tokenMint: tokenMint })
-    await metadata.refresh()
-    return metadata
+  static async load(programs: MarginPrograms, airspace: Address | undefined, tokenMint: PublicKey) {
+    const config = new TokenConfig({ programs, airspace, tokenMint })
+    await config.refresh()
+    return config
   }
 
   async refresh() {
@@ -41,12 +53,9 @@ export class PositionTokenMetadata {
       this.valueModifier = Number128.ZERO
       return
     }
-    this.info = this.programs.metadata.coder.accounts.decode<PositionTokenMetadataInfo>(
-      "positionTokenMetadata",
-      info.data
-    )
+    this.info = this.programs.margin.coder.accounts.decode<TokenConfigInfo>("TokenConfig", info.data)
     this.valueModifier = Number128.fromDecimal(new BN(this.info.valueModifier), -2)
-    this.tokenKind = PositionTokenMetadata.decodeTokenKind(this.info.tokenKind)
+    this.tokenKind = TokenConfig.decodeTokenKind(this.info.tokenKind)
   }
 
   static decodeTokenKind(kind: TokenKind) {

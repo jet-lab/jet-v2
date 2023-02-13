@@ -197,6 +197,7 @@ export class MarginAccount {
    * @param {Provider} provider The provider and wallet that can sign for this margin account
    * @param {Address} owner
    * @param {number} seed
+   * @param {Address} airspaceAddress Address of the airspace. If not provided, uses the first value found in the config
    * @param {Record<string, Pool>} pools
    * @param {MarginWalletTokens} walletTokens
    * @memberof MarginAccount
@@ -214,7 +215,7 @@ export class MarginAccount {
     this.address = MarginAccount.derive(programs, owner, seed)
     this.airspace = airspaceAddress
       ? translateAddress(airspaceAddress)
-      : findDerivedAccount(this.programs.config.airspaceProgramId, "airspace", this.programs.config.airspaces[0].name)
+      : Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name)
     this.pools = pools
     this.walletTokens = walletTokens
     this.positions = this.getPositions()

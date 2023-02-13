@@ -14,8 +14,8 @@ import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
-import { PositionTokenMetadata } from "../positionTokenMetadata"
 import { FixedTermMarket } from "fixed-term"
+import { TokenConfig } from "../tokenConfig"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
@@ -90,17 +90,17 @@ export class Pool {
   /**
    * The metadata of the [[Pool]] deposit note mint
    *
-   * @type {PositionTokenMetadata}
+   * @type {TokenConfig}
    * @memberof Pool
    */
-  depositNoteMetadata: PositionTokenMetadata
+  depositNoteMetadata: TokenConfig
   /**
    * The metadata of the [[Pool]] loan note mint
    *
-   * @type {PositionTokenMetadata}
+   * @type {TokenConfig}
    * @memberof Pool
    */
-  loanNoteMetadata: PositionTokenMetadata
+  loanNoteMetadata: TokenConfig
 
   /**
    * The address of the [[Pool]]
@@ -356,8 +356,8 @@ export class Pool {
    * @param tokenConfig
    */
   constructor(public programs: MarginPrograms, public addresses: PoolAddresses, public tokenConfig: MarginTokenConfig) {
-    this.depositNoteMetadata = new PositionTokenMetadata({ programs, tokenMint: addresses.depositNoteMint })
-    this.loanNoteMetadata = new PositionTokenMetadata({ programs, tokenMint: addresses.loanNoteMint })
+    this.depositNoteMetadata = new TokenConfig({ programs, airspace: undefined, tokenMint: addresses.depositNoteMint })
+    this.loanNoteMetadata = new TokenConfig({ programs, airspace: undefined, tokenMint: addresses.loanNoteMint })
 
     const zero = new BN(0)
     this.prices = {
@@ -821,7 +821,7 @@ export class Pool {
     marginAccount: MarginAccount
     pools: Record<string, Pool> | Pool[]
     change: PoolTokenChange
-    destination?: TokenAddress,
+    destination?: TokenAddress
     markets: FixedTermMarket[]
   }): Promise<string> {
     if (!change.changeKind.isShiftBy()) {
@@ -939,7 +939,7 @@ export class Pool {
     source,
     change,
     closeLoan,
-    signer,
+    signer
   }: {
     marginAccount: MarginAccount
     pools: Record<string, Pool> | Pool[]

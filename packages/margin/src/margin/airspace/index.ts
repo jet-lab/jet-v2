@@ -11,6 +11,15 @@ export * from "./state"
  */
 export class Airspace {
   /**
+   *
+   * @param program The JetAirspace program
+   * @param name The name string used to derive the airspace address
+   * @returns The public key of the airspace
+   */
+  static deriveAddress(programId: PublicKey, name: string): PublicKey {
+    return findDerivedAccount(programId, "airspace", name)
+  }
+  /**
    * Derives the address for the issuerId required to create an airspace permit
    *
    * @param authority The authority requesting the permit

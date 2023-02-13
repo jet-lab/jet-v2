@@ -1499,6 +1499,65 @@ export type JetMargin = {
       }
     },
     {
+      name: "TokenConfig"
+      docs: [
+        "The configuration account specifying parameters for a token when used",
+        "in a position within a margin account."
+      ]
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "mint"
+            docs: ["The mint for the token"]
+            type: "publicKey"
+          },
+          {
+            name: "underlyingMint"
+            docs: ["The mint for the underlying token represented, if any"]
+            type: "publicKey"
+          },
+          {
+            name: "airspace"
+            docs: ["The space this config is valid within"]
+            type: "publicKey"
+          },
+          {
+            name: "admin"
+            docs: [
+              "The administrator of this token, which has the authority to provide information",
+              "about (e.g. prices) and otherwise modify position states for these tokens."
+            ]
+            type: {
+              defined: "TokenAdmin"
+            }
+          },
+          {
+            name: "tokenKind"
+            docs: [
+              "Description of this token",
+              "",
+              "This determines the way the margin program values a token as a position in a",
+              "margin account."
+            ]
+            type: {
+              defined: "TokenKind"
+            }
+          },
+          {
+            name: "valueModifier"
+            docs: ["A modifier to adjust the token value, based on the kind of token"]
+            type: "u16"
+          },
+          {
+            name: "maxStaleness"
+            docs: ["The maximum staleness (seconds) that's acceptable for balances of this token"]
+            type: "u64"
+          }
+        ]
+      }
+    },
+    {
       name: "TokenConfigUpdate"
       type: {
         kind: "struct"
@@ -3828,6 +3887,65 @@ export const IDL: JetMargin = {
           {
             name: "pastDue",
             type: "bool"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenConfig",
+      docs: [
+        "The configuration account specifying parameters for a token when used",
+        "in a position within a margin account."
+      ],
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "mint",
+            docs: ["The mint for the token"],
+            type: "publicKey"
+          },
+          {
+            name: "underlyingMint",
+            docs: ["The mint for the underlying token represented, if any"],
+            type: "publicKey"
+          },
+          {
+            name: "airspace",
+            docs: ["The space this config is valid within"],
+            type: "publicKey"
+          },
+          {
+            name: "admin",
+            docs: [
+              "The administrator of this token, which has the authority to provide information",
+              "about (e.g. prices) and otherwise modify position states for these tokens."
+            ],
+            type: {
+              defined: "TokenAdmin"
+            }
+          },
+          {
+            name: "tokenKind",
+            docs: [
+              "Description of this token",
+              "",
+              "This determines the way the margin program values a token as a position in a",
+              "margin account."
+            ],
+            type: {
+              defined: "TokenKind"
+            }
+          },
+          {
+            name: "valueModifier",
+            docs: ["A modifier to adjust the token value, based on the kind of token"],
+            type: "u16"
+          },
+          {
+            name: "maxStaleness",
+            docs: ["The maximum staleness (seconds) that's acceptable for balances of this token"],
+            type: "u64"
           }
         ]
       }
