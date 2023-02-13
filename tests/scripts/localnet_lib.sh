@@ -60,12 +60,13 @@ run() {
 }
 
 init-idl() {
+    cargo run --bin strip-idl-docs
     anchor idl init -f ./target/idl/jet_metadata.json $META_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_control.json $CTRL_PID --provider.cluster localnet
-    # anchor idl init -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
-    # anchor idl init -f ./target/idl/jet_bonds.json $BOND_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_bonds.json $BOND_PID --provider.cluster localnet
 }
 
 start-validator() {
