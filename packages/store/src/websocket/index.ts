@@ -22,9 +22,9 @@ export const initWebsocket = (cluster?: Cluster) => {
         endpoint = process.env.WS_API;
         break;
     }
-    if (!endpoint) throw `No websocket environment variable set up.`;
-
+    
     console.log('initialising websocket for ', cluster, endpoint);
+    if (!endpoint) throw `No websocket environment variable set up.`;
 
     ws = new WebSocket(endpoint);
 
