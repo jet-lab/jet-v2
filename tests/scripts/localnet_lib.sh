@@ -7,6 +7,7 @@ set -euxo pipefail
 CTRL_PID=JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8
 MRGN_PID=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ
 POOL_PID=JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ
+FIXED_TERM_PID=JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc
 META_PID=JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp
 MRKT_PID=JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc
 ASM_PID=JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi
@@ -68,7 +69,11 @@ init-idl() {
     # anchor idl init -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
+<<<<<<< HEAD
     anchor idl init -f ./target/idl/jet_fixed_term.json $MRKT_PID --provider.cluster localnet
+=======
+    anchor idl init -f ./target/idl/jet_fixed_term.json $FIXED_TERM_PID --provider.cluster localnet
+>>>>>>> 240ea8f5 (e2e error: acocunt discriminator on decoding TokenConfig)
 }
 
 start-validator() {

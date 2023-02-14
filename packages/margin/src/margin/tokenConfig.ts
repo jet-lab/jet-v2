@@ -4,7 +4,20 @@ import { findDerivedAccount, Number128 } from "../utils"
 import { Airspace } from "./airspace"
 import { MarginPrograms } from "./marginClient"
 import { TokenKind } from "./metadata"
-import { PositionKind, TokenConfigInfo } from "./state"
+import { PositionKind } from "./state"
+
+/**
+ * On-chain representation of the [[TokenConfig]]
+ */
+export interface TokenConfigInfo {
+  mint: PublicKey
+  underlyingMint: PublicKey
+  airspace: PublicKey
+  admin: number[]
+  tokenKind: TokenKind
+  valueModifier: BN
+  maxStaleness: BN
+}
 
 export class TokenConfig {
   private programs: MarginPrograms
