@@ -47,7 +47,7 @@ export const createSettingsSlice: StateCreator<JetStore, [['zustand/devtools', n
   },
   updateSettings: (payload: Partial<Settings>) => {
     if (payload.cluster !== get().settings.cluster) {
-      initWebsocket(payload.cluster);
+      initWebsocket(payload.cluster, get().selectedWallet);
     }
     return set(state => ({ settings: { ...state.settings, ...payload } }), false, 'UPDATE_SETTINGS');
   }

@@ -23,7 +23,7 @@ export const useJetStore = create<JetStore, [['zustand/devtools', never], ['zust
       {
         name: 'jet-state',
         onRehydrateStorage: () => {
-          return state => state && initWebsocket(state.settings.cluster);
+          return state => state && initWebsocket(state.settings.cluster, state.selectedWallet);
         }
       }
     )
