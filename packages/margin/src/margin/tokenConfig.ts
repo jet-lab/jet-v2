@@ -32,7 +32,7 @@ export class TokenConfig {
     airspace = airspace
       ? translateAddress(airspace)
       : Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name)
-    return findDerivedAccount(programs.config.marginProgramId, "token-config", tokenMint)
+    return findDerivedAccount(programs.config.marginProgramId, "token-config", airspace, tokenMint)
   }
 
   constructor({
