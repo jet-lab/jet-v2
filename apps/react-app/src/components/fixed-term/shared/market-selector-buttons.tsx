@@ -20,9 +20,9 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.REACT_APP_DEV_REACT_APP_DATA_API
+        ? process.env.REACT_APP_DEV_DATA_API
         : cluster === 'localnet'
-        ? process.env.REACT_APP_LOCAL_REACT_APP_DATA_API
+        ? process.env.REACT_APP_LOCAL_DATA_API
         : '',
     [cluster]
   );
