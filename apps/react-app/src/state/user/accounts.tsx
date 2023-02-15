@@ -43,9 +43,9 @@ export const AccountsLoading = atom({
 });
 // Track the current account by its name, so it's lightweight
 // and we can reference this value to select the entire state
-export const CurrentAccountAddress = atom({
+export const CurrentAccountAddress = atom<string>({
   key: 'currentAccountAddress',
-  default: '' as string,
+  default: '',
   effects: [localStorageEffect('jetAppCurrentAccountAddress')]
 });
 // User's starred accounts for quick selection
@@ -67,7 +67,6 @@ export const CurrentAccount = selector<MarginAccount | undefined>({
   get: ({ get }) => {
     const accounts = get(Accounts);
     const currentAddress = get(CurrentAccountAddress);
-
     const currentAccount = Object.values(accounts).filter(account => account.address.toString() === currentAddress)[0];
     return currentAccount;
   },
@@ -150,7 +149,7 @@ export function useAccountsSyncer() {
         }
       }
       // If no currentAccount select first
-      if (!currentAccount && accounts.length) {
+      if (!currentAccountAddress && accounts.length > 0) {
         setCurrentAccountAddress(accounts[0].address.toString());
       }
 
