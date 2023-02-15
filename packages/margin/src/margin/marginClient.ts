@@ -385,11 +385,11 @@ export class MarginClient {
   static async getBlackBoxHistory(pubKey: PublicKey, cluster: MarginCluster): Promise<AccountTransaction[]> {
     const url =
       cluster === "mainnet-beta"
-        ? process.env.DATA_API
+        ? process.env.REACT_APP_DATA_API
         : cluster === "devnet"
-        ? process.env.DEV_DATA_API
+        ? process.env.REACT_APP_DEV_DATA_API
         : cluster === "localnet"
-        ? process.env.LOCAL_DATA_API
+        ? process.env.REACT_APP_LOCAL_DATA_API
         : ""
     const flightLogURL = `${url}/margin/accounts/activity/${pubKey}`
 
