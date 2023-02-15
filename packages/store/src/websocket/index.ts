@@ -1,10 +1,10 @@
 import { Cluster } from 'slices/settings';
-import { JET_WS_EVENTS } from '../events';
+import { APPLICATION_WS_EVENTS, JET_WS_EVENTS } from '../events';
 import { PoolDataUpdate } from '../slices/pools';
 import { useJetStore } from '../store';
 
 let ws: WebSocket;
-export const initWebsocket = (cluster?: Cluster) => {
+export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
   if (ws) {
     ws.close();
   }
@@ -29,18 +29,18 @@ export const initWebsocket = (cluster?: Cluster) => {
     ws = new WebSocket(endpoint);
 
     ws.onopen = () => {
-      // const subscriptionEvent: APPLICATION_WS_EVENTS = {
-      //   type: 'SUBSCRIBE',
-      //   payload: {
-      //     wallet: <wallet pkey>,
-      //     margin_accounts: [
-      //       <amrgin account 1 pkey>,
-      //        ...,
-      //       <margin account n pkey>
-      //     ]
-      //   }
-      // };
-      // ws.send(JSON.stringify(subscriptionEvent));
+      if (!wallet) {
+        return;
+      }
+      const subscriptionEvent: APPLICATION_WS_EVENTS = {
+        type: 'SUBSCRIBE',
+        payload: {
+          wallet,
+          // It's safe not to pass in margin accounts
+          margin_accounts: []
+        }
+      };
+      ws.send(JSON.stringify(subscriptionEvent));
     };
 
     ws.onmessage = (msg: MessageEvent<string>) => {
