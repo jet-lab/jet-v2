@@ -52,11 +52,11 @@ export function DebtTable() {
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
-        ? process.env.DATA_API
+        ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.DEV_DATA_API
+        ? process.env.REACT_APP_DEV_REACT_APP_DATA_API
         : cluster === 'localnet'
-        ? process.env.LOCAL_DATA_API
+        ? process.env.REACT_APP_LOCAL_REACT_APP_DATA_API
         : '',
     [cluster]
   );

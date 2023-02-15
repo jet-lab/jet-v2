@@ -13,13 +13,13 @@ export const initWebsocket = (cluster?: Cluster) => {
     let endpoint: string | undefined;
     switch (cluster) {
       case 'devnet':
-        endpoint = process.env.DEV_WS_API;
+        endpoint = process.env.REACT_APP_DEV_REACT_APP_WS_API;
         break;
       case 'localnet':
-        endpoint = process.env.LOCAL_WS_API;
+        endpoint = process.env.REACT_APP_LOCAL_REACT_APP_WS_API;
         break;
       case 'mainnet-beta':
-        endpoint = process.env.WS_API;
+        endpoint = process.env.REACT_APP_WS_API;
         break;
     }
     
