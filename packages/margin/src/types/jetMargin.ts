@@ -2175,6 +2175,28 @@ export type JetMargin = {
           index: false
         }
       ]
+    },
+    {
+      name: "PermitConfigured"
+      fields: [
+        {
+          name: "airspace"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "owner"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "permissions"
+          type: {
+            defined: "Permissions"
+          }
+          index: false
+        }
+      ]
     }
   ]
   errors: [
@@ -4506,6 +4528,28 @@ export const IDL: JetMargin = {
         {
           name: "isAdapter",
           type: "bool",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PermitConfigured",
+      fields: [
+        {
+          name: "airspace",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "owner",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "permissions",
+          type: {
+            defined: "Permissions"
+          },
           index: false
         }
       ]
