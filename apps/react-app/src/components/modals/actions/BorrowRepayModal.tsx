@@ -1,10 +1,10 @@
+import { useMemo } from 'react';
 import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SendingTransaction } from '@state/actions/actions';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { CurrentAccount } from '@state/user/accounts';
-import { CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { useTokenInputDisabledMessage } from '@utils/actions/tokenInput';
 import { useCurrencyFormatting } from '@utils/currency';
@@ -16,15 +16,21 @@ import { useProjectedRisk, useRiskStyle } from '@utils/risk';
 import { ArrowRight } from './ArrowRight';
 import { Button, Modal, Tabs, Typography } from 'antd';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
+import { useJetStore } from '@jet-lab/store';
 
 // Modal to Borrow / Repay using the current Pool
 export function BorrowRepayModal(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { borrow, repay } = useMarginActions();
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const [currentAction, setCurrentAction] = useRecoilState(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -63,7 +69,7 @@ export function BorrowRepayModal(): JSX.Element {
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'success',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
       resetTokenInputString();
       resetCurrentAction();
@@ -84,7 +90,7 @@ export function BorrowRepayModal(): JSX.Element {
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'error',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
     }
     setSendingTransaction(false);

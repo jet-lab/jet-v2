@@ -26,7 +26,7 @@ export const submitRepay = async (
   markets: FixedTermMarket[],
   market: MarketAndConfig,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach'
+  explorer: 'solscan' | 'solanaExplorer' | 'solanaBeach'
 ) => {
   let tx = 'failed_before_tx';
   try {
@@ -43,14 +43,14 @@ export const submitRepay = async (
       'Repay Successful',
       `Your debt has been successfully repaid`,
       'success',
-      getExplorerUrl(tx, cluster, blockExplorer)
+      getExplorerUrl(tx, cluster, explorer)
     );
   } catch (e: any) {
     notify(
       'Repay Failed',
       `There was an issue repaying your debt, please try again.`,
       'error',
-      getExplorerUrl(e.signature, cluster, blockExplorer)
+      getExplorerUrl(e.signature, cluster, explorer)
     );
     throw e;
   }
@@ -82,7 +82,7 @@ export const settleNow = async (
   provider: AnchorProvider,
   setOwedTokens: Dispatch<SetStateAction<TokenAmount>>,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
+  explorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
   pools: JetMarginPools,
   amount: TokenAmount
 ) => {
@@ -102,7 +102,7 @@ export const settleNow = async (
       'Settle Successful',
       `Your assets have been sent to your margin account`,
       'success',
-      getExplorerUrl(tx, cluster, blockExplorer)
+      getExplorerUrl(tx, cluster, explorer)
     );
     setOwedTokens(new TokenAmount(new BN(0), token.decimals));
   } catch (e: any) {
@@ -110,7 +110,7 @@ export const settleNow = async (
       'Settle Failed',
       `There was an issue settling your funds, please try again.`,
       'error',
-      getExplorerUrl(e.signature, cluster, blockExplorer)
+      getExplorerUrl(e.signature, cluster, explorer)
     );
   }
 };
@@ -121,7 +121,7 @@ export const redeemDeposits = async (
   provider: AnchorProvider,
   deposits: Deposit[],
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
   pools: Record<string, Pool>,
   markets: FixedTermMarket[]
 ) => {
@@ -140,7 +140,7 @@ export const redeemDeposits = async (
       'Deposit redemption failed',
       'There was an error redeeming your deposit',
       'error',
-      getExplorerUrl(e.signature, cluster, blockExplorer)
+      getExplorerUrl(e.signature, cluster, explorer)
     );
     throw e;
   }

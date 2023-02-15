@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useRecoilState, useResetRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useEffect, useMemo, useState } from 'react';
+import { useRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
 import { SwapsRowOrder } from '@state/views/views';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { CurrentAccount } from '@state/user/accounts';
-import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '@state/pools/pools';
+import { Pools, PoolOptions } from '@state/pools/pools';
 import {
   CurrentAction,
   CurrentSwapOutput,
@@ -30,13 +29,13 @@ import SwapIcon from '@assets/icons/function-swap.svg';
 import { CurrentSplSwapPool, hasOrcaPool, SplSwapPools, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const splSwapPools = useRecoilValue(SplSwapPools);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { splTokenSwap } = useMarginActions();
@@ -47,8 +46,15 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
-  const currentPool = useRecoilValue(CurrentPool);
+  const { selectedPoolKey, selectPool } = useJetStore(state => ({
+    selectedPoolKey: state.selectedPoolKey,
+    selectPool: state.selectPool
+  }));
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const poolPrecision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
   const overallInputBalance = poolPosition ? poolPosition.depositBalance.tokens - poolPosition.loanBalance.tokens : 0;
@@ -270,7 +276,7 @@ export function SwapEntry(): JSX.Element {
           .replaceAll('{{ASSET}}', currentPool.symbol)
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'success',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
       resetTokenInputString();
     } else if (resp === ActionResponse.Cancelled) {
@@ -291,7 +297,7 @@ export function SwapEntry(): JSX.Element {
             .replaceAll('{{ASSET}}', currentPool.symbol)
             .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
           'error',
-          txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+          txId ? getExplorerUrl(txId, cluster, explorer) : undefined
         );
       }
     setSendingTransaction(false);
@@ -379,7 +385,7 @@ export function SwapEntry(): JSX.Element {
             onClick={() => {
               if (outputToken) {
                 const outputString = swapOutputTokens?.uiTokens ?? '0';
-                setCurrentPoolSymbol(outputToken.symbol);
+                selectPool(outputToken.address.toBase58());
                 setOutputToken(currentPool);
                 // Allow UI to update and then adjust amounts
                 setSwitchingAssets(true);

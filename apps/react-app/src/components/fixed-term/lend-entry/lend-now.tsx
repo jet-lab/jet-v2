@@ -8,14 +8,14 @@ import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
-import { CurrentPool, Pools } from '@state/pools/pools';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { Pools } from '@state/pools/pools';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
+import { useJetStore } from '@jet-lab/store';
 
 interface RequestLoanProps {
   decimals: number;
@@ -36,15 +36,20 @@ interface Forecast {
 export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const cluster = useRecoilValue(Cluster);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
-  const currentPool = useRecoilValue(CurrentPool);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const wallet = useWallet();
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
+
+  const { cluster, explorer } = useJetStore(state => state.settings);
 
   const disabled =
     !marginAccount ||
@@ -112,7 +117,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         'Lend Successful',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
         'success',
-        getExplorerUrl(signature, cluster, blockExplorer)
+        getExplorerUrl(signature, cluster, explorer)
       );
       refreshOrderBooks();
     } catch (e: any) {
@@ -120,7 +125,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         'Lend Order Failed',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
         'error',
-        getExplorerUrl(e.signature, cluster, blockExplorer)
+        getExplorerUrl(e.signature, cluster, explorer)
       );
       throw e;
     }

@@ -1,14 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { SPLSwapPool, TokenAmount } from '@jet-lab/margin';
-import { Cluster } from '../settings/settings';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL, CurrentSwapOutput } from '../actions/actions';
 import { useProvider } from '@utils/jet/provider';
-import { CurrentPool } from '../pools/pools';
+import { Pools } from '../pools/pools';
 import { getSwapPoolPrice } from '@utils/actions/swap';
 
 import orcaPools from '@jet-lab/margin/src/margin/swap/orca-swap-pools.json';
 import { MainConfig } from '@state/config/marginConfig';
+import { useJetStore } from '@jet-lab/store';
 
 // Market
 export const SplSwapPools = atom({
@@ -42,10 +42,16 @@ export const SwapPoolTokenAmounts = atom({
     | undefined
 });
 export function useSplSwapSyncer() {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const { provider } = useProvider();
   const config = useRecoilValue(MainConfig);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const outputToken = useRecoilValue(CurrentSwapOutput);
   const [swapPools, setSwapPools] = useRecoilState(SplSwapPools);
   const [currentSwapPool, setCurrentSwapPool] = useRecoilState(CurrentSplSwapPool);

@@ -13,7 +13,6 @@ export const StateSyncer = (): JSX.Element => {
   useAccountsSyncer();
   useSplSwapSyncer();
   useFixedTermSync();
-  // useProtocolClientSyncer()
   return <></>;
 };
 

@@ -1,84 +1,11 @@
 import { atom } from 'recoil';
 import { localStorageEffect } from '../effects/localStorageEffect';
-import { getPing } from '@utils/ui';
 
 // Disclaimer accepted
 export const DisclaimersAccepted = atom({
   key: 'disclaimersAccepted',
   default: {} as Record<string, boolean>,
   effects: [localStorageEffect('jetAppDisclaimerAccepted')]
-});
-
-// RPC Input
-export interface Node {
-  name: string;
-  devnet: string;
-  devnetPing: number;
-  mainnetBeta: string;
-  mainnetBetaPing: number;
-}
-export type NodeOption = 'default' | 'custom';
-export const rpcNodeOptions: NodeOption[] = ['default', 'custom'];
-export const rpcNodes: Record<NodeOption, Node> = {
-  default: {
-    name: 'Default',
-    devnet: `https://jetprot-develope-26c4.devnet.rpcpool.com/${process.env.REACT_APP_RPC_DEV_TOKEN ?? ''}`,
-    devnetPing: 0,
-    mainnetBeta: `https://jetprot-main-0d7b.mainnet.rpcpool.com/${process.env.REACT_APP_RPC_TOKEN ?? ''}`,
-    mainnetBetaPing: 0
-  },
-  custom: {
-    name: 'Custom',
-    devnet: '',
-    devnetPing: 0,
-    mainnetBeta: '',
-    mainnetBetaPing: 0
-  }
-};
-export const RpcNodes = atom({
-  key: 'rpcNodes',
-  default: rpcNodes as Record<NodeOption, Node>,
-  effects: [
-    ({ setSelf }) => {
-      const customMainnetNode = localStorage.getItem('jetCustomNode-mainnet');
-      const customDevnetNode = localStorage.getItem('jetCustomNode-devnet');
-      if (customMainnetNode) {
-        rpcNodes.custom.mainnetBeta = customMainnetNode;
-      }
-      if (customDevnetNode) {
-        rpcNodes.custom.devnet = customDevnetNode;
-      }
-      for (const nodeOption in rpcNodes) {
-        const node = rpcNodes[nodeOption as NodeOption];
-        getPing(node.devnet)
-          .then((ping: number) => (node.devnetPing = ping))
-          .catch(() => {
-            throw new Error(`Error getting ping, ${JSON.stringify(node.devnet)}`);
-          });
-        getPing(node.mainnetBeta)
-          .then((ping: number) => (node.mainnetBetaPing = ping))
-          .catch(() => {
-            throw new Error(`Error getting ping, ${JSON.stringify(node.mainnetBeta)}`);
-          });
-      }
-      setSelf(rpcNodes);
-    }
-  ],
-  dangerouslyAllowMutability: true
-});
-
-export const PreferredRpcNode = atom({
-  key: 'preferredRpcNode',
-  default: 'default' as NodeOption,
-  effects: [localStorageEffect('jetAppPreferredNode')]
-});
-
-// Connection cluster
-export type ClusterOption = 'localnet' | 'devnet' | 'mainnet-beta';
-export const Cluster = atom<ClusterOption>({
-  key: 'cluster',
-  default: 'mainnet-beta',
-  effects: [localStorageEffect('jetAppCluster')]
 });
 
 // Fiat Currency
@@ -136,11 +63,6 @@ export const blockExplorers: Record<Explorer, Record<string, string>> = {
     url: 'https://solanabeach.io/transaction/'
   }
 };
-export const BlockExplorer = atom({
-  key: 'blockExplorer',
-  default: 'solscan' as Explorer,
-  effects: [localStorageEffect('jetAppPreferredExplorer')]
-});
 
 // Unix / Local Time
 export type TimeDisplay = 'local' | 'utc';

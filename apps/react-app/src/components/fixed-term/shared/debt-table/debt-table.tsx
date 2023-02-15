@@ -5,12 +5,11 @@ import { Tabs } from 'antd';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { LoadingOutlined } from '@ant-design/icons';
-import { useOrdersForUser } from '@jet-lab/store';
+import { useJetStore, useOrdersForUser } from '@jet-lab/store';
 import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { useEffect, useMemo } from 'react';
 import { notify } from '@utils/notify';
 import { useProvider } from '@utils/jet/provider';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { PostedOrdersTable } from './posted-order-table';
 import { TokenAmount } from '@jet-lab/margin';
 import BN from 'bn.js';
@@ -47,18 +46,17 @@ export function DebtTable() {
   const selectedMarket = useRecoilValue(SelectedFixedTermMarketAtom);
   const market = markets[selectedMarket];
   const { provider } = useProvider();
-  const blockExplorer = useRecoilValue(BlockExplorer);
-  const cluster = useRecoilValue(Cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const pools = useRecoilValue(Pools);
 
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
-        ? process.env.DATA_API
+        ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.DEV_DATA_API
+        ? process.env.REACT_APP_DEV_DATA_API
         : cluster === 'localnet'
-        ? process.env.LOCAL_DATA_API
+        ? process.env.REACT_APP_LOCAL_DATA_API
         : '',
     [cluster]
   );
@@ -114,7 +112,7 @@ export function DebtTable() {
                     market={markets[selectedMarket]}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={blockExplorer}
+                    explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />
@@ -139,7 +137,7 @@ export function DebtTable() {
                     provider={provider}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={blockExplorer}
+                    explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />
@@ -164,7 +162,7 @@ export function DebtTable() {
                     market={markets[selectedMarket]}
                     marginAccount={account}
                     cluster={cluster}
-                    blockExplorer={blockExplorer}
+                    explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
                   />

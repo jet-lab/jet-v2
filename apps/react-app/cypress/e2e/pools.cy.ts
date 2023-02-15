@@ -7,7 +7,7 @@ describe('Main Flows', () => {
 
   it('Airdrop USDC and deposit collateral', () => {
     airdrop('USDC', 'USDC');
-    deposit('USDC', 1);
+    deposit('USDC', 10);
   });
 
   it('Deposit and withdraw SOL', () => {

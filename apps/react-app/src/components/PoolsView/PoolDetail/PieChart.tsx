@@ -1,36 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
-import { CurrentPool } from '@state/pools/pools';
 import { Arc } from '@visx/shape';
 import { Group } from '@visx/group';
 
-// Pie Chart component showing a percentage value
-export function PieChart(props: {
-  // Percentage of data to fill in chart
+interface PoolDetailsPieChart {
   percentage: number;
-  // Data-related text
-  text: string;
-  // Optionally add a term's definition of tooltip
-  term?: string;
-}): JSX.Element {
-  const currentPool = useRecoilValue(CurrentPool);
+}
+
+export function PieChart({ percentage }: PoolDetailsPieChart): JSX.Element {
   const [percent, setPercent] = useState(0);
 
   // Animate chart
   useEffect(() => {
-    const percentage = props.percentage * 100;
-    const animate = setInterval(() => {
+    const animate = () => {
       if (percent < percentage) {
-        setPercent(p => p + 1);
+        setPercent(percent + 1);
+      } else if (percent > percentage) {
+        setPercent(percent - 1);
       }
-    }, 5);
-    return () => clearInterval(animate);
-  }, [props.percentage, percent]);
+    };
 
-  // Reset on pool change
-  useEffect(() => {
-    setPercent(0);
-  }, [currentPool]);
+    const animationRef = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationRef);
+  }, [percentage, percent]);
 
   return (
     <>

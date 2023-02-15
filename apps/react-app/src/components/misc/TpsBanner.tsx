@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Cluster, PreferredRpcNode, rpcNodes } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { useProvider } from '@utils/jet/provider';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Alert } from 'antd';
 import { NetworkStateAtom } from '@state/network/network-state';
+import { useJetStore } from '@jet-lab/store';
 
 // Banner to show user that the Solana network is running slowly
 export function TpsBanner(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
+  const { cluster, rpc } = useJetStore(state => ({ cluster: state.settings.cluster, rpc: state.settings.rpc }));
   const { provider } = useProvider();
-  const rpcNode = useRecoilValue(PreferredRpcNode);
   const dictionary = useRecoilValue(Dictionary);
-  const nodeIndexer = cluster === 'mainnet-beta' ? 'mainnetBeta' : 'devnet';
-  const ping = rpcNodes[rpcNode][`${nodeIndexer}Ping`];
+  const ping = rpc.pings[cluster];
   const [tps, setTps] = useState<number | undefined>(undefined);
   const unusuallySlow = (tps && tps < 1500) || ping > 750;
   const criticallySlow = (tps && tps < 1000) || ping > 1500;
@@ -51,9 +49,6 @@ export function TpsBanner(): JSX.Element {
       }
     }
     getSolanaTps();
-    // Check TPS every 30 seconds
-    const tpsInterval = setInterval(getSolanaTps, 60_000);
-    return () => clearInterval(tpsInterval);
   }, [provider.connection]);
 
   // Render the TPS banner (if TPS is slow enough)

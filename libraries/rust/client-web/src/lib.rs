@@ -35,6 +35,7 @@ impl JetWebClient {
     pub async fn connect(
         user_address: Pubkey,
         adapter: SolanaNetworkAdapter,
+        airspace_name: &str,
     ) -> Result<JetWebClient, JsError> {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
@@ -61,10 +62,9 @@ impl JetWebClient {
             Request::new_with_str_and_init(config_url, &opts).unwrap()
         };
 
-        let log_level = if network_kind == NetworkKind::Localnet {
-            log::Level::Debug
-        } else {
-            log::Level::Warn
+        let log_level = match network_kind {
+            NetworkKind::Localnet | NetworkKind::Devnet => log::Level::Debug,
+            NetworkKind::Mainnet => log::Level::Warn,
         };
 
         if console_log::init_with_level(log_level).is_err() {
@@ -87,10 +87,11 @@ impl JetWebClient {
         };
 
         let config = serde_json::from_value(config_response).unwrap();
+
         let adapter = JsNetworkAdapter::new(adapter, user_address);
 
         Ok(Self {
-            client: JetClient::new(adapter, config, "default")?,
+            client: JetClient::new(adapter, config, airspace_name)?,
         })
     }
 

@@ -5,7 +5,7 @@ import { NavDrawerOpen } from '@state/views/views';
 import { SendingTransaction } from '@state/actions/actions';
 import { useChangeView } from '@utils/ui';
 import { Tooltip, Typography } from 'antd';
-import { Cluster } from '@state/settings/settings';
+import { useJetStore } from '@jet-lab/store';
 
 type Route = '/' | '/swaps' | '/accounts' | '/fixed-lend' | '/fixed-borrow';
 interface Link {
@@ -18,8 +18,7 @@ interface Link {
 // All navigation links
 export function NavLinks(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const cluster = useRecoilValue(Cluster);
-
+  const cluster = useJetStore(state => state.settings.cluster);
   const navLinks: Link[] = [
     { title: dictionary.poolsView.title, route: '/', disabled: false, hidden: false },
     { title: dictionary.swapsView.title, route: '/swaps', disabled: false, hidden: false },

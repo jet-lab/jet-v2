@@ -1,23 +1,27 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Dictionary } from '@state/settings/localization/localization';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { WalletModal } from '@state/modals/modals';
 import { SendingTransaction } from '@state/actions/actions';
-import { CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
 import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
 import { Button } from 'antd';
 import { CloudFilled } from '@ant-design/icons';
+import { useJetStore } from '@jet-lab/store';
 
 // Button for airdropping a token to the user's Solana wallet (if on devnet)
 export function AirdropButton(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
-  const cluster = useRecoilValue(Cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const { connected } = useWallet();
-  const currentPool = useRecoilValue(CurrentPool);
+  const pools = useRecoilValue(Pools);
+
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const currentPool = pools
+    ? Object.values(pools.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey)
+    : undefined;
   const { airdrop } = useMarginActions();
   const setWalletModalOpen = useSetRecoilState(WalletModal);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
@@ -38,7 +42,7 @@ export function AirdropButton(): JSX.Element {
           .replace('{{AMOUNT}}', amount)
           .replace('{{ASSET}}', currentPool.symbol),
         'success',
-        txId ? getExplorerUrl(txId, cluster, blockExplorer) : undefined
+        txId ? getExplorerUrl(txId, cluster, explorer) : undefined
       );
     } else if (resp === ActionResponse.Cancelled) {
       notify(

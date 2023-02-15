@@ -47,7 +47,7 @@ module.exports = (_env, arg) => {
       minimize: true,
       minimizer: [new SwcMinifyWebpackPlugin()]
     },
-    devtool: arg.mode === 'production' ? 'source-map' : 'eval-source-map',
+    devtool: arg.mode === 'production' ? 'eval-source-map' : 'eval-source-map',
     devServer: {
       static: {
         directory: path.resolve(__dirname, 'public')

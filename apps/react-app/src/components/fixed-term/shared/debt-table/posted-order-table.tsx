@@ -16,7 +16,7 @@ interface GetPostOrderColumnes {
   marginAccount: MarginAccount;
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }
@@ -25,7 +25,7 @@ const getPostOrderColumns = ({
   marginAccount,
   provider,
   cluster,
-  blockExplorer,
+  explorer,
   pools,
   markets
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
@@ -62,7 +62,7 @@ const getPostOrderColumns = ({
       return (
         <CloseOutlined
           style={{ color: '#e36868' }}
-          onClick={() => cancel(market, marginAccount, provider, order, cluster, blockExplorer, pools, markets)}
+          onClick={() => cancel(market, marginAccount, provider, order, cluster, explorer, pools, markets)}
         />
       );
     }
@@ -75,7 +75,7 @@ const cancel = async (
   provider: AnchorProvider,
   order: OpenOrder,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
   pools: Record<string, Pool>,
   markets: FixedTermMarket[]
 ) => {
@@ -94,7 +94,7 @@ const cancel = async (
       'Cancel order failed',
       'There was an error cancelling your order',
       'error',
-      getExplorerUrl(e.signature, cluster, blockExplorer)
+      getExplorerUrl(e.signature, cluster, explorer)
     );
     throw e;
   }
@@ -106,7 +106,7 @@ export const PostedOrdersTable = ({
   marginAccount,
   provider,
   cluster,
-  blockExplorer,
+  explorer,
   pools,
   markets
 }: {
@@ -115,7 +115,7 @@ export const PostedOrdersTable = ({
   marginAccount: MarginAccount;
   provider: AnchorProvider;
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
-  blockExplorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }) => {
@@ -126,11 +126,11 @@ export const PostedOrdersTable = ({
         marginAccount,
         provider,
         cluster,
-        blockExplorer,
+        explorer,
         pools,
         markets
       }),
-    [market, marginAccount, provider, cluster, blockExplorer]
+    [market, marginAccount, provider, cluster, explorer]
   );
 
   return (

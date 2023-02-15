@@ -1,11 +1,12 @@
 import { TokenAmount } from '@jet-lab/margin';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
-import { CurrentPool } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { Button, Slider } from 'antd';
 import { getTokenAmountFromNumber } from '@utils/currency';
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
+import { useJetStore } from '@jet-lab/store';
 
 // Slider component for the TokenInput
 export function TokenSlider(props: {
@@ -15,7 +16,13 @@ export function TokenSlider(props: {
   disabled: boolean;
 }): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setTokenInputString = useSetRecoilState(TokenInputString);
   const formatter = (value?: number): ReactNode => `${value}%`;

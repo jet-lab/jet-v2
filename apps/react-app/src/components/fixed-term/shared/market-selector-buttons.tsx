@@ -1,7 +1,6 @@
 import { MarginAccount, MarketAndConfig, TokenAmount } from '@jet-lab/margin';
-import { useOpenPositions } from '@jet-lab/store';
+import { useJetStore, useOpenPositions } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
-import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useProvider } from '@utils/jet/provider';
 import { Button } from 'antd';
 import BN from 'bn.js';
@@ -15,20 +14,19 @@ interface IMarketSelectorButtonProps {
   selectedMarket?: MarketAndConfig;
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
-  const cluster = useRecoilValue(Cluster);
+  const { cluster, explorer } = useJetStore(state => state.settings);
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
-        ? process.env.DATA_API
+        ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.DEV_DATA_API
+        ? process.env.REACT_APP_DEV_DATA_API
         : cluster === 'localnet'
-        ? process.env.LOCAL_DATA_API
+        ? process.env.REACT_APP_LOCAL_DATA_API
         : '',
     [cluster]
   );
   const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market, marginAccount);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
 
@@ -73,7 +71,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                   provider,
                   depositsToClaim,
                   cluster,
-                  blockExplorer,
+                  explorer,
                   pools.tokenPools,
                   markets.map(m => m.market)
                 );
@@ -94,7 +92,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                 provider,
                 setOwedTokens,
                 cluster,
-                blockExplorer,
+                explorer,
                 pools,
                 owedTokens
               )
@@ -129,7 +127,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                 markets.map(m => m.market),
                 selectedMarket,
                 cluster,
-                blockExplorer
+                explorer
               )
             }>
             Repay Now

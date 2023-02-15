@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CSVDownload } from 'react-csv';
 import { SetterOrUpdater, useRecoilState, useRecoilValue } from 'recoil';
@@ -6,7 +6,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { FiatCurrency } from '@state/settings/settings';
 import { AccountsViewOrder, SwapsViewOrder } from '@state/views/views';
 import { WalletTokens } from '@state/user/walletTokens';
-import { CurrentPoolSymbol, Pools } from '@state/pools/pools';
+import { Pools } from '@state/pools/pools';
 import { AccountBalance, Accounts, CurrentAccount } from '@state/user/accounts';
 import { ActionRefresh, CurrentSwapOutput } from '@state/actions/actions';
 import { useCurrencyFormatting } from '@utils/currency';
@@ -19,6 +19,7 @@ import { Info } from '@components/misc/Info';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import debounce from 'lodash.debounce';
+import { useJetStore } from '@jet-lab/store';
 
 // Table to show margin account's balances for each token
 export function FullAccountBalance(): JSX.Element {
@@ -29,7 +30,6 @@ export function FullAccountBalance(): JSX.Element {
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
   const [swapsViewOrder, setSwapsViewOrder] = useRecoilState(SwapsViewOrder);
   const walletTokens = useRecoilValue(WalletTokens);
-  const currentPoolSymbol = useRecoilValue(CurrentPoolSymbol);
   const pools = useRecoilValue(Pools);
   const currentSwapOutput = useRecoilValue(CurrentSwapOutput);
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -41,6 +41,13 @@ export function FullAccountBalance(): JSX.Element {
   const accountBalancesRef = useRef<any>();
   const loadingAccounts = walletTokens && !accounts.length;
   const { Paragraph, Text } = Typography;
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
 
   // Determine which component ordering state/reordering method to utilize
   function getOrderContext(): {
@@ -63,7 +70,7 @@ export function FullAccountBalance(): JSX.Element {
 
   // Tell if token is a swap token, and highlight in table
   function isSwapToken(symbol: string): boolean {
-    if (pathname === '/swaps' && (currentPoolSymbol === symbol || currentSwapOutput?.symbol === symbol)) {
+    if (pathname === '/swaps' && (currentPool?.symbol === symbol || currentSwapOutput?.symbol === symbol)) {
       return true;
     }
     return false;

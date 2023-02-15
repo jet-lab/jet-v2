@@ -5,13 +5,13 @@ import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { MarginAccount, MarginClient, AccountTransaction, TokenAmount } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
-import { Cluster } from '../settings/settings';
 import { Dictionary } from '../settings/localization/localization';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
 import { walletParam, WalletTokens } from './walletTokens';
 import { Pools } from '../pools/pools';
 import { useProvider } from '@utils/jet/provider';
 import { MainConfig } from '@state/config/marginConfig';
+import { useJetStore } from '@jet-lab/store';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {
@@ -43,9 +43,9 @@ export const AccountsLoading = atom({
 });
 // Track the current account by its name, so it's lightweight
 // and we can reference this value to select the entire state
-export const CurrentAccountAddress = atom({
+export const CurrentAccountAddress = atom<string>({
   key: 'currentAccountAddress',
-  default: '' as string,
+  default: '',
   effects: [localStorageEffect('jetAppCurrentAccountAddress')]
 });
 // User's starred accounts for quick selection
@@ -67,7 +67,6 @@ export const CurrentAccount = selector<MarginAccount | undefined>({
   get: ({ get }) => {
     const accounts = get(Accounts);
     const currentAddress = get(CurrentAccountAddress);
-
     const currentAccount = Object.values(accounts).filter(account => account.address.toString() === currentAddress)[0];
     return currentAccount;
   },
@@ -87,7 +86,7 @@ export const AccountHistoryLoaded = atom({
 
 // A syncer to be called so that we can have dependent atom state
 export function useAccountsSyncer() {
-  const cluster = useRecoilValue(Cluster);
+  const cluster = useJetStore(state => state.settings.cluster);
   const marginConfig = useRecoilValue(MainConfig);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
@@ -150,7 +149,7 @@ export function useAccountsSyncer() {
         }
       }
       // If no currentAccount select first
-      if (!currentAccount && accounts.length) {
+      if (!currentAccountAddress && accounts.length > 0) {
         setCurrentAccountAddress(accounts[0].address.toString());
       }
 

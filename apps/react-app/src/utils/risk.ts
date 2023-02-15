@@ -1,8 +1,10 @@
 import { useRecoilValue } from 'recoil';
 import { MarginAccount, Pool, TokenAmount, PoolAction } from '@jet-lab/margin';
-import { CurrentPool } from '@state/pools/pools';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentAction, MaxTradeAmounts, TokenInputAmount } from '@state/actions/actions';
+import { useJetStore } from '@jet-lab/store';
+import { Pools } from '@state/pools/pools';
+import { useMemo } from 'react';
 
 // Project user's risk from an action
 export function useProjectedRisk(
@@ -15,7 +17,13 @@ export function useProjectedRisk(
   outputToken?: Pool,
   swapRepayWithProceeds?: boolean
 ) {
-  const currentPool = useRecoilValue(CurrentPool);
+  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const pools = useRecoilValue(Pools);
+  const currentPool = useMemo(
+    () =>
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+    [selectedPoolKey, pools]
+  );
   const pool = marginPool ?? currentPool;
   const currentAccount = useRecoilValue(CurrentAccount);
   const account = marginAccount ?? currentAccount;
@@ -29,6 +37,7 @@ export function useProjectedRisk(
   const canProjectAfterAction =
     pool && account && action && action !== 'transfer' && amount && !amount.isZero() && max && !amount.gt(max);
   const defaultActionProjection = account?.riskIndicator ?? 0;
+
   if (max && amount.gt(max)) {
     return Infinity;
   }
@@ -42,6 +51,7 @@ export function useProjectedRisk(
         swapRepayWithProceeds
       ).riskIndicator
     : defaultActionProjection;
+
   return projectedRiskIndicator;
 }
 

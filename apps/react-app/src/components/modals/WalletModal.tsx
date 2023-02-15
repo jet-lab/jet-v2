@@ -8,40 +8,44 @@ import { formatPubkey } from '@utils/format';
 import { notify } from '@utils/notify';
 import { Modal, Divider, Typography } from 'antd';
 import ArrowIcon from '@assets/icons/arrow-icon.svg';
+import { useJetStore, initJetClient } from '@jet-lab/store';
 
 // Modal to connect user's Solana wallet to app
 export function WalletModal(): JSX.Element {
-  const { wallets, wallet, select, publicKey } = useWallet();
+  const wallet = useWallet();
   const dictionary = useRecoilValue(Dictionary);
   const WalletModalOpen = useRecoilValue(WalletModalState);
   const resetWalletModal = useResetRecoilState(WalletModalState);
   const { Text } = Typography;
+  const connectWallet = useJetStore(state => state.connectWallet);
 
   // Nofity on connection
   useEffect(() => {
-    if (publicKey) {
+    if (wallet.publicKey) {
+      connectWallet(wallet.publicKey.toBase58());
+      initJetClient(wallet);
       resetWalletModal();
       notify(
         dictionary.notifications.wallet.connect.message,
         dictionary.notifications.wallet.connect.description
-          .replaceAll('{{WALLET_NAME}}', wallet?.adapter.name ?? '')
-          .replaceAll('{{PUBLIC_KEY}}', formatPubkey(publicKey?.toString() ?? '')),
+          .replaceAll('{{WALLET_NAME}}', wallet.wallet?.adapter.name ?? '')
+          .replaceAll('{{PUBLIC_KEY}}', formatPubkey(wallet.publicKey?.toString() ?? '')),
         'success'
       );
       // Initiate logRocket
       const logRocketProject = process.env.REACT_APP_LOGROCKET_PROJECT;
       if (logRocketProject) {
         LogRocket.init(logRocketProject);
-        LogRocket.identify(publicKey.toBase58());
+        LogRocket.identify(wallet.publicKey.toBase58());
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [publicKey]);
+  }, [wallet.publicKey]);
 
   // Returns className for wallet and checks if 'active'
   function getWalletClassNames(walletName: string) {
     let className = 'wallet flex align-center justify-between';
-    if (wallet && wallet.adapter.name === walletName) {
+    if (wallet.wallet && wallet.wallet.adapter.name === walletName) {
       className += ' active';
     }
 
@@ -60,7 +64,7 @@ export function WalletModal(): JSX.Element {
   }
 
   // If wallet modal is open and we're not already connected
-  if (WalletModalOpen && !publicKey) {
+  if (WalletModalOpen && !wallet.publicKey) {
     return (
       <Modal open className="wallet-modal" maskClosable={false} footer={null} onCancel={resetWalletModal}>
         <div className="flex-centered column">
@@ -68,11 +72,11 @@ export function WalletModal(): JSX.Element {
           <Text>{dictionary.settingsModal.wallet.worldOfDefi}</Text>
           <Divider />
           <div className="wallets flex-centered column">
-            {wallets.map(({ adapter }) => (
+            {wallet.wallets.map(({ adapter }) => (
               <div
                 key={adapter.name}
                 className={getWalletClassNames(adapter.name)}
-                onClick={() => select(adapter.name)}>
+                onClick={() => wallet.select(adapter.name)}>
                 <div className="flex-centered">
                   <img src={getWalletLogoPath(adapter.name)} width="30px" height="auto" alt={`${adapter.name} Logo`} />
                   <p className="center-text">{adapter.name}</p>

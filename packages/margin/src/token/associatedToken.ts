@@ -106,6 +106,7 @@ export class AssociatedToken {
       if (!account.info.owner.equals(ownerAddress)) {
         throw new TokenInvalidOwnerError("The owner of a token account doesn't match the expected owner")
       }
+
       if (!account.info.mint.equals(mintAddress)) {
         throw new TokenInvalidMintError("The mint of a token account doesn't match the expected mint")
       }
