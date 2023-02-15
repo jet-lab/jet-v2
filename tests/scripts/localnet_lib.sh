@@ -61,12 +61,14 @@ run() {
 
 init-idl() {
     cargo run --bin strip-idl-docs
+    anchor idl init -f ./target/idl/jet_airspace.json $ASM_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_test_service.json $JTS_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_metadata.json $META_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_control.json $CTRL_PID --provider.cluster localnet
     # anchor idl init -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
-    # anchor idl init -f ./target/idl/jet_bonds.json $BOND_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_fixed_term.json $MRKT_PID --provider.cluster localnet
 }
 
 start-validator() {
@@ -117,7 +119,7 @@ start-new-validator() {
     cargo run --bin jetctl -- generate-app-config -ul --no-confirm config/localnet/ -o apps/react-app/public/localnet.config.json
     start-crank-service
     start-oracle
-    init-idl
+    init-idl &
     wait $VALIDATOR_PID
 
 }
