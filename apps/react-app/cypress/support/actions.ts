@@ -41,10 +41,12 @@ export const airdrop = (symbol: string, asset: string) => {
 };
 
 export const deposit = (symbol: string, amount: number) => {
+  cy.wait(2000)
   cy.get(`.${symbol}-pools-table-row`).click();
   cy.contains('button', 'Deposit').should('not.be.disabled').click();
   cy.get('.ant-modal-content input.ant-input').as('input');
   cy.get('@input').should('not.be.disabled');
+  cy.wait(2000)
   cy.get('@input').type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').should('not.be.disabled').contains('Deposit').click();
   cy.contains(`Your deposit of ${formatWithCommas(amount)} ${symbol} was successfully processed.`);

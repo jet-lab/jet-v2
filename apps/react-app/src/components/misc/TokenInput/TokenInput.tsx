@@ -75,6 +75,7 @@ export function TokenInput(props: {
   const errorMessage = useTokenInputErrorMessage();
   // If we're given an external value, are sendingTransaction, can't enter an input or have a disabled message
   const sendingTransaction = useRecoilValue(SendingTransaction);
+
   const disabled = sendingTransaction || props.value !== undefined || disabledMessage.length > 0 || maxInput.isZero();
   const { Text } = Typography;
 

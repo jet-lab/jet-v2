@@ -1,5 +1,5 @@
 import { Cluster } from 'slices/settings';
-import { APPLICATION_WS_EVENTS, JET_WS_EVENTS } from '../events';
+import { JET_WS_EVENTS } from '../events';
 import { PoolDataUpdate } from '../slices/pools';
 import { useJetStore } from '../store';
 
@@ -29,17 +29,18 @@ export const initWebsocket = (cluster?: Cluster) => {
     ws = new WebSocket(endpoint);
 
     ws.onopen = () => {
-      const subscriptionEvent: APPLICATION_WS_EVENTS = {
-        type: 'SUBSCRIBE',
-        payload: {
-          wallet: 'APhQTneeYjR8A5E3BuJBZFjHKpWdxHhTdiE1nuzoT553',
-          margin_accounts: [
-            'B8Tifsx1p22hto44FBo3sEt5nJmHtzTUNbM4f9UP42GV',
-            'GT7eBGzue4e1Bq7N3Qox518nsCfyzEkEZeKwpD2vQMVM'
-          ]
-        }
-      };
-      ws.send(JSON.stringify(subscriptionEvent));
+      // const subscriptionEvent: APPLICATION_WS_EVENTS = {
+      //   type: 'SUBSCRIBE',
+      //   payload: {
+      //     wallet: <wallet pkey>,
+      //     margin_accounts: [
+      //       <amrgin account 1 pkey>,
+      //        ...,
+      //       <margin account n pkey>
+      //     ]
+      //   }
+      // };
+      // ws.send(JSON.stringify(subscriptionEvent));
     };
 
     ws.onmessage = (msg: MessageEvent<string>) => {
