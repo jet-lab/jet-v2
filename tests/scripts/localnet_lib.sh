@@ -69,11 +69,7 @@ init-idl() {
     # anchor idl init -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
     anchor idl init -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
-<<<<<<< HEAD
     anchor idl init -f ./target/idl/jet_fixed_term.json $MRKT_PID --provider.cluster localnet
-=======
-    anchor idl init -f ./target/idl/jet_fixed_term.json $FIXED_TERM_PID --provider.cluster localnet
->>>>>>> 240ea8f5 (e2e error: acocunt discriminator on decoding TokenConfig)
 }
 
 start-validator() {
