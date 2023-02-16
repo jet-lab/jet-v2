@@ -28,7 +28,7 @@ mod util;
 
 use instructions::*;
 
-pub use instructions::{SplSwapPoolCreateParams, TokenCreateParams};
+pub use instructions::{SaberSwapPoolCreateParams, SplSwapPoolCreateParams, TokenCreateParams};
 
 declare_id!("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy");
 
@@ -58,6 +58,9 @@ pub mod seeds {
 
     #[constant]
     pub const SWAP_POOL_TOKENS: &[u8] = b"swap-pool-tokens";
+
+    #[constant]
+    pub const SWAP_POOL_FEES: &[u8] = b"swap-pool-fees";
 }
 
 #[program]
@@ -125,5 +128,13 @@ pub mod jet_test_service {
     /// ensuring multiple initializations will not collide.
     pub fn if_not_initialized(ctx: Context<IfNotInitialized>, instruction: Vec<u8>) -> Result<()> {
         if_not_initialized_handler(ctx, instruction)
+    }
+
+    /// Create a Saber swap pool
+    pub fn saber_swap_pool_create(
+        ctx: Context<SaberSwapPoolCreate>,
+        params: SaberSwapPoolCreateParams,
+    ) -> Result<()> {
+        saber_swap_pool_create_handler(ctx, params)
     }
 }
