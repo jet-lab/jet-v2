@@ -137,4 +137,9 @@ pub mod jet_test_service {
     ) -> Result<()> {
         saber_swap_pool_create_handler(ctx, params)
     }
+
+    /// Balance an SPL swap pool based on current oracle prices
+    pub fn saber_swap_pool_balance(ctx: Context<SaberSwapPoolBalance>) -> Result<()> {
+        saber_swap_pool_balance_handler(ctx)
+    }
 }

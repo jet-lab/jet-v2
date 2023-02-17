@@ -57,7 +57,6 @@ pub struct SaberSwapPoolCreate<'info> {
                 SWAP_POOL_INFO,
                 mint_a.key().as_ref(),
                 mint_b.key().as_ref(),
-                // b"saber".as_ref()
               ],
               bump,
               space = 8 + std::mem::size_of::<SaberSwapInfo>(),
@@ -70,7 +69,6 @@ pub struct SaberSwapPoolCreate<'info> {
                 SWAP_POOL_STATE,
                 mint_a.key().as_ref(),
                 mint_b.key().as_ref(),
-                // b"saber".as_ref(), // TODO: reorder
               ],
               bump,
               space = saber_stable_client::state::SwapInfo::LEN,
@@ -157,10 +155,12 @@ pub struct SaberSwapPoolCreate<'info> {
         ],
         bump,
         token::mint = pool_mint,
-        token::authority = pool_info,
+        // The LP token authority must be the same as the scratch accounts
+        // else withdrawals from the pool do not work as only 1 authority is provided
+        token::authority = payer,
         payer = payer,
     )]
-    lp_destination: Box<Account<'info, TokenAccount>>,
+    lp_token: Box<Account<'info, TokenAccount>>,
 
     swap_program: AccountInfo<'info>,
     token_program: Program<'info, Token>,
@@ -227,7 +227,6 @@ pub fn saber_swap_pool_create_handler(
         SWAP_POOL_STATE,
         mint_a_key.as_ref(),
         mint_b_key.as_ref(),
-        // b"saber".as_ref(), // TODO: don't hardcode
         &[bump],
     ];
     let seeds = [&pool_signer_seeds[..]];
@@ -249,7 +248,7 @@ pub fn saber_swap_pool_create_handler(
                 mint: ctx.accounts.mint_b.to_account_info(),
             },
             pool_mint: ctx.accounts.pool_mint.to_account_info(),
-            output_lp: ctx.accounts.lp_destination.to_account_info(),
+            output_lp: ctx.accounts.lp_token.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
         },
         &seeds,
