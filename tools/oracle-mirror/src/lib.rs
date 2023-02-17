@@ -8,7 +8,7 @@ use anchor_lang::{AccountDeserialize, Discriminator};
 use anyhow::{bail, Result};
 use clap::Parser;
 
-use jet_environment::builder::resolve_swap_program;
+use jet_environment::{builder::resolve_swap_program, programs::SABER};
 use jet_solana_client::network::NetworkKind;
 use solana_clap_utils::input_validators::normalize_to_url_if_moniker;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
@@ -87,10 +87,12 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         RpcClient::new_with_commitment(target_endpoint, CommitmentConfig::processed()),
     )) as Arc<dyn SolanaRpcClient>;
 
-    let swap_program = get_spl_program(&target_client).await?;
+    let spl_swap_program = get_spl_program(&target_client).await?;
 
     let oracle_list = discover_oracles(&source_client, &target_client).await?;
-    let pool_list = discover_pools(&target_sdk_client, &oracle_list, swap_program).await?;
+    let spl_pool_list =
+        discover_spl_pools(&target_sdk_client, &oracle_list, spl_swap_program).await?;
+    let saber_pool_list = discover_saber_pools(&target_sdk_client, &oracle_list).await?;
 
     let mut id_file = None;
 
@@ -98,7 +100,8 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         if !opts.no_oracle_sync {
             sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
         }
-        sync_pool_balances(&target_client, &signer, &pool_list).await?;
+        sync_pool_balances(&target_client, &signer, &spl_pool_list, &spl_swap_program).await?;
+        sync_pool_balances(&target_client, &signer, &saber_pool_list, &SABER).await?;
 
         if id_file.is_none() {
             id_file = Some(RunningProcessIdFile::new());
@@ -140,6 +143,7 @@ async fn sync_pool_balances(
     target: &RpcClient,
     signer: &Keypair,
     pools: &[(Pubkey, Pubkey)],
+    program: &Pubkey,
 ) -> Result<()> {
     for (token_a, token_b) in pools {
         let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(600_000)];
@@ -154,18 +158,37 @@ async fn sync_pool_balances(
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
         }
 
-        let swap_program = get_spl_program(target).await?;
-
-        instructions.push(
-            jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
-                &swap_program,
-                token_a,
-                token_b,
-                &scratch_a,
-                &scratch_b,
-                &signer.pubkey(),
-            ),
-        );
+        let spl_swap_program = get_spl_program(target).await?;
+        match program {
+            p if p == &spl_swap_program => {
+                instructions.push(
+                    jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
+                        program,
+                        token_a,
+                        token_b,
+                        &scratch_a,
+                        &scratch_b,
+                        &signer.pubkey(),
+                    ),
+                );
+            }
+            p if p == &SABER => {
+                instructions.push(
+                    jet_margin_sdk::ix_builder::test_service::saber_swap_pool_balance(
+                        program,
+                        token_a,
+                        token_b,
+                        &scratch_a,
+                        &scratch_b,
+                        &signer.pubkey(),
+                    ),
+                );
+            }
+            _ => {
+                eprintln!("Unknown swap program {program}. Pool not balanced");
+                return Ok(());
+            }
+        }
 
         let balance_tx = Transaction::new_signed_with_payer(
             &instructions,
@@ -250,7 +273,7 @@ async fn sync_oracles(
     Ok(())
 }
 
-async fn discover_pools(
+async fn discover_spl_pools(
     target: &Arc<dyn SolanaRpcClient>,
     oracles: &[OracleInfo],
     program: Pubkey,
@@ -260,7 +283,21 @@ async fn discover_pools(
         jet_margin_sdk::swap::spl_swap::SplSwapPool::get_pools(target, &supported_mints, program)
             .await?;
 
-    println!("found {} pools", result.len());
+    println!("found {} SPL pools", result.len());
+
+    Ok(result.keys().cloned().collect())
+}
+
+async fn discover_saber_pools(
+    target: &Arc<dyn SolanaRpcClient>,
+    oracles: &[OracleInfo],
+) -> Result<Vec<(Pubkey, Pubkey)>> {
+    let supported_mints = HashSet::from_iter(oracles.iter().map(|o| o.target_mint));
+    let result =
+        jet_margin_sdk::swap::saber_swap::SaberSwapPool::get_pools(target, &supported_mints)
+            .await?;
+
+    println!("found {} Saber pools", result.len());
 
     Ok(result.keys().cloned().collect())
 }

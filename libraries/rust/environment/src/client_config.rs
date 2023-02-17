@@ -223,9 +223,11 @@ pub mod legacy {
     use jet_instructions::{fixed_term::Market, margin_swap::derive_spl_swap_authority};
     use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
-    use crate::programs::ORCA_V2;
+    use crate::programs::{ORCA_V2, ORCA_V2_DEVNET};
 
     use super::*;
+
+    const SPL_PROGRAMS: [Pubkey; 2] = [ORCA_V2, ORCA_V2_DEVNET];
 
     pub async fn from_config<I: NetworkUserInterface>(
         network: &I,
@@ -280,6 +282,15 @@ pub mod legacy {
         let mut exchanges = HashMap::new();
 
         for dex in &config.exchanges {
+            // The legacy config only supports SPL swaps
+            if !SPL_PROGRAMS.contains(&dex.program) {
+                log::warn!(
+                    "Dex {}:{} ignored in the legacy config as it is not an SPL pool",
+                    dex.program,
+                    dex.description
+                );
+                continue;
+            }
             let swap_state = match network.get_account(&dex.address).await? {
                 None => {
                     log::error!(

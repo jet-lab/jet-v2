@@ -26,9 +26,12 @@ use solana_sdk::{
     sysvar::{self, SysvarId},
 };
 
-use jet_test_service::seeds::{
-    SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS, TOKEN_INFO, TOKEN_MINT,
-    TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
+use jet_test_service::{
+    seeds::{
+        SWAP_POOL_FEES, SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS,
+        TOKEN_INFO, TOKEN_MINT, TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
+    },
+    SaberSwapPoolCreateParams,
 };
 
 pub use jet_test_service::{SplSwapPoolCreateParams, TokenCreateParams};
@@ -242,6 +245,96 @@ pub fn spl_swap_pool_balance(
     }
 }
 
+/// Create a Saber swap pool
+pub fn saber_swap_pool_create(
+    swap_program: &Pubkey,
+    payer: &Pubkey,
+    token_a: &Pubkey,
+    token_b: &Pubkey,
+    liquidity_level: u8,
+    price_threshold: u16,
+) -> Instruction {
+    let addrs = derive_saber_swap_pool(swap_program, token_a, token_b);
+    let accounts = jet_test_service::accounts::SaberSwapPoolCreate {
+        payer: *payer,
+        mint_a: *token_a,
+        mint_b: *token_b,
+        info_a: derive_token_info(token_a), // TODO: will clash
+        info_b: derive_token_info(token_b),
+        pool_info: addrs.info,
+        pool_state: addrs.state,
+        pool_authority: addrs.authority,
+        pool_mint: addrs.mint,
+        pool_token_a: addrs.token_a_account,
+        pool_token_b: addrs.token_b_account,
+        pool_fee_a: addrs.fee_a,
+        pool_fee_b: addrs.fee_b,
+        lp_token: addrs.lp_token,
+        swap_program: *swap_program,
+        token_program: spl_token::ID,
+        system_program: system_program::ID,
+        rent: sysvar::rent::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::SaberSwapPoolCreate {
+            params: SaberSwapPoolCreateParams {
+                nonce: addrs.nonce,
+                liquidity_level,
+                price_threshold,
+            },
+        }
+        .data(),
+    }
+}
+
+/// Balance a Saber swap pool
+pub fn saber_swap_pool_balance(
+    swap_program: &Pubkey,
+    token_a: &Pubkey,
+    token_b: &Pubkey,
+    scratch_a: &Pubkey,
+    scratch_b: &Pubkey,
+    payer: &Pubkey,
+) -> Instruction {
+    let pool = derive_saber_swap_pool(swap_program, token_a, token_b);
+
+    let accounts = jet_test_service::accounts::SaberSwapPoolBalance {
+        payer: *payer,
+        scratch_a: *scratch_a,
+        scratch_b: *scratch_b,
+        mint_a: *token_a,
+        mint_b: *token_b,
+        info_a: derive_token_info(token_a),
+        info_b: derive_token_info(token_b),
+        pyth_price_a: derive_pyth_price(token_a),
+        pyth_price_b: derive_pyth_price(token_b),
+        pool_info: pool.info,
+        pool_state: pool.state,
+        pool_authority: pool.authority,
+        pool_mint: pool.mint,
+        pool_token_a: pool.token_a_account,
+        pool_token_b: pool.token_b_account,
+        pool_fee_a: pool.fee_a,
+        pool_fee_b: pool.fee_b,
+        lp_token: pool.lp_token,
+        saber_program: *swap_program,
+        token_program: spl_token::ID,
+        system_program: system_program::ID,
+        rent: sysvar::rent::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::SaberSwapPoolBalance {}.data(),
+    }
+}
+
 /// if the account is not initialized, invoke the instruction
 pub fn if_not_initialized(account_to_check: Pubkey, ix: Instruction) -> Instruction {
     let mut accounts = jet_test_service::accounts::IfNotInitialized {
@@ -338,6 +431,66 @@ pub fn derive_spl_swap_pool(
     }
 }
 
+/// Get the addresses for a Saber swap pool
+pub fn derive_saber_swap_pool(
+    program: &Pubkey,
+    token_a: &Pubkey,
+    token_b: &Pubkey,
+) -> SaberSwapPoolAddress {
+    let info = Pubkey::find_program_address(
+        &[SWAP_POOL_INFO, token_a.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let state = Pubkey::find_program_address(
+        &[SWAP_POOL_STATE, token_a.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let (authority, nonce) = Pubkey::find_program_address(&[state.as_ref()], program);
+    let token_a_account = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, state.as_ref(), token_a.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let token_b_account = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, state.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let mint =
+        Pubkey::find_program_address(&[SWAP_POOL_MINT, state.as_ref()], &jet_test_service::ID).0;
+    let fee_a = Pubkey::find_program_address(
+        &[SWAP_POOL_FEES, state.as_ref(), token_a.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let fee_b = Pubkey::find_program_address(
+        &[SWAP_POOL_FEES, state.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+
+    let lp_destination = Pubkey::find_program_address(
+        &[SWAP_POOL_FEES, state.as_ref(), mint.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+
+    SaberSwapPoolAddress {
+        info,
+        state,
+        authority,
+        token_a_account,
+        token_b_account,
+        mint,
+        fee_a,
+        fee_b,
+        lp_token: lp_destination,
+        nonce,
+    }
+}
+
 /// Set of addresses for a test swap pool
 pub struct SwapPoolAddress {
     /// The test-service state about the pool
@@ -360,6 +513,39 @@ pub struct SwapPoolAddress {
 
     /// The account to collect fees
     pub fees: Pubkey,
+
+    /// The pool nonce
+    pub nonce: u8,
+}
+
+/// Set of addresses for a test Saber swap pool
+pub struct SaberSwapPoolAddress {
+    /// The test-service state about the pool
+    pub info: Pubkey,
+
+    /// The address of the swap pool state
+    pub state: Pubkey,
+
+    /// The authority
+    pub authority: Pubkey,
+
+    /// The token A vault
+    pub token_a_account: Pubkey,
+
+    /// The token B vault
+    pub token_b_account: Pubkey,
+
+    /// The LP token
+    pub mint: Pubkey,
+
+    /// The account to collect fees from token A
+    pub fee_a: Pubkey,
+
+    /// The account to collect fees from token B
+    pub fee_b: Pubkey,
+
+    /// The account to transfer liquiditity token to/from
+    pub lp_token: Pubkey,
 
     /// The pool nonce
     pub nonce: u8,

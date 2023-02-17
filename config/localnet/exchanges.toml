@@ -7,3 +7,8 @@ quote = "USDC"
 program = "spl-swap"
 base = "BTC"
 quote = "USDT"
+
+[[dex]]
+program = "saber-swap"
+base = "USDT"
+quote = "USDC"
