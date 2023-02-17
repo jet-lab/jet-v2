@@ -8,6 +8,7 @@ import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useLocation } from 'react-router-dom';
+import { getOrderbookSnapshot } from '@jet-lab/store';
 
 export const AllFixedTermMarketsAtom = atom<Array<MarketAndConfig>>({
   key: 'allFixedTermMarkets',
@@ -50,7 +51,10 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
     const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
-        const model = await market.market.fetchOrderbook(tenor);
+
+        const apiEndpoint = 'http://localhost:3002';  // FIXME
+        const snapshot = await getOrderbookSnapshot(apiEndpoint, market.market)
+        const model = market.market.getOrderbookModel(tenor, snapshot);
         return {
           name: market.name,
           orderbook: model
