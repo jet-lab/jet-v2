@@ -1,4 +1,6 @@
+use anchor_lang::prelude::{AccountInfo, Pubkey};
 use rand::rngs::mock::StepRng;
+use solana_sdk::entrypoint::ProgramResult;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
@@ -174,6 +176,7 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
             saber_program::id(),
             saber_program::processor::Processor::process
         ),
+        (anchor_spl::dex::id(), openbook_processor),
     ];
 
     let payer_key = Keypair::new();
@@ -185,6 +188,16 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         .unwrap();
 
     Arc::new(rpc)
+}
+
+// Register OpenBook, converting a DexError to ProgramError
+fn openbook_processor(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    input: &[u8],
+) -> ProgramResult {
+    anchor_spl::dex::serum_dex::state::State::process(program_id, accounts, input)
+        .map_err(|e| e.into())
 }
 
 pub async fn init_wallet(
