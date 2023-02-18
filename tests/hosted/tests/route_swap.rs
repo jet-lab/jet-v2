@@ -12,7 +12,6 @@ use anchor_spl::dex::{
 };
 use anyhow::Error;
 
-use jet_instructions::openbook::create_open_orders;
 use jet_margin_sdk::{
     ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts, SwapContext},
     lookup_tables::LookupTable,
@@ -132,11 +131,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
         msol,
     })
 }
-
-/*
-I was working on setting up open order accounts for the users in the swap
-I also need to add some liquidity to the pool, but I could do this before I start the swap.
- */
 
 async fn setup_swap_accounts<'a>(
     ctx: &Arc<MarginTestContext>,
@@ -672,6 +666,7 @@ async fn route_saber_swap() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(not(feature = "localnet"))]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_openbook_swap() -> anyhow::Result<()> {

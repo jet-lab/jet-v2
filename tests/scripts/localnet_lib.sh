@@ -87,7 +87,7 @@ start-validator() {
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
         --bpf-program $SBR_PID $SBRSWAP_SO \
-        --pbf-program $OPNBK_ID $OPNBK_SO \
+        --bpf-program $OPNBK_PID $OPNBK_SO \
         --quiet \
         $@ &
     VALIDATOR_PID=$!
