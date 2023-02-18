@@ -28,3 +28,4 @@ localnet.config.legacy.json
 # documentations
 
 .turbo
+.cargo
