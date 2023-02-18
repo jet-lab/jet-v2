@@ -34,7 +34,7 @@ CMD solana-test-validator --reset \
       --bpf-program JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN  /root/programs/jet_margin_swap.so \
       --bpf-program JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp  /root/programs/jet_metadata.so \
       --bpf-program FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL /root/programs/pyth.so \
-      --bpf-program 9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin /root/programs/serum_dex_v3.so \
+      --bpf-program EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj /root/programs/openbook.so \
       --bpf-program 4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt /root/programs/spl_token_faucet.so \
       --bpf-program SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ /root/programs/saber_stable_swap.so \
       --bpf-program 9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP /root/programs/mainnet_9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP_2022-06-20.so \
