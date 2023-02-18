@@ -3,6 +3,7 @@ pub mod context;
 pub mod fixed_term;
 pub mod load;
 pub mod margin;
+pub mod openbook;
 pub mod pricing;
 pub mod runtime;
 pub mod saber_swap;

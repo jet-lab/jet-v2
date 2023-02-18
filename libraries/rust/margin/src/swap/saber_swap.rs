@@ -144,7 +144,7 @@ impl SaberSwapPool {
 }
 
 impl SwapAccounts for SaberSwapPool {
-    fn to_account_meta(&self) -> Vec<AccountMeta> {
+    fn to_account_meta(&self, _authority: Pubkey) -> Vec<AccountMeta> {
         let (swap_authority, _) =
             Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
 
@@ -166,5 +166,9 @@ impl SwapAccounts for SaberSwapPool {
 
     fn route_type(&self) -> SwapRouteIdentifier {
         SwapRouteIdentifier::SaberStable
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self as &dyn std::any::Any
     }
 }

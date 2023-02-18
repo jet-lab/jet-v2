@@ -1,6 +1,6 @@
 [package]
 name = "jet-margin-swap"
-version = "1.0.0"
+version = "1.1.0"
 description = "Anchor program to swap margin pool deposits via spl token swap"
 edition = "2018"
 
@@ -16,11 +16,13 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 testing = ["jet-margin-pool/testing", "jet-margin/testing"]
-devnet = ["jet-static-program-registry/devnet"]
+devnet = ["jet-static-program-registry/devnet", "anchor-spl/devnet"]
 
 [dependencies]
+bytemuck = "1"
+
 anchor-lang = "0.26"
-anchor-spl = "0.26"
+anchor-spl = { version = "0.26", features = ["dex"] }
 
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
