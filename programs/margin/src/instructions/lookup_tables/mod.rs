@@ -15,38 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod accounting_invoke;
-mod adapter_invoke;
-mod close_account;
-mod close_position;
-mod create_account;
-mod liquidate_begin;
-mod liquidate_end;
-mod liquidator_invoke;
-mod refresh_position_metadata;
-mod register_position;
-mod update_position_balance;
-mod verify_healthy;
+mod append_to_lookup;
+mod create_lookup_table;
+mod init_lookup_registry;
 
-mod admin;
-mod configure;
-mod lookup_tables;
-mod positions;
-
-pub use accounting_invoke::*;
-pub use adapter_invoke::*;
-pub use close_account::*;
-pub use close_position::*;
-pub use create_account::*;
-pub use liquidate_begin::*;
-pub use liquidate_end::*;
-pub use liquidator_invoke::*;
-pub use refresh_position_metadata::*;
-pub use register_position::*;
-pub use update_position_balance::*;
-pub use verify_healthy::*;
-
-pub use admin::*;
-pub use configure::*;
-pub use lookup_tables::*;
-pub use positions::*;
+pub use append_to_lookup::*;
+pub use create_lookup_table::*;
+pub use init_lookup_registry::*;
