@@ -14,6 +14,7 @@ jobs:
     env:
       HOME: /home/tools
       BATCH: batch1
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -40,6 +41,7 @@ jobs:
     env:
       HOME: /home/tools
       BATCH: batch2
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -65,6 +67,7 @@ jobs:
       image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
     env:
       HOME: /home/tools
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -89,6 +92,7 @@ jobs:
     env:
       HOME: /home/tools
       CODECOV: true
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - uses: actions/checkout@v3
 
@@ -118,6 +122,7 @@ jobs:
       REACT_APP_RPC_DEV_TOKEN: ${{ secrets.REACT_APP_RPC_DEV_TOKEN }}
       REACT_APP_RPC_TOKEN: ${{ secrets.REACT_APP_RPC_TOKEN }}
       REACT_APP_LOGROCKET_PROJECT: ''
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
