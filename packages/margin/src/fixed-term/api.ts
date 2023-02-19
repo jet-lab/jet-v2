@@ -4,7 +4,7 @@ import { FixedTermMarket, MarketAndConfig } from "./fixedTerm"
 import { Address, AnchorProvider, BN } from "@project-serum/anchor"
 import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../margin"
 import { AssociatedToken } from "../token"
-import { sendAll } from "../utils"
+import { sendAndConfirmV0 } from "../utils"
 
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {
@@ -61,7 +61,7 @@ export const offerLoan = async ({
   markets
 }: ICreateLendOrder) => {
   const pool = pools[market.config.symbol]
-  const instructions: TransactionInstruction[][] = []
+  let instructions: TransactionInstruction[] = []
 
   const prefreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -69,7 +69,7 @@ export const offerLoan = async ({
     pools,
     markets: markets.filter(m => m.address != market.market.address),
   })
-  instructions.push(prefreshIXS)
+  instructions = instructions.concat(prefreshIXS)
 
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
@@ -79,7 +79,7 @@ export const offerLoan = async ({
     walletAddress,
     markets
   })
-  instructions.push(marketIXS)
+  instructions = instructions.concat(marketIXS)
 
   const postfreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -88,7 +88,7 @@ export const offerLoan = async ({
     markets: [market.market],
     marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
-  instructions.push(postfreshIXS)
+  instructions = instructions.concat(postfreshIXS)
 
   const orderIXS: TransactionInstruction[] = []
 
@@ -110,8 +110,8 @@ export const offerLoan = async ({
     instructions: orderIXS,
     adapterInstruction: loanOffer
   })
-  instructions.push(orderIXS)
-  return sendAll(provider, [instructions])
+  instructions = instructions.concat(orderIXS)
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }
 
 interface ICreateBorrowOrder {
@@ -137,7 +137,7 @@ export const requestLoan = async ({
   marketConfig,
   markets
 }: ICreateBorrowOrder): Promise<string> => {
-  const instructions: TransactionInstruction[][] = []
+  let instructions: TransactionInstruction[] = []
 
   const prefreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -145,7 +145,7 @@ export const requestLoan = async ({
     pools,
     markets: markets.filter(m => m.address != market.market.address),
   })
-  instructions.push(prefreshIXS)
+  instructions = instructions.concat(prefreshIXS)
 
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
@@ -155,7 +155,7 @@ export const requestLoan = async ({
     walletAddress,
     markets
   })
-  instructions.push(marketIXS)
+  instructions = instructions.concat(marketIXS)
 
   const postfreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -164,7 +164,7 @@ export const requestLoan = async ({
     markets: [market.market],
     marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
-  instructions.push(postfreshIXS)
+  instructions = instructions.concat(postfreshIXS)
 
   const orderIXS: TransactionInstruction[] = []
 
@@ -187,8 +187,8 @@ export const requestLoan = async ({
     instructions: orderIXS,
     adapterInstruction: borrowOffer
   })
-  instructions.push(orderIXS)
-  return sendAll(provider, [instructions])
+  instructions = instructions.concat(orderIXS)
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }
 
 interface ICancelOrder {
@@ -227,8 +227,7 @@ export const cancelOrder = async ({ market, marginAccount, provider, orderId, po
     markets,
     marketAddress: market.market.address
   })
-
-  return sendAll(provider, [instructions])
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }
 
 // MARKET TAKER ORDERS
@@ -253,15 +252,15 @@ export const borrowNow = async ({
   markets
 }: IBorrowNow): Promise<string> => {
   const pool = pools[market.config.symbol]
-  const instructions: TransactionInstruction[][] = []
-
+  let instructions: TransactionInstruction[] = []
+  
   const prefreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
     markets: markets.filter(m => m.address != market.market.address),
   })
-  instructions.push(prefreshIXS)
+  instructions = instructions.concat(prefreshIXS)
 
   // Create relevant accounts if they do not exist
   const { marketIXS, tokenMint } = await withCreateFixedTermMarketAccounts({
@@ -271,7 +270,7 @@ export const borrowNow = async ({
     walletAddress,
     markets
   })
-  instructions.push(marketIXS)
+  instructions = instructions.concat(marketIXS)
 
   const postfreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -280,7 +279,7 @@ export const borrowNow = async ({
     markets: [market.market],
     marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
-  instructions.push(postfreshIXS)
+  instructions = instructions.concat(postfreshIXS)
 
   await marginAccount.withRefreshDepositPosition({
     instructions: postfreshIXS,
@@ -317,8 +316,8 @@ export const borrowNow = async ({
     instructions: orderIXS,
     adapterInstruction: depositIx
   })
-  instructions.push(orderIXS)
-  return sendAll(provider, [instructions])
+  instructions = instructions.concat(orderIXS)
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }
 
 interface ILendNow {
@@ -341,7 +340,7 @@ export const lendNow = async ({
   markets
 }: ILendNow): Promise<string> => {
   const pool = pools[market.config.symbol]
-  const instructions: TransactionInstruction[][] = []
+  let instructions: TransactionInstruction[] = []
 
   const prefreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -349,7 +348,7 @@ export const lendNow = async ({
     pools,
     markets: markets.filter(m => m.address != market.market.address),
   })
-  instructions.push(prefreshIXS)
+  instructions = instructions.concat(prefreshIXS)
 
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
@@ -359,7 +358,7 @@ export const lendNow = async ({
     walletAddress,
     markets
   })
-  instructions.push(marketIXS)
+  instructions = instructions.concat(marketIXS)
 
   const postfreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -368,7 +367,7 @@ export const lendNow = async ({
     markets: [market.market],
     marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
-  instructions.push(postfreshIXS)
+  instructions = instructions.concat(postfreshIXS)
 
   const orderIXS: TransactionInstruction[] = []
   await pool.withWithdrawToMargin({
@@ -385,12 +384,12 @@ export const lendNow = async ({
     adapterInstruction: lendNow
   })
 
-  instructions.push(orderIXS)
+  instructions = instructions.concat(orderIXS)
   const updateIXS: TransactionInstruction[] = []
   await marginAccount.withUpdateAllPositionBalances({ instructions: updateIXS })
-  instructions.push(updateIXS)
+  instructions = instructions.concat(updateIXS)
 
-  return sendAll(provider, [instructions])
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }
 
 interface ISettle {
@@ -404,7 +403,7 @@ interface ISettle {
 
 export const settle = async ({ markets, selectedMarket, marginAccount, provider, pools, amount }: ISettle) => {
   const { market, token } = selectedMarket
-  const instructions: TransactionInstruction[][] = []
+  let instructions: TransactionInstruction[] = []
   const pool = pools[token.symbol]
   const refreshIXS: TransactionInstruction[] = []
 
@@ -414,7 +413,7 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
     markets: markets.map(m => m.market),
   })
 
-  instructions.push(refreshIXS)
+  instructions = instructions.concat(refreshIXS)
   const settleIXS: TransactionInstruction[] = []
   const change = PoolTokenChange.shiftBy(amount)
   const source = AssociatedToken.derive(market.addresses.underlyingTokenMint, marginAccount.address)
@@ -437,8 +436,8 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
     adapterInstruction: depositIx
   })
   await marginAccount.withUpdatePositionBalance({ instructions: settleIXS, position })
-  instructions.push(settleIXS)
-  return sendAll(provider, [instructions])
+  instructions = instructions.concat(settleIXS)
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }
 
 interface IRepay {
@@ -466,7 +465,7 @@ export const repay = async ({
   pools,
   markets,
 }: IRepay) => {
-  const instructions: TransactionInstruction[][] = []
+  let instructions: TransactionInstruction[] = []
 
   const poolIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -475,7 +474,7 @@ export const repay = async ({
     markets,
     marketAddress: market.market.address
   })
-  instructions.push(poolIXS)
+  instructions = instructions.concat(poolIXS)
 
   await marginAccount.withRefreshDepositPosition({
     instructions: poolIXS,
@@ -530,7 +529,7 @@ export const repay = async ({
       sortedTermLoans.shift()
     }
   }
-  instructions.push(orderIXS)
+  instructions = instructions.concat(orderIXS)
   const refreshIxs: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: refreshIxs,
@@ -538,8 +537,8 @@ export const repay = async ({
     markets,
     marketAddress: market.market.address
   })
-  instructions.push(refreshIxs)
-  return sendAll(provider, [instructions])
+  instructions = instructions.concat(refreshIxs)
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }
 
 
@@ -568,7 +567,7 @@ export const redeem = async ({
   provider,
   deposits
 }: IRedeem) => {
-  const instructions: TransactionInstruction[][] = []
+  let instructions: TransactionInstruction[] = []
   const refreshIxs: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: refreshIxs,
@@ -576,7 +575,7 @@ export const redeem = async ({
     markets,
     marketAddress: market.market.address
   })
-  instructions.push(refreshIxs)
+  instructions = instructions.concat(refreshIxs)
 
   const redeemIxs: TransactionInstruction[] = []
   const sortedDeposits = deposits.sort((a, b) => a.sequence_number - b.sequence_number)
@@ -593,7 +592,7 @@ export const redeem = async ({
       adapterInstruction: redeem
     })
   }
-
-  instructions.push(redeemIxs)
-  return sendAll(provider, [instructions])
+  
+  instructions = instructions.concat(redeemIxs)
+  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
 }

@@ -1883,6 +1883,15 @@
     dotenv "8.2.0"
     mkdirp "1.0.4"
 
+"@solana/spl-token@^0.3.7":
+  version "0.3.7"
+  resolved "https://registry.yarnpkg.com/@solana/spl-token/-/spl-token-0.3.7.tgz#6f027f9ad8e841f792c32e50920d9d2e714fc8da"
+  integrity sha512-bKGxWTtIw6VDdCBngjtsGlKGLSmiu/8ghSt/IOYJV24BsymRbgq7r12GToeetpxmPaZYLddKwAz7+EwprLfkfg==
+  dependencies:
+    "@solana/buffer-layout" "^4.0.0"
+    "@solana/buffer-layout-utils" "^0.2.0"
+    buffer "^6.0.3"
+
 "@solana/wallet-adapter-alpha@^0.1.6":
   version "0.1.6"
   resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-alpha/-/wallet-adapter-alpha-0.1.6.tgz#deeafaeb5963b67b9f054a923812a08a8533cd07"

@@ -3,6 +3,7 @@ import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@
 import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   AccountMeta,
+  AddressLookupTableProgram,
   GetProgramAccountsFilter,
   MemcmpFilter,
   PublicKey,
@@ -37,6 +38,8 @@ import {
 import { MarginPrograms } from "./marginClient"
 import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
 import { Airspace } from "./airspace"
+
+const LOOKUP_REGISTRY_PROGRAM = new PublicKey("LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru");
 
 /** A description of a position associated with a [[MarginAccount]] and [[Pool]] */
 export interface PoolPosition {
@@ -907,7 +910,18 @@ export class MarginAccount {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
     }
     const marginAccount = new MarginAccount(programs, provider, owner, seed, airspaceAddress, pools, walletTokens)
-    await marginAccount.createAccount()
+    const instructions: TransactionInstruction[] = [];
+    await marginAccount.withCreateAccount(instructions);
+    // Add a lookup registry account
+    await marginAccount.withInitLookupRegistry(instructions);
+    const slot = await provider.connection.getSlot()
+    const marginLookup = await marginAccount.withCreateLookupTable({
+      instructions,
+      slot,
+      discriminator: 10, // TODO
+    });
+    await marginAccount.sendAndConfirm(instructions);
+    console.log("Lookup address is ", marginLookup.toBase58())
     return marginAccount
   }
 
@@ -979,7 +993,7 @@ export class MarginAccount {
   async createAccount(): Promise<string> {
     const instructions: TransactionInstruction[] = []
     await this.withCreateAccount(instructions)
-    return await this.sendAll([instructions])
+    return await this.sendAndConfirmV0(instructions, [])
   }
 
   /**
@@ -1698,6 +1712,118 @@ export class MarginAccount {
     return accounts
   }
 
+  /** Create an address lookup table registry account owned by the margin account.
+   */
+  async initLookupRegistry(): Promise<void> {
+    const ix: TransactionInstruction[] = []
+    await this.withInitLookupRegistry(ix)
+    await this.sendAndConfirm(ix)
+  }
+
+  async withInitLookupRegistry(instructions: TransactionInstruction[]) {
+    const [registryAccount] = PublicKey.findProgramAddressSync([
+      this.address.toBytes()
+    ], LOOKUP_REGISTRY_PROGRAM)
+    const ix = await this.programs.margin.methods
+    .initLookupRegistry()
+    .accounts({
+      marginAuthority: this.owner,
+      payer: this.provider.wallet.publicKey,
+      marginAccount: this.address,
+      registryAccount,
+      registryProgram: LOOKUP_REGISTRY_PROGRAM,
+      systemProgram: SystemProgram.programId,
+    })
+    .instruction()
+    instructions.push(ix)
+  }
+
+  async createLookupTable(slot: number, discriminator: number): Promise<PublicKey> {
+    const ix: TransactionInstruction[] = []
+    const lookupTable = await this.withCreateLookupTable({instructions: ix, slot, discriminator})
+    await this.sendAndConfirm(ix)
+    return lookupTable
+  }
+
+  async withCreateLookupTable({
+    instructions,
+    slot,
+    discriminator
+  }: {
+    instructions: TransactionInstruction[],
+    slot: number,
+    discriminator: number,
+  }): Promise<PublicKey> {
+    const [registryAccount] = PublicKey.findProgramAddressSync([
+      this.address.toBytes()
+    ], LOOKUP_REGISTRY_PROGRAM);
+    const [_, lookupTable] = AddressLookupTableProgram.createLookupTable({
+      authority: this.address,
+      payer: this.provider.wallet.publicKey,
+      recentSlot: slot
+    });
+    const ix = await this.programs.margin.methods
+    .createLookupTable(
+       new BN(slot),
+      new BN(discriminator),
+    )
+    .accounts({
+      marginAuthority: this.owner,
+      payer: this.provider.wallet.publicKey,
+      marginAccount: this.address,
+      registryAccount,
+      registryProgram: LOOKUP_REGISTRY_PROGRAM,
+      systemProgram: SystemProgram.programId,
+      lookupTable,
+      addressLookupTableProgram: AddressLookupTableProgram.programId
+    })
+    .instruction()
+    instructions.push(ix)
+    return lookupTable
+  }
+
+  async appendToLookupTable(args: {
+    lookupTable: PublicKey,
+    discriminator: number,
+    addresses: PublicKey[]
+  }) {
+    const ix: TransactionInstruction[] = []
+    await this.withAppendToLookupTable({instructions: ix, ...args})
+    await this.sendAndConfirm(ix)
+  }
+
+  async withAppendToLookupTable({
+    instructions,
+    lookupTable,
+    discriminator,
+    addresses
+  }: {
+    instructions: TransactionInstruction[],
+    lookupTable: PublicKey,
+    discriminator: number,
+    addresses: PublicKey[]
+  }) {
+    const [registryAccount] = PublicKey.findProgramAddressSync([
+      this.address.toBytes()
+    ], LOOKUP_REGISTRY_PROGRAM);
+    const ix = await this.programs.margin.methods
+    .appendToLookup(
+      new BN(discriminator), addresses
+    )
+    .accounts({
+      marginAuthority: this.owner,
+      payer: this.provider.wallet.publicKey,
+      marginAccount: this.address,
+      registryAccount,
+      registryProgram: LOOKUP_REGISTRY_PROGRAM,
+      systemProgram: SystemProgram.programId,
+      lookupTable,
+      addressLookupTableProgram: AddressLookupTableProgram.programId
+    })
+    .instruction()
+    instructions.push(ix)
+  }
+
   /**
    * Sends a transaction using the [[MarginAccount]] [[AnchorProvider]]
    *
@@ -1712,10 +1838,14 @@ export class MarginAccount {
 
   async sendAndConfirmV0(
     instructions: TransactionInstruction[],
-    lookupTables: PublicKey[],
     signers?: Signer[]
   ): Promise<string> {
-    return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
+    // Authorities are:
+    // - margin account
+    // - jet authority
+    // - other adapters?
+    const authorities = [this.address.toBase58()];
+    return await sendAndConfirmV0(this.provider, instructions, authorities, signers)
   }
 
   /**

@@ -32,10 +32,6 @@ pub struct CreateLookupTable<'info> {
     /// The margin account to create this lookup account for
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
-    /// The registry account
-    #[account(mut)]
-    pub registry_account: AccountInfo<'info>,
-
     /// The lookup table being created
     /// CHECK: the account will be validated by the lookup table program
     #[account(mut)]

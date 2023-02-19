@@ -12,6 +12,7 @@ import {
   TransactionSignature,
   VersionedTransaction
 } from "@solana/web3.js"
+import axios from "axios"
 import bs58 from "bs58"
 
 /**
@@ -78,16 +79,30 @@ export async function sendAndConfirm(
 export async function sendAndConfirmV0(
   provider: AnchorProvider,
   instructions: TransactionInstruction[],
-  lookupTables: PublicKey[],
+  authorities: string[],
   signers?: Signer[],
   opts?: ConfirmOptions
 ): Promise<TransactionSignature> {
   if (opts === undefined) {
     opts = provider.opts
   }
+  let lookups: string[] = (await axios.post("http://localhost:3006/lookup/get_addresses", {
+    instructions: instructions.map(i => {
+      return {
+        program: i.programId.toJSON(),
+        accounts: i.keys.map(k => {
+          return k.pubkey.toJSON()
+        }),
+        data: []
+      }
+    }),
+    // TODO: hardcoded for now
+    authorities: ["Ecxa8ZnbGJcDSPqBRDQQ3ZTjtBSnkvqPcMdMkx7JAZCM", ...authorities]
+  })).data.addresses;
+
 
   const tablesResponse = await Promise.all(
-    lookupTables.map(address => provider.connection.getAddressLookupTable(address).then(res => res.value))
+    lookups.map(address => provider.connection.getAddressLookupTable(new PublicKey(address)).then(res => res.value))
   )
   const tables: AddressLookupTableAccount[] = []
   for (const table of tablesResponse) {
@@ -189,17 +204,13 @@ export async function sendAll(
       const transactions = signedUnflattened[i]
       const txnArray: string[] = []
       for (const tx of transactions) {
-        try {
-          const rawTx = tx.serialize()
-          const sent = await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch(err => {
-            let customErr = new ConfirmError(err.message)
-            customErr.signature = bs58.encode(tx.signature!)
-            throw customErr
-          })
-          txnArray.push(sent)
-        } catch (e) {
-          console.error(e)
-        }
+        const rawTx = tx.serialize()
+        const sent = await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch(err => {
+          let customErr = new ConfirmError(err.message)
+          customErr.signature = bs58.encode(tx.signature!)
+          throw customErr
+        })
+        txnArray.push(sent)
       }
       // Return the txid of the final transaction in the array
       // TODO: We should return an array instead of only the final txn
