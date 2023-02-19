@@ -27,3 +27,6 @@ jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+
+# lookup-table-registry-client = { path = "../../../../lookup-table-registry/libraries/rust" }
+lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry" }

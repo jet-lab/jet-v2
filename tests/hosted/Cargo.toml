@@ -68,5 +68,7 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 jet-simulation = { path = "../../libraries/rust/simulation" }
+# lookup-table-registry = { path = "../../../lookup-table-registry/programs/lookup-table-registry", features = ["no-entrypoint"] }
+lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", features = ["no-entrypoint"] }
 
 itertools = "0.10.3"

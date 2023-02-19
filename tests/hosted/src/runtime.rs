@@ -174,6 +174,7 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
             saber_program::id(),
             saber_program::processor::Processor::process
         ),
+        lookup_table_registry,
     ];
 
     let payer_key = Keypair::new();
