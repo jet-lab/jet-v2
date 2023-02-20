@@ -22,7 +22,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         endpoint = process.env.REACT_APP_WS_API;
         break;
     }
-    
+
     console.log('initialising websocket for ', cluster, endpoint);
     if (!endpoint) throw `No websocket environment variable set up.`;
 
@@ -59,6 +59,18 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
       } else if (data.type === 'PRICE-UPDATE') {
         useJetStore.getState().updatePrices(data);
       }
+    };
+
+    ws.onerror = (_: Event) => {
+      setTimeout(() => {
+        initWebsocket(cluster, wallet);
+      }, 1000);
+    };
+
+    ws.onclose = (_: CloseEvent) => {
+      setTimeout(() => {
+        initWebsocket(cluster, wallet);
+      }, 1000);
     };
   } catch (e) {
     console.log(e);
