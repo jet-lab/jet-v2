@@ -1,7 +1,7 @@
 use agnostic_orderbook::state::critbit::Slab;
 use bonfida_utils::fp_math::{fp32_div, fp32_mul_ceil, fp32_mul_floor};
 use jet_fixed_term::orderbook::state::{CallbackInfo, OrderTag};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use solana_program::pubkey::Pubkey;
 
 use crate::orderbook::interest_pricing::{f64_to_fp32, fp32_to_f64};
