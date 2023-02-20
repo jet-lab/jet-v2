@@ -1,6 +1,6 @@
 import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, MarketAndConfig, OrderbookModel } from '@jet-lab/margin';
 import { Program } from '@project-serum/anchor';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
 import { AirspaceConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
@@ -8,7 +8,7 @@ import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useLocation } from 'react-router-dom';
-import { getOrderbookSnapshot } from '@jet-lab/store';
+import { getOrderbookSnapshot, useJetStore } from '@jet-lab/store';
 
 export const AllFixedTermMarketsAtom = atom<Array<MarketAndConfig>>({
   key: 'allFixedTermMarkets',
@@ -47,13 +47,24 @@ export interface ExtendedOrderBook {
 export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   key: 'allFixedTermMarketOrderBooks',
   get: async ({ get }) => {
+    const { cluster } = useJetStore(state => state.settings);
+    const apiEndpoint = useMemo(
+      () =>
+        cluster === 'mainnet-beta'
+          ? process.env.REACT_APP_DATA_API
+          : cluster === 'devnet'
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === 'localnet'
+          ? process.env.REACT_APP_LOCAL_DATA_API
+          : '',
+      [cluster]
+    );
     const list = get(AllFixedTermMarketsAtom);
     const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
 
-        const apiEndpoint = 'http://localhost:3002';  // FIXME
-        const snapshot = await getOrderbookSnapshot(apiEndpoint, market.market)
+        const snapshot = await getOrderbookSnapshot(apiEndpoint || 'http://localhost:3002', market.market)
         const model = market.market.getOrderbookModel(tenor, snapshot);
         return {
           name: market.name,
