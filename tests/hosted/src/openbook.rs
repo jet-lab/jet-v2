@@ -192,6 +192,9 @@ impl OpenBookMarketConfig for OpenBookMarket {
 
         send_and_confirm(&ctx.rpc, &[init_ix], &[]).await?;
 
+        let base_mint_decimals = token_manager.get_mint(&base_mint).await?.decimals;
+        let quote_mint_decimals = token_manager.get_mint(&quote_mint).await?.decimals;
+
         Ok(Self {
             market: market.pubkey(),
             bids: bids.pubkey(),
@@ -204,6 +207,10 @@ impl OpenBookMarketConfig for OpenBookMarket {
             quote_vault,
             vault_signer,
             program: Dex::id(),
+            base_lot_size,
+            quote_lot_size,
+            base_mint_decimals,
+            quote_mint_decimals,
         })
     }
 

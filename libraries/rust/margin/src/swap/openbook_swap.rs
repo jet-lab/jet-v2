@@ -33,11 +33,11 @@ use crate::ix_builder::SwapAccounts;
 /// Accounts used for a Saber swap pool
 #[derive(Debug, Clone, Copy)]
 pub struct OpenBookMarket {
-    ///
+    /// The market address
     pub market: Pubkey,
-    ///
+    /// Base (coin) mint
     pub base_mint: Pubkey,
-    ///
+    /// Quote (price currency) mint
     pub quote_mint: Pubkey,
     ///
     pub request_queue: Pubkey,
@@ -55,6 +55,14 @@ pub struct OpenBookMarket {
     pub vault_signer: Pubkey,
     ///
     pub program: Pubkey,
+    ///
+    pub base_lot_size: u64,
+    ///
+    pub quote_lot_size: u64,
+    /// Base decimals for price conversions
+    pub base_mint_decimals: u8,
+    /// Quote decimals for price conversions
+    pub quote_mint_decimals: u8,
 }
 
 impl OpenBookMarket {
@@ -87,9 +95,17 @@ impl OpenBookMarket {
                 continue;
             }
 
-            let Ok(parsed_market) = Self::from_market_state(market_address, program, market) else {
+            let Ok(mut parsed_market) = Self::from_market_state(market_address, program, market) else {
                 continue;
             };
+            let Ok(base_) = super::find_mint(rpc, &parsed_market.base_mint).await else {
+                continue;
+            };
+            let Ok(quote_) = super::find_mint(rpc, &parsed_market.quote_mint).await else {
+                continue;
+            };
+            parsed_market.base_mint_decimals = base_.decimals;
+            parsed_market.quote_mint_decimals = quote_.decimals;
 
             // Check if there is a pool, insert if none, replace if smaller
             pool_sizes
@@ -133,6 +149,10 @@ impl OpenBookMarket {
             base_vault: pubkey_from_slice(market.coin_vault),
             quote_vault: pubkey_from_slice(market.pc_vault),
             vault_signer,
+            base_lot_size: market.coin_lot_size,
+            quote_lot_size: market.pc_lot_size,
+            base_mint_decimals: 0,
+            quote_mint_decimals: 0,
         })
     }
 }
