@@ -24,6 +24,7 @@ anchor-spl = "0.26"
 
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
+jet-metadata = { path = "../metadata", features = ["no-entrypoint"] }
 
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
 

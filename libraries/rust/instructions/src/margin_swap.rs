@@ -11,10 +11,10 @@ use jet_margin_pool::{ChangeKind, TokenChange};
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteDetail, SwapRouteIdentifier};
 use jet_margin_swap::{instruction as ix_data, ROUTE_SWAP_MAX_SPLIT, ROUTE_SWAP_MIN_SPLIT};
 
-use crate::margin::derive_position_token_account;
 use crate::margin_pool::MarginPoolIxBuilder;
 use crate::IxResult;
 use crate::JetIxError;
+use crate::{get_metadata_address, margin::derive_position_token_account};
 
 pub use jet_margin_swap::ID as MARGIN_SWAP_PROGRAM;
 
@@ -156,6 +156,8 @@ pub struct MarginSwapRouteIxBuilder {
     pool_note_mints: HashSet<Pubkey>,
     /// The context used for the swap
     swap_context: SwapContext,
+    /// Whether this builder has liquidation accounts
+    is_liquidation: bool,
 }
 
 impl MarginSwapRouteIxBuilder {
@@ -240,7 +242,53 @@ impl MarginSwapRouteIxBuilder {
             spl_token_accounts,
             pool_note_mints,
             swap_context,
+            is_liquidation: false,
         })
+    }
+
+    /// Whether this builder is for a liquidation
+    pub fn is_liquidation(&self) -> bool {
+        self.is_liquidation
+    }
+
+    /// Set a liquidator
+    pub fn set_liquidation(
+        &mut self,
+        liquidator: Pubkey,
+        fee_destination: Option<Pubkey>,
+    ) -> IxResult<()> {
+        if self.is_liquidation {
+            return Err(JetIxError::SwapIxError(
+                "A liquidator is already set".to_string(),
+            ));
+        }
+        if self.is_finalized {
+            return Err(JetIxError::SwapIxError(
+                "Swap route is already finalized".to_string(),
+            ));
+        }
+        if self.current_route_tokens.is_some() {
+            return Err(JetIxError::SwapIxError(
+                "Swap route not empty, can only add liquidator to empty route".to_string(),
+            ));
+        }
+        let liquidation = get_metadata_address(&liquidator);
+        self.account_metas.extend_from_slice(&[
+            AccountMeta {
+                pubkey: liquidation,
+                is_signer: false,
+                is_writable: false,
+            },
+            AccountMeta {
+                pubkey: fee_destination.unwrap(), // TODO: derive when not in tests
+                is_signer: false,
+                is_writable: true,
+            },
+        ]);
+
+        self.is_liquidation = true;
+
+        Ok(())
     }
 
     /// Add a swap leg to the route
@@ -357,12 +405,14 @@ impl MarginSwapRouteIxBuilder {
                     withdrawal_amount: self.withdrawal_change.tokens,
                     minimum_amount_out: self.minimum_amount_out,
                     swap_routes: self.route_details,
+                    is_liquidation: self.is_liquidation,
                 }
                 .data(),
                 SwapContext::MarginPositions => ix_data::RouteSwap {
                     amount_in: self.withdrawal_change.tokens,
                     minimum_amount_out: self.minimum_amount_out,
                     swap_routes: self.route_details,
+                    is_liquidation: self.is_liquidation,
                 }
                 .data(),
             },

@@ -63,8 +63,15 @@ mod jet_margin_swap {
         amount_in: u64,
         minimum_amount_out: u64,
         swap_routes: [SwapRouteDetail; 3],
+        is_liquidation: bool,
     ) -> Result<()> {
-        route_swap_handler(ctx, amount_in, minimum_amount_out, swap_routes)
+        route_swap_handler(
+            ctx,
+            amount_in,
+            minimum_amount_out,
+            swap_routes,
+            is_liquidation,
+        )
     }
 
     /// Route a swap to one or more venues by using margin pools
@@ -74,6 +81,7 @@ mod jet_margin_swap {
         withdrawal_amount: u64,
         minimum_amount_out: u64,
         swap_routes: [SwapRouteDetail; 3],
+        is_liquidation: bool,
     ) -> Result<()> {
         route_swap_pool_handler(
             ctx,
@@ -81,6 +89,7 @@ mod jet_margin_swap {
             withdrawal_amount,
             minimum_amount_out,
             swap_routes,
+            is_liquidation,
         )
     }
 
@@ -128,6 +137,9 @@ pub enum ErrorCode {
 
     #[msg("Token swaps having a split should deposit into the same account")]
     InvalidSplitDestination,
+
+    #[msg("Invalid liquidator on a liquidation swap")]
+    InvalidLiquidator,
 }
 
 #[repr(u8)]

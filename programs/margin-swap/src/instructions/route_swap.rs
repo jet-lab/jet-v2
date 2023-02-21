@@ -22,6 +22,7 @@ use std::{
 
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
+use jet_metadata::LiquidatorMetadata;
 
 use crate::*;
 
@@ -113,6 +114,29 @@ impl<'info> RouteSwapPool<'info> {
 
         Ok(())
     }
+
+    /// Transfer a swap fee (liquidation) to recipient
+    #[inline(never)]
+    fn transfer_fee(
+        &self,
+        source: &AccountInfo<'info>,
+        destination: &AccountInfo<'info>,
+        amount: u64,
+    ) -> Result<()> {
+        token::transfer(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                token::Transfer {
+                    from: source.to_account_info(),
+                    to: destination.to_account_info(),
+                    authority: self.margin_account.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -122,6 +146,31 @@ pub struct RouteSwap<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     pub token_program: Program<'info, Token>,
+}
+
+impl<'info> RouteSwap<'info> {
+    /// Transfer a swap fee (liquidation) to recipient
+    #[inline(never)]
+    fn transfer_fee(
+        &self,
+        source: &AccountInfo<'info>,
+        destination: &AccountInfo<'info>,
+        amount: u64,
+    ) -> Result<()> {
+        token::transfer(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                token::Transfer {
+                    from: source.to_account_info(),
+                    to: destination.to_account_info(),
+                    authority: self.margin_account.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        Ok(())
+    }
 }
 
 /// Route a swap with up to 3 legs, which can be split across venues (e.g 80/20).
@@ -137,6 +186,7 @@ pub fn route_swap_pool_handler<'info>(
     withdrawal_amount: u64,
     minimum_amount_out: u64,
     swap_routes: [SwapRouteDetail; 3],
+    is_liquidation: bool,
 ) -> Result<()> {
     // To protect users, the minimum_amount_out should always be positive.
     // We only check for slippage after all swaps, and some swaps might return 0
@@ -155,6 +205,18 @@ pub fn route_swap_pool_handler<'info>(
     };
 
     let mut remaining_accounts = ctx.remaining_accounts.iter();
+
+    // If this is a liquidation, the first 2 accounts are:
+    // - liquidation account
+    // - fee output PDA of the control authority
+    let fee_recipient = if is_liquidation {
+        Some(liquiation_fee_destination(
+            &mut remaining_accounts,
+            ctx.accounts.margin_account.load()?.liquidator,
+        )?)
+    } else {
+        None
+    };
     let (mut src_transit, dst_transit) = {
         let slice = remaining_accounts.as_slice();
         (
@@ -214,7 +276,7 @@ pub fn route_swap_pool_handler<'info>(
 
     let destination_closing_balance = token::accessor::amount(dst_transit)?;
 
-    let swap_amount_out = destination_closing_balance
+    let mut swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
     // Check if slippage tolerance is exceeded
@@ -225,6 +287,15 @@ pub fn route_swap_pool_handler<'info>(
             minimum_amount_out
         );
         return Err(error!(crate::ErrorCode::SlippageExceeded));
+    }
+
+    // If liquidating, transfer liquidation fee
+    if let Some(fee_recipient) = fee_recipient {
+        let fee = swap_amount_out.saturating_mul(1).saturating_div(100);
+        swap_amount_out = swap_amount_out.checked_sub(fee).unwrap();
+        assert!(swap_amount_out > fee);
+        ctx.accounts
+            .transfer_fee(dst_transit, &fee_recipient, fee)?;
     }
 
     // Deposit into the destination pool
@@ -244,6 +315,7 @@ pub fn route_swap_handler<'info>(
     amount_in: u64,
     minimum_amount_out: u64,
     swap_routes: [SwapRouteDetail; 3],
+    is_liquidation: bool,
 ) -> Result<()> {
     // To protect users, the minimum_amount_out should always be positive.
     // We only check for slippage after all swaps, and some swaps might return 0
@@ -262,6 +334,19 @@ pub fn route_swap_handler<'info>(
     };
 
     let mut remaining_accounts = ctx.remaining_accounts.iter();
+
+    // If this is a liquidation, the first 2 accounts are:
+    // - liquidation account
+    // - fee output PDA of the control authority
+    let fee_recipient = if is_liquidation {
+        Some(liquiation_fee_destination(
+            &mut remaining_accounts,
+            ctx.accounts.margin_account.load()?.liquidator,
+        )?)
+    } else {
+        None
+    };
+
     let (mut src_transit, dst_transit) = {
         let slice = remaining_accounts.as_slice();
         (
@@ -294,7 +379,7 @@ pub fn route_swap_handler<'info>(
 
     let destination_closing_balance = token::accessor::amount(dst_transit)?;
 
-    let swap_amount_out = destination_closing_balance
+    let mut swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
     // Check if slippage tolerance is exceeded
@@ -305,6 +390,16 @@ pub fn route_swap_handler<'info>(
             minimum_amount_out
         );
         return Err(error!(crate::ErrorCode::SlippageExceeded));
+    }
+
+    // If liquidating, transfer liquidation fee
+    if let Some(fee_recipient) = fee_recipient {
+        // TODO make the fee a const
+        let fee = swap_amount_out.saturating_mul(1).saturating_div(100);
+        swap_amount_out = swap_amount_out.checked_sub(fee).unwrap();
+        assert!(swap_amount_out > fee);
+        ctx.accounts
+            .transfer_fee(dst_transit, &fee_recipient, fee)?;
     }
 
     Ok(())
@@ -437,6 +532,27 @@ fn exec_swap_split<'info>(
     };
 
     Ok((dst_ata_opening, dst_ata_closing, dst_ata))
+}
+
+/// Check that account is being liquidated by the liquidator, and validate fee destination
+fn liquiation_fee_destination<'info>(
+    remaining_accounts: &mut Iter<AccountInfo<'info>>,
+    current_liquidator: Pubkey,
+) -> Result<AccountInfo<'info>> {
+    let liquidation = next_account_info(remaining_accounts)?;
+    let data = &mut &**liquidation.try_borrow_data()?;
+    let liquidation = LiquidatorMetadata::try_deserialize(data)?;
+    if liquidation.liquidator != current_liquidator {
+        return err!(crate::ErrorCode::InvalidLiquidator);
+    }
+    let fee_destination = next_account_info(remaining_accounts)?.to_account_info();
+    if cfg!(feature = "testing") {
+        Ok(fee_destination)
+    } else {
+        // TODO: verify the destination ATA
+        let _ = false;
+        Ok(fee_destination)
+    }
 }
 
 /// Scratch space for try_accounts, reused to prevent creating accounts each time
