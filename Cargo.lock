@@ -2668,6 +2668,7 @@ dependencies = [
  "jet-margin",
  "jet-margin-pool",
  "jet-metadata",
+ "jet-program-common",
  "jet-static-program-registry",
  "stable-swap-anchor",
 ]

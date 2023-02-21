@@ -23,6 +23,7 @@ use std::{
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
 use jet_metadata::LiquidatorMetadata;
+use jet_program_common::CONTROL_AUTHORITY;
 
 use crate::*;
 
@@ -549,8 +550,10 @@ fn liquiation_fee_destination<'info>(
     // SAFETY: The token program will validate that this is a token account
     // when transferring the fee from the user's token account.
     // We only check that it has the correct authority, being the control program.
-    let _authority = token::accessor::authority(&fee_destination)?;
-    // TODO: verify that the authority = control pda
+    let authority = token::accessor::authority(&fee_destination)?;
+    if authority != CONTROL_AUTHORITY {
+        return err!(crate::ErrorCode::InvalidFeeDestination);
+    }
     Ok(fee_destination)
 }
 

@@ -284,8 +284,12 @@ impl TestLiquidator {
         let fee_destination = get_associated_token_address(&get_control_authority_address(), loan);
 
         if self.ctx.rpc.get_account(&fee_destination).await?.is_none() {
-            let create_ata_ix =
-                create_associated_token_account(&liquidator, &liquidator, loan, &spl_token::id());
+            let create_ata_ix = create_associated_token_account(
+                &liquidator,
+                &get_control_authority_address(),
+                loan,
+                &spl_token::id(),
+            );
             self.ctx
                 .rpc
                 .send_and_confirm_1tx(&[create_ata_ix], &[&self.wallet])

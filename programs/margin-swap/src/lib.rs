@@ -140,6 +140,9 @@ pub enum ErrorCode {
 
     #[msg("Invalid liquidator on a liquidation swap")]
     InvalidLiquidator,
+
+    #[msg("Invalid fee destination account due to an authority mismatch")]
+    InvalidFeeDestination,
 }
 
 #[repr(u8)]

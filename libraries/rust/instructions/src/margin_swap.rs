@@ -278,7 +278,7 @@ impl MarginSwapRouteIxBuilder {
             AccountMeta {
                 pubkey: get_associated_token_address(
                     &get_control_authority_address(),
-                    &&self.dst_token,
+                    &self.dst_token,
                 ),
                 is_signer: false,
                 is_writable: true,
