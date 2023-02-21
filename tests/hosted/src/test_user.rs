@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
+use jet_instructions::control::get_control_authority_address;
 use jet_margin_sdk::cat;
 use jet_margin_sdk::ix_builder::MarginSwapRouteIxBuilder;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
@@ -152,7 +153,6 @@ impl TestUser {
         dst: &Pubkey,
         change: TokenChange,
         liquidator: Option<Pubkey>,
-        fee_destination: Option<Pubkey>,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
 
@@ -168,7 +168,7 @@ impl TestUser {
             1,
         )?;
         if let Some(liquidator) = liquidator {
-            swap_builder.set_liquidation(liquidator, fee_destination)?;
+            swap_builder.set_liquidation(liquidator)?;
         }
         swap_builder.add_swap_leg(pool, 0)?;
         swap_builder.finalize()?;
@@ -281,7 +281,7 @@ impl TestLiquidator {
         let liq = self.begin(user, true).await?;
         // Create a fee account for the liquidator
         let liquidator = self.wallet.pubkey();
-        let fee_destination = get_associated_token_address(&liquidator, loan);
+        let fee_destination = get_associated_token_address(&get_control_authority_address(), loan);
 
         if self.ctx.rpc.get_account(&fee_destination).await?.is_none() {
             let create_ata_ix =
@@ -291,15 +291,8 @@ impl TestLiquidator {
                 .send_and_confirm_1tx(&[create_ata_ix], &[&self.wallet])
                 .await?;
         }
-        liq.swap(
-            swaps,
-            collateral,
-            loan,
-            change,
-            Some(self.wallet.pubkey()),
-            Some(fee_destination),
-        )
-        .await?;
+        liq.swap(swaps, collateral, loan, change, Some(self.wallet.pubkey()))
+            .await?;
         liq.margin_repay(loan, repay).await?;
         liq.liquidate_end(Some(self.wallet.pubkey())).await
     }

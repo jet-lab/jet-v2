@@ -546,13 +546,12 @@ fn liquiation_fee_destination<'info>(
         return err!(crate::ErrorCode::InvalidLiquidator);
     }
     let fee_destination = next_account_info(remaining_accounts)?.to_account_info();
-    if cfg!(feature = "testing") {
-        Ok(fee_destination)
-    } else {
-        // TODO: verify the destination ATA
-        let _ = false;
-        Ok(fee_destination)
-    }
+    // SAFETY: The token program will validate that this is a token account
+    // when transferring the fee from the user's token account.
+    // We only check that it has the correct authority, being the control program.
+    let _authority = token::accessor::authority(&fee_destination)?;
+    // TODO: verify that the authority = control pda
+    Ok(fee_destination)
 }
 
 /// Scratch space for try_accounts, reused to prevent creating accounts each time

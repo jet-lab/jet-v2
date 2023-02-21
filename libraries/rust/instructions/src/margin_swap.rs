@@ -11,9 +11,9 @@ use jet_margin_pool::{ChangeKind, TokenChange};
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteDetail, SwapRouteIdentifier};
 use jet_margin_swap::{instruction as ix_data, ROUTE_SWAP_MAX_SPLIT, ROUTE_SWAP_MIN_SPLIT};
 
-use crate::margin_pool::MarginPoolIxBuilder;
 use crate::IxResult;
 use crate::JetIxError;
+use crate::{control::get_control_authority_address, margin_pool::MarginPoolIxBuilder};
 use crate::{get_metadata_address, margin::derive_position_token_account};
 
 pub use jet_margin_swap::ID as MARGIN_SWAP_PROGRAM;
@@ -252,11 +252,7 @@ impl MarginSwapRouteIxBuilder {
     }
 
     /// Set a liquidator
-    pub fn set_liquidation(
-        &mut self,
-        liquidator: Pubkey,
-        fee_destination: Option<Pubkey>,
-    ) -> IxResult<()> {
+    pub fn set_liquidation(&mut self, liquidator: Pubkey) -> IxResult<()> {
         if self.is_liquidation {
             return Err(JetIxError::SwapIxError(
                 "A liquidator is already set".to_string(),
@@ -280,7 +276,10 @@ impl MarginSwapRouteIxBuilder {
                 is_writable: false,
             },
             AccountMeta {
-                pubkey: fee_destination.unwrap(), // TODO: derive when not in tests
+                pubkey: get_associated_token_address(
+                    &get_control_authority_address(),
+                    &&self.dst_token,
+                ),
                 is_signer: false,
                 is_writable: true,
             },
