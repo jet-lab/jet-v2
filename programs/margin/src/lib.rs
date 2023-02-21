@@ -101,7 +101,7 @@ pub mod jet_margin {
     ///            a user to own multiple margin accounts, by creating new accounts with different
     ///            seed values.
     ///
-    /// # [Accounts](jet_margin::accounts::CreateAccount)
+    /// **[Accounts](jet_margin::accounts::CreateAccount) expected with create\_account.rs:**
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -117,16 +117,13 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::AccountCreated`] | Marks the creation of the account. |
-
     pub fn create_account(ctx: Context<CreateAccount>, seed: u16) -> Result<()> {
         create_account_handler(ctx, seed)
     }
 
-    /// Close a user's margin account
+    /// Close a user's margin account. The margin account must have zero positions remaining to be closed.
     ///
-    /// The margin account must have zero positions remaining to be closed.
-    ///
-    /// # [Accounts](jet_margin::accounts::CloseAccount)
+    /// **[Accounts](jet_margin::accounts::CloseAccount) expected with close\_account.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -141,7 +138,6 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::AccountClosed`] | Marks the closure of the account. |
-
     pub fn close_account(ctx: Context<CloseAccount>) -> Result<()> {
         close_account_handler(ctx)
     }
@@ -153,7 +149,7 @@ pub mod jet_margin {
     ///
     /// This instruction may fail if the account has reached it's maximum number of positions.
     ///
-    /// # [Accounts](jet_margin::accounts::RegisterPosition)
+    /// **[Accounts](jet_margin::accounts::RegisterPosition) expected with register\_position.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -168,7 +164,7 @@ pub mod jet_margin {
     /// | `rent` | `read_only` | The [rent sysvar](https://docs.solana.com/developing/runtime-facilities/sysvars#rent). The rent to open the account. |
     /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
-    /// # Events
+    /// **Events emitted by register\_position.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -186,7 +182,7 @@ pub mod jet_margin {
     /// instruction allows udating the margin account state to reflect the current available
     /// balance of collateral.
     ///
-    /// # [Accounts](jet_margin::accounts::UpdatePositionBalance)
+    /// **[Accounts](jet_margin::accounts::UpdatePositionBalance) expected with update\_position\_balance.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -200,7 +196,6 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::PositionBalanceUpdated`] | Marks the updating of the position balance. |
-    ///
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
     }
@@ -209,7 +204,7 @@ pub mod jet_margin {
     /// in the case where the metadata has changed after the position was
     /// created.
     ///
-    /// # [Accounts](jet_margin::accounts::RefreshPositionMetadata)
+    /// **[Accounts](jet_margin::accounts::RefreshPositionMetadata) expected with refresh\_position\_metadata.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -217,23 +212,20 @@ pub mod jet_margin {
     /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
     /// | `metadata` | `read_only` | The metadata account for the token, which has been updated. |
     ///
-    /// # Events
-    ///
+    /// **Events emitted by refresh\_position\_metadata.rs:**
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |
-    ///
     pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
         refresh_position_metadata_handler(ctx)
     }
 
     /// Close out a position, removing it from the account.
-    ///
     /// Since there is a finite number of positions a single account can maintain it may be
     /// necessary for a user to close out old positions to take new ones.
     ///
-    /// # [Accounts](jet_margin::accounts::ClosePosition)
+    ///  **[Accounts](jet_margin::accounts::ClosePosition) expected with close\_position.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -251,7 +243,6 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::PositionClosed`] | Marks the closure of the position. |
-    ///
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
         close_position_handler(ctx)
     }
@@ -263,7 +254,7 @@ pub mod jet_margin {
     /// the health check for a margin account.
     ///
     ///
-    /// # [Accounts](jet_margin::accounts::VerifyHealthy)
+    /// **[Accounts](jet_margin::accounts::VerifyHealthy) expected with verify\_healthy.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -276,7 +267,6 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::VerifiedHealthy`] | Marks the verification of the position. |
-    ///
     pub fn verify_healthy(ctx: Context<VerifyHealthy>) -> Result<()> {
         verify_healthy_handler(ctx)
     }
@@ -298,7 +288,7 @@ pub mod jet_margin {
     ///
     /// * `data` - The instruction data to pass to the adapter program
     ///
-    /// # [Accounts](jet_margin::accounts::AdapterInvoke)
+    /// **[Accounts](jet_margin::accounts::AdapterInvoke) expected with adapter\_invoke.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -314,7 +304,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
-    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) marks the change in position. |
+    /// | [`events::PositionEvent`]  _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
     /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
@@ -339,7 +329,7 @@ pub mod jet_margin {
     ///
     /// * `data` - The instruction data to pass to the adapter program
     ///
-    /// # [Accounts](jet_margin::accounts::AccountingInvoke)
+    /// **[Accounts](jet_margin::accounts::AccountingInvoke) expected with accounting\_invoke.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -354,7 +344,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Name** | **Description** |
     /// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |
-    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) marks the change in position. |
+    /// | [`events::PositionEvent`]  _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
     /// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |
     pub fn accounting_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
@@ -371,7 +361,7 @@ pub mod jet_margin {
     /// Requires the `liquidator_metadata` account, which restricts the signer to
     /// those approved by protocol governance.
     ///
-    /// # [Accounts](jet_margin::accounts::LiquidateBegin)
+    /// **[Accounts](jet_margin::accounts::LiquidateBegin) expected with liquidate\_begin.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
@@ -394,16 +384,15 @@ pub mod jet_margin {
     }
 
     /// End the liquidation state for an account
-    ///
     /// Normally must be signed by the liquidator that started the liquidation state. Can be
     /// signed by anyone after the [timeout period](jet_margin::LIQUIDATION_TIMEOUT) has elapsed.
     ///
-    /// # [Accounts](jet_margin::accounts::LiquidateEnd)
+    /// **[Accounts](jet_margin::accounts::LiquidateEnd) expected with liquidate\_end.rs:**
     ///
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
-    /// | `authority` | `signer` | The pubkey calling the instruction to end liquidation. |
+    /// | `authority` | `signer (writable)` | The pubkey calling the instruction to end liquidation. |
     /// | `margin_account` | `writable` | The account in need of liquidation. |
     /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
     ///
@@ -419,11 +408,10 @@ pub mod jet_margin {
 
     /// Perform an action by invoking another program, for the purposes of
     /// liquidating a margin account.
-    ///
     /// Requires the account already be in the liquidation state, and the signer must
     /// be the same liquidator that started the liquidation state.      
     ///
-    /// # [Accounts](jet_margin::accounts::LiquidatorInvoke)
+    /// **[Accounts](jet_margin::accounts::LiquidatorInvoke) expected with liquidator\_invoke.rs:**
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
@@ -439,7 +427,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::LiquidatorInvokeBegin`] | Marks the beginning of this liquidation event. |
-    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::PositionEvent`]  _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
     /// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event. |
     pub fn liquidator_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,

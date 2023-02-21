@@ -11,7 +11,7 @@
     "clean:all": "scripts/clean-all",
     "clean:ts": "yarn --cwd apps/react-app clean & yarn --cwd packages/margin clean",
     "dev": "turbo run dev",
-    "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap -p jet-market --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
+    "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap -p jet-fixed-term --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "turbo run fmt",
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
