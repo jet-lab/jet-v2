@@ -114,6 +114,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
+      REACT_APP_LOCAL_DATA_API: http://localhost:3002
+      REACT_APP_LOCAL_WS_API: ws://localhost:3002/ws
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
       REACT_APP_RPC_DEV_TOKEN: ${{ secrets.REACT_APP_RPC_DEV_TOKEN }}
       REACT_APP_RPC_TOKEN: ${{ secrets.REACT_APP_RPC_TOKEN }}
