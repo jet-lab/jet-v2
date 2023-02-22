@@ -241,6 +241,10 @@ pub fn route_swap_pool_handler<'info>(
         return err!(crate::ErrorCode::NoSwapTokensWithdrawn);
     }
 
+    // Data for events
+    let token_in = token::accessor::mint(&src_transit)?;
+    let amount_in = swap_amount_in;
+
     let mut scratch = Scratch::default();
 
     // Iterate through all the valid swap legs and execute the swaps
@@ -291,12 +295,13 @@ pub fn route_swap_pool_handler<'info>(
     }
 
     // If liquidating, transfer liquidation fee
+    let mut liquidation_fees = 0;
     if let Some(fee_recipient) = fee_recipient {
-        let fee = swap_amount_out.saturating_mul(1).saturating_div(100);
-        swap_amount_out = swap_amount_out.checked_sub(fee).unwrap();
-        assert!(swap_amount_out > fee);
+        liquidation_fees = swap_amount_out.saturating_mul(1).saturating_div(100);
+        swap_amount_out = swap_amount_out.checked_sub(liquidation_fees).unwrap();
+        assert!(swap_amount_out > liquidation_fees);
         ctx.accounts
-            .transfer_fee(dst_transit, &fee_recipient, fee)?;
+            .transfer_fee(dst_transit, &fee_recipient, liquidation_fees)?;
     }
 
     // Deposit into the destination pool
@@ -307,6 +312,15 @@ pub fn route_swap_pool_handler<'info>(
         ChangeKind::ShiftBy,
         swap_amount_out,
     )?;
+
+    emit!(crate::RouteSwapped {
+        margin_account: ctx.accounts.margin_account.key(),
+        token_in,
+        amount_in,
+        amount_out: swap_amount_out,
+        liquidation_fees,
+        routes: swap_routes
+    });
 
     Ok(())
 }
@@ -356,6 +370,9 @@ pub fn route_swap_handler<'info>(
         )
     };
 
+    // Data for events
+    let token_in = token::accessor::mint(&src_transit)?;
+
     // The destination opening balance is used to track how many tokens were swapped
     let destination_opening_balance = token::accessor::amount(dst_transit)?;
 
@@ -394,14 +411,26 @@ pub fn route_swap_handler<'info>(
     }
 
     // If liquidating, transfer liquidation fee
+    let mut liquidation_fees = 0;
     if let Some(fee_recipient) = fee_recipient {
         // TODO make the fee a const
-        let fee = swap_amount_out.saturating_mul(1).saturating_div(100);
-        swap_amount_out = swap_amount_out.checked_sub(fee).unwrap();
-        assert!(swap_amount_out > fee);
+        liquidation_fees = swap_amount_out.saturating_mul(1).saturating_div(100);
+        swap_amount_out = swap_amount_out.checked_sub(liquidation_fees).unwrap();
+        assert!(swap_amount_out > liquidation_fees);
         ctx.accounts
-            .transfer_fee(dst_transit, &fee_recipient, fee)?;
+            .transfer_fee(dst_transit, &fee_recipient, liquidation_fees)?;
     }
+
+    emit!(crate::RouteSwapped {
+        margin_account: ctx.accounts.margin_account.key(),
+        token_in,
+        // This could be lowe due to dust remaining after a swap, but is negligible.
+        // We take the exact amount in the pool swap as the values are already calculated,
+        amount_in,
+        amount_out: swap_amount_out,
+        liquidation_fees,
+        routes: swap_routes
+    });
 
     Ok(())
 }

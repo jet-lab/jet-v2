@@ -145,6 +145,16 @@ pub enum ErrorCode {
     InvalidFeeDestination,
 }
 
+#[event]
+pub struct RouteSwapped {
+    margin_account: Pubkey,
+    token_in: Pubkey,
+    amount_in: u64,
+    amount_out: u64,
+    liquidation_fees: u64,
+    routes: [SwapRouteDetail; 3],
+}
+
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub enum SwapRouteIdentifier {
