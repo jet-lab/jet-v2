@@ -706,4 +706,34 @@ mod test {
         println!("{:?}", sim.fills);
         assert_eq!(sim.posted_quote_qty, 668);
     }
+
+    #[test]
+    fn test_refresh_from_snapshot() {
+        let bids = vec![Order {
+            owner: Pubkey::default(),
+            order_tag: OrderTag::default(),
+            base_size: 123,
+            price: 456,
+        }];
+        let asks = vec![Order {
+            owner: Pubkey::default(),
+            order_tag: OrderTag::default(),
+            base_size: 789,
+            price: 101112,
+        }];
+
+        let mut om = OrderbookModel {
+            tenor: 11,
+            bids: vec![],
+            asks: vec![],
+        };
+
+        om.refresh_from_snapshot(OrderbookSnapshot {
+            bids: bids.clone(),
+            asks: asks.clone(),
+        });
+
+        assert_eq!(om.bids, bids);
+        assert_eq!(om.asks, asks);
+    }
 }
