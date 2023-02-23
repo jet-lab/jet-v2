@@ -142,6 +142,11 @@ jobs:
             ${{ runner.os }}-e2e-
             ${{ runner.os }}-
 
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: "true"
+
       - name: Install Rust
         if: steps.cachedeps.outputs.cache-hit != 'true'
         uses: actions-rs/toolchain@v1
