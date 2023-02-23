@@ -484,6 +484,7 @@ export class FixedTermMarket {
 
   getOrderbookModel(tenor: bigint, snapshot: OrderbookSnapshot): OrderbookModel {
     const model = new OrderbookModel(BigInt(tenor))
+    console.log("Order book snapshot ", snapshot);
     model.refreshFromSnapshot(snapshot);
     this.orderbookModel = model
 
