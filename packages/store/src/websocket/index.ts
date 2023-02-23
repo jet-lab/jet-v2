@@ -27,7 +27,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
     // if (!endpoint) throw `No websocket environment variable set up.`;
     if (!endpoint) {
       endpoint = "ws://localhost:3002/ws";
-      console.warn("No websocket environment variable set up, using a default");
+      console.warn("No websocket environment variable set up, using a default!");
     }
 
     ws = new WebSocket(endpoint);
