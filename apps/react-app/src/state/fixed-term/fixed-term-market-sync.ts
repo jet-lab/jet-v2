@@ -47,18 +47,15 @@ export interface ExtendedOrderBook {
 export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   key: 'allFixedTermMarketOrderBooks',
   get: async ({ get }) => {
-    const { cluster } = useJetStore(state => state.settings);
-    const apiEndpoint = useMemo(
-      () =>
+    const { cluster } = useJetStore.getState().settings;
+    const apiEndpoint =
         cluster === 'mainnet-beta'
           ? process.env.REACT_APP_DATA_API
           : cluster === 'devnet'
           ? process.env.REACT_APP_DEV_DATA_API
           : cluster === 'localnet'
           ? process.env.REACT_APP_LOCAL_DATA_API
-          : '',
-      [cluster]
-    );
+          : undefined;
     const list = get(AllFixedTermMarketsAtom);
     const markets = await Promise.all(
       list.map(async market => {
