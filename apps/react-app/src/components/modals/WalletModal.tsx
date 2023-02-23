@@ -8,7 +8,10 @@ import { formatPubkey } from '@utils/format';
 import { notify } from '@utils/notify';
 import { Modal, Divider, Typography } from 'antd';
 import ArrowIcon from '@assets/icons/arrow-icon.svg';
-import { useJetStore, initJetClient } from '@jet-lab/store';
+import {
+  useJetStore, 
+  // initJetClient
+} from '@jet-lab/store';
 
 // Modal to connect user's Solana wallet to app
 export function WalletModal(): JSX.Element {
@@ -23,7 +26,7 @@ export function WalletModal(): JSX.Element {
   useEffect(() => {
     if (wallet.publicKey) {
       connectWallet(wallet.publicKey.toBase58());
-      initJetClient(wallet);
+      // initJetClient(wallet);
       resetWalletModal();
       notify(
         dictionary.notifications.wallet.connect.message,

@@ -13,8 +13,11 @@ import {
 } from '@state/settings/settings';
 import { Modal, Radio, Select, Typography } from 'antd';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
-import { initJetClient, useJetStore } from '@jet-lab/store';
-import { useWallet } from '@solana/wallet-adapter-react';
+import {
+  // initJetClient,
+  useJetStore
+} from '@jet-lab/store';
+// import { useWallet } from '@solana/wallet-adapter-react';
 
 // Modal for changing app preferences
 export function SettingsModal(): JSX.Element {
@@ -41,7 +44,7 @@ export function SettingsModal(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const { Title, Text } = Typography;
   const { Option } = Select;
-  const wallet = useWallet();
+  // const wallet = useWallet();
 
   // Save settings to global state and localstorage
   async function saveSettings() {
@@ -56,9 +59,9 @@ export function SettingsModal(): JSX.Element {
       setPreferDayMonthYear(preferDayMonthYearSetting);
     }
 
-    if (settings.cluster !== clusterSetting) {
-      initJetClient(wallet);
-    }
+    // if (settings.cluster !== clusterSetting) {
+    //   initJetClient(wallet);
+    // }
     updateSettings({
       cluster: clusterSetting,
       explorer: explorerSetting
