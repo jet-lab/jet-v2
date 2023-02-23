@@ -33,8 +33,9 @@ module.exports = (_env, arg) => {
         REACT_APP_IP_REGISTRY: process.env.REACT_APP_IP_REGISTRY,
         REACT_APP_LOGROCKET_PROJECT: process.env.REACT_APP_LOGROCKET_PROJECT,
       })
+    })
   ];
-
+  
   if (arg.mode === 'production') {
     plugins.push(new MiniCssExtractPlugin());
   }
