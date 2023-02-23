@@ -20,6 +20,7 @@ import axios from 'axios';
 
 // Graph for displaying pricing and slippage data for current swap pair
 export function SwapsGraph(): JSX.Element {
+  const { cluster } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
   const currentAccount = useRecoilValue(CurrentAccount);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
@@ -43,6 +44,8 @@ export function SwapsGraph(): JSX.Element {
   const [oraclePrice, setOraclePrice] = useState(0);
   const [poolPrice, setPoolPrice] = useState(0);
   const { Title, Text } = Typography;
+  const endpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_WS_API;
+
 
   // Create and render chart on new data / market pair
   useEffect(() => {
@@ -339,7 +342,7 @@ export function SwapsGraph(): JSX.Element {
       return;
     }
     axios
-      .get(`http://localhost:3005/swap/plotdata/${from}/${to}/${maxAmount * 2}`)
+      .get(`${endpoint}/swap/plotdata/${from}/${to}/${maxAmount * 2}`)
       .then(resp => {
         // TODO: normalise to floats
         const out = resp.data.map((r: any) => {

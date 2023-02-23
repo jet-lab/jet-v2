@@ -139,6 +139,7 @@ export function SwapEntry(): JSX.Element {
   const disabled =
     sendingTransaction || !currentPool || !outputToken || projectedRiskIndicator >= 1 || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
+  const endpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_WS_API;
 
   // Parse slippage input
   function getSlippageInput() {
@@ -336,7 +337,7 @@ export function SwapEntry(): JSX.Element {
     if (!currentPool || !outputToken || !tokenInputAmount || tokenInputAmount.isZero()) {
       return;
     }
-    getSwapRoutes(currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount)
+    getSwapRoutes(endpoint || "", currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount)
       .then(routes => {})
       .catch(e => console.error(e));
   }, [tokenInputAmount, currentPool?.symbol, outputToken?.symbol]); // TODO: input and output pools

@@ -6,8 +6,6 @@ import {
   MarginAccount,
   Pool,
   PoolTokenChange,
-  SPLSwapPool,
-  SwapPath,
   TokenAmount,
   TokenFaucet
 } from '@jet-lab/margin';
@@ -23,6 +21,7 @@ import { message } from 'antd';
 import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { useJetStore } from '@jet-lab/store';
 import { useMemo } from 'react';
+import { SwapPath } from '@utils/actions/swap';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -50,6 +49,7 @@ export function useMarginActions() {
   const accountPoolPosition = currentPool?.symbol && currentAccount?.poolPositions[currentPool.symbol];
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
+  const endpoint: string = (cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_WS_API) || "";
 
   // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
@@ -269,48 +269,6 @@ export function useMarginActions() {
     }
   }
 
-  // // Swap
-  // async function splTokenSwap(
-  //   inputToken: Pool,
-  //   outputToken: Pool,
-  //   swapPool: SPLSwapPool,
-  //   swapAmount: TokenAmount,
-  //   minAmountOut: TokenAmount,
-  //   repayWithOutput: boolean
-  // ): Promise<[string | undefined, ActionResponse | undefined]> {
-  //   if (!pools || !inputToken || !outputToken || !currentAccount) {
-  //     console.error('Input/output tokens or current account undefined');
-  //     throw new Error();
-  //   }
-
-  //   try {
-  //     const txId = await inputToken.splTokenSwap({
-  //       marginAccount: currentAccount,
-  //       pools: Object.values(pools.tokenPools),
-  //       outputToken,
-  //       swapPool,
-  //       swapAmount,
-  //       minAmountOut,
-  //       repayWithOutput
-  //     });
-  //     await actionRefresh();
-  //     if (txId === 'Setup check failed') {
-  //       return [undefined, ActionResponse.Failed];
-  //     }
-  //     return [txId, ActionResponse.Success];
-  //   } catch (err: any) {
-  //     console.error(err);
-  //     if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
-  //       return [undefined, ActionResponse.Cancelled];
-  //     } else if (err.toString().includes('"Custom":16')) {
-  //       message.warning(dictionary.actions.swap.warningMessages.maxSlippageExceeded, NOTIFICATION_DURATION);
-  //       return [undefined, undefined];
-  //     } else {
-  //       return [undefined, ActionResponse.Failed];
-  //     }
-  //   }
-  // }
-
   // Swap
   async function routeSwap(
     inputToken: Pool,
@@ -327,6 +285,7 @@ export function useMarginActions() {
 
     try {
       const txId = await inputToken.routeSwap({
+        endpoint,
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
         markets: markets.map(m => m.market),

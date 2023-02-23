@@ -76,13 +76,14 @@ export function getOutputTokenAmount(
 // }
 
 export async function getSwapRoutes(
+  endpoint: string,
   sourceToken: PublicKey,
   targetToken: PublicKey,
   swapAmount: TokenAmount
 ): Promise<SwapRoute[] | undefined> {
   return (
     await axios.get<any, any>(
-      `http://localhost:3005/swap/quote/${sourceToken.toBase58()}/${targetToken.toBase58()}/${swapAmount.lamports.toNumber()}`
+      `${endpoint}/swap/quote/${sourceToken.toBase58()}/${targetToken.toBase58()}/${swapAmount.lamports.toNumber()}`
     )
   ).data;
 }
