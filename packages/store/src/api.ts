@@ -30,7 +30,6 @@ export const getOrderbookSnapshot = async (
   market: FixedTermMarket
 ): Promise<OrderbookSnapshot> => {
   const path = `fixed/orderbook-snapshot/${market.address}`;
-  console.log(path);
   const r = await fetch(`${apiEndpoint}/${path}`);
   
   return await r.json();
