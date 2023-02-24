@@ -138,9 +138,16 @@ describe('Fixed Term Market', () => {
     cy.contains('Your borrow order for 100 USDC was filled successfully');
   });
 
+  it('can cancel an outstanding order', () => {
+    cy.contains('ACCOUNT 1').as('lenderAccount');
+    cy.get('@lenderAccount').click();
+    cy.get('.debt-detail tr .anticon-close').first().click();
+    cy.contains('Order Cancelled')
+  })
+
   it('can repay and outstanding borrow', () => {
-    const borrowLink = cy.contains('.nav-link', 'Borrow');
-    borrowLink.click() // navigate back to fixed term
+    cy.contains('ACCOUNT 2').as('borrowerAccount');
+    cy.get('@borrowerAccount').click();
     cy.contains('You owe')
     const repayInput = cy.get('.assets-to-settle input').should('not.be.disabled');
     repayInput.click();
@@ -149,21 +156,4 @@ describe('Fixed Term Market', () => {
     repayButton.click();
     cy.contains('Repay Successful')
   })
-
-  // it('can claim a deposit', () => {
-
-  // })
-
-  it('can cancel an outstanding order', () => {
-    cy.contains('ACCOUNT 1').as('lenderAccount');
-    cy.get('@lenderAccount').click();
-    cy.get('.debt-detail tr .anticon-close').first().click();
-    cy.contains('Order Cancelled')
-  })
-
-  it('can withdraw outstanding funds to the pool', () => {
-    cy.contains('Settle Now').click();
-    cy.contains('Settle Successful')
-  })
-
 });
