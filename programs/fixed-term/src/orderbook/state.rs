@@ -204,7 +204,7 @@ impl<'info> OrderbookMut<'info> {
     }
 }
 
-#[cfg_attr(feature = "cli", derive(serde::Serialize))]
+#[cfg_attr(feature = "cli", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Zeroable, Pod,
 )]

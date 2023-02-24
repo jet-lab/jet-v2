@@ -4,7 +4,7 @@ import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } 
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
 import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount } from "./utils"
-import { MakerSimulation, OrderbookModel, TakerSimulation, rate_to_price } from "../wasm"
+import { MakerSimulation, OrderbookModel, OrderbookSnapshot, TakerSimulation, rate_to_price } from "../wasm"
 import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
@@ -482,13 +482,9 @@ export class FixedTermMarket {
     return await findFixedTermDerivedAccount(["term_deposit", this.address, marginUser, seed], this.program.programId)
   }
 
-  async fetchOrderbook(tenor: bigint): Promise<OrderbookModel> {
-    const asksBuf = (await this.provider.connection.getAccountInfo(this.info.asks))!.data
-    const bidsBuf = (await this.provider.connection.getAccountInfo(this.info.bids))!.data
-
+  getOrderbookModel(tenor: bigint, snapshot: OrderbookSnapshot): OrderbookModel {
     const model = new OrderbookModel(BigInt(tenor))
-    model.refresh(bidsBuf, asksBuf)
-
+    model.refreshFromSnapshot(snapshot);
     this.orderbookModel = model
 
     return model
