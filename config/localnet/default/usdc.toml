@@ -28,8 +28,8 @@ ticket_price = 0.9
 origination_fee = 10
 
 [[fixed_term_market]]
-borrow_tenor = 30
-lend_tenor = 40
+borrow_tenor = 120
+lend_tenor = 180
 min_order_size = 10
 paused = false
 ticket_price = 0.9
