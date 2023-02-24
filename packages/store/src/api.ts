@@ -1,4 +1,4 @@
-import { MarginAccount } from '@jet-lab/margin';
+import { MarginAccount, OrderbookSnapshot } from '@jet-lab/margin';
 import { FixedTermMarket } from '@jet-lab/margin';
 import { OpenOrders, OpenPositions } from './types';
 import useSWR from 'swr';
@@ -23,4 +23,14 @@ export const useOpenPositions = (apiEndpoint: string, market?: FixedTermMarket, 
       return null;
     }
   });
+};
+
+export const getOrderbookSnapshot = async (
+  apiEndpoint: string,
+  market: FixedTermMarket
+): Promise<OrderbookSnapshot> => {
+  const path = `fixed/orderbook-snapshot/${market.address}`;
+  const r = await fetch(`${apiEndpoint}/${path}`);
+  
+  return await r.json();
 };

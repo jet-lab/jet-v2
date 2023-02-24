@@ -38,6 +38,12 @@ impl JsOrderbookModel {
         self.inner.refresh(bidsBuffer, asksBuffer);
     }
 
+    #[wasm_bindgen(js_name = "refreshFromSnapshot")]
+    pub fn refresh_from_snapshot(&mut self, snapshot: JsValue) {
+        let snapshot = serde_wasm_bindgen::from_value(snapshot).unwrap();
+        self.inner.refresh_from_snapshot(snapshot);
+    }
+
     #[wasm_bindgen(js_name = "sampleLiquidity")]
     pub fn sample_liquidity(&self, side: &str) -> Result<JsValue, JsError> {
         let sample = self.inner.sample_liquidity(side.into()); // TODO try_into
@@ -104,6 +110,11 @@ export type Order = {
     base_size: bigint,
     price: bigint,
 }
+
+export type OrderbookSnapshot = {
+    bids: Array<Order>,
+    asks: Array<Order>,
+};
 
 export type LiquidityObservation = {
     cumulative_base: bigint,
@@ -187,6 +198,10 @@ export class OrderbookModel {
     * @param {Uint8Array} asksBuffer
     */
     refresh(bidsBuffer: Uint8Array, asksBuffer: Uint8Array): void;
+    /**
+    * @param {OrderbookSnapshot} snapshot
+    */
+    refreshFromSnapshot(snapshot: OrderbookSnapshot): void;
     /**
     * @param {string} side
     * @returns {LiquiditySample}

@@ -66,7 +66,6 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         initWebsocket(cluster, wallet);
       }, 1000);
     };
-
   } catch (e) {
     console.log(e);
   }
