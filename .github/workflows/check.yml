@@ -134,7 +134,8 @@ jobs:
         name: Get cache
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          # key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-e2e
           path: |
             ~/.cache/act
             ~/.cache/solana
@@ -145,9 +146,11 @@ jobs:
             target/
             !target/idl
             !target/deploy
+          # restore-keys: |
+          #   ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}-
+          #   ${{ runner.os }}-e2e-
+          #   ${{ runner.os }}-
           restore-keys: |
-            ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}-
-            ${{ runner.os }}-e2e-
             ${{ runner.os }}-
 
       - name: Install Rust
@@ -185,12 +188,6 @@ jobs:
         with:
           compose-file: "./.github/e2e-docker-compose.yml"
           down-flags: "--volumes"
-          services: |
-            api
-            mongodb
-            postgres
-            poller
-            parser
       # Use this to debug if services don't start
       # - name: Docker and network check
       #   run: sleep 15 && docker compose -f ./.github/e2e-docker-compose.yml ps && netstat -peanut
