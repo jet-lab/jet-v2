@@ -118,6 +118,14 @@ jobs:
       REACT_APP_RPC_DEV_TOKEN: ${{ secrets.REACT_APP_RPC_DEV_TOKEN }}
       REACT_APP_RPC_TOKEN: ${{ secrets.REACT_APP_RPC_TOKEN }}
       REACT_APP_LOGROCKET_PROJECT: ''
+
+      REACT_APP_LOCAL_DATA_API: ${{ secrets.REACT_APP_LOCAL_DATA_API }}
+      REACT_APP_DEV_DATA_API: ${{ secrets.REACT_APP_DEV_DATA_API }}
+      REACT_APP_DATA_API: ${{ secrets.REACT_APP_DATA_API }}
+
+      REACT_APP_LOCAL_WS_API: ${{ secrets.REACT_APP_LOCAL_WS_API }}
+      REACT_APP_DEV_WS_API: ${{ secrets.REACT_APP_DEV_WS_API }}
+      REACT_APP_WS_API: ${{ secrets.REACT_APP_WS_API }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
