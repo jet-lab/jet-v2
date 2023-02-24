@@ -66,9 +66,9 @@ export class TokenConfig {
       this.valueModifier = Number128.ZERO
       return
     }
-    this.info = this.programs.margin.coder.accounts.decode<TokenConfigInfo>("TokenConfig", info.data)
-    this.valueModifier = Number128.fromDecimal(new BN(this.info.valueModifier), -2)
-    this.tokenKind = TokenConfig.decodeTokenKind(this.info.tokenKind)
+    this.info = this.programs.margin.coder.accounts.decodeUnchecked("TokenConfig", info.data)
+    this.valueModifier = Number128.fromDecimal(new BN(this.info!.valueModifier), -2)
+    this.tokenKind = TokenConfig.decodeTokenKind(this.info!.tokenKind)
   }
 
   static decodeTokenKind(kind: TokenKind) {
