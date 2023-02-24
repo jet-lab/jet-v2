@@ -411,7 +411,7 @@ impl MarginTxBuilder {
         let source = get_associated_token_address(margin_account, &token_mint);
         let pool = MarginPoolIxBuilder::new(token_mint);
         let loan_notes = derive_loan_account(&self.ix.address, &pool.loan_note_mint);
-        let inner_ix = pool.repay(self.ix.owner, source, loan_notes, change);
+        let inner_ix = pool.repay(self.ix.address, source, loan_notes, change);
         let wrapped_ix = self.adapter_invoke_ix(inner_ix);
 
         self.create_transaction_builder(&[wrapped_ix])
