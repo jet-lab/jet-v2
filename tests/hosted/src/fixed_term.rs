@@ -47,7 +47,7 @@ use jet_margin_sdk::{
     util::no_dupe_queue::AsyncNoDupeQueue,
 };
 use jet_program_common::Fp32;
-use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -708,7 +708,11 @@ impl<P: Proxy> FixedTermUser<P> {
 
 impl<P: Proxy + GenerateProxy> FixedTermUser<P> {
     pub async fn new(manager: Arc<TestManager>) -> Result<Self> {
-        let owner = create_wallet(&manager.client, 10 * LAMPORTS_PER_SOL).await?;
+        let owner = manager.keygen.generate_key();
+        manager
+            .client
+            .airdrop(&owner.pubkey(), 10 * LAMPORTS_PER_SOL)
+            .await?;
         let proxy = P::generate(manager.clone(), &owner).await?;
         Self::new_with_proxy(manager, owner, proxy)
     }

@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -212,7 +211,7 @@ impl TestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
-        jet_simulation::create_wallet(&self.inner.rpc, sol_amount * LAMPORTS_PER_SOL).await
+        self.inner.create_wallet(sol_amount).await
     }
 
     pub async fn create_user(&self) -> Result<JetSimulationClient, Error> {

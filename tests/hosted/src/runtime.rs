@@ -1,13 +1,13 @@
-use rand::rngs::mock::StepRng;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use std::cell::RefCell;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
 use jet_simulation::TestRuntime;
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
+
+pub use jet_simulation::{DeterministicKeygen, Keygen, RandomKeygen};
 
 /// If you don't provide a name, gets the name of the current function name and
 /// uses it to create a test context. Only use this way when called directly in
@@ -57,68 +57,12 @@ impl SolanaTestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, anyhow::Error> {
-        init_wallet(
-            &self.rpc,
-            self.generate_key(),
-            sol_amount * LAMPORTS_PER_SOL,
-        )
-        .await
-    }
-}
+        let wallet = self.generate_key();
+        self.rpc
+            .airdrop(&wallet.pubkey(), sol_amount * LAMPORTS_PER_SOL)
+            .await?;
 
-pub trait Keygen: Send + Sync {
-    fn generate_key(&self) -> Keypair;
-}
-
-#[derive(Clone)]
-pub struct DeterministicKeygen(Arc<Mutex<RefCell<MockRng>>>);
-impl DeterministicKeygen {
-    pub fn new(seed: &str) -> Self {
-        let seed: u64 = seed
-            .as_bytes()
-            .chunks(8)
-            .map(|chunk| {
-                let mut a = [0u8; 8];
-                a[..chunk.len()].copy_from_slice(chunk);
-                u64::from_le_bytes(a)
-            })
-            .fold(0, |acc, next| acc.wrapping_add(next));
-        Self(Arc::new(Mutex::new(RefCell::new(MockRng(StepRng::new(
-            seed, 1,
-        ))))))
-    }
-}
-impl Keygen for DeterministicKeygen {
-    fn generate_key(&self) -> Keypair {
-        Keypair::generate(&mut *self.0.lock().unwrap().borrow_mut())
-    }
-}
-
-#[derive(Clone)]
-pub struct RandomKeygen;
-impl Keygen for RandomKeygen {
-    fn generate_key(&self) -> Keypair {
-        Keypair::new()
-    }
-}
-
-struct MockRng(StepRng);
-impl rand::CryptoRng for MockRng {}
-impl rand::RngCore for MockRng {
-    fn next_u32(&mut self) -> u32 {
-        self.0.next_u32()
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        self.0.next_u64()
-    }
-
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.0.fill_bytes(dest)
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand::Error> {
-        self.0.try_fill_bytes(dest)
+        Ok(wallet)
     }
 }
 
@@ -185,23 +129,4 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         .unwrap();
 
     Arc::new(rpc)
-}
-
-pub async fn init_wallet(
-    rpc: &std::sync::Arc<dyn SolanaRpcClient>,
-    wallet: Keypair,
-    lamports: u64,
-) -> Result<solana_sdk::signature::Keypair, anyhow::Error> {
-    let tx = solana_sdk::system_transaction::create_account(
-        rpc.payer(),
-        &wallet,
-        rpc.get_latest_blockhash().await?,
-        lamports,
-        0,
-        &solana_sdk::system_program::ID,
-    );
-
-    rpc.send_and_confirm_transaction(&tx).await?;
-
-    Ok(wallet)
 }

@@ -158,20 +158,17 @@ impl MarginTxBuilder {
         self.rpc.create_transaction(&signers, instructions).await
     }
 
-    fn create_transaction_builder(
-        &self,
-        instructions: &[Instruction],
-    ) -> Result<TransactionBuilder> {
+    fn create_transaction_builder(&self, instructions: &[Instruction]) -> TransactionBuilder {
         let signers = self
             .signer
             .as_ref()
             .map(|s| vec![clone(s)])
             .unwrap_or_default();
 
-        Ok(TransactionBuilder {
+        TransactionBuilder {
             signers,
             instructions: instructions.to_vec(),
-        })
+        }
     }
 
     async fn create_unsigned_transaction(
@@ -282,7 +279,7 @@ impl MarginTxBuilder {
             })
             .collect::<Vec<_>>();
 
-        self.create_transaction_builder(&to_close)
+        Ok(self.create_transaction_builder(&to_close))
     }
 
     /// Transaction to deposit tokens into a margin account
@@ -341,7 +338,7 @@ impl MarginTxBuilder {
         let inner_borrow_ix = pool.margin_borrow(self.ix.address, deposit_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_borrow_ix));
-        self.create_transaction_builder(&instructions)
+        Ok(self.create_transaction_builder(&instructions))
     }
 
     /// Transaction to repay a loan of tokens in a margin account from the account's deposits
@@ -368,7 +365,7 @@ impl MarginTxBuilder {
         let inner_repay_ix = pool.margin_repay(self.ix.address, deposit_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_repay_ix));
-        self.create_transaction_builder(&instructions)
+        Ok(self.create_transaction_builder(&instructions))
     }
 
     /// Transaction to repay a loan of tokens in a margin account from a token account
@@ -397,6 +394,28 @@ impl MarginTxBuilder {
         instructions.push(self.ix.update_position_balance(loan_position));
 
         self.create_transaction(&instructions).await
+    }
+
+    /// Repay a loan from an ATA that is owned by the same margin account
+    ///
+    /// # Params
+    ///
+    /// `margin_account` - The margin account who owns the loan and the tokens to repay
+    /// `token_mint` - The address of the mint for the tokens that were borrowed
+    /// `change` - The amount of tokens to repay
+    pub fn repay_from_margin(
+        &self,
+        margin_account: &Pubkey,
+        token_mint: Pubkey,
+        change: TokenChange,
+    ) -> TransactionBuilder {
+        let source = get_associated_token_address(margin_account, &token_mint);
+        let pool = MarginPoolIxBuilder::new(token_mint);
+        let loan_notes = derive_loan_account(&self.ix.address, &pool.loan_note_mint);
+        let inner_ix = pool.repay(self.ix.owner, source, loan_notes, change);
+        let wrapped_ix = self.adapter_invoke_ix(inner_ix);
+
+        self.create_transaction_builder(&[wrapped_ix])
     }
 
     /// Transaction to withdraw tokens deposited into a margin account
@@ -497,7 +516,7 @@ impl MarginTxBuilder {
         instructions.push(self.ix.update_position_balance(source_position));
         instructions.push(self.ix.update_position_balance(destination_position));
 
-        self.create_transaction_builder(&instructions)
+        Ok(self.create_transaction_builder(&instructions))
     }
 
     /// Transaction to swap tokens in a chain of up to 3 legs.
@@ -538,11 +557,11 @@ impl MarginTxBuilder {
 
         let setup_instructions = self.setup_swap(builder).await?;
         let transactions = vec![
-            self.create_transaction_builder(&setup_instructions)?,
+            self.create_transaction_builder(&setup_instructions),
             self.create_transaction_builder(&[
                 ComputeBudgetInstruction::set_compute_unit_limit(800000),
                 self.adapter_invoke_ix(inner_swap_ix),
-            ])?,
+            ]),
         ];
 
         Ok(transactions)

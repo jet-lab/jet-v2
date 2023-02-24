@@ -18,8 +18,8 @@
 use anyhow::Error;
 use solana_client::client_error::ClientError;
 use std::{
-    mem::MaybeUninit,
-    sync::{Mutex, Once},
+    cell::RefCell,
+    sync::{Arc, Mutex},
 };
 
 use rand::rngs::mock::StepRng;
@@ -56,18 +56,6 @@ pub async fn send_and_confirm(
     );
 
     rpc.send_and_confirm_transaction(&tx).await
-}
-
-/// Generate a new wallet keypair with some initial funding
-pub async fn create_wallet(
-    rpc: &std::sync::Arc<dyn SolanaRpcClient>,
-    lamports: u64,
-) -> Result<solana_sdk::signature::Keypair, anyhow::Error> {
-    let wallet = solana_sdk::signature::Keypair::new();
-
-    rpc.airdrop(&wallet.pubkey(), lamports).await?;
-
-    Ok(wallet)
 }
 
 /// Asserts that an error is a custom solana error with the expected code number
@@ -117,23 +105,45 @@ macro_rules! assert_program_error {
     }};
 }
 
-pub fn generate_keypair() -> Keypair {
-    static MOCK_RNG_INIT: Once = Once::new();
-    static mut MOCK_RNG: MaybeUninit<Mutex<MockRng>> = MaybeUninit::uninit();
+pub trait Keygen: Send + Sync {
+    fn generate_key(&self) -> Keypair;
+}
 
-    unsafe {
-        MOCK_RNG_INIT.call_once(|| {
-            MOCK_RNG.write(Mutex::new(MockRng(StepRng::new(1, 1))));
-        });
+#[derive(Clone)]
+pub struct DeterministicKeygen(Arc<Mutex<RefCell<MockRng>>>);
+impl DeterministicKeygen {
+    pub fn new(seed: &str) -> Self {
+        let seed: u64 = seed
+            .as_bytes()
+            .chunks(8)
+            .map(|chunk| {
+                let mut a = [0u8; 8];
+                a[..chunk.len()].copy_from_slice(chunk);
+                u64::from_le_bytes(a)
+            })
+            .fold(0, |acc, next| acc.wrapping_add(next));
+        Self(Arc::new(Mutex::new(RefCell::new(MockRng(StepRng::new(
+            seed, 1,
+        ))))))
+    }
+}
 
-        Keypair::generate(&mut *MOCK_RNG.assume_init_ref().lock().unwrap())
+impl Keygen for DeterministicKeygen {
+    fn generate_key(&self) -> Keypair {
+        Keypair::generate(&mut *self.0.lock().unwrap().borrow_mut())
+    }
+}
+
+#[derive(Clone)]
+pub struct RandomKeygen;
+impl Keygen for RandomKeygen {
+    fn generate_key(&self) -> Keypair {
+        Keypair::new()
     }
 }
 
 struct MockRng(StepRng);
-
 impl rand::CryptoRng for MockRng {}
-
 impl rand::RngCore for MockRng {
     fn next_u32(&mut self) -> u32 {
         self.0.next_u32()

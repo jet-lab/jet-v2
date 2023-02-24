@@ -10,7 +10,7 @@ use hosted_tests::{context::MarginTestContext, margin::MarginPoolSetupInfo, marg
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::{assert_custom_program_error, create_wallet};
+use jet_simulation::assert_custom_program_error;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -70,15 +70,9 @@ async fn rounding_poc() -> Result<()> {
     let ctx = margin_test_context!();
     let env = setup_environment(&ctx).await.unwrap();
 
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
-        .await
-        .unwrap();
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
-        .await
-        .unwrap();
-    let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
-        .await
-        .unwrap();
+    let wallet_a = ctx.create_wallet(10).await.unwrap();
+    let wallet_b = ctx.create_wallet(10).await.unwrap();
+    let wallet_c = ctx.create_wallet(10).await.unwrap();
 
     let user_a = ctx.margin.user(&wallet_a, 0).unwrap();
     let user_b = ctx.margin.user(&wallet_b, 0).unwrap();

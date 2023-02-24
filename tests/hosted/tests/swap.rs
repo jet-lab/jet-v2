@@ -17,7 +17,7 @@ use hosted_tests::{
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::{assert_custom_program_error, create_wallet};
+use jet_simulation::assert_custom_program_error;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -113,8 +113,8 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
     let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = ctx.create_wallet(10).await?;
+    let wallet_b = ctx.create_wallet(10).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account

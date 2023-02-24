@@ -10,12 +10,11 @@ use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, WithSigner};
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::tx_builder::TokenDepositsConfig;
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::{create_wallet, SolanaRpcClient};
+use jet_simulation::SolanaRpcClient;
 use tokio::try_join;
 
 use crate::margin_test_context;
@@ -143,7 +142,7 @@ pub async fn setup_user(
     tokens: Vec<(Pubkey, u64, u64)>,
 ) -> Result<TestUser> {
     // Create our two user wallets, with some SOL funding to get started
-    let wallet = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet = ctx.create_wallet(10).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
