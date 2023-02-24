@@ -295,6 +295,7 @@ impl TestManager {
             self.airspace,
             airspace_authority,
             self.ix_builder.token_mint(),
+            None,
         )
         .await?;
         register_deposit(
@@ -302,6 +303,7 @@ impl TestManager {
             self.airspace,
             airspace_authority,
             self.ix_builder.ticket_mint(),
+            None,
         )
         .await?;
 

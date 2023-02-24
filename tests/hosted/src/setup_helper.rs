@@ -191,6 +191,7 @@ pub async fn register_deposit(
     airspace: Pubkey,
     airspace_authority: &Keypair,
     mint: Pubkey,
+    collateral_weight: Option<u16>,
 ) -> Result<Signature> {
     let config_builder = MarginConfigIxBuilder::new(
         airspace,
@@ -217,7 +218,7 @@ pub async fn register_deposit(
                     },
                 },
                 token_kind: TokenKind::Collateral,
-                value_modifier: 100,
+                value_modifier: collateral_weight.unwrap_or(100),
                 max_staleness: 0,
             }),
         )
