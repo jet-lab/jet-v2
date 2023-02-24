@@ -6,7 +6,7 @@ export const connectWallet = () => {
   cy.contains('Connected');
 };
 
-export const loadPageAndCreateAccount = (path?: string) => {
+export const loadPageAndFundSol = (path?: string) => {
   cy.clearLocalStorage();
   const url = path ? path : Cypress.config().baseUrl;
 
@@ -16,8 +16,10 @@ export const loadPageAndCreateAccount = (path?: string) => {
   cy.contains('Save Preferences').click();
   connectWallet();
   airdrop('SOL', 'SOL');
+};
 
-  cy.contains('Create an account').as('createAccountBtn');
+export const createAccount = () => {
+  cy.contains('New Account +').as('createAccountBtn');
   cy.get('@createAccountBtn').should('be.visible');
   cy.get('@createAccountBtn').should('not.be.disabled');
   cy.get('@createAccountBtn').click();
@@ -29,8 +31,7 @@ export const loadPageAndCreateAccount = (path?: string) => {
   cy.get('@createAccountAction').should('not.be.disabled');
   cy.get('@createAccountAction').click();
   cy.contains('Account created');
-  cy.contains('Account 1');
-};
+}
 
 export const airdrop = (symbol: string, asset: string) => {
   cy.get(`.${symbol}-pools-table-row`).click();

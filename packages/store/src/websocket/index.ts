@@ -67,11 +67,6 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
       }, 1000);
     };
 
-    ws.onclose = (_: CloseEvent) => {
-      setTimeout(() => {
-        initWebsocket(cluster, wallet);
-      }, 1000);
-    };
   } catch (e) {
     console.log(e);
   }
