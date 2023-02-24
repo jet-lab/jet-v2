@@ -124,22 +124,21 @@ impl MarginTxBuilder {
     /// supply it to support cases where the liquidator is not the fee payer.
     pub fn new_liquidator(
         rpc: Arc<dyn SolanaRpcClient>,
-        signer: Option<Keypair>,
+        liquidator: Keypair,
         airspace: Pubkey,
         owner: Pubkey,
         seed: u16,
     ) -> MarginTxBuilder {
-        let mut ix = MarginIxBuilder::new(airspace, owner, seed).with_payer(rpc.payer().pubkey());
-        if let Some(signer) = signer.as_ref() {
-            ix = ix.with_authority(signer.pubkey());
-        }
-        let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey(), None);
+        let ix = MarginIxBuilder::new(airspace, owner, seed)
+            .with_payer(rpc.payer().pubkey())
+            .with_authority(liquidator.pubkey());
+        let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey(), None);
 
         Self {
             rpc,
             ix,
             config_ix,
-            signer,
+            signer: Some(liquidator),
             is_liquidator: true,
         }
     }

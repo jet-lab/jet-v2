@@ -117,7 +117,7 @@ impl MarginClient {
     ) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            Keypair::from_bytes(&keypair.to_bytes())?,
             self.airspace(),
             *owner,
             seed,
