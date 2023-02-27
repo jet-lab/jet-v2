@@ -22,7 +22,6 @@ import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
 import { fromLocaleString } from '@utils/format';
 import debounce from 'lodash.debounce';
-import { useJetStore } from '@jet-lab/store';
 
 // Main component for token inputs when the user takes one of the main actions (deposit, borrow, etc)
 export function TokenInput(props: {
@@ -49,12 +48,11 @@ export function TokenInput(props: {
   const currentAccount = useRecoilValue(CurrentAccount);
   const account = props.account ?? currentAccount;
   // The pool being interacted with (or specified externally)
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
   const tokenPool = useMemo(
     () =>
-      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
-    [selectedPoolKey, pools]
+      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.symbol === props.poolSymbol),
+    [props.poolSymbol, pools]
   );
   const currentAction = useRecoilValue(CurrentAction);
   // If an action was specified, reference that action otherwise reference the currentAction
