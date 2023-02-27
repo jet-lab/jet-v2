@@ -43,7 +43,7 @@ cargo-lint() {
 
 cargo-test() {
     if [[ ${CODECOV:-false} == true ]]; then
-        cargo llvm-cov --workspace --lcov --output-path lcov.info
+        cargo llvm-cov --workspace --lcov --output-path lcov.info nextest
     else 
         cargo nextest run
     fi
