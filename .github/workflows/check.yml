@@ -10,7 +10,7 @@ jobs:
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
+      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-1
     env:
       HOME: /home/tools
       BATCH: batch1
@@ -36,7 +36,7 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
+      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-1
     env:
       HOME: /home/tools
       BATCH: batch2
@@ -62,7 +62,7 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
+      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-1
     env:
       HOME: /home/tools
     steps:
@@ -85,7 +85,7 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
+      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-1
     env:
       HOME: /home/tools
       CODECOV: true
