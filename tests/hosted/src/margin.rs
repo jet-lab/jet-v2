@@ -35,6 +35,7 @@ use jet_margin_sdk::ix_builder::{
     MarginPoolConfiguration, MarginPoolIxBuilder,
 };
 use jet_margin_sdk::lookup_tables::LookupTable;
+use jet_margin_sdk::margin_integrator::PositionRefresher;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{
     InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder, WithSigner,
@@ -408,6 +409,14 @@ impl MarginUser {
     pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Signature>, Error> {
         self.rpc
             .send_and_confirm_condensed(self.tx.refresh_all_pool_positions().await?)
+            .await
+    }
+
+    pub async fn refresh_positions(&self) -> Result<Vec<Signature>, Error> {
+        self.tx
+            .refresh_positions()
+            .await?
+            .send_and_confirm_condensed(&self.rpc)
             .await
     }
 
