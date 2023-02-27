@@ -133,12 +133,8 @@ async fn route_swap() -> Result<(), anyhow::Error> {
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
-
-    // Initialize the margin accounts for each user
-    user_a.create_account().await?;
-    user_b.create_account().await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
 
     // Create swap pools with some liquidity
     let swap_pool_spl_usdc_tsol = SplSwapPool::configure(
