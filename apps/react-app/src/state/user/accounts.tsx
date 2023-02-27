@@ -182,15 +182,7 @@ export function useAccountsSyncer() {
       }
 
       // Account trasactions
-      const transactions =
-        cluster !== 'mainnet-beta'
-          ? await MarginClient.getTransactionHistory(
-              currentAccount.provider,
-              currentAccount.address,
-              mints,
-              marginConfig
-            )
-          : await MarginClient.getBlackBoxHistory(currentAccount.address, cluster);
+      const transactions = await MarginClient.getBlackBoxHistory(currentAccount.address, cluster);
 
       setAccountHistoryLoaded(true);
       return {
