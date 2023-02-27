@@ -90,20 +90,20 @@ impl MarginClient {
         }
     }
 
-    pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
+    pub fn user(&self, keypair: &Keypair, seed: u16) -> MarginUser {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            Some(clone(keypair)),
             keypair.pubkey(),
             seed,
             self.tx_admin.airspace,
         );
 
-        Ok(MarginUser {
+        MarginUser {
             tx,
             signer: clone(keypair),
             rpc: self.rpc.clone(),
-        })
+        }
     }
 
     pub fn airspace(&self) -> Pubkey {
@@ -389,6 +389,11 @@ impl MarginUser {
                 .send_and_confirm(vec![airspace.permit_create(self.signer())].into());
         }
         self.send_confirm_tx(self.tx.create_account().await?).await
+    }
+
+    pub async fn created(self) -> Result<Self, Error> {
+        self.create_account().await?;
+        Ok(self)
     }
 
     /// Close the margin account

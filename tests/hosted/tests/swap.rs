@@ -118,12 +118,8 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
-
-    // Initialize the margin accounts for each user
-    user_a.create_account().await?;
-    user_b.create_account().await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
 
     // Create a swap pool with sufficient liquidity
     let swap_pool = SplSwapPool::configure(

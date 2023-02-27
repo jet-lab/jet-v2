@@ -146,10 +146,7 @@ pub async fn setup_user(
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user = ctx.margin.user(&wallet, 0)?;
-
-    // Initialize the margin accounts for each user
-    user.create_account().await?;
+    let user = ctx.margin.user(&wallet, 0).created().await?;
 
     let mut mint_to_token_account = HashMap::new();
     for (mint, in_wallet, in_pool) in tokens {
