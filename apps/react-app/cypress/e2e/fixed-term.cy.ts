@@ -1,4 +1,4 @@
-import { airdrop, borrow, deposit, loadPageAndCreateAccount } from '../support/actions';
+import { airdrop, borrow, deposit, loadPageAndFundSol, createAccount } from '../support/actions';
 
 describe('Fixed Term Market', () => {
   it('can get data from the API endpoint', () => {
@@ -9,11 +9,17 @@ describe('Fixed Term Market', () => {
       expect(response).to.have.property('duration');
     });
   });
-  it('creates a market maker account', () => {
-    loadPageAndCreateAccount();
+
+  it('loads the page', () => {
+    loadPageAndFundSol();
   });
 
-  it('funds the market maker account', () => {
+  it('creates a lender account', () => {
+    // Account 1 = Lender
+    createAccount();
+  });
+
+  it('funds the lender account', () => {
     airdrop('SOL', 'SOL');
     airdrop('USDC', 'USDC');
     airdrop('BTC', 'BTC');
@@ -24,8 +30,28 @@ describe('Fixed Term Market', () => {
     deposit('USDC', 50000);
   });
 
+  it('creates a borrower account', () => {
+    // Account 2 = Borrower
+    createAccount();
+  });
+
+  it('funds the borrower account', () => {
+    airdrop('SOL', 'SOL');
+    airdrop('USDC', 'USDC');
+    airdrop('BTC', 'BTC');
+    airdrop('USDT', 'USDT');
+    deposit('SOL', 1);
+    deposit('BTC', 1);
+    deposit('USDT', 1);
+    deposit('USDC', 50000);
+  });
+
+  it('selects the lender account', () => {
+    cy.contains('ACCOUNT 1').as('lenderAccount');
+    cy.get('@lenderAccount').click();
+  });
+
   it('can create one fixed rate lend order', () => {
-    cy.wait(1000);
     const lendLink = cy.contains('.nav-link', 'Lend');
     lendLink.click();
     const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
@@ -49,8 +75,11 @@ describe('Fixed Term Market', () => {
     cy.contains('Your lend offer for 2000 USDC at 10% was created successfully');
   });
 
+  it('selects the lender account', () => {
+    cy.contains('ACCOUNT 2').as('borrowerAccount');
+    cy.get('@borrowerAccount').click();
+  });
   it('can create one fixed rate borrow order', () => {
-    cy.wait(1000);
     const borrowLink = cy.contains('.nav-link', 'Borrow');
     borrowLink.click();
     const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
@@ -74,30 +103,15 @@ describe('Fixed Term Market', () => {
     cy.contains('Your borrow offer for 2000 USDC at 5% was created successfully');
   });
 
-  it('creates a market taker account', () => {
-    loadPageAndCreateAccount();
-  });
-
-  it('funds the market taker account', () => {
-    airdrop('SOL', 'SOL');
-    airdrop('USDC', 'USDC');
-    airdrop('BTC', 'BTC');
-    airdrop('USDT', 'USDT');
-    deposit('SOL', 1);
-    deposit('BTC', 1);
-    deposit('USDT', 1);
-    deposit('USDC', 50000);
-  });
-
   it('issues a lend now order', () => {
-    cy.wait(1000);
+    cy.contains('ACCOUNT 1').as('lenderAccount');
+    cy.get('@lenderAccount').click();
     const lendLink = cy.contains('.nav-link', 'Lend');
     lendLink.click();
     const lendNow = cy.contains('lend now');
     lendNow.click();
     const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
     amountInput.click();
-    cy.wait(5000);
     amountInput.type(`1000`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
@@ -105,24 +119,40 @@ describe('Fixed Term Market', () => {
   });
 
   it('issues a borrow now order', () => {
-    cy.wait(1000);
+    cy.contains('ACCOUNT 2').as('borrowerAccount');
+    cy.get('@borrowerAccount').click();
     const borrowLink = cy.contains('.nav-link', 'Borrow');
     borrowLink.click();
     const borrowNowTab = cy.contains('borrow now');
     borrowNowTab.click();
     const amountInput = cy.get('.fixed-term .borrow-now .input-amount input').should('not.be.disabled');
     amountInput.click();
-    cy.wait(5000);
     amountInput.type(`100`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
     cy.contains('Your borrow order for 100 USDC was filled successfully');
   });
 
-  it('can perform a borrow on a pool after a position on a fixed market could have gone stale', () => {
-    cy.wait(31000); // current stale time is 30 seconds
-    const poolsLink = cy.contains('.nav-link', 'Pools');
-    poolsLink.click();
-    borrow('USDC', 10);
+  it('can cancel an outstanding order', () => {
+    cy.contains('ACCOUNT 1').as('lenderAccount');
+    cy.get('@lenderAccount').click();
+    cy.get('.debt-detail tr .anticon-close').first().click();
+    cy.contains('Order Cancelled');
+  });
+
+  it('can repay and outstanding borrow', () => {
+    // Switching accounts back and forth to cause a refresh
+    // TODO: Ugly, update when websocket is in
+    cy.contains('ACCOUNT 1').as('lenderAccount');
+    cy.get('@lenderAccount').click();
+    cy.contains('ACCOUNT 2').as('borrowerAccount');
+    cy.get('@borrowerAccount').click();
+    cy.contains('You owe');
+    const repayInput = cy.get('.assets-to-settle input').should('not.be.disabled');
+    repayInput.click();
+    repayInput.type('110');
+    const repayButton = cy.contains('Repay Now');
+    repayButton.click();
+    cy.contains('Repay Successful');
   });
 });
