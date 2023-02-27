@@ -9,7 +9,7 @@ import { notify } from '@utils/notify';
 import { Modal, Divider, Typography } from 'antd';
 import ArrowIcon from '@assets/icons/arrow-icon.svg';
 import {
-  useJetStore, 
+  useJetStore
   // initJetClient
 } from '@jet-lab/store';
 

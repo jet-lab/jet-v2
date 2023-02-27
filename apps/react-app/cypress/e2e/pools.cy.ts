@@ -1,8 +1,9 @@
-import { loadPageAndCreateAccount, airdrop, deposit, borrow, withdraw, repay } from '../support/actions';
+import { loadPageAndFundSol, airdrop, deposit, borrow, withdraw, repay, createAccount } from '../support/actions';
 
 describe('Main Flows', () => {
   it('Connects a new test wallet and creates an account', () => {
-    loadPageAndCreateAccount();
+    loadPageAndFundSol();
+    createAccount();
   });
 
   it('Airdrop USDC and deposit collateral', () => {
@@ -24,7 +25,8 @@ describe('Main Flows', () => {
 
 describe('Error Flows', () => {
   it('Connects a new test wallet and creates an account', () => {
-    loadPageAndCreateAccount();
+    loadPageAndFundSol();
+    createAccount();
   });
 
   it('All deposits should be disabled, because SOL in wallet is under fees buffer amount', () => {

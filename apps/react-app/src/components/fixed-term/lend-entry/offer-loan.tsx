@@ -88,15 +88,17 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market)
       });
-      notify(
-        'Lend Offer Created',
-        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-          basisPoints.toNumber() / 100
-        }% was created successfully`,
-        'success',
-        getExplorerUrl(signature, cluster, explorer)
-      );
-      refreshOrderBooks();
+      setTimeout(() => {
+        refreshOrderBooks();
+        notify(
+          'Lend Offer Created',
+          `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+            basisPoints.toNumber() / 100
+          }% was created successfully`,
+          'success',
+          getExplorerUrl(signature, cluster, explorer)
+        );
+      }, 2000); // TODO: Ugly and unneded, update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Lend Offer Failed',
@@ -126,14 +128,16 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       return;
     }
 
-    const productModel = marginAccount? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool) : undefined;
-    const setupCheckEstimate = productModel?.makerAccountForecast("lend", sim, "setup");
+    const productModel = marginAccount
+      ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
+      : undefined;
+    const setupCheckEstimate = productModel?.makerAccountForecast('lend', sim, 'setup');
     if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
       // FIXME Disable form submission
-      console.log("WARNING Trade violates setup check and should not be allowed")
+      console.log('WARNING Trade violates setup check and should not be allowed');
     }
 
-    const valuationEstimate = productModel?.makerAccountForecast("lend", sim);
+    const valuationEstimate = productModel?.makerAccountForecast('lend', sim);
 
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
     const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
@@ -150,7 +154,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
       postedRate,
       selfMatch: sim.self_match,
-      riskIndicator: valuationEstimate?.riskIndicator,
+      riskIndicator: valuationEstimate?.riskIndicator
     });
   }
 
@@ -258,11 +262,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && (
-            <span>
-              {forecast.riskIndicator}
-            </span>
-          )}
+          {forecast && <span>{forecast.riskIndicator}</span>}
         </div>
         <div className="stat-line">
           <span>Auto Roll</span>
