@@ -221,7 +221,7 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
     assert!(ctx.tokens.get_balance(&user_c_tsol_account).await? - 500 * ONE_TSOL < ONE_TSOL);
 
     // User C should be able to close all TSOL positions as loan is paid and deposit withdrawn
-    user_c.close_token_positions(&env.tsol).await?;
+    user_c.close_pool_positions(&env.tsol).await?;
 
     Ok(())
 }

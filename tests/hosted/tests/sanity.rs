@@ -329,7 +329,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Close a specific position
     user_a
-        .close_token_position(&env.tsol, TokenKind::Collateral)
+        .close_pool_position(&env.tsol, TokenKind::Collateral)
         .await?;
 
     // Close all User A empty accounts

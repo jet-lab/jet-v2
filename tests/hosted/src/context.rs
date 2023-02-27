@@ -31,6 +31,7 @@ use jet_metadata::TokenKind;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
+use crate::margin::MarginUser;
 use crate::runtime::SolanaTestContext;
 use crate::{margin::MarginClient, tokens::TokenManager};
 
@@ -123,6 +124,11 @@ impl MarginTestContext {
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
         self.solana.create_wallet(sol_amount).await
+    }
+
+    pub async fn create_margin_user(&self, sol_amount: u64) -> Result<MarginUser, Error> {
+        let wallet = self.solana.create_wallet(sol_amount).await?;
+        self.margin.user(&wallet, 0).created().await
     }
 
     pub fn generate_key(&self) -> Keypair {

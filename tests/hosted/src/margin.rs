@@ -361,9 +361,17 @@ impl MarginUser {
             .into_iter()
             .collect()
     }
-}
 
-impl MarginUser {
+    /// Creates a new Self for actions on the same margin account, but
+    /// authorized by provided liquidator.
+    pub fn liquidator(&self, liquidator: Keypair) -> Self {
+        Self {
+            signer: clone(&liquidator),
+            tx: self.tx.liquidator(liquidator),
+            rpc: self.rpc.clone(),
+        }
+    }
+
     pub fn owner(&self) -> &Pubkey {
         self.tx.owner()
     }
@@ -583,14 +591,14 @@ impl MarginUser {
             .map(|_| ())
     }
 
-    /// Close a user's token positions for a specific mint.
-    pub async fn close_token_positions(&self, token_mint: &Pubkey) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.close_token_positions(token_mint).await?)
+    /// Close a user's lending pool positions for a specific mint.
+    pub async fn close_pool_positions(&self, token_mint: &Pubkey) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.close_pool_positions(token_mint).await?)
             .await
     }
 
-    /// Close a user's token position for a mint, with the specified and token kind.
-    pub async fn close_token_position(
+    /// Close a user's lending pool position for a mint, with the specified and token kind.
+    pub async fn close_pool_position(
         &self,
         token_mint: &Pubkey,
         kind: TokenKind,
@@ -622,11 +630,12 @@ impl MarginUser {
         destination: &Pubkey,
         amount: u64,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(
-            self.tx
-                .transfer_deposit(*mint, *source_owner, *source, *destination, amount)
-                .await?,
-        )
-        .await
+        self.tx
+            .transfer_deposit(*mint, *source_owner, *source, *destination, amount)
+            .await?
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
     }
 }

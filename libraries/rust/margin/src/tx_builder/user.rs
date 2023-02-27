@@ -143,6 +143,18 @@ impl MarginTxBuilder {
         }
     }
 
+    /// Creates a new Self for actions on the same margin account, but
+    /// authorized by provided liquidator.
+    pub fn liquidator(&self, liquidator: Keypair) -> Self {
+        Self {
+            rpc: self.rpc.clone(),
+            ix: self.ix.clone().with_authority(liquidator.pubkey()),
+            config_ix: self.config_ix.clone(),
+            signer: Some(liquidator),
+            is_liquidator: true,
+        }
+    }
+
     /// Creates a variant of the builder that has a signer other than the payer.
     pub fn with_signer(mut self, signer: Keypair) -> Self {
         self.ix = self.ix.with_authority(signer.pubkey());
@@ -224,7 +236,7 @@ impl MarginTxBuilder {
     ///
     /// Both the deposit and loan position should be empty.
     /// Use [Self::close_empty_positions] to close all empty positions.
-    pub async fn close_token_positions(&self, token_mint: &Pubkey) -> Result<Transaction> {
+    pub async fn close_pool_positions(&self, token_mint: &Pubkey) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let deposit_account = self.ix.get_token_account_address(&pool.deposit_note_mint);
         let instructions = vec![
@@ -713,7 +725,7 @@ impl MarginTxBuilder {
         source: Pubkey,
         destination: Pubkey,
         amount: u64,
-    ) -> Result<Transaction> {
+    ) -> Result<TransactionBuilder> {
         let state = self.get_account_state().await?;
         let mut instructions = vec![];
 
@@ -734,7 +746,7 @@ impl MarginTxBuilder {
                 .transfer_deposit(source_owner, source, destination, amount),
         );
 
-        self.create_transaction(&instructions).await
+        Ok(self.create_transaction_builder(&instructions))
     }
 
     /// Get the latest [MarginAccount] state
