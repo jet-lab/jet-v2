@@ -348,17 +348,11 @@ impl MarginAccount {
     pub fn verify_healthy_positions(&self, timestamp: u64) -> AnchorResult<()> {
         let info = self.valuation(timestamp)?;
 
-        if info.required_collateral > info.effective_collateral || info.past_due {
-            let due_status = match info.past_due {
-                true => "overdue",
-                false => "not overdue",
-            };
-
+        if info.required_collateral > info.effective_collateral {
             msg!(
-                "account is unhealthy: K_e = {}, K_r = {} ({})",
+                "account is unhealthy: K_e = {}, K_r = {}",
                 info.effective_collateral,
-                info.required_collateral,
-                due_status
+                info.required_collateral
             );
             return err!(ErrorCode::Unhealthy);
         }
@@ -1099,7 +1093,7 @@ mod tests {
         assert_healthy(&acc);
         // but when past due, the account is unhealthy
         acc.get_position_mut(&claim).require().unwrap().flags |= AdapterPositionFlags::PAST_DUE;
-        assert_unhealthy(&acc);
+        acc.verify_unhealthy_positions(ARBITRARY_TIME).unwrap();
     }
 
     fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
