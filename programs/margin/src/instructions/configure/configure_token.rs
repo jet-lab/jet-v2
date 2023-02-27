@@ -82,8 +82,8 @@ pub fn configure_token_handler(
     let config = &mut ctx.accounts.token_config;
 
     emit!(TokenConfigured {
-        airspace: config.airspace,
-        mint: config.mint,
+        airspace: ctx.accounts.airspace.key(),
+        mint: ctx.accounts.mint.key(),
         update: updated_config.clone(),
     });
 
