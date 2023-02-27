@@ -19,23 +19,25 @@ module.exports = (_env, arg) => {
       Buffer: ['buffer', 'Buffer']
     }),
     new DefinePlugin({
-      'process.env': JSON.stringify(dotenv.config().parsed || {
-        REACT_APP_LOCAL_DATA_API: process.env.REACT_APP_LOCAL_DATA_API,
-        REACT_APP_DEV_DATA_API: process.env.REACT_APP_DEV_DATA_API,
-        REACT_APP_DATA_API: process.env.REACT_APP_DATA_API,
+      'process.env': JSON.stringify(
+        dotenv.config().parsed || {
+          REACT_APP_LOCAL_DATA_API: process.env.REACT_APP_LOCAL_DATA_API,
+          REACT_APP_DEV_DATA_API: process.env.REACT_APP_DEV_DATA_API,
+          REACT_APP_DATA_API: process.env.REACT_APP_DATA_API,
 
-        REACT_APP_LOCAL_WS_API: process.env.REACT_APP_LOCAL_WS_API,
-        REACT_APP_DEV_WS_API: process.env.REACT_APP_DEV_WS_API,
-        REACT_APP_WS_API: process.env.REACT_APP_WS_API,
+          REACT_APP_LOCAL_WS_API: process.env.REACT_APP_LOCAL_WS_API,
+          REACT_APP_DEV_WS_API: process.env.REACT_APP_DEV_WS_API,
+          REACT_APP_WS_API: process.env.REACT_APP_WS_API,
 
-        REACT_APP_RPC_DEV_TOKEN: process.env.REACT_APP_RPC_DEV_TOKEN,
-        REACT_APP_RPC_TOKEN: process.env.REACT_APP_RPC_TOKEN,
-        REACT_APP_IP_REGISTRY: process.env.REACT_APP_IP_REGISTRY,
-        REACT_APP_LOGROCKET_PROJECT: process.env.REACT_APP_LOGROCKET_PROJECT,
-      })
+          REACT_APP_RPC_DEV_TOKEN: process.env.REACT_APP_RPC_DEV_TOKEN,
+          REACT_APP_RPC_TOKEN: process.env.REACT_APP_RPC_TOKEN,
+          REACT_APP_IP_REGISTRY: process.env.REACT_APP_IP_REGISTRY,
+          REACT_APP_LOGROCKET_PROJECT: process.env.REACT_APP_LOGROCKET_PROJECT
+        }
+      )
     })
   ];
-  
+
   if (arg.mode === 'production') {
     plugins.push(new MiniCssExtractPlugin());
   }

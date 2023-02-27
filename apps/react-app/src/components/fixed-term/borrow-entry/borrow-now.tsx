@@ -1,6 +1,14 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { bigIntToBn, bnToBigInt, borrowNow, FixedTermProductModel, MarketAndConfig, OrderbookModel, TokenAmount } from '@jet-lab/margin';
+import {
+  bigIntToBn,
+  bnToBigInt,
+  borrowNow,
+  FixedTermProductModel,
+  MarketAndConfig,
+  OrderbookModel,
+  TokenAmount
+} from '@jet-lab/margin';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -86,14 +94,16 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         return;
       }
 
-      const productModel = marginAccount? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool) : undefined;
-      const setupCheckEstimate = productModel?.takerAccountForecast("borrow", sim, "setup");
+      const productModel = marginAccount
+        ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
+        : undefined;
+      const setupCheckEstimate = productModel?.takerAccountForecast('borrow', sim, 'setup');
       if (setupCheckEstimate !== undefined && setupCheckEstimate.riskIndicator >= 1.0) {
         // FIXME Disable form submission
-        console.log("WARNING Trade violates setup check and should not be allowed");
+        console.log('WARNING Trade violates setup check and should not be allowed');
       }
 
-      const valuationEstimate = productModel?.takerAccountForecast("borrow", sim);
+      const valuationEstimate = productModel?.takerAccountForecast('borrow', sim);
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
@@ -103,7 +113,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
-        riskIndicator: valuationEstimate?.riskIndicator,
+        riskIndicator: valuationEstimate?.riskIndicator
       });
     } catch (e) {
       console.log(e);
@@ -123,13 +133,15 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         amount,
         markets: markets.map(m => m.market)
       });
-      notify(
-        'Borrow Successful',
-        `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
-        'success',
-        getExplorerUrl(signature, cluster, explorer)
-      );
-      refreshOrderBooks();
+      setTimeout(() => {
+        refreshOrderBooks();
+        notify(
+          'Borrow Successful',
+          `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
+          'success',
+          getExplorerUrl(signature, cluster, explorer)
+        );
+      }, 2000); // TODO: Ugly and unneded, update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Borrow Order Failed',
@@ -205,11 +217,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && (
-            <span>
-              {forecast.riskIndicator}
-            </span>
-          )}
+          {forecast && <span>{forecast.riskIndicator}</span>}
         </div>
         <div className="stat-line">
           <span>Auto Roll</span>
