@@ -1,6 +1,6 @@
 import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, MarketAndConfig, OrderbookModel } from '@jet-lab/margin';
 import { Program } from '@project-serum/anchor';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
 import { AirspaceConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
@@ -49,19 +49,19 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   get: async ({ get }) => {
     const { cluster } = useJetStore.getState().settings;
     const apiEndpoint =
-        cluster === 'mainnet-beta'
-          ? process.env.REACT_APP_DATA_API
-          : cluster === 'devnet'
-          ? process.env.REACT_APP_DEV_DATA_API
-          : cluster === 'localnet'
-          ? process.env.REACT_APP_LOCAL_DATA_API
-          : undefined;
+      cluster === 'mainnet-beta'
+        ? process.env.REACT_APP_DATA_API
+        : cluster === 'devnet'
+        ? process.env.REACT_APP_DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.REACT_APP_LOCAL_DATA_API
+        : undefined;
     const list = get(AllFixedTermMarketsAtom);
     const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
 
-        const snapshot = await getOrderbookSnapshot(apiEndpoint || 'http://localhost:3002', market.market)
+        const snapshot = await getOrderbookSnapshot(apiEndpoint || 'http://localhost:3002', market.market);
         const model = market.market.getOrderbookModel(tenor, snapshot);
         return {
           name: market.name,

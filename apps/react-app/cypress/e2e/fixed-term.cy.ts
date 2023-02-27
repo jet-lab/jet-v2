@@ -12,7 +12,7 @@ describe('Fixed Term Market', () => {
 
   it('loads the page', () => {
     loadPageAndFundSol();
-  })
+  });
 
   it('creates a lender account', () => {
     // Account 1 = Lender
@@ -28,7 +28,7 @@ describe('Fixed Term Market', () => {
     deposit('BTC', 1);
     deposit('USDT', 1);
     deposit('USDC', 50000);
-  })
+  });
 
   it('creates a borrower account', () => {
     // Account 2 = Borrower
@@ -44,16 +44,14 @@ describe('Fixed Term Market', () => {
     deposit('BTC', 1);
     deposit('USDT', 1);
     deposit('USDC', 50000);
-  })
-
+  });
 
   it('selects the lender account', () => {
     cy.contains('ACCOUNT 1').as('lenderAccount');
     cy.get('@lenderAccount').click();
-  })
+  });
 
   it('can create one fixed rate lend order', () => {
-    cy.wait(1000);
     const lendLink = cy.contains('.nav-link', 'Lend');
     lendLink.click();
     const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
@@ -80,9 +78,8 @@ describe('Fixed Term Market', () => {
   it('selects the lender account', () => {
     cy.contains('ACCOUNT 2').as('borrowerAccount');
     cy.get('@borrowerAccount').click();
-  })
+  });
   it('can create one fixed rate borrow order', () => {
-    cy.wait(1000);
     const borrowLink = cy.contains('.nav-link', 'Borrow');
     borrowLink.click();
     const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
@@ -104,7 +101,7 @@ describe('Fixed Term Market', () => {
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
     cy.contains('Your borrow offer for 2000 USDC at 5% was created successfully');
-  })
+  });
 
   it('issues a lend now order', () => {
     cy.contains('ACCOUNT 1').as('lenderAccount');
@@ -115,7 +112,6 @@ describe('Fixed Term Market', () => {
     lendNow.click();
     const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
     amountInput.click();
-    cy.wait(5000);
     amountInput.type(`1000`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
@@ -131,7 +127,6 @@ describe('Fixed Term Market', () => {
     borrowNowTab.click();
     const amountInput = cy.get('.fixed-term .borrow-now .input-amount input').should('not.be.disabled');
     amountInput.click();
-    cy.wait(5000);
     amountInput.type(`100`);
     const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
     submitButton.click();
@@ -142,18 +137,22 @@ describe('Fixed Term Market', () => {
     cy.contains('ACCOUNT 1').as('lenderAccount');
     cy.get('@lenderAccount').click();
     cy.get('.debt-detail tr .anticon-close').first().click();
-    cy.contains('Order Cancelled')
-  })
+    cy.contains('Order Cancelled');
+  });
 
   it('can repay and outstanding borrow', () => {
+    // Switching accounts back and forth to cause a refresh
+    // TODO: Ugly, update when websocket is in
+    cy.contains('ACCOUNT 1').as('lenderAccount');
+    cy.get('@lenderAccount').click();
     cy.contains('ACCOUNT 2').as('borrowerAccount');
     cy.get('@borrowerAccount').click();
-    cy.contains('You owe')
+    cy.contains('You owe');
     const repayInput = cy.get('.assets-to-settle input').should('not.be.disabled');
     repayInput.click();
     repayInput.type('110');
-    const repayButton = cy.contains('Repay Now')
+    const repayButton = cy.contains('Repay Now');
     repayButton.click();
-    cy.contains('Repay Successful')
-  })
+    cy.contains('Repay Successful');
+  });
 });

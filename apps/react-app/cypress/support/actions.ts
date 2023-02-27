@@ -31,7 +31,7 @@ export const createAccount = () => {
   cy.get('@createAccountAction').should('not.be.disabled');
   cy.get('@createAccountAction').click();
   cy.contains('Account created');
-}
+};
 
 export const airdrop = (symbol: string, asset: string) => {
   cy.get(`.${symbol}-pools-table-row`).click();
@@ -42,12 +42,10 @@ export const airdrop = (symbol: string, asset: string) => {
 };
 
 export const deposit = (symbol: string, amount: number) => {
-  cy.wait(2000)
   cy.get(`.${symbol}-pools-table-row`).click();
   cy.contains('button', 'Deposit').should('not.be.disabled').click();
   cy.get('.ant-modal-content input.ant-input').as('input');
   cy.get('@input').should('not.be.disabled');
-  cy.wait(2000)
   cy.get('@input').type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').should('not.be.disabled').contains('Deposit').click();
   cy.contains(`Your deposit of ${formatWithCommas(amount)} ${symbol} was successfully processed.`);
@@ -60,7 +58,6 @@ export const borrow = (symbol: string, amount: number, resetMaxState?: boolean) 
     // Reset max trade values to simulate borrowing on existing account
     cy.get('[data-testid="reset-max-trade"]').click();
   }
-  cy.wait(500);
   cy.get('.ant-modal-content input.ant-input').as('input');
   cy.get('@input').should('not.be.disabled');
   cy.get('@input').click();
