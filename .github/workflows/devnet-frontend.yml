@@ -3,11 +3,12 @@ name: Deploy Devnet Frontend
 on:
   push:
     branches:
-      - "master"
+      - "devnet-frontend-deploy"
   workflow_dispatch: {}
 
 jobs:
   deploy-frontend:
+    runs-on: ubuntu-latest
     env:
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
       REACT_APP_RPC_DEV_TOKEN: ''
@@ -29,7 +30,7 @@ jobs:
         name: Get cache
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-devnet-deploy-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/yarn.lock') }}
           path: |
             ~/.cache/act
             ~/.cache/solana
@@ -47,7 +48,7 @@ jobs:
         run: cargo install wasm-pack
 
       - name: Build
-        run: yarn build
+        run: yarn install --frozen-lockfile && yarn build
 
       - id: 'auth'
         uses: 'google-github-actions/auth@v0'
@@ -59,5 +60,5 @@ jobs:
         with:
           predefinedAcl: 'publicRead'
           path: 'apps/react-app/build'
-          destination: 'jet-app-config/'
+          destination: 'devnet.jetprotocol.io/'
           parent: false
