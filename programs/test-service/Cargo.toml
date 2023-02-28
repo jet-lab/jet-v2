@@ -19,7 +19,7 @@ devnet = ["jet-program-common/devnet"]
 
 [dependencies]
 anchor-lang = "0.26"
-anchor-spl = "0.26"
+anchor-spl = { version = "0.26", features = ["dex"] }
 
 pyth-sdk-solana = "0.7"
 bytemuck = "1.7"

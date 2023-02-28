@@ -11,12 +11,14 @@ use anyhow::Error;
 use anchor_spl::dex::{serum_dex, Dex};
 use async_trait::async_trait;
 use jet_margin_sdk::swap::openbook_swap::OpenBookMarket;
+use jet_program_common::CONTROL_AUTHORITY;
 use jet_simulation::{generate_keypair, send_and_confirm};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::{system_instruction, sysvar::SysvarId};
 
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use spl_associated_token_account::instruction::{create_associated_token_account_idempotent};
 
 use crate::runtime::SolanaTestContext;
 use crate::tokens::TokenManager;
@@ -190,7 +192,10 @@ impl OpenBookMarketConfig for OpenBookMarket {
             quote_dust_threshold,
         )?;
 
-        send_and_confirm(&ctx.rpc, &[init_ix], &[]).await?;
+        // Create the referrer fee account
+        let referrer_ix = create_associated_token_account_idempotent(&ctx.rpc.payer().pubkey(), &CONTROL_AUTHORITY, &quote_mint, &spl_token::id());
+
+        send_and_confirm(&ctx.rpc, &[referrer_ix, init_ix], &[]).await?;
 
         let base_mint_decimals = token_manager.get_mint(&base_mint).await?.decimals;
         let quote_mint_decimals = token_manager.get_mint(&quote_mint).await?.decimals;

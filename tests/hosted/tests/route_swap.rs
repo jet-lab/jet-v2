@@ -687,6 +687,8 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
     )
     .await?;
 
+    dbg!(&market);
+
     // Check that we can find the market
     let mut supported_mints = HashSet::new();
     supported_mints.insert(env.msol);
@@ -743,6 +745,8 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
         self_trade_behavior: SelfTradeBehavior::AbortTransaction,
         limit: u16::MAX,
     };
+
+    dbg!(ctx.rpc.payer().pubkey());
 
     market
         .new_order(

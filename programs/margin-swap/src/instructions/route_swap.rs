@@ -435,7 +435,7 @@ fn exec_swap_split<'info>(
             dst_ata.to_account_info()
         }
         SwapRouteIdentifier::OpenBook => {
-            let accounts = remaining_accounts.take(11).cloned().collect::<Vec<_>>();
+            let accounts = remaining_accounts.take(12).cloned().collect::<Vec<_>>();
             let swap_accounts = OpenbookSwapInfo::try_accounts(
                 &anchor_spl::dex::id(),
                 &mut &accounts[..],

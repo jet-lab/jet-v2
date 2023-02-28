@@ -21,7 +21,8 @@ use anchor_openbook::serum_dex::{
     instruction::SelfTradeBehavior,
     matching::{OrderType, Side},
 };
-use anchor_spl::dex as anchor_openbook;
+use anchor_spl::{dex as anchor_openbook, token::TokenAccount};
+use jet_program_common::CONTROL_AUTHORITY;
 
 use crate::*;
 
@@ -62,6 +63,10 @@ pub struct OpenbookSwapInfo<'info> {
     /// CHECK:
     pub vault_signer: AccountInfo<'info>,
 
+    /// The referrer account owned by the control program
+    #[account(mut, token::authority = CONTROL_AUTHORITY)]
+    pub referrer_account: Account<'info, TokenAccount>,
+
     /// The address of the swap program
     pub dex_program: Program<'info, anchor_openbook::Dex>,
 
@@ -86,6 +91,9 @@ impl<'info> OpenbookSwapInfo<'info> {
             let base_mint = Pubkey::new(bytemuck::cast_slice(&{ market.coin_mint }));
             (market.coin_lot_size, base_mint)
         };
+
+        // Track the referrer balance
+        let referrer_opening = token::accessor::amount(&self.referrer_account.to_account_info())?;
 
         // Determine order side
         let source_mint = token::accessor::mint(source)?;
@@ -118,7 +126,8 @@ impl<'info> OpenbookSwapInfo<'info> {
                 token_program: token_program.to_account_info(),
                 rent: self.rent.to_account_info(),
             },
-        );
+        )
+        .with_remaining_accounts(vec![self.referrer_account.to_account_info()]);
 
         anchor_openbook::new_order_v3(
             swap_context,
@@ -147,6 +156,16 @@ impl<'info> OpenbookSwapInfo<'info> {
             },
         );
         anchor_openbook::settle_funds(settle_ctx)?;
+
+        let referrer_closing = token::accessor::amount(&self.referrer_account.to_account_info())?;
+        let referral_fee = referrer_closing.checked_sub(referrer_opening).unwrap();
+
+        emit!(crate::ProtocolSwapFee {
+            venue: self.market.key(),
+            mint: self.referrer_account.mint,
+            amount: referral_fee,
+            venue_identifier: SwapRouteIdentifier::OpenBook
+        });
 
         Ok(())
     }

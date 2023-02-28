@@ -1347,6 +1347,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23d8666cb01533c39dde32bcbab8e227b4ed6679b2c925eba05feabea39508fb"
 
 [[package]]
+name = "default-env"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f753eb82d29277e79efc625e84aecacfd4851ee50e05a8573a4740239a77bfd3"
+dependencies = [
+ "proc-macro2 0.4.30",
+ "quote 0.6.13",
+ "syn 0.15.44",
+]
+
+[[package]]
 name = "der"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2098,6 +2109,7 @@ dependencies = [
  "rand_distr",
  "serde_json",
  "serial_test",
+ "serum_dex 0.5.10",
  "shellexpand",
  "solana-clap-utils",
  "solana-cli-config",
@@ -2669,6 +2681,7 @@ dependencies = [
  "bytemuck",
  "jet-margin",
  "jet-margin-pool",
+ "jet-program-common",
  "jet-static-program-registry",
  "stable-swap-anchor",
 ]
@@ -4457,6 +4470,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "serum_dex"
+version = "0.5.10"
+source = "git+https://github.com/openbook-dex/program?branch=master#c85e56deeaead43abbc33b7301058838b9c5136d"
+dependencies = [
+ "anchor-lang",
+ "arrayref",
+ "bincode",
+ "bytemuck",
+ "byteorder",
+ "default-env",
+ "enumflags2 0.6.4",
+ "field-offset",
+ "itertools 0.10.5",
+ "num-traits",
+ "num_enum",
+ "safe-transmute",
+ "serde",
+ "solana-program",
+ "solana-security-txt",
+ "spl-token 3.5.0",
+ "static_assertions",
+ "thiserror",
+ "without-alloc",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5257,6 +5296,12 @@ dependencies = [
  "rustversion",
  "syn 1.0.107",
 ]
+
+[[package]]
+name = "solana-security-txt"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e0461f3afb29d8591300b3dd09b5472b3772d65688a2826ad960b8c0d5fa605"
 
 [[package]]
 name = "solana-send-transaction-service"

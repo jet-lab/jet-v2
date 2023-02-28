@@ -39,3 +39,16 @@ pub struct SaberSwapInfo {
     /// The allowance of price deviation before the pool may be rebalanced
     pub price_threshold: u16,
 }
+
+/// Information about an OpebBook market
+#[account]
+pub struct OpenBookMarketInfo {
+    /// The address of the market state
+    pub market_state: Pubkey,
+
+    /// The magnitude of liquidity to provide the pool
+    pub liquidity_level: u8,
+
+    /// The allowance of price deviation before the pool may be rebalanced
+    pub price_threshold: u16,
+}

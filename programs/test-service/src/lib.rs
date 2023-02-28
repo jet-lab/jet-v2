@@ -142,4 +142,12 @@ pub mod jet_test_service {
     pub fn saber_swap_pool_balance(ctx: Context<SaberSwapPoolBalance>) -> Result<()> {
         saber_swap_pool_balance_handler(ctx)
     }
+
+    /// Create an OpenBook market
+    pub fn openbook_market_create(
+        ctx: Context<OpenBookMarketCreate>,
+        params: OpenBookMarketCreateParams,
+    ) -> Result<()> {
+        openbook_market_create_handler(ctx, params)
+    }
 }
