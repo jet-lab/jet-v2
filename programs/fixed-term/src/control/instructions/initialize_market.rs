@@ -124,6 +124,20 @@ pub struct InitializeMarket<'info> {
     /// CHECK: determined by caller
     pub ticket_oracle: AccountInfo<'info>,
 
+    /// The vault for storing collected market fees
+    #[account(
+        init,
+        seeds = [
+            seeds::FEE_VAULT,
+            market.key().as_ref()
+        ],
+        bump,
+        payer = payer,
+        token::mint = underlying_token_mint,
+        token::authority = market,
+    )]
+    pub fee_vault: Box<Account<'info, TokenAccount>>,
+
     /// The account where fees are allowed to be withdrawn
     #[account(token::mint = underlying_token_mint)]
     pub fee_destination: Box<Account<'info, TokenAccount>>,
@@ -161,6 +175,7 @@ pub fn handler(ctx: Context<InitializeMarket>, params: InitializeMarketParams) -
             lend_tenor: params.lend_tenor,
             underlying_oracle: ctx.accounts.underlying_oracle.key(),
             ticket_oracle: ctx.accounts.ticket_oracle.key(),
+            fee_vault: ctx.accounts.fee_vault.key(),
             fee_destination: ctx.accounts.fee_destination.key(),
             origination_fee: params.origination_fee,
         } ignoring {
@@ -169,7 +184,6 @@ pub fn handler(ctx: Context<InitializeMarket>, params: InitializeMarketParams) -
             asks,
             bids,
             nonce,
-            collected_fees,
             _reserved,
         }
     }

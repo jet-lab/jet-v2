@@ -42,6 +42,7 @@ pub struct FixedTermIxBuilder {
     orderbook_market_state: Pubkey,
     underlying_oracle: Pubkey,
     ticket_oracle: Pubkey,
+    fee_vault: Pubkey,
     fee_destination: Pubkey,
     orderbook: OrderBookAddresses,
     payer: Pubkey,
@@ -93,6 +94,7 @@ impl FixedTermIxBuilder {
             orderbook_market_state,
             underlying_oracle,
             ticket_oracle,
+            fee_vault: Self::fee_vault(market),
             fee_destination: fee_destination
                 .unwrap_or_else(|| get_associated_token_address(&authority, &underlying_mint)),
             payer,
@@ -118,6 +120,7 @@ impl FixedTermIxBuilder {
             orderbook_market_state: market.orderbook_market_state,
             underlying_oracle: market.underlying_oracle,
             ticket_oracle: market.ticket_oracle,
+            fee_vault: market.fee_vault,
             fee_destination: market.fee_destination,
             orderbook: OrderBookAddresses {
                 bids: market.bids,
@@ -211,6 +214,7 @@ impl FixedTermIxBuilder {
             market: self.market,
             ticket_mint: self.ticket_mint,
             underlying_token_vault: self.underlying_token_vault,
+            fee_vault: self.fee_vault,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.event_queue,
             crank_authorization: self.crank_authorization(&self.payer),
@@ -287,6 +291,7 @@ impl FixedTermIxBuilder {
             airspace: self.airspace,
             underlying_oracle: self.underlying_oracle,
             ticket_oracle: self.ticket_oracle,
+            fee_vault: self.fee_vault,
             fee_destination: self.fee_destination,
             payer,
             rent: solana_sdk::sysvar::rent::ID,
@@ -627,6 +632,7 @@ impl FixedTermIxBuilder {
             ticket_collateral: margin_user.ticket_collateral,
             ticket_collateral_mint: self.ticket_collateral,
             underlying_token_vault: self.underlying_token_vault,
+            fee_vault: self.fee_vault,
             underlying_settlement: underlying_settlement.unwrap_or_else(|| {
                 get_associated_token_address(&margin_account, &self.underlying_mint)
             }),
@@ -760,10 +766,10 @@ impl FixedTermIxBuilder {
     }
 
     pub fn pause_ticket_redemption(&self) -> Instruction {
-        self.modify_market([true as u8].into(), 8 + 32 * 14 + 2)
+        self.modify_market([true as u8].into(), 8 + 32 * 15 + 2)
     }
     pub fn resume_ticket_redemption(&self) -> Instruction {
-        self.modify_market([false as u8].into(), 8 + 32 * 14 + 2)
+        self.modify_market([false as u8].into(), 8 + 32 * 15 + 2)
     }
 
     pub fn modify_market(&self, data: Vec<u8>, offset: u32) -> Instruction {
@@ -910,6 +916,11 @@ impl FixedTermIxBuilder {
             self.market.as_ref(),
             owner.as_ref(),
         ])
+    }
+
+    /// derive the address for the market fee vault
+    pub fn fee_vault(market: Pubkey) -> Pubkey {
+        fixed_term_address(&[jet_fixed_term::seeds::FEE_VAULT, market.as_ref()])
     }
 
     pub fn user_claims(margin_user: Pubkey) -> Pubkey {
