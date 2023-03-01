@@ -64,13 +64,21 @@ export function DebtTable() {
   const {
     data: ordersData,
     error: ordersError,
-    isLoading: ordersLoading
+    isLoading: ordersLoading,
+    mutate: ordersRefresh
   } = useOrdersForUser(String(apiEndpoint), market?.market, account);
   const {
     data: positionsData,
     error: positionsError,
-    isLoading: positionsLoading
+    isLoading: positionsLoading,
+    mutate: positionsRefresh
   } = useOpenPositions(String(apiEndpoint), market?.market, account);
+
+
+  useEffect(() => {
+    ordersRefresh()
+    positionsRefresh()
+  }, [account?.address])
 
   useEffect(() => {
     if (ordersError || positionsError)

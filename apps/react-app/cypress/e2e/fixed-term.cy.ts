@@ -22,11 +22,7 @@ describe('Fixed Term Market', () => {
   it('funds the lender account', () => {
     airdrop('SOL', 'SOL');
     airdrop('USDC', 'USDC');
-    airdrop('BTC', 'BTC');
-    airdrop('USDT', 'USDT');
     deposit('SOL', 1);
-    deposit('BTC', 1);
-    deposit('USDT', 1);
     deposit('USDC', 50000);
   });
 
@@ -38,11 +34,7 @@ describe('Fixed Term Market', () => {
   it('funds the borrower account', () => {
     airdrop('SOL', 'SOL');
     airdrop('USDC', 'USDC');
-    airdrop('BTC', 'BTC');
-    airdrop('USDT', 'USDT');
     deposit('SOL', 1);
-    deposit('BTC', 1);
-    deposit('USDT', 1);
     deposit('USDC', 50000);
   });
 

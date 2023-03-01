@@ -23,5 +23,5 @@ echo "waiting for oracles ..."
 cp apps/react-app/public/localnet.config.json apps/react-app/build/localnet.config.json
 
 cp apps/react-app/public/localnet.config.legacy.json apps/react-app/build/localnet.config.legacy.json
-
+yarn build --force
 yarn --cwd apps/react-app e2e:ci
