@@ -28,7 +28,7 @@ pub struct WithdrawFees<'info> {
 pub fn handler(ctx: Context<WithdrawFees>) -> Result<()> {
     let collected_fees = ctx.accounts.fee_vault.amount;
     ctx.accounts.withdraw(
-        &ctx.accounts.fee_vault.to_account_info(),
+        ctx.accounts.fee_vault.to_account_info(),
         &ctx.accounts.fee_destination,
         collected_fees,
     )?;
