@@ -20,8 +20,10 @@ echo "waiting for oracles ..."
 	done
 	echo "oracles ready!"
 
+yarn build --force
+
 cp apps/react-app/public/localnet.config.json apps/react-app/build/localnet.config.json
 
 cp apps/react-app/public/localnet.config.legacy.json apps/react-app/build/localnet.config.legacy.json
-yarn build --force
+
 yarn --cwd apps/react-app e2e:ci
