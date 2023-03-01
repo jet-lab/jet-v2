@@ -26,6 +26,7 @@ import { formatWithCommas } from '@utils/format';
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
+import { LoadingOutlined } from '@ant-design/icons';
 
 interface RequestLoanProps {
   decimals: number;
@@ -64,6 +65,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
+  const [pending, setPending] = useState(false)
+
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
@@ -74,6 +77,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     forecast?.selfMatch;
 
   const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
+    setPending(true)
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -98,6 +102,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
+        setPending(false)
       }, 2000); // TODO: Ugly / unneded update when websocket is fully integrated
     } catch (e: any) {
       notify(
@@ -108,6 +113,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
+      setPending(false)
       throw e;
     }
   };
@@ -273,8 +279,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Off</span>
         </div>
       </div>
-      <Button className="submit-button" disabled={disabled} onClick={() => createBorrowOrder()}>
-        Request {marketToString(marketAndConfig.config)} loan
+      <Button className="submit-button" disabled={disabled || pending} onClick={() => createBorrowOrder()}>
+        {pending ? <><LoadingOutlined />Sending transaction</> : `Request ${marketToString(marketAndConfig.config)} loan`}
       </Button>
     </div>
   );

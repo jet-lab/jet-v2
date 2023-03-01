@@ -12,7 +12,7 @@ import {
   SelectedFixedTermMarketAtom
 } from '@state/fixed-term/fixed-term-market-sync';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
 import { MarketAndConfig } from '@jet-lab/margin';
 interface FixedChart {
@@ -37,11 +37,8 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
 const asksKeys = ['lend-now', 'request-loan'];
 const immediateKeys = ['lend-now', 'borrow-now'];
 
-export const FixedPriceChartContainer = ({ type }: FixedChart) => {
-  const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
-  const currentTab = useRecoilValue(CurrentOrderTabAtom);
+const LineChartWithData = ({ market, currentTab} : { market: MarketAndConfig, currentTab: string}) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
-  const market = useRecoilValue(FixedTermMarketAtom);
   const allMarkets = useRecoilValue(AllFixedTermMarketsAtom);
   const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
   const marginConfig = useRecoilValue(MainConfig);
@@ -87,6 +84,14 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
       return all;
     }, [] as ISeries[]);
   }, [openOrders, currentTab, selectedMarketIndex]);
+  return <ResponsiveLineChart series={series} />
+}
+
+export const FixedPriceChartContainer = ({ type }: FixedChart) => {
+  const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
+  const currentTab = useRecoilValue(CurrentOrderTabAtom);
+  
+  const market = useRecoilValue(FixedTermMarketAtom);
 
   return (
     <div className="fixed-term-graph view-element view-element-hidden flex align-center justify-end column">
@@ -97,7 +102,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
           </div>
         </div>
       </div>
-      <ResponsiveLineChart series={series} />
+      { market && <Suspense><LineChartWithData market={market} currentTab={currentTab} /></Suspense>}
       <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
     </div>
   );

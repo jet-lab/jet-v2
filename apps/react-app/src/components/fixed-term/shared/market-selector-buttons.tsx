@@ -43,6 +43,12 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
     }
   }, [marginAccount?.address]);
 
+  const [totalBorrowed, setTotalBorrowed] = useState(token && data && new TokenAmount(new BN(data.total_borrowed), token.decimals))
+
+  useEffect(() => {
+    setTotalBorrowed(new TokenAmount(data ? new BN(data.total_borrowed) : new BN(0), token?.decimals || 0))
+  }, [data])
+
   if (!marginAccount || !data || !pools || !token) return null;
 
   const depositsToClaim = data.deposits.filter(
@@ -54,7 +60,33 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
   }, new BN(0));
   const hasToClaim = depositsToClaim.length > 0;
   const hasToSettle = owedTokens?.tokens > 0;
-  const hasToRepay = data.total_borrowed > 0;
+  const hasToRepay = data.total_borrowed > 0 && totalBorrowed;
+
+  const handleRepay = async () =>{
+    const bnAmount = new BN(parseFloat(repayAmount) * 10 ** token.decimals)
+    const tokenAmount = new TokenAmount(bnAmount, token.decimals)
+    if (!totalBorrowed) return
+    try {
+      await submitRepay(
+        marginAccount,
+        provider,
+        bnAmount,
+        data.loans,
+        pools.tokenPools,
+        markets.map(m => m.market),
+        selectedMarket,
+        cluster,
+        explorer,
+      )
+      if (totalBorrowed.sub(tokenAmount).lte(new TokenAmount(new BN(0), token.decimals))) {
+        setTotalBorrowed(undefined)
+      } else {
+        setTotalBorrowed(totalBorrowed.sub(tokenAmount))
+      }
+    } catch (e) {
+      console.log(e)
+    }
+  }
 
   return (
     <div className="selector-actions">
@@ -102,7 +134,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         </div>
       ) : hasToRepay ? (
         <div className="assets-to-settle">
-          You owe {new TokenAmount(new BN(data.total_borrowed), token.decimals).tokens} {token.symbol} on this market.
+          You owe {totalBorrowed?.tokens} {token.symbol} on this market.
           <input
             value={repayAmount}
             onChange={e => {
@@ -117,19 +149,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
             }}
           />
           <Button
-            onClick={() =>
-              submitRepay(
-                marginAccount,
-                provider,
-                new BN(parseFloat(repayAmount) * 10 ** token.decimals),
-                data.loans,
-                pools.tokenPools,
-                markets.map(m => m.market),
-                selectedMarket,
-                cluster,
-                explorer
-              )
-            }>
+            onClick={handleRepay}>
             Repay Now
           </Button>
         </div>
