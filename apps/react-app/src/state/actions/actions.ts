@@ -10,7 +10,7 @@ export const actionOptions: PoolAction[] = [
   'repay',
   'repayFromDeposit',
   'swap',
-  'transfer'
+  // 'transfer'
 ];
 
 export const CurrentAction = atom({
