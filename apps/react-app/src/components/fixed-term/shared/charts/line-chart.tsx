@@ -36,6 +36,8 @@ interface ILineChart {
   paddingRight: number;
   paddingBottom: number;
   series: ISeries[];
+  isRequest: boolean;
+  symbol: string;
 }
 
 interface IYValues {
@@ -56,7 +58,9 @@ export const LineChart = ({
   paddingLeft,
   paddingRight,
   paddingBottom,
-  series
+  series,
+  isRequest,
+  symbol
 }: ILineChart) => {
   const setMarket = useSetRecoilState(SelectedFixedTermMarketAtom);
   const formatting = useCurrencyFormatting();
@@ -223,6 +227,12 @@ export const LineChart = ({
               dy: 4,
               dx: -8
             })}
+            label="Annualised interest rate"
+            labelOffset={60}
+            labelProps={{
+              fill: '#fff',
+              fontSize: 14,
+            }}
           />
           <AxisBottom
             hideAxisLine={true}
@@ -239,6 +249,12 @@ export const LineChart = ({
               textAnchor: 'middle',
               dy: 8
             })}
+            label={isRequest ? `Cumulative ${symbol} requests` : `Cumulative ${symbol} offers`}
+            labelOffset={16}
+            labelProps={{
+              fill: '#fff',
+              fontSize: 14
+            }}
           />
           {height > 0 && width > 0 && (
             <Bar
@@ -285,8 +301,10 @@ export const LineChart = ({
 
 interface ResponsiveLineChartProps {
   series: ISeries[];
+  isRequest: boolean;
+  symbol: string;
 }
-export const ResponsiveLineChart = ({ series }: ResponsiveLineChartProps) => {
+export const ResponsiveLineChart = ({ series, isRequest, symbol }: ResponsiveLineChartProps) => {
   return (
     <ParentSizeModern>
       {parent =>
@@ -295,10 +313,12 @@ export const ResponsiveLineChart = ({ series }: ResponsiveLineChartProps) => {
             height={parent.height}
             width={parent.width}
             paddingTop={64}
-            paddingBottom={40}
-            paddingLeft={60}
+            paddingBottom={64}
+            paddingLeft={96}
             paddingRight={24}
             series={series.filter(s => s.data.length > 0)}
+            isRequest={isRequest}
+            symbol={symbol}
           />
         ) : (
           <LoadingOutlined />
