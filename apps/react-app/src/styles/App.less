@@ -2787,7 +2787,7 @@ html {
 
 .chart-legend {
   position: absolute;
-  bottom: 48px;
+  bottom: 96px;
   right: 16px;
   display: flex;
   flex-direction: column;
@@ -2900,4 +2900,24 @@ html {
   border-radius: 4px;
   margin: 4px;
   text-align: center;
+}
+
+.responsive-line-chart-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.responsive-line-chart-y-label {
+  position: absolute;
+  transform: rotate(-90deg);
+  left:-54px; 
+  top: 50%;
+}
+
+.responsive-line-chart-x-label {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translate(-50%, 0);
 }

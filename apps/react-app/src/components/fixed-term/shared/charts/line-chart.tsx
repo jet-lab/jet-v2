@@ -36,7 +36,6 @@ interface ILineChart {
   paddingRight: number;
   paddingBottom: number;
   series: ISeries[];
-  isRequest: boolean;
   symbol: string;
 }
 
@@ -59,8 +58,7 @@ export const LineChart = ({
   paddingRight,
   paddingBottom,
   series,
-  isRequest,
-  symbol
+   symbol
 }: ILineChart) => {
   const setMarket = useSetRecoilState(SelectedFixedTermMarketAtom);
   const formatting = useCurrencyFormatting();
@@ -227,12 +225,7 @@ export const LineChart = ({
               dy: 4,
               dx: -8
             })}
-            label="Annualised interest rate"
-            labelOffset={60}
-            labelProps={{
-              fill: '#fff',
-              fontSize: 14,
-            }}
+            numTicks={8}
           />
           <AxisBottom
             hideAxisLine={true}
@@ -249,12 +242,7 @@ export const LineChart = ({
               textAnchor: 'middle',
               dy: 8
             })}
-            label={isRequest ? `Cumulative ${symbol} requests` : `Cumulative ${symbol} offers`}
-            labelOffset={16}
-            labelProps={{
-              fill: '#fff',
-              fontSize: 14
-            }}
+            numTicks={8}
           />
           {height > 0 && width > 0 && (
             <Bar
@@ -292,7 +280,7 @@ export const LineChart = ({
             textAlign: 'center',
             transform: 'translateX(calc(-50% - 8px))'
           }}>
-          {tooltipData.valueOfX.toFixed(2)}
+          {symbol} {formatting.currencyAbbrev(tooltipData.valueOfX, 0, false, undefined, undefined, undefined, 'thousands')}
         </Tooltip>
       )}
     </>
@@ -306,24 +294,27 @@ interface ResponsiveLineChartProps {
 }
 export const ResponsiveLineChart = ({ series, isRequest, symbol }: ResponsiveLineChartProps) => {
   return (
-    <ParentSizeModern>
-      {parent =>
-        series.length > 0 ? (
-          <LineChart
-            height={parent.height}
-            width={parent.width}
-            paddingTop={64}
-            paddingBottom={64}
-            paddingLeft={96}
-            paddingRight={24}
-            series={series.filter(s => s.data.length > 0)}
-            isRequest={isRequest}
-            symbol={symbol}
-          />
-        ) : (
-          <LoadingOutlined />
-        )
-      }
-    </ParentSizeModern>
+    <div className='responsive-line-chart-container'>
+     <div className='responsive-line-chart-y-label'>Annualised interest rate</div>
+      <ParentSizeModern>
+        {parent =>
+          series.length > 0 ? (
+            <LineChart
+              height={parent.height}
+              width={parent.width}
+              paddingTop={64}
+              paddingBottom={80}
+              paddingLeft={96}
+              paddingRight={24}
+              series={series.filter(s => s.data.length > 0)}
+              symbol={symbol}
+            />
+          ) : (
+            <LoadingOutlined />
+          )
+        }
+      </ParentSizeModern>
+      <div className='responsive-line-chart-x-label'>{isRequest ? `Cumulative ${symbol} requests` : `Cumulative ${symbol} offers`}</div>
+    </div>
   );
 };
