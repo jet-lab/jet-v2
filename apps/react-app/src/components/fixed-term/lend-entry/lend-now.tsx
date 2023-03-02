@@ -34,8 +34,8 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  repayAmount: string;
-  interest: string;
+  repayAmount: number;
+  interest: number;
   effectiveRate: number;
   selfMatch: boolean;
   fulfilled: boolean;
@@ -106,8 +106,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
       setForecast({
-        repayAmount: repayAmount.uiTokens,
-        interest: repayAmount.sub(lendAmount).uiTokens,
+        repayAmount: repayAmount.tokens,
+        interest: repayAmount.sub(lendAmount).tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches,
@@ -201,7 +201,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <span>Repayment Amount</span>
           {forecast?.repayAmount && (
             <span>
-              {forecast.repayAmount} {token.symbol}
+              {forecast.repayAmount.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -209,7 +209,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <span>Total Interest</span>
           {forecast?.interest && (
             <span>
-              {forecast.interest} {token.symbol}
+              {forecast.interest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -219,7 +219,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{forecast.riskIndicator}</span>}
+          {forecast && <span>{marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}</span>}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={marketLendOrder}>

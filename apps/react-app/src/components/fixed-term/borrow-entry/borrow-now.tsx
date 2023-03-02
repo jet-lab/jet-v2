@@ -34,8 +34,8 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  repayAmount: string;
-  interest: string;
+  repayAmount: number;
+  interest: number;
   effectiveRate: number;
   selfMatch: boolean;
   fulfilled: boolean;
@@ -124,8 +124,8 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
       setForecast({
-        repayAmount: repayAmount.uiTokens,
-        interest: repayAmount.sub(borrowedAmount).uiTokens,
+        repayAmount: repayAmount.tokens,
+        interest: repayAmount.sub(borrowedAmount).tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
@@ -214,7 +214,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Repayment Amount</span>
           {forecast && (
             <span>
-              {forecast.repayAmount} {token.symbol}
+              {forecast.repayAmount.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -222,7 +222,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Total Interest</span>
           {forecast && (
             <span>
-              {forecast.interest} {token.symbol}
+              {forecast.interest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -231,8 +231,12 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <RateDisplay rate={forecast?.effectiveRate} />
         </div>
         <div className="stat-line">
+          <span>Fees</span>
+          {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
+        </div>
+        <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{forecast.riskIndicator}</span>}
+          {forecast && <span>{marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}</span>}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={createBorrowOrder}>

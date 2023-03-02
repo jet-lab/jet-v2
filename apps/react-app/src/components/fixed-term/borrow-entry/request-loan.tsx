@@ -36,11 +36,11 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  postedRepayAmount?: string;
-  postedInterest?: string;
+  postedRepayAmount?: number;
+  postedInterest?: number;
   postedRate?: number;
-  matchedAmount?: string;
-  matchedInterest?: string;
+  matchedAmount?: number;
+  matchedInterest?: number;
   matchedRate?: number;
   selfMatch: boolean;
   riskIndicator?: number;
@@ -162,11 +162,11 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const postedRate = sim.posted_vwar;
 
     setForecast({
-      matchedAmount: matchRepayAmount.uiTokens,
-      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+      matchedAmount: matchRepayAmount.tokens,
+      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).tokens,
       matchedRate: matchRate,
-      postedRepayAmount: postedRepayAmount.uiTokens,
-      postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
+      postedRepayAmount: postedRepayAmount.tokens,
+      postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
       postedRate,
       selfMatch: sim.self_match,
       riskIndicator: valuationEstimate?.riskIndicator
@@ -239,7 +239,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Posted Repayment Amount</span>
           {forecast?.postedRepayAmount && (
             <span>
-              {forecast?.postedRepayAmount}
+              {forecast?.postedRepayAmount.toFixed(token.precision)}
               {token.symbol}
             </span>
           )}
@@ -248,7 +248,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Posted Interest</span>
           {forecast?.postedInterest && (
             <span>
-              {forecast?.postedInterest} {token.symbol}
+              {forecast?.postedInterest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -260,7 +260,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
             <span>
-              {forecast.matchedAmount}
+              {forecast.matchedAmount.toFixed(token.precision)}
               {token.symbol}
             </span>
           )}
@@ -269,7 +269,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Interest</span>
           {forecast?.matchedInterest && (
             <span>
-              {forecast.matchedInterest} {token.symbol}
+              {forecast.matchedInterest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -278,8 +278,12 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <RateDisplay rate={forecast?.matchedRate} />
         </div>
         <div className="stat-line">
+          <span>Fees</span>
+          {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
+        </div>
+        <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{forecast.riskIndicator}</span>}
+          {forecast && <span>{marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}</span>}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={() => createBorrowOrder()}>
