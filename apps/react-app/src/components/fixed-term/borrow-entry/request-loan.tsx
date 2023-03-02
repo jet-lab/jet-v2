@@ -49,8 +49,10 @@ interface Forecast {
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
-  const pools = useRecoilValue(Pools);
+  const {selectedPoolKey, prices} = useJetStore(state => ({
+    selectedPoolKey: state.selectedPoolKey,
+    prices: state.prices
+  }));  const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
@@ -67,6 +69,10 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
 
   const [pending, setPending] = useState(false)
 
+  const effectiveCollateral = marginAccount?.valuation.effectiveCollateral.toNumber() || 0;
+  const tokenPrice = prices ? prices[marketAndConfig.token.mint.toString()] : { price: 0}
+  const hasEnoughCollateral =(new TokenAmount(amount, token.decimals).tokens * tokenPrice.price) <= effectiveCollateral
+
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
@@ -74,7 +80,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     !pools ||
     basisPoints.lte(new BN(0)) ||
     amount.lte(new BN(0)) ||
-    forecast?.selfMatch;
+    forecast?.selfMatch ||
+    !hasEnoughCollateral;
 
   const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     setPending(true)
@@ -274,14 +281,12 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Risk Indicator</span>
           {forecast && <span>{forecast.riskIndicator}</span>}
         </div>
-        <div className="stat-line">
-          <span>Auto Roll</span>
-          <span>Off</span>
-        </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={() => createBorrowOrder()}>
         {pending ? <><LoadingOutlined />Sending transaction</> : `Request ${marketToString(marketAndConfig.config)} loan`}
       </Button>
+      {forecast?.selfMatch && <div className='fixed-term-warning'>The offer would match with your own requests in this market.</div>}
+      {!hasEnoughCollateral && <div className='fixed-term-warning'>Not enough collateral to submit this request</div>}
     </div>
   );
 };

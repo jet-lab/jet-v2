@@ -62,6 +62,10 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
 
   const [pending, setPending] = useState(false)
 
+  const tokenBalance = marginAccount?.poolPositions[token.symbol].depositBalance
+  const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount, token.decimals))
+
+
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
@@ -70,7 +74,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     amount.lte(new BN(0)) ||
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
-    !forecast.fulfilled;
+    !forecast.fulfilled ||
+    !hasEnoughTokens
 
   const handleForecast = (amount: BN) => {
     if (bnToBigInt(amount) === BigInt(0)) {
@@ -153,6 +158,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 
+
   return (
     <div className="fixed-term order-entry-body">
       <div className="lend-now fixed-order-entry-fields">
@@ -215,14 +221,12 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <span>Risk Indicator</span>
           {forecast && <span>{forecast.riskIndicator}</span>}
         </div>
-        <div className="stat-line">
-          <span>Auto Roll</span>
-          <span>Off</span>
-        </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={marketLendOrder}>
       {pending ? <><LoadingOutlined />Sending transaction</> : `Lend ${marketToString(marketAndConfig.config)}`}
       </Button>
+      {forecast?.selfMatch && <div className='fixed-term-warning'>The request would match with your own offers in this market.</div>}
+      {!hasEnoughTokens && <div className='fixed-term-warning'>Not enough deposited {token.symbol} to submit this request</div>}
     </div>
   );
 };
