@@ -64,7 +64,7 @@ describe('Fixed Term Market', () => {
   });
 
   describe('can create one fixed rate lend order', () => {
-    const lendAmtString = '100';
+    const lendAmtString = '1000';
     const interestString = '10';
 
     it('selects the offer loan tab', () => {
@@ -75,12 +75,16 @@ describe('Fixed Term Market', () => {
 
     it('inputs the lend amount', () => {
       const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
-      amountInput.click().type(lendAmtString);
+      amountInput.click()
+      amountInput.type(lendAmtString);
+      amountInput.clear()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
-      interestInput.click().type(interestString);
+      interestInput.click()
+      interestInput.type(interestString);
+      interestInput.clear()
     });
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
@@ -93,8 +97,8 @@ describe('Fixed Term Market', () => {
   });
 
   describe('can create a second fixed rate lend order', () => {
-    const lendAmtString = '100';
-    const interestString = '10';
+    const lendAmtString = '2000';
+    const interestString = '15';
 
     it('selects the offer loan tab', () => {
       const lendLink = cy.contains('.nav-link', 'Lend');
@@ -104,13 +108,18 @@ describe('Fixed Term Market', () => {
 
     it('inputs the lend amount', () => {
       const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
-      amountInput.click().type(lendAmtString);
+      amountInput.click()
+      amountInput.type(lendAmtString);
+      amountInput.clear()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
-      interestInput.click().type(interestString);
+      interestInput.click()
+      interestInput.type(interestString);
+      interestInput.clear()
     });
+    
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
       submitButton.click();
@@ -128,7 +137,7 @@ describe('Fixed Term Market', () => {
 
   describe('can create one fixed rate borrow order', () => {
     const borrowAmtString = '100';
-    const interestString = '10';
+    const interestString = '5';
 
     it('selects the offer loan tab', () => {
       const lendLink = cy.contains('.nav-link', 'Borrow');
@@ -138,13 +147,18 @@ describe('Fixed Term Market', () => {
 
     it('inputs the lend amount', () => {
       const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
-      amountInput.click().type(borrowAmtString);
+      amountInput.click()
+      amountInput.type(borrowAmtString);
+      amountInput.clear()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
-      interestInput.click().type(interestString);
+      interestInput.click()
+      interestInput.type(interestString);
+      interestInput.clear()
     });
+    
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
       submitButton.click();
@@ -156,8 +170,8 @@ describe('Fixed Term Market', () => {
   });
 
   describe('can create a second fixed rate borrow order', () => {
-    const borrowAmtString = '100';
-    const interestString = '10';
+    const borrowAmtString = '200';
+    const interestString = '5';
 
     it('selects the offer loan tab', () => {
       const lendLink = cy.contains('.nav-link', 'Borrow');
@@ -167,12 +181,16 @@ describe('Fixed Term Market', () => {
 
     it('inputs the lend amount', () => {
       const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
-      amountInput.click().type(borrowAmtString);
+      amountInput.click()
+      amountInput.type(borrowAmtString);
+      amountInput.clear()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
-      interestInput.click().type(interestString);
+      interestInput.click()
+      interestInput.type(interestString);
+      interestInput.clear()
     });
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
@@ -190,7 +208,7 @@ describe('Fixed Term Market', () => {
   });
 
   describe('issues a lend now order', () => {
-    const lendAmtString = '100';
+    const lendAmtString = '20';
 
     it('selects the lend now tab', () => {
       const lendLink = cy.contains('.nav-link', 'Lend');
@@ -223,7 +241,7 @@ describe('Fixed Term Market', () => {
   });
 
   describe('issues a borrow now order', () => {
-    const lendAmtString = '100';
+    const lendAmtString = '20';
     it('selects the borrow now tab', () => {
       const borrowLink = cy.contains('.nav-link', 'Borrow');
       borrowLink.click();
@@ -273,6 +291,7 @@ describe('Fixed Term Market', () => {
       const repayInput = cy.get('.assets-to-settle input').should('not.be.disabled');
       repayInput.click();
       repayInput.type('110');
+      repayInput.clear()
     });
 
     it('submits the order', () => {
