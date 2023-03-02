@@ -277,10 +277,11 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Effective Rate</span>
           <RateDisplay rate={forecast?.matchedRate} />
         </div>
-        <div className="stat-line">
+        {/* <div className="stat-line">
+          // NOTE calculate this from wasm module as it need sto be 50 bps ANNUALISED
           <span>Fees</span>
           {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
-        </div>
+        </div> */}
         <div className="stat-line">
           <span>Risk Indicator</span>
           {forecast && <span>{marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}</span>}
