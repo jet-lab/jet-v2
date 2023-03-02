@@ -70,7 +70,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   const [pending, setPending] = useState(false)
 
   const effectiveCollateral = marginAccount?.valuation.effectiveCollateral.toNumber() || 0;
-  const tokenPrice = prices ? prices[marketAndConfig.token.mint.toString()] : { price: 0}
+  const tokenPrice = prices && prices[marketAndConfig.token.mint.toString()] ? prices[marketAndConfig.token.mint.toString()] : { price: Infinity }
   const hasEnoughCollateral =(new TokenAmount(amount, token.decimals).tokens * tokenPrice.price) <= effectiveCollateral
 
   const disabled =

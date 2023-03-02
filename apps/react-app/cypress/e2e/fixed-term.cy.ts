@@ -67,7 +67,7 @@ describe('Fixed Term Market', () => {
     cy.contains('Your lend offer for 2000 USDC at 10% was created successfully');
   });
 
-  it('selects the lender account', () => {
+  it('selects the borrower account', () => {
     cy.contains('ACCOUNT 2').as('borrowerAccount');
     cy.get('@borrowerAccount').click();
   });
