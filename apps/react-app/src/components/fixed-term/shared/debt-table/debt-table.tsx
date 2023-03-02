@@ -74,11 +74,10 @@ export function DebtTable() {
     mutate: positionsRefresh
   } = useOpenPositions(String(apiEndpoint), market?.market, account);
 
-
   useEffect(() => {
-    ordersRefresh()
-    positionsRefresh()
-  }, [account?.address])
+    ordersRefresh();
+    positionsRefresh();
+  }, [account?.address]);
 
   useEffect(() => {
     if (ordersError || positionsError)

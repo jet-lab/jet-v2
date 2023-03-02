@@ -13,7 +13,7 @@ import { notify } from '@utils/notify';
 import { useRecoilRefresher_UNSTABLE } from 'recoil';
 import { AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 
-type UpdateOrders = Dispatch<SetStateAction<string[]>>
+type UpdateOrders = Dispatch<SetStateAction<string[]>>;
 
 interface GetPostOrderColumnes {
   market: MarketAndConfig;
@@ -24,7 +24,7 @@ interface GetPostOrderColumnes {
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
   ordersPendingDeletion: string[];
-  setOrdersPendingDeletion: UpdateOrders
+  setOrdersPendingDeletion: UpdateOrders;
   refreshOrderBooks: () => void;
 }
 const getPostOrderColumns = ({
@@ -39,47 +39,61 @@ const getPostOrderColumns = ({
   ordersPendingDeletion,
   setOrdersPendingDeletion
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
-    {
-      title: 'Issue date',
-      dataIndex: 'created_timestamp',
-      key: 'created_timestamp',
-      render: (date: number) => `${formatDistanceToNowStrict(date)} ago`
-    },
-    {
-      title: 'Total QTY',
-      dataIndex: 'total_quote_qty',
-      key: 'total_quote_qty',
-      render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`
-    },
-    {
-      title: 'Filled QTY',
-      dataIndex: 'filled_quote_qty',
-      key: 'filled_quote_qty',
-      render: (filled: number) => {
-        return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
-      }
-    },
-    {
-      title: 'Rate',
-      dataIndex: 'rate',
-      key: 'rate',
-      render: (rate: number) => `${100 * rate}%`
-    },
-    {
-      title: 'Cancel',
-      key: 'cancel',
-      render: (order: OpenOrder) => {
-        return ordersPendingDeletion.includes(order.order_id) ? <LoadingOutlined /> : (
-          <CloseOutlined
-            style={{ color: '#e36868' }}
-            onClick={() => {
-              cancel(market, marginAccount, provider, order, cluster, explorer, pools, markets, refreshOrderBooks, ordersPendingDeletion, setOrdersPendingDeletion)
-            }}
-          />
-        );
-      }
+  {
+    title: 'Issue date',
+    dataIndex: 'created_timestamp',
+    key: 'created_timestamp',
+    render: (date: number) => `${formatDistanceToNowStrict(date)} ago`
+  },
+  {
+    title: 'Total QTY',
+    dataIndex: 'total_quote_qty',
+    key: 'total_quote_qty',
+    render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`
+  },
+  {
+    title: 'Filled QTY',
+    dataIndex: 'filled_quote_qty',
+    key: 'filled_quote_qty',
+    render: (filled: number) => {
+      return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
     }
-  ];
+  },
+  {
+    title: 'Rate',
+    dataIndex: 'rate',
+    key: 'rate',
+    render: (rate: number) => `${100 * rate}%`
+  },
+  {
+    title: 'Cancel',
+    key: 'cancel',
+    render: (order: OpenOrder) => {
+      return ordersPendingDeletion.includes(order.order_id) ? (
+        <LoadingOutlined />
+      ) : (
+        <CloseOutlined
+          style={{ color: '#e36868' }}
+          onClick={() => {
+            cancel(
+              market,
+              marginAccount,
+              provider,
+              order,
+              cluster,
+              explorer,
+              pools,
+              markets,
+              refreshOrderBooks,
+              ordersPendingDeletion,
+              setOrdersPendingDeletion
+            );
+          }}
+        />
+      );
+    }
+  }
+];
 
 const cancel = async (
   market: MarketAndConfig,
@@ -103,11 +117,10 @@ const cancel = async (
       pools,
       markets
     });
-      notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
-      setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
-      refreshOrderBooks();
+    notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
+    setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
+    refreshOrderBooks();
   } catch (e: any) {
-
     notify(
       'Cancel order failed',
       'There was an error cancelling your order',
@@ -138,9 +151,8 @@ export const PostedOrdersTable = ({
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }) => {
-
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
-  const [ordersPendingDeletion, setOrdersPendingDeletion] = useState<string[]>([])
+  const [ordersPendingDeletion, setOrdersPendingDeletion] = useState<string[]>([]);
 
   const columns = useMemo(
     () =>

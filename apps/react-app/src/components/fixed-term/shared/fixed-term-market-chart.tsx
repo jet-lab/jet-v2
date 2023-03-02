@@ -37,7 +37,7 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
 const asksKeys = ['lend-now', 'request-loan'];
 const requestKeys = ['lend-now', 'borrow-now'];
 
-const LineChartWithData = ({ market, currentTab} : { market: MarketAndConfig, currentTab: string}) => {
+const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; currentTab: string }) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
   const allMarkets = useRecoilValue(AllFixedTermMarketsAtom);
   const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
@@ -83,13 +83,15 @@ const LineChartWithData = ({ market, currentTab} : { market: MarketAndConfig, cu
     }, [] as ISeries[]);
   }, [openOrders, currentTab, selectedMarketIndex]);
 
-  return <ResponsiveLineChart symbol={market.token.symbol} isRequest={requestKeys.includes(currentTab)} series={series} />
-}
+  return (
+    <ResponsiveLineChart symbol={market.token.symbol} isRequest={requestKeys.includes(currentTab)} series={series} />
+  );
+};
 
 export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
   const currentTab = useRecoilValue(CurrentOrderTabAtom);
-  
+
   const market = useRecoilValue(FixedTermMarketAtom);
 
   return (
@@ -101,7 +103,11 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
           </div>
         </div>
       </div>
-      { market && <Suspense><LineChartWithData market={market} currentTab={currentTab} /></Suspense>}
+      {market && (
+        <Suspense>
+          <LineChartWithData market={market} currentTab={currentTab} />
+        </Suspense>
+      )}
       <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
     </div>
   );

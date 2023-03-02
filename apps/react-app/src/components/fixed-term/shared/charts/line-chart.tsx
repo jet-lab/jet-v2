@@ -58,7 +58,7 @@ export const LineChart = ({
   paddingRight,
   paddingBottom,
   series,
-   symbol
+  symbol
 }: ILineChart) => {
   const setMarket = useSetRecoilState(SelectedFixedTermMarketAtom);
   const formatting = useCurrencyFormatting();
@@ -280,7 +280,8 @@ export const LineChart = ({
             textAlign: 'center',
             transform: 'translateX(calc(-50% - 8px))'
           }}>
-          {symbol} {formatting.currencyAbbrev(tooltipData.valueOfX, 0, false, undefined, undefined, undefined, 'thousands')}
+          {symbol}{' '}
+          {formatting.currencyAbbrev(tooltipData.valueOfX, 0, false, undefined, undefined, undefined, 'thousands')}
         </Tooltip>
       )}
     </>
@@ -294,8 +295,8 @@ interface ResponsiveLineChartProps {
 }
 export const ResponsiveLineChart = ({ series, isRequest, symbol }: ResponsiveLineChartProps) => {
   return (
-    <div className='responsive-line-chart-container'>
-     <div className='responsive-line-chart-y-label'>Annualised interest rate</div>
+    <div className="responsive-line-chart-container">
+      <div className="responsive-line-chart-y-label">Annualised interest rate</div>
       <ParentSizeModern>
         {parent =>
           series.length > 0 ? (
@@ -314,7 +315,9 @@ export const ResponsiveLineChart = ({ series, isRequest, symbol }: ResponsiveLin
           )
         }
       </ParentSizeModern>
-      <div className='responsive-line-chart-x-label'>{isRequest ? `Cumulative ${symbol} requests` : `Cumulative ${symbol} offers`}</div>
+      <div className="responsive-line-chart-x-label">
+        {isRequest ? `Cumulative ${symbol} requests` : `Cumulative ${symbol} offers`}
+      </div>
     </div>
   );
 };

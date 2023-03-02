@@ -45,7 +45,7 @@ interface Forecast {
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const {selectedPoolKey, prices} = useJetStore(state => ({
+  const { selectedPoolKey, prices } = useJetStore(state => ({
     selectedPoolKey: state.selectedPoolKey,
     prices: state.prices
   }));
@@ -63,16 +63,18 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState(false);
 
-  
   useEffect(() => {
     handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 
   const effectiveCollateral = marginAccount?.valuation.effectiveCollateral.toNumber() || 0;
-  const tokenPrice = prices && prices[marketAndConfig.token.mint.toString()] ? prices[marketAndConfig.token.mint.toString()] : { price: Infinity }
-  const hasEnoughCollateral =(new TokenAmount(amount, token.decimals).tokens * tokenPrice.price) <= effectiveCollateral
+  const tokenPrice =
+    prices && prices[marketAndConfig.token.mint.toString()]
+      ? prices[marketAndConfig.token.mint.toString()]
+      : { price: Infinity };
+  const hasEnoughCollateral = new TokenAmount(amount, token.decimals).tokens * tokenPrice.price <= effectiveCollateral;
 
   const disabled =
     !marginAccount ||
@@ -137,7 +139,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   };
 
   const createBorrowOrder = async () => {
-    setPending(true)
+    setPending(true);
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -158,7 +160,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
-        setPending(false)
+        setPending(false);
       }, 2000); // TODO: Ugly and unneded, update when websocket is fully integrated
     } catch (e: any) {
       notify(
@@ -167,7 +169,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
-      setPending(false)
+      setPending(false);
       throw e;
     }
   };
@@ -237,14 +239,27 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div> */}
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}</span>}
+          {forecast && (
+            <span>
+              {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
+            </span>
+          )}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={createBorrowOrder}>
-      {pending ? <><LoadingOutlined />Sending transaction</> : `Borrow ${marketToString(marketAndConfig.config)}`} 
+        {pending ? (
+          <>
+            <LoadingOutlined />
+            Sending transaction
+          </>
+        ) : (
+          `Borrow ${marketToString(marketAndConfig.config)}`
+        )}
       </Button>
-      {forecast?.selfMatch && <div className='fixed-term-warning'>The request would match with your own offers in this market.</div>}
-      {!hasEnoughCollateral && <div className='fixed-term-warning'>Not enough collateral to submit this request</div>}
+      {forecast?.selfMatch && (
+        <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
+      )}
+      {!hasEnoughCollateral && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
     </div>
   );
 };

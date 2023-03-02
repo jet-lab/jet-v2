@@ -9,7 +9,7 @@ export const actionOptions: PoolAction[] = [
   'borrow',
   'repay',
   'repayFromDeposit',
-  'swap',
+  'swap'
   // 'transfer'
 ];
 
