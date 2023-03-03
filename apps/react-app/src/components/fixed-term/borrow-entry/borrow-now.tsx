@@ -141,7 +141,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   // for test debugging
   useEffect(() => {
     if(!amount.isZero() && disabled) {
-      console.table(
+      console.log(
         'hasMarginAccount', !!marginAccount,
         'hasPublicKey', !!wallet.publicKey,
         'hasCurrentPool', !!currentPool,
