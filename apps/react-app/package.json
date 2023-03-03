@@ -21,7 +21,6 @@
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
     "@jet-lab/e2e-react-adapter": "^0.1.3",
-    "@jet-lab/jet-client-web": "*",
     "@jet-lab/margin": "*",
     "@jet-lab/store": "*",
     "@orca-so/stablecurve": "^1.0.6",
