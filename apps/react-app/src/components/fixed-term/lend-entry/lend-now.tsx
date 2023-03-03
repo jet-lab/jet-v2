@@ -24,6 +24,7 @@ import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@sta
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
+import { LoadingOutlined } from '@ant-design/icons';
 
 interface RequestLoanProps {
   decimals: number;
@@ -58,6 +59,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const [forecast, setForecast] = useState<Forecast>();
 
   const { cluster, explorer } = useJetStore(state => state.settings);
+
+  const [pending, setPending] = useState(false)
 
   const disabled =
     !marginAccount ||
@@ -111,6 +114,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   };
 
   const marketLendOrder = async () => {
+    setPending(true)
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -131,6 +135,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
+        setPending(false)
       }, 2000); // TODO: Ugly and unneded. update when websocket is fully integrated
     } catch (e: any) {
       notify(
@@ -139,6 +144,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
+      setPending(false)
       throw e;
     }
   };
@@ -214,8 +220,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <span>Off</span>
         </div>
       </div>
-      <Button className="submit-button" disabled={disabled} onClick={marketLendOrder}>
-        Lend {marketToString(marketAndConfig.config)}
+      <Button className="submit-button" disabled={disabled || pending} onClick={marketLendOrder}>
+      {pending ? <><LoadingOutlined />Sending transaction</> : `Lend ${marketToString(marketAndConfig.config)}`}
       </Button>
     </div>
   );
