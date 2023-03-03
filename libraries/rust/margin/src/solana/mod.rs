@@ -38,10 +38,9 @@ pub mod keypair {
 
 /// missing implementations for Pubkey
 pub mod pubkey {
+    use crate::seal;
     use solana_sdk::pubkey::Pubkey;
     use spl_associated_token_account::get_associated_token_address;
-
-    use crate::seal;
 
     /// provides or_ata method for Option<Pubkey>
     pub trait OrAta: Sealed {
