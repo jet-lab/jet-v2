@@ -77,14 +77,14 @@ describe('Fixed Term Market', () => {
       const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
       amountInput.click()
       amountInput.type(lendAmtString);
-      amountInput.clear()
+      amountInput.blur()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
       interestInput.click()
       interestInput.type(interestString);
-      interestInput.clear()
+      interestInput.blur()
     });
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
@@ -110,14 +110,14 @@ describe('Fixed Term Market', () => {
       const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
       amountInput.click()
       amountInput.type(lendAmtString);
-      amountInput.clear()
+      amountInput.blur()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
       interestInput.click()
       interestInput.type(interestString);
-      interestInput.clear()
+      interestInput.blur()
     });
     
     it('clicks the button once enabled', () => {
@@ -149,14 +149,14 @@ describe('Fixed Term Market', () => {
       const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
       amountInput.click()
       amountInput.type(borrowAmtString);
-      amountInput.clear()
+      amountInput.blur()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
       interestInput.click()
       interestInput.type(interestString);
-      interestInput.clear()
+      interestInput.blur()
     });
     
     it('clicks the button once enabled', () => {
@@ -183,14 +183,14 @@ describe('Fixed Term Market', () => {
       const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
       amountInput.click()
       amountInput.type(borrowAmtString);
-      amountInput.clear()
+      amountInput.blur()
     });
 
     it('inputs the interest rate', () => {
       const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
       interestInput.click()
       interestInput.type(interestString);
-      interestInput.clear()
+      interestInput.blur()
     });
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
@@ -222,7 +222,7 @@ describe('Fixed Term Market', () => {
       const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
       amountInput.click();
       amountInput.type(lendAmtString);
-      amountInput.clear();
+      amountInput.blur();
     });
 
     it('submits the order', () => {
@@ -254,7 +254,7 @@ describe('Fixed Term Market', () => {
       const amountInput = cy.get('.fixed-term .borrow-now .input-amount input').should('not.be.disabled');
       amountInput.click();
       amountInput.type(lendAmtString);
-      amountInput.clear();
+      amountInput.blur();
     });
     it('submits the transaction', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
@@ -291,7 +291,7 @@ describe('Fixed Term Market', () => {
       const repayInput = cy.get('.assets-to-settle input').should('not.be.disabled');
       repayInput.click();
       repayInput.type('110');
-      repayInput.clear()
+      repayInput.blur()
     });
 
     it('submits the order', () => {
