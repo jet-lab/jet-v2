@@ -186,6 +186,23 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
 
+  // for test debugging
+  useEffect(() => {
+    if(!amount.isZero() && !basisPoints.isZero() && disabled) {
+      console.table({
+        hasMarginAccount: !!marginAccount,
+        hasPublicKey: !!wallet.publicKey,
+        hasCurrentPool: !!currentPool,
+        hasEnoughCollateral: hasEnoughCollateral,
+        poolsAvailable: pools?.tokenPools.length || 0,
+        basisPoints: basisPoints.toNumber(),
+        amountSelected: amount.toNumber(),
+        wouldSelfMatch: forecast?.selfMatch,
+        collateral: effectiveCollateral
+      })
+    }
+  }, [disabled, amount, basisPoints])
+
   return (
     <div className="fixed-term order-entry-body">
       <div className="request-loan fixed-order-entry-fields">

@@ -157,6 +157,22 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 
+
+  // for test debugging
+  useEffect(() => {
+    if(!amount.isZero() && disabled) {
+      console.table({
+        hasMarginAccount: !!marginAccount,
+        hasPublicKey: !!wallet.publicKey,
+        hasCurrentPool: !!currentPool,
+        hasEnoughTokens: hasEnoughTokens,
+        poolsAvailable: pools?.tokenPools.length || 0,
+        amountSelected: amount.toNumber(),
+        wouldSelfMatch: forecast?.selfMatch,
+      })
+    }
+  }, [disabled, amount])
+
   return (
     <div className="fixed-term order-entry-body">
       <div className="lend-now fixed-order-entry-fields">
