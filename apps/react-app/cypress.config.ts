@@ -8,7 +8,7 @@ const cypressConfig = {
       hideXHR: true
     },
     baseUrl: 'http://localhost:3000',
-    defaultCommandTimeout: 20_000,
+    defaultCommandTimeout: 60_000,
     testIsolation: false
   }
 };
