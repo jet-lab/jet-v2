@@ -21,7 +21,7 @@ use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
     solana::{
-        keypair::clone,
+        keypair::KeypairExt,
         transaction::{InverseSendTransactionBuilder, SendTransactionBuilder, WithSigner},
     },
     tx_builder::fixed_term::FixedTermPositionRefresher,
@@ -711,7 +711,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         .proxy
         .proxy
         .create_deposit_position(mint)
-        .with_signers(&[clone(&borrower.owner)])
+        .with_signers(&[borrower.owner.clone()])
         .send_and_confirm(&ctx.rpc)
         .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;

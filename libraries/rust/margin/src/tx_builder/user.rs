@@ -40,6 +40,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use crate::cat;
 use crate::lookup_tables::LookupTable;
 use crate::margin_integrator::PositionRefresher;
+use crate::solana::pubkey::OrAta;
 use crate::solana::transaction::WithSigner;
 use crate::util::data::Join;
 use crate::{
@@ -300,24 +301,25 @@ impl MarginTxBuilder {
     /// `token_mint` - The address of the mint for the tokens being deposited
     /// `source` - The token account that the deposit will be transfered from
     /// `amount` - The amount of tokens to deposit
-    pub async fn deposit(
+    pub async fn pool_deposit(
         &self,
         token_mint: &Pubkey,
-        source: &Pubkey,
+        source: Option<Pubkey>,
         change: TokenChange,
-    ) -> Result<Transaction> {
+        authority: MarginActionAuthority,
+    ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
-
+        let authority = authority.resolve(&self.ix);
+        let source = source.or_ata(&authority, &token_mint);
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let position = self
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
+        let inner_ix = pool.deposit(authority, source, position, change);
+        // let wrapped_ix = self.smart_invoke(inner_ix);
+        instructions.push(self.smart_invoke(inner_ix));
 
-        instructions.push(pool.deposit(self.ix.owner, *source, position, change));
-
-        instructions.push(self.ix.update_position_balance(position));
-
-        self.create_transaction(&instructions).await
+        Ok(self.create_transaction_builder(&instructions))
     }
 
     /// Transaction to borrow tokens in a margin account
@@ -379,52 +381,27 @@ impl MarginTxBuilder {
         Ok(self.create_transaction_builder(&instructions))
     }
 
-    /// Transaction to repay a loan of tokens in a margin account from a token account
+    /// Repay a loan from a token account of the underlying
     ///
     /// # Params
     ///
     /// `token_mint` - The address of the mint for the tokens that were borrowed
-    /// `source` - The token account the repayment will be made from
-    /// `amount` - The amount of tokens to repay
-    pub async fn repay(
-        &self,
-        token_mint: &Pubkey,
-        source: &Pubkey,
-        change: TokenChange,
-    ) -> Result<Transaction> {
-        let mut instructions = vec![];
-
-        let pool = MarginPoolIxBuilder::new(*token_mint);
-        let loan_position = self
-            .get_or_create_pool_loan_position(&mut instructions, &pool)
-            .await?;
-
-        let inner_repay_ix = pool.repay(self.ix.owner, *source, loan_position, change);
-
-        instructions.push(inner_repay_ix);
-        instructions.push(self.ix.update_position_balance(loan_position));
-
-        self.create_transaction(&instructions).await
-    }
-
-    /// Repay a loan from an ATA that is owned by the same margin account
-    ///
-    /// # Params
-    ///
-    /// `margin_account` - The margin account who owns the loan and the tokens to repay
-    /// `token_mint` - The address of the mint for the tokens that were borrowed
+    /// `source` - Token account where funds originate, defaults to authority's ATA
     /// `change` - The amount of tokens to repay
-    pub fn repay_from_margin(
+    /// `authority` - The margin account who owns the loan and the tokens to repay
+    pub fn pool_repay(
         &self,
-        margin_account: &Pubkey,
         token_mint: Pubkey,
+        source: Option<Pubkey>,
         change: TokenChange,
+        authority: MarginActionAuthority,
     ) -> TransactionBuilder {
-        let source = get_associated_token_address(margin_account, &token_mint);
+        let authority = authority.resolve(&self.ix);
+        let source = source.or_ata(&authority, &token_mint);
         let pool = MarginPoolIxBuilder::new(token_mint);
         let loan_notes = derive_loan_account(&self.ix.address, &pool.loan_note_mint);
-        let inner_ix = pool.repay(self.ix.address, source, loan_notes, change);
-        let wrapped_ix = self.adapter_invoke_ix(inner_ix);
+        let inner_ix = pool.repay(authority, source, loan_notes, change);
+        let wrapped_ix = self.smart_invoke(inner_ix);
 
         self.create_transaction_builder(&[wrapped_ix])
     }
@@ -905,6 +882,60 @@ impl MarginTxBuilder {
         match self.is_liquidator {
             true => self.ix.liquidator_invoke(inner),
             false => self.ix.adapter_invoke(inner),
+        }
+    }
+
+    /// If the margin account needs to sign, then use adapter or liquidator
+    /// invoke, otherwise use accounting invoke.
+    fn smart_invoke(&self, inner: Instruction) -> Instruction {
+        if inner
+            .accounts
+            .iter()
+            .any(|a| a.is_signer && self.ix.address == a.pubkey)
+        {
+            self.adapter_invoke_ix(inner)
+        } else {
+            self.ix.accounting_invoke(inner)
+        }
+    }
+}
+
+/// Instructions invoked through a margin account may require a signer that
+/// could potentially be any account, depending on the situation. For example, a
+/// deposit into the margin account requires a signer from the source account,
+/// which could be anyone.
+///
+/// Most cases follow one of a few common patterns though. For example the
+/// margin account authority or the margin account itself is most likely to be
+/// the account authorizing a deposit. But in theory it could be anyone.
+///
+/// Rather than requiring the caller to always specify the address of the
+/// authority of this action, we can leverage some of the data that is already
+/// encapsulated within the MarginIxBuilder. So the caller of the function can
+/// just specify that it wants to use a concept, such as "authority", rather
+/// than having to struggle to identify the authority.
+pub enum MarginActionAuthority {
+    /// - The builder's configured "authority" for the margin account.
+    /// - Typically, the acccount owner or its liquidator, depending on context.
+    /// - See method: `MarginIxBuilder::authority()`.
+    /// - In theory, this is *expected* to be whatever the actual MarginAccount
+    ///   on chain is configured to require as the authority for user actions,
+    ///   but there is nothing in MarginIxBuilder that guarantees its
+    ///   "authority" is consistent with the on-chain state.
+    AccountAuthority,
+    /// The margin account itself is the authority, so there is no external
+    /// signature needed.
+    MarginAccount,
+    /// Some other account that the tx_builder doesn't know about needs to sign.
+    AdHoc(Pubkey),
+}
+
+impl MarginActionAuthority {
+    fn resolve(self, ixb: &MarginIxBuilder) -> Pubkey {
+        match self {
+            MarginActionAuthority::AccountAuthority => ixb.authority(),
+            MarginActionAuthority::MarginAccount => ixb.address,
+            MarginActionAuthority::AdHoc(adhoc) => adhoc,
         }
     }
 }

@@ -50,7 +50,8 @@ use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 use jet_control::TokenMetadataParams;
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::{
-    global_initialize_instructions, AirspaceAdmin, MarginTxBuilder, TokenDepositsConfig,
+    global_initialize_instructions, AirspaceAdmin, MarginActionAuthority, MarginTxBuilder,
+    TokenDepositsConfig,
 };
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -444,14 +445,27 @@ impl MarginUser {
             .map(|_| ())
     }
 
+    // todo this is a leaky abstraction because it allows a source to be
+    // specified without allowing the caller to specify the authority. may be
+    // better to expose the authority as well.
     pub async fn deposit(
         &self,
         mint: &Pubkey,
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.deposit(mint, source, change).await?)
-            .await
+        self.tx
+            .pool_deposit(
+                mint,
+                Some(*source),
+                change,
+                MarginActionAuthority::AccountAuthority,
+            )
+            .await?
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
     }
 
     pub async fn withdraw(
@@ -477,14 +491,25 @@ impl MarginUser {
             .map(|_| ())
     }
 
+    // todo this is a leaky abstraction because it allows a source to be
+    // specified without allowing the caller to specify the authority. may be
+    // better to expose the authority as well.
     pub async fn repay(
         &self,
         mint: &Pubkey,
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.repay(mint, source, change).await?)
-            .await
+        self.tx
+            .pool_repay(
+                *mint,
+                Some(*source),
+                change,
+                MarginActionAuthority::AccountAuthority,
+            )
+            .send_and_confirm(&self.rpc)
+            .await?;
+        Ok(())
     }
 
     /// Swap between two tokens using a swap pool.
