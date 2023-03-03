@@ -15,13 +15,12 @@ macro_rules! seal {
     };
     ($Sealed:ident: $($Type:ty),+$(,)?) => {
         paste::paste! {
-            #[allow(non_snake_case)]
-            mod [<mod_for_ $Sealed>] {
+            mod [<mod_for_ $Sealed:snake>] {
                 use super::*;
                 pub trait $Sealed {}
                 $(impl $Sealed for $Type {})+
             }
-            use [<mod_for_ $Sealed>]::$Sealed;
+            use [<mod_for_ $Sealed:snake>]::$Sealed;
         }
     };
 }
