@@ -189,17 +189,17 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   // for test debugging
   useEffect(() => {
     if(!amount.isZero() && !basisPoints.isZero() && disabled) {
-      console.table({
-        hasMarginAccount: !!marginAccount,
-        hasPublicKey: !!wallet.publicKey,
-        hasCurrentPool: !!currentPool,
-        hasEnoughCollateral: hasEnoughCollateral,
-        poolsAvailable: pools?.tokenPools.length || 0,
-        basisPoints: basisPoints.toNumber(),
-        amountSelected: amount.toNumber(),
-        wouldSelfMatch: forecast?.selfMatch,
-        collateral: effectiveCollateral
-      })
+      console.log(
+        'hasMarginAccount', !!marginAccount,
+        'hasPublicKey', !!wallet.publicKey,
+        'hasCurrentPool', !!currentPool,
+        'hasEnoughCollateral', hasEnoughCollateral,
+        'poolsAvailable', pools?.tokenPools.length || 0,
+        'basisPoints', basisPoints.toNumber(),
+        'amountSelected', amount.toNumber(),
+        'wouldSelfMatch', forecast?.selfMatch,
+        'collateral', effectiveCollateral
+      )
     }
   }, [disabled, amount, basisPoints])
 

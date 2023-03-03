@@ -141,16 +141,16 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   // for test debugging
   useEffect(() => {
     if(!amount.isZero() && disabled) {
-      console.table({
-        hasMarginAccount: !!marginAccount,
-        hasPublicKey: !!wallet.publicKey,
-        hasCurrentPool: !!currentPool,
-        hasEnoughCollateral: hasEnoughCollateral,
-        poolsAvailable: pools?.tokenPools.length || 0,
-        amountSelected: amount.toNumber(),
-        wouldSelfMatch: forecast?.selfMatch,
-        collateral: effectiveCollateral
-      })
+      console.table(
+        'hasMarginAccount', !!marginAccount,
+        'hasPublicKey', !!wallet.publicKey,
+        'hasCurrentPool', !!currentPool,
+        'hasEnoughCollateral', hasEnoughCollateral,
+        'poolsAvailable', pools?.tokenPools.length || 0,
+        'amountSelected', amount.toNumber(),
+        'wouldSelfMatch', forecast?.selfMatch,
+        'collateral', effectiveCollateral
+      )
     }
   }, [disabled, amount])
 
