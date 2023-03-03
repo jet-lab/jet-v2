@@ -15,8 +15,8 @@ services:
       - POSTGRES_PASSWORD=password123
       - POSTGRES_DB=flightlogs
     restart: always
-    ports:
-      - 5432:5432
+    # ports:
+    #   - 5432:5432
   api:
     image: gcr.io/kubernetes-608504/jet-data-v2-black-box:devnet
     environment:
