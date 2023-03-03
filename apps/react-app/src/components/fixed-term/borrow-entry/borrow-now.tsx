@@ -73,7 +73,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const tokenPrice =
     prices && prices[marketAndConfig.token.mint.toString()]
       ? prices[marketAndConfig.token.mint.toString()]
-      : { price: Infinity };
+      : { price: 0 };
   const hasEnoughCollateral = new TokenAmount(amount, token.decimals).tokens * tokenPrice.price <= effectiveCollateral;
 
   const disabled =
