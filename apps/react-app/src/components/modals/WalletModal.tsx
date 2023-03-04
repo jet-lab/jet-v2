@@ -75,25 +75,18 @@ export function WalletModal(): JSX.Element {
           <Text>{dictionary.settingsModal.wallet.worldOfDefi}</Text>
           <Divider />
           <div className="wallets flex-centered column">
-            {wallet.wallets
-              .filter(wallet => wallet.adapter.name !== 'Sollet')
-              .map(({ adapter }) => (
-                <div
-                  key={adapter.name}
-                  className={getWalletClassNames(adapter.name)}
-                  onClick={() => wallet.select(adapter.name)}>
-                  <div className="flex-centered">
-                    <img
-                      src={getWalletLogoPath(adapter.name)}
-                      width="30px"
-                      height="auto"
-                      alt={`${adapter.name} Logo`}
-                    />
-                    <p className="center-text">{adapter.name}</p>
-                  </div>
-                  <ArrowIcon width="25px" />
+            {wallet.wallets.map(({ adapter }) => (
+              <div
+                key={adapter.name}
+                className={getWalletClassNames(adapter.name)}
+                onClick={() => wallet.select(adapter.name)}>
+                <div className="flex-centered">
+                  <img src={getWalletLogoPath(adapter.name)} width="30px" height="auto" alt={`${adapter.name} Logo`} />
+                  <p className="center-text">{adapter.name}</p>
                 </div>
-              ))}
+                <ArrowIcon width="25px" />
+              </div>
+            ))}
           </div>
         </div>
       </Modal>
