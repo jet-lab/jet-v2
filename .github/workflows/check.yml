@@ -93,16 +93,14 @@ jobs:
           dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
           df -h
           echo "Removing large packages"
-          sudo apt-get remove -y '^gcc-*'
-          sudo apt-get remove -y '^g++-*'
-          sudo apt-get remove -y '^gfortran-*'
-          sudo apt-get remove -y '^cpp-*'
-          sudo apt-get remove -y '^dotnet-.*'
-          sudo apt-get remove -y '^llvm-.*'
-          sudo apt-get remove -y 'temurin-*-jdk'
-          sudo apt-get remove -y 'dotnet-sdk-*'
-          sudo apt-get remove -y 'mysql-server-core-*'
-          sudo apt-get remove -y azure-cli google-cloud-sdk microsoft-edge-stable hhvm google-chrome-stable firefox powershell mono-devel snapd
+          sudo apt-get remove -y '^gfortran-*' || echo can't remove  '^gfortran-*' 
+          sudo apt-get remove -y '^cpp-*' || echo can't remove  '^cpp-*' 
+          sudo apt-get remove -y '^dotnet-.*' || echo can't remove  '^dotnet-.*' 
+          sudo apt-get remove -y '^llvm-.*' || echo can't remove  '^llvm-.*' 
+          sudo apt-get remove -y 'temurin-*-jdk' || echo can't remove  'temurin-*-jdk' 
+          sudo apt-get remove -y 'dotnet-sdk-*' || echo can't remove  'dotnet-sdk-*' 
+          sudo apt-get remove -y 'mysql-server-core-*' || echo can't remove  'mysql-server-core-*' 
+          sudo apt-get remove -y azure-cli google-cloud-sdk microsoft-edge-stable hhvm google-chrome-stable firefox powershell mono-devel snapd || echo can't remove 'azure-cli google-cloud-sdk microsoft-edge-stable hhvm google-chrome-stable firefox powershell mono-devel snapd'
           sudo apt-get autoremove -y
           sudo apt-get clean
           df -h
