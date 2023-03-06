@@ -4,7 +4,7 @@ const cypressConfig = {
     screenshotOnRunFailure: true,
     video: true,
     viewportWidth: 1_920,
-    viewportHeight: 1_080,
+    viewportHeight: 1_280,
     env: {
       hideXHR: true
     },

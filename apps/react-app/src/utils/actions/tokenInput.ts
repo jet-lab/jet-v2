@@ -19,7 +19,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const { selectedPoolKey, pools } = useJetStore(state => ({ selectedPoolKey: state.selectedPoolKey, pools: state.pools }));
   const currentPool = useMemo(
     () =>
-      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+      pools && Object.values(pools).find(pool => pool.address === selectedPoolKey),
     [selectedPoolKey, pools]
   );
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -27,6 +27,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const currentAction = useRecoilValue(CurrentAction);
   const newAccountModalOpen = useRecoilValue(NewAccountModal);
   const poolPosition = marginAccount && currentPool?.symbol && marginAccount.poolPositions[currentPool.symbol];
+
   if (!pools || !currentPool || !marginAccount) {
     return '';
   }

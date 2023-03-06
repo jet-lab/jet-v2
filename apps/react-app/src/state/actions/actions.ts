@@ -13,9 +13,9 @@ export const actionOptions: PoolAction[] = [
   // 'transfer'
 ];
 
-export const CurrentAction = atom({
+export const CurrentAction = atom<PoolAction | undefined>({
   key: 'currentAction',
-  default: undefined as PoolAction | undefined
+  default: undefined
 });
 
 // Any time we need to refresh data, trigger this state change throughout relevant Wrappers
