@@ -10,14 +10,13 @@
     "build": "rm -rf ./build && webpack --mode production && cp -r public/* build",
     "clean": "rm -rf ./build & rm -rf .turbo",
     "dev": "webpack serve --mode development",
-    "e2e": "ELECTRON_ENABLE_LOGGING=1 cypress run --headless",
+    "e2e": "ELECTRON_ENABLE_LOGGING=1 cypress run --headless --record",
     "e2e:ci": "start-server-and-test start http://localhost:3000 e2e",
     "e2e:gui": "yarn cypress open",
     "start": "serve -s build --no-request-logging",
     "analyze": "ANALYZE=true webpack --profile --progress --mode production",
     "fmt": "prettier --check .",
-    "fmt:fix": "prettier --write .",
-    "register-cypress-runner": "npx cypress run --record"
+    "fmt:fix": "prettier --write ."
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",

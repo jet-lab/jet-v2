@@ -26,5 +26,4 @@ cp apps/react-app/public/localnet.config.json apps/react-app/build/localnet.conf
 
 cp apps/react-app/public/localnet.config.legacy.json apps/react-app/build/localnet.config.legacy.json
 
-yarn --cwd apps/react-app register-cypress-runner
 yarn --cwd apps/react-app e2e:ci
