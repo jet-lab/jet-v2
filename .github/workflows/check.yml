@@ -182,9 +182,6 @@ jobs:
         with:
           key: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Inject Docker registry
-        run: sed -i 's!PLACEHOLDER!gcr.io/${{ secrets.GCP_PROJECT }}!g' ./.github/e2e-docker-compose.yml
-
       - name: Start data environment
         uses: isbang/compose-action@v1.4.1
         with:
