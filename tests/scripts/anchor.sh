@@ -27,7 +27,6 @@ cp apps/react-app/public/localnet.config.json apps/react-app/build/localnet.conf
 cp apps/react-app/public/localnet.config.legacy.json apps/react-app/build/localnet.config.legacy.json
 
 cd apps/react-app
-npx cypress run --record --key fd8cb51f-aacc-4978-a8cc-6952192053aa
-
+npx cypress run --record
 cd ../..
 yarn --cwd apps/react-app e2e:ci
