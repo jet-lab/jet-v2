@@ -138,22 +138,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     }
   };
 
-  // for test debugging
-  useEffect(() => {
-    if(!amount.isZero() && disabled) {
-      console.log(
-        'hasMarginAccount', !!marginAccount,
-        'hasPublicKey', !!wallet.publicKey,
-        'hasCurrentPool', !!currentPool,
-        'hasEnoughCollateral', hasEnoughCollateral,
-        'poolsAvailable', pools?.tokenPools.length || 0,
-        'amountSelected', amount.toNumber(),
-        'wouldSelfMatch', forecast?.selfMatch,
-        'collateral', effectiveCollateral
-      )
-    }
-  }, [disabled, amount])
-
   const createBorrowOrder = async () => {
     setPending(true);
     let signature: string;

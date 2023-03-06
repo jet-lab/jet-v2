@@ -5,6 +5,7 @@ import { useJetStore } from '../store';
 
 let ws: WebSocket;
 export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
+  console.log('Connecting WS: ', cluster, wallet)
   if (ws) {
     ws.close();
   }
@@ -35,9 +36,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
       const subscriptionEvent: APPLICATION_WS_EVENTS = {
         type: 'SUBSCRIBE',
         payload: {
-          wallet,
-          // It's safe not to pass in margin accounts
-          margin_accounts: []
+          wallet
         }
       };
       ws.send(JSON.stringify(subscriptionEvent));
