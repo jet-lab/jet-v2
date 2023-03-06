@@ -93,11 +93,16 @@ jobs:
           dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
           df -h
           echo "Removing large packages"
-          sudo apt-get remove -y '^ghc-8.*'
+          sudo apt-get remove -y '^gcc-*'
+          sudo apt-get remove -y '^g++-*'
+          sudo apt-get remove -y '^gfortran-*'
+          sudo apt-get remove -y '^cpp-*'
           sudo apt-get remove -y '^dotnet-.*'
           sudo apt-get remove -y '^llvm-.*'
-          sudo apt-get remove -y 'php.*'
-          sudo apt-get remove -y azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel
+          sudo apt-get remove -y 'temurin-*-jdk'
+          sudo apt-get remove -y 'dotnet-sdk-*'
+          sudo apt-get remove -y 'mysql-server-core-*'
+          sudo apt-get remove -y azure-cli google-cloud-sdk microsoft-edge-stable hhvm google-chrome-stable firefox powershell mono-devel snapd
           sudo apt-get autoremove -y
           sudo apt-get clean
           df -h
