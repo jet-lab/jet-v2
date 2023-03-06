@@ -416,8 +416,13 @@ impl MarginUser {
     }
 
     pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.refresh_pool_position(token_mint).await?)
-            .await
+        self.tx
+            .refresh_pool_position(token_mint)
+            .await?
+            .with_signers(&[])
+            .send_and_confirm(&self.rpc)
+            .await?;
+        Ok(())
     }
 
     pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Signature>, Error> {

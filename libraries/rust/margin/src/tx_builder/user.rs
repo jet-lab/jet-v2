@@ -23,7 +23,7 @@ use async_trait::async_trait;
 use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
@@ -34,7 +34,7 @@ use solana_sdk::transaction::{Transaction, VersionedTransaction};
 use anchor_lang::{AccountDeserialize, Id};
 
 use jet_margin::{MarginAccount, TokenConfig, TokenKind, TokenOracle};
-use jet_margin_pool::TokenChange;
+use jet_margin_pool::{MarginPool, TokenChange};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
@@ -294,7 +294,12 @@ impl MarginTxBuilder {
         Ok(self.create_transaction_builder(&to_close))
     }
 
-    /// Transaction to deposit tokens into a margin account
+    /// Deposit tokens into a lending pool position owned by a margin account.
+    ///
+    /// Figures out if needed, and uses if so:
+    /// - adapter vs accounting invoke
+    /// - create position
+    /// - refresh position
     ///
     /// # Params
     ///
@@ -310,13 +315,16 @@ impl MarginTxBuilder {
     ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let authority = authority.resolve(&self.ix);
-        let source = source.or_ata(&authority, &token_mint);
+        let source = source.or_ata(&authority, token_mint);
         let pool = MarginPoolIxBuilder::new(*token_mint);
-        let position = self
-            .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
-            .await?;
+        let (position, maybe_create) = self.get_or_create_position(&pool.deposit_note_mint).await?;
         let inner_ix = pool.deposit(authority, source, position, change);
-        // let wrapped_ix = self.smart_invoke(inner_ix);
+        if let Some(create) = maybe_create {
+            instructions.push(create);
+            if self.ix.needs_signature(&inner_ix) {
+                instructions.push(self.refresh_pool_position(token_mint).await?);
+            }
+        }
         instructions.push(self.smart_invoke(inner_ix));
 
         Ok(self.create_transaction_builder(&instructions))
@@ -338,7 +346,7 @@ impl MarginTxBuilder {
         let token_metadata = self.get_token_metadata(token_mint).await?;
 
         let deposit_position = self
-            .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
+            .get_or_push_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let _ = self
             .get_or_create_pool_loan_position(&mut instructions, &pool)
@@ -369,7 +377,7 @@ impl MarginTxBuilder {
         let pool = MarginPoolIxBuilder::new(*token_mint);
 
         let deposit_position = self
-            .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
+            .get_or_push_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let _ = self
             .get_or_create_pool_loan_position(&mut instructions, &pool)
@@ -422,7 +430,7 @@ impl MarginTxBuilder {
         let pool = MarginPoolIxBuilder::new(*token_mint);
 
         let deposit_position = self
-            .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
+            .get_or_push_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
 
         let inner_withdraw_ix =
@@ -458,10 +466,10 @@ impl MarginTxBuilder {
         let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
 
         let source_position = self
-            .get_or_create_position(&mut instructions, &source_pool.deposit_note_mint)
+            .get_or_push_create_position(&mut instructions, &source_pool.deposit_note_mint)
             .await?;
         let destination_position = self
-            .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
+            .get_or_push_create_position(&mut instructions, &destination_pool.deposit_note_mint)
             .await?;
 
         let destination_metadata = self.get_token_metadata(destination_token_mint).await?;
@@ -558,7 +566,7 @@ impl MarginTxBuilder {
     async fn setup_swap(&self, builder: &MarginSwapRouteIxBuilder) -> Result<Vec<Instruction>> {
         let mut setup_instructions = vec![];
         for deposit_note_mint in builder.get_pool_note_mints() {
-            self.get_or_create_position(&mut setup_instructions, deposit_note_mint)
+            self.get_or_push_create_position(&mut setup_instructions, deposit_note_mint)
                 .await?;
         }
         for token_mint in builder.get_spl_token_mints() {
@@ -624,14 +632,13 @@ impl MarginTxBuilder {
     }
 
     /// Refresh a user's position in a margin pool
-    pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<Transaction> {
-        let metadata = self.get_token_metadata(token_mint).await?;
+    pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<Instruction> {
         let ix_builder = MarginPoolIxBuilder::new(*token_mint);
-        let ix = self.ix.adapter_invoke(
-            ix_builder.margin_refresh_position(self.ix.address, metadata.pyth_price),
-        );
+        let pool_oracle = self.get_pool(token_mint).await?.token_price_oracle;
 
-        self.create_transaction(&[ix]).await
+        Ok(self
+            .ix
+            .accounting_invoke(ix_builder.margin_refresh_position(self.ix.address, pool_oracle)))
     }
 
     /// Append instructions to refresh pool positions to instructions
@@ -807,6 +814,17 @@ impl MarginTxBuilder {
         }
     }
 
+    async fn get_pool(&self, token_mint: &Pubkey) -> Result<MarginPool> {
+        let pool_builder = MarginPoolIxBuilder::new(*token_mint);
+        let account = self
+            .rpc
+            .get_account(&pool_builder.address)
+            .await?
+            .context("could not find pool")?;
+
+        Ok(MarginPool::try_deserialize(&mut &account.data[..])?)
+    }
+
     async fn get_position_metadata(
         &self,
         position_token_mint: &Pubkey,
@@ -844,19 +862,38 @@ impl MarginTxBuilder {
         }
     }
 
-    async fn get_or_create_position(
+    async fn get_or_push_create_position(
         &self,
         instructions: &mut Vec<Instruction>,
         token_mint: &Pubkey,
     ) -> Result<Pubkey> {
-        let state = self.get_account_state().await?;
-        let ix_register = self.ix.register_position(*token_mint);
-
-        if !state.positions().any(|p| p.token == *token_mint) {
-            instructions.push(ix_register);
+        let (address, create) = self.get_or_create_position(token_mint).await?;
+        if let Some(ix) = create {
+            instructions.push(ix);
         }
+        Ok(address)
+    }
 
-        Ok(derive_position_token_account(&self.ix.address, token_mint))
+    async fn get_or_create_position(
+        &self,
+        token_mint: &Pubkey,
+    ) -> Result<(Pubkey, Option<Instruction>)> {
+        match self.get_position_token_account(token_mint).await? {
+            Some(address) => Ok((address, None)),
+            None => Ok((
+                derive_position_token_account(&self.ix.address, token_mint),
+                Some(self.ix.register_position(*token_mint)),
+            )),
+        }
+    }
+
+    async fn get_position_token_account(&self, token_mint: &Pubkey) -> Result<Option<Pubkey>> {
+        Ok(self
+            .get_account_state()
+            .await?
+            .positions()
+            .find(|p| p.token == *token_mint)
+            .map(|p| p.address))
     }
 
     async fn get_or_create_pool_loan_position(
@@ -888,11 +925,7 @@ impl MarginTxBuilder {
     /// If the margin account needs to sign, then use adapter or liquidator
     /// invoke, otherwise use accounting invoke.
     fn smart_invoke(&self, inner: Instruction) -> Instruction {
-        if inner
-            .accounts
-            .iter()
-            .any(|a| a.is_signer && self.ix.address == a.pubkey)
-        {
+        if self.ix.needs_signature(&inner) {
             self.adapter_invoke_ix(inner)
         } else {
             self.ix.accounting_invoke(inner)
