@@ -585,6 +585,26 @@ impl TestManager {
             )
             .map_err(anyhow::Error::new)
     }
+
+    pub async fn simulate_new_order_with_fees(
+        &self,
+        mut params: OrderParams,
+        side: agnostic_orderbook::state::Side,
+    ) -> Result<OrderSummary> {
+        let mut eq = self.load_event_queue().await?;
+        let mut orderbook = self.load_orderbook().await?;
+        let market = self.load_market().await?;
+        params.max_ticket_qty = market.borrow_order_qty(params.max_ticket_qty);
+        params.max_underlying_token_qty = market.borrow_order_qty(params.max_underlying_token_qty);
+        orderbook
+            .inner()?
+            .new_order(
+                params.as_new_order_params(side, CallbackInfo::default()),
+                &mut eq.inner()?,
+                MIN_ORDER_SIZE,
+            )
+            .map_err(anyhow::Error::new)
+    }
 }
 
 #[derive(Clone)]

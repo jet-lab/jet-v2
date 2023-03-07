@@ -370,7 +370,7 @@ impl TermLoan {
     /// a fp32 value
     pub fn price(&self) -> Result<Fp32> {
         let base = self.principal.safe_add(self.interest)?;
-        Ok(Fp32::from(base) / self.principal)
+        Ok(Fp32::from(self.principal) / base)
     }
 
     /// Determines the loan tenor
