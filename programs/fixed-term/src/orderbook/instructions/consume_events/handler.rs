@@ -135,7 +135,7 @@ fn handle_margin_fill<'info>(
             (OrderType::MarginLend, sequence_number, tenor)
         }
 
-        // maker has borrowed tokens from the maker
+        // maker has borrowed tokens from the taker
         Side::Ask => {
             user.assets.reduce_order(quote_size);
             let tenor = market.load()?.borrow_tenor;
@@ -150,8 +150,8 @@ fn handle_margin_fill<'info>(
                 )?;
 
                 user.assets.entitled_tokens.try_add_assign(disburse)?;
-
-                let maturation_timestamp = Clock::get()?.unix_timestamp.safe_add(tenor as i64)?;
+                let strike_timestamp = Clock::get()?.unix_timestamp;
+                let maturation_timestamp = strike_timestamp.safe_add(tenor as i64)?;
                 let sequence_number = user
                     .debt
                     .new_term_loan_from_fill(base_size, maturation_timestamp)?;
@@ -165,6 +165,9 @@ fn handle_margin_fill<'info>(
                     payer,
                     order_tag: info.order_tag,
                     maturation_timestamp,
+                    strike_timestamp,
+                    principal: quote_size,
+                    interest: base_size.safe_sub(quote_size)?,
                     balance: base_size,
                     flags,
                 };
@@ -266,7 +269,7 @@ fn handle_signer_fill<'info>(
                     .write(&mut deposit)?;
                 }
                 FillAccount::Token(token_account) => {
-                    ctx.mint(&ctx.accounts.ticket_mint, token_account, base_size)?
+                    ctx.mint(&ctx.accounts.ticket_mint, token_account, base_size)?;
                 }
             }
 

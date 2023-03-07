@@ -2713,6 +2713,7 @@ dependencies = [
  "borsh 0.9.3",
  "bytemuck",
  "num-traits",
+ "rand_chacha 0.3.1",
  "solana-program",
  "static_assertions",
  "thiserror",
