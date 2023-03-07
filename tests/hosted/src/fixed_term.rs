@@ -114,27 +114,30 @@ impl Clone for TestManager {
 
 impl TestManager {
     pub async fn full(client: &MarginTestContext) -> Result<Self> {
-        let mint = client.solana.generate_key();
+        let (mint, mint_authority) = generate_test_mint(&client.solana).await?;
         let oracle = TokenManager::new(client.solana.clone())
-            .create_oracle(&mint.pubkey())
+            .create_oracle(&mint)
             .await?;
         let ticket_mint = fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_MINT,
-            derive_market(&client.margin.airspace(), &mint.pubkey(), MARKET_SEED).as_ref(),
+            derive_market(&client.margin.airspace(), &mint, MARKET_SEED).as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&ticket_mint)
             .await?;
-        TestManager::new(
+
+        Self::new(
             client.solana.clone(),
             client.margin.airspace(),
             &mint,
+            mint_authority,
             &client.generate_key(),
             &client.generate_key(),
             &client.generate_key(),
             oracle.price,
             ticket_oracle.price,
         )
+        .with_market()
         .await?
         .with_crank()
         .await?
@@ -143,61 +146,17 @@ impl TestManager {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn new(
-        client: SolanaTestContext,
-        airspace: Pubkey,
-        mint: &Keypair,
-        eq_kp: &Keypair,
-        bids_kp: &Keypair,
-        asks_kp: &Keypair,
-        underlying_oracle: Pubkey,
-        ticket_oracle: Pubkey,
-    ) -> Result<Self> {
-        let mint_authority = client.generate_key();
-        let payer = client.rpc.payer();
-        let recent_blockhash = client.rpc.get_latest_blockhash().await?;
-        let rent = client
-            .rpc
-            .get_minimum_balance_for_rent_exemption(Mint::LEN)
-            .await?;
-        let transaction = initialize_test_mint_transaction(
-            mint,
-            payer,
-            &mint_authority.pubkey(),
-            6,
-            rent,
-            recent_blockhash,
-        );
-        client
-            .rpc
-            .send_and_confirm_transaction(&transaction)
-            .await?;
-        Self::new_for_existing_mint(
-            client,
-            airspace,
-            &mint.pubkey(),
-            eq_kp,
-            bids_kp,
-            asks_kp,
-            mint_authority,
-            underlying_oracle,
-            ticket_oracle,
-        )
-        .await
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub async fn new_for_existing_mint(
+    pub fn new(
         client: SolanaTestContext,
         airspace: Pubkey,
         mint: &Pubkey,
+        mint_authority: Keypair,
         eq_kp: &Keypair,
         bids_kp: &Keypair,
         asks_kp: &Keypair,
-        mint_authority: Keypair,
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
-    ) -> Result<Self> {
+    ) -> Self {
         let SolanaTestContext {
             rpc: client,
             keygen,
@@ -219,7 +178,7 @@ impl TestManager {
                 event_queue: eq_kp.pubkey(),
             },
         );
-        let this = Self {
+        Self {
             client: client.clone(),
             event_consumer: Arc::new(EventConsumer::new(client.clone())),
             keygen,
@@ -230,40 +189,50 @@ impl TestManager {
             mint_authority,
             margin_accounts_to_settle: Default::default(),
             airspace,
-        };
+        }
+    }
 
+    pub async fn with_market(self) -> Result<Self> {
+        self.init_market().await?;
+        Ok(self)
+    }
+
+    pub async fn init_market(&self) -> Result<()> {
         let init_eq = {
-            let rent = this
+            let rent = self
                 .client
                 .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
                 .await?;
-            this.ix_builder
-                .initialize_event_queue(&eq_kp.pubkey(), EVENT_QUEUE_CAPACITY, rent)
+            self.ix_builder.initialize_event_queue(
+                &self.event_queue.pubkey(),
+                EVENT_QUEUE_CAPACITY,
+                rent,
+            )
         };
 
         let init_bids = {
-            let rent = this
+            let rent = self
                 .client
                 .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
-            this.ix_builder
-                .initialize_orderbook_slab(&bids_kp.pubkey(), ORDERBOOK_CAPACITY, rent)
+            self.ix_builder
+                .initialize_orderbook_slab(&self.bids.pubkey(), ORDERBOOK_CAPACITY, rent)
         };
         let init_asks = {
-            let rent = this
+            let rent = self
                 .client
                 .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
-            this.ix_builder
-                .initialize_orderbook_slab(&asks_kp.pubkey(), ORDERBOOK_CAPACITY, rent)
+            self.ix_builder
+                .initialize_orderbook_slab(&self.asks.pubkey(), ORDERBOOK_CAPACITY, rent)
         };
 
-        let payer = this.client.payer().pubkey();
-        let init_fee_destination = this
+        let payer = self.client.payer().pubkey();
+        let init_fee_destination = self
             .ix_builder
             .init_default_fee_destination(&payer)
             .unwrap();
-        let init_manager = this.ix_builder.initialize_market(
+        let init_manager = self.ix_builder.initialize_market(
             payer,
             MARKET_TAG,
             MARKET_SEED,
@@ -271,19 +240,19 @@ impl TestManager {
             LEND_TENOR,
             ORIGINATION_FEE,
         );
-        let init_orderbook = this
+        let init_orderbook = self
             .ix_builder
-            .initialize_orderbook(this.client.payer().pubkey(), MIN_ORDER_SIZE);
+            .initialize_orderbook(self.client.payer().pubkey(), MIN_ORDER_SIZE);
 
-        this.sign_send_transaction(
+        self.sign_send_transaction(
             &[init_eq, init_bids, init_asks, init_fee_destination],
-            &[eq_kp, bids_kp, asks_kp],
+            &[&self.event_queue, &self.bids, &self.asks],
         )
         .await?;
-        this.sign_send_transaction(&[init_manager, init_orderbook], &[])
+        self.sign_send_transaction(&[init_manager, init_orderbook], &[])
             .await?;
 
-        Ok(this)
+        Ok(())
     }
 
     pub async fn with_crank(self) -> Result<Self> {
@@ -1092,6 +1061,35 @@ impl OrderAmount {
             auto_roll: false,
         }
     }
+}
+
+pub async fn generate_test_mint(client: &SolanaTestContext) -> Result<(Pubkey, Keypair)> {
+    let mint = client.generate_key();
+    let mint_authority = client.generate_key();
+    initialize_test_mint(client, &mint, &mint_authority.pubkey()).await?;
+
+    Ok((mint.pubkey(), mint_authority))
+}
+
+pub async fn initialize_test_mint(
+    client: &SolanaTestContext,
+    mint: &Keypair,
+    mint_authority: &Pubkey,
+) -> Result<()> {
+    let payer = client.rpc.payer();
+    let recent_blockhash = client.rpc.get_latest_blockhash().await?;
+    let rent = client
+        .rpc
+        .get_minimum_balance_for_rent_exemption(Mint::LEN)
+        .await?;
+    let transaction =
+        initialize_test_mint_transaction(&mint, payer, &mint_authority, 6, rent, recent_blockhash);
+    client
+        .rpc
+        .send_and_confirm_transaction(&transaction)
+        .await?;
+
+    Ok(())
 }
 
 pub fn initialize_test_mint_transaction(

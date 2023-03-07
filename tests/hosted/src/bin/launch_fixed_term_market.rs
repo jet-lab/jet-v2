@@ -1,7 +1,7 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::Result;
-use hosted_tests::fixed_term::TestManager;
+use hosted_tests::fixed_term::{initialize_test_mint, TestManager};
 use hosted_tests::margin::MarginClient;
 use hosted_tests::solana_test_context;
 use jet_margin_sdk::{
@@ -27,19 +27,23 @@ async fn main() -> Result<()> {
         .register_adapter_if_unregistered(&jet_fixed_term::ID)
         .await?;
 
+    initialize_test_mint(&ctx, &keys::mint(), &keys::mint().pubkey()).await?;
     let x = TestManager::new(
         ctx,
         derive_airspace("default"),
-        &keys::mint(),
+        &keys::mint().pubkey(),
+        keys::mint(),
         &keys::event_queue(),
         &keys::bids(),
         &keys::asks(),
         keys::usdc_price().pubkey(),
         keys::ticket_price().pubkey(),
     )
+    .with_market()
     .await?
     .with_margin(&airspace_authority)
     .await?;
+
     x.pause_orders().await?;
 
     {
