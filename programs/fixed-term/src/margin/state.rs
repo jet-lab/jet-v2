@@ -358,21 +358,26 @@ pub struct TermLoan {
 impl TermLoan {
     /// The annualized interest rate for this loan
     pub fn rate(&self) -> Result<u64> {
-        let tenor = self.tenor()? as u64;
-        let price = {
-            let base = self.principal.safe_add(self.interest)?;
-            let quote = self.principal;
-            let price = Fp32::from(base) / quote;
-            price
-                .downcast_u64()
-                .ok_or_else(|| error!(FixedTermErrorCode::FixedPointDivision))
-        }?;
+        let tenor = self.tenor()?;
+        let price = self
+            .price()?
+            .downcast_u64()
+            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointDivision))?;
         Ok(PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor))
     }
 
+    /// The "price" (that is, the ratio of principal to total repayment) of this loan, expressed as
+    /// a fp32 value
+    pub fn price(&self) -> Result<Fp32> {
+        let base = self.principal.safe_add(self.interest)?;
+        Ok(Fp32::from(base) / self.principal)
+    }
+
     /// Determines the loan tenor
-    pub fn tenor(&self) -> Result<UnixTimestamp> {
-        self.maturation_timestamp.safe_sub(self.strike_timestamp)
+    pub fn tenor(&self) -> Result<u64> {
+        self.maturation_timestamp
+            .safe_sub(self.strike_timestamp)
+            .map(|t| t as u64)
     }
 }
 

@@ -1024,6 +1024,17 @@ impl<P: Proxy> FixedTermUser<P> {
             .await
     }
 
+    pub async fn get_active_term_loans(&self) -> Result<Vec<TermLoan>> {
+        let mut loans = vec![];
+
+        let user = self.load_margin_user().await?;
+        for seqno in user.debt.active_loans() {
+            loans.push(self.load_term_loan(seqno).await?);
+        }
+
+        Ok(loans)
+    }
+
     pub async fn load_anchor<T: AccountDeserialize>(&self, key: &Pubkey) -> Result<T> {
         let data = self
             .client
