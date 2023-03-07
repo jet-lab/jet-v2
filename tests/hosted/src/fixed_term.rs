@@ -1,8 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use agnostic_orderbook::state::{
     critbit::{LeafNode, Slab},
@@ -86,35 +82,16 @@ pub const LEND_TENOR: u64 = 5; // in seconds
 pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 
-#[derive(Debug, Default, Clone)]
-pub struct Keys<T>(HashMap<String, T>);
-
-impl<T> Keys<T> {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-    pub fn insert(&mut self, k: &str, v: T) {
-        self.0.insert(k.into(), v);
-    }
-    pub fn unwrap(&self, k: &str) -> Result<&T> {
-        self.0
-            .get(k)
-            .ok_or_else(|| anyhow::Error::msg("missing key: {k}"))
-    }
-
-    pub fn inner(&self) -> &HashMap<String, T> {
-        &self.0
-    }
-}
-
 pub struct TestManager {
     pub client: Arc<dyn SolanaRpcClient>,
     pub keygen: Arc<dyn Keygen>,
     pub ix_builder: FixedTermIxBuilder,
     pub event_consumer: Arc<EventConsumer>,
-    pub kps: Keys<Keypair>,
-    pub keys: Keys<Pubkey>,
     pub margin_accounts_to_settle: AsyncNoDupeQueue<Pubkey>,
+    pub bids: Keypair,
+    pub asks: Keypair,
+    pub event_queue: Keypair,
+    pub mint_authority: Keypair,
     airspace: Pubkey,
 }
 
@@ -124,15 +101,11 @@ impl Clone for TestManager {
             client: self.client.clone(),
             ix_builder: self.ix_builder.clone(),
             event_consumer: self.event_consumer.clone(),
-            kps: Keys(
-                self.kps
-                    .0
-                    .iter()
-                    .map(|(k, v)| (k.clone(), Keypair::from_bytes(&v.to_bytes()).unwrap()))
-                    .collect(),
-            ),
-            keys: self.keys.clone(),
             keygen: self.keygen.clone(),
+            bids: clone(&self.bids),
+            asks: clone(&self.asks),
+            event_queue: clone(&self.event_queue),
+            mint_authority: clone(&self.mint_authority),
             margin_accounts_to_settle: AsyncNoDupeQueue::new(),
             airspace: self.airspace,
         }
@@ -180,22 +153,61 @@ impl TestManager {
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Result<Self> {
+        let mint_authority = client.generate_key();
+        let payer = client.rpc.payer();
+        let recent_blockhash = client.rpc.get_latest_blockhash().await?;
+        let rent = client
+            .rpc
+            .get_minimum_balance_for_rent_exemption(Mint::LEN)
+            .await?;
+        let transaction = initialize_test_mint_transaction(
+            mint,
+            payer,
+            &mint_authority.pubkey(),
+            6,
+            rent,
+            recent_blockhash,
+        );
+        client
+            .rpc
+            .send_and_confirm_transaction(&transaction)
+            .await?;
+        Self::new_for_existing_mint(
+            client,
+            airspace,
+            &mint.pubkey(),
+            eq_kp,
+            bids_kp,
+            asks_kp,
+            mint_authority,
+            underlying_oracle,
+            ticket_oracle,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn new_for_existing_mint(
+        client: SolanaTestContext,
+        airspace: Pubkey,
+        mint: &Pubkey,
+        eq_kp: &Keypair,
+        bids_kp: &Keypair,
+        asks_kp: &Keypair,
+        mint_authority: Keypair,
+        underlying_oracle: Pubkey,
+        ticket_oracle: Pubkey,
+    ) -> Result<Self> {
         let SolanaTestContext {
             rpc: client,
             keygen,
         } = client;
         let payer = client.payer();
-        let recent_blockhash = client.get_latest_blockhash().await?;
-        let rent = client
-            .get_minimum_balance_for_rent_exemption(Mint::LEN)
-            .await?;
-        let transaction = initialize_test_mint_transaction(mint, payer, 6, rent, recent_blockhash);
-        client.send_and_confirm_transaction(&transaction).await?;
 
         let ix_builder = FixedTermIxBuilder::new_from_seed(
             payer.pubkey(),
             &airspace,
-            &mint.pubkey(),
+            mint,
             MARKET_SEED,
             payer.pubkey(),
             underlying_oracle,
@@ -207,17 +219,18 @@ impl TestManager {
                 event_queue: eq_kp.pubkey(),
             },
         );
-        let mut this = Self {
+        let this = Self {
             client: client.clone(),
             event_consumer: Arc::new(EventConsumer::new(client.clone())),
             keygen,
             ix_builder,
-            kps: Keys::new(),
-            keys: Keys::new(),
+            bids: clone(bids_kp),
+            asks: clone(asks_kp),
+            event_queue: clone(eq_kp),
+            mint_authority,
             margin_accounts_to_settle: Default::default(),
             airspace,
         };
-        this.insert_kp("token_mint", clone(mint));
 
         let init_eq = {
             let rent = this
@@ -244,9 +257,6 @@ impl TestManager {
             this.ix_builder
                 .initialize_orderbook_slab(&asks_kp.pubkey(), ORDERBOOK_CAPACITY, rent)
         };
-        this.insert_kp("eq", clone(eq_kp));
-        this.insert_kp("bids", clone(bids_kp));
-        this.insert_kp("asks", clone(asks_kp));
 
         let payer = this.client.payer().pubkey();
         let init_fee_destination = this
@@ -265,9 +275,12 @@ impl TestManager {
             .ix_builder
             .initialize_orderbook(this.client.payer().pubkey(), MIN_ORDER_SIZE);
 
-        this.sign_send_transaction(&[init_eq, init_bids, init_asks, init_fee_destination], None)
-            .await?;
-        this.sign_send_transaction(&[init_manager, init_orderbook], None)
+        this.sign_send_transaction(
+            &[init_eq, init_bids, init_asks, init_fee_destination],
+            &[eq_kp, bids_kp, asks_kp],
+        )
+        .await?;
+        this.sign_send_transaction(&[init_manager, init_orderbook], &[])
             .await?;
 
         Ok(this)
@@ -278,7 +291,7 @@ impl TestManager {
             .ix_builder
             .authorize_crank(self.client.payer().pubkey());
 
-        self.sign_send_transaction(&[auth_crank], None).await?;
+        self.sign_send_transaction(&[auth_crank], &[]).await?;
         Ok(self)
     }
 
@@ -313,15 +326,13 @@ impl TestManager {
     pub async fn sign_send_transaction(
         &self,
         instructions: &[Instruction],
-        add_signers: Option<&[&Keypair]>,
+        extra_signers: &[&Keypair],
     ) -> Result<Signature> {
         let mut signers = Vec::<&Keypair>::new();
-        let owned_kps = self.kps.inner();
-        let mut keypairs = owned_kps.iter().map(|(_, v)| v).collect::<Vec<&Keypair>>();
-        if let Some(extra_signers) = add_signers {
-            keypairs.extend_from_slice(extra_signers);
-        }
+        let mut keypairs = vec![];
+        keypairs.extend_from_slice(extra_signers);
         keypairs.push(self.client.payer());
+        keypairs.push(&self.mint_authority); // needed to fund users
 
         let msg = Message::new(instructions, Some(&self.client.payer().pubkey()));
         for signer in msg.signer_keys() {
@@ -411,19 +422,19 @@ impl TestManager {
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption();
 
-        self.sign_send_transaction(&[pause], None).await
+        self.sign_send_transaction(&[pause], &[]).await
     }
 
     pub async fn resume_ticket_redemption(&self) -> Result<Signature> {
         let resume = self.ix_builder.resume_ticket_redemption();
 
-        self.sign_send_transaction(&[resume], None).await
+        self.sign_send_transaction(&[resume], &[]).await
     }
 
     pub async fn pause_orders(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_order_matching();
 
-        self.sign_send_transaction(&[pause], None).await
+        self.sign_send_transaction(&[pause], &[]).await
     }
 
     pub async fn resume_orders(&self) -> Result<()> {
@@ -433,15 +444,10 @@ impl TestManager {
             }
 
             let resume = self.ix_builder.resume_order_matching();
-            self.sign_send_transaction(&[resume], None).await?;
+            self.sign_send_transaction(&[resume], &[]).await?;
         }
 
         Ok(())
-    }
-
-    pub fn insert_kp(&mut self, k: &str, kp: Keypair) {
-        self.keys.insert(k, kp.pubkey());
-        self.kps.insert(k, kp);
     }
 }
 
@@ -532,7 +538,7 @@ impl TestManager {
                     max_staleness: 0,
                 }),
             )],
-            Some(&[airspace_authority]),
+            &[airspace_authority],
         )
         .await?;
 
@@ -608,7 +614,7 @@ impl TestManager {
         self.load_anchor(&vault).await
     }
     pub async fn load_event_queue(&self) -> Result<OwnedEventQueue> {
-        let data = self.load_account("eq").await?;
+        let data = self.load_data(&self.event_queue.pubkey()).await?;
 
         Ok(OwnedEventQueue::from(data))
     }
@@ -622,8 +628,8 @@ impl TestManager {
         )
     }
     pub async fn load_orderbook(&self) -> Result<OwnedBook> {
-        let bids_data = self.load_account("bids").await?;
-        let asks_data = self.load_account("asks").await?;
+        let bids_data = self.load_data(&self.bids.pubkey()).await?;
+        let asks_data = self.load_data(&self.asks.pubkey()).await?;
 
         Ok(OwnedBook {
             bids: bids_data,
@@ -631,9 +637,6 @@ impl TestManager {
         })
     }
 
-    pub async fn load_account(&self, k: &str) -> Result<Vec<u8>> {
-        self.load_data(self.keys.unwrap(k)?).await
-    }
     pub async fn load_data(&self, key: &Pubkey) -> Result<Vec<u8>> {
         Ok(self
             .client
@@ -668,7 +671,7 @@ impl GenerateProxy for MarginIxBuilder {
     async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
         let margin = MarginIxBuilder::new(manager.ix_builder.airspace(), owner.pubkey(), 0);
         manager
-            .sign_send_transaction(&[margin.create_account()], Some(&[owner]))
+            .sign_send_transaction(&[margin.create_account()], &[owner])
             .await?;
 
         Ok(margin)
@@ -744,13 +747,13 @@ impl<P: Proxy> FixedTermUser<P> {
             &spl_token::ID,
             &self.manager.ix_builder.token_mint(),
             &self.token_acc,
-            &self.manager.ix_builder.token_mint(),
+            &self.manager.mint_authority.pubkey(),
             &[],
             STARTING_TOKENS,
         )?;
 
         self.manager
-            .sign_send_transaction(&[create_token, create_ticket, fund], Some(&[&self.owner]))
+            .sign_send_transaction(&[create_token, create_ticket, fund], &[])
             .await?;
 
         Ok(())
@@ -1094,6 +1097,7 @@ impl OrderAmount {
 pub fn initialize_test_mint_transaction(
     mint_keypair: &Keypair,
     payer: &Keypair,
+    mint_authority: &Pubkey,
     decimals: u8,
     rent: u64,
     recent_blockhash: Hash,
@@ -1112,8 +1116,8 @@ pub fn initialize_test_mint_transaction(
         let initialize_mint = initialize_mint(
             &spl_token::ID,
             &mint_keypair.pubkey(),
-            &mint_keypair.pubkey(),
-            Some(&mint_keypair.pubkey()),
+            mint_authority,
+            Some(mint_authority),
             decimals,
         )
         .unwrap();
