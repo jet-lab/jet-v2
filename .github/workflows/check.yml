@@ -125,6 +125,7 @@ jobs:
         uses: docker://jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-1
         with: 
           options: -e HOME=/home/tools -e CODECOV=true
+          args: /bin/bash
           run: ./check cargo-test
 
       - name: Upload coverage to Codecov
