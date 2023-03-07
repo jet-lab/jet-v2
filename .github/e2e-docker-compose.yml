@@ -36,7 +36,7 @@ services:
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
       - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
   swap:
-    image: PLACEHOLDER/jet-swap-api:latest
+    image: gcr.io/kubernetes-608504/jet-swap-api:latest
     environment:
       - DGRAPH_ENDPOINT=http://dgraphswap:9080
       - SOLANA_ENDPOINT=http://172.17.0.1:8899
