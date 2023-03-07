@@ -45,7 +45,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
     ws.onmessage = (msg: MessageEvent<string>) => {
       const data: JET_WS_EVENTS = JSON.parse(msg.data);
 
-      console.log('WS Message: ', data)
+      console.log('WS Message: ', msg.data)
 
       if (data.type === 'MARGIN-POOL-UPDATE') {
         const update: PoolDataUpdate = {
