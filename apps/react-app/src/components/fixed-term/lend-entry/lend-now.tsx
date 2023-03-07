@@ -45,8 +45,8 @@ interface Forecast {
 export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
+  const { cluster, explorer, selectedPoolKey } = useJetStore(state => ({ cluster: state.settings.cluster, explorer: state.settings.explorer, selectedPoolKey: state.selectedPoolKey }));
   const currentPool = useMemo(
     () =>
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
@@ -58,7 +58,6 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
 
-  const { cluster, explorer } = useJetStore(state => state.settings);
 
   const [pending, setPending] = useState(false);
 

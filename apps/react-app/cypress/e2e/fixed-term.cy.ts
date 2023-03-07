@@ -1,7 +1,6 @@
 import { airdrop, borrow, deposit, loadPageAndFundSol, createAccount } from '../support/actions';
 
 describe('Fixed Term Market', () => {
-
   describe('Setup', () => {
     it('can get data from the API endpoint', () => {
       const res = cy.request('http://localhost:3002/health').as('status');

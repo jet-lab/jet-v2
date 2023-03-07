@@ -52,16 +52,17 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.REACT_APP_DEV_DATA_API
-        : cluster === 'localnet'
-        ? process.env.REACT_APP_LOCAL_DATA_API
-        : undefined;
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === 'localnet'
+            ? process.env.REACT_APP_LOCAL_DATA_API
+            : undefined;
     const list = get(AllFixedTermMarketsAtom);
     const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
-
+        console.log('Requesting orderbook')
         const snapshot = await getOrderbookSnapshot(apiEndpoint || 'http://localhost:3002', market.market);
+        console.log('received orderbook', snapshot)
         const model = market.market.getOrderbookModel(tenor, snapshot);
         return {
           name: market.name,

@@ -6,6 +6,7 @@ import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useJetStore } from '@jet-lab/store';
 import { PoolData } from '@jet-lab/store/dist/slices/pools';
+import { CurrentAction } from '@state/actions/actions';
 
 // Our app's interface for interacting with margin pools
 export interface JetMarginPools {
@@ -43,12 +44,22 @@ export const PoolOptions = selector<PoolOption[]>({
   dangerouslyAllowMutability: true
 });
 
+export const PoolRefresh = selector<number>({
+  key: 'last-pools-refresh',
+  get: ({ get }) => {
+    const action = get(CurrentAction)
+    console.log('Action: ', action)
+    return Date.now()
+  }
+})
+
 // A syncer to be called so that we can have dependent atom state
 export function usePoolsSyncer() {
   const { programs, provider } = useProvider();
   const setPools = useSetRecoilState(Pools);
   const networkState = useRecoilValue(NetworkStateAtom);
   const state = useJetStore();
+  const refreshTime = useRecoilValue(PoolRefresh)
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
@@ -122,5 +133,5 @@ export function usePoolsSyncer() {
     };
     // TODO remove resetting pools upon action
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programs?.config, networkState]);
+  }, [programs?.config, networkState, refreshTime]);
 }
