@@ -3,7 +3,7 @@ import { APPLICATION_WS_EVENTS, JET_WS_EVENTS } from '../events';
 import { PoolDataUpdate } from '../slices/pools';
 import { useJetStore } from '../store';
 
-let ws: WebSocket;
+export let ws: WebSocket;
 export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
   console.log('Connecting WS: ', cluster, wallet)
   if (ws) {

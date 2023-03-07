@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useResetRecoilState, useRecoilValue, useRecoilState, useSetRecoilState, useRecoilRefresher_UNSTABLE } from 'recoil';
+import { useResetRecoilState, useRecoilValue, useRecoilState, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { feesBuffer, MarginPrograms } from '@jet-lab/margin';
@@ -17,7 +17,6 @@ import { Input, Modal, Tooltip, Typography } from 'antd';
 import { NetworkStateAtom } from '../../state/network/network-state';
 import debounce from 'lodash.debounce';
 import { useJetStore } from '@jet-lab/store';
-import { PoolRefresh } from '@state/pools/pools';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
@@ -39,12 +38,10 @@ export function NewAccountModal(): JSX.Element {
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const networkState = useRecoilValue(NetworkStateAtom);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
-  const refreshPools = useRecoilRefresher_UNSTABLE(PoolRefresh)
 
   const { Title, Paragraph, Text } = Typography;
 
   useEffect(() => {
-    refreshPools()
     if (newAccountModalOpen) setActionRefresh(Date.now());
 
   }, [newAccountModalOpen]);
