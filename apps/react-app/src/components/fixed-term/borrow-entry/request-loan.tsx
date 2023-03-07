@@ -107,8 +107,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         refreshOrderBooks();
         notify(
           'Borrow Offer Created',
-          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-            basisPoints.toNumber() / 100
+          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
@@ -118,8 +117,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-          basisPoints.toNumber() / 100
+        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
@@ -188,13 +186,13 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
 
   // for test debugging
   useEffect(() => {
-    if(!amount.isZero() && !basisPoints.isZero() && disabled) {
+    if (!amount.isZero() && !basisPoints.isZero() && disabled) {
       console.log(
         'hasMarginAccount', !!marginAccount,
         'hasPublicKey', !!wallet.publicKey,
         'hasCurrentPool', !!currentPool,
         'hasEnoughCollateral', hasEnoughCollateral,
-        'poolsAvailable', pools?.tokenPools.length || 0,
+        'poolsAvailable', JSON.stringify(pools),
         'basisPoints', basisPoints.toNumber(),
         'amountSelected', amount.toNumber(),
         'wouldSelfMatch', forecast?.selfMatch,
