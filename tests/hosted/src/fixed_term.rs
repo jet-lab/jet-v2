@@ -37,9 +37,7 @@ use jet_margin_sdk::{
         keypair::clone,
         transaction::{SendTransactionBuilder, TransactionBuilder, WithSigner},
     },
-    tx_builder::{
-        fixed_term::FixedTermPositionRefresher, global_initialize_instructions, MarginTxBuilder,
-    },
+    tx_builder::global_initialize_instructions,
     util::no_dupe_queue::AsyncNoDupeQueue,
 };
 use jet_program_common::Fp32;
@@ -623,22 +621,22 @@ impl TestManager {
 
 #[async_trait]
 pub trait GenerateProxy {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self>
+    async fn generate(manager: Arc<TestManager>, owner: &Keypair, seed: u16) -> Result<Self>
     where
         Self: Sized;
 }
 
 #[async_trait]
 impl GenerateProxy for NoProxy {
-    async fn generate(_manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
+    async fn generate(_manager: Arc<TestManager>, owner: &Keypair, _seed: u16) -> Result<Self> {
         Ok(NoProxy(owner.pubkey()))
     }
 }
 
 #[async_trait]
 impl GenerateProxy for MarginIxBuilder {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
-        let margin = MarginIxBuilder::new(manager.ix_builder.airspace(), owner.pubkey(), 0);
+    async fn generate(manager: Arc<TestManager>, owner: &Keypair, seed: u16) -> Result<Self> {
+        let margin = MarginIxBuilder::new(manager.ix_builder.airspace(), owner.pubkey(), seed);
         manager
             .sign_send_transaction(&[margin.create_account()], &[owner])
             .await?;
@@ -656,7 +654,7 @@ pub struct FixedTermUser<P: Proxy> {
 }
 
 impl<P: Proxy> FixedTermUser<P> {
-    pub fn new_with_proxy(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
+    pub fn new(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
         let token_acc =
             get_associated_token_address(&proxy.pubkey(), &manager.ix_builder.token_mint());
 
@@ -669,30 +667,51 @@ impl<P: Proxy> FixedTermUser<P> {
         })
     }
 
-    pub async fn new_with_proxy_funded(
-        manager: Arc<TestManager>,
-        owner: Keypair,
-        proxy: P,
-    ) -> Result<Self> {
-        let user = Self::new_with_proxy(manager, owner, proxy)?;
+    pub async fn new_funded(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
+        let user = Self::new(manager, owner, proxy)?;
         user.fund().await?;
         Ok(user)
     }
 }
 
+impl FixedTermUser<RefreshingProxy<MarginIxBuilder>> {
+    pub fn new_refreshing(manager: Arc<TestManager>, owner: Keypair, seed: u16) -> Self {
+        let proxy = RefreshingProxy::full(&manager.client, &owner, seed, manager.airspace);
+        let token_acc =
+            get_associated_token_address(&proxy.pubkey(), &manager.ix_builder.token_mint());
+
+        Self {
+            owner,
+            proxy,
+            token_acc,
+            client: manager.client.clone(),
+            manager,
+        }
+    }
+}
+
 impl<P: Proxy + GenerateProxy> FixedTermUser<P> {
-    pub async fn new(manager: Arc<TestManager>) -> Result<Self> {
+    pub async fn generate_for(
+        manager: Arc<TestManager>,
+        owner: Keypair,
+        seed: u16,
+    ) -> Result<Self> {
+        let proxy = P::generate(manager.clone(), &owner, seed).await?;
+        Self::new(manager, owner, proxy)
+    }
+
+    pub async fn generate(manager: Arc<TestManager>) -> Result<Self> {
         let owner = manager.keygen.generate_key();
         manager
             .client
             .airdrop(&owner.pubkey(), 10 * LAMPORTS_PER_SOL)
             .await?;
-        let proxy = P::generate(manager.clone(), &owner).await?;
-        Self::new_with_proxy(manager, owner, proxy)
+        let proxy = P::generate(manager.clone(), &owner, 0).await?;
+        Self::new(manager, owner, proxy)
     }
 
-    pub async fn new_funded(manager: Arc<TestManager>) -> Result<Self> {
-        let user = Self::new(manager).await?;
+    pub async fn generate_funded(manager: Arc<TestManager>) -> Result<Self> {
+        let user = Self::generate(manager).await?;
         user.fund().await?;
         Ok(user)
     }
@@ -1131,42 +1150,19 @@ pub fn initialize_test_mint_transaction(
     )
 }
 
-pub async fn create_fixed_term_market_margin_user(
+pub async fn create_and_fund_fixed_term_market_margin_user(
     ctx: &Arc<MarginTestContext>,
     manager: Arc<TestManager>,
     pool_positions: Vec<(Pubkey, u64, u64)>,
 ) -> FixedTermUser<RefreshingProxy<MarginIxBuilder>> {
-    let client = manager.client.clone();
-
     // set up user
     let user = setup_user(ctx, pool_positions).await.unwrap();
-    let margin = user.user.tx.ix.clone();
     let wallet = user.user.signer;
 
     // set up proxy
-    let proxy = RefreshingProxy {
-        proxy: margin.clone(),
-        refreshers: vec![
-            Arc::new(MarginTxBuilder::new(
-                client.clone(),
-                None,
-                wallet.pubkey(),
-                0,
-                ctx.margin.airspace(),
-            )),
-            Arc::new(
-                FixedTermPositionRefresher::new(
-                    margin.pubkey(),
-                    client.clone(),
-                    &[manager.ix_builder.market()],
-                )
-                .await
-                .unwrap(),
-            ),
-        ],
-    };
+    let proxy = RefreshingProxy::full(&ctx.rpc, &wallet, 0, ctx.margin.airspace());
 
-    let user = FixedTermUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+    let user = FixedTermUser::new_funded(manager.clone(), wallet, proxy.clone())
         .await
         .unwrap();
     user.initialize_margin_user().await.unwrap();

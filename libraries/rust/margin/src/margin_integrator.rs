@@ -3,11 +3,16 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::future::join_all;
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
+use jet_simulation::SolanaRpcClient;
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer};
 
 use crate::{
     ix_builder::MarginIxBuilder,
-    solana::transaction::{TransactionBuilder, WithSigner},
+    solana::{
+        keypair::clone,
+        transaction::{TransactionBuilder, WithSigner},
+    },
+    tx_builder::{fixed_term::FixedTermPositionRefresher, MarginTxBuilder},
 };
 
 /// A variant of Proxy with the ability to refresh a margin account's positions.
@@ -25,6 +30,31 @@ pub struct RefreshingProxy<P: Proxy> {
     pub proxy: P,
     /// adapter-specific implementations to refresh positions in a margin account
     pub refreshers: Vec<Arc<dyn PositionRefresher>>,
+}
+
+impl RefreshingProxy<MarginIxBuilder> {
+    /// This returns a proxy that is expected to know about all the possible
+    /// positions that may need to be refreshed.
+    pub fn full(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        wallet: &Keypair,
+        seed: u16,
+        airspace: Pubkey,
+    ) -> Self {
+        let margin_tx_builder = MarginTxBuilder::new(
+            rpc.clone(),
+            Some(clone(&wallet)),
+            wallet.pubkey(),
+            seed,
+            airspace,
+        );
+        let fixed_term = FixedTermPositionRefresher::new(*margin_tx_builder.address(), rpc.clone());
+
+        RefreshingProxy {
+            proxy: margin_tx_builder.ix.clone(),
+            refreshers: vec![Arc::new(fixed_term), Arc::new(margin_tx_builder)],
+        }
+    }
 }
 
 impl<P: Proxy> RefreshingProxy<P> {

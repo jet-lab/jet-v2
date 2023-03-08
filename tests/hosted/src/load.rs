@@ -8,7 +8,7 @@ use jet_margin_sdk::{
 use std::{sync::Arc, time::Duration};
 
 use crate::{
-    fixed_term::{self, create_fixed_term_market_margin_user, OrderAmount},
+    fixed_term::{self, create_and_fund_fixed_term_market_margin_user, OrderAmount},
     margin_test_context,
     pricing::TokenPricer,
     setup_helper::{create_tokens, create_users, tokens},
@@ -95,9 +95,12 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
     println!("creating collateral token");
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
     println!("creating users with collateral");
-    let user =
-        create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, 350_000)])
-            .await;
+    let user = create_and_fund_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, 350_000)],
+    )
+    .await;
 
     let UnhealthyAccountsLoadTestScenario {
         user_count: _, //todo

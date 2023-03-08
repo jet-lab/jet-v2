@@ -5,7 +5,7 @@ use anyhow::Result;
 use futures::{future::join_all, join};
 use hosted_tests::{
     fixed_term::{
-        create_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
+        create_and_fund_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
         TestManager as FixedTermTestManager, STARTING_TOKENS,
     },
     margin_test_context,
@@ -49,7 +49,7 @@ async fn non_margin_orders_through_margin_account() -> Result<()> {
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     manager: Arc<FixedTermTestManager>,
 ) -> Result<()> {
-    let alice = FixedTermUser::<P>::new_funded(manager.clone()).await?;
+    let alice = FixedTermUser::<P>::generate_funded(manager.clone()).await?;
 
     const START_TICKETS: u64 = 1_000_000;
     alice.convert_tokens(START_TICKETS).await?;
@@ -173,7 +173,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert_eq!(summary_b.total_quote_qty, 500);
 
     // send to validator
-    let bob = FixedTermUser::<P>::new_funded(manager.clone()).await?;
+    let bob = FixedTermUser::<P>::generate_funded(manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
 
     assert_eq!(
@@ -328,26 +328,21 @@ async fn margin_repay() -> Result<()> {
                 0,
                 margin.airspace,
             )),
-            Arc::new(
-                FixedTermPositionRefresher::new(
-                    margin.pubkey(),
-                    client.clone(),
-                    &[manager.ix_builder.market()],
-                )
-                .await
-                .unwrap(),
-            ),
+            Arc::new(FixedTermPositionRefresher::new(
+                margin.pubkey(),
+                client.clone(),
+            )),
         ],
     };
 
     // set a lend order on the book
-    let lender = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let lender = FixedTermUser::<NoProxy>::generate_funded(manager.clone()).await?;
     let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
 
     lender.lend_order(lend_params, &[]).await?;
     let posted_lend = manager.load_orderbook().await?.bids()?[0];
 
-    let user = FixedTermUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+    let user = FixedTermUser::new_funded(manager.clone(), wallet, proxy.clone())
         .await
         .unwrap();
     user.initialize_margin_user().await.unwrap();
@@ -431,8 +426,8 @@ async fn can_consume_lots_of_events() -> Result<()> {
     let manager = Arc::new(FixedTermTestManager::full(&margin_test_context!()).await?);
 
     // make and fund users
-    let alice = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
-    let bob = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let alice = FixedTermUser::<NoProxy>::generate_funded(manager.clone()).await?;
+    let bob = FixedTermUser::<NoProxy>::generate_funded(manager.clone()).await?;
     alice.convert_tokens(1_000_000).await?;
 
     let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 1_000);
@@ -486,8 +481,8 @@ async fn settle_many_margin_accounts() -> Result<()> {
     for _ in 0..n_trades {
         trades.push(async {
             let (lender, borrower) = join!(
-                create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]),
-                create_fixed_term_market_margin_user(
+                create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]),
+                create_and_fund_fixed_term_market_margin_user(
                     &ctx,
                     manager.clone(),
                     vec![(collateral, 0, u64::MAX / 1_000)],
@@ -536,7 +531,7 @@ async fn margin_borrow() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user = create_fixed_term_market_margin_user(
+    let user = create_and_fund_fixed_term_market_margin_user(
         &ctx,
         manager.clone(),
         vec![(collateral, 0, u64::MAX / 2)],
@@ -580,7 +575,7 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     let result = vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -624,7 +619,7 @@ async fn margin_lend() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     let result = vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -661,7 +656,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let borrower = create_fixed_term_market_margin_user(
+    let borrower = create_and_fund_fixed_term_market_margin_user(
         &ctx,
         manager.clone(),
         vec![(collateral, 0, u64::MAX / 2)],
@@ -669,7 +664,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     .await;
     let mint = manager.ix_builder.token_mint();
 
-    let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -737,13 +732,13 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let borrower = create_fixed_term_market_margin_user(
+    let borrower = create_and_fund_fixed_term_market_margin_user(
         &ctx,
         manager.clone(),
         vec![(collateral, 0, u64::MAX / 2)],
     )
     .await;
-    let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -816,7 +811,7 @@ async fn margin_sell_tickets() -> Result<()> {
     let client = manager.client.clone();
     let ([], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
 
     vec![
@@ -850,7 +845,7 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
     let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let ([collateral], _, _) = tokens(&ctx).await?;
 
-    let user = create_fixed_term_market_margin_user(
+    let user = create_and_fund_fixed_term_market_margin_user(
         &ctx,
         manager.clone(),
         vec![(collateral, 0, u64::MAX / 2)],
@@ -896,7 +891,7 @@ async fn auto_roll_borrow() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user = create_fixed_term_market_margin_user(
+    let user = create_and_fund_fixed_term_market_margin_user(
         &ctx,
         manager.clone(),
         vec![(collateral, 0, u64::MAX / 2)],
