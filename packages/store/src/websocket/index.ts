@@ -36,7 +36,8 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
       const subscriptionEvent: APPLICATION_WS_EVENTS = {
         type: 'SUBSCRIBE',
         payload: {
-          wallet
+          wallet,
+          margin_accounts: []
         }
       };
       ws.send(JSON.stringify(subscriptionEvent));

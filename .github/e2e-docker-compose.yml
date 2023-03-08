@@ -23,7 +23,7 @@ services:
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
       - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
       - SOLANA_ENDPOINT=http://172.17.0.1:8899
-      - RUST_LOG=sqlx=warn,hyper=warn,tokio=error,debug
+      - RUST_LOG=sqlx::query=warn,sqlx=trace,hyper=warn,tokio=error,black_box=trace
     ports:
       - 3002:3002
     restart: always
