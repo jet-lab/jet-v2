@@ -85,7 +85,6 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     env:
-      HOME: /home/tools
       CODECOV: true
     steps:
       - name: clean up
