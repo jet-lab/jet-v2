@@ -8,12 +8,12 @@ use spl_associated_token_account::{
 use jet_instructions::{
     control::get_control_authority_address,
     fixed_term::{
-        derive::market_from_tenor, event_queue_len, orderbook_slab_len, FixedTermIxBuilder,
-        InitializeMarketParams, Market, OrderBookAddresses, FIXED_TERM_PROGRAM,
+        derive::{self, market_from_tenor},
+        event_queue_len, orderbook_slab_len, FixedTermIxBuilder, InitializeMarketParams, Market,
+        OrderBookAddresses, FIXED_TERM_PROGRAM,
     },
     test_service::{
-        self, derive_pyth_price, derive_pyth_product, derive_ticket_mint, derive_token_info,
-        TokenCreateParams,
+        self, derive_pyth_price, derive_pyth_product, derive_token_info, TokenCreateParams,
     },
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
@@ -76,7 +76,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
 
     if builder.network != NetworkKind::Mainnet {
         // Register to get an oracle for the ticket token on testing networks
-        let ticket_mint = derive_ticket_mint(&market_address);
+        let ticket_mint = derive::ticket_mint(&market_address);
         let ticket_info = derive_token_info(&ticket_mint);
 
         log::info!(
@@ -157,9 +157,9 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     market_address: &Pubkey,
     config: &FixedTermMarketConfig,
 ) -> Result<(), BuilderError> {
-    let claims_mint = FixedTermIxBuilder::claims_mint(market_address);
-    let ticket_collateral_mint = FixedTermIxBuilder::ticket_collateral_mint(market_address);
-    let ticket_mint = derive_ticket_mint(market_address);
+    let claims_mint = derive::claims_mint(market_address);
+    let ticket_collateral_mint = derive::ticket_collateral_mint(market_address);
+    let ticket_mint = derive::ticket_mint(market_address);
 
     let ticket_oracle = match builder.network {
         NetworkKind::Localnet | NetworkKind::Devnet => Some(TokenOracle::Pyth {

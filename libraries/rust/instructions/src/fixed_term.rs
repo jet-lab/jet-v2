@@ -219,7 +219,7 @@ impl FixedTermIxBuilder {
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.event_queue,
-            crank_authorization: self.crank_authorization(&self.payer),
+            crank_authorization: derive::crank_authorization(&self.market, &self.payer),
             crank: self.payer,
             payer: self.payer,
             system_program: solana_sdk::system_program::ID,
@@ -335,8 +335,8 @@ impl FixedTermIxBuilder {
             payer: self.payer,
             margin_user,
             margin_account: owner,
-            claims: FixedTermIxBuilder::user_claims(margin_user),
-            ticket_collateral: FixedTermIxBuilder::user_ticket_collateral(margin_user),
+            claims: derive::user_claims(&margin_user),
+            ticket_collateral: derive::user_ticket_collateral(&margin_user),
             claims_mint: self.claims,
             ticket_collateral_mint: self.ticket_collateral,
             rent: solana_sdk::sysvar::rent::ID,
@@ -761,7 +761,7 @@ impl FixedTermIxBuilder {
         let accounts = jet_fixed_term::accounts::AuthorizeCrank {
             crank,
             market: self.market,
-            crank_authorization: self.crank_authorization(&crank),
+            crank_authorization: derive::crank_authorization(&self.market, &crank),
             authority: self.authority,
             airspace: self.airspace,
             payer: self.payer,
@@ -840,84 +840,28 @@ pub struct MarginUser {
 
 impl FixedTermIxBuilder {
     pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
-        let address = derive::fixed_term_address(&[
-            jet_fixed_term::seeds::MARGIN_USER,
-            self.market.as_ref(),
-            margin_account.as_ref(),
-        ]);
+        let address = derive::margin_user(&self.market, &margin_account);
         MarginUser {
             address,
-            ticket_collateral: derive::fixed_term_address(&[
-                jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
-                address.as_ref(),
-            ]),
-            claims: derive::fixed_term_address(&[
-                jet_fixed_term::seeds::CLAIM_NOTES,
-                address.as_ref(),
-            ]),
+            ticket_collateral: derive::user_ticket_collateral(&address),
+            claims: derive::user_claims(&address),
         }
     }
 
-    pub fn claims_mint(market_key: &Pubkey) -> Pubkey {
-        derive::fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, market_key.as_ref()])
-    }
-
-    pub fn ticket_collateral_mint(market_key: &Pubkey) -> Pubkey {
-        derive::fixed_term_address(&[
-            jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
-            market_key.as_ref(),
-        ])
-    }
-
     pub fn term_deposit_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
-        derive::fixed_term_address(&[
-            jet_fixed_term::seeds::TERM_DEPOSIT,
-            self.market.as_ref(),
-            ticket_holder.as_ref(),
-            seed,
-        ])
+        derive::term_deposit_bytes(&self.market, ticket_holder, seed)
     }
+
     pub fn term_loan_key(&self, margin_user: &Pubkey, seed: &[u8]) -> Pubkey {
-        derive::fixed_term_address(&[
-            jet_fixed_term::seeds::TERM_LOAN,
-            self.market.as_ref(),
-            margin_user.as_ref(),
-            seed,
-        ])
+        derive::term_loan_bytes(&self.market, margin_user, seed)
     }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
-        derive::fixed_term_address(&[
-            jet_fixed_term::seeds::MARGIN_USER,
-            self.market.as_ref(),
-            owner.as_ref(),
-        ])
+        derive::margin_user(&self.market, &owner)
     }
 
-    pub fn user_claims(margin_user: Pubkey) -> Pubkey {
-        derive::fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, margin_user.as_ref()])
-    }
-
-    pub fn user_ticket_collateral(margin_user: Pubkey) -> Pubkey {
-        derive::fixed_term_address(&[
-            jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
-            margin_user.as_ref(),
-        ])
-    }
     pub fn crank_authorization(&self, crank: &Pubkey) -> Pubkey {
-        Pubkey::find_program_address(
-            &[
-                jet_fixed_term::seeds::CRANK_AUTHORIZATION,
-                self.market.as_ref(),
-                crank.as_ref(),
-            ],
-            &jet_fixed_term::ID,
-        )
-        .0
-    }
-
-    pub fn jet_fixed_term_id() -> Pubkey {
-        jet_fixed_term::ID
+        derive::crank_authorization(&self.market, crank)
     }
 }
 

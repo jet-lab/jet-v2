@@ -6,7 +6,7 @@ use jet_client::fixed_term::MarketInfo;
 use jet_client::margin::MarginAccountClient;
 use jet_client_native::{JetSimulationClient, SimulationClient};
 use jet_environment::config::{FixedTermMarketConfig, TokenDescription};
-use jet_instructions::fixed_term::FixedTermIxBuilder;
+use jet_instructions::fixed_term::derive;
 
 use hosted_tests::actions::*;
 use hosted_tests::context::{TestContext, TestContextSetupInfo, DEFAULT_POOL_CONFIG};
@@ -382,7 +382,7 @@ async fn can_cancel_orders() -> anyhow::Result<()> {
 
     let orders = accounts[0].fixed_term(&market.address).unwrap().orders();
     let claims_token = Token {
-        mint: FixedTermIxBuilder::claims_mint(&market.address),
+        mint: derive::claims_mint(&market.address),
         decimals: usdc.decimals,
     };
 

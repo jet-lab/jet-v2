@@ -21,7 +21,9 @@ use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
 use jet_fixed_term::control::instructions::InitializeMarketParams;
 use solana_sdk::instruction::Instruction;
 
-use super::derive::{claims_mint, market, ticket_collateral, ticket_mint, underlying_token_vault};
+use super::derive::{
+    claims_mint, market, ticket_collateral_mint, ticket_mint, underlying_token_vault,
+};
 
 pub fn initialize_market(
     params: InitializeMarketParams,
@@ -39,7 +41,7 @@ pub fn initialize_market(
         underlying_token_vault: underlying_token_vault(&market),
         ticket_mint: ticket_mint(&market),
         claims: claims_mint(&market),
-        collateral: ticket_collateral(&market),
+        collateral: ticket_collateral_mint(&market),
         market,
         underlying_token_mint,
         airspace,
