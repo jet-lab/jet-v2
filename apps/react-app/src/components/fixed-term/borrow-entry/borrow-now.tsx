@@ -34,8 +34,8 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  repayAmount: string;
-  interest: string;
+  repayAmount: number;
+  interest: number;
   effectiveRate: number;
   selfMatch: boolean;
   fulfilled: boolean;
@@ -45,7 +45,10 @@ interface Forecast {
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const { selectedPoolKey, prices } = useJetStore(state => ({
+    selectedPoolKey: state.selectedPoolKey,
+    prices: state.prices
+  }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -60,7 +63,18 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    handleForecast(amount);
+  }, [amount, marginAccount?.address, marketAndConfig]);
+
+  const effectiveCollateral = marginAccount?.valuation.effectiveCollateral.toNumber() || 0;
+  const tokenPrice =
+    prices && prices[marketAndConfig.token.mint.toString()]
+      ? prices[marketAndConfig.token.mint.toString()]
+      : { price: Infinity };
+  const hasEnoughCollateral = new TokenAmount(amount, token.decimals).tokens * tokenPrice.price <= effectiveCollateral;
 
   const disabled =
     !marginAccount ||
@@ -70,7 +84,8 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     amount.lte(new BN(0)) ||
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
-    !forecast.fulfilled;
+    !forecast.fulfilled ||
+    !hasEnoughCollateral;
 
   const handleForecast = (amount: BN) => {
     if (bnToBigInt(amount) === BigInt(0)) {
@@ -85,11 +100,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         undefined,
         marginAccount?.address.toBytes()
       );
-      if (sim.self_match) {
-        // FIXME Integrate with forecast panel
-        console.log('ERROR Order would be rejected for self-matching');
-        return;
-      }
 
       let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
       if (correspondingPool == undefined) {
@@ -111,8 +121,8 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
       setForecast({
-        repayAmount: repayAmount.uiTokens,
-        interest: repayAmount.sub(borrowedAmount).uiTokens,
+        repayAmount: repayAmount.tokens,
+        interest: repayAmount.sub(borrowedAmount).tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
@@ -124,7 +134,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   };
 
   const createBorrowOrder = async () => {
-    setPending(true)
+    setPending(true);
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -145,7 +155,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
-        setPending(false)
+        setPending(false);
       }, 2000); // TODO: Ugly and unneded, update when websocket is fully integrated
     } catch (e: any) {
       notify(
@@ -154,14 +164,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
-      setPending(false)
+      setPending(false);
       throw e;
     }
   };
-
-  useEffect(() => {
-    handleForecast(amount);
-  }, [amount, marginAccount?.address, marketAndConfig]);
 
   return (
     <div className="fixed-term order-entry-body">
@@ -205,7 +211,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Repayment Amount</span>
           {forecast && (
             <span>
-              {forecast.repayAmount} {token.symbol}
+              {forecast.repayAmount.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -213,7 +219,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Total Interest</span>
           {forecast && (
             <span>
-              {forecast.interest} {token.symbol}
+              {forecast.interest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -221,18 +227,34 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Interest Rate</span>
           <RateDisplay rate={forecast?.effectiveRate} />
         </div>
+        {/* <div className="stat-line">
+          // NOTE calculate this from wasm module as it need sto be 50 bps ANNUALISED
+          <span>Fees</span>
+          {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
+        </div> */}
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{forecast.riskIndicator}</span>}
-        </div>
-        <div className="stat-line">
-          <span>Auto Roll</span>
-          <span>Off</span>
+          {forecast && (
+            <span>
+              {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
+            </span>
+          )}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={createBorrowOrder}>
-      {pending ? <><LoadingOutlined />Sending transaction</> : `Borrow ${marketToString(marketAndConfig.config)}`} 
+        {pending ? (
+          <>
+            <LoadingOutlined />
+            Sending transaction
+          </>
+        ) : (
+          `Borrow ${marketToString(marketAndConfig.config)}`
+        )}
       </Button>
+      {forecast?.selfMatch && (
+        <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
+      )}
+      {!hasEnoughCollateral && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
     </div>
   );
 };

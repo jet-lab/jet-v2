@@ -5,6 +5,7 @@ import { JetStore } from '../store';
 export interface PoolsSlice {
   pools: Record<string, PoolData>;
   selectedPoolKey: string;
+  poolsLastUpdated: number;
   updatePool: (update: PoolDataUpdate) => void;
   initAllPools: (update: Record<string, PoolData>) => void;
   selectPool: (address: string) => void;
@@ -72,6 +73,7 @@ const getCcRate = (reserveConfig: PoolRateConfig, utilRate: number): number => {
 export const createPoolsSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], PoolsSlice> = set => ({
   pools: {},
   selectedPoolKey: '',
+  poolsLastUpdated: 0,
   updatePool: (update: PoolDataUpdate) => {
     return set(
       state => {
@@ -90,7 +92,8 @@ export const createPoolsSlice: StateCreator<JetStore, [['zustand/devtools', neve
               borrow_rate: ccRate,
               lending_rate: (1 - pool.pool_rate_config.managementFeeRate) * ccRate * util_ratio
             }
-          }
+          },
+          poolsLastUpdated: Date.now()
         };
       },
       false,

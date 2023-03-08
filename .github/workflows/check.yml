@@ -126,6 +126,8 @@ jobs:
       REACT_APP_LOCAL_WS_API: ${{ secrets.REACT_APP_LOCAL_WS_API }}
       REACT_APP_DEV_WS_API: ${{ secrets.REACT_APP_DEV_WS_API }}
       REACT_APP_WS_API: ${{ secrets.REACT_APP_WS_API }}
+
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
