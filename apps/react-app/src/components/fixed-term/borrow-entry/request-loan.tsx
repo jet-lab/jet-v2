@@ -192,7 +192,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         'hasPublicKey', !!wallet.publicKey,
         'hasCurrentPool', !!currentPool,
         'hasEnoughCollateral', hasEnoughCollateral,
-        'poolsAvailable', JSON.stringify(pools),
+        'poolsAvailable', pools,
         'basisPoints', basisPoints.toNumber(),
         'amountSelected', amount.toNumber(),
         'wouldSelfMatch', forecast?.selfMatch,
