@@ -18,7 +18,7 @@
 # Then you can run any of the subcommands without calling ./check:
 #   e2e    # tab completion is available
 
-DOCKER_IMAGE=jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-1
+DOCKER_IMAGE=jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
 SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 
 #################
