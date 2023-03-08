@@ -12,12 +12,12 @@ describe('Main Flows', () => {
   });
 
   it('Deposit and withdraw SOL', () => {
-    deposit('SOL', 0.5);
+    deposit('SOL', 10);
     withdraw('SOL', 0.3);
   });
 
   it('Borrow and repay SOL from existing margin account', () => {
-    deposit('SOL', 0.5);
+    deposit('SOL', 1);
     borrow('SOL', 0.3, true);
     repay('SOL', 0.3);
   });

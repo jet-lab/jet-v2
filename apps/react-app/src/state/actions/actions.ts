@@ -9,13 +9,13 @@ export const actionOptions: PoolAction[] = [
   'borrow',
   'repay',
   'repayFromDeposit',
-  'swap',
-  'transfer'
+  'swap'
+  // 'transfer'
 ];
 
-export const CurrentAction = atom({
+export const CurrentAction = atom<PoolAction | undefined>({
   key: 'currentAction',
-  default: undefined as PoolAction | undefined
+  default: undefined
 });
 
 // Any time we need to refresh data, trigger this state change throughout relevant Wrappers

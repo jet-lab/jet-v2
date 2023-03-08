@@ -6,7 +6,7 @@
     "types": "./lib/jet_client_web.d.ts",
     "scripts": {
         "compile-wasm": "wasm-pack build --target bundler --release --out-dir ../../../packages/wasm/lib ../../libraries/rust/client-web",
-        "build": "yarn compile-wasm && ./fixup"
+        "build-ignored": "yarn compile-wasm && ./fixup"
     },
     "files": ["dist/*"]
 }

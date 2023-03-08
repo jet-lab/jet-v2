@@ -43,11 +43,13 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
     }
   }, [marginAccount?.address]);
 
-  const [totalBorrowed, setTotalBorrowed] = useState(token && data && new TokenAmount(new BN(data.total_borrowed), token.decimals))
+  const [totalBorrowed, setTotalBorrowed] = useState(
+    token && data && new TokenAmount(new BN(data.total_borrowed), token.decimals)
+  );
 
   useEffect(() => {
-    setTotalBorrowed(new TokenAmount(data ? new BN(data.total_borrowed) : new BN(0), token?.decimals || 0))
-  }, [data])
+    setTotalBorrowed(new TokenAmount(data ? new BN(data.total_borrowed) : new BN(0), token?.decimals || 0));
+  }, [data]);
 
   if (!marginAccount || !data || !pools || !token) return null;
 
@@ -62,10 +64,10 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
   const hasToSettle = owedTokens?.tokens > 0;
   const hasToRepay = data.total_borrowed > 0 && totalBorrowed;
 
-  const handleRepay = async () =>{
-    const bnAmount = new BN(parseFloat(repayAmount) * 10 ** token.decimals)
-    const tokenAmount = new TokenAmount(bnAmount, token.decimals)
-    if (!totalBorrowed) return
+  const handleRepay = async () => {
+    const bnAmount = new BN(parseFloat(repayAmount) * 10 ** token.decimals);
+    const tokenAmount = new TokenAmount(bnAmount, token.decimals);
+    if (!totalBorrowed) return;
     try {
       await submitRepay(
         marginAccount,
@@ -76,17 +78,17 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         markets.map(m => m.market),
         selectedMarket,
         cluster,
-        explorer,
-      )
+        explorer
+      );
       if (totalBorrowed.sub(tokenAmount).lte(new TokenAmount(new BN(0), token.decimals))) {
-        setTotalBorrowed(undefined)
+        setTotalBorrowed(undefined);
       } else {
-        setTotalBorrowed(totalBorrowed.sub(tokenAmount))
+        setTotalBorrowed(totalBorrowed.sub(tokenAmount));
       }
     } catch (e) {
-      console.log(e)
+      console.log(e);
     }
-  }
+  };
 
   return (
     <div className="selector-actions">
@@ -148,10 +150,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
               }
             }}
           />
-          <Button
-            onClick={handleRepay}>
-            Repay Now
-          </Button>
+          <Button onClick={handleRepay}>Repay Now</Button>
         </div>
       ) : (
         <div>There are no outstanding actions on this market.</div>
