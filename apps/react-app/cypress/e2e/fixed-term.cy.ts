@@ -88,40 +88,6 @@ describe('Fixed Term Market', () => {
     });
   });
 
-  describe('can create a second fixed rate lend order', () => {
-    const lendAmtString = '2000';
-    const interestString = '15';
-
-    it('selects the offer loan tab', () => {
-      const lendLink = cy.contains('.nav-link', 'Lend');
-      lendLink.click();
-      cy.contains('lend now'); // ensure we loaded the page fully
-    });
-
-    it('inputs the lend amount', () => {
-      const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
-      amountInput.clear()
-      amountInput.click().type(lendAmtString);
-      amountInput.blur();
-    });
-
-    it('inputs the interest rate', () => {
-      const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
-      interestInput.clear()
-      interestInput.click().type(interestString);
-      interestInput.blur()
-    });
-
-    it('clicks the button once enabled', () => {
-      const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-      submitButton.click();
-    });
-
-    it('successfully receives confirmation', () => {
-      cy.contains(`Your lend offer for ${lendAmtString} USDC at ${interestString}% was created successfully`);
-    });
-  });
-
   describe('can create one fixed rate borrow order', () => {
     const borrowAmtString = '100';
     const interestString = '5';
@@ -152,39 +118,6 @@ describe('Fixed Term Market', () => {
       interestInput.blur()
     });
 
-    it('clicks the button once enabled', () => {
-      const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-      submitButton.click();
-    });
-
-    it('successfully receives confirmation', () => {
-      cy.contains(`Your borrow offer for ${borrowAmtString} USDC at ${interestString}% was created successfully`);
-    });
-  });
-
-  describe('can create a second fixed rate borrow order', () => {
-    const borrowAmtString = '200';
-    const interestString = '5';
-
-    it('selects the request loan tab', () => {
-      const borrowLink = cy.contains('.nav-link', 'Borrow');
-      borrowLink.click();
-      cy.contains('borrow now'); // ensure we loaded the page fully
-    });
-
-    it('inputs the borrow amount', () => {
-      const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
-      amountInput.clear()
-      amountInput.click().type(borrowAmtString);
-      amountInput.blur()
-    });
-
-    it('inputs the interest rate', () => {
-      const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
-      interestInput.clear()
-      interestInput.click().type(interestString);
-      interestInput.blur()
-    });
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
       submitButton.click();

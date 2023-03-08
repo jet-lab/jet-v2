@@ -131,14 +131,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     const sim = model.simulateMaker('borrow', amount, limitPrice, marginAccount?.address.toBytes());
-
-    if (sim.self_match) {
-      // FIXME Integrate with forecast panel
-      console.log('ERROR Order would be rejected for self-matching');
-
-      return;
-    }
-
     let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
     if (correspondingPool == undefined) {
       console.log('ERROR `correspondingPool` must be defined.');
@@ -183,23 +175,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     );
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
-
-  // for test debugging
-  useEffect(() => {
-    if (!amount.isZero() && !basisPoints.isZero() && disabled) {
-      console.log(
-        'hasMarginAccount', !!marginAccount,
-        'hasPublicKey', !!wallet.publicKey,
-        'hasCurrentPool', !!currentPool,
-        'hasEnoughCollateral', hasEnoughCollateral,
-        'poolsAvailable', pools,
-        'basisPoints', basisPoints.toNumber(),
-        'amountSelected', amount.toNumber(),
-        'wouldSelfMatch', forecast?.selfMatch,
-        'collateral', effectiveCollateral
-      )
-    }
-  }, [disabled, amount, basisPoints])
 
   return (
     <div className="fixed-term order-entry-body">

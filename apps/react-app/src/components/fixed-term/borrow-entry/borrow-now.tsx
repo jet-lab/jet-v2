@@ -100,11 +100,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         undefined,
         marginAccount?.address.toBytes()
       );
-      if (sim.self_match) {
-        // FIXME Integrate with forecast panel
-        console.log('ERROR Order would be rejected for self-matching');
-        return;
-      }
 
       let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
       if (correspondingPool == undefined) {

@@ -60,9 +60,7 @@ export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
     const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
-        console.log('Requesting orderbook')
         const snapshot = await getOrderbookSnapshot(apiEndpoint || 'http://localhost:3002', market.market);
-        console.log('received orderbook', JSON.stringify(snapshot))
         const model = market.market.getOrderbookModel(tenor, snapshot);
         return {
           name: market.name,
