@@ -1,7 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
 use jet_margin_sdk::fixed_term::{
-    recover_uninitialized, FixedTermIxBuilder, OrderBookAddresses, FIXED_TERM_PROGRAM,
+    recover_uninitialized, FixedTermIxBuilder, InitializeMarketParams, OrderBookAddresses,
+    FIXED_TERM_PROGRAM,
 };
 use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
 use serde::{Deserialize, Serialize};
@@ -152,11 +153,13 @@ pub async fn process_create_fixed_term_market<'a>(
         }
         let init_market = fixed_term_market.initialize_market(
             payer,
-            MANAGER_VERSION,
-            seed,
-            params.borrow_tenor,
-            params.lend_tenor,
-            params.origination_fee,
+            InitializeMarketParams {
+                version_tag: MANAGER_VERSION,
+                seed,
+                borrow_tenor: params.borrow_tenor,
+                lend_tenor: params.lend_tenor,
+                origination_fee: params.origination_fee,
+            },
         );
         steps.push(format!(
             "initialize-market for token [{}]",

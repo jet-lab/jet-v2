@@ -20,12 +20,14 @@ use jet_fixed_term::{
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
-use jet_instructions::{fixed_term::derive_market, margin::MarginConfigIxBuilder};
+use jet_instructions::{
+    fixed_term::{derive, InitializeMarketParams},
+    margin::MarginConfigIxBuilder,
+};
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
-        fixed_term_address,
         settler::{settle_margin_users_loop, SettleMarginUsersConfig},
         FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
     },
@@ -35,6 +37,7 @@ use jet_margin_sdk::{
     margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
+        keypair::KeypairExt,
         transaction::{SendTransactionBuilder, TransactionBuilder, WithSigner},
     },
     tx_builder::global_initialize_instructions,
@@ -79,6 +82,13 @@ pub const BORROW_TENOR: u64 = 3;
 pub const LEND_TENOR: u64 = 5; // in seconds
 pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
+pub const ORDERBOOK_PARAMS: InitializeMarketParams = InitializeMarketParams {
+    version_tag: MARKET_TAG,
+    seed: MARKET_SEED,
+    borrow_tenor: BORROW_TENOR,
+    lend_tenor: LEND_TENOR,
+    origination_fee: ORIGINATION_FEE,
+};
 
 pub struct TestManager {
     pub client: Arc<dyn SolanaRpcClient>,
@@ -116,9 +126,9 @@ impl TestManager {
         let oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&mint)
             .await?;
-        let ticket_mint = fixed_term_address(&[
+        let ticket_mint = derive::fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_MINT,
-            derive_market(&client.margin.airspace(), &mint, MARKET_SEED).as_ref(),
+            derive::market(&client.margin.airspace(), &mint, MARKET_SEED).as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&ticket_mint)
@@ -196,61 +206,15 @@ impl TestManager {
     }
 
     pub async fn init_market(&self) -> Result<()> {
-        let init_eq = {
-            let rent = self
-                .client
-                .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
-                .await?;
-            self.ix_builder.initialize_event_queue(
-                &self.event_queue.pubkey(),
-                EVENT_QUEUE_CAPACITY,
-                rent,
-            )
-        };
-
-        let init_bids = {
-            let rent = self
-                .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
-                .await?;
-            self.ix_builder
-                .initialize_orderbook_slab(&self.bids.pubkey(), ORDERBOOK_CAPACITY, rent)
-        };
-        let init_asks = {
-            let rent = self
-                .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
-                .await?;
-            self.ix_builder
-                .initialize_orderbook_slab(&self.asks.pubkey(), ORDERBOOK_CAPACITY, rent)
-        };
-
-        let payer = self.client.payer().pubkey();
-        let init_fee_destination = self
-            .ix_builder
-            .init_default_fee_destination(&payer)
-            .unwrap();
-        let init_manager = self.ix_builder.initialize_market(
-            payer,
-            MARKET_TAG,
-            MARKET_SEED,
-            BORROW_TENOR,
-            LEND_TENOR,
-            ORIGINATION_FEE,
-        );
-        let init_orderbook = self
-            .ix_builder
-            .initialize_orderbook(self.client.payer().pubkey(), MIN_ORDER_SIZE);
-
-        self.sign_send_transaction(
-            &[init_eq, init_bids, init_asks, init_fee_destination],
-            &[&self.event_queue, &self.bids, &self.asks],
+        init_market(
+            &self.client,
+            &self.ix_builder,
+            &self.bids,
+            &self.asks,
+            &self.event_queue,
+            ORDERBOOK_PARAMS,
         )
-        .await?;
-        self.sign_send_transaction(&[init_manager, init_orderbook], &[])
-            .await?;
-
-        Ok(())
+        .await
     }
 
     pub async fn with_crank(self) -> Result<Self> {
@@ -416,6 +380,45 @@ impl TestManager {
 
         Ok(())
     }
+}
+
+pub async fn init_market(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    ix_builder: &FixedTermIxBuilder,
+    bids: &Keypair,
+    asks: &Keypair,
+    event_queue: &Keypair,
+    params: InitializeMarketParams,
+) -> Result<()> {
+    let init_eq = {
+        let rent = rpc
+            .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
+            .await?;
+        ix_builder.initialize_event_queue(&event_queue.pubkey(), EVENT_QUEUE_CAPACITY, rent)
+    };
+    let orderbook_rent = rpc
+        .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
+        .await?;
+    let init_bids =
+        ix_builder.initialize_orderbook_slab(&bids.pubkey(), ORDERBOOK_CAPACITY, orderbook_rent);
+    let init_asks =
+        ix_builder.initialize_orderbook_slab(&asks.pubkey(), ORDERBOOK_CAPACITY, orderbook_rent);
+
+    let payer = rpc.payer().pubkey();
+    let init_fee_destination = ix_builder.init_default_fee_destination(&payer).unwrap();
+    let init_manager = ix_builder.initialize_market(payer, params);
+    let init_orderbook = ix_builder.initialize_orderbook(rpc.payer().pubkey(), MIN_ORDER_SIZE);
+
+    vec![init_eq, init_bids, init_asks, init_fee_destination]
+        .with_signers(&[event_queue.clone(), bids.clone(), asks.clone()])
+        .send_and_confirm(rpc)
+        .await?;
+    vec![init_manager, init_orderbook]
+        .with_signers(&[])
+        .send_and_confirm(rpc)
+        .await?;
+
+    Ok(())
 }
 
 /// copy paste from jet_v2::hosted::margin

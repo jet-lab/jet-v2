@@ -8,8 +8,8 @@ use spl_associated_token_account::{
 use jet_instructions::{
     control::get_control_authority_address,
     fixed_term::{
-        derive_market_from_tenor, event_queue_len, orderbook_slab_len, FixedTermIxBuilder, Market,
-        OrderBookAddresses, FIXED_TERM_PROGRAM,
+        derive::market_from_tenor, event_queue_len, orderbook_slab_len, FixedTermIxBuilder,
+        InitializeMarketParams, Market, OrderBookAddresses, FIXED_TERM_PROGRAM,
     },
     test_service::{
         self, derive_pyth_price, derive_pyth_product, derive_ticket_mint, derive_token_info,
@@ -36,8 +36,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
 ) -> Result<(), BuilderError> {
     let payer = builder.payer();
 
-    let market_address =
-        derive_market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
+    let market_address = market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
 
     let control_authority = get_control_authority_address();
     let fee_destination = get_associated_token_address(&control_authority, &token.mint);
@@ -302,11 +301,13 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     builder.propose([
         ix_builder.initialize_market(
             builder.proposal_payer(),
-            1,
-            seed,
-            config.borrow_tenor,
-            config.lend_tenor,
-            config.origination_fee,
+            InitializeMarketParams {
+                version_tag: 1,
+                seed,
+                borrow_tenor: config.borrow_tenor,
+                lend_tenor: config.lend_tenor,
+                origination_fee: config.origination_fee,
+            },
         ),
         ix_builder.initialize_orderbook(builder.proposal_payer(), config.min_order_size),
     ]);

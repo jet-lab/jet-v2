@@ -10,7 +10,7 @@ use jet_fixed_term::{
     orderbook::state::OrderParams,
     tickets::state::TermDeposit,
 };
-use jet_instructions::fixed_term::{derive_term_deposit, FixedTermIxBuilder};
+use jet_instructions::fixed_term::{derive, FixedTermIxBuilder};
 
 use crate::{
     bail,
@@ -338,7 +338,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
         ixns.extend(matured_deposits.into_iter().map(|d| {
             let user_key = self.builder.margin_user_account(self.account.address());
             let deposit_key =
-                derive_term_deposit(&self.builder.market(), &user_key, d.sequence_number);
+                derive::term_deposit(&self.builder.market(), &user_key, d.sequence_number);
 
             self.account
                 .builder

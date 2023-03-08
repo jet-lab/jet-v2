@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use jet_instructions::{
-    fixed_term::derive_market, margin_pool::MarginPoolIxBuilder, test_service::derive_ticket_mint,
+    fixed_term::derive, margin_pool::MarginPoolIxBuilder, test_service::derive_ticket_mint,
 };
 use solana_sdk::pubkey::Pubkey;
 
@@ -191,7 +191,7 @@ impl AirspaceAdmin {
     ) -> TransactionBuilder {
         let margin_config_ix =
             MarginConfigIxBuilder::new(self.airspace, self.payer, Some(self.authority));
-        let market = derive_market(&self.airspace, &token_mint, seed);
+        let market = derive::market(&self.airspace, &token_mint, seed);
         let claims_mint = FixedTermIxBuilder::claims_mint(&market);
         let collateral_mint = FixedTermIxBuilder::ticket_collateral_mint(&market);
         let ticket_mint = derive_ticket_mint(&market);

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
+use jet_instructions::fixed_term::derive::market_from_tenor;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -16,7 +17,6 @@ use jet_environment::{
     programs::ORCA_V2,
 };
 use jet_instructions::airspace::derive_airspace;
-use jet_instructions::fixed_term::derive_market_from_tenor;
 use jet_instructions::margin::MarginConfigIxBuilder;
 use jet_instructions::test_service::{
     derive_pyth_price, derive_token_mint, token_update_pyth_price,
@@ -369,9 +369,9 @@ impl TestContextSetupInfo {
                     .flat_map(|t| {
                         let token = derive_token_mint(&t.name);
 
-                        t.fixed_term_markets.iter().map(move |m| {
-                            derive_market_from_tenor(&airspace, &token, m.borrow_tenor)
-                        })
+                        t.fixed_term_markets
+                            .iter()
+                            .map(move |m| market_from_tenor(&airspace, &token, m.borrow_tenor))
                     })
                     .collect(),
             }],
