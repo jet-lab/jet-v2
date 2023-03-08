@@ -94,7 +94,7 @@ impl FixedTermIxBuilder {
             orderbook_market_state,
             underlying_oracle,
             ticket_oracle,
-            fee_vault: Self::fee_vault(market),
+            fee_vault: derive_fee_vault(&market),
             fee_destination: fee_destination
                 .unwrap_or_else(|| get_associated_token_address(&authority, &underlying_mint)),
             payer,
@@ -918,11 +918,6 @@ impl FixedTermIxBuilder {
         ])
     }
 
-    /// derive the address for the market fee vault
-    pub fn fee_vault(market: Pubkey) -> Pubkey {
-        fixed_term_address(&[jet_fixed_term::seeds::FEE_VAULT, market.as_ref()])
-    }
-
     pub fn user_claims(margin_user: Pubkey) -> Pubkey {
         fixed_term_address(&[jet_fixed_term::seeds::CLAIM_NOTES, margin_user.as_ref()])
     }
@@ -981,6 +976,10 @@ pub fn derive_market_from_tenor(airspace: &Pubkey, token_mint: &Pubkey, tenor: u
     seed[..8].copy_from_slice(&tenor.to_le_bytes());
 
     derive_market(airspace, token_mint, seed)
+}
+
+pub fn derive_fee_vault(market: &Pubkey) -> Pubkey {
+    fixed_term_address(&[jet_fixed_term::seeds::FEE_VAULT, market.as_ref()])
 }
 
 pub fn derive_margin_user(market: &Pubkey, margin_account: &Pubkey) -> Pubkey {
