@@ -100,9 +100,10 @@ jobs:
           sudo apt-get clean
           df -h
           echo "Removing large directories"
-          rm -rf /usr/share/dotnet/
+          tree /opt/hostedtoolcache || echo 'no tree'
+          rm -rf /opt/hostedtoolcache
           df -h
-          du -hd3 / | sort -h
+          sudo du -hd3 / | sort -h | tail -n 100
 
       - uses: actions/checkout@v3
 
