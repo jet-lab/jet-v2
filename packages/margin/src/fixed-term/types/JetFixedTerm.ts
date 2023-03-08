@@ -61,6 +61,11 @@ export type JetFixedTerm = {
       "name": "UNDERLYING_TOKEN_VAULT",
       "type": "bytes",
       "value": "[117, 110, 100, 101, 114, 108, 121, 105, 110, 103, 95, 116, 111, 107, 101, 110, 95, 118, 97, 117, 108, 116]"
+    },
+    {
+      "name": "FEE_VAULT",
+      "type": "bytes",
+      "value": "[102, 101, 101, 95, 118, 97, 117, 108, 116]"
     }
   ],
   "instructions": [
@@ -728,6 +733,14 @@ export type JetFixedTerm = {
           "isSigner": false,
           "docs": [
             "The market token vault"
+          ]
+        },
+        {
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The market fee vault"
           ]
         },
         {
@@ -2193,6 +2206,13 @@ export type JetFixedTerm = {
             "name": "ticketOracle",
             "docs": [
               "oracle that defines the value of the tickets"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "feeVault",
+            "docs": [
+              "vault for collected market fees"
             ],
             "type": "publicKey"
           },
@@ -4026,6 +4046,11 @@ export const IDL: JetFixedTerm = {
       "name": "UNDERLYING_TOKEN_VAULT",
       "type": "bytes",
       "value": "[117, 110, 100, 101, 114, 108, 121, 105, 110, 103, 95, 116, 111, 107, 101, 110, 95, 118, 97, 117, 108, 116]"
+    },
+    {
+      "name": "FEE_VAULT",
+      "type": "bytes",
+      "value": "[102, 101, 101, 95, 118, 97, 117, 108, 116]"
     }
   ],
   "instructions": [
@@ -4693,6 +4718,14 @@ export const IDL: JetFixedTerm = {
           "isSigner": false,
           "docs": [
             "The market token vault"
+          ]
+        },
+        {
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The market fee vault"
           ]
         },
         {
@@ -6158,6 +6191,13 @@ export const IDL: JetFixedTerm = {
             "name": "ticketOracle",
             "docs": [
               "oracle that defines the value of the tickets"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "feeVault",
+            "docs": [
+              "vault for collected market fees"
             ],
             "type": "publicKey"
           },

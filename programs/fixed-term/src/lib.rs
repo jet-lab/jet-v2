@@ -385,4 +385,7 @@ pub mod seeds {
 
     #[constant]
     pub const UNDERLYING_TOKEN_VAULT: &[u8] = b"underlying_token_vault";
+
+    #[constant]
+    pub const FEE_VAULT: &[u8] = b"fee_vault";
 }

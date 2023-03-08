@@ -629,6 +629,13 @@ impl TestManager {
         })
     }
 
+    pub async fn collected_fees(&self) -> Result<u64> {
+        let key = self.load_market().await?.fee_vault;
+        let vault = self.load_anchor::<TokenAccount>(&key).await?;
+
+        Ok(vault.amount)
+    }
+
     pub async fn load_account(&self, k: &str) -> Result<Vec<u8>> {
         self.load_data(self.keys.unwrap(k)?).await
     }

@@ -167,11 +167,14 @@ fn handle_fill<'info>(
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.reduce_order(quote_size);
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    let mut manager = market.load_mut()?;
+                    let manager = market.load()?;
                     let disburse = manager.loan_to_disburse(quote_size);
-                    manager
-                        .collected_fees
-                        .try_add_assign(quote_size.safe_sub(disburse)?)?;
+                    let fees = quote_size.safe_sub(disburse)?;
+                    ctx.withdraw(
+                        &ctx.accounts.underlying_token_vault,
+                        &ctx.accounts.fee_vault,
+                        fees,
+                    )?;
                     margin_user
                         .assets
                         .entitled_tokens
