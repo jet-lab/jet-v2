@@ -61,7 +61,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
-    env:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
