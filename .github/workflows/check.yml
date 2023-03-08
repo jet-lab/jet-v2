@@ -29,7 +29,7 @@ jobs:
             !target/idl
             !target/deploy
 
-      - run: ./check hosted-tests-localnet
+      - run: /github-entrypoint.sh ./check hosted-tests-localnet
 
 
   hosted-tests-localnet-batch2:
@@ -54,7 +54,7 @@ jobs:
             !target/idl
             !target/deploy
 
-      - run: ./check hosted-tests-localnet
+      - run: /github-entrypoint.sh ./check hosted-tests-localnet
 
 
   cargo-lint:
@@ -75,7 +75,7 @@ jobs:
             ~/.cargo/git/db/
             target/
 
-      - run: ./check cargo-lint
+      - run: /github-entrypoint.sh ./check cargo-lint
 
 
   cargo-test:
@@ -121,7 +121,7 @@ jobs:
         uses: docker://jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
         with: 
           options: -e HOME=/home/tools -e CODECOV=true
-          args: ./check cargo-test
+          args: /github-entrypoint.sh ./check cargo-test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
