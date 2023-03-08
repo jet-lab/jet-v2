@@ -39,61 +39,61 @@ const getPostOrderColumns = ({
   ordersPendingDeletion,
   setOrdersPendingDeletion
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
-  {
-    title: 'Issue date',
-    dataIndex: 'created_timestamp',
-    key: 'created_timestamp',
-    render: (date: number) => `${formatDistanceToNowStrict(date)} ago`
-  },
-  {
-    title: 'Total QTY',
-    dataIndex: 'total_quote_qty',
-    key: 'total_quote_qty',
-    render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`
-  },
-  {
-    title: 'Filled QTY',
-    dataIndex: 'filled_quote_qty',
-    key: 'filled_quote_qty',
-    render: (filled: number) => {
-      return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
+    {
+      title: 'Issue date',
+      dataIndex: 'created_timestamp',
+      key: 'created_timestamp',
+      render: (date: number) => `${formatDistanceToNowStrict(date)} ago`
+    },
+    {
+      title: 'Total QTY',
+      dataIndex: 'total_quote_qty',
+      key: 'total_quote_qty',
+      render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`
+    },
+    {
+      title: 'Filled QTY',
+      dataIndex: 'filled_quote_qty',
+      key: 'filled_quote_qty',
+      render: (filled: number) => {
+        return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
+      }
+    },
+    {
+      title: 'Rate',
+      dataIndex: 'rate',
+      key: 'rate',
+      render: (rate: number) => `${(100 * rate).toFixed(3)}%`
+    },
+    {
+      title: 'Cancel',
+      key: 'cancel',
+      render: (order: OpenOrder) => {
+        return ordersPendingDeletion.includes(order.order_id) ? (
+          <LoadingOutlined />
+        ) : (
+          <CloseOutlined
+            style={{ color: '#e36868' }}
+            onClick={() => {
+              cancel(
+                market,
+                marginAccount,
+                provider,
+                order,
+                cluster,
+                explorer,
+                pools,
+                markets,
+                refreshOrderBooks,
+                ordersPendingDeletion,
+                setOrdersPendingDeletion
+              );
+            }}
+          />
+        );
+      }
     }
-  },
-  {
-    title: 'Rate',
-    dataIndex: 'rate',
-    key: 'rate',
-    render: (rate: number) => `${100 * rate}%`
-  },
-  {
-    title: 'Cancel',
-    key: 'cancel',
-    render: (order: OpenOrder) => {
-      return ordersPendingDeletion.includes(order.order_id) ? (
-        <LoadingOutlined />
-      ) : (
-        <CloseOutlined
-          style={{ color: '#e36868' }}
-          onClick={() => {
-            cancel(
-              market,
-              marginAccount,
-              provider,
-              order,
-              cluster,
-              explorer,
-              pools,
-              markets,
-              refreshOrderBooks,
-              ordersPendingDeletion,
-              setOrdersPendingDeletion
-            );
-          }}
-        />
-      );
-    }
-  }
-];
+  ];
 
 const cancel = async (
   market: MarketAndConfig,

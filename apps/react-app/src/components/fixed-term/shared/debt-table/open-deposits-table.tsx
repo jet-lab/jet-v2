@@ -29,7 +29,7 @@ const getDepositsColumns = (market: MarketAndConfig) => [
     title: 'Rate',
     dataIndex: 'rate',
     key: 'rate',
-    render: (rate: number) => `${100 * rate}%`
+    render: (rate: number) => `${(100 * rate).toFixed(3)}%`
   }
 ];
 
