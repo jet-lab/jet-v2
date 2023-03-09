@@ -210,6 +210,7 @@ fn handle_fill<'info>(
                         quote_filled: quote_size,
                         base_filled: base_size,
                         flags,
+                        fees,
                     });
                     margin_user.emit_all_balances();
                 } else {

@@ -172,7 +172,8 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
             maturation_timestamp,
             quote_filled,
             base_filled,
-            flags: term_loan.flags
+            flags: term_loan.flags,
+            fees,
         });
     }
     let total_debt = order_summary.base_combined();
