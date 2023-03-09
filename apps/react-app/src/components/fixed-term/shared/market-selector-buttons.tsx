@@ -20,10 +20,10 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.REACT_APP_DEV_DATA_API
-        : cluster === 'localnet'
-        ? process.env.REACT_APP_LOCAL_DATA_API
-        : '',
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === 'localnet'
+            ? process.env.REACT_APP_LOCAL_DATA_API
+            : '',
     [cluster]
   );
   const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market, marginAccount);
@@ -136,21 +136,23 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         </div>
       ) : hasToRepay ? (
         <div className="assets-to-settle">
-          You owe {totalBorrowed?.tokens} {token.symbol} on this market.
-          <input
-            value={repayAmount}
-            onChange={e => {
-              const parsed = parseFloat(e.target.value);
-              if (isNaN(parsed)) {
-                setRepayAmount('0');
-              } else {
-                const total = new TokenAmount(new BN(data.total_borrowed), token.decimals);
-                const amount = parsed <= total.tokens ? e.target.value : total.uiTokens.replace(',', '');
-                setRepayAmount(amount);
-              }
-            }}
-          />
-          <Button onClick={handleRepay}>Repay Now</Button>
+          <span>You owe <span className="click-to-repay" onClick={() => setRepayAmount(totalBorrowed.tokens.toString())}>{totalBorrowed.tokens} {token.symbol}</span> on this market.</span>
+          <span className="input-and-button">
+            <input
+              value={repayAmount}
+              onChange={e => {
+                const parsed = parseFloat(e.target.value);
+                if (isNaN(parsed)) {
+                  setRepayAmount('0');
+                } else {
+                  const total = new TokenAmount(new BN(data.total_borrowed), token.decimals);
+                  const amount = parsed <= total.tokens ? e.target.value : total.uiTokens.replace(',', '');
+                  setRepayAmount(amount);
+                }
+              }}
+            />
+            <Button onClick={handleRepay}>Repay Now</Button>
+          </span>
         </div>
       ) : (
         <div>There are no outstanding actions on this market.</div>
