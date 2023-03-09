@@ -547,15 +547,15 @@ impl Liquidation {
         self.start_time
     }
 
-    pub fn collateral_loss_mut(&mut self) -> &mut Number128 {
+    pub fn equity_loss_mut(&mut self) -> &mut Number128 {
         bytemuck::cast_mut(&mut self.equity_loss)
     }
 
-    pub fn collateral_loss(&self) -> &Number128 {
+    pub fn equity_loss(&self) -> &Number128 {
         bytemuck::cast_ref(&self.equity_loss)
     }
 
-    pub fn max_collateral_loss(&self) -> Number128 {
+    pub fn max_equity_loss(&self) -> Number128 {
         Number128::from_i128(self.max_equity_loss)
     }
 }
