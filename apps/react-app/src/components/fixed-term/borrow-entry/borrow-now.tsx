@@ -122,7 +122,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty), token.decimals)
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
 
       setForecast({
         repayAmount: repayAmount.tokens,
