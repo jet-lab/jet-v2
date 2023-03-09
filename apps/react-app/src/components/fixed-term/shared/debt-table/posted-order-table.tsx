@@ -13,7 +13,7 @@ import { notify } from '@utils/notify';
 import { useRecoilRefresher_UNSTABLE } from 'recoil';
 import { AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 
-type UpdateOrders = Dispatch<SetStateAction<string[]>>
+type UpdateOrders = Dispatch<SetStateAction<string[]>>;
 
 interface GetPostOrderColumnes {
   market: MarketAndConfig;
@@ -24,7 +24,7 @@ interface GetPostOrderColumnes {
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
   ordersPendingDeletion: string[];
-  setOrdersPendingDeletion: UpdateOrders
+  setOrdersPendingDeletion: UpdateOrders;
   refreshOrderBooks: () => void;
 }
 const getPostOrderColumns = ({
@@ -63,17 +63,31 @@ const getPostOrderColumns = ({
       title: 'Rate',
       dataIndex: 'rate',
       key: 'rate',
-      render: (rate: number) => `${100 * rate}%`
+      render: (rate: number) => `${(100 * rate).toFixed(3)}%`
     },
     {
       title: 'Cancel',
       key: 'cancel',
       render: (order: OpenOrder) => {
-        return ordersPendingDeletion.includes(order.order_id) ? <LoadingOutlined /> : (
+        return ordersPendingDeletion.includes(order.order_id) ? (
+          <LoadingOutlined />
+        ) : (
           <CloseOutlined
             style={{ color: '#e36868' }}
             onClick={() => {
-              cancel(market, marginAccount, provider, order, cluster, explorer, pools, markets, refreshOrderBooks, ordersPendingDeletion, setOrdersPendingDeletion)
+              cancel(
+                market,
+                marginAccount,
+                provider,
+                order,
+                cluster,
+                explorer,
+                pools,
+                markets,
+                refreshOrderBooks,
+                ordersPendingDeletion,
+                setOrdersPendingDeletion
+              );
             }}
           />
         );
@@ -103,11 +117,10 @@ const cancel = async (
       pools,
       markets
     });
-      notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
-      setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
-      refreshOrderBooks();
+    notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
+    setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
+    refreshOrderBooks();
   } catch (e: any) {
-
     notify(
       'Cancel order failed',
       'There was an error cancelling your order',
@@ -138,9 +151,8 @@ export const PostedOrdersTable = ({
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }) => {
-
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
-  const [ordersPendingDeletion, setOrdersPendingDeletion] = useState<string[]>([])
+  const [ordersPendingDeletion, setOrdersPendingDeletion] = useState<string[]>([]);
 
   const columns = useMemo(
     () =>

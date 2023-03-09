@@ -112,3 +112,7 @@ pub fn orderbook_market_state(market: &Pubkey) -> Pubkey {
         market.as_ref(),
     ])
 }
+
+pub fn fee_vault(market: &Pubkey) -> Pubkey {
+    fixed_term_address(&[jet_fixed_term::seeds::FEE_VAULT, market.as_ref()])
+}

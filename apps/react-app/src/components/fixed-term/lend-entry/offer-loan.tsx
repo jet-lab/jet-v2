@@ -36,11 +36,11 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  postedRepayAmount?: string;
-  postedInterest?: string;
+  postedRepayAmount?: number;
+  postedInterest?: number;
   postedRate?: number;
-  matchedAmount?: string;
-  matchedInterest?: string;
+  matchedAmount?: number;
+  matchedInterest?: number;
   matchedRate?: number;
   selfMatch: boolean;
   riskIndicator?: number;
@@ -65,7 +65,10 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState(false);
+
+  const tokenBalance = marginAccount?.poolPositions[token.symbol].depositBalance;
+  const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount, token.decimals));
 
   const disabled =
     !marginAccount ||
@@ -74,10 +77,11 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !pools ||
     basisPoints.lte(new BN(0)) ||
     amount.lte(new BN(0)) ||
-    forecast?.selfMatch;
+    forecast?.selfMatch ||
+    !hasEnoughTokens;
 
   const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
-    setPending(true)
+    setPending(true);
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -96,24 +100,22 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         refreshOrderBooks();
         notify(
           'Lend Offer Created',
-          `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-            basisPoints.toNumber() / 100
+          `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
-        setPending(false)
+        setPending(false);
       }, 2000); // TODO: Ugly and unneded, update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Lend Offer Failed',
-        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-          basisPoints.toNumber() / 100
+        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
-      setPending(false)
+      setPending(false);
       throw e;
     }
   };
@@ -122,12 +124,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     const sim = model.simulateMaker('lend', amount, limitPrice, marginAccount?.address.toBytes());
-
-    if (sim.self_match) {
-      // FIXME Integrate with forecast panel
-      console.log('ERROR Order would be rejected for self-matching');
-    }
-
     let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
     if (correspondingPool == undefined) {
       console.log('ERROR `correspondingPool` must be defined.');
@@ -153,11 +149,11 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     const postedRate = sim.posted_vwar;
 
     setForecast({
-      matchedAmount: matchRepayAmount.uiTokens,
-      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+      matchedAmount: matchRepayAmount.tokens,
+      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).tokens,
       matchedRate: matchRate,
-      postedRepayAmount: postedRepayAmount.uiTokens,
-      postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
+      postedRepayAmount: postedRepayAmount.tokens,
+      postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
       postedRate,
       selfMatch: sim.self_match,
       riskIndicator: valuationEstimate?.riskIndicator
@@ -228,7 +224,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Posted Repayment Amount</span>
           {forecast?.postedRepayAmount && (
             <span>
-              {forecast?.postedRepayAmount}
+              {forecast?.postedRepayAmount.toFixed(token.precision)}
               {token.symbol}
             </span>
           )}
@@ -237,7 +233,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Posted Interest</span>
           {forecast?.postedInterest && (
             <span>
-              {forecast?.postedInterest} {token.symbol}
+              {forecast?.postedInterest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -249,7 +245,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
             <span>
-              {forecast.matchedAmount}
+              {forecast.matchedAmount.toFixed(token.precision)}
               {token.symbol}
             </span>
           )}
@@ -258,7 +254,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Matched Interest</span>
           {forecast?.matchedInterest && (
             <span>
-              {forecast.matchedInterest} {token.symbol}
+              {forecast.matchedInterest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -268,16 +264,29 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{forecast.riskIndicator}</span>}
-        </div>
-        <div className="stat-line">
-          <span>Auto Roll</span>
-          <span>Off</span>
+          {forecast && (
+            <span>
+              {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
+            </span>
+          )}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={() => createLendOrder()}>
-      {pending ? <><LoadingOutlined />Sending transaction</> :  `Offer ${marketToString(marketAndConfig.config)} loan`}
+        {pending ? (
+          <>
+            <LoadingOutlined />
+            Sending transaction
+          </>
+        ) : (
+          `Offer ${marketToString(marketAndConfig.config)} loan`
+        )}
       </Button>
+      {forecast?.selfMatch && (
+        <div className="fixed-term-warning">The offer would match with your own requests in this market.</div>
+      )}
+      {!hasEnoughTokens && (
+        <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this offer</div>
+      )}
     </div>
   );
 };

@@ -99,6 +99,7 @@ pub fn margin_borrow_order(
         ticket_collateral_mint: ticket_collateral_mint(&orderbook_mut.market),
         underlying_token_vault: underlying_token_vault(&orderbook_mut.market),
         underlying_settlement: ata(&margin_account, underlying_mint),
+        fee_vault: fee_vault(&orderbook_mut.market),
         orderbook_mut,
         margin_account,
         margin_user,

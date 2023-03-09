@@ -625,6 +625,13 @@ impl TestManager {
         })
     }
 
+    pub async fn collected_fees(&self) -> Result<u64> {
+        let key = self.load_market().await?.fee_vault;
+        let vault = self.load_anchor::<TokenAccount>(&key).await?;
+
+        Ok(vault.amount)
+    }
+
     pub async fn load_data(&self, key: &Pubkey) -> Result<Vec<u8>> {
         Ok(self
             .client
@@ -633,6 +640,7 @@ impl TestManager {
             .ok_or_else(|| anyhow::Error::msg("failed to fetch key: {key}"))?
             .data)
     }
+
     pub async fn load_anchor<T: AccountDeserialize>(&self, key: &Pubkey) -> Result<T> {
         let data = self.load_data(key).await?;
 

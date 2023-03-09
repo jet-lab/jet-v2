@@ -22,6 +22,7 @@ pub fn consume_events(
         market,
         ticket_mint: ticket_mint(&market),
         underlying_token_vault,
+        fee_vault: fee_vault(&market),
         orderbook_market_state: orderbook_market_state(&market),
         event_queue,
         crank_authorization: crank_authorization(&market, &crank),

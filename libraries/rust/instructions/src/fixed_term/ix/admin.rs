@@ -40,6 +40,7 @@ pub fn initialize_market(
         underlying_oracle,
         ticket_oracle,
         fee_destination,
+        fee_vault: fee_vault(&market),
         payer,
         rent: solana_sdk::sysvar::rent::ID,
         token_program: spl_token::ID,
@@ -159,11 +160,11 @@ pub fn resume_order_matching(
 }
 
 pub fn pause_ticket_redemption(market_admin: MarketAdmin) -> Instruction {
-    modify_market([true as u8].into(), 8 + 32 * 14 + 2, market_admin)
+    modify_market([true as u8].into(), 8 + 32 * 15 + 2, market_admin)
 }
 
 pub fn resume_ticket_redemption(market_admin: MarketAdmin) -> Instruction {
-    modify_market([false as u8].into(), 8 + 32 * 14 + 2, market_admin)
+    modify_market([false as u8].into(), 8 + 32 * 15 + 2, market_admin)
 }
 
 pub fn modify_market(data: Vec<u8>, offset: u32, market_admin: MarketAdmin) -> Instruction {

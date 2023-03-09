@@ -23,8 +23,8 @@ export function NavLinks(): JSX.Element {
     { title: dictionary.poolsView.title, route: '/', disabled: false, hidden: false },
     { title: dictionary.swapsView.title, route: '/swaps', disabled: false, hidden: false },
     { title: dictionary.accountsView.title, route: '/accounts', disabled: false, hidden: false },
-    { title: 'Lend', route: '/fixed-lend', disabled: false, hidden: cluster === 'mainnet-beta' },
-    { title: 'Borrow', route: '/fixed-borrow', disabled: false, hidden: cluster === 'mainnet-beta' }
+    { title: 'Fixed Lend', route: '/fixed-lend', disabled: false, hidden: cluster === 'mainnet-beta' },
+    { title: 'Fixed Borrow', route: '/fixed-borrow', disabled: false, hidden: cluster === 'mainnet-beta' }
   ];
 
   if (cluster !== 'mainnet-beta') {

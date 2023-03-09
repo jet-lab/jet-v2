@@ -10,9 +10,8 @@ jobs:
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
+      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
     env:
-      HOME: /home/tools
       BATCH: batch1
     steps:
       - name: Checkout
@@ -30,15 +29,14 @@ jobs:
             !target/idl
             !target/deploy
 
-      - run: ./check hosted-tests-localnet
+      - run: /github-entrypoint.sh ./check hosted-tests-localnet
 
 
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
+      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
     env:
-      HOME: /home/tools
       BATCH: batch2
     steps:
       - name: Checkout
@@ -56,15 +54,13 @@ jobs:
             !target/idl
             !target/deploy
 
-      - run: ./check hosted-tests-localnet
+      - run: /github-entrypoint.sh ./check hosted-tests-localnet
 
 
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
-    env:
-      HOME: /home/tools
+      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -79,17 +75,17 @@ jobs:
             ~/.cargo/git/db/
             target/
 
-      - run: ./check cargo-lint
+      - run: /github-entrypoint.sh ./check cargo-lint
 
 
   cargo-test:
     runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:rust-1.66.1-node-18.13.0-solana-1.13.7-anchor-0.26.0-1
     env:
-      HOME: /home/tools
       CODECOV: true
     steps:
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache
+
       - uses: actions/checkout@v3
 
       - name: Get cargo-test cache
@@ -102,7 +98,11 @@ jobs:
             ~/.cargo/git/db/
             target/
 
-      - run: ./check cargo-test
+      - name: Run tests
+        uses: docker://jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
+        with: 
+          options: -e HOME=/home/tools -e CODECOV=true
+          args: /github-entrypoint.sh ./check cargo-test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -126,6 +126,8 @@ jobs:
       REACT_APP_LOCAL_WS_API: ${{ secrets.REACT_APP_LOCAL_WS_API }}
       REACT_APP_DEV_WS_API: ${{ secrets.REACT_APP_DEV_WS_API }}
       REACT_APP_WS_API: ${{ secrets.REACT_APP_WS_API }}
+
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

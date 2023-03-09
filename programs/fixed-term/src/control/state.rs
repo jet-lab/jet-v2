@@ -40,6 +40,8 @@ pub struct Market {
     pub underlying_oracle: Pubkey,
     /// oracle that defines the value of the tickets
     pub ticket_oracle: Pubkey,
+    /// Vault for collected Market fees
+    pub fee_vault: Pubkey,
     /// where fees can be withdrawn to
     pub fee_destination: Pubkey,
     /// The user-defined part of the seed that generated this market's PDA
@@ -58,8 +60,6 @@ pub struct Market {
     pub lend_tenor: u64,
     /// assessed on borrows. scaled by origination_fee::FEE_UNIT
     pub origination_fee: u64,
-    /// amount of fees currently available to be withdrawn by market owner
-    pub collected_fees: u64,
     /// Used to generate unique order tags
     pub nonce: u64,
 }

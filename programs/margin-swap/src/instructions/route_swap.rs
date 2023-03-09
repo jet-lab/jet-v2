@@ -131,8 +131,8 @@ pub struct RouteSwap<'info> {
 /// - accounts of the swap instruction
 ///
 /// Where there are multiple swaps, the above are concatenated to each other
-pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, RouteSwapPool<'info>>,
+pub fn route_swap_pool_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, RouteSwapPool<'info>>,
     withdrawal_change_kind: ChangeKind,
     withdrawal_amount: u64,
     minimum_amount_out: u64,
@@ -239,8 +239,8 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
     Ok(())
 }
 
-pub fn route_swap_handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+pub fn route_swap_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, RouteSwap<'info>>,
     amount_in: u64,
     minimum_amount_out: u64,
     swap_routes: [SwapRouteDetail; 3],
