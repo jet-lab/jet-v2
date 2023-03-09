@@ -14,21 +14,20 @@
 //! difficulty in accessing every address for a particular market.
 //!
 //! These functions should:
-//! - be named after an instruction in the crate.
-//! - simply construct and return an Instruction for a specific instruction in
-//!   the program.
+//! - be named after a fixed term instruction (some exceptions to init accounts)
+//! - simply construct and return an Instruction for a specific fixed term ix.
 //! - derive pdas that can be derived from other inputs.
 //! - Facilitate construction of the Instruction struct.
-//! - Put data parameters before pubkeys
+//! - Have data parameters before pubkeys
 //!
 //! These functions should NOT:
-//! - be methods of a struct.
+//! - be methods.
 //! - depend on unnecessary data. Do not require complex structs with fields
 //!   that are not used by the function. Only use a struct of pubkeys as a param
 //!   if EVERY pubkey is used by that function.
 //! - have any side effects such as mutations or sending requests.
 //! - be async.
-//! - make any assumptions, for example setting the payer == crank.
+//! - make any assumptions, for example setting the payer = crank.
 //! - depend on any pubkeys that can always be derived from other inputs.
 
 mod admin;
