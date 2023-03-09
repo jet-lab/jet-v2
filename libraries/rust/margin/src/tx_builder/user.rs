@@ -336,7 +336,7 @@ impl MarginTxBuilder {
 
         let inner_refresh_loan_ix =
             pool.margin_refresh_position(self.ix.address, token_metadata.pyth_price);
-        instructions.push(self.adapter_invoke_ix(inner_refresh_loan_ix));
+        instructions.push(self.ix.accounting_invoke(inner_refresh_loan_ix));
 
         let inner_borrow_ix = pool.margin_borrow(self.ix.address, deposit_position, change);
 

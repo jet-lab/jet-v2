@@ -152,7 +152,7 @@ impl TestUser {
         src: &Pubkey,
         dst: &Pubkey,
         change: TokenChange,
-        liquidator: Option<Pubkey>,
+        is_liquidation: bool,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
 
@@ -167,8 +167,8 @@ impl TestUser {
             change,
             1,
         )?;
-        if let Some(liquidator) = liquidator {
-            swap_builder.set_liquidation(liquidator)?;
+        if is_liquidation {
+            swap_builder.set_liquidation()?;
         }
         swap_builder.add_swap_leg(pool, 0)?;
         swap_builder.finalize()?;
@@ -295,8 +295,7 @@ impl TestLiquidator {
                 .send_and_confirm_1tx(&[create_ata_ix], &[&self.wallet])
                 .await?;
         }
-        liq.swap(swaps, collateral, loan, change, Some(self.wallet.pubkey()))
-            .await?;
+        liq.swap(swaps, collateral, loan, change, true).await?;
         liq.margin_repay(loan, repay).await?;
         liq.liquidate_end(Some(self.wallet.pubkey())).await
     }

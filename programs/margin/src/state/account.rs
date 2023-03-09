@@ -349,6 +349,7 @@ impl MarginAccount {
         let info = self.valuation(timestamp)?;
 
         if info.required_collateral > info.effective_collateral {
+            msg!("{:#?}", &info);
             msg!(
                 "account is unhealthy: K_e = {}, K_r = {}",
                 info.effective_collateral,
@@ -526,22 +527,19 @@ pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation
     pub start_time: i64,
 
-    /// cumulative change in equity caused by invocations during the liquidation so far
-    /// negative if equity is lost
-    pub equity_change: i128,
+    /// The cumulative amount of equity lost during liquidation so far
+    pub equity_loss: i128,
 
-    /// lowest amount of equity change that is allowed during invoke steps
-    /// typically negative or zero
-    /// if equity_change goes lower than this number, liquidate_invoke should fail
-    pub min_equity_change: i128,
+    /// The maximum amount of collateral allowed to be lost during all steps
+    pub max_equity_loss: i128,
 }
 
 impl Liquidation {
-    pub fn new(start_time: i64, min_equity_change: Number128) -> Self {
+    pub fn new(start_time: i64, max_equity_loss: Number128) -> Self {
         Self {
             start_time,
-            equity_change: 0,
-            min_equity_change: min_equity_change.to_i128(),
+            equity_loss: 0,
+            max_equity_loss: max_equity_loss.to_i128(),
         }
     }
 
@@ -549,16 +547,16 @@ impl Liquidation {
         self.start_time
     }
 
-    pub fn equity_change_mut(&mut self) -> &mut Number128 {
-        bytemuck::cast_mut(&mut self.equity_change)
+    pub fn collateral_loss_mut(&mut self) -> &mut Number128 {
+        bytemuck::cast_mut(&mut self.equity_loss)
     }
 
-    pub fn equity_change(&self) -> &Number128 {
-        bytemuck::cast_ref(&self.equity_change)
+    pub fn collateral_loss(&self) -> &Number128 {
+        bytemuck::cast_ref(&self.equity_loss)
     }
 
-    pub fn min_equity_change(&self) -> Number128 {
-        Number128::from_i128(self.min_equity_change)
+    pub fn max_collateral_loss(&self) -> Number128 {
+        Number128::from_i128(self.max_equity_loss)
     }
 }
 
@@ -589,6 +587,14 @@ pub struct Valuation {
 impl Valuation {
     pub fn available_collateral(&self) -> Number128 {
         self.effective_collateral - self.required_collateral
+    }
+
+    pub fn effective_c_ratio(&self) -> Number128 {
+        if self.liabilities == Number128::ZERO {
+            Number128::MAX
+        } else {
+            self.effective_collateral / self.required_collateral
+        }
     }
 
     pub fn past_due(&self) -> bool {

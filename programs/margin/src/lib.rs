@@ -58,18 +58,17 @@ pub const MAX_ORACLE_STALENESS: i64 = 30;
 #[constant]
 pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
-/// The maximum amount of equity that can be deducted from an account during liquidation
-/// as a fraction of the total dollar value that is expected to need to be liquidated
-pub const LIQUIDATION_MAX_EQUITY_LOSS_BPS: u16 = 15_00;
+/// The maximum amount of collateral that can be deducted from an account during liquidation
+/// as a fraction of the account's entire collateral value
+pub const LIQUIDATION_MAX_TOTAL_COLLATERAL_LOSS_BPS: u16 = 4_00;
 
 /// The maximum c-ratio that an account can end a liquidation with.
 ///
 /// Note: This is not a traditional c-ratio, because it's based on the ratio of
 ///       the effective_collateral / required_collateral.
-pub const LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = 125_00;
+pub const LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = 1_25;
 
-/// The threshold at which accounts can have all their debts closed. Accounts with
-/// total exposure below this value can have their exposure reduced to zero.
+/// Liabilities below this value can be reduced to zero during liquidation
 pub const LIQUIDATION_CLOSE_THRESHOLD_USD: u64 = 100;
 
 /// The maximum duration in seconds of a liquidation before another user may cancel it
@@ -618,6 +617,10 @@ pub enum ErrorCode {
     /// 141041 - The liquidation attempted to extract too much value
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
+
+    /// 141042 - The liquidation attempted to extract too much value
+    #[msg("attempted to make account too healthy value during liquidation")]
+    LiquidationExcessiveHealth,
 
     /// 141050 - The airspace does not match
     #[msg("attempting to mix entities from different airspaces")]

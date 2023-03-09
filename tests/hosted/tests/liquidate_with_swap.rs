@@ -34,8 +34,8 @@ async fn liquidate_with_swap() -> Result<()> {
             &swaps,
             &sol,
             &usdc,
-            TokenChange::shift(800),
-            700,
+            TokenChange::shift(850),
+            720,
         )
         .await
         .unwrap();

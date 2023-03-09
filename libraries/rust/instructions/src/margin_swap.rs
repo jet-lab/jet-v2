@@ -11,10 +11,10 @@ use jet_margin_pool::{ChangeKind, TokenChange};
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteDetail, SwapRouteIdentifier};
 use jet_margin_swap::{instruction as ix_data, ROUTE_SWAP_MAX_SPLIT, ROUTE_SWAP_MIN_SPLIT};
 
+use crate::margin::derive_position_token_account;
 use crate::IxResult;
 use crate::JetIxError;
 use crate::{control::get_control_authority_address, margin_pool::MarginPoolIxBuilder};
-use crate::{get_metadata_address, margin::derive_position_token_account};
 
 pub use jet_margin_swap::ID as MARGIN_SWAP_PROGRAM;
 
@@ -173,16 +173,6 @@ impl MarginSwapRouteIxBuilder {
         withdrawal_change: TokenChange,
         minimum_amount_out: u64,
     ) -> IxResult<Self> {
-        // Withdrawal_change can only be shift_by if not using margin
-        if matches!(
-            (swap_context, withdrawal_change.kind),
-            (SwapContext::MarginPositions, ChangeKind::SetTo)
-        ) {
-            return Err(JetIxError::SwapIxError(
-                "Change can only be ShiftBy when not swapping on margin".to_string(),
-            ));
-        }
-
         let mut spl_token_accounts = HashSet::with_capacity(4);
         spl_token_accounts.insert(src_token);
         spl_token_accounts.insert(dst_token);
@@ -251,8 +241,8 @@ impl MarginSwapRouteIxBuilder {
         self.is_liquidation
     }
 
-    /// Set a liquidator
-    pub fn set_liquidation(&mut self, liquidator: Pubkey) -> IxResult<()> {
+    /// Mark as a swap for the purpose of liquidation
+    pub fn set_liquidation(&mut self) -> IxResult<()> {
         if self.is_liquidation {
             return Err(JetIxError::SwapIxError(
                 "A liquidator is already set".to_string(),
@@ -268,22 +258,12 @@ impl MarginSwapRouteIxBuilder {
                 "Swap route not empty, can only add liquidator to empty route".to_string(),
             ));
         }
-        let liquidation = get_metadata_address(&liquidator);
-        self.account_metas.extend_from_slice(&[
-            AccountMeta {
-                pubkey: liquidation,
-                is_signer: false,
-                is_writable: false,
-            },
-            AccountMeta {
-                pubkey: get_associated_token_address(
-                    &get_control_authority_address(),
-                    &self.dst_token,
-                ),
-                is_signer: false,
-                is_writable: true,
-            },
-        ]);
+
+        self.account_metas.extend_from_slice(&[AccountMeta {
+            pubkey: get_associated_token_address(&get_control_authority_address(), &self.dst_token),
+            is_signer: false,
+            is_writable: true,
+        }]);
 
         self.is_liquidation = true;
 

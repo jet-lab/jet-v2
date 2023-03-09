@@ -18,6 +18,8 @@
 // Allow this until fixed upstream
 #![allow(clippy::result_large_err)]
 
+use std::convert::TryInto;
+
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token;
@@ -38,6 +40,9 @@ use instructions::*;
 pub const ROUTE_SWAP_MAX_SPLIT: u8 = 90;
 /// The minimum swap split percentage
 pub const ROUTE_SWAP_MIN_SPLIT: u8 = 100 - ROUTE_SWAP_MAX_SPLIT;
+
+/// The fee charged for liquidation swaps (bps)
+pub const LIQUIDATION_FEE: u64 = 3_00;
 
 #[program]
 mod jet_margin_swap {
@@ -206,4 +211,12 @@ impl SwapRouteDetail {
             _ => Ok(true),
         }
     }
+}
+
+/// Calculate the liquidation fee on a swap output
+pub fn liquidation_fee(amount_out: u64) -> u64 {
+    let amount = amount_out as u128;
+    let fee = (amount * LIQUIDATION_FEE as u128) / 10_000;
+
+    fee.try_into().unwrap()
 }

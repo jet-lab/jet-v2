@@ -18,10 +18,14 @@
 use anchor_lang::prelude::*;
 
 use jet_metadata::MarginAdapterMetadata;
+use jet_program_common::Number128;
 
 use crate::adapter::{self, InvokeAdapter};
 use crate::syscall::{sys, Sys};
-use crate::{events, ErrorCode, Liquidation, LiquidationState, MarginAccount, Valuation};
+use crate::{
+    events, ErrorCode, Liquidation, LiquidationState, MarginAccount, Valuation,
+    LIQUIDATION_CLOSE_THRESHOLD_USD, LIQUIDATION_MAX_COLLATERAL_RATIO,
+};
 
 #[derive(Accounts)]
 pub struct LiquidatorInvoke<'info> {
@@ -96,16 +100,33 @@ fn update_and_verify_liquidation(
 ) -> Result<Valuation> {
     let end_value = margin_account.valuation(sys().unix_timestamp())?;
 
-    *liquidation.equity_change_mut() += end_value.equity - start_value.equity; // side effects
+    let diff_collateral = start_value.weighted_collateral - end_value.weighted_collateral;
+    let diff_liabilities = start_value.liabilities - end_value.liabilities;
 
-    if liquidation.equity_change() < &liquidation.min_equity_change() {
+    *liquidation.collateral_loss_mut() += diff_collateral - diff_liabilities;
+
+    if liquidation.collateral_loss() > &liquidation.max_collateral_loss() {
         msg!(
-            "Illegal liquidation: net loss of {} equity which exceeds the min equity change of {}",
-            liquidation.equity_change(),
-            liquidation.min_equity_change()
+            "Illegal liquidation: net loss of {} collateral which exceeds the max collateral loss of {}",
+            liquidation.collateral_loss(),
+            liquidation.max_collateral_loss()
         );
-        err!(ErrorCode::LiquidationLostValue)
-    } else {
-        Ok(end_value)
+        return err!(ErrorCode::LiquidationLostValue);
     }
+
+    let max_c_ratio = Number128::from_decimal(LIQUIDATION_MAX_COLLATERAL_RATIO, -2);
+    let liability_threshold = Number128::from_decimal(LIQUIDATION_CLOSE_THRESHOLD_USD, 0);
+
+    if end_value.effective_c_ratio() > max_c_ratio && start_value.liabilities > liability_threshold
+    {
+        msg!(
+            "Illegal liquidation: attempting to make the account excessively healthy, from c-ratio {} -> {}",
+            start_value.effective_c_ratio(),
+            end_value.effective_c_ratio()
+        );
+
+        return err!(ErrorCode::LiquidationExcessiveHealth);
+    }
+
+    Ok(end_value)
 }
