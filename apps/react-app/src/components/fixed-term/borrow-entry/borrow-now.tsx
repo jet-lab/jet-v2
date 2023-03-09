@@ -261,6 +261,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       )}
       {!hasEnoughCollateral && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
       {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
+      {forecast && forecast.effectiveRate === 0 && <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>}
     </div>
   );
 };
