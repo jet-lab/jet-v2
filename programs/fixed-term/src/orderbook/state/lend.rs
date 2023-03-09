@@ -227,9 +227,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         requires_payment: bool,
     ) -> Result<()> {
         let staked = self.inner.lend(summary, deposit, requires_payment)?;
-        if staked > 0 {
-            self.margin_user.assets.new_deposit(staked)?;
-        }
+        self.margin_user.assets.new_deposit(staked)?;
 
         mint_to(
             CpiContext::new(

@@ -25,7 +25,6 @@ pub struct AutoRollLendOrder<'info> {
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// The `MarginAccount` this `TermDeposit` belongs to
-    #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The `TermDeposit` account to roll

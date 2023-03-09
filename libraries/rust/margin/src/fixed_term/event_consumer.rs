@@ -209,24 +209,20 @@ impl EventConsumer {
             })
             .collect::<Vec<_>>();
 
-        let _results = futures::future::join_all(tasks)
-            .await
-            .into_iter()
-            .collect::<Result<Vec<_>, (Pubkey, EventConsumerError)>>()
-            .map_err(|(_, e)| e)?;
+        let results = futures::future::join_all(tasks).await;
 
-        // for result in &results {
-        //     if let Err((market, e)) = result {
-        //         tracing::error!(?market, "failed consuming events because: {e}",);
-        //     }
-        // }
+        for result in &results {
+            if let Err((market, e)) = result {
+                tracing::error!(?market, "failed consuming events because: {e}",);
+            }
+        }
 
-        // if tracing::enabled!(tracing::Level::DEBUG) {
-        //     let success = results.iter().filter(|r| r.is_ok()).count();
-        //     let failed = results.len() - success;
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            let success = results.iter().filter(|r| r.is_ok()).count();
+            let failed = results.len() - success;
 
-        //     tracing::debug!(success, failed, "attempted consume events")
-        // }
+            tracing::debug!(success, failed, "attempted consume events")
+        }
 
         Ok(())
     }
