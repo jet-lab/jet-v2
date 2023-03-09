@@ -693,6 +693,8 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, borrower.tickets().await?);
     assert_eq!(999, borrower.collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
+    // No tokens have been disbursed, so this should be 0
+    assert_eq!(0, manager.collected_fees().await?);
 
     lender
         .refresh_and_margin_lend_order(underlying(1_001, 2_000))
@@ -725,6 +727,9 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, lender.tickets().await?);
     assert_eq!(1_201, lender.collateral().await?);
     assert_eq!(0, lender.claims().await?);
+
+    // FIXME: an exact number would be nice
+    assert!(manager.collected_fees().await? > 0);
 
     Ok(())
 }
@@ -790,6 +795,9 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(0, borrower.tickets().await?);
     assert_eq!(0, borrower.collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
+
+    // FIXME: an exact number would be nice
+    assert!(manager.collected_fees().await? > 0);
 
     manager.consume_events().await?;
     // assert!(false);

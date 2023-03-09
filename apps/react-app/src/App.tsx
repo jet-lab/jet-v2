@@ -7,7 +7,6 @@ import {
   MathWalletAdapter,
   SolflareWalletAdapter,
   SolongWalletAdapter,
-  SolletWalletAdapter,
   BraveWalletAdapter
 } from '@solana/wallet-adapter-wallets';
 import { lazy, Suspense, useMemo } from 'react';
@@ -35,7 +34,6 @@ export const App = (): JSX.Element => {
       new SolflareWalletAdapter(),
       new SolongWalletAdapter(),
       new MathWalletAdapter(),
-      new SolletWalletAdapter(),
       ...(isDebug ? [new E2EWalletAdapter()] : [])
     ],
     [isDebug]

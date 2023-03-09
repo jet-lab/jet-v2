@@ -53,7 +53,10 @@ export function TokenInput(props: {
   const pools = useRecoilValue(Pools);
   const tokenPool = useMemo(
     () =>
-      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => props.poolSymbol ? pool.symbol === props.poolSymbol : pool.address.toBase58() === selectedPoolKey),
+      pools?.tokenPools &&
+      Object.values(pools?.tokenPools).find(pool =>
+        props.poolSymbol ? pool.symbol === props.poolSymbol : pool.address.toBase58() === selectedPoolKey
+      ),
     [selectedPoolKey, props.poolSymbol, pools]
   );
   const currentAction = useRecoilValue(CurrentAction);

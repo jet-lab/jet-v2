@@ -285,8 +285,8 @@ pub mod jet_fixed_term {
     }
 
     /// Crank specific instruction, processes the event queue
-    pub fn consume_events<'a, 'b, 'info>(
-        ctx: Context<'a, 'b, 'b, 'info, ConsumeEvents<'info>>,
+    pub fn consume_events<'b, 'info>(
+        ctx: Context<'_, 'b, 'b, 'info, ConsumeEvents<'info>>,
         num_events: u32,
         seed_bytes: Vec<u8>,
     ) -> Result<()> {
@@ -390,4 +390,7 @@ pub mod seeds {
 
     #[constant]
     pub const UNDERLYING_TOKEN_VAULT: &[u8] = b"underlying_token_vault";
+
+    #[constant]
+    pub const FEE_VAULT: &[u8] = b"fee_vault";
 }

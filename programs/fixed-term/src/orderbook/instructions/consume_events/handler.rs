@@ -6,8 +6,9 @@ use agnostic_orderbook::{
     },
 };
 use anchor_lang::prelude::*;
-use jet_program_common::traits::{SafeAdd, TryAddAssign};
 use num_traits::FromPrimitive;
+
+use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 
 use crate::{
     control::state::Market,
@@ -66,15 +67,20 @@ fn handle_fill<'info>(
     fill: FillInfo,
 ) -> Result<()> {
     match accounts {
-        FillAccounts::Margin(accs) => {
-            handle_margin_fill(&ctx.accounts.market, accs, fill, ctx.accounts.payer.key())
-        }
+        FillAccounts::Margin(accs) => handle_margin_fill(
+            ctx,
+            &ctx.accounts.market,
+            accs,
+            fill,
+            ctx.accounts.payer.key(),
+        ),
         FillAccounts::Signer(accs) => handle_signer_fill(ctx, accs, fill),
     }
 }
 
 #[inline(never)]
 fn handle_margin_fill<'info>(
+    ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
     market: &AccountLoader<'info, Market>,
     mut accounts: MarginFillAccounts<'info>,
     info: FillInfo,
@@ -134,9 +140,16 @@ fn handle_margin_fill<'info>(
             user.assets.reduce_order(quote_size);
             let tenor = market.load()?.borrow_tenor;
             let sequence_number = if let Some(term_account) = accounts.term_account {
-                let disperse = market.load()?.loan_to_disburse(quote_size);
-                market.load_mut()?.collected_fees.try_add_assign(disperse)?;
-                user.assets.entitled_tokens.try_add_assign(disperse)?;
+                let disburse = market.load()?.loan_to_disburse(quote_size);
+                let fees = quote_size.safe_sub(disburse)?;
+
+                ctx.withdraw(
+                    &ctx.accounts.underlying_token_vault,
+                    &ctx.accounts.fee_vault,
+                    fees,
+                )?;
+
+                user.assets.entitled_tokens.try_add_assign(disburse)?;
 
                 let maturation_timestamp = Clock::get()?.unix_timestamp.safe_add(tenor as i64)?;
                 let sequence_number = user
@@ -168,6 +181,7 @@ fn handle_margin_fill<'info>(
                     maturation_timestamp,
                     quote_filled: quote_size,
                     base_filled: base_size,
+                    fees,
                     flags,
                 });
                 user.emit_all_balances();

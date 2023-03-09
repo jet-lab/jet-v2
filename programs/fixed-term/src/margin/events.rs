@@ -46,6 +46,7 @@ pub struct TermLoanCreated {
     pub quote_filled: u64,
     pub base_filled: u64,
     pub flags: TermLoanFlags,
+    pub fees: u64,
 }
 
 #[event]

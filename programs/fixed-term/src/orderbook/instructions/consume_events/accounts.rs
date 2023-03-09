@@ -18,6 +18,7 @@ pub struct ConsumeEvents<'info> {
     #[account(
         has_one = ticket_mint @ FixedTermErrorCode::WrongTicketMint,
         has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
+        has_one = fee_vault @ FixedTermErrorCode::WrongVault,
         has_one = orderbook_market_state @ FixedTermErrorCode::WrongMarketState,
         has_one = event_queue @ FixedTermErrorCode::WrongEventQueue,
     )]
@@ -31,6 +32,10 @@ pub struct ConsumeEvents<'info> {
     /// CHECK: has_one
     #[account(mut)]
     pub underlying_token_vault: AccountInfo<'info>,
+    /// The market fee vault
+    /// CHECK: has_one
+    #[account(mut)]
+    pub fee_vault: AccountInfo<'info>,
 
     // aaob accounts
     /// CHECK: handled by aaob
