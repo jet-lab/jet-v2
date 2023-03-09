@@ -1,6 +1,4 @@
-//! This file is only for functions that derive fixed term pubkeys from other
-//! known data. Nothing in this file should be async or fallible with any side
-//! effects.
+//! PDA derivation functions for the fixed term program
 
 use anchor_lang::prelude::Pubkey;
 use jet_fixed_term::seeds;
@@ -105,5 +103,12 @@ pub fn user_ticket_collateral(margin_user: &Pubkey) -> Pubkey {
     fixed_term_address(&[
         jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
         margin_user.as_ref(),
+    ])
+}
+
+pub fn orderbook_market_state(market: &Pubkey) -> Pubkey {
+    fixed_term_address(&[
+        jet_fixed_term::seeds::ORDERBOOK_MARKET_STATE,
+        market.as_ref(),
     ])
 }

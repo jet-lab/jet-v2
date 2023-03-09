@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use jet_margin_sdk::fixed_term::{
-    recover_uninitialized, FixedTermIxBuilder, InitializeMarketParams, OrderBookAddresses,
+    ix::recover_uninitialized, FixedTermIxBuilder, InitializeMarketParams, OrderbookAddresses,
     FIXED_TERM_PROGRAM,
 };
 use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
@@ -130,7 +130,7 @@ pub async fn process_create_fixed_term_market<'a>(
         params.token_oracle,
         params.ticket_oracle,
         None,
-        OrderBookAddresses {
+        OrderbookAddresses {
             bids: bids.pubkey(),
             asks: asks.pubkey(),
             event_queue: eq.pubkey(),

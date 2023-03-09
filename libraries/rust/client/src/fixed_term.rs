@@ -400,8 +400,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     pub async fn request_loan_with_params(&self, params: OrderParams) -> ClientResult<I, ()> {
         let mut ixns = vec![];
 
-        let token_account = self
-            .account
+        self.account
             .with_deposit_position(&self.builder.token_mint(), &mut ixns)
             .await?;
 
@@ -412,7 +411,6 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
                 .builder
                 .adapter_invoke(self.builder.margin_borrow_order(
                     self.account.address,
-                    Some(token_account),
                     params,
                     self.get_next_loan_seq_no(),
                 )),

@@ -1,7 +1,7 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::Result;
-use hosted_tests::fixed_term::{initialize_test_mint, TestManager};
+use hosted_tests::fixed_term::{initialize_test_mint, OrderbookKeypairs, TestManager};
 use hosted_tests::margin::MarginClient;
 use hosted_tests::solana_test_context;
 use jet_margin_sdk::{
@@ -33,9 +33,11 @@ async fn main() -> Result<()> {
         derive_airspace("default"),
         &keys::mint().pubkey(),
         keys::mint(),
-        &keys::event_queue(),
-        &keys::bids(),
-        &keys::asks(),
+        OrderbookKeypairs {
+            event_queue: keys::event_queue(),
+            bids: keys::bids(),
+            asks: keys::asks(),
+        },
         keys::usdc_price().pubkey(),
         keys::ticket_price().pubkey(),
     )

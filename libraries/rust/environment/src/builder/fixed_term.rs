@@ -10,7 +10,7 @@ use jet_instructions::{
     fixed_term::{
         derive::{self, market_from_tenor},
         event_queue_len, orderbook_slab_len, FixedTermIxBuilder, InitializeMarketParams, Market,
-        OrderBookAddresses, FIXED_TERM_PROGRAM,
+        OrderbookAddresses, FIXED_TERM_PROGRAM,
     },
     test_service::{
         self, derive_pyth_price, derive_pyth_product, derive_token_info, TokenCreateParams,
@@ -66,7 +66,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
             token.pyth_price,
             token.pyth_price,
             Some(fee_destination),
-            OrderBookAddresses {
+            OrderbookAddresses {
                 bids: market.bids,
                 asks: market.asks,
                 event_queue: market.event_queue,
@@ -229,7 +229,7 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     let key_bids = Keypair::new();
     let key_asks = Keypair::new();
 
-    let orderbook = OrderBookAddresses {
+    let orderbook = OrderbookAddresses {
         bids: key_bids.pubkey(),
         asks: key_asks.pubkey(),
         event_queue: key_eq.pubkey(),

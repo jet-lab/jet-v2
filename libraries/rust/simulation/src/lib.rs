@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anyhow::Error;
+use lazy_static::__Deref;
 use solana_client::client_error::ClientError;
 use std::{
     cell::RefCell,
@@ -107,6 +108,11 @@ macro_rules! assert_program_error {
 
 pub trait Keygen: Send + Sync {
     fn generate_key(&self) -> Keypair;
+}
+impl Keygen for Arc<dyn Keygen> {
+    fn generate_key(&self) -> Keypair {
+        self.deref().generate_key()
+    }
 }
 
 #[derive(Clone)]

@@ -29,7 +29,7 @@ use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
         settler::{settle_margin_users_loop, SettleMarginUsersConfig},
-        FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
+        FixedTermIxBuilder, OrderbookAddresses, OwnedEventQueue,
     },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
@@ -96,9 +96,7 @@ pub struct TestManager {
     pub ix_builder: FixedTermIxBuilder,
     pub event_consumer: Arc<EventConsumer>,
     pub margin_accounts_to_settle: AsyncNoDupeQueue<Pubkey>,
-    pub bids: Keypair,
-    pub asks: Keypair,
-    pub event_queue: Keypair,
+    pub orderbook: OrderbookKeypairs,
     pub mint_authority: Keypair,
     airspace: Pubkey,
 }
@@ -110,9 +108,7 @@ impl Clone for TestManager {
             ix_builder: self.ix_builder.clone(),
             event_consumer: self.event_consumer.clone(),
             keygen: self.keygen.clone(),
-            bids: clone(&self.bids),
-            asks: clone(&self.asks),
-            event_queue: clone(&self.event_queue),
+            orderbook: self.orderbook.clone(),
             mint_authority: clone(&self.mint_authority),
             margin_accounts_to_settle: AsyncNoDupeQueue::new(),
             airspace: self.airspace,
@@ -139,9 +135,7 @@ impl TestManager {
             client.margin.airspace(),
             &mint,
             mint_authority,
-            &client.generate_key(),
-            &client.generate_key(),
-            &client.generate_key(),
+            OrderbookKeypairs::generate(&client.solana.keygen),
             oracle.price,
             ticket_oracle.price,
         )
@@ -159,9 +153,7 @@ impl TestManager {
         airspace: Pubkey,
         mint: &Pubkey,
         mint_authority: Keypair,
-        eq_kp: &Keypair,
-        bids_kp: &Keypair,
-        asks_kp: &Keypair,
+        orderbook: OrderbookKeypairs,
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Self {
@@ -180,20 +172,14 @@ impl TestManager {
             underlying_oracle,
             ticket_oracle,
             None,
-            OrderBookAddresses {
-                bids: bids_kp.pubkey(),
-                asks: asks_kp.pubkey(),
-                event_queue: eq_kp.pubkey(),
-            },
+            (&orderbook).into(),
         );
         Self {
             client: client.clone(),
             event_consumer: Arc::new(EventConsumer::new(client.clone())),
             keygen,
             ix_builder,
-            bids: clone(bids_kp),
-            asks: clone(asks_kp),
-            event_queue: clone(eq_kp),
+            orderbook,
             mint_authority,
             margin_accounts_to_settle: Default::default(),
             airspace,
@@ -209,9 +195,7 @@ impl TestManager {
         init_market(
             &self.client,
             &self.ix_builder,
-            &self.bids,
-            &self.asks,
-            &self.event_queue,
+            self.orderbook.clone(),
             ORDERBOOK_PARAMS,
         )
         .await
@@ -382,35 +366,69 @@ impl TestManager {
     }
 }
 
+pub struct OrderbookKeypairs {
+    pub bids: Keypair,
+    pub asks: Keypair,
+    pub event_queue: Keypair,
+}
+
+impl OrderbookKeypairs {
+    fn generate<K: Keygen>(keygen: &K) -> OrderbookKeypairs {
+        OrderbookKeypairs {
+            event_queue: keygen.generate_key(),
+            bids: keygen.generate_key(),
+            asks: keygen.generate_key(),
+        }
+    }
+}
+
+impl Clone for OrderbookKeypairs {
+    fn clone(&self) -> Self {
+        Self {
+            bids: self.bids.clone(),
+            asks: self.asks.clone(),
+            event_queue: self.event_queue.clone(),
+        }
+    }
+}
+
+impl Into<OrderbookAddresses> for &OrderbookKeypairs {
+    fn into(self) -> OrderbookAddresses {
+        OrderbookAddresses {
+            bids: self.bids.pubkey(),
+            asks: self.asks.pubkey(),
+            event_queue: self.event_queue.pubkey(),
+        }
+    }
+}
+
 pub async fn init_market(
     rpc: &Arc<dyn SolanaRpcClient>,
     ix_builder: &FixedTermIxBuilder,
-    bids: &Keypair,
-    asks: &Keypair,
-    event_queue: &Keypair,
+    ob: OrderbookKeypairs,
     params: InitializeMarketParams,
 ) -> Result<()> {
     let init_eq = {
         let rent = rpc
             .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
             .await?;
-        ix_builder.initialize_event_queue(&event_queue.pubkey(), EVENT_QUEUE_CAPACITY, rent)
+        ix_builder.initialize_event_queue(&ob.event_queue.pubkey(), EVENT_QUEUE_CAPACITY, rent)
     };
     let orderbook_rent = rpc
         .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
         .await?;
     let init_bids =
-        ix_builder.initialize_orderbook_slab(&bids.pubkey(), ORDERBOOK_CAPACITY, orderbook_rent);
+        ix_builder.initialize_orderbook_slab(&ob.bids.pubkey(), ORDERBOOK_CAPACITY, orderbook_rent);
     let init_asks =
-        ix_builder.initialize_orderbook_slab(&asks.pubkey(), ORDERBOOK_CAPACITY, orderbook_rent);
+        ix_builder.initialize_orderbook_slab(&ob.asks.pubkey(), ORDERBOOK_CAPACITY, orderbook_rent);
 
     let payer = rpc.payer().pubkey();
     let init_fee_destination = ix_builder.init_default_fee_destination(&payer).unwrap();
     let init_manager = ix_builder.initialize_market(payer, params);
-    let init_orderbook = ix_builder.initialize_orderbook(rpc.payer().pubkey(), MIN_ORDER_SIZE);
+    let init_orderbook = ix_builder.initialize_orderbook(payer, MIN_ORDER_SIZE);
 
     vec![init_eq, init_bids, init_asks, init_fee_destination]
-        .with_signers(&[event_queue.clone(), bids.clone(), asks.clone()])
+        .with_signers(&[ob.event_queue, ob.bids, ob.asks])
         .send_and_confirm(rpc)
         .await?;
     vec![init_manager, init_orderbook]
@@ -584,7 +602,7 @@ impl TestManager {
         self.load_anchor(&vault).await
     }
     pub async fn load_event_queue(&self) -> Result<OwnedEventQueue> {
-        let data = self.load_data(&self.event_queue.pubkey()).await?;
+        let data = self.load_data(&self.orderbook.event_queue.pubkey()).await?;
 
         Ok(OwnedEventQueue::from(data))
     }
@@ -598,8 +616,8 @@ impl TestManager {
         )
     }
     pub async fn load_orderbook(&self) -> Result<OwnedBook> {
-        let bids_data = self.load_data(&self.bids.pubkey()).await?;
-        let asks_data = self.load_data(&self.asks.pubkey()).await?;
+        let bids_data = self.load_data(&self.orderbook.bids.pubkey()).await?;
+        let asks_data = self.load_data(&self.orderbook.asks.pubkey()).await?;
 
         Ok(OwnedBook {
             bids: bids_data,
@@ -786,7 +804,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .redeem_ticket(self.proxy.pubkey(), ticket, None);
+            .redeem_deposit(self.proxy.pubkey(), ticket, None);
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
@@ -829,12 +847,10 @@ impl<P: Proxy> FixedTermUser<P> {
 
     pub async fn margin_borrow_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
         let debt_seqno = self.load_margin_user().await?.debt.next_new_loan_seqno();
-        let borrow = self.manager.ix_builder.margin_borrow_order(
-            self.proxy.pubkey(),
-            None,
-            params,
-            debt_seqno,
-        );
+        let borrow =
+            self.manager
+                .ix_builder
+                .margin_borrow_order(self.proxy.pubkey(), params, debt_seqno);
         Ok(self
             .proxy
             .invoke_signed(borrow)
