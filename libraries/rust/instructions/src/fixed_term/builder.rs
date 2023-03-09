@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
     seeds,

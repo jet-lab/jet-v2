@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)] // todo more granular
-
 pub mod builder;
 pub mod derive;
 pub mod ix;

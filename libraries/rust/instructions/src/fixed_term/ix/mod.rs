@@ -30,6 +30,8 @@
 //! - make any assumptions, for example setting the payer = crank.
 //! - depend on any pubkeys that can always be derived from other inputs.
 
+#![allow(clippy::too_many_arguments)]
+
 mod admin;
 mod crank;
 mod margin_user;
