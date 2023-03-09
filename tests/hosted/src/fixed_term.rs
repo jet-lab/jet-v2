@@ -392,12 +392,12 @@ impl Clone for OrderbookKeypairs {
     }
 }
 
-impl Into<OrderbookAddresses> for &OrderbookKeypairs {
-    fn into(self) -> OrderbookAddresses {
+impl From<&OrderbookKeypairs> for OrderbookAddresses {
+    fn from(val: &OrderbookKeypairs) -> Self {
         OrderbookAddresses {
-            bids: self.bids.pubkey(),
-            asks: self.asks.pubkey(),
-            event_queue: self.event_queue.pubkey(),
+            bids: val.bids.pubkey(),
+            asks: val.asks.pubkey(),
+            event_queue: val.event_queue.pubkey(),
         }
     }
 }
@@ -1129,7 +1129,7 @@ pub async fn initialize_test_mint(
         .get_minimum_balance_for_rent_exemption(Mint::LEN)
         .await?;
     let transaction =
-        initialize_test_mint_transaction(&mint, payer, &mint_authority, 6, rent, recent_blockhash);
+        initialize_test_mint_transaction(mint, payer, mint_authority, 6, rent, recent_blockhash);
     client
         .rpc
         .send_and_confirm_transaction(&transaction)

@@ -43,7 +43,7 @@ impl RefreshingProxy<MarginIxBuilder> {
     ) -> Self {
         let margin_tx_builder = MarginTxBuilder::new(
             rpc.clone(),
-            Some(clone(&wallet)),
+            Some(clone(wallet)),
             wallet.pubkey(),
             seed,
             airspace,

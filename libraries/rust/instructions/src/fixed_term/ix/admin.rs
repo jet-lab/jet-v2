@@ -112,7 +112,7 @@ pub fn init_default_fee_destination(
     underlying_mint: &Pubkey,
     payer: &Pubkey,
 ) -> Option<Instruction> {
-    let ata = ata(&authority, &underlying_mint);
+    let ata = ata(authority, underlying_mint);
     if fee_destination == &ata {
         Some(if_not_initialized(
             ata,

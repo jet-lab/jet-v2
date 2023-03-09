@@ -136,7 +136,7 @@ pub fn sell_tickets_order_accounts(
     jet_fixed_term::accounts::SellTicketsOrder {
         authority,
         user_ticket_vault: ticket_source.unwrap_or_else(|| ata(&authority, &ticket_mint)),
-        user_token_vault: token_destination.unwrap_or_else(|| ata(&authority, &underlying_mint)),
+        user_token_vault: token_destination.unwrap_or_else(|| ata(&authority, underlying_mint)),
         ticket_mint,
         underlying_token_vault: underlying_token_vault(&orderbook_mut.market),
         orderbook_mut,
@@ -199,7 +199,7 @@ pub fn lend_order_accounts(
             lender_tickets
         },
         lender_tokens,
-        underlying_token_vault: underlying_token_vault(&market),
+        underlying_token_vault: underlying_token_vault(market),
         ticket_mint,
         payer,
         orderbook_mut,

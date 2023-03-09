@@ -70,7 +70,7 @@ pub fn term_loan_bytes(market: &Pubkey, margin_user: &Pubkey, seed: &[u8]) -> Pu
         jet_fixed_term::seeds::TERM_LOAN,
         market.as_ref(),
         margin_user.as_ref(),
-        &seed,
+        seed,
     ])
 }
 
@@ -79,7 +79,7 @@ pub fn term_deposit_bytes(market: &Pubkey, owner: &Pubkey, seed: &[u8]) -> Pubke
         jet_fixed_term::seeds::TERM_DEPOSIT,
         market.as_ref(),
         owner.as_ref(),
-        &seed,
+        seed,
     ])
 }
 
