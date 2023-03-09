@@ -44,14 +44,14 @@ interface Forecast {
   matchedRate?: number;
   selfMatch: boolean;
   riskIndicator?: number;
+  hasEnoughCollateral: boolean;
 }
 
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, prices } = useJetStore(state => ({
+  const { selectedPoolKey } = useJetStore(state => ({
     selectedPoolKey: state.selectedPoolKey,
-    prices: state.prices
   }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -70,13 +70,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
 
   const [pending, setPending] = useState(false);
 
-  const effectiveCollateral = marginAccount?.valuation.effectiveCollateral.toNumber() || 0;
-  const tokenPrice =
-    prices && prices[marketAndConfig.token.mint.toString()]
-      ? prices[marketAndConfig.token.mint.toString()]
-      : { price: Infinity };
-  const hasEnoughCollateral = new TokenAmount(amount, token.decimals).tokens * tokenPrice.price <= effectiveCollateral;
-
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
@@ -85,7 +78,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     basisPoints.lte(new BN(0)) ||
     amount.lte(new BN(0)) ||
     forecast?.selfMatch ||
-    !hasEnoughCollateral;
+    !forecast?.hasEnoughCollateral;
 
   const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     setPending(true);
@@ -141,11 +134,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
       : undefined;
     const setupCheckEstimate = productModel?.makerAccountForecast('borrow', sim, 'setup');
-    if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
-      // FIXME Disable form submission
-      console.log('WARNING Trade violates setup check and should not be allowed');
-    }
-
     const valuationEstimate = productModel?.makerAccountForecast('borrow', sim);
 
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
@@ -163,7 +151,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
       postedRate,
       selfMatch: sim.self_match,
-      riskIndicator: valuationEstimate?.riskIndicator
+      riskIndicator: valuationEstimate?.riskIndicator,
+      hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
     });
   }
 
@@ -297,7 +286,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The offer would match with your own requests in this market.</div>
       )}
-      {!hasEnoughCollateral && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
     </div>
   );
 };
