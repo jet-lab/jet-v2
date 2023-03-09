@@ -254,8 +254,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
             <span>
-              {forecast.matchedAmount.toFixed(token.precision)}
-              {token.symbol}
+              {`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
