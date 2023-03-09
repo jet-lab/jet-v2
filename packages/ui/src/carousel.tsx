@@ -1,0 +1,1 @@
+export const Carousel = () => <div>Simple React Component</div>
