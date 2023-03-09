@@ -40,6 +40,7 @@ interface Forecast {
   selfMatch: boolean;
   fulfilled: boolean;
   riskIndicator?: number;
+  unfilledQty: number;
 }
 
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -85,6 +86,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
+    forecast.unfilledQty > 0 ||
     !hasEnoughCollateral;
 
   const handleForecast = (amount: BN) => {
@@ -120,13 +122,16 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty), token.decimals)
+
       setForecast({
         repayAmount: repayAmount.tokens,
         interest: repayAmount.sub(borrowedAmount).tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
-        riskIndicator: valuationEstimate?.riskIndicator
+        riskIndicator: valuationEstimate?.riskIndicator,
+        unfilledQty: unfilledQty.tokens
       });
     } catch (e) {
       console.log(e);
@@ -255,6 +260,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
       )}
       {!hasEnoughCollateral && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
     </div>
   );
 };
