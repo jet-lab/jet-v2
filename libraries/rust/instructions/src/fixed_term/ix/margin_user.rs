@@ -154,7 +154,6 @@ pub fn margin_repay(
     payer: Pubkey,
     margin_user: Pubkey,
     source: Pubkey,
-    underlying_token_vault: Pubkey,
 ) -> Instruction {
     let data = jet_fixed_term::instruction::Repay { amount }.data();
     let accounts = jet_fixed_term::accounts::Repay {
@@ -167,7 +166,7 @@ pub fn margin_repay(
         source,
         payer,
         source_authority,
-        underlying_token_vault,
+        underlying_token_vault: underlying_token_vault(&market),
         token_program: spl_token::ID,
     }
     .to_account_metas(None);

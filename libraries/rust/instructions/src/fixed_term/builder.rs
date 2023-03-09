@@ -18,11 +18,6 @@ pub struct FixedTermIxBuilder {
     authority: Pubkey,
     market: Pubkey,
     underlying_mint: Pubkey,
-    ticket_mint: Pubkey,
-    underlying_token_vault: Pubkey,
-    claims: Pubkey,
-    ticket_collateral: Pubkey,
-    orderbook_market_state: Pubkey,
     underlying_oracle: Pubkey,
     ticket_oracle: Pubkey,
     fee_destination: Pubkey,
@@ -48,11 +43,6 @@ impl FixedTermIxBuilder {
             authority,
             market,
             underlying_mint,
-            ticket_mint: derive::ticket_mint(&market),
-            underlying_token_vault: derive::underlying_token_vault(&market),
-            claims: derive::claims_mint(&market),
-            ticket_collateral: derive::ticket_collateral_mint(&market),
-            orderbook_market_state: derive::orderbook_market_state(&market),
             underlying_oracle,
             ticket_oracle,
             fee_destination: fee_destination
@@ -73,11 +63,6 @@ impl FixedTermIxBuilder {
                 &market.seed,
             ]),
             underlying_mint: market.underlying_token_mint,
-            ticket_mint: market.ticket_mint,
-            underlying_token_vault: market.underlying_token_vault,
-            claims: market.claims_mint,
-            ticket_collateral: market.ticket_collateral_mint,
-            orderbook_market_state: market.orderbook_market_state,
             underlying_oracle: market.underlying_oracle,
             ticket_oracle: market.ticket_oracle,
             fee_destination: market.fee_destination,
@@ -125,22 +110,22 @@ impl FixedTermIxBuilder {
         self.underlying_mint
     }
     pub fn ticket_mint(&self) -> Pubkey {
-        self.ticket_mint
+        derive::ticket_mint(&self.market)
     }
     pub fn market(&self) -> Pubkey {
         self.market
     }
     pub fn vault(&self) -> Pubkey {
-        self.underlying_token_vault
+        derive::underlying_token_vault(&self.market)
     }
     pub fn orderbook_state(&self) -> Pubkey {
-        self.orderbook_market_state
+        derive::orderbook_market_state(&self.market)
     }
     pub fn claims(&self) -> Pubkey {
-        self.claims
+        derive::claims_mint(&self.market)
     }
     pub fn collateral(&self) -> Pubkey {
-        self.ticket_collateral
+        derive::ticket_collateral_mint(&self.market)
     }
     pub fn event_queue(&self) -> Pubkey {
         self.orderbook.event_queue
@@ -158,7 +143,7 @@ impl FixedTermIxBuilder {
     pub fn orderbook_mut(&self) -> jet_fixed_term::accounts::OrderbookMut {
         jet_fixed_term::accounts::OrderbookMut {
             market: self.market,
-            orderbook_market_state: self.orderbook_market_state,
+            orderbook_market_state: derive::orderbook_market_state(&self.market),
             event_queue: self.orderbook.event_queue,
             bids: self.orderbook.bids,
             asks: self.orderbook.asks,
@@ -182,7 +167,6 @@ impl FixedTermIxBuilder {
             seed,
             events,
             self.market,
-            self.underlying_token_vault,
             self.orderbook.event_queue,
             self.payer,
             self.payer,
@@ -435,7 +419,10 @@ impl FixedTermIxBuilder {
     }
 
     pub fn pause_order_matching(&self) -> Instruction {
-        ix::pause_order_matching(self.market_admin(), self.orderbook_market_state)
+        ix::pause_order_matching(
+            self.market_admin(),
+            derive::orderbook_market_state(&self.market),
+        )
     }
 
     pub fn resume_order_matching(&self) -> Instruction {
@@ -474,7 +461,6 @@ impl FixedTermIxBuilder {
             *payer,
             derive::margin_user(&self.market, margin_account),
             *source,
-            self.underlying_token_vault,
         )
     }
 

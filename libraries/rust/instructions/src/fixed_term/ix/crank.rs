@@ -13,7 +13,6 @@ pub fn consume_events(
     seed: &[u8],
     events: impl IntoIterator<Item = impl Into<Vec<Pubkey>>>,
     market: Pubkey,
-    underlying_token_vault: Pubkey,
     event_queue: Pubkey,
     crank: Pubkey,
     payer: Pubkey,
@@ -21,7 +20,7 @@ pub fn consume_events(
     let mut accounts = jet_fixed_term::accounts::ConsumeEvents {
         market,
         ticket_mint: ticket_mint(&market),
-        underlying_token_vault,
+        underlying_token_vault: underlying_token_vault(&market),
         fee_vault: fee_vault(&market),
         orderbook_market_state: orderbook_market_state(&market),
         event_queue,
