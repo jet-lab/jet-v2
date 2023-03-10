@@ -6,7 +6,9 @@ use anyhow::{Error, Result};
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
 use jet_margin_sdk::solana::keypair::clone;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, WithSigner};
+use jet_margin_sdk::solana::transaction::{
+    SendTransactionBuilder, TransactionBuilderExt, WithSigner,
+};
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::tx_builder::TokenDepositsConfig;
 use jet_margin_sdk::util::asynchronous::MapAsync;

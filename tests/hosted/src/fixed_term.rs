@@ -38,7 +38,9 @@ use jet_margin_sdk::{
     solana::{
         keypair::clone,
         keypair::KeypairExt,
-        transaction::{SendTransactionBuilder, TransactionBuilder, WithSigner},
+        transaction::{
+            SendTransactionBuilder, TransactionBuilder, TransactionBuilderExt, WithSigner,
+        },
     },
     tx_builder::global_initialize_instructions,
     util::no_dupe_queue::AsyncNoDupeQueue,

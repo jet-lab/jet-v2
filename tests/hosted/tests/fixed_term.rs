@@ -22,7 +22,10 @@ use jet_margin_sdk::{
     margin_integrator::{NoProxy, Proxy},
     solana::{
         keypair::KeypairExt,
-        transaction::{InverseSendTransactionBuilder, SendTransactionBuilder, WithSigner},
+        transaction::{
+            InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilderExt,
+            WithSigner,
+        },
     },
     tx_builder::fixed_term::FixedTermPositionRefresher,
     util::data::Concat,

@@ -38,7 +38,8 @@ use jet_margin_sdk::lookup_tables::LookupTable;
 use jet_margin_sdk::margin_integrator::PositionRefresher;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{
-    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder, WithSigner,
+    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder,
+    TransactionBuilderExt, WithSigner,
 };
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;

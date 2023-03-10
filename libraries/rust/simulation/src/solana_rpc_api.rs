@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
@@ -328,5 +329,67 @@ impl SolanaRpcClient for RpcConnection {
 
     fn payer(&self) -> &Keypair {
         &self.0.payer
+    }
+}
+
+/// This allows you pass a reference or smart pointer to a `dyn SolanaRpcClient`
+/// as a SolanaRpcClient. So functions no longer need to require
+/// `Arc<dyn_SolanaRpcClient>` as a parameter any more. Instead, functions can
+/// generically accept any SolanaRpcClient, and the caller can pass in
+/// `Arc<dyn_SolanaRpcClient>` without a problem.
+///
+/// This works with &, Box, and Arc, but not Rc.
+#[async_trait]
+impl<D: Deref<Target = dyn SolanaRpcClient> + Send + Sync> SolanaRpcClient for D {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self.deref().as_any()
+    }
+    async fn get_account(&self, address: &Pubkey) -> Result<Option<Account>> {
+        self.deref().get_account(address).await
+    }
+    async fn get_multiple_accounts(&self, pubkeys: &[Pubkey]) -> Result<Vec<Option<Account>>> {
+        self.deref().get_multiple_accounts(pubkeys).await
+    }
+    async fn get_genesis_hash(&self) -> Result<Hash> {
+        self.deref().get_genesis_hash().await
+    }
+    async fn get_latest_blockhash(&self) -> Result<Hash> {
+        self.deref().get_latest_blockhash().await
+    }
+    async fn get_minimum_balance_for_rent_exemption(&self, length: usize) -> Result<u64> {
+        self.deref()
+            .get_minimum_balance_for_rent_exemption(length)
+            .await
+    }
+    async fn send_transaction(&self, transaction: &Transaction) -> Result<Signature> {
+        self.deref().send_transaction(transaction).await
+    }
+    async fn get_signature_statuses(
+        &self,
+        signatures: &[Signature],
+    ) -> Result<Vec<Option<TransactionStatus>>> {
+        self.deref().get_signature_statuses(signatures).await
+    }
+    async fn get_program_accounts(
+        &self,
+        program_id: &Pubkey,
+        size: Option<usize>,
+    ) -> Result<Vec<(Pubkey, Account)>> {
+        self.deref().get_program_accounts(program_id, size).await
+    }
+    async fn airdrop(&self, account: &Pubkey, amount: u64) -> Result<()> {
+        self.deref().airdrop(account, amount).await
+    }
+    async fn get_slot(&self, commitment_config: Option<CommitmentConfig>) -> Result<Slot> {
+        self.deref().get_slot(commitment_config).await
+    }
+    async fn get_clock(&self) -> Result<Clock> {
+        self.deref().get_clock().await
+    }
+    async fn set_clock(&self, new_clock: Clock) -> Result<()> {
+        self.deref().set_clock(new_clock).await
+    }
+    fn payer(&self) -> &Keypair {
+        self.deref().payer()
     }
 }

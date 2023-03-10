@@ -7,7 +7,10 @@ use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_margin_sdk::{
     ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder},
-    solana::{keypair::clone, transaction::WithSigner},
+    solana::{
+        keypair::clone,
+        transaction::{TransactionBuilderExt, WithSigner},
+    },
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
