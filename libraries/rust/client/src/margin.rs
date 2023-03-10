@@ -9,7 +9,6 @@ use spl_associated_token_account::{
 };
 
 use jet_instructions::{
-    airspace::derive_airspace,
     margin::{derive_margin_account, derive_token_config, MarginIxBuilder},
     margin_pool::derive_margin_pool,
 };
@@ -105,7 +104,7 @@ impl<I: NetworkUserInterface> MarginClient<I> {
         const MAX_DERIVED_ACCOUNTS_TO_CHECK: u16 = 32;
 
         let user = self.client.signer();
-        let airspace = self.client.airspace_address();
+        let airspace = self.client.airspace();
         let possible_accounts = (0..MAX_DERIVED_ACCOUNTS_TO_CHECK)
             .map(|seed| derive_margin_account(&airspace, &user, seed))
             .collect::<Vec<_>>();
@@ -158,7 +157,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
 
     /// the airspace the margin account is a part of
     pub fn airspace(&self) -> Pubkey {
-        self.client.airspace_address()
+        self.client.airspace()
     }
 
     /// The positions currently held by this account
@@ -408,7 +407,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
         };
 
         let underlying_config_address =
-            derive_token_config(&self.client.airspace_address(), &config.underlying_mint);
+            derive_token_config(&self.client.airspace(), &config.underlying_mint);
         let underlying_config = match self
             .client
             .state()
@@ -498,10 +497,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
             .state()
             .get::<TokenConfig>(&position.token)
             .unwrap();
-        let pool_address = derive_margin_pool(
-            &derive_airspace(&self.client.airspace()),
-            &position.underlying_token,
-        );
+        let pool_address = derive_margin_pool(&self.client.airspace(), &position.underlying_token);
         let pool = self
             .client
             .state()
@@ -530,8 +526,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
         self.state()
             .positions()
             .filter_map(|position| {
-                let config_address =
-                    derive_token_config(&self.client.airspace_address(), &position.token);
+                let config_address = derive_token_config(&self.client.airspace(), &position.token);
 
                 self.client
                     .state()

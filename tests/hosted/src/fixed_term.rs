@@ -24,9 +24,7 @@ use jet_fixed_term::{
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
-use jet_instructions::{
-    airspace::derive_airspace, fixed_term::derive_market, margin::MarginConfigIxBuilder,
-};
+use jet_instructions::{fixed_term::derive_market, margin::MarginConfigIxBuilder};
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
@@ -119,7 +117,7 @@ pub struct TestManager {
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
     pub margin_accounts_to_settle: AsyncNoDupeQueue<Pubkey>,
-    airspace: String,
+    airspace: Pubkey,
 }
 
 impl Clone for TestManager {
@@ -138,7 +136,7 @@ impl Clone for TestManager {
             keys: self.keys.clone(),
             keygen: self.keygen.clone(),
             margin_accounts_to_settle: AsyncNoDupeQueue::new(),
-            airspace: self.airspace.clone(),
+            airspace: self.airspace,
         }
     }
 }
@@ -151,12 +149,7 @@ impl TestManager {
             .await?;
         let ticket_mint = fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_MINT,
-            derive_market(
-                &client.margin.airspace_address(),
-                &mint.pubkey(),
-                MARKET_SEED,
-            )
-            .as_ref(),
+            derive_market(&client.margin.airspace(), &mint.pubkey(), MARKET_SEED).as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&ticket_mint)
@@ -181,7 +174,7 @@ impl TestManager {
     #[allow(clippy::too_many_arguments)]
     pub async fn new(
         client: SolanaTestContext,
-        airspace: String,
+        airspace: Pubkey,
         mint: &Keypair,
         eq_kp: &Keypair,
         bids_kp: &Keypair,
@@ -203,7 +196,7 @@ impl TestManager {
 
         let ix_builder = FixedTermIxBuilder::new_from_seed(
             payer.pubkey(),
-            &derive_airspace(&airspace),
+            &airspace,
             &mint.pubkey(),
             MARKET_SEED,
             payer.pubkey(),
@@ -301,14 +294,14 @@ impl TestManager {
             .await?;
         register_deposit(
             &self.client,
-            self.airspace_address(),
+            self.airspace,
             airspace_authority,
             self.ix_builder.token_mint(),
         )
         .await?;
         register_deposit(
             &self.client,
-            self.airspace_address(),
+            self.airspace,
             airspace_authority,
             self.ix_builder.ticket_mint(),
         )
@@ -342,10 +335,6 @@ impl TestManager {
         tx.sign(&signers, self.client.get_latest_blockhash().await?);
 
         self.client.send_and_confirm_transaction(&tx).await
-    }
-
-    pub fn airspace_address(&self) -> Pubkey {
-        derive_airspace(&self.airspace)
     }
 }
 
@@ -550,7 +539,7 @@ impl TestManager {
         airspace_authority: &Keypair,
     ) -> Result<()> {
         let margin_config_ix = MarginConfigIxBuilder::new(
-            self.airspace_address(),
+            self.airspace,
             self.client.payer().pubkey(),
             Some(airspace_authority.pubkey()),
         );
@@ -778,7 +767,7 @@ impl GenerateProxy for MarginIxBuilder {
         owner: &Keypair,
     ) -> Result<Self> {
         ctx.issue_permit(owner.pubkey()).await?;
-        let margin = MarginIxBuilder::new(manager.airspace.clone(), owner.pubkey(), 0);
+        let margin = MarginIxBuilder::new(manager.airspace, owner.pubkey(), 0);
         manager
             .sign_send_transaction(&[margin.create_account()], Some(&[owner]))
             .await?;

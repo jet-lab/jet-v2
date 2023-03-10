@@ -51,6 +51,16 @@ impl AirspaceIxBuilder {
         }
     }
 
+    /// Create a new instruction builder referencing an airspace by its address
+    pub fn new_from_address(address: Pubkey, payer: Pubkey, authority: Pubkey) -> Self {
+        Self {
+            payer,
+            address,
+            authority,
+            seed: "".to_owned(),
+        }
+    }
+
     /// making the field public would allow invalid states because it can
     /// diverge from the seed.
     pub fn address(&self) -> Pubkey {

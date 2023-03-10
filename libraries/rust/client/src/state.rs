@@ -4,6 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use jet_instructions::airspace::derive_airspace;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
@@ -29,17 +30,22 @@ pub struct AccountStates<I> {
 
 impl<I: NetworkUserInterface> AccountStates<I> {
     /// Initialize an empty local state, which can synchronize data from the given interface
-    pub fn new(network: I, app_config: JetAppConfig, airspace: String) -> ClientResult<I, Self> {
+    pub fn new(
+        network: I,
+        app_config: JetAppConfig,
+        airspace_seed: String,
+    ) -> ClientResult<I, Self> {
         let airspace_config = app_config
             .airspaces
             .iter()
-            .find(|entry| entry.name == airspace)
+            .find(|entry| entry.name == airspace_seed)
             .ok_or_else(|| {
-                ClientError::Unexpected(format!("no such airspace {airspace} in app config"))
+                ClientError::Unexpected(format!("no such airspace {airspace_seed} in app config"))
             })?;
 
         let config = StateConfig {
-            airspace,
+            airspace: derive_airspace(&airspace_seed),
+            airspace_seed,
             tokens: airspace_config
                 .tokens
                 .clone()
@@ -93,7 +99,8 @@ impl<I> std::ops::Deref for AccountStates<I> {
 
 #[derive(Debug)]
 pub struct StateConfig {
-    pub airspace: String,
+    pub airspace_seed: String,
+    pub airspace: Pubkey,
     pub tokens: Vec<TokenInfo>,
     pub fixed_term_markets: Vec<Pubkey>,
     pub exchanges: Vec<DexInfo>,

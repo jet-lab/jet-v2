@@ -105,11 +105,7 @@ impl MarginClient {
         })
     }
 
-    pub fn airspace(&self) -> String {
-        self.airspace.seed()
-    }
-
-    pub fn airspace_address(&self) -> Pubkey {
+    pub fn airspace(&self) -> Pubkey {
         self.airspace.address()
     }
 
@@ -297,7 +293,7 @@ impl MarginClient {
         let control_ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
             .set_liquidator(&liquidator, is_liquidator);
         let margin_ix = MarginConfigIxBuilder::new(
-            self.tx_admin.airspace_address(),
+            self.tx_admin.airspace(),
             self.rpc.payer().pubkey(),
             Some(self.airspace_authority.pubkey()),
         )

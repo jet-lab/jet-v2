@@ -94,7 +94,7 @@ impl From<SolanaTestContext> for MarginTestContext {
         MarginTestContext {
             tokens: TokenManager::new(solana.clone()),
             margin_config: MarginConfigIxBuilder::new(
-                margin.airspace_address(),
+                margin.airspace(),
                 solana.rpc.payer().pubkey(),
                 Some(airspace_authority.pubkey()),
             ),
@@ -143,8 +143,8 @@ impl MarginTestContext {
     }
 
     pub async fn issue_permit(&self, user: Pubkey) -> Result<Signature, Error> {
-        let ix = AirspaceIxBuilder::new(
-            &self.margin.airspace(),
+        let ix = AirspaceIxBuilder::new_from_address(
+            self.margin.airspace(),
             self.payer.pubkey(),
             self.airspace_authority.pubkey(),
         )

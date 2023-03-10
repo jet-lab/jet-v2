@@ -32,7 +32,7 @@ use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
 pub use jet_margin::ID as MARGIN_PROGRAM;
 pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 
-use crate::airspace::{derive_airspace, derive_permit};
+use crate::airspace::derive_permit;
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
@@ -48,9 +48,7 @@ pub struct MarginIxBuilder {
     pub address: Pubkey,
 
     /// The airspace the margin account belongs to
-    ///
-    /// The `String` is used to derive the pubkey of the airspace
-    airspace: String,
+    pub airspace: Pubkey,
 
     /// The account paying for any rent.
     /// - Defaults to authority, which defaults to owner.
@@ -64,7 +62,7 @@ pub struct MarginIxBuilder {
 impl MarginIxBuilder {
     /// Create a new [MarginIxBuilder] which uses the margin account as the authority.
     /// Ordinary margin users should use this function to create a builder.
-    pub fn new(airspace: String, owner: Pubkey, seed: u16) -> Self {
+    pub fn new(airspace: Pubkey, owner: Pubkey, seed: u16) -> Self {
         let (address, _) = Pubkey::find_program_address(
             &[owner.as_ref(), seed.to_le_bytes().as_ref()],
             &jet_margin::ID,
@@ -79,15 +77,7 @@ impl MarginIxBuilder {
         }
     }
 
-    pub fn airspace(&self) -> String {
-        self.airspace.clone()
-    }
-
-    pub fn airspace_address(&self) -> Pubkey {
-        derive_airspace(&self.airspace)
-    }
-
-    pub fn new_for_address(airspace: String, address: Pubkey, payer: Pubkey) -> Self {
+    pub fn new_for_address(airspace: Pubkey, address: Pubkey, payer: Pubkey) -> Self {
         Self {
             owner: payer,
             seed: 0,
@@ -122,7 +112,7 @@ impl MarginIxBuilder {
     pub fn create_account(&self) -> Instruction {
         let accounts = ix_account::CreateAccount {
             owner: self.owner,
-            permit: derive_permit(&self.airspace_address(), &self.owner),
+            permit: derive_permit(&self.airspace, &self.owner),
             payer: self.payer(),
             margin_account: self.address,
             system_program: SYSTEM_PROGAM_ID,
@@ -182,7 +172,7 @@ impl MarginIxBuilder {
     pub fn register_position(&self, position_token_mint: Pubkey) -> Instruction {
         let token_account = derive_position_token_account(&self.address, &position_token_mint);
 
-        let config = MarginConfigIxBuilder::new(self.airspace_address(), self.payer(), None)
+        let config = MarginConfigIxBuilder::new(self.airspace, self.payer(), None)
             .derive_token_config(&position_token_mint);
 
         let accounts = ix_account::RegisterPosition {
@@ -244,7 +234,7 @@ impl MarginIxBuilder {
         let accounts = ix_account::RefreshPositionMetadata {
             metadata,
             margin_account: self.address,
-            permit: derive_margin_permit(&self.airspace_address(), &self.authority()),
+            permit: derive_margin_permit(&self.airspace, &self.authority()),
             refresher: self.authority(),
         };
 
@@ -261,13 +251,13 @@ impl MarginIxBuilder {
     ///
     /// `position_token_mint` - The mint for the position to be refreshed
     pub fn refresh_position_config(&self, position_token_mint: &Pubkey) -> Instruction {
-        let config = MarginConfigIxBuilder::new(self.airspace_address(), self.payer(), None)
+        let config = MarginConfigIxBuilder::new(self.airspace, self.payer(), None)
             .derive_token_config(position_token_mint);
 
         let accounts = ix_account::RefreshPositionConfig {
             config,
             margin_account: self.address,
-            permit: derive_margin_permit(&self.airspace_address(), &self.authority()),
+            permit: derive_margin_permit(&self.airspace, &self.authority()),
             refresher: self.authority(),
         };
 
@@ -409,7 +399,7 @@ impl MarginIxBuilder {
     ///
     /// `token_mint` - The mint for the token to be deposited
     pub fn create_deposit_position(&self, token_mint: Pubkey) -> Instruction {
-        let config_ix = MarginConfigIxBuilder::new(self.airspace_address(), self.payer(), None);
+        let config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer(), None);
         let token_account = get_associated_token_address(&self.address, &token_mint);
         let accounts = ix_account::CreateDepositPosition {
             margin_account: self.address,
