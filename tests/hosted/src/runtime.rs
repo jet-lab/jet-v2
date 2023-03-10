@@ -42,14 +42,14 @@ pub struct SolanaTestContext {
 
 impl SolanaTestContext {
     pub async fn new(test_name: &str) -> SolanaTestContext {
-        SolanaTestContext {
-            rpc: get_runtime().await,
-            keygen: if cfg!(feature = "localnet") {
-                Arc::new(RandomKeygen) // so retries will work
-            } else {
-                Arc::new(DeterministicKeygen::new(test_name))
-            },
-        }
+        let keygen = init_keygen(test_name);
+        let rpc = init_runtime(keygen.generate_key()).await;
+
+        rpc.airdrop(&rpc.payer().pubkey(), 10_000 * LAMPORTS_PER_SOL)
+            .await
+            .unwrap();
+
+        Self { rpc, keygen }
     }
 
     pub fn generate_key(&self) -> Keypair {
@@ -66,27 +66,30 @@ impl SolanaTestContext {
     }
 }
 
-async fn get_runtime() -> Arc<dyn SolanaRpcClient> {
+fn init_keygen(seed: &str) -> Arc<dyn Keygen> {
     if cfg!(feature = "localnet") {
-        localnet_runtime().await
+        Arc::new(RandomKeygen)
     } else {
-        simulation_runtime().await
+        Arc::new(DeterministicKeygen::new(seed))
     }
 }
 
-async fn localnet_runtime() -> Arc<dyn SolanaRpcClient> {
-    Arc::new(
-        RpcConnection::new_local_funded(Keypair::new())
-            .await
-            .unwrap(),
-    )
+async fn init_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
+    if cfg!(feature = "localnet") {
+        localnet_runtime(payer).await
+    } else {
+        simulation_runtime(payer).await
+    }
 }
 
-async fn simulation_runtime() -> Arc<dyn SolanaRpcClient> {
-    build_simulation_runtime().await
+async fn localnet_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
+    Arc::new(RpcConnection::new_optimistic(
+        payer,
+        "http://127.0.0.1:8899",
+    ))
 }
 
-async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
+async fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
     let _ = env_logger::builder().is_test(false).try_init();
     let runtime = jet_simulation::create_test_runtime![
         jet_test_service,
@@ -120,13 +123,5 @@ async fn build_simulation_runtime() -> Arc<dyn SolanaRpcClient> {
         ),
     ];
 
-    let payer_key = Keypair::new();
-    let payer = payer_key.pubkey();
-    let rpc = runtime.rpc(payer_key);
-
-    rpc.airdrop(&payer, 10_000 * LAMPORTS_PER_SOL)
-        .await
-        .unwrap();
-
-    Arc::new(rpc)
+    Arc::new(runtime.rpc(payer))
 }
