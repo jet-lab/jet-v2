@@ -487,9 +487,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-              .div(collateralWeight.mul(warningRiskLevel))
-              .div(lamportPrice)
+            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+            .div(collateralWeight.mul(warningRiskLevel))
+            .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power

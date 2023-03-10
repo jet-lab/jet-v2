@@ -22,6 +22,7 @@ use std::{
 
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
+use jet_program_common::CONTROL_AUTHORITY;
 
 use crate::*;
 
@@ -113,6 +114,29 @@ impl<'info> RouteSwapPool<'info> {
 
         Ok(())
     }
+
+    /// Transfer a swap fee (liquidation) to recipient
+    #[inline(never)]
+    fn transfer_fee(
+        &self,
+        source: &AccountInfo<'info>,
+        destination: &AccountInfo<'info>,
+        amount: u64,
+    ) -> Result<()> {
+        token::transfer(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                token::Transfer {
+                    from: source.to_account_info(),
+                    to: destination.to_account_info(),
+                    authority: self.margin_account.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -124,6 +148,31 @@ pub struct RouteSwap<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+impl<'info> RouteSwap<'info> {
+    /// Transfer a swap fee (liquidation) to recipient
+    #[inline(never)]
+    fn transfer_fee(
+        &self,
+        source: &AccountInfo<'info>,
+        destination: &AccountInfo<'info>,
+        amount: u64,
+    ) -> Result<()> {
+        token::transfer(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                token::Transfer {
+                    from: source.to_account_info(),
+                    to: destination.to_account_info(),
+                    authority: self.margin_account.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        Ok(())
+    }
+}
+
 /// Route a swap with up to 3 legs, which can be split across venues (e.g 80/20).
 ///
 /// The instruction relies on extra accounts, which are structured for each leg as:
@@ -131,12 +180,13 @@ pub struct RouteSwap<'info> {
 /// - accounts of the swap instruction
 ///
 /// Where there are multiple swaps, the above are concatenated to each other
-pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, RouteSwapPool<'info>>,
+pub fn route_swap_pool_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, RouteSwapPool<'info>>,
     withdrawal_change_kind: ChangeKind,
     withdrawal_amount: u64,
     minimum_amount_out: u64,
     swap_routes: [SwapRouteDetail; 3],
+    is_liquidation: bool,
 ) -> Result<()> {
     // To protect users, the minimum_amount_out should always be positive.
     // We only check for slippage after all swaps, and some swaps might return 0
@@ -155,6 +205,14 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
     };
 
     let mut remaining_accounts = ctx.remaining_accounts.iter();
+
+    // If this is a liquidation, the first account is:
+    // - fee output PDA of the control authority
+    let fee_recipient = if is_liquidation {
+        Some(liquiation_fee_destination(&mut remaining_accounts)?)
+    } else {
+        None
+    };
     let (mut src_transit, dst_transit) = {
         let slice = remaining_accounts.as_slice();
         (
@@ -177,6 +235,10 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
     if swap_amount_in == 0 {
         return err!(crate::ErrorCode::NoSwapTokensWithdrawn);
     }
+
+    // Data for events
+    let token_in = token::accessor::mint(&src_transit)?;
+    let amount_in = swap_amount_in;
 
     let mut scratch = Scratch::default();
 
@@ -214,9 +276,21 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
 
     let destination_closing_balance = token::accessor::amount(dst_transit)?;
 
-    let swap_amount_out = destination_closing_balance
+    let mut swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
+
+    // If liquidating, transfer liquidation fee
+    let mut liquidation_fees = 0;
+    if let Some(fee_recipient) = fee_recipient {
+        liquidation_fees = liquidation_fee(swap_amount_out);
+        swap_amount_out = swap_amount_out.checked_sub(liquidation_fees).unwrap();
+
+        assert!(swap_amount_out > liquidation_fees);
+        ctx.accounts
+            .transfer_fee(dst_transit, &fee_recipient, liquidation_fees)?;
+    }
+
     // Check if slippage tolerance is exceeded
     if swap_amount_out < minimum_amount_out {
         msg!(
@@ -227,6 +301,8 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
         return Err(error!(crate::ErrorCode::SlippageExceeded));
     }
 
+    msg!("output = {}", swap_amount_out);
+
     // Deposit into the destination pool
     ctx.accounts.deposit(
         dest_pool_accounts,
@@ -236,14 +312,24 @@ pub fn route_swap_pool_handler<'a, 'b, 'c, 'info>(
         swap_amount_out,
     )?;
 
+    emit!(crate::RouteSwapped {
+        margin_account: ctx.accounts.margin_account.key(),
+        token_in,
+        amount_in,
+        amount_out: swap_amount_out,
+        liquidation_fees,
+        routes: swap_routes
+    });
+
     Ok(())
 }
 
-pub fn route_swap_handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+pub fn route_swap_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, RouteSwap<'info>>,
     amount_in: u64,
     minimum_amount_out: u64,
     swap_routes: [SwapRouteDetail; 3],
+    is_liquidation: bool,
 ) -> Result<()> {
     // To protect users, the minimum_amount_out should always be positive.
     // We only check for slippage after all swaps, and some swaps might return 0
@@ -262,6 +348,16 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
     };
 
     let mut remaining_accounts = ctx.remaining_accounts.iter();
+
+    // If this is a liquidation, the first 2 accounts are:
+    // - liquidation account
+    // - fee output PDA of the control authority
+    let fee_recipient = if is_liquidation {
+        Some(liquiation_fee_destination(&mut remaining_accounts)?)
+    } else {
+        None
+    };
+
     let (mut src_transit, dst_transit) = {
         let slice = remaining_accounts.as_slice();
         (
@@ -269,6 +365,9 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
             slice.last().unwrap(),
         )
     };
+
+    // Data for events
+    let token_in = token::accessor::mint(&src_transit)?;
 
     // The destination opening balance is used to track how many tokens were swapped
     let destination_opening_balance = token::accessor::amount(dst_transit)?;
@@ -294,9 +393,21 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
 
     let destination_closing_balance = token::accessor::amount(dst_transit)?;
 
-    let swap_amount_out = destination_closing_balance
+    let mut swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
+
+    // If liquidating, transfer liquidation fee
+    let mut liquidation_fees = 0;
+    if let Some(fee_recipient) = fee_recipient {
+        liquidation_fees = liquidation_fee(swap_amount_out);
+        swap_amount_out = swap_amount_out.checked_sub(liquidation_fees).unwrap();
+
+        assert!(swap_amount_out > liquidation_fees);
+        ctx.accounts
+            .transfer_fee(dst_transit, &fee_recipient, liquidation_fees)?;
+    }
+
     // Check if slippage tolerance is exceeded
     if swap_amount_out < minimum_amount_out {
         msg!(
@@ -306,6 +417,17 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         );
         return Err(error!(crate::ErrorCode::SlippageExceeded));
     }
+
+    emit!(crate::RouteSwapped {
+        margin_account: ctx.accounts.margin_account.key(),
+        token_in,
+        // This could be lowe due to dust remaining after a swap, but is negligible.
+        // We take the exact amount in the pool swap as the values are already calculated,
+        amount_in,
+        amount_out: swap_amount_out,
+        liquidation_fees,
+        routes: swap_routes
+    });
 
     Ok(())
 }
@@ -437,6 +559,24 @@ fn exec_swap_split<'info>(
     };
 
     Ok((dst_ata_opening, dst_ata_closing, dst_ata))
+}
+
+/// Validate fee destination for liquidations
+fn liquiation_fee_destination<'info>(
+    remaining_accounts: &mut Iter<AccountInfo<'info>>,
+) -> Result<AccountInfo<'info>> {
+    let fee_destination = next_account_info(remaining_accounts)?.to_account_info();
+
+    // SAFETY: The token program will validate that this is a token account
+    // when transferring the fee from the user's token account.
+    // We only check that it has the correct authority, being the control program.
+
+    let authority = token::accessor::authority(&fee_destination)?;
+    if authority != CONTROL_AUTHORITY {
+        return err!(crate::ErrorCode::InvalidFeeDestination);
+    }
+
+    Ok(fee_destination)
 }
 
 /// Scratch space for try_accounts, reused to prevent creating accounts each time

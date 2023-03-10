@@ -1,3 +1,4 @@
+import { initWebsocket } from '../websocket';
 import { StateCreator } from 'zustand';
 import { JetStore } from '../store';
 
@@ -20,11 +21,15 @@ export interface AccountsSlice {
   disconnectWallet: () => void;
 }
 
-export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], AccountsSlice> = set => ({
+export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], AccountsSlice> = (set, get) => ({
   accounts: {},
   selectedWallet: null,
   connectWallet: async wallet => {
-    set(() => ({ selectedWallet: wallet }), false, 'CONNECT_WALLET');
+    set(() => {
+      const cluster = get().settings.cluster
+      initWebsocket(cluster, wallet)
+      return ({ selectedWallet: wallet })
+    }, false, 'CONNECT_WALLET');
   },
   disconnectWallet: () => set(() => ({ selectedWallet: null }), false, 'DISCONNECT_WALLET')
 });

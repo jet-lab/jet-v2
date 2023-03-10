@@ -156,7 +156,7 @@ impl TryFrom<pyth_sdk_solana::PriceFeed> for PriceChangeInfo {
 
 /// Invoke a margin adapter with the requested data
 /// * `signed` - sign with the margin account
-pub fn invoke<'info>(ctx: &InvokeAdapter<'_, 'info>, data: Vec<u8>) -> Result<Vec<PositionEvent>> {
+pub fn invoke(ctx: &InvokeAdapter, data: Vec<u8>) -> Result<Vec<PositionEvent>> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
 
     let accounts = ctx

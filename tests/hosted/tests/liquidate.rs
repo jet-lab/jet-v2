@@ -259,7 +259,7 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
 
     let user_b_liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
 
-    let result = user_b_liq.withdraw(&scen.usdc, 50000 * ONE_USDC).await;
+    let result = user_b_liq.withdraw(&scen.usdc, 200_000 * ONE_USDC).await;
 
     assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 

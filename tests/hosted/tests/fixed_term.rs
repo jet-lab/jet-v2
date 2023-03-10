@@ -14,7 +14,7 @@ use hosted_tests::{
 };
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
-    orderbook::state::{CallbackFlags, OrderParams},
+    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams},
 };
 use jet_margin_sdk::{
     cat,
@@ -276,7 +276,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
 
     assert!(manager.load_orderbook().await?.bids()?.first().is_none());
     assert_eq!(order.base_quantity, cancel_event.event.base_size);
-    assert_eq!(cancel_event.callback_info.owner, bob.proxy.pubkey());
+    assert_eq!(cancel_event.callback_info.owner(), bob.proxy.pubkey());
     assert_eq!(cancel_event.event.order_id, order.key);
 
     // test order pausing
@@ -698,6 +698,8 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, borrower.tickets().await?);
     assert_eq!(999, borrower.collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
+    // No tokens have been disbursed, so this should be 0
+    assert_eq!(0, manager.collected_fees().await?);
 
     lender
         .refresh_and_margin_lend_order(underlying(1_001, 2_000))
@@ -730,6 +732,9 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, lender.tickets().await?);
     assert_eq!(1_201, lender.collateral().await?);
     assert_eq!(0, lender.claims().await?);
+
+    // FIXME: an exact number would be nice
+    assert!(manager.collected_fees().await? > 0);
 
     Ok(())
 }
@@ -796,7 +801,11 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(0, borrower.collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
+    // FIXME: an exact number would be nice
+    assert!(manager.collected_fees().await? > 0);
+
     manager.consume_events().await?;
+    // assert!(false);
     manager.expect_and_execute_settlement(&[&lender]).await?;
 
     // todo improve the rounding situation to make this 1_000
@@ -895,7 +904,7 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn auto_roll_borrow() -> Result<()> {
+async fn auto_roll_flags() -> Result<()> {
     let ctx = margin_test_context!();
     let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     let client = manager.client.clone();
@@ -942,7 +951,7 @@ async fn auto_roll_borrow() -> Result<()> {
         .await?;
 
     let posted_info = manager.load_orderbook().await?.asks_order_callback(0)?;
-    assert!(posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
+    assert!(posted_info.flags().contains(CallbackFlags::AUTO_ROLL));
 
     params.auto_roll = false;
     vec![
@@ -959,7 +968,107 @@ async fn auto_roll_borrow() -> Result<()> {
     .await?;
 
     let posted_info = manager.load_orderbook().await?.asks_order_callback(1)?;
-    assert!(!posted_info.flags.contains(CallbackFlags::AUTO_ROLL));
+    assert!(!posted_info.flags().contains(CallbackFlags::AUTO_ROLL));
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn auto_roll_lend_order_is_correct() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    let borrower = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+    let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    lender
+        .set_roll_config(
+            MarketSide::Lending,
+            AutoRollConfig {
+                limit_price: underlying(1_001, 2_000).limit_price,
+            },
+        )
+        .await?;
+    let mut lend_params = underlying(1_001, 2_000);
+    lend_params.auto_roll = true;
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(
+        borrower
+            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
+            .await?,
+    )
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    manager.consume_events().await?;
+    manager.expect_and_execute_settlement(&[&lender]).await?;
+
+    // let the `TermDeposit` mature
+    #[cfg(not(feature = "localnet"))]
+    {
+        let mut clock = manager.client.get_clock().await?;
+        clock.unix_timestamp += 6;
+        manager.client.set_clock(clock).await?;
+    }
+    #[cfg(feature = "localnet")]
+    {
+        std::thread::sleep(std::time::Duration::from_secs(
+            hosted_tests::fixed_term::LEND_TENOR as u64,
+        ));
+    }
+
+    // repay the loan
+    borrower.try_repay_all().await?;
+
+    let market_balance_pre = manager.load_manager_token_vault().await?.amount;
+    manager
+        .auto_roll_term_deposits(&lender.proxy.pubkey())
+        .await?;
+    let market_balance_post = manager.load_manager_token_vault().await?.amount;
+
+    // no tokens should have leaked
+    assert_eq!(market_balance_pre, market_balance_post);
+
+    let order_info = manager.load_orderbook().await?.bids_order_callback(0)?;
+    assert_eq!(order_info.owner(), lender.proxy.pubkey());
+    assert_eq!(
+        MarginCallbackInfo::from(order_info).margin_user,
+        manager
+            .ix_builder
+            .margin_user(lender.proxy.pubkey())
+            .address
+    );
 
     Ok(())
 }

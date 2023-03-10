@@ -36,6 +36,8 @@ export interface MarketInfo {
   ticketCollateralMint: PublicKey
   underlyingOracle: PublicKey
   ticketOracle: PublicKey
+  feeVault: PublicKey
+  feeDestination: PublicKey
   seed: number[]
   bump: number[]
   orderbookPaused: boolean
@@ -53,10 +55,11 @@ export interface MarginUserInfo {
   market: PublicKey
   claims: PublicKey
   collateral: PublicKey
-  underlyingSettlement: PublicKey
-  ticketSettlement: PublicKey
+  ticketCollateral: PublicKey
   debt: DebtInfo
   assets: AssetInfo
+  borrowRollConfig: AutoRollConfig
+  lendRollConfig: AutoRollConfig
 }
 
 export interface DebtInfo {
@@ -65,8 +68,6 @@ export interface DebtInfo {
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
-  borrowRollConfig: AutoRollConfig
-  lendRollConfig: AutoRollConfig
 }
 
 export interface AssetInfo {
@@ -74,6 +75,8 @@ export interface AssetInfo {
   entitledTickets: BN
   nextDepositSeqno: BN
   nextUnredeemedDepositSeqno: BN
+  ticketsStaked: BN
+  postedQuote: BN
   _reserved0: number[]
 }
 
@@ -100,6 +103,7 @@ export class FixedTermMarket {
     bids: PublicKey
     underlyingTokenMint: PublicKey
     underlyingTokenVault: PublicKey
+    feeVault: PublicKey
     ticketMint: PublicKey
     claimsMint: PublicKey
     claimsMetadata: PublicKey
@@ -231,6 +235,7 @@ export class FixedTermMarket {
     const termLoan = await this.deriveTermLoanAddress(marginUser, seed)
     const claims = await this.deriveMarginUserClaims(marginUser)
     const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
 
     return this.program.methods
       .marginBorrowOrder(params)
@@ -243,7 +248,7 @@ export class FixedTermMarket {
         claims,
         ticketCollateral,
         payer,
-        underlyingSettlement: await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true),
+        underlyingSettlement: underlyingSettlement,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
       })
@@ -308,7 +313,7 @@ export class FixedTermMarket {
     let ticketSettlement = userTicketVault
     const marketUser = await this.deriveMarginUserAddress(user)
     if (params.autoStake) {
-      ticketSettlement = await this.deriveTermDepositAddress(marketUser, seed)
+      ticketSettlement = await this.deriveTermDepositAddress(user.address, seed)
     }
     const ticketCollateral = await this.deriveTicketCollateral(marketUser)
     return await this.program.methods
@@ -355,17 +360,23 @@ export class FixedTermMarket {
   }
 
   async repay({
-    user, termLoan, nextTermLoan, payer, source, amount
+    user,
+    termLoan,
+    nextTermLoan,
+    payer,
+    source,
+    amount
   }: {
-    user: MarginAccount,
-    termLoan: Address,
-    nextTermLoan: Address,
-    payer: Address,
-    source: Address,
+    user: MarginAccount
+    termLoan: Address
+    nextTermLoan: Address
+    payer: Address
+    source: Address
     amount: BN
   }) {
     const marketUser = await this.deriveMarginUserAddress(user)
-    return this.program.methods.repay(amount)
+    return this.program.methods
+      .repay(amount)
       .accounts({
         marginUser: marketUser,
         termLoan,
@@ -377,7 +388,7 @@ export class FixedTermMarket {
         claims: await this.deriveMarginUserClaims(marketUser),
         claimsMint: this.addresses.claimsMint,
         market: this.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
   }
@@ -478,13 +489,16 @@ export class FixedTermMarket {
     return await findFixedTermDerivedAccount(["term_loan", this.address, marginUser, seed], this.program.programId)
   }
 
-  async deriveTermDepositAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findFixedTermDerivedAccount(["term_deposit", this.address, marginUser, seed], this.program.programId)
+  async deriveTermDepositAddress(marginAccount: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findFixedTermDerivedAccount(
+      ["term_deposit", this.address, marginAccount, seed],
+      this.program.programId
+    )
   }
 
   getOrderbookModel(tenor: bigint, snapshot: OrderbookSnapshot): OrderbookModel {
     const model = new OrderbookModel(BigInt(tenor))
-    model.refreshFromSnapshot(snapshot);
+    model.refreshFromSnapshot(snapshot)
     this.orderbookModel = model
 
     return model
@@ -500,12 +514,12 @@ export class FixedTermMarket {
     marginAccount: MarginAccount,
     deposit: {
       id: number
-      address: string,
-      sequence_number: number,
-      maturation_timestamp: number,
-      balance: number,
-      rate: number,
-      payer: string,
+      address: string
+      sequence_number: number
+      maturation_timestamp: number
+      balance: number
+      rate: number
+      payer: string
       created_timestamp: number
     },
     market: FixedTermMarket
@@ -520,37 +534,38 @@ export class FixedTermMarket {
       nextUnredeemedDepositSeqno: marginUserData?.assets.nextUnredeemedDepositSeqno.toNumber(),
       nextDepositSeqno: marginUserData?.assets.nextDepositSeqno.toNumber(),
       deposit_seq_no: deposit.sequence_number
-  })
+    })
 
-    console.table(
-      {
-        deposit: deposit.address,
-        owner: marginUser.toBase58(),
-        authority: marginAccount.address.toBase58(),
-        payer: deposit.payer,
-        tokenAccount: tokenAccount.toBase58(),
-        market: market.address.toBase58(),
-        underlyingTokenVault: market.addresses.underlyingTokenVault.toBase58(),
-        tokenProgram: TOKEN_PROGRAM_ID.toBase58(),
-        ticketCollateral: ticketCollateral.toBase58(),
-        ticketCollateralMint: ticketCollateralMint.toBase58()
-      }
-    )
-    return await this.program.methods.marginRedeemDeposit().accounts({
-      marginUser,
-      ticketCollateral,
-      ticketCollateralMint,
-      inner: {
-        deposit: deposit.address,
-        owner: marginUser,
-        authority: marginAccount.address,
-        payer: deposit.payer,
-        tokenAccount,
-        market: market.address,
-        underlyingTokenVault: market.addresses.underlyingTokenVault,
-        tokenProgram: TOKEN_PROGRAM_ID
-      }
-    }).instruction()
+    console.table({
+      deposit: deposit.address,
+      owner: marginUser.toBase58(),
+      authority: marginAccount.address.toBase58(),
+      payer: deposit.payer,
+      tokenAccount: tokenAccount.toBase58(),
+      market: market.address.toBase58(),
+      underlyingTokenVault: market.addresses.underlyingTokenVault.toBase58(),
+      tokenProgram: TOKEN_PROGRAM_ID.toBase58(),
+      ticketCollateral: ticketCollateral.toBase58(),
+      ticketCollateralMint: ticketCollateralMint.toBase58()
+    })
+    return await this.program.methods
+      .marginRedeemDeposit()
+      .accounts({
+        marginUser,
+        ticketCollateral,
+        ticketCollateralMint,
+        inner: {
+          deposit: deposit.address,
+          owner: marginUser,
+          authority: marginAccount.address,
+          payer: deposit.payer,
+          tokenAccount,
+          market: market.address,
+          underlyingTokenVault: market.addresses.underlyingTokenVault,
+          tokenProgram: TOKEN_PROGRAM_ID
+        }
+      })
+      .instruction()
   }
 }
 
@@ -562,208 +577,194 @@ export interface MarketAndConfig {
 }
 
 export class FixedTermProductModel {
-  private marginAccount: MarginAccount;
-  private pool: Pool;
+  private marginAccount: MarginAccount
+  private pool: Pool
   private collateralWeight: number
   private requiredCollateralFactor: number
 
-  public static fromMarginAccountPool(
-    marginAccount: MarginAccount,
-    pool: Pool,
-  ): FixedTermProductModel {
+  public static fromMarginAccountPool(marginAccount: MarginAccount, pool: Pool): FixedTermProductModel {
     return new FixedTermProductModel(
       marginAccount,
       pool.depositNoteMetadata.valueModifier.toNumber(),
       pool.loanNoteMetadata.valueModifier.toNumber(),
       pool
-    );
+    )
   }
 
   public constructor(
     marginAccount: MarginAccount,
     collateralWeight: number,
     requiredCollateralFactor: number,
-    pool: Pool,
+    pool: Pool
   ) {
-    this.marginAccount = marginAccount;
-    this.collateralWeight = collateralWeight;
-    this.requiredCollateralFactor = requiredCollateralFactor;
-    this.pool = pool;
+    this.marginAccount = marginAccount
+    this.collateralWeight = collateralWeight
+    this.requiredCollateralFactor = requiredCollateralFactor
+    this.pool = pool
   }
 
   private tokenPrice(): number {
-    return this.pool.info?.tokenPriceOracle.aggregate.price || NaN;
+    return this.pool.info?.tokenPriceOracle.aggregate.price || NaN
   }
 
   private tokens(lamports: bigint): number {
-    const tokenDecimals = this.pool.info?.tokenMint.decimals || 0;
-    
-    return Number(lamports) / 10**tokenDecimals;
+    const tokenDecimals = this.pool.info?.tokenMint.decimals || 0
+
+    return Number(lamports) / 10 ** tokenDecimals
   }
 
   private valueOf(lamports: bigint): number {
-    return this.tokens(lamports) * this.tokenPrice();
+    return this.tokens(lamports) * this.tokenPrice()
   }
 
   takerAccountForecast(
     action: "lend" | "borrow",
     sim: TakerSimulation,
-    mode: "setup" | "maintenance" = "maintenance",
+    mode: "setup" | "maintenance" = "maintenance"
   ): ValuationEstimate {
-    let delta: ValuationDelta;
+    let delta: ValuationDelta
 
     if (action == "lend") {
-      const principalAmount = this.valueOf(sim.filled_quote_qty);
-      const repaymentAmount = this.valueOf(sim.filled_base_qty);
-      const principalWeight = this.collateralWeight;
-      const repaymentWeight = this.collateralWeight;
+      const principalAmount = this.valueOf(sim.filled_quote_qty)
+      const repaymentAmount = this.valueOf(sim.filled_base_qty)
+      const principalWeight = this.collateralWeight
+      const repaymentWeight = this.collateralWeight
 
-      delta = this.accounting.termDeposit(principalAmount, repaymentAmount, principalWeight, repaymentWeight);
+      delta = this.accounting.termDeposit(principalAmount, repaymentAmount, principalWeight, repaymentWeight)
     } else if (action == "borrow") {
       // TODO Fees
-      const receivedAmount = this.valueOf(sim.filled_quote_qty);
-      const repaymentAmount = this.valueOf(sim.filled_base_qty);
-      const receivedWeight = this.collateralWeight;
-      let repaymentFactor = this.requiredCollateralFactor;
+      const receivedAmount = this.valueOf(sim.filled_quote_qty)
+      const repaymentAmount = this.valueOf(sim.filled_base_qty)
+      const receivedWeight = this.collateralWeight
+      let repaymentFactor = this.requiredCollateralFactor
       if (mode == "setup") {
-        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber();
+        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber()
       }
 
-      delta = this.accounting.termLoan(receivedAmount, repaymentAmount, receivedWeight, repaymentFactor);
+      delta = this.accounting.termLoan(receivedAmount, repaymentAmount, receivedWeight, repaymentFactor)
     } else {
-      throw Error("unreachable");
+      throw Error("unreachable")
     }
 
-    const estimate = this.accounting.apply(this.marginAccount, delta, mode);
-    return estimate;
+    const estimate = this.accounting.apply(this.marginAccount, delta, mode)
+    return estimate
   }
 
   makerAccountForecast(
     action: "lend" | "borrow",
     sim: MakerSimulation,
-    mode: "setup" | "maintenance" = "maintenance",
+    mode: "setup" | "maintenance" = "maintenance"
   ): ValuationEstimate {
-    let delta: ValuationDelta;
+    let delta: ValuationDelta
 
     if (action == "lend") {
-      const fillPrincipalAmount = this.valueOf(sim.filled_quote_qty);
-      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty);
-      const postPrincipalAmount = this.valueOf(sim.posted_quote_qty);
-      const postRepaymentAmount = this.valueOf(sim.posted_base_qty);
+      const fillPrincipalAmount = this.valueOf(sim.filled_quote_qty)
+      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty)
+      const postPrincipalAmount = this.valueOf(sim.posted_quote_qty)
+      const postRepaymentAmount = this.valueOf(sim.posted_base_qty)
 
-      const principalWeight = this.collateralWeight;
-      const repaymentWeight = this.requiredCollateralFactor;
+      const principalWeight = this.collateralWeight
+      const repaymentWeight = this.requiredCollateralFactor
 
       delta = this.accounting.merge(
-        this.accounting.termDeposit(
-          fillPrincipalAmount, fillRepaymentAmount, principalWeight, repaymentWeight
-        ),
-        this.accounting.loanOffer(
-          postPrincipalAmount, postRepaymentAmount, principalWeight, repaymentWeight,
-        )
-      );
+        this.accounting.termDeposit(fillPrincipalAmount, fillRepaymentAmount, principalWeight, repaymentWeight),
+        this.accounting.loanOffer(postPrincipalAmount, postRepaymentAmount, principalWeight, repaymentWeight)
+      )
     } else if (action == "borrow") {
       // TODO Fees
-      const fillReceivedAmount = this.valueOf(sim.filled_quote_qty);
-      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty);
-      const postReceivedAmount = this.valueOf(sim.posted_quote_qty);
-      const postRepaymentAmount = this.valueOf(sim.posted_base_qty);
+      const fillReceivedAmount = this.valueOf(sim.filled_quote_qty)
+      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty)
+      const postReceivedAmount = this.valueOf(sim.posted_quote_qty)
+      const postRepaymentAmount = this.valueOf(sim.posted_base_qty)
 
-      const receivedWeight = this.collateralWeight;
-      let repaymentFactor = this.requiredCollateralFactor;
+      const receivedWeight = this.collateralWeight
+      let repaymentFactor = this.requiredCollateralFactor
       if (mode == "setup") {
-        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber();
+        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber()
       }
 
       delta = this.accounting.merge(
-        this.accounting.termLoan(
-          fillReceivedAmount, fillRepaymentAmount, receivedWeight, repaymentFactor
-        ),
-        this.accounting.loanRequest(
-          postReceivedAmount, postRepaymentAmount, receivedWeight, repaymentFactor
-        )
-      );
+        this.accounting.termLoan(fillReceivedAmount, fillRepaymentAmount, receivedWeight, repaymentFactor),
+        this.accounting.loanRequest(postReceivedAmount, postRepaymentAmount, receivedWeight, repaymentFactor)
+      )
     } else {
-      throw Error("unreachable");
+      throw Error("unreachable")
     }
 
-    const estimate = this.accounting.apply(this.marginAccount, delta, mode);
+    const estimate = this.accounting.apply(this.marginAccount, delta, mode)
 
-    return estimate;
+    return estimate
   }
 
-  private accounting = { // FIXME Naive implementation below. Lending especially needs attention.
+  private accounting = {
+    // FIXME Naive implementation below. Lending especially needs attention.
 
     termDeposit(
       principalAmount: number,
       repaymentAmount: number,
       principalWeight: number,
-      repaymentWeight: number,
+      repaymentWeight: number
     ): ValuationDelta {
       return {
         liabilities: 0,
         requiredCollateral: 0,
-        weightedCollateral: repaymentWeight * repaymentAmount - principalWeight * principalAmount,
-      };
+        weightedCollateral: repaymentWeight * repaymentAmount - principalWeight * principalAmount
+      }
     },
 
     loanOffer(
       principalAmount: number,
       repaymentAmount: number,
       principalWeight: number,
-      repaymentWeight: number,
+      repaymentWeight: number
     ): ValuationDelta {
-      return this.termDeposit(principalAmount, repaymentAmount, principalWeight, repaymentWeight);
+      return this.termDeposit(principalAmount, repaymentAmount, principalWeight, repaymentWeight)
     },
 
     termLoan(
       receivedAmount: number,
       repaymentAmount: number,
       receivedWeight: number,
-      repaymentFactor: number,
+      repaymentFactor: number
     ): ValuationDelta {
       return {
         liabilities: repaymentAmount,
         requiredCollateral: repaymentAmount / repaymentFactor,
-        weightedCollateral: receivedWeight * receivedAmount,
-      };
+        weightedCollateral: receivedWeight * receivedAmount
+      }
     },
 
     loanRequest(
       receivedAmount: number,
       repaymentAmount: number,
       receivedWeight: number,
-      repaymentFactor: number,
+      repaymentFactor: number
     ): ValuationDelta {
-      return this.termLoan(receivedAmount, repaymentAmount, receivedWeight, repaymentFactor);
+      return this.termLoan(receivedAmount, repaymentAmount, receivedWeight, repaymentFactor)
     },
 
-    apply(
-      account: MarginAccount,
-      delta: ValuationDelta,
-      mode: "setup" | "maintenance"
-    ): ValuationEstimate {
-      let assets: number = NaN;  // FIXME Compute total assets in the margin account
-      let liabilities = account.valuation.liabilities.toNumber();
+    apply(account: MarginAccount, delta: ValuationDelta, mode: "setup" | "maintenance"): ValuationEstimate {
+      let assets: number = NaN // FIXME Compute total assets in the margin account
+      let liabilities = account.valuation.liabilities.toNumber()
 
-      let weightedCollateral = account.valuation.weightedCollateral.toNumber();
-      let requiredCollateral: number;
+      let weightedCollateral = account.valuation.weightedCollateral.toNumber()
+      let requiredCollateral: number
       if (mode == "setup") {
-        requiredCollateral = account.valuation.requiredSetupCollateral.toNumber();
+        requiredCollateral = account.valuation.requiredSetupCollateral.toNumber()
       } else if (mode == "maintenance") {
-        requiredCollateral = account.valuation.requiredCollateral.toNumber();
+        requiredCollateral = account.valuation.requiredCollateral.toNumber()
       } else {
-        throw Error("unreachable");
+        throw Error("unreachable")
       }
 
-      liabilities += delta.liabilities;
-      requiredCollateral += delta.requiredCollateral;
-      weightedCollateral += delta.weightedCollateral;
+      liabilities += delta.liabilities
+      requiredCollateral += delta.requiredCollateral
+      weightedCollateral += delta.weightedCollateral
 
-      const equity = assets - liabilities;
-      const availableCollateral = weightedCollateral - (liabilities + requiredCollateral);
+      const equity = assets - liabilities
+      const availableCollateral = weightedCollateral - (liabilities + requiredCollateral)
 
-      const riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities);
+      const riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
       return {
         assets,
@@ -772,37 +773,33 @@ export class FixedTermProductModel {
         requiredCollateral,
         weightedCollateral,
         availableCollateral,
-        riskIndicator,
+        riskIndicator
       }
     },
 
-    merge(
-      delta1: ValuationDelta,
-      delta2: ValuationDelta,
-    ): ValuationDelta {
+    merge(delta1: ValuationDelta, delta2: ValuationDelta): ValuationDelta {
       return {
         liabilities: delta1.liabilities + delta2.liabilities,
         requiredCollateral: delta1.requiredCollateral + delta2.requiredCollateral,
-        weightedCollateral: delta1.weightedCollateral + delta2.weightedCollateral,
+        weightedCollateral: delta1.weightedCollateral + delta2.weightedCollateral
       }
-    },
-
+    }
   }
 }
 
 export interface ValuationEstimate {
-  assets: number,
-  liabilities: number,
-  equity: number,
-  requiredCollateral: number,
-  weightedCollateral: number,
-  availableCollateral: number,
-  riskIndicator: number,
+  assets: number
+  liabilities: number
+  equity: number
+  requiredCollateral: number
+  weightedCollateral: number
+  availableCollateral: number
+  riskIndicator: number
 }
 
 // TODO When porting to the rust client, might be better to use position deltas.
 export interface ValuationDelta {
-  liabilities: number,
-  requiredCollateral: number,
-  weightedCollateral: number,
+  liabilities: number
+  requiredCollateral: number
+  weightedCollateral: number
 }
