@@ -70,7 +70,7 @@ export const LineChart = ({
   const linesPathsRefs = useRef<RefObject<SVGPathElement>[]>([]);
 
   useEffect(() => {
-    linesPathsRefs.current = series.map(() => createRef<SVGPathElement>());
+    linesPathsRefs.current = series.map(() => createRef<SVGPathElement>())
   }, [series]);
 
   const { xScale, yScale, ordinalColorScale } = useMemo(() => {

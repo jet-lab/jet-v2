@@ -48,7 +48,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const { selectedPoolKey } = useJetStore(state => ({
-    selectedPoolKey: state.selectedPoolKey
+    selectedPoolKey: state.selectedPoolKey,
   }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -110,7 +110,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
 
       setForecast({
         repayAmount: repayAmount.tokens,
@@ -248,18 +248,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && (
-        <div className="fixed-term-warning">Not enough collateral to submit this request</div>
-      )}
-      {forecast && forecast.unfilledQty > 0 && (
-        <div className="fixed-term-warning">
-          Current max liquidity on this market is{' '}
-          {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}
-        </div>
-      )}
-      {forecast && forecast.effectiveRate === 0 && (
-        <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>
-      )}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
+      {forecast && forecast.effectiveRate === 0 && <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>}
     </div>
   );
 };

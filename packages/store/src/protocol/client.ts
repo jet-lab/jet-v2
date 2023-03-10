@@ -31,4 +31,4 @@
 //   const accounts = jetClient?.margin().accounts();
 //   console.log(accounts);
 // };
-export {};
+export {}

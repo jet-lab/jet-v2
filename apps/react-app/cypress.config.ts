@@ -1,5 +1,5 @@
 const cypressConfig = {
-  projectId: '3g2ars',
+  projectId: "3g2ars",
   e2e: {
     screenshotOnRunFailure: true,
     video: true,

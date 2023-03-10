@@ -13,7 +13,7 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
     key: 'created_timestamp',
     render: (date: string) => formatDistanceToNowStrict(new Date(date), { addSuffix: true }),
     sorter: (a, b) => a.created_timestamp - b.created_timestamp,
-    sortDirections: ['descend']
+    sortDirections: ['descend'],
   },
   {
     title: 'Maturity',
@@ -21,7 +21,7 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
     key: 'maturation_timestamp',
     render: (date: string) => formatDistanceToNowStrict(new Date(date), { addSuffix: true }),
     sorter: (a, b) => a.maturation_timestamp - b.maturation_timestamp,
-    sortDirections: ['descend']
+    sortDirections: ['descend'],
   },
   {
     title: 'Balance',
@@ -30,7 +30,7 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
     render: (value: number) =>
       `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
     sorter: (a, b) => a.balance - b.balance,
-    sortDirections: ['descend']
+    sortDirections: ['descend'],
   },
   {
     title: 'Rate',
@@ -38,7 +38,7 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
     key: 'rate',
     render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
     sorter: (a, b) => a.rate - b.rate,
-    sortDirections: ['descend']
+    sortDirections: ['descend'],
   }
 ];
 

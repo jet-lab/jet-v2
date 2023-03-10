@@ -39,69 +39,69 @@ const getPostOrderColumns = ({
   ordersPendingDeletion,
   setOrdersPendingDeletion
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
-  {
-    title: 'Issue date',
-    dataIndex: 'created_timestamp',
-    key: 'created_timestamp',
-    render: (date: number) => `${formatDistanceToNowStrict(date)} ago`,
-    sorter: (a, b) => a.created_timestamp - b.created_timestamp,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Total QTY',
-    dataIndex: 'total_quote_qty',
-    key: 'total_quote_qty',
-    render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`,
-    sorter: (a, b) => a.total_quote_qty - b.total_quote_qty,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Filled QTY',
-    dataIndex: 'filled_quote_qty',
-    key: 'filled_quote_qty',
-    render: (filled: number) => {
-      return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
+    {
+      title: 'Issue date',
+      dataIndex: 'created_timestamp',
+      key: 'created_timestamp',
+      render: (date: number) => `${formatDistanceToNowStrict(date)} ago`,
+      sorter: (a, b) => a.created_timestamp - b.created_timestamp,
+      sortDirections: ['descend'],
     },
-    sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Rate',
-    dataIndex: 'rate',
-    key: 'rate',
-    render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
-    sorter: (a, b) => a.rate - b.rate,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Cancel',
-    key: 'cancel',
-    render: (order: OpenOrder) => {
-      return ordersPendingDeletion.includes(order.order_id) ? (
-        <LoadingOutlined />
-      ) : (
-        <CloseOutlined
-          style={{ color: '#e36868' }}
-          onClick={() => {
-            cancel(
-              market,
-              marginAccount,
-              provider,
-              order,
-              cluster,
-              explorer,
-              pools,
-              markets,
-              refreshOrderBooks,
-              ordersPendingDeletion,
-              setOrdersPendingDeletion
-            );
-          }}
-        />
-      );
+    {
+      title: 'Total QTY',
+      dataIndex: 'total_quote_qty',
+      key: 'total_quote_qty',
+      render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`,
+      sorter: (a, b) => a.total_quote_qty - b.total_quote_qty,
+      sortDirections: ['descend'],
+    },
+    {
+      title: 'Filled QTY',
+      dataIndex: 'filled_quote_qty',
+      key: 'filled_quote_qty',
+      render: (filled: number) => {
+        return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
+      },
+      sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
+      sortDirections: ['descend'],
+    },
+    {
+      title: 'Rate',
+      dataIndex: 'rate',
+      key: 'rate',
+      render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
+      sorter: (a, b) => a.rate - b.rate,
+      sortDirections: ['descend'],
+    },
+    {
+      title: 'Cancel',
+      key: 'cancel',
+      render: (order: OpenOrder) => {
+        return ordersPendingDeletion.includes(order.order_id) ? (
+          <LoadingOutlined />
+        ) : (
+          <CloseOutlined
+            style={{ color: '#e36868' }}
+            onClick={() => {
+              cancel(
+                market,
+                marginAccount,
+                provider,
+                order,
+                cluster,
+                explorer,
+                pools,
+                markets,
+                refreshOrderBooks,
+                ordersPendingDeletion,
+                setOrdersPendingDeletion
+              );
+            }}
+          />
+        );
+      }
     }
-  }
-];
+  ];
 
 const cancel = async (
   market: MarketAndConfig,

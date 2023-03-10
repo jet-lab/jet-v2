@@ -16,12 +16,10 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const dictionary = useRecoilValue(Dictionary);
   const walletTokens = useRecoilValue(WalletTokens);
   const accountNames = useRecoilValue(AccountNames);
-  const { selectedPoolKey, pools } = useJetStore(state => ({
-    selectedPoolKey: state.selectedPoolKey,
-    pools: state.pools
-  }));
+  const { selectedPoolKey, pools } = useJetStore(state => ({ selectedPoolKey: state.selectedPoolKey, pools: state.pools }));
   const currentPool = useMemo(
-    () => pools && Object.values(pools).find(pool => pool.address === selectedPoolKey),
+    () =>
+      pools && Object.values(pools).find(pool => pool.address === selectedPoolKey),
     [selectedPoolKey, pools]
   );
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -182,10 +180,10 @@ export function useTokenInputErrorMessage(account?: MarginAccount | undefined, p
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const projectedRiskIndicator =
     currentPool &&
-    currentAccount &&
-    currentAction &&
-    !(currentAction === 'swap' || currentAction === 'transfer') &&
-    !tokenInputAmount.isZero()
+      currentAccount &&
+      currentAction &&
+      !(currentAction === 'swap' || currentAction === 'transfer') &&
+      !tokenInputAmount.isZero()
       ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
       : currentAccount?.riskIndicator ?? 0;
   const risk = projectedRisk ?? projectedRiskIndicator;

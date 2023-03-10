@@ -48,10 +48,7 @@ export function usePoolsSyncer() {
   const { programs, provider } = useProvider();
   const setPools = useSetRecoilState(Pools);
   const networkState = useRecoilValue(NetworkStateAtom);
-  const { initAllPools, poolsLastUpdated } = useJetStore(state => ({
-    initAllPools: state.initAllPools,
-    poolsLastUpdated: state.poolsLastUpdated
-  }));
+  const { initAllPools, poolsLastUpdated } = useJetStore(state => ({ initAllPools: state.initAllPools, poolsLastUpdated: state.poolsLastUpdated }));
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
