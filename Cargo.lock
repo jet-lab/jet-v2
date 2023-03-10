@@ -2669,6 +2669,7 @@ dependencies = [
  "anchor-spl",
  "jet-margin",
  "jet-margin-pool",
+ "jet-program-common",
  "jet-static-program-registry",
  "stable-swap-anchor",
 ]

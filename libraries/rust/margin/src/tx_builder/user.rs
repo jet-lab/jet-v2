@@ -336,7 +336,7 @@ impl MarginTxBuilder {
 
         let inner_refresh_loan_ix =
             pool.margin_refresh_position(self.ix.address, token_metadata.pyth_price);
-        instructions.push(self.adapter_invoke_ix(inner_refresh_loan_ix));
+        instructions.push(self.ix.accounting_invoke(inner_refresh_loan_ix));
 
         let inner_borrow_ix = pool.margin_borrow(self.ix.address, deposit_position, change);
 
@@ -537,13 +537,14 @@ impl MarginTxBuilder {
         let inner_swap_ix = builder.get_instruction()?;
 
         let setup_instructions = self.setup_swap(builder).await?;
-        let transactions = vec![
-            self.create_transaction_builder(&setup_instructions)?,
-            self.create_transaction_builder(&[
-                ComputeBudgetInstruction::set_compute_unit_limit(800000),
-                self.adapter_invoke_ix(inner_swap_ix),
-            ])?,
-        ];
+        let mut transactions = vec![];
+        if !setup_instructions.is_empty() {
+            transactions.push(self.create_transaction_builder(&setup_instructions)?);
+        }
+        transactions.push(self.create_transaction_builder(&[
+            ComputeBudgetInstruction::set_compute_unit_limit(800000),
+            self.adapter_invoke_ix(inner_swap_ix),
+        ])?);
 
         Ok(transactions)
     }
