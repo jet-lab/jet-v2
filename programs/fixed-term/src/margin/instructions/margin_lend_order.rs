@@ -1,13 +1,11 @@
-use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::{AutoRollConfig, MarginUser},
-    market_token_manager::MarketTokenManager,
+    margin::state::MarginUser,
     orderbook::{
         instructions::lend_order::*,
-        state::{CallbackFlags, OrderParams},
+        state::{LendOrderAccounts, MarginLendAccounts, OrderParams},
     },
     serialization::RemainingAccounts,
     FixedTermErrorCode,
@@ -38,73 +36,30 @@ pub struct MarginLendOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-fn order_flags(user: &Account<MarginUser>, params: &OrderParams) -> Result<CallbackFlags> {
-    let auto_roll = if params.auto_roll {
-        if user.borrow_roll_config == AutoRollConfig::default() {
-            msg!(
-                "Auto roll settings have not been configured for margin user [{}]",
-                user.key()
-            );
-            return err!(FixedTermErrorCode::InvalidAutoRollConfig);
-        }
-        CallbackFlags::AUTO_ROLL
-    } else {
-        CallbackFlags::default()
-    };
-    let auto_stake = if params.auto_stake {
-        CallbackFlags::AUTO_STAKE
-    } else {
-        CallbackFlags::empty()
-    };
-
-    Ok(CallbackFlags::MARGIN | auto_roll | auto_stake)
-}
-
 pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams) -> Result<()> {
-    let user = &mut ctx.accounts.margin_user;
-
-    let (callback_info, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
-        ctx.accounts.inner.authority.key(),
-        Side::Bid,
-        params,
-        user.key(),
-        user.key(),
+    let a = ctx.accounts;
+    let accounts = &mut MarginLendAccounts {
+        margin_user: &mut a.margin_user,
+        ticket_collateral: &a.ticket_collateral,
+        ticket_collateral_mint: &a.ticket_collateral_mint,
+        inner: &mut LendOrderAccounts {
+            authority: &a.inner.authority,
+            orderbook_mut: &mut a.inner.orderbook_mut,
+            ticket_settlement: &a.inner.ticket_settlement,
+            lender_tokens: a.inner.lender_tokens.as_ref(),
+            underlying_token_vault: &a.inner.underlying_token_vault,
+            ticket_mint: &a.inner.ticket_mint,
+            payer: &a.inner.payer,
+            system_program: &a.inner.system_program,
+            token_program: &a.inner.token_program,
+        },
+    };
+    accounts.margin_lend_order(
+        &params,
         ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        order_flags(user, &params)?,
-    )?;
-    let staked = ctx.accounts.inner.lend(
-        user.key(),
-        &user.assets.next_new_deposit_seqno().to_le_bytes(),
-        user.assets.next_new_deposit_seqno(),
-        callback_info,
-        &order_summary,
-    )?;
-
-    if staked > 0 {
-        ctx.accounts.margin_user.assets.new_deposit(staked)?;
-    }
-
-    ctx.mint(
-        &ctx.accounts.ticket_collateral_mint,
-        &ctx.accounts.ticket_collateral,
-        staked + order_summary.quote_posted()?,
-    )?;
-    emit!(crate::events::OrderPlaced {
-        market: ctx.accounts.inner.orderbook_mut.market.key(),
-        authority: ctx.accounts.inner.authority.key(),
-        margin_user: Some(ctx.accounts.margin_user.key()),
-        order_tag: callback_info.order_tag.as_u128(),
-        order_summary: order_summary.summary(),
-        auto_stake: params.auto_stake,
-        post_only: params.post_only,
-        post_allowed: params.post_allowed,
-        limit_price: params.limit_price,
-        order_type: crate::events::OrderType::MarginLend,
-    });
-    ctx.accounts.margin_user.emit_asset_balances();
-
-    Ok(())
+        true,
+    )
 }

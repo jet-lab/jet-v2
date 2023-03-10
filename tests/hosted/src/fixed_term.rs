@@ -39,7 +39,9 @@ use jet_margin_sdk::{
     margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
-        transaction::{SendTransactionBuilder, TransactionBuilder, WithSigner},
+        transaction::{
+            InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder, WithSigner,
+        },
     },
     tx_builder::{
         fixed_term::FixedTermPositionRefresher, global_initialize_instructions, MarginTxBuilder,
@@ -351,9 +353,8 @@ impl TestManager {
             if pending == 0 {
                 break;
             }
-
-            println!("pending = {pending}");
             self.event_consumer.consume().await?;
+            self.event_consumer.sync_queues().await?;
         }
         Ok(())
     }
@@ -406,6 +407,30 @@ impl TestManager {
         }
     }
 
+    pub async fn auto_roll_term_deposits(&self, margin_account: &Pubkey) -> Result<()> {
+        let mut mature_deposits = self.load_mature_deposits(margin_account).await?;
+        mature_deposits.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
+
+        let mut seq_no = self
+            .load_margin_user(margin_account)
+            .await?
+            .assets
+            .next_new_deposit_seqno();
+        let mut builder = Vec::<TransactionBuilder>::new();
+        for (key, deposit) in mature_deposits {
+            let ix = self.ix_builder.auto_roll_lend_order(
+                *margin_account,
+                key,
+                deposit.payer,
+                None,
+                seq_no,
+            );
+            seq_no += 1;
+            builder.push(ix.into())
+        }
+        builder.send_and_confirm_condensed(&self.client).await?;
+        Ok(())
+    }
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption();
 
@@ -651,6 +676,64 @@ impl TestManager {
         let data = self.load_data(key).await?;
 
         T::try_deserialize(&mut data.as_slice()).map_err(anyhow::Error::from)
+    }
+
+    pub async fn load_margin_user(&self, margin_account: &Pubkey) -> Result<MarginUser> {
+        let key = self.ix_builder.margin_user_account(*margin_account);
+
+        self.load_anchor(&key).await
+    }
+
+    pub async fn load_mature_deposits(
+        &self,
+        margin_account: &Pubkey,
+    ) -> Result<Vec<(Pubkey, TermDeposit)>> {
+        let current_time = self.client.get_clock().await?.unix_timestamp;
+
+        let deposits = self
+            .client
+            .get_program_accounts(
+                &jet_fixed_term::ID,
+                Some(std::mem::size_of::<TermDeposit>() + 8),
+            )
+            .await?
+            .into_iter()
+            .filter_map(|(k, a)| {
+                if let Ok(deposit) = TermDeposit::try_deserialize(&mut a.data.as_slice()) {
+                    if &deposit.owner == margin_account && deposit.matures_at <= current_time {
+                        return Some((k, deposit));
+                    }
+                }
+                None
+            })
+            .collect::<Vec<_>>();
+        Ok(deposits)
+    }
+
+    pub async fn load_outstanding_loans(
+        &self,
+        margin_account: Pubkey,
+    ) -> Result<Vec<(Pubkey, TermLoan)>> {
+        let margin_user = self.ix_builder.margin_user(margin_account).address;
+        let loans = self
+            .client
+            .get_program_accounts(
+                &jet_fixed_term::ID,
+                Some(std::mem::size_of::<TermLoan>() + 8),
+            )
+            .await?
+            .into_iter()
+            .filter_map(|(k, a)| {
+                if let Ok(loan) = TermLoan::try_deserialize(&mut a.data.as_slice()) {
+                    if loan.margin_user == margin_user {
+                        return Some((k, loan));
+                    }
+                }
+                None
+            })
+            .collect::<Vec<_>>();
+
+        Ok(loans)
     }
 }
 
@@ -950,6 +1033,19 @@ impl<P: Proxy> FixedTermUser<P> {
             .data;
 
         T::try_deserialize(&mut data.as_slice()).map_err(anyhow::Error::from)
+    }
+
+    pub async fn try_repay_all(&self) -> Result<()> {
+        let mut outstanding_loans = self
+            .manager
+            .load_outstanding_loans(self.proxy.pubkey())
+            .await?;
+        outstanding_loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
+
+        for (_, loan) in outstanding_loans {
+            self.repay(loan.sequence_number, loan.balance).await?;
+        }
+        Ok(())
     }
 }
 

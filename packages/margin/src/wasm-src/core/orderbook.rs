@@ -147,6 +147,28 @@ impl OrderbookModel {
     }
 
     pub fn refresh(&mut self, bids_buffer: &[u8], asks_buffer: &[u8]) {
+        let extract_orders = |buffer: &[u8], ascending: bool| {
+            let buf1 = &mut buffer.to_owned();
+            let slab1: Slab<CallbackInfo> = Slab::from_buffer_unchecked(buf1).unwrap();
+
+            let buf2 = &mut buffer.to_owned();
+            let slab2: Slab<CallbackInfo> = Slab::from_buffer_unchecked(buf2).unwrap();
+
+            slab2
+                .into_iter(ascending)
+                .map(|leaf| {
+                    let handle = slab1.find_by_key(leaf.key).unwrap();
+                    let callback = slab1.get_callback_info(handle);
+                    Order {
+                        owner: callback.owner(),
+                        order_tag: callback.order_tag(),
+                        base_size: leaf.base_quantity,
+                        price: leaf.price(),
+                    }
+                })
+                .collect()
+        };
+
         self.bids = extract_orders(bids_buffer, false);
         self.asks = extract_orders(asks_buffer, true);
     }
@@ -512,28 +534,6 @@ pub struct MakerSimulation {
     pub filled_vwap: f64,
     pub filled_vwar: f64,
     pub fills: Vec<Fill>,
-}
-
-fn extract_orders(buffer: &[u8], ascending: bool) -> Vec<Order> {
-    let buf1 = &mut buffer.to_owned();
-    let slab1: Slab<CallbackInfo> = Slab::from_buffer_unchecked(buf1).unwrap();
-
-    let buf2 = &mut buffer.to_owned();
-    let slab2: Slab<CallbackInfo> = Slab::from_buffer_unchecked(buf2).unwrap();
-
-    slab2
-        .into_iter(ascending)
-        .map(|leaf| {
-            let handle = slab1.find_by_key(leaf.key).unwrap();
-            let callback = slab1.get_callback_info(handle);
-            Order {
-                owner: callback.owner,
-                order_tag: callback.order_tag,
-                base_size: leaf.base_quantity,
-                price: leaf.price(),
-            }
-        })
-        .collect()
 }
 
 #[cfg(test)]
