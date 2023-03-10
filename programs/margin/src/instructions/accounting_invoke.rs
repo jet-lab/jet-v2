@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 
 use crate::adapter::{self, InvokeAdapter};
-use crate::{events, AdapterConfig, MarginAccount};
+use crate::{events, AdapterConfig, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
 pub struct AccountingInvoke<'info> {
@@ -31,7 +31,9 @@ pub struct AccountingInvoke<'info> {
     pub adapter_program: AccountInfo<'info>,
 
     /// The metadata about the proxy program
-    #[account(has_one = adapter_program)]
+    #[account(has_one = adapter_program,
+              constraint = adapter_config.airspace == margin_account.load()?.airspace @ ErrorCode::WrongAirspace
+    )]
     pub adapter_config: Account<'info, AdapterConfig>,
 }
 

@@ -42,7 +42,8 @@ pub struct LiquidateBegin<'info> {
     /// The permit allowing the liquidator to do this
     #[account(
         constraint = permit.owner == liquidator.key() @ ErrorCode::UnauthorizedLiquidator,
-        constraint = permit.permissions.contains(Permissions::LIQUIDATE) @ ErrorCode::UnauthorizedLiquidator
+        constraint = permit.permissions.contains(Permissions::LIQUIDATE) @ ErrorCode::UnauthorizedLiquidator,
+        constraint = permit.airspace == margin_account.load()?.airspace @ ErrorCode::WrongAirspace
     )]
     pub permit: Account<'info, Permit>,
 
