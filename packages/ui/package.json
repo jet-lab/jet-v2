@@ -14,6 +14,9 @@
         "clean": "rm -rf ./dist & rm -rf .turbo & rm -f tsconfig.tsbuildinfo"
     },
     "dependencies": {
+        "@radix-ui/react-dialog": "^1.0.3",
+        "@radix-ui/react-icons": "^1.2.0",
+        "@radix-ui/react-portal": "^1.0.2",
         "react": "^18.2.0",
         "react-dom": "^18.2.0"
     },
