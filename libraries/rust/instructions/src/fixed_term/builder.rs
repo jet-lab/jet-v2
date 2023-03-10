@@ -277,7 +277,6 @@ impl FixedTermIxBuilder {
             self.market,
             ticket_holder,
             self.underlying_mint,
-            ticket_holder,
             deposit,
             token_destination,
             self.payer,
@@ -300,9 +299,8 @@ impl FixedTermIxBuilder {
             margin_user,
             ix::redeem_deposit_accounts(
                 self.market,
-                margin_user,
-                self.underlying_mint,
                 margin_account,
+                self.underlying_mint,
                 deposit,
                 token_destination,
                 self.payer,
@@ -412,6 +410,24 @@ impl FixedTermIxBuilder {
             lender_tokens,
             self.orderbook_mut(),
             self.underlying_mint,
+            self.payer,
+        )
+    }
+
+    pub fn auto_roll_lend_order(
+        &self,
+        margin_account: Pubkey,
+        deposit: Pubkey,
+        rent_receiver: Pubkey,
+        deposit_seqno: u64,
+    ) -> Instruction {
+        ix::auto_roll_lend_order(
+            deposit_seqno,
+            &self.market,
+            margin_account,
+            deposit,
+            rent_receiver,
+            self.orderbook_mut(),
             self.payer,
         )
     }

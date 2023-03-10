@@ -128,7 +128,6 @@ pub fn margin_lend_order(
         params,
         &deposit_seqno.to_le_bytes(),
         &market,
-        margin_user,
         margin_account,
         Some(ata(&margin_account, &ticket_mint(&market))),
         lender_tokens,
@@ -193,3 +192,57 @@ pub fn configure_auto_roll(
 
     Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
 }
+
+pub fn auto_roll_lend_order(
+    deposit_seqno: u64,
+    market: &Pubkey,
+    margin_account: Pubkey,
+    deposit: Pubkey,
+    rent_receiver: Pubkey,
+    orderbook_mut: OrderbookMut,
+    payer: Pubkey,
+) -> Instruction {
+    let margin_user = margin_user(market, &margin_account);
+    let data = jet_fixed_term::instruction::AutoRollLendOrder {}.data();
+    let accounts = jet_fixed_term::accounts::AutoRollLendOrder {
+        deposit,
+        new_deposit: term_deposit(&market, &margin_account, deposit_seqno + 1),
+        ticket_collateral: user_ticket_collateral(&margin_user),
+        ticket_collateral_mint: ticket_collateral_mint(&market),
+        ticket_mint: ticket_mint(&market),
+        underlying_token_vault: underlying_token_vault(&market),
+        rent_receiver,
+        payer,
+        margin_account,
+        margin_user,
+        orderbook_mut,
+        token_program: spl_token::ID,
+        system_program: solana_sdk::system_program::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
+}
+
+// fn margin_lend_order_accounts(
+//     &self,
+//     margin_account: Pubkey,
+//     lender_tokens: Option<Pubkey>,
+//     params: OrderParams,
+//     deposit_seqno: u64,
+// ) -> jet_fixed_term::accounts::MarginLendOrder {
+//     let margin_user = self.margin_user(margin_account);
+//     jet_fixed_term::accounts::MarginLendOrder {
+//         margin_user: margin_user.address,
+//         ticket_collateral: margin_user.ticket_collateral,
+//         ticket_collateral_mint: self.ticket_collateral,
+//         inner: self.lend_order_accounts(
+//             margin_account,
+//             Some(self.term_deposit_key(&margin_account, &deposit_seqno.to_le_bytes())),
+//             None,
+//             lender_tokens,
+//             params,
+//             &deposit_seqno.to_le_bytes(),
+//         ),
+//     }
+// }

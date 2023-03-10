@@ -76,7 +76,6 @@ pub fn redeem_deposit_accounts(
     market: Pubkey,
     owner: Pubkey,
     underlying_mint: Pubkey,
-    authority: Pubkey,
     deposit: Pubkey,
     token_destination: Option<Pubkey>,
     payer: Pubkey,
@@ -85,7 +84,6 @@ pub fn redeem_deposit_accounts(
     jet_fixed_term::accounts::RedeemDeposit {
         deposit,
         owner,
-        authority,
         token_account,
         payer,
         market,
@@ -165,7 +163,6 @@ pub fn lend_order(
         seed,
         market,
         authority,
-        authority,
         lender_tickets,
         lender_tokens,
         orderbook_mut,
@@ -179,7 +176,6 @@ pub fn lend_order_accounts(
     params: OrderParams,
     seed: &[u8],
     market: &Pubkey,
-    user: Pubkey,
     authority: Pubkey,
     lender_tickets: Option<Pubkey>,
     lender_tokens: Option<Pubkey>,
@@ -190,7 +186,7 @@ pub fn lend_order_accounts(
     let ticket_mint = ticket_mint(market);
     let lender_tickets = lender_tickets.unwrap_or_else(|| ata(&authority, &ticket_mint));
     let lender_tokens = lender_tokens.unwrap_or_else(|| ata(&authority, &underlying_mint));
-    let deposit = term_deposit_bytes(market, &user, seed);
+    let deposit = term_deposit_bytes(market, &authority, seed);
     jet_fixed_term::accounts::LendOrder {
         authority,
         ticket_settlement: if params.auto_stake {

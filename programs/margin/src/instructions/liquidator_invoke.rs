@@ -96,16 +96,16 @@ fn update_and_verify_liquidation(
 ) -> Result<Valuation> {
     let end_value = margin_account.valuation(sys().unix_timestamp())?;
 
-    *liquidation.equity_change_mut() += end_value.equity - start_value.equity; // side effects
+    *liquidation.equity_loss_mut() += start_value.equity - end_value.equity;
 
-    if liquidation.equity_change() < &liquidation.min_equity_change() {
+    if liquidation.equity_loss() > &liquidation.max_equity_loss() {
         msg!(
-            "Illegal liquidation: net loss of {} equity which exceeds the min equity change of {}",
-            liquidation.equity_change(),
-            liquidation.min_equity_change()
+            "Illegal liquidation: net loss of {} equity which exceeds the max equity loss of {}",
+            liquidation.equity_loss(),
+            liquidation.max_equity_loss()
         );
-        err!(ErrorCode::LiquidationLostValue)
-    } else {
-        Ok(end_value)
+        return err!(ErrorCode::LiquidationLostValue);
     }
+
+    Ok(end_value)
 }
