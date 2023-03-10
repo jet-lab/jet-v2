@@ -435,7 +435,7 @@ export class MarginAccount {
       let liquidationData: LiquidationData | undefined = undefined
       if (!marginAccount.liquidator.equals(PublicKey.default)) {
         liquidationData =
-          (await this.programs.margin.account.LiquidationState.fetchNullable(this.findLiquidationStateAddress()))
+          (await this.programs.margin.account.liquidationState.fetchNullable(this.findLiquidationStateAddress()))
             ?.state ?? undefined
       }
       this.info = {
@@ -487,9 +487,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-            .div(collateralWeight.mul(warningRiskLevel))
-            .div(lamportPrice)
+              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+              .div(collateralWeight.mul(warningRiskLevel))
+              .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
@@ -1701,7 +1701,12 @@ export class MarginAccount {
         owner: this.owner,
         marginAccount: this.address,
         adapterProgram: adapterInstruction.programId,
-        adapterMetadata: findDerivedAccount(this.programs.metadata.programId, adapterInstruction.programId)
+        adapterConfig: findDerivedAccount(
+          this.programs.margin.programId,
+          "adapter-config",
+          this.airspace,
+          adapterInstruction.programId
+        )
       })
       .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()
@@ -1747,7 +1752,12 @@ export class MarginAccount {
       .accounts({
         marginAccount: this.address,
         adapterProgram: adapterInstruction.programId,
-        adapterMetadata: findDerivedAccount(this.programs.metadata.programId, adapterInstruction.programId)
+        adapterConfig: findDerivedAccount(
+          this.programs.margin.programId,
+          "adapter-config",
+          this.airspace,
+          adapterInstruction.programId
+        )
       })
       .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()

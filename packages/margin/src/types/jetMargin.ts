@@ -14,17 +14,13 @@ export type JetMargin = {
   constants: [
     {
       name: "TOKEN_CONFIG_SEED"
-      type: {
-        defined: "&[u8]"
-      }
-      value: 'b"token-config"'
+      type: "bytes"
+      value: "[116, 111, 107, 101, 110, 45, 99, 111, 110, 102, 105, 103]"
     },
     {
       name: "ADAPTER_CONFIG_SEED"
-      type: {
-        defined: "&[u8]"
-      }
-      value: 'b"adapter-config"'
+      type: "bytes"
+      value: "[97, 100, 97, 112, 116, 101, 114, 45, 99, 111, 110, 102, 105, 103]"
     },
     {
       name: "LIQUIDATOR_CONFIG_SEED"
@@ -35,10 +31,8 @@ export type JetMargin = {
     },
     {
       name: "PERMIT_SEED"
-      type: {
-        defined: "&[u8]"
-      }
-      value: 'b"permit"'
+      type: "bytes"
+      value: "[112, 101, 114, 109, 105, 116]"
     },
     {
       name: "MAX_ORACLE_CONFIDENCE"
@@ -516,7 +510,7 @@ export type JetMargin = {
           docs: ["The program to be invoked"]
         },
         {
-          name: "adapterMetadata"
+          name: "adapterConfig"
           isMut: false
           isSigner: false
           docs: ["The metadata about the proxy program"]
@@ -580,7 +574,7 @@ export type JetMargin = {
           docs: ["The program to be invoked"]
         },
         {
-          name: "adapterMetadata"
+          name: "adapterConfig"
           isMut: false
           isSigner: false
           docs: ["The metadata about the proxy program"]
@@ -643,10 +637,10 @@ export type JetMargin = {
           docs: ["The liquidator account performing the liquidation actions"]
         },
         {
-          name: "liquidatorMetadata"
+          name: "permit"
           isMut: false
           isSigner: false
-          docs: ["The metadata describing the liquidator"]
+          docs: ["The permit allowing the liquidator to do this"]
         },
         {
           name: "liquidation"
@@ -765,7 +759,7 @@ export type JetMargin = {
           docs: ["The program to be invoked"]
         },
         {
-          name: "adapterMetadata"
+          name: "adapterConfig"
           isMut: false
           isSigner: false
           docs: ["The metadata about the proxy program"]
@@ -920,7 +914,7 @@ export type JetMargin = {
         {
           name: "sourceOwner"
           isMut: false
-          isSigner: true
+          isSigner: false
           docs: ["The authority for the source account"]
         },
         {
@@ -1281,7 +1275,7 @@ export type JetMargin = {
       }
     },
     {
-      name: "LiquidationState"
+      name: "liquidationState"
       docs: ["State of an in-progress liquidation"]
       type: {
         kind: "struct"
@@ -1307,7 +1301,7 @@ export type JetMargin = {
       }
     },
     {
-      name: "TokenConfig"
+      name: "tokenConfig"
       docs: [
         "The configuration account specifying parameters for a token when used",
         "in a position within a margin account."
@@ -1337,7 +1331,7 @@ export type JetMargin = {
               "about (e.g. prices) and otherwise modify position states for these tokens."
             ]
             type: {
-              array: ["u8", 65] // Tuple enum type not supported by anchor
+              defined: "TokenAdmin"
             }
           },
           {
@@ -1366,7 +1360,7 @@ export type JetMargin = {
       }
     },
     {
-      name: "Permit"
+      name: "permit"
       docs: ["Configuration enabling a signer to execute permissioned actions"]
       type: {
         kind: "struct"
@@ -1385,14 +1379,14 @@ export type JetMargin = {
             name: "permissions"
             docs: ["Actions which may be performed with the signature of the owner."]
             type: {
-              array: ["u8", 4] // Opaque type to avoid definition
+              defined: "Permissions"
             }
           }
         ]
       }
     },
     {
-      name: "AdapterConfig"
+      name: "adapterConfig"
       docs: ["Configuration for allowed adapters"]
       type: {
         kind: "struct"
@@ -1512,7 +1506,7 @@ export type JetMargin = {
             name: "admin"
             docs: ["The administration authority for the token"]
             type: {
-              array: ["u8", 65] // Tuple enum type not supported by anchor
+              defined: "TokenAdmin"
             }
           },
           {
@@ -1725,20 +1719,13 @@ export type JetMargin = {
             type: "i64"
           },
           {
-            name: "equityChange"
-            docs: [
-              "cumulative change in equity caused by invocations during the liquidation so far",
-              "negative if equity is lost"
-            ]
+            name: "equityLoss"
+            docs: ["The cumulative amount of equity lost during liquidation so far"]
             type: "i128"
           },
           {
-            name: "minEquityChange"
-            docs: [
-              "lowest amount of equity change that is allowed during invoke steps",
-              "typically negative or zero",
-              "if equity_change goes lower than this number, liquidate_invoke should fail"
-            ]
+            name: "maxEquityLoss"
+            docs: ["The maximum amount of collateral allowed to be lost during all steps"]
             type: "i128"
           }
         ]
@@ -1842,6 +1829,53 @@ export type JetMargin = {
                 type: "publicKey"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenAdmin"
+      docs: ["Description of which program administers a token"]
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "Margin"
+            fields: [
+              {
+                name: "oracle"
+                docs: ["An oracle that can be used to collect price information for a token"]
+                type: {
+                  defined: "TokenOracle"
+                }
+              }
+            ]
+          },
+          {
+            name: "Adapter"
+            fields: ["publicKey"]
+          }
+        ]
+      }
+    },
+    {
+      name: "SyscallProvider"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "Mock"
+            fields: [
+              {
+                defined: "dynFn()->T"
+              }
+            ]
+          },
+          {
+            name: "SolanaRuntime"
+          },
+          {
+            name: "Stub"
           }
         ]
       }
@@ -2349,9 +2383,6 @@ export type JetMargin = {
       msg: "the permit is not owned by the current user"
     }
   ]
-  metadata: {
-    address: "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
-  }
 }
 
 export const IDL: JetMargin = {
@@ -2370,17 +2401,13 @@ export const IDL: JetMargin = {
   constants: [
     {
       name: "TOKEN_CONFIG_SEED",
-      type: {
-        defined: "&[u8]"
-      },
-      value: 'b"token-config"'
+      type: "bytes",
+      value: "[116, 111, 107, 101, 110, 45, 99, 111, 110, 102, 105, 103]"
     },
     {
       name: "ADAPTER_CONFIG_SEED",
-      type: {
-        defined: "&[u8]"
-      },
-      value: 'b"adapter-config"'
+      type: "bytes",
+      value: "[97, 100, 97, 112, 116, 101, 114, 45, 99, 111, 110, 102, 105, 103]"
     },
     {
       name: "LIQUIDATOR_CONFIG_SEED",
@@ -2391,10 +2418,8 @@ export const IDL: JetMargin = {
     },
     {
       name: "PERMIT_SEED",
-      type: {
-        defined: "&[u8]"
-      },
-      value: 'b"permit"'
+      type: "bytes",
+      value: "[112, 101, 114, 109, 105, 116]"
     },
     {
       name: "MAX_ORACLE_CONFIDENCE",
@@ -2872,7 +2897,7 @@ export const IDL: JetMargin = {
           docs: ["The program to be invoked"]
         },
         {
-          name: "adapterMetadata",
+          name: "adapterConfig",
           isMut: false,
           isSigner: false,
           docs: ["The metadata about the proxy program"]
@@ -2936,7 +2961,7 @@ export const IDL: JetMargin = {
           docs: ["The program to be invoked"]
         },
         {
-          name: "adapterMetadata",
+          name: "adapterConfig",
           isMut: false,
           isSigner: false,
           docs: ["The metadata about the proxy program"]
@@ -2999,10 +3024,10 @@ export const IDL: JetMargin = {
           docs: ["The liquidator account performing the liquidation actions"]
         },
         {
-          name: "liquidatorMetadata",
+          name: "permit",
           isMut: false,
           isSigner: false,
-          docs: ["The metadata describing the liquidator"]
+          docs: ["The permit allowing the liquidator to do this"]
         },
         {
           name: "liquidation",
@@ -3121,7 +3146,7 @@ export const IDL: JetMargin = {
           docs: ["The program to be invoked"]
         },
         {
-          name: "adapterMetadata",
+          name: "adapterConfig",
           isMut: false,
           isSigner: false,
           docs: ["The metadata about the proxy program"]
@@ -3276,7 +3301,7 @@ export const IDL: JetMargin = {
         {
           name: "sourceOwner",
           isMut: false,
-          isSigner: true,
+          isSigner: false,
           docs: ["The authority for the source account"]
         },
         {
@@ -3637,7 +3662,7 @@ export const IDL: JetMargin = {
       }
     },
     {
-      name: "LiquidationState",
+      name: "liquidationState",
       docs: ["State of an in-progress liquidation"],
       type: {
         kind: "struct",
@@ -3663,7 +3688,7 @@ export const IDL: JetMargin = {
       }
     },
     {
-      name: "TokenConfig",
+      name: "tokenConfig",
       docs: [
         "The configuration account specifying parameters for a token when used",
         "in a position within a margin account."
@@ -3693,7 +3718,7 @@ export const IDL: JetMargin = {
               "about (e.g. prices) and otherwise modify position states for these tokens."
             ],
             type: {
-              array: ["u8", 65] // Tuple enum type not supported by anchor
+              defined: "TokenAdmin"
             }
           },
           {
@@ -3722,7 +3747,7 @@ export const IDL: JetMargin = {
       }
     },
     {
-      name: "Permit",
+      name: "permit",
       docs: ["Configuration enabling a signer to execute permissioned actions"],
       type: {
         kind: "struct",
@@ -3741,14 +3766,14 @@ export const IDL: JetMargin = {
             name: "permissions",
             docs: ["Actions which may be performed with the signature of the owner."],
             type: {
-              array: ["u8", 4] // Opaque type to avoid definition
+              defined: "Permissions"
             }
           }
         ]
       }
     },
     {
-      name: "AdapterConfig",
+      name: "adapterConfig",
       docs: ["Configuration for allowed adapters"],
       type: {
         kind: "struct",
@@ -3868,7 +3893,7 @@ export const IDL: JetMargin = {
             name: "admin",
             docs: ["The administration authority for the token"],
             type: {
-              array: ["u8", 65] // Tuple enum type not supported by anchor
+              defined: "TokenAdmin"
             }
           },
           {
@@ -4081,20 +4106,13 @@ export const IDL: JetMargin = {
             type: "i64"
           },
           {
-            name: "equityChange",
-            docs: [
-              "cumulative change in equity caused by invocations during the liquidation so far",
-              "negative if equity is lost"
-            ],
+            name: "equityLoss",
+            docs: ["The cumulative amount of equity lost during liquidation so far"],
             type: "i128"
           },
           {
-            name: "minEquityChange",
-            docs: [
-              "lowest amount of equity change that is allowed during invoke steps",
-              "typically negative or zero",
-              "if equity_change goes lower than this number, liquidate_invoke should fail"
-            ],
+            name: "maxEquityLoss",
+            docs: ["The maximum amount of collateral allowed to be lost during all steps"],
             type: "i128"
           }
         ]
@@ -4198,6 +4216,53 @@ export const IDL: JetMargin = {
                 type: "publicKey"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenAdmin",
+      docs: ["Description of which program administers a token"],
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "Margin",
+            fields: [
+              {
+                name: "oracle",
+                docs: ["An oracle that can be used to collect price information for a token"],
+                type: {
+                  defined: "TokenOracle"
+                }
+              }
+            ]
+          },
+          {
+            name: "Adapter",
+            fields: ["publicKey"]
+          }
+        ]
+      }
+    },
+    {
+      name: "SyscallProvider",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "Mock",
+            fields: [
+              {
+                defined: "dynFn()->T"
+              }
+            ]
+          },
+          {
+            name: "SolanaRuntime"
+          },
+          {
+            name: "Stub"
           }
         ]
       }
@@ -4704,8 +4769,5 @@ export const IDL: JetMargin = {
       name: "PermitNotOwned",
       msg: "the permit is not owned by the current user"
     }
-  ],
-  metadata: {
-    address: "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
-  }
+  ]
 }

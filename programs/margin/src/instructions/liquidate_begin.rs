@@ -22,9 +22,9 @@ use jet_program_common::Number128;
 use crate::{
     events,
     syscall::{sys, Sys},
-    ErrorCode, Liquidation, LiquidationState, MarginAccount, LIQUIDATION_MAX_TOTAL_EQUITY_LOSS_BPS,
+    ErrorCode, Liquidation, LiquidationState, MarginAccount, Permissions, Permit,
+    LIQUIDATION_MAX_TOTAL_EQUITY_LOSS_BPS,
 };
-use jet_metadata::LiquidatorMetadata;
 
 #[derive(Accounts)]
 pub struct LiquidateBegin<'info> {
@@ -39,9 +39,12 @@ pub struct LiquidateBegin<'info> {
     /// The liquidator account performing the liquidation actions
     pub liquidator: Signer<'info>,
 
-    /// The metadata describing the liquidator
-    #[account(has_one = liquidator)]
-    pub liquidator_metadata: Account<'info, LiquidatorMetadata>,
+    /// The permit allowing the liquidator to do this
+    #[account(
+        constraint = permit.owner == liquidator.key() @ ErrorCode::UnauthorizedLiquidator,
+        constraint = permit.permissions.contains(Permissions::LIQUIDATE) @ ErrorCode::UnauthorizedLiquidator
+    )]
+    pub permit: Account<'info, Permit>,
 
     /// Account to persist the state of the liquidation
     #[account(

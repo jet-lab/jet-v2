@@ -48,7 +48,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
-  const { cluster, explorer, selectedPoolKey } = useJetStore(state => ({ cluster: state.settings.cluster, explorer: state.settings.explorer, selectedPoolKey: state.selectedPoolKey }));
+  const { cluster, explorer, selectedPoolKey } = useJetStore(state => ({
+    cluster: state.settings.cluster,
+    explorer: state.settings.explorer,
+    selectedPoolKey: state.selectedPoolKey
+  }));
   const currentPool = useMemo(
     () =>
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
@@ -59,7 +63,6 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
-
 
   const [pending, setPending] = useState(false);
 
@@ -101,7 +104,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals);
 
       setForecast({
         repayAmount: repayAmount.tokens,
@@ -114,7 +117,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
       });
 
-      console.log(sim)
+      console.log(sim);
     } catch (e) {
       console.log(e);
     }
@@ -243,9 +246,18 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       {hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this request</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
-      {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
-      {forecast && forecast.effectiveRate === 0 && <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing lend amount.</div>}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && (
+        <div className="fixed-term-warning">Not enough collateral to submit this request</div>
+      )}
+      {forecast && forecast.unfilledQty > 0 && (
+        <div className="fixed-term-warning">
+          Current max liquidity on this market is{' '}
+          {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}
+        </div>
+      )}
+      {forecast && forecast.effectiveRate === 0 && (
+        <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing lend amount.</div>
+      )}
     </div>
   );
 };

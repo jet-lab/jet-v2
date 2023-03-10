@@ -299,6 +299,7 @@ impl MarginIxBuilder {
     /// `adapter_ix` - The instruction to be invoked
     pub fn adapter_invoke(&self, adapter_ix: Instruction) -> Instruction {
         invoke!(
+            self.airspace,
             self.address,
             adapter_ix,
             AdapterInvoke { owner: self.owner }
@@ -311,7 +312,7 @@ impl MarginIxBuilder {
     ///
     /// `adapter_ix` - The instruction to be invoked
     pub fn accounting_invoke(&self, adapter_ix: Instruction) -> Instruction {
-        accounting_invoke(self.address, adapter_ix)
+        accounting_invoke(self.airspace, self.address, adapter_ix)
     }
 
     /// Begin liquidating a margin account
@@ -321,8 +322,7 @@ impl MarginIxBuilder {
     /// `liquidator` - The address of the liquidator
     pub fn liquidate_begin(&self) -> Instruction {
         let liquidator = self.authority();
-        let (liquidator_metadata, _) =
-            Pubkey::find_program_address(&[liquidator.as_ref()], &jet_metadata::id());
+        let permit = derive_margin_permit(&self.airspace, &liquidator);
 
         let (liquidation, _) = Pubkey::find_program_address(
             &[b"liquidation", self.address.as_ref(), liquidator.as_ref()],
@@ -333,7 +333,7 @@ impl MarginIxBuilder {
             margin_account: self.address,
             payer: self.payer(),
             liquidator,
-            liquidator_metadata,
+            permit,
             liquidation,
             system_program: SYSTEM_PROGAM_ID,
         };
@@ -354,6 +354,7 @@ impl MarginIxBuilder {
         );
 
         invoke!(
+            self.airspace,
             self.address,
             adapter_ix,
             LiquidatorInvoke {
@@ -495,8 +496,12 @@ impl MarginIxBuilder {
 /// # Params
 ///
 /// `adapter_ix` - The instruction to be invoked
-pub fn accounting_invoke(margin_account: Pubkey, adapter_ix: Instruction) -> Instruction {
-    invoke!(margin_account, adapter_ix, AccountingInvoke)
+pub fn accounting_invoke(
+    airspace: Pubkey,
+    margin_account: Pubkey,
+    adapter_ix: Instruction,
+) -> Instruction {
+    invoke!(airspace, margin_account, adapter_ix, AccountingInvoke)
 }
 
 /// Utility for creating instructions that modify configuration for the margin program within
@@ -683,19 +688,19 @@ pub fn derive_margin_permit(airspace: &Pubkey, owner: &Pubkey) -> Pubkey {
 /// instruction, such as adapter_invoke, liquidate_invoke, and accounting_invoke
 macro_rules! invoke {
     (
+        $airspace:expr,
         $margin_account:expr,
         $adapter_ix:ident,
         $Instruction:ident $({
             $($additional_field:ident$(: $value:expr)?),* $(,)?
         })?
     ) => {{
-        let (adapter_metadata, _) =
-            Pubkey::find_program_address(&[$adapter_ix.program_id.as_ref()], &jet_metadata::ID);
+        let adapter_config = derive_adapter_config(&$airspace, &$adapter_ix.program_id);
 
         let mut accounts = ix_account::$Instruction {
             margin_account: $margin_account,
             adapter_program: $adapter_ix.program_id,
-            adapter_metadata,
+            adapter_config,
             $($($additional_field$(: $value)?),*)?
         }
         .to_account_metas(None);

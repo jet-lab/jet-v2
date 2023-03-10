@@ -171,14 +171,7 @@ impl AirspaceAdmin {
         let margin_config_ix =
             MarginConfigIxBuilder::new(self.airspace(), self.payer, Some(self.authority));
 
-        // FIXME: remove control legacy
-        let ctrl_ix = ControlIxBuilder::new(self.payer);
-
-        vec![
-            ctrl_ix.set_liquidator(&liquidator, is_liquidator),
-            margin_config_ix.configure_liquidator(liquidator, is_liquidator),
-        ]
-        .into()
+        vec![margin_config_ix.configure_liquidator(liquidator, is_liquidator)].into()
     }
 
     /// Register a fixed term market for use with margin accounts

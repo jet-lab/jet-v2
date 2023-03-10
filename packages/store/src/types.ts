@@ -35,17 +35,17 @@ export interface Loan {
   balance: number;
   is_marked_due: boolean;
   created_timestamp: number;
-  payer: string
+  payer: string;
   rate: number;
 }
 
 export interface Deposit {
-  id: number
-  address: string,
-  sequence_number: number,
-  maturation_timestamp: number,
-  balance: number,
-  rate: number,
-  payer: string,
-  created_timestamp: number
+  id: number;
+  address: string;
+  sequence_number: number;
+  maturation_timestamp: number;
+  balance: number;
+  rate: number;
+  payer: string;
+  created_timestamp: number;
 }

@@ -120,6 +120,10 @@ impl MarginTestContext {
             .send_and_confirm_condensed(&ctx.rpc)
             .await?;
 
+        ctx.margin.register_adapter(&jet_margin_pool::ID).await?;
+        ctx.margin.register_adapter(&jet_margin_swap::ID).await?;
+        ctx.margin.register_adapter(&jet_fixed_term::ID).await?;
+
         Ok(ctx)
     }
 

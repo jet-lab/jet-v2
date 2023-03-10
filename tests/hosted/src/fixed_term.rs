@@ -24,7 +24,10 @@ use jet_fixed_term::{
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
-use jet_instructions::{fixed_term::derive_market, margin::MarginConfigIxBuilder};
+use jet_instructions::{
+    fixed_term::derive_market,
+    margin::{derive_adapter_config, MarginConfigIxBuilder},
+};
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
@@ -33,9 +36,7 @@ use jet_margin_sdk::{
         settler::{settle_margin_users_loop, SettleMarginUsersConfig},
         FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
     },
-    ix_builder::{
-        get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
-    },
+    ix_builder::{get_control_authority_address, MarginIxBuilder},
     margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
@@ -288,7 +289,11 @@ impl TestManager {
     /// register relevant positions.
     pub async fn with_margin(self, airspace_authority: &Keypair) -> Result<Self> {
         self.create_authority_if_missing().await?;
-        self.register_adapter_if_unregistered(&jet_fixed_term::ID)
+        self.register_adapter_if_unregistered(&jet_fixed_term::ID, airspace_authority)
+            .await?;
+        self.register_adapter_if_unregistered(&jet_margin_pool::ID, airspace_authority)
+            .await?;
+        self.register_adapter_if_unregistered(&jet_margin_swap::ID, airspace_authority)
             .await?;
         self.register_tickets_position_metadatata(airspace_authority)
             .await?;
@@ -492,14 +497,18 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_adapter_if_unregistered(&self, adapter: &Pubkey) -> Result<()> {
+    pub async fn register_adapter_if_unregistered(
+        &self,
+        adapter: &Pubkey,
+        authority: &Keypair,
+    ) -> Result<()> {
         if self
             .client
-            .get_account(&get_metadata_address(adapter))
+            .get_account(&derive_adapter_config(&self.airspace, adapter))
             .await?
             .is_none()
         {
-            self.register_adapter(adapter).await?;
+            self.register_adapter(adapter, authority).await?;
         }
 
         Ok(())
@@ -562,10 +571,15 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<()> {
-        let ix = ControlIxBuilder::new(self.client.payer().pubkey()).register_adapter(adapter);
+    pub async fn register_adapter(&self, adapter: &Pubkey, authority: &Keypair) -> Result<()> {
+        let ix = MarginConfigIxBuilder::new(
+            self.airspace,
+            self.client.payer().pubkey(),
+            Some(authority.pubkey()),
+        )
+        .configure_adapter(*adapter, true);
 
-        send_and_confirm(&self.client, &[ix], &[]).await?;
+        send_and_confirm(&self.client, &[ix], &[authority]).await?;
         Ok(())
     }
 

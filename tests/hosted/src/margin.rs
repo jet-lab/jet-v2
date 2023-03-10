@@ -223,8 +223,10 @@ impl MarginClient {
     }
 
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
-        self.rpc
-            .send_and_confirm(self.tx_admin.configure_margin_adapter(*adapter, true))
+        self.tx_admin
+            .configure_margin_adapter(*adapter, true)
+            .with_signer(clone(&self.airspace_authority))
+            .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
     }
@@ -290,8 +292,6 @@ impl MarginClient {
         liquidator: Pubkey,
         is_liquidator: bool,
     ) -> Result<(), Error> {
-        let control_ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
-            .set_liquidator(&liquidator, is_liquidator);
         let margin_ix = MarginConfigIxBuilder::new(
             self.tx_admin.airspace(),
             self.rpc.payer().pubkey(),
@@ -299,12 +299,7 @@ impl MarginClient {
         )
         .configure_liquidator(liquidator, is_liquidator);
 
-        send_and_confirm(
-            &self.rpc,
-            &[control_ix, margin_ix],
-            &[&self.airspace_authority],
-        )
-        .await?;
+        send_and_confirm(&self.rpc, &[margin_ix], &[&self.airspace_authority]).await?;
 
         Ok(())
     }

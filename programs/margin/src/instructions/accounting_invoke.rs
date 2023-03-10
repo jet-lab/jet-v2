@@ -17,10 +17,8 @@
 
 use anchor_lang::prelude::*;
 
-use jet_metadata::MarginAdapterMetadata;
-
 use crate::adapter::{self, InvokeAdapter};
-use crate::{events, MarginAccount};
+use crate::{events, AdapterConfig, MarginAccount};
 
 #[derive(Accounts)]
 pub struct AccountingInvoke<'info> {
@@ -34,7 +32,7 @@ pub struct AccountingInvoke<'info> {
 
     /// The metadata about the proxy program
     #[account(has_one = adapter_program)]
-    pub adapter_metadata: Account<'info, MarginAdapterMetadata>,
+    pub adapter_config: Account<'info, AdapterConfig>,
 }
 
 pub fn accounting_invoke_handler<'info>(

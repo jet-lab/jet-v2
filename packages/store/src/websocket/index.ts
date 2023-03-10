@@ -5,7 +5,7 @@ import { useJetStore } from '../store';
 
 export let ws: WebSocket;
 export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
-  console.log('Connecting WS: ', cluster, wallet)
+  console.log('Connecting WS: ', cluster, wallet);
   if (ws) {
     ws.close();
   }

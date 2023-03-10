@@ -43,8 +43,8 @@ interface MARGIN_POOL_UPDATE {
 interface SUBSCRIBE {
   type: 'SUBSCRIBE';
   payload: {
-    wallet: string,
-    margin_accounts: string[]
+    wallet: string;
+    margin_accounts: string[];
   };
 }
 // *** END SUBSCRIBE EVENT ***
