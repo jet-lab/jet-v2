@@ -1378,9 +1378,7 @@ export type JetMargin = {
           {
             name: "permissions"
             docs: ["Actions which may be performed with the signature of the owner."]
-            type: {
-              defined: "Permissions"
-            }
+            type: "u32"
           }
         ]
       }
