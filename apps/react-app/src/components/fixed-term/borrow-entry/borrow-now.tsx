@@ -40,14 +40,15 @@ interface Forecast {
   selfMatch: boolean;
   fulfilled: boolean;
   riskIndicator?: number;
+  unfilledQty: number;
+  hasEnoughCollateral: boolean;
 }
 
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, prices } = useJetStore(state => ({
+  const { selectedPoolKey } = useJetStore(state => ({
     selectedPoolKey: state.selectedPoolKey,
-    prices: state.prices
   }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -69,13 +70,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 
-  const effectiveCollateral = marginAccount?.valuation.effectiveCollateral.toNumber() || 0;
-  const tokenPrice =
-    prices && prices[marketAndConfig.token.mint.toString()]
-      ? prices[marketAndConfig.token.mint.toString()]
-      : { price: Infinity };
-  const hasEnoughCollateral = new TokenAmount(amount, token.decimals).tokens * tokenPrice.price <= effectiveCollateral;
-
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
@@ -85,7 +79,8 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
-    !hasEnoughCollateral;
+    forecast.unfilledQty > 0 ||
+    !forecast?.hasEnoughCollateral;
 
   const handleForecast = (amount: BN) => {
     if (bnToBigInt(amount) === BigInt(0)) {
@@ -111,22 +106,21 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
         : undefined;
       const setupCheckEstimate = productModel?.takerAccountForecast('borrow', sim, 'setup');
-      if (setupCheckEstimate !== undefined && setupCheckEstimate.riskIndicator >= 1.0) {
-        // FIXME Disable form submission
-        console.log('WARNING Trade violates setup check and should not be allowed');
-      }
-
       const valuationEstimate = productModel?.takerAccountForecast('borrow', sim);
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
+
       setForecast({
         repayAmount: repayAmount.tokens,
         interest: repayAmount.sub(borrowedAmount).tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
-        riskIndicator: valuationEstimate?.riskIndicator
+        riskIndicator: valuationEstimate?.riskIndicator,
+        unfilledQty: unfilledQty.tokens,
+        hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
       });
     } catch (e) {
       console.log(e);
@@ -254,7 +248,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
       )}
-      {!hasEnoughCollateral && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
+      {forecast && forecast.effectiveRate === 0 && <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>}
     </div>
   );
 };

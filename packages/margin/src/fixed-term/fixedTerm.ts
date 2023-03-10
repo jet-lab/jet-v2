@@ -234,6 +234,7 @@ export class FixedTermMarket {
     const termLoan = await this.deriveTermLoanAddress(marginUser, seed)
     const claims = await this.deriveMarginUserClaims(marginUser)
     const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
 
     return this.program.methods
       .marginBorrowOrder(params)
@@ -246,7 +247,7 @@ export class FixedTermMarket {
         claims,
         ticketCollateral,
         payer,
-        underlyingSettlement: await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true),
+        underlyingSettlement: underlyingSettlement,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
       })
