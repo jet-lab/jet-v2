@@ -250,11 +250,11 @@ impl MarginClient {
         token: &Pubkey,
         config: &MarginPoolConfiguration,
     ) -> Result<(), Error> {
-        let ix =
-            ControlIxBuilder::new(self.rpc.payer().pubkey()).configure_margin_pool(token, config);
-
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
-
+        self.tx_admin
+            .configure_margin_pool(*token, config)
+            .with_signer(clone(&self.airspace_authority))
+            .send_and_confirm(&self.rpc)
+            .await?;
         Ok(())
     }
 

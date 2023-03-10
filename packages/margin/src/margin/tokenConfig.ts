@@ -3,7 +3,6 @@ import { AccountInfo, PublicKey } from "@solana/web3.js"
 import { findDerivedAccount, Number128 } from "../utils"
 import { Airspace } from "./airspace"
 import { MarginPrograms } from "./marginClient"
-import { TokenKind } from "./metadata"
 import { PositionKind } from "./state"
 
 /**
@@ -14,7 +13,7 @@ export interface TokenConfigInfo {
   underlyingMint: PublicKey
   airspace: PublicKey
   admin: number[]
-  tokenKind: TokenKind
+  tokenKind: number
   valueModifier: BN
   maxStaleness: BN
 }
@@ -66,20 +65,20 @@ export class TokenConfig {
       this.valueModifier = Number128.ZERO
       return
     }
-    this.info = this.programs.margin.coder.accounts.decodeUnchecked("TokenConfig", info.data)
+    this.info = this.programs.margin.coder.accounts.decode("TokenConfig", info.data)
     this.valueModifier = Number128.fromDecimal(new BN(this.info!.valueModifier), -2)
     this.tokenKind = TokenConfig.decodeTokenKind(this.info!.tokenKind)
   }
 
-  static decodeTokenKind(kind: TokenKind) {
-    if ("nonCollateral" in kind) {
+  static decodeTokenKind(kind: number) {
+    if (kind == 0) {
       return PositionKind.NoValue
-    } else if ("collateral" in kind) {
+    } else if (kind == 1 || kind == 3) {
       return PositionKind.Deposit
-    } else if ("claim" in kind) {
+    } else if (kind == 2) {
       return PositionKind.Claim
     } else {
-      throw new Error("Unrecognized TokenKind.")
+      throw new Error("Unrecognized TokenKind: " + kind.toString())
     }
   }
 

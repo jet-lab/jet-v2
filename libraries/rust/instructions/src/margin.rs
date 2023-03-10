@@ -222,29 +222,6 @@ impl MarginIxBuilder {
         }
     }
 
-    /// Get instruction to refresh the metadata for a position
-    ///
-    /// # Params
-    ///
-    /// `position_token_mint` - The mint for the position to be refreshed
-    pub fn refresh_position_metadata(&self, position_token_mint: &Pubkey) -> Instruction {
-        let (metadata, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
-
-        let accounts = ix_account::RefreshPositionMetadata {
-            metadata,
-            margin_account: self.address,
-            permit: derive_margin_permit(&self.airspace, &self.authority()),
-            refresher: self.authority(),
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            data: ix_data::RefreshPositionMetadata.data(),
-            accounts: accounts.to_account_metas(None),
-        }
-    }
-
     /// Get instruction to refresh the config for a position
     ///
     /// # Params

@@ -12,7 +12,8 @@ use comfy_table::{presets::UTF8_FULL, Table};
 use futures::FutureExt;
 use jet_margin_sdk::{
     ix_builder::{
-        get_metadata_address, MarginConfigIxBuilder, MarginIxBuilder, MarginPoolIxBuilder,
+        derive_token_config, get_metadata_address, MarginConfigIxBuilder, MarginIxBuilder,
+        MarginPoolIxBuilder,
     },
     jet_margin::{self, MarginAccount, PriceInfo, Valuation},
     jet_margin_pool::{self, MarginPool},
@@ -169,7 +170,7 @@ pub async fn process_refresh_metadata(
                 plan = plan.instructions(
                     [],
                     [format!("refresh-position-md {token} for {address}")],
-                    [ix.refresh_position_metadata(&deposit_token)],
+                    [ix.refresh_position_config(&deposit_token)],
                 );
             }
         }
@@ -379,6 +380,36 @@ pub async fn process_inspect(client: &Client, addresses: Vec<Pubkey>) -> Result<
         println!();
     }
 
+    Ok(Plan::default())
+}
+
+pub async fn process_read_token_config(
+    client: &Client,
+    airspace: Pubkey,
+    address: Pubkey,
+) -> Result<Plan> {
+    use jet_margin_sdk::jet_margin::TokenConfig;
+
+    let try_config = client
+        .read_anchor_account::<TokenConfig>(&address)
+        .await
+        .ok();
+
+    let try_derive_config = client
+        .read_anchor_account::<TokenConfig>(&derive_token_config(&airspace, &address))
+        .await
+        .ok();
+
+    let config = match (try_config, try_derive_config) {
+        (Some(config), _) => config,
+        (_, Some(config)) => config,
+        _ => {
+            println!("no token config found for {address}");
+            return Ok(Plan::default());
+        }
+    };
+
+    println!("{config:#?}");
     Ok(Plan::default())
 }
 

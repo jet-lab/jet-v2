@@ -10,12 +10,12 @@ import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
 import { MarginTokenConfig } from "../config"
 import { PoolTokenChange } from "./poolTokenChange"
-import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { FixedTermMarket } from "fixed-term"
-import { TokenConfig } from "../tokenConfig"
+import { TokenConfig, TokenConfigInfo } from "../tokenConfig"
+import { Airspace } from "../airspace"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
@@ -346,7 +346,7 @@ export class Pool {
     depositNoteMint: Mint
     loanNoteMint: Mint
     tokenPriceOracle: PriceData
-    tokenMetadata: TokenMetadata
+    tokenMetadata: TokenConfigInfo
   }
   /**
    * Creates a Pool
@@ -420,10 +420,11 @@ export class Pool {
         depositNoteMint: AssociatedToken.decodeMint(depositNoteMintInfo, this.addresses.depositNoteMint),
         loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint),
         tokenPriceOracle: parsePriceData(oracleInfo.data),
-        tokenMetadata: this.programs.metadata.coder.accounts.decode<TokenMetadata>(
-          "tokenMetadata",
-          tokenMetadataInfo.data
-        )
+        tokenMetadata: (await TokenConfig.load(
+          this.programs,
+          Airspace.deriveAddress(this.programs.airspace.programId, this.programs.config.airspaces[0].name),
+           this.addresses.tokenMint
+        )).info as TokenConfigInfo
       }
     }
 
@@ -704,7 +705,7 @@ export class Pool {
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
-          tokenPriceOracle: this.info?.tokenMetadata.pythPrice
+          tokenPriceOracle: this.info?.marginPool.tokenPriceOracle
         })
         .instruction()
     })

@@ -267,23 +267,6 @@ export class MarginAccount {
   }
 
   /**
-   * Derive the address of a metadata account.
-   *
-   * ## Remarks
-   *
-   * Some account types such as pools, adapters and position mints have
-   * metadata associated with them. The metadata type is determined by the account type.
-   *
-   * @param {Address} account
-   * @return {PublicKey}
-   * @memberof MarginAccount
-   */
-  findMetadataAddress(account: Address): PublicKey {
-    const accountAddress = translateAddress(account)
-    return findDerivedAccount(this.programs.config.metadataProgramId, accountAddress)
-  }
-
-  /**
    * Derive the address of an airspace permit account.
    *
    * ## Remarks
@@ -321,10 +304,7 @@ export class MarginAccount {
    * @param tokenMint The mint address for the token to derive the config address for.
    */
   findTokenConfigAddress(tokenMint: Address): PublicKey {
-    if (this.airspace) {
-      return findDerivedAccount(this.programs.config.marginProgramId, "token-config", this.airspace, tokenMint)
-    }
-    return findDerivedAccount(this.programs.config.marginProgramId, "token-config", tokenMint)
+    return findDerivedAccount(this.programs.config.marginProgramId, "token-config", this.airspace, tokenMint)
   }
 
   /**
@@ -435,7 +415,7 @@ export class MarginAccount {
       let liquidationData: LiquidationData | undefined = undefined
       if (!marginAccount.liquidator.equals(PublicKey.default)) {
         liquidationData =
-          (await this.programs.margin.account.liquidationState.fetchNullable(this.findLiquidationStateAddress()))
+          (await this.programs.margin.account.LiquidationState.fetchNullable(this.findLiquidationStateAddress()))
             ?.state ?? undefined
       }
       this.info = {
@@ -1164,62 +1144,6 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(instruction)
-  }
-
-  /**
-   * Sends a transaction to refresh the metadata for a position.
-   *
-   * ## Remarks
-   *
-   * When a position is registered some position mint metadata is copied to the position.
-   * This data can become out of sync if the mint metadata is changed. Refreshing the position
-   * metadata may at the benefit or detriment to the owner.
-   *
-   * @param {{ positionMint: Address }} { positionMint }
-   * @return {Promise<string>}
-   * @memberof MarginAccount
-   */
-  async refreshPositionMetadata({ positionMint }: { positionMint: Address }): Promise<string> {
-    const instructions: TransactionInstruction[] = []
-    await this.withRefreshPositionMetadata({ instructions, positionMint })
-    return await this.sendAndConfirm(instructions)
-  }
-
-  /**
-   * Creates an instruction to refresh the metadata for a position.
-   *
-   * ## Remarks
-   *
-   * When a position is registered some position mint metadata is copied to the position.
-   * This data can become out of sync if the mint metadata is changed. Refreshing the position
-   * metadata may at the benefit or detriment to the owner.
-   *
-   * @param {{
-   *     instructions: TransactionInstruction[]
-   *     positionMint: Address
-   *   }} {
-   *     instructions,
-   *     positionMint
-   *   }
-   * @return {Promise<void>}
-   * @memberof MarginAccount
-   */
-  async withRefreshPositionMetadata({
-    instructions,
-    positionMint
-  }: {
-    instructions: TransactionInstruction[]
-    positionMint: Address
-  }): Promise<void> {
-    const metadata = this.findMetadataAddress(positionMint)
-    const ix = await this.programs.margin.methods
-      .refreshPositionMetadata()
-      .accounts({
-        marginAccount: this.address,
-        metadata
-      })
-      .instruction()
-    instructions.push(ix)
   }
 
   /**

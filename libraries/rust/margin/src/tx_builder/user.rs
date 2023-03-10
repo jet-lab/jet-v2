@@ -637,15 +637,6 @@ impl MarginTxBuilder {
             .collect())
     }
 
-    /// Refresh the metadata for a position
-    pub async fn refresh_position_metadata(
-        &self,
-        position_token_mint: &Pubkey,
-    ) -> Result<Transaction> {
-        self.create_transaction(&[self.ix.refresh_position_metadata(position_token_mint)])
-            .await
-    }
-
     /// Refresh metadata for all positions in the user account
     pub async fn refresh_all_position_metadata(&self) -> Result<Vec<TransactionBuilder>> {
         let instructions = self
@@ -653,14 +644,9 @@ impl MarginTxBuilder {
             .await?
             .positions()
             .map(|position| {
-                let is_deposit_account = position.address
-                    == get_associated_token_address(self.address(), &position.token);
-
-                match is_deposit_account {
-                    false => self.ix.refresh_position_metadata(&position.token),
-                    true => self.ix.refresh_position_config(&position.token),
-                }
-                .with_signers(&self.signers())
+                self.ix
+                    .refresh_position_config(&position.token)
+                    .with_signers(&self.signers())
             })
             .collect::<Vec<_>>();
 
