@@ -206,11 +206,11 @@ pub fn auto_roll_lend_order(
     let data = jet_fixed_term::instruction::AutoRollLendOrder {}.data();
     let accounts = jet_fixed_term::accounts::AutoRollLendOrder {
         deposit,
-        new_deposit: term_deposit(&market, &margin_account, deposit_seqno + 1),
+        new_deposit: term_deposit(market, &margin_account, deposit_seqno + 1),
         ticket_collateral: user_ticket_collateral(&margin_user),
-        ticket_collateral_mint: ticket_collateral_mint(&market),
-        ticket_mint: ticket_mint(&market),
-        underlying_token_vault: underlying_token_vault(&market),
+        ticket_collateral_mint: ticket_collateral_mint(market),
+        ticket_mint: ticket_mint(market),
+        underlying_token_vault: underlying_token_vault(market),
         rent_receiver,
         payer,
         margin_account,
