@@ -13,7 +13,7 @@ import {
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
-import { marketToString } from '@utils/jet/fixed-term-utils';
+import { feesCalc, marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
@@ -45,6 +45,7 @@ interface Forecast {
   selfMatch: boolean;
   riskIndicator?: number;
   hasEnoughCollateral: boolean;
+  fees: number;
 }
 
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -142,17 +143,20 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
     const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
     const postedRate = sim.posted_vwar;
+    const matchedInterest = matchRepayAmount.sub(matchBorrowAmount)
+    const postedInterest = postedRepayAmount.sub(postedBorrowAmount)
 
     setForecast({
       matchedAmount: matchRepayAmount.tokens,
-      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).tokens,
+      matchedInterest: matchedInterest.tokens,
       matchedRate: matchRate,
       postedRepayAmount: postedRepayAmount.tokens,
-      postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
+      postedInterest: postedInterest.tokens,
       postedRate,
       selfMatch: sim.self_match,
       riskIndicator: valuationEstimate?.riskIndicator,
-      hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
+      hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
+      fees: matchedInterest.tokens ? feesCalc(sim.filled_vwar, matchedInterest.tokens) : feesCalc(sim.posted_vwar, postedInterest.tokens)
     });
   }
 
@@ -259,11 +263,10 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Effective Rate</span>
           <RateDisplay rate={forecast?.matchedRate} />
         </div>
-        {/* <div className="stat-line">
-          // NOTE calculate this from wasm module as it need sto be 50 bps ANNUALISED
+        <div className="stat-line">
           <span>Fees</span>
-          {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
-        </div> */}
+          {forecast && <span>{forecast?.fees} {token.symbol}</span>}
+        </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
           {forecast && (
