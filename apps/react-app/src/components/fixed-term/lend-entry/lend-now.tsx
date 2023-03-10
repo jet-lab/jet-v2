@@ -34,19 +34,21 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  repayAmount: string;
-  interest: string;
+  repayAmount: number;
+  interest: number;
   effectiveRate: number;
   selfMatch: boolean;
   fulfilled: boolean;
   riskIndicator?: number;
+  unfilledQty: number;
+  hasEnoughCollateral: boolean;
 }
 
 export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
+  const { cluster, explorer, selectedPoolKey } = useJetStore(state => ({ cluster: state.settings.cluster, explorer: state.settings.explorer, selectedPoolKey: state.selectedPoolKey }));
   const currentPool = useMemo(
     () =>
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
@@ -58,9 +60,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
 
-  const { cluster, explorer } = useJetStore(state => state.settings);
 
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState(false);
+
+  const tokenBalance = marginAccount?.poolPositions[token.symbol].depositBalance;
+  const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount, token.decimals));
 
   const disabled =
     !marginAccount ||
@@ -70,7 +74,9 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     amount.lte(new BN(0)) ||
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
-    !forecast.fulfilled;
+    !forecast.fulfilled ||
+    !hasEnoughTokens ||
+    !forecast?.hasEnoughCollateral;
 
   const handleForecast = (amount: BN) => {
     if (bnToBigInt(amount) === BigInt(0)) {
@@ -91,30 +97,31 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
         : undefined;
       const setupCheckEstimate = productModel?.takerAccountForecast('lend', sim, 'setup');
-      if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
-        // FIXME Disable form submission
-        console.log('WARNING Trade violates setup check and should not be allowed');
-      }
-
       const valuationEstimate = productModel?.takerAccountForecast('lend', sim);
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
+
       setForecast({
-        repayAmount: repayAmount.uiTokens,
-        interest: repayAmount.sub(lendAmount).uiTokens,
+        repayAmount: repayAmount.tokens,
+        interest: repayAmount.sub(lendAmount).tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches,
-        riskIndicator: valuationEstimate?.riskIndicator
+        riskIndicator: valuationEstimate?.riskIndicator,
+        unfilledQty: unfilledQty.tokens,
+        hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
       });
+
+      console.log(sim)
     } catch (e) {
       console.log(e);
     }
   };
 
   const marketLendOrder = async () => {
-    setPending(true)
+    setPending(true);
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -135,7 +142,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
-        setPending(false)
+        setPending(false);
       }, 2000); // TODO: Ugly and unneded. update when websocket is fully integrated
     } catch (e: any) {
       notify(
@@ -144,7 +151,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
-      setPending(false)
+      setPending(false);
       throw e;
     }
   };
@@ -195,7 +202,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <span>Repayment Amount</span>
           {forecast?.repayAmount && (
             <span>
-              {forecast.repayAmount} {token.symbol}
+              {forecast.repayAmount.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -203,7 +210,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           <span>Total Interest</span>
           {forecast?.interest && (
             <span>
-              {forecast.interest} {token.symbol}
+              {forecast.interest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -213,16 +220,32 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{forecast.riskIndicator}</span>}
-        </div>
-        <div className="stat-line">
-          <span>Auto Roll</span>
-          <span>Off</span>
+          {forecast && (
+            <span>
+              {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
+            </span>
+          )}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={marketLendOrder}>
-      {pending ? <><LoadingOutlined />Sending transaction</> : `Lend ${marketToString(marketAndConfig.config)}`}
+        {pending ? (
+          <>
+            <LoadingOutlined />
+            Sending transaction
+          </>
+        ) : (
+          `Lend ${marketToString(marketAndConfig.config)}`
+        )}
       </Button>
+      {forecast?.selfMatch && (
+        <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
+      )}
+      {hasEnoughTokens && (
+        <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this request</div>
+      )}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
+      {forecast && forecast.effectiveRate === 0 && <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing lend amount.</div>}
     </div>
   );
 };

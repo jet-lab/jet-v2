@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::Token;
+use anchor_spl::token::{Token, TokenAccount};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
@@ -12,7 +12,7 @@ use crate::{
 pub struct WithdrawFees<'info> {
     #[account(mut,
         has_one = fee_destination @ FixedTermErrorCode::WrongFeeDestination,
-        has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
+        has_one = fee_vault @ FixedTermErrorCode::WrongVault,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -20,25 +20,24 @@ pub struct WithdrawFees<'info> {
     pub fee_destination: AccountInfo<'info>,
 
     #[account(mut)]
-    pub underlying_token_vault: AccountInfo<'info>,
+    pub fee_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
 }
 
 pub fn handler(ctx: Context<WithdrawFees>) -> Result<()> {
-    let mut manager = ctx.accounts.market.load_mut()?;
+    let collected_fees = ctx.accounts.fee_vault.amount;
     ctx.accounts.withdraw(
-        &ctx.accounts.underlying_token_vault,
+        ctx.accounts.fee_vault.to_account_info(),
         &ctx.accounts.fee_destination,
-        manager.collected_fees,
+        collected_fees,
     )?;
 
     emit!(FeesWithdrawn {
         market: ctx.accounts.market.key(),
         fee_destination: ctx.accounts.fee_destination.key(),
-        collected_fees: manager.collected_fees
+        collected_fees,
     });
-    manager.collected_fees = 0;
 
     Ok(())
 }

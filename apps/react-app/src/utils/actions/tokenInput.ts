@@ -16,11 +16,10 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const dictionary = useRecoilValue(Dictionary);
   const walletTokens = useRecoilValue(WalletTokens);
   const accountNames = useRecoilValue(AccountNames);
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
-  const pools = useRecoilValue(Pools);
+  const { selectedPoolKey, pools } = useJetStore(state => ({ selectedPoolKey: state.selectedPoolKey, pools: state.pools }));
   const currentPool = useMemo(
     () =>
-      pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
+      pools && Object.values(pools).find(pool => pool.address === selectedPoolKey),
     [selectedPoolKey, pools]
   );
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -28,6 +27,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const currentAction = useRecoilValue(CurrentAction);
   const newAccountModalOpen = useRecoilValue(NewAccountModal);
   const poolPosition = marginAccount && currentPool?.symbol && marginAccount.poolPositions[currentPool.symbol];
+
   if (!pools || !currentPool || !marginAccount) {
     return '';
   }
@@ -65,7 +65,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
     ) {
       disabledMessage = dictionary.actions.disabledMessages.aboveMaxRisk;
       // No liquidity for withdraw
-    } else if (!pools.tokenPools[tokenSymbol]?.vault.tokens) {
+    } else if (!pools[selectedPoolKey].deposit_tokens) {
       disabledMessage = dictionary.actions.disabledMessages.notEnoughLiquidity;
     }
   } else if (currentAction === 'borrow') {
@@ -79,7 +79,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
     ) {
       disabledMessage = dictionary.actions.disabledMessages.aboveMaxRisk;
       // No liquidity in market to borrow from
-    } else if (!pools.tokenPools[tokenSymbol]?.vault.tokens) {
+    } else if (!pools[selectedPoolKey].deposit_tokens) {
       disabledMessage = dictionary.actions.disabledMessages.notEnoughLiquidity;
     }
   } else if (currentAction === 'repay' || currentAction === 'repayFromDeposit') {
@@ -180,10 +180,10 @@ export function useTokenInputErrorMessage(account?: MarginAccount | undefined, p
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const projectedRiskIndicator =
     currentPool &&
-    currentAccount &&
-    currentAction &&
-    !(currentAction === 'swap' || currentAction === 'transfer') &&
-    !tokenInputAmount.isZero()
+      currentAccount &&
+      currentAction &&
+      !(currentAction === 'swap' || currentAction === 'transfer') &&
+      !tokenInputAmount.isZero()
       ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
       : currentAccount?.riskIndicator ?? 0;
   const risk = projectedRisk ?? projectedRiskIndicator;

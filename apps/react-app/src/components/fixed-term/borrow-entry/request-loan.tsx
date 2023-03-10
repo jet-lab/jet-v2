@@ -36,20 +36,23 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  postedRepayAmount?: string;
-  postedInterest?: string;
+  postedRepayAmount?: number;
+  postedInterest?: number;
   postedRate?: number;
-  matchedAmount?: string;
-  matchedInterest?: string;
+  matchedAmount?: number;
+  matchedInterest?: number;
   matchedRate?: number;
   selfMatch: boolean;
   riskIndicator?: number;
+  hasEnoughCollateral: boolean;
 }
 
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const { selectedPoolKey } = useJetStore(state => ({
+    selectedPoolKey: state.selectedPoolKey,
+  }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -65,7 +68,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState(false);
 
   const disabled =
     !marginAccount ||
@@ -74,10 +77,11 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     !pools ||
     basisPoints.lte(new BN(0)) ||
     amount.lte(new BN(0)) ||
-    forecast?.selfMatch;
+    forecast?.selfMatch ||
+    !forecast?.hasEnoughCollateral;
 
   const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
-    setPending(true)
+    setPending(true);
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -96,24 +100,22 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         refreshOrderBooks();
         notify(
           'Borrow Offer Created',
-          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-            basisPoints.toNumber() / 100
+          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
-        setPending(false)
+        setPending(false);
       }, 2000); // TODO: Ugly / unneded update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-          basisPoints.toNumber() / 100
+        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
-      setPending(false)
+      setPending(false);
       throw e;
     }
   };
@@ -122,14 +124,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     const sim = model.simulateMaker('borrow', amount, limitPrice, marginAccount?.address.toBytes());
-
-    if (sim.self_match) {
-      // FIXME Integrate with forecast panel
-      console.log('ERROR Order would be rejected for self-matching');
-
-      return;
-    }
-
     let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
     if (correspondingPool == undefined) {
       console.log('ERROR `correspondingPool` must be defined.');
@@ -140,11 +134,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
       : undefined;
     const setupCheckEstimate = productModel?.makerAccountForecast('borrow', sim, 'setup');
-    if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
-      // FIXME Disable form submission
-      console.log('WARNING Trade violates setup check and should not be allowed');
-    }
-
     const valuationEstimate = productModel?.makerAccountForecast('borrow', sim);
 
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
@@ -155,14 +144,15 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const postedRate = sim.posted_vwar;
 
     setForecast({
-      matchedAmount: matchRepayAmount.uiTokens,
-      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+      matchedAmount: matchRepayAmount.tokens,
+      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).tokens,
       matchedRate: matchRate,
-      postedRepayAmount: postedRepayAmount.uiTokens,
-      postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
+      postedRepayAmount: postedRepayAmount.tokens,
+      postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
       postedRate,
       selfMatch: sim.self_match,
-      riskIndicator: valuationEstimate?.riskIndicator
+      riskIndicator: valuationEstimate?.riskIndicator,
+      hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
     });
   }
 
@@ -232,7 +222,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Posted Repayment Amount</span>
           {forecast?.postedRepayAmount && (
             <span>
-              {forecast?.postedRepayAmount}
+              {forecast?.postedRepayAmount.toFixed(token.precision)}
               {token.symbol}
             </span>
           )}
@@ -241,7 +231,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Posted Interest</span>
           {forecast?.postedInterest && (
             <span>
-              {forecast?.postedInterest} {token.symbol}
+              {forecast?.postedInterest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -253,8 +243,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
             <span>
-              {forecast.matchedAmount}
-              {token.symbol}
+              {`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
@@ -262,7 +251,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Interest</span>
           {forecast?.matchedInterest && (
             <span>
-              {forecast.matchedInterest} {token.symbol}
+              {forecast.matchedInterest.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
@@ -270,18 +259,34 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Effective Rate</span>
           <RateDisplay rate={forecast?.matchedRate} />
         </div>
+        {/* <div className="stat-line">
+          // NOTE calculate this from wasm module as it need sto be 50 bps ANNUALISED
+          <span>Fees</span>
+          {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
+        </div> */}
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && <span>{forecast.riskIndicator}</span>}
-        </div>
-        <div className="stat-line">
-          <span>Auto Roll</span>
-          <span>Off</span>
+          {forecast && (
+            <span>
+              {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
+            </span>
+          )}
         </div>
       </div>
       <Button className="submit-button" disabled={disabled || pending} onClick={() => createBorrowOrder()}>
-        {pending ? <><LoadingOutlined />Sending transaction</> : `Request ${marketToString(marketAndConfig.config)} loan`}
+        {pending ? (
+          <>
+            <LoadingOutlined />
+            Sending transaction
+          </>
+        ) : (
+          `Request ${marketToString(marketAndConfig.config)} loan`
+        )}
       </Button>
+      {forecast?.selfMatch && (
+        <div className="fixed-term-warning">The offer would match with your own requests in this market.</div>
+      )}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
     </div>
   );
 };

@@ -2,7 +2,7 @@ use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token::get_associated_token_address, token::Token};
 use jet_margin::{AdapterResult, PositionChange};
-use jet_program_common::traits::{SafeSub, TryAddAssign};
+use jet_program_common::traits::SafeSub;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
@@ -59,6 +59,10 @@ pub struct MarginBorrowOrder<'info> {
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
     pub underlying_token_vault: AccountInfo<'info>,
 
+    /// The market fee vault
+    #[account(mut, address = orderbook_mut.fee_vault() @ FixedTermErrorCode::WrongVault)]
+    pub fee_vault: AccountInfo<'info>,
+
     /// Where to receive borrowed tokens
     #[account(mut, address = get_associated_token_address(
         &margin_user.margin_account,
@@ -100,11 +104,10 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
     } else {
         CallbackFlags::default()
     };
-    let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
-        ctx.accounts.margin_account.key(),
+    let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_margin_order(
         Side::Ask,
         params,
-        ctx.accounts.margin_user.key(),
+        ctx.accounts.margin_account.key(),
         ctx.accounts.margin_user.key(),
         ctx.remaining_accounts
             .iter()
@@ -116,7 +119,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
     let debt = &mut ctx.accounts.margin_user.debt;
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
-        let mut manager = ctx.accounts.orderbook_mut.market.load_mut()?;
+        let manager = ctx.accounts.orderbook_mut.market.load()?;
         let maturation_timestamp = manager.borrow_tenor as i64 + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_term_loan_without_posting(order_summary.base_filled(), maturation_timestamp)?;
@@ -134,9 +137,12 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
         )?;
         let quote_filled = order_summary.quote_filled()?;
         let disburse = manager.loan_to_disburse(quote_filled);
-        manager
-            .collected_fees
-            .try_add_assign(quote_filled.safe_sub(disburse)?)?;
+        let fees = quote_filled.safe_sub(disburse)?;
+        ctx.withdraw(
+            &ctx.accounts.underlying_token_vault,
+            &ctx.accounts.fee_vault,
+            fees,
+        )?;
         let base_filled = order_summary.base_filled();
         *term_loan = TermLoan {
             sequence_number,
@@ -165,7 +171,8 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
             maturation_timestamp,
             quote_filled,
             base_filled,
-            flags: term_loan.flags
+            flags: term_loan.flags,
+            fees,
         });
     }
     let total_debt = order_summary.base_combined();

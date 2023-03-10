@@ -35,9 +35,9 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
 };
 
 const asksKeys = ['lend-now', 'request-loan'];
-const immediateKeys = ['lend-now', 'borrow-now'];
+const requestKeys = ['lend-now', 'borrow-now'];
 
-const LineChartWithData = ({ market, currentTab} : { market: MarketAndConfig, currentTab: string}) => {
+const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; currentTab: string }) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
   const allMarkets = useRecoilValue(AllFixedTermMarketsAtom);
   const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
@@ -58,9 +58,7 @@ const LineChartWithData = ({ market, currentTab} : { market: MarketAndConfig, cu
   const series = useMemo(() => {
     let target = openOrders;
     // If market order we display only the currently selected market
-    if (immediateKeys.includes(currentTab)) {
-      target = [openOrders[selectedMarketIndex]];
-    }
+    target = [openOrders[selectedMarketIndex]];
 
     const orderTypeKey = asksKeys.includes(currentTab) ? 'asks' : 'bids';
     return target.reduce((all, current) => {
@@ -84,13 +82,16 @@ const LineChartWithData = ({ market, currentTab} : { market: MarketAndConfig, cu
       return all;
     }, [] as ISeries[]);
   }, [openOrders, currentTab, selectedMarketIndex]);
-  return <ResponsiveLineChart series={series} />
-}
+
+  return (
+    <ResponsiveLineChart symbol={market.token.symbol} isRequest={requestKeys.includes(currentTab)} series={series} />
+  );
+};
 
 export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
   const currentTab = useRecoilValue(CurrentOrderTabAtom);
-  
+
   const market = useRecoilValue(FixedTermMarketAtom);
 
   return (
@@ -102,7 +103,11 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
           </div>
         </div>
       </div>
-      { market && <Suspense><LineChartWithData market={market} currentTab={currentTab} /></Suspense>}
+      {market && (
+        <Suspense>
+          <LineChartWithData market={market} currentTab={currentTab} />
+        </Suspense>
+      )}
       <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
     </div>
   );

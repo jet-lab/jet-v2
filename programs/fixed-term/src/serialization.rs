@@ -227,6 +227,51 @@ pub fn init<'info, T: AnchorStruct>(
     new_account.try_into()
 }
 
+/// initialize a PDA and return the mutable struct from references
+pub fn init_from_ref<'a, 'info, T: AnchorStruct>(
+    new_account: &'a AccountInfo<'info>,
+    payer: &'a AccountInfo<'info>,
+    system_program: &'a AccountInfo<'info>,
+    seeds: &[&[u8]],
+) -> Result<AnchorAccount<'info, T, Mut>> {
+    let space = 8 + std::mem::size_of::<T>();
+    let (new_pubkey, nonce) = Pubkey::find_program_address(seeds, &T::owner());
+    if new_pubkey != *new_account.key {
+        msg!(
+            "Provided account was {:?} but seeds generate {:?}",
+            new_account.key,
+            new_pubkey
+        );
+        return Err(ProgramError::InvalidSeeds.into());
+    }
+
+    let mut signer = seeds.to_vec();
+    let bump = &[nonce];
+    signer.push(bump);
+    let ix = anchor_lang::solana_program::system_instruction::create_account(
+        payer.key,
+        &new_pubkey,
+        Rent::get()?.minimum_balance(space),
+        space as u64,
+        &T::owner(),
+    );
+    anchor_lang::solana_program::program::invoke_signed(
+        &ix,
+        &[payer.clone(), new_account.clone(), system_program.clone()],
+        &[&signer[..]],
+    )
+    .map_err(|_| error!(crate::errors::FixedTermErrorCode::InvokeCreateAccount))?;
+
+    {
+        let mut data = new_account.data.borrow_mut();
+        for byte in 0..8 {
+            data[byte] = T::discriminator()[byte];
+        }
+    }
+
+    new_account.try_into()
+}
+
 /// Consolidates all required interfaces of anchor accounts into a single trait for readability
 pub trait AnchorStruct:
     AnchorSerialize + AccountSerialize + AccountDeserialize + Owner + Clone + Discriminator

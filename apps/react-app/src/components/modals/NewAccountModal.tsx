@@ -38,10 +38,12 @@ export function NewAccountModal(): JSX.Element {
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const networkState = useRecoilValue(NetworkStateAtom);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
+
   const { Title, Paragraph, Text } = Typography;
 
   useEffect(() => {
     if (newAccountModalOpen) setActionRefresh(Date.now());
+
   }, [newAccountModalOpen]);
 
   // Create a new account with a deposit
