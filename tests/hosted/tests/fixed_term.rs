@@ -4,6 +4,7 @@ use agnostic_orderbook::state::event_queue::EventRef;
 use anyhow::Result;
 use futures::{future::join_all, join};
 use hosted_tests::{
+    context::MarginTestContext,
     fixed_term::{
         create_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
         TestManager as FixedTermTestManager, STARTING_TOKENS,
@@ -35,21 +36,24 @@ use solana_sdk::signer::Signer;
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders() -> Result<(), anyhow::Error> {
-    let manager = FixedTermTestManager::full(&margin_test_context!()).await?;
-    non_margin_orders_for_proxy::<NoProxy>(Arc::new(manager)).await
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
+    non_margin_orders_for_proxy::<NoProxy>(ctx, manager).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let manager = FixedTermTestManager::full(&margin_test_context!()).await?;
-    non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
+    non_margin_orders_for_proxy::<MarginIxBuilder>(ctx, manager).await
 }
 
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
+    ctx: Arc<MarginTestContext>,
     manager: Arc<FixedTermTestManager>,
 ) -> Result<()> {
-    let alice = FixedTermUser::<P>::new_funded(manager.clone()).await?;
+    let alice = FixedTermUser::<P>::new_funded(ctx.clone(), manager.clone()).await?;
 
     const START_TICKETS: u64 = 1_000_000;
     alice.convert_tokens(START_TICKETS).await?;
@@ -173,7 +177,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert_eq!(summary_b.total_quote_qty, 500);
 
     // send to validator
-    let bob = FixedTermUser::<P>::new_funded(manager.clone()).await?;
+    let bob = FixedTermUser::<P>::new_funded(ctx.clone(), manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
 
     assert_eq!(
@@ -341,7 +345,7 @@ async fn margin_repay() -> Result<()> {
     };
 
     // set a lend order on the book
-    let lender = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let lender = FixedTermUser::<NoProxy>::new_funded(ctx.clone(), manager.clone()).await?;
     let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
 
     lender.lend_order(lend_params, &[]).await?;
@@ -428,11 +432,12 @@ async fn margin_repay() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 async fn can_consume_lots_of_events() -> Result<()> {
-    let manager = Arc::new(FixedTermTestManager::full(&margin_test_context!()).await?);
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
 
     // make and fund users
-    let alice = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
-    let bob = FixedTermUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let alice = FixedTermUser::<NoProxy>::new_funded(ctx.clone(), manager.clone()).await?;
+    let bob = FixedTermUser::<NoProxy>::new_funded(ctx.clone(), manager.clone()).await?;
     alice.convert_tokens(1_000_000).await?;
 
     let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 1_000);

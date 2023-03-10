@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use actions::{fixed_term::MarketParameters, margin_pool::ConfigurePoolCliOptions};
 use anchor_lang::prelude::Pubkey;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::{AppSettings, Parser, Subcommand};
 use client::{Client, ClientConfig, Plan};
 use serde::Deserialize;
@@ -35,6 +35,10 @@ pub struct CliOpts {
         default_value_t = 0
     )]
     pub target_proposal_option: u8,
+
+    /// The relevant airspace to use
+    #[clap(global = true, long, env = "JET_AIRSPACE_ID")]
+    pub airspace: Option<Pubkey>,
 
     /// Prefix transactions with a change to the compute limit
     #[clap(global = true, long)]
@@ -179,6 +183,11 @@ pub enum MarginCommand {
     Inspect {
         /// List of accounts to inspect
         addresses: Vec<Pubkey>,
+    },
+
+    ReadTokenConfig {
+        /// The token or config address
+        address: Pubkey,
     },
 }
 
@@ -349,7 +358,16 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         Command::CheckMetadata { address } => {
             actions::global::process_check_metadata(&client, address).await?
         }
-        Command::Margin { subcmd } => run_margin_command(&client, subcmd).await?,
+        Command::Margin { subcmd } => {
+            let airspace = match opts.airspace {
+                Some(airspace) => airspace,
+                None => {
+                    bail!("the --airspace option is required for margin account commands")
+                }
+            };
+
+            run_margin_command(&client, subcmd, airspace).await?
+        }
         Command::MarginPool { subcmd } => run_margin_pool_command(&client, subcmd).await?,
         Command::Fixed { subcmd } => run_fixed_command(&client, subcmd).await?,
     };
@@ -407,19 +425,23 @@ async fn run_proposals_command(client: &Client, command: ProposalsCommand) -> Re
     }
 }
 
-async fn run_margin_command(client: &Client, command: MarginCommand) -> Result<Plan> {
+async fn run_margin_command(
+    client: &Client,
+    command: MarginCommand,
+    airspace: Pubkey,
+) -> Result<Plan> {
     match command {
         MarginCommand::RegisterAdapter { address } => {
-            actions::margin::process_register_adapter(client, address).await
+            actions::margin::process_register_adapter(client, airspace, address).await
         }
         MarginCommand::AddLiquidator { liquidator } => {
-            actions::margin::process_set_liquidator(client, liquidator, true).await
+            actions::margin::process_set_liquidator(client, airspace, liquidator, true).await
         }
         MarginCommand::RemoveLiquidator { liquidator } => {
-            actions::margin::process_set_liquidator(client, liquidator, false).await
+            actions::margin::process_set_liquidator(client, airspace, liquidator, false).await
         }
         MarginCommand::RefreshPositionMd { token } => {
-            actions::margin::process_refresh_metadata(client, token).await
+            actions::margin::process_refresh_metadata(client, airspace, token).await
         }
         MarginCommand::UpdateBalances { account } => {
             actions::margin::process_update_balances(client, account).await
@@ -433,10 +455,13 @@ async fn run_margin_command(client: &Client, command: MarginCommand) -> Result<P
             actions::margin::process_transfer_position(client, source, target, token, amount).await
         }
         MarginCommand::ListTopAccounts { limit } => {
-            actions::margin::process_list_top_accounts(client, limit).await
+            actions::margin::process_list_top_accounts(client, airspace, limit).await
         }
         MarginCommand::Inspect { addresses } => {
             actions::margin::process_inspect(client, addresses).await
+        }
+        MarginCommand::ReadTokenConfig { address } => {
+            actions::margin::process_read_token_config(client, airspace, address).await
         }
     }
 }

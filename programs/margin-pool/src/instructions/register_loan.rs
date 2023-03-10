@@ -32,7 +32,7 @@ pub struct RegisterLoan<'info> {
     /// that it will be sent.
     ///
     /// CHECK:
-    pub position_token_metadata: AccountInfo<'info>,
+    pub loan_token_config: AccountInfo<'info>,
 
     /// The token account to store the loan notes representing the claim
     /// against the margin account

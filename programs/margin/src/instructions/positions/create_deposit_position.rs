@@ -21,7 +21,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 
-use crate::{events, util::Require, Approver, MarginAccount, TokenConfig};
+use crate::{events, util::Require, Approver, MarginAccount, PositionConfigUpdate, TokenConfig};
 
 #[derive(Accounts)]
 pub struct CreateDepositPosition<'info> {
@@ -63,13 +63,12 @@ pub fn create_deposit_position_handler(ctx: Context<CreateDepositPosition>) -> R
     account.verify_authority(ctx.accounts.authority.key())?;
 
     let key = account.register_position(
-        position_token.key(),
-        position_token.decimals,
-        address,
-        config.adapter_program().unwrap_or_default(),
-        config.token_kind,
-        config.value_modifier,
-        config.max_staleness,
+        PositionConfigUpdate::new_from_config(
+            config,
+            position_token.decimals,
+            address,
+            config.adapter_program().unwrap_or_default(),
+        ),
         &[Approver::MarginAccountAuthority],
     )?;
 

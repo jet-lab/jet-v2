@@ -68,10 +68,6 @@ pub struct TokenConfig {
     /// The space this config is valid within
     pub airspace: Pubkey,
 
-    /// The administrator of this token, which has the authority to provide information
-    /// about (e.g. prices) and otherwise modify position states for these tokens.
-    pub admin: TokenAdmin,
-
     /// Description of this token
     ///
     /// This determines the way the margin program values a token as a position in a
@@ -83,6 +79,10 @@ pub struct TokenConfig {
 
     /// The maximum staleness (seconds) that's acceptable for balances of this token
     pub max_staleness: u64,
+
+    /// The administrator of this token, which has the authority to provide information
+    /// about (e.g. prices) and otherwise modify position states for these tokens.
+    pub admin: TokenAdmin,
 }
 
 impl PartialEq<TokenConfigUpdate> for TokenConfig {

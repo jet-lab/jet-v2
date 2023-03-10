@@ -157,7 +157,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
 
     /// the airspace the margin account is a part of
     pub fn airspace(&self) -> Pubkey {
-        self.client.state().config.airspace
+        self.client.airspace()
     }
 
     /// The positions currently held by this account

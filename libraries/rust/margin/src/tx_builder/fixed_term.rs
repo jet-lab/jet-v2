@@ -29,6 +29,7 @@ impl PositionRefresher for FixedTermPositionRefresher {
                 {
                     ret.push(
                         accounting_invoke(
+                            fixed_term_market.airspace(),
                             self.margin_account,
                             fixed_term_market.refresh_position(self.margin_account, false),
                         )

@@ -3,7 +3,6 @@ use solana_sdk::pubkey::Pubkey;
 use jet_instructions::{
     airspace::{derive_governor_id, AirspaceIxBuilder},
     control::{get_control_authority_address, ControlIxBuilder},
-    get_metadata_address,
     margin::{derive_adapter_config, TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle},
     test_service::{
         self, derive_pyth_price, derive_pyth_product, derive_token_info, derive_token_mint,
@@ -44,9 +43,6 @@ pub async fn configure_environment<I: NetworkUserInterface>(
         )
         .await?,
     );
-
-    // margin adapters (legacy config)
-    register_global_margin_adapters(builder, &config.margin_adapters).await?;
 
     let oracle_authority = config.oracle_authority.unwrap_or(payer);
 
@@ -114,26 +110,6 @@ async fn register_airspace_adapters<'a, I: NetworkUserInterface>(
         )
         .await?,
     );
-
-    Ok(())
-}
-
-pub(crate) async fn register_global_margin_adapters<'a, I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
-    adapters: impl IntoIterator<Item = &'a Pubkey>,
-) -> Result<(), BuilderError> {
-    let ctrl_ix =
-        ControlIxBuilder::new_for_authority(builder.proposal_authority(), builder.proposal_payer());
-
-    let ixns = filter_initializers(
-        builder,
-        adapters
-            .into_iter()
-            .map(|addr| (get_metadata_address(addr), ctrl_ix.register_adapter(addr))),
-    )
-    .await?;
-
-    builder.propose(ixns);
 
     Ok(())
 }
