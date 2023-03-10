@@ -1,2 +1,2 @@
 export const RateDisplay = ({ rate }: { rate: number | undefined }) =>
-  rate === undefined || isNaN(rate) ? null : <span>{(rate * 100).toFixed(3)}%</span>;
+  rate === undefined || isNaN(rate) ? <span>0</span> : <span>{(rate * 100).toFixed(3)}%</span>;
