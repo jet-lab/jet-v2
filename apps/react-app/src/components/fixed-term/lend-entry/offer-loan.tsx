@@ -284,7 +284,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {!hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this offer</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && !basisPoints.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
     </div>
   );
 };

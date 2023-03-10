@@ -240,7 +240,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
       )}
-      {hasEnoughTokens && (
+      {!hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this request</div>
       )}
       {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}

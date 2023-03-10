@@ -12,7 +12,7 @@ import {
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
-import { marketToString } from '@utils/jet/fixed-term-utils';
+import { feesCalc, marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
@@ -42,6 +42,7 @@ interface Forecast {
   riskIndicator?: number;
   unfilledQty: number;
   hasEnoughCollateral: boolean;
+  fees: number;
 }
 
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -111,16 +112,18 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
       const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
+      const totalInterest = repayAmount.sub(borrowedAmount)
 
       setForecast({
         repayAmount: repayAmount.tokens,
-        interest: repayAmount.sub(borrowedAmount).tokens,
+        interest: totalInterest.tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
         riskIndicator: valuationEstimate?.riskIndicator,
         unfilledQty: unfilledQty.tokens,
-        hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
+        hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
+        fees: feesCalc(sim.filled_vwar, totalInterest.tokens)
       });
     } catch (e) {
       console.log(e);
@@ -221,11 +224,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Interest Rate</span>
           <RateDisplay rate={forecast?.effectiveRate} />
         </div>
-        {/* <div className="stat-line">
-          // NOTE calculate this from wasm module as it need sto be 50 bps ANNUALISED
+        <div className="stat-line">
           <span>Fees</span>
-          {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
-        </div> */}
+          {forecast && <span>{forecast?.fees.toFixed(token.precision)} {token.symbol}</span>}
+        </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
           {forecast && (
