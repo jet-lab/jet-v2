@@ -336,9 +336,11 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
             .await?;
 
         ixns.extend(matured_deposits.into_iter().map(|d| {
-            let user_key = self.builder.margin_user_account(self.account.address());
-            let deposit_key =
-                derive_term_deposit(&self.builder.market(), &user_key, d.sequence_number);
+            let deposit_key = derive_term_deposit(
+                &self.builder.market(),
+                &self.account.address(),
+                d.sequence_number,
+            );
 
             self.account
                 .builder

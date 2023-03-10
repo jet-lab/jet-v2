@@ -11,7 +11,10 @@ use clap::Parser;
 use comfy_table::{presets::UTF8_FULL, Table};
 use futures::FutureExt;
 use jet_margin_sdk::{
-    ix_builder::{get_metadata_address, ControlIxBuilder, MarginIxBuilder, MarginPoolIxBuilder},
+    ix_builder::{
+        derive_token_config, get_metadata_address, MarginConfigIxBuilder, MarginIxBuilder,
+        MarginPoolIxBuilder,
+    },
     jet_margin::{self, MarginAccount, PriceInfo, Valuation},
     jet_margin_pool::{self, MarginPool},
     jet_metadata::{self, PositionTokenMetadata},
@@ -103,9 +106,13 @@ impl PartialEq<jet_metadata::TokenKind> for TokenKind {
     }
 }
 
-pub async fn process_register_adapter(client: &Client, adapter: Pubkey) -> Result<Plan> {
+pub async fn process_register_adapter(
+    client: &Client,
+    airspace: Pubkey,
+    adapter: Pubkey,
+) -> Result<Plan> {
     let adapter_md_address = get_metadata_address(&adapter);
-    let ix = ControlIxBuilder::new(resolve_payer(client)?);
+    let ix = MarginConfigIxBuilder::new(airspace, resolve_payer(client)?, None);
 
     if client.account_exists(&adapter_md_address).await? {
         println!("address {adapter} is already registered");
@@ -117,13 +124,17 @@ pub async fn process_register_adapter(client: &Client, adapter: Pubkey) -> Resul
         .instructions(
             [],
             [format!("set-adapter {adapter}")],
-            [ix.register_adapter(&adapter)],
+            [ix.configure_adapter(adapter, true)],
         )
         .build())
 }
 
-pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<Plan> {
-    let margin_accounts = get_all_accounts(client).await?;
+pub async fn process_refresh_metadata(
+    client: &Client,
+    airspace: Pubkey,
+    token: Pubkey,
+) -> Result<Plan> {
+    let margin_accounts = get_all_accounts(client, &airspace).await?;
     let mut plan = client.plan()?;
     let deposit_token = MarginPoolIxBuilder::new(token).deposit_note_mint;
     let config = client
@@ -137,8 +148,12 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
     println!("found {} margin accounts", margin_accounts.len());
 
     for (address, account) in margin_accounts {
+        if account.airspace != airspace {
+            continue;
+        }
+
         let ix = MarginIxBuilder::new(
-            Pubkey::default(), // FIXME: read airspace from margin account
+            Default::default(), // FIXME: read airspace from margin account
             account.owner,
             u16::from_le_bytes(account.user_seed),
         )
@@ -155,7 +170,7 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
                 plan = plan.instructions(
                     [],
                     [format!("refresh-position-md {token} for {address}")],
-                    [ix.refresh_position_metadata(&deposit_token)],
+                    [ix.refresh_position_config(&deposit_token)],
                 );
             }
         }
@@ -168,11 +183,12 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
 
 pub async fn process_set_liquidator(
     client: &Client,
+    airspace: Pubkey,
     liquidator: Pubkey,
     is_liquidator: bool,
 ) -> Result<Plan> {
     let liquidator_md_address = get_metadata_address(&liquidator);
-    let ix = ControlIxBuilder::new(resolve_payer(client)?);
+    let ix = MarginConfigIxBuilder::new(airspace, resolve_payer(client)?, None);
 
     let is_currently_liquidator = client.account_exists(&liquidator_md_address).await?;
     if is_currently_liquidator == is_liquidator {
@@ -186,7 +202,7 @@ pub async fn process_set_liquidator(
         .instructions(
             [],
             [format!("set-liquidator {liquidator} = {is_liquidator}")],
-            [ix.set_liquidator(&liquidator, is_liquidator)],
+            [ix.configure_liquidator(liquidator, is_liquidator)],
         )
         .build())
 }
@@ -200,7 +216,7 @@ pub async fn process_update_balances(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Pubkey::default(), // FIXME: read airspace from margin account
+        Default::default(), // FIXME: read airspace from margin account
         account.owner,
         u16::from_le_bytes(account.user_seed),
     )
@@ -232,7 +248,7 @@ pub async fn process_transfer_position(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Pubkey::default(), // FIXME: read airspace from margin account
+        Default::default(), // FIXME: read airspace from margin account
         source.owner,
         u16::from_le_bytes(source.user_seed),
     )
@@ -261,8 +277,12 @@ pub async fn process_transfer_position(
         .build())
 }
 
-pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<Plan> {
-    let mut all_user_accounts = get_all_accounts(client).await?;
+pub async fn process_list_top_accounts(
+    client: &Client,
+    airspace: Pubkey,
+    limit: usize,
+) -> Result<Plan> {
+    let mut all_user_accounts = get_all_accounts(client, &airspace).await?;
 
     let refresh_account_tasks = all_user_accounts.iter_mut().map(|(address, account)| {
         refresh_account_positions(client, account).map(|result| (*address, result))
@@ -318,7 +338,10 @@ pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<
     Ok(Plan::default())
 }
 
-async fn get_all_accounts(client: &Client) -> Result<Vec<(Pubkey, MarginAccount)>> {
+async fn get_all_accounts(
+    client: &Client,
+    airspace: &Pubkey,
+) -> Result<Vec<(Pubkey, MarginAccount)>> {
     let all_margin_accounts = client.rpc().get_program_accounts(&jet_margin::ID).await?;
     let margin_user_account_size = 8 + std::mem::size_of::<MarginAccount>();
 
@@ -330,7 +353,9 @@ async fn get_all_accounts(client: &Client) -> Result<Vec<(Pubkey, MarginAccount)
             }
 
             match MarginAccount::try_deserialize(&mut &account.data[..]) {
-                Ok(deserialized) => Some((address, deserialized)),
+                Ok(deserialized) => {
+                    (deserialized.airspace == *airspace).then_some((address, deserialized))
+                }
                 Err(_) => {
                     eprintln!("could not deserialize margin account {address}");
                     None
@@ -355,6 +380,36 @@ pub async fn process_inspect(client: &Client, addresses: Vec<Pubkey>) -> Result<
         println!();
     }
 
+    Ok(Plan::default())
+}
+
+pub async fn process_read_token_config(
+    client: &Client,
+    airspace: Pubkey,
+    address: Pubkey,
+) -> Result<Plan> {
+    use jet_margin_sdk::jet_margin::TokenConfig;
+
+    let try_config = client
+        .read_anchor_account::<TokenConfig>(&address)
+        .await
+        .ok();
+
+    let try_derive_config = client
+        .read_anchor_account::<TokenConfig>(&derive_token_config(&airspace, &address))
+        .await
+        .ok();
+
+    let config = match (try_config, try_derive_config) {
+        (Some(config), _) => config,
+        (_, Some(config)) => config,
+        _ => {
+            println!("no token config found for {address}");
+            return Ok(Plan::default());
+        }
+    };
+
+    println!("{config:#?}");
     Ok(Plan::default())
 }
 

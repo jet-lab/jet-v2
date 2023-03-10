@@ -12,7 +12,7 @@ on:
 
 env:
   ANCHOR_CLI_VERSION: 0.24.2
-  SOLANA_CLI_VERSION: 1.10.29
+  SOLANA_CLI_VERSION: 1.15.0
   VALIDATOR_IMG: jet-v2-test-validator
 
 defaults:
@@ -99,8 +99,6 @@ jobs:
       - name: Build Programs with Devnet
         run: |
           yarn install
-          cargo fmt -- --check
-          cargo clippy --all-targets -- -Dwarnings
           anchor build --skip-lint -- --features devnet
 
       - name: Deploy Metadata
@@ -116,7 +114,7 @@ jobs:
       - name: Deploy Margin
         run: |
           solana program deploy -u d --program-id JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ target/deploy/jet_margin.so
-          anchor idl upgrade -f ./target/idl/jet_margin.json JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ --provider.cluster devnet
+        # anchor idl upgrade -f ./target/idl/jet_margin.json JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ --provider.cluster devnet
 
       - name: Deploy Margin Pool
         run: |
@@ -131,7 +129,7 @@ jobs:
       - name: Deploy Fixed Term
         run: |
           solana program deploy -u d --program-id JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc target/deploy/jet_fixed_term.so
-          anchor idl upgrade -f ./target/idl/jet_fixed_term.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
+        # anchor idl upgrade -f ./target/idl/jet_fixed_term.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
 
       - name: Deploy Airspace
         run: |

@@ -223,11 +223,16 @@ async fn sync_user_debt_assets<I: NetworkUserInterface>(
     let deposits: Vec<Arc<TermDeposit>> = load_user_positions(
         states,
         |state| state.assets.active_deposits(),
-        |user, state, seqno| derive_term_deposit(&state.market, user, seqno),
+        |_, state, seqno| derive_term_deposit(&state.market, &state.margin_account, seqno),
     )
     .await?;
 
     let user_states = states.get_all::<UserState>();
+    let mut user_account_map = HashMap::new();
+    user_states.iter().for_each(|s| {
+        user_account_map.insert(s.1.margin_account(), s.0);
+    });
+
     let mut user_updates = HashMap::new();
 
     for (user, root) in &user_states {
@@ -242,7 +247,8 @@ async fn sync_user_debt_assets<I: NetworkUserInterface>(
     }
 
     for deposit in deposits {
-        let state = user_updates.get_mut(&deposit.owner).unwrap();
+        let user = user_account_map.get(&deposit.owner).unwrap();
+        let state = user_updates.get_mut(user).unwrap();
         state
             .deposits
             .insert(deposit.sequence_number, deposit.clone());
@@ -328,8 +334,8 @@ fn parse_bid_asks(
 
                 output.insert(OrderEntry {
                     order_id: node.key,
-                    order_tag: ft_info.order_tag,
-                    owner: ft_info.owner,
+                    order_tag: ft_info.order_tag(),
+                    owner: ft_info.owner(),
                     price: ui_price(node.price()),
                     base_token_amount: node.base_quantity,
                     tenor,

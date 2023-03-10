@@ -1,3 +1,4 @@
+pub mod auto_roll_lend_order;
 pub mod configure_auto_roll;
 pub mod initialize_margin_user;
 pub mod margin_borrow_order;
@@ -8,6 +9,7 @@ pub mod refresh_position;
 pub mod repay;
 pub mod settle;
 
+pub use auto_roll_lend_order::*;
 pub use configure_auto_roll::*;
 pub use initialize_margin_user::*;
 pub use margin_borrow_order::*;

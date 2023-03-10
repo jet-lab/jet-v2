@@ -104,11 +104,10 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
     } else {
         CallbackFlags::default()
     };
-    let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
-        ctx.accounts.margin_account.key(),
+    let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_margin_order(
         Side::Ask,
         params,
-        ctx.accounts.margin_user.key(),
+        ctx.accounts.margin_account.key(),
         ctx.accounts.margin_user.key(),
         ctx.remaining_accounts
             .iter()
@@ -172,7 +171,8 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
             maturation_timestamp,
             quote_filled,
             base_filled,
-            flags: term_loan.flags
+            flags: term_loan.flags,
+            fees,
         });
     }
     let total_debt = order_summary.base_combined();

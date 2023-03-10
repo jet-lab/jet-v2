@@ -211,8 +211,8 @@ impl MarginTxBuilder {
     }
 
     /// The address of the associated airspace
-    pub fn airspace(&self) -> &Pubkey {
-        &self.ix.airspace
+    pub fn airspace(&self) -> Pubkey {
+        self.ix.airspace
     }
 
     /// Transaction to create a new margin account for the user
@@ -337,7 +337,7 @@ impl MarginTxBuilder {
 
         let inner_refresh_loan_ix =
             pool.margin_refresh_position(self.ix.address, token_metadata.pyth_price);
-        instructions.push(self.adapter_invoke_ix(inner_refresh_loan_ix));
+        instructions.push(self.ix.accounting_invoke(inner_refresh_loan_ix));
 
         let inner_borrow_ix = pool.margin_borrow(self.ix.address, deposit_position, change);
 
@@ -484,7 +484,7 @@ impl MarginTxBuilder {
         };
         let inner_swap_ix = pool_spl_swap(
             &swap_info,
-            self.airspace(),
+            &self.airspace(),
             &self.ix.address,
             source_token_mint,
             destination_token_mint,
@@ -540,10 +540,8 @@ impl MarginTxBuilder {
         let mut transactions = vec![];
         let setup_instructions = self.setup_swap(builder).await?;
         if !setup_instructions.is_empty() {
-            let setup = self.create_transaction_builder(&setup_instructions)?;
-            transactions.push(setup);
+            transactions.push(self.create_transaction_builder(&setup_instructions)?);
         }
-
         transactions.push(self.create_transaction_builder(&[
             ComputeBudgetInstruction::set_compute_unit_limit(800000),
             self.adapter_invoke_ix(inner_swap_ix),
@@ -640,15 +638,6 @@ impl MarginTxBuilder {
             .collect())
     }
 
-    /// Refresh the metadata for a position
-    pub async fn refresh_position_metadata(
-        &self,
-        position_token_mint: &Pubkey,
-    ) -> Result<Transaction> {
-        self.create_transaction(&[self.ix.refresh_position_metadata(position_token_mint)])
-            .await
-    }
-
     /// Refresh metadata for all positions in the user account
     pub async fn refresh_all_position_metadata(&self) -> Result<Vec<TransactionBuilder>> {
         let instructions = self
@@ -656,14 +645,9 @@ impl MarginTxBuilder {
             .await?
             .positions()
             .map(|position| {
-                let is_deposit_account = position.address
-                    == get_associated_token_address(self.address(), &position.token);
-
-                match is_deposit_account {
-                    false => self.ix.refresh_position_metadata(&position.token),
-                    true => self.ix.refresh_position_config(&position.token),
-                }
-                .with_signers(&self.signers())
+                self.ix
+                    .refresh_position_config(&position.token)
+                    .with_signers(&self.signers())
             })
             .collect::<Vec<_>>();
 
@@ -891,7 +875,7 @@ impl MarginTxBuilder {
         Ok(if let Some(position) = search_result {
             position.address
         } else {
-            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer());
+            let pools_ix = pool.register_loan(self.ix.address, self.ix.payer(), self.airspace());
             let wrapped_ix = self.adapter_invoke_ix(pools_ix);
             instructions.push(wrapped_ix);
 

@@ -52,12 +52,6 @@ mod jet_control {
         instructions::create_margin_pool_handler(ctx)
     }
 
-    /// Register a program to be allowed for use as margin adapter in the
-    /// protocol.
-    pub fn register_adapter(ctx: Context<RegisterAdapter>) -> Result<()> {
-        instructions::register_adapter_handler(ctx)
-    }
-
     /// Configure details about a margin pool
     pub fn configure_margin_pool(
         ctx: Context<ConfigureMarginPool>,
@@ -65,11 +59,5 @@ mod jet_control {
         pool_config: Option<MarginPoolConfig>,
     ) -> Result<()> {
         instructions::configure_margin_pool_handler(ctx, metadata, pool_config)
-    }
-
-    /// Configure an address as being allowed to perform the functions
-    /// of a liquidator.
-    pub fn set_liquidator(ctx: Context<SetLiquidator>, is_liquidator: bool) -> Result<()> {
-        instructions::set_liquidator_handler(ctx, is_liquidator)
     }
 }

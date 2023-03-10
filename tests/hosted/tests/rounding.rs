@@ -84,6 +84,11 @@ async fn rounding_poc() -> Result<()> {
     let user_b = ctx.margin.user(&wallet_b, 0).unwrap();
     let user_c = ctx.margin.user(&wallet_c, 0).unwrap();
 
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
+    ctx.issue_permit(wallet_c.pubkey()).await?;
+
     user_a.create_account().await.unwrap();
     user_b.create_account().await.unwrap();
     user_c.create_account().await.unwrap();

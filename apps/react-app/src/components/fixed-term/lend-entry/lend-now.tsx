@@ -40,6 +40,8 @@ interface Forecast {
   selfMatch: boolean;
   fulfilled: boolean;
   riskIndicator?: number;
+  unfilledQty: number;
+  hasEnoughCollateral: boolean;
 }
 
 export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -73,7 +75,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
-    !hasEnoughTokens;
+    !hasEnoughTokens ||
+    !forecast?.hasEnoughCollateral;
 
   const handleForecast = (amount: BN) => {
     if (bnToBigInt(amount) === BigInt(0)) {
@@ -94,23 +97,24 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
         : undefined;
       const setupCheckEstimate = productModel?.takerAccountForecast('lend', sim, 'setup');
-      if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
-        // FIXME Disable form submission
-        console.log('WARNING Trade violates setup check and should not be allowed');
-      }
-
       const valuationEstimate = productModel?.takerAccountForecast('lend', sim);
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
+
       setForecast({
         repayAmount: repayAmount.tokens,
         interest: repayAmount.sub(lendAmount).tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches,
-        riskIndicator: valuationEstimate?.riskIndicator
+        riskIndicator: valuationEstimate?.riskIndicator,
+        unfilledQty: unfilledQty.tokens,
+        hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
       });
+
+      console.log(sim)
     } catch (e) {
       console.log(e);
     }
@@ -239,6 +243,9 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       {!hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this request</div>
       )}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
+      {forecast && forecast.effectiveRate === 0 && <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing lend amount.</div>}
     </div>
   );
 };

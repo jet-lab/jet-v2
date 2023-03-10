@@ -59,18 +59,8 @@ pub const MAX_ORACLE_STALENESS: i64 = 30;
 pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
 /// The maximum amount of equity that can be deducted from an account during liquidation
-/// as a fraction of the total dollar value that is expected to need to be liquidated
-pub const LIQUIDATION_MAX_EQUITY_LOSS_BPS: u16 = 10_00;
-
-/// The maximum c-ratio that an account can end a liquidation with.
-///
-/// Note: This is not a traditional c-ratio, because it's based on the ratio of
-///       the effective_collateral / required_collateral.
-pub const LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = 125_00;
-
-/// The threshold at which accounts can have all their debts closed. Accounts with
-/// total exposure below this value can have their exposure reduced to zero.
-pub const LIQUIDATION_CLOSE_THRESHOLD_USD: u64 = 100;
+/// as a fraction of the account's entire liabilities value
+pub const LIQUIDATION_MAX_TOTAL_EQUITY_LOSS_BPS: u16 = 4_00;
 
 /// The maximum duration in seconds of a liquidation before another user may cancel it
 #[constant]
@@ -203,29 +193,6 @@ pub mod jet_margin {
     ///
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
-    }
-
-    /// Update the metadata for a position stored in the margin account,
-    /// in the case where the metadata has changed after the position was
-    /// created.
-    ///
-    /// # [Accounts](jet_margin::accounts::RefreshPositionMetadata)
-    ///
-    /// |     |     |     |
-    /// | --- | --- | --- |
-    /// | **Name** | **Type** | **Description** |
-    /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
-    /// | `metadata` | `read_only` | The metadata account for the token, which has been updated. |
-    ///
-    /// # Events
-    ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Event Name** | **Description** |
-    /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |
-    ///
-    pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
-        refresh_position_metadata_handler(ctx)
     }
 
     /// Close out a position, removing it from the account.
@@ -618,6 +585,10 @@ pub enum ErrorCode {
     /// 141041 - The liquidation attempted to extract too much value
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
+
+    /// 141042 - Submit the incorrect LiquidationState to the instruction
+    #[msg("liquidationState does not match given margin account")]
+    WrongLiquidationState,
 
     /// 141050 - The airspace does not match
     #[msg("attempting to mix entities from different airspaces")]

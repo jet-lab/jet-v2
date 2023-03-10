@@ -44,6 +44,7 @@ interface Forecast {
   matchedRate?: number;
   selfMatch: boolean;
   riskIndicator?: number;
+  hasEnoughCollateral: boolean;
 }
 
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
@@ -78,7 +79,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     basisPoints.lte(new BN(0)) ||
     amount.lte(new BN(0)) ||
     forecast?.selfMatch ||
-    !hasEnoughTokens;
+    !hasEnoughTokens ||
+    !forecast?.hasEnoughCollateral;
 
   const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     setPending(true);
@@ -134,11 +136,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
       : undefined;
     const setupCheckEstimate = productModel?.makerAccountForecast('lend', sim, 'setup');
-    if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
-      // FIXME Disable form submission
-      console.log('WARNING Trade violates setup check and should not be allowed');
-    }
-
     const valuationEstimate = productModel?.makerAccountForecast('lend', sim);
 
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
@@ -156,7 +153,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
       postedRate,
       selfMatch: sim.self_match,
-      riskIndicator: valuationEstimate?.riskIndicator
+      riskIndicator: valuationEstimate?.riskIndicator,
+      hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
     });
   }
 
@@ -245,8 +243,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
             <span>
-              {forecast.matchedAmount.toFixed(token.precision)}
-              {token.symbol}
+              {`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
@@ -287,6 +284,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {!hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this offer</div>
       )}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && !basisPoints.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
     </div>
   );
 };

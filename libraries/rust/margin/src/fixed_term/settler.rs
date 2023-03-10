@@ -67,7 +67,13 @@ async fn settle_with_recovery(
     tracing::debug!("sending settle tx for margin accounts {margin_accounts:?}");
     match margin_accounts
         .iter()
-        .map(|margin_account| accounting_invoke(*margin_account, builder.settle(*margin_account)))
+        .map(|margin_account| {
+            accounting_invoke(
+                builder.airspace(),
+                *margin_account,
+                builder.settle(*margin_account),
+            )
+        })
         .collect::<Vec<_>>()
         .with_signers(&[])
         .send_and_confirm(&rpc)

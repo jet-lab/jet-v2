@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
+use jet_margin_sdk::tx_builder::AirspaceAdmin;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
 use jet_client::NetworkKind;
@@ -16,7 +17,7 @@ use jet_environment::{
     },
     programs::ORCA_V2,
 };
-use jet_instructions::airspace::derive_airspace;
+use jet_instructions::airspace::{derive_airspace, AirspaceIxBuilder};
 use jet_instructions::fixed_term::derive_market_from_tenor;
 use jet_instructions::margin::MarginConfigIxBuilder;
 use jet_instructions::test_service::{
@@ -119,6 +120,10 @@ impl MarginTestContext {
             .send_and_confirm_condensed(&ctx.rpc)
             .await?;
 
+        ctx.margin.register_adapter(&jet_margin_pool::ID).await?;
+        ctx.margin.register_adapter(&jet_margin_swap::ID).await?;
+        ctx.margin.register_adapter(&jet_fixed_term::ID).await?;
+
         Ok(ctx)
     }
 
@@ -139,6 +144,19 @@ impl MarginTestContext {
             .set_liquidator_metadata(liquidator.pubkey(), true)
             .await?;
         Ok(liquidator)
+    }
+
+    pub async fn issue_permit(&self, user: Pubkey) -> Result<Signature, Error> {
+        let ix = AirspaceIxBuilder::new_from_address(
+            self.margin.airspace(),
+            self.payer.pubkey(),
+            self.airspace_authority.pubkey(),
+        )
+        .permit_create(user);
+
+        self.rpc
+            .send_and_confirm_1tx(&[ix], &[&self.airspace_authority])
+            .await
     }
 }
 
@@ -217,6 +235,8 @@ impl TestContext {
 
     pub async fn create_user(&self) -> Result<JetSimulationClient, Error> {
         let wallet = self.create_wallet(1_000).await?;
+        self.issue_permit(wallet.pubkey()).await?;
+
         let client = SimulationClient::new(self.inner.rpc.clone(), Some(wallet));
 
         Ok(JetSimulationClient::new(
@@ -253,6 +273,17 @@ impl TestContext {
                 exponent,
             },
         )
+        .await
+    }
+
+    pub async fn issue_permit(&self, owner: Pubkey) -> Result<Signature, Error> {
+        AirspaceAdmin::new(
+            &self.config.airspaces[0].name,
+            self.rpc().payer().pubkey(),
+            self.rpc().payer().pubkey(),
+        )
+        .issue_user_permit(owner)
+        .send_and_confirm(self.rpc())
         .await
     }
 }

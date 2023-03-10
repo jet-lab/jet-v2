@@ -55,10 +55,11 @@ export interface MarginUserInfo {
   market: PublicKey
   claims: PublicKey
   collateral: PublicKey
-  underlyingSettlement: PublicKey
-  ticketSettlement: PublicKey
+  ticketCollateral: PublicKey
   debt: DebtInfo
   assets: AssetInfo
+  borrowRollConfig: AutoRollConfig
+  lendRollConfig: AutoRollConfig
 }
 
 export interface DebtInfo {
@@ -67,8 +68,6 @@ export interface DebtInfo {
   nextTermLoanMaturity: BN
   pending: BN
   committed: BN
-  borrowRollConfig: AutoRollConfig
-  lendRollConfig: AutoRollConfig
 }
 
 export interface AssetInfo {
@@ -76,6 +75,8 @@ export interface AssetInfo {
   entitledTickets: BN
   nextDepositSeqno: BN
   nextUnredeemedDepositSeqno: BN
+  ticketsStaked: BN
+  postedQuote: BN
   _reserved0: number[]
 }
 
@@ -234,6 +235,7 @@ export class FixedTermMarket {
     const termLoan = await this.deriveTermLoanAddress(marginUser, seed)
     const claims = await this.deriveMarginUserClaims(marginUser)
     const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
 
     return this.program.methods
       .marginBorrowOrder(params)
@@ -246,7 +248,7 @@ export class FixedTermMarket {
         claims,
         ticketCollateral,
         payer,
-        underlyingSettlement: await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true),
+        underlyingSettlement: underlyingSettlement,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
       })
@@ -311,7 +313,7 @@ export class FixedTermMarket {
     let ticketSettlement = userTicketVault
     const marketUser = await this.deriveMarginUserAddress(user)
     if (params.autoStake) {
-      ticketSettlement = await this.deriveTermDepositAddress(marketUser, seed)
+      ticketSettlement = await this.deriveTermDepositAddress(user.address, seed)
     }
     const ticketCollateral = await this.deriveTicketCollateral(marketUser)
     return await this.program.methods
@@ -487,8 +489,11 @@ export class FixedTermMarket {
     return await findFixedTermDerivedAccount(["term_loan", this.address, marginUser, seed], this.program.programId)
   }
 
-  async deriveTermDepositAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findFixedTermDerivedAccount(["term_deposit", this.address, marginUser, seed], this.program.programId)
+  async deriveTermDepositAddress(marginAccount: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findFixedTermDerivedAccount(
+      ["term_deposit", this.address, marginAccount, seed],
+      this.program.programId
+    )
   }
 
   getOrderbookModel(tenor: bigint, snapshot: OrderbookSnapshot): OrderbookModel {

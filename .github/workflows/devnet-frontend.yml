@@ -3,7 +3,7 @@ name: Deploy Devnet Frontend
 on:
   push:
     branches:
-      - "master"
+      - "devnet"
   workflow_dispatch: {}
 
 jobs:

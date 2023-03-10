@@ -76,7 +76,6 @@ pub async fn setup_token(
         },
         collateral_weight,
     };
-
     try_join!(
         ctx.margin.create_pool(&setup),
         ctx.tokens.set_price(&token, &price),
@@ -148,6 +147,9 @@ pub async fn setup_user(
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
     let user = ctx.margin.user(&wallet, 0)?;
+
+    // Add an airspace permit for the user
+    ctx.issue_permit(wallet.pubkey()).await?;
 
     // Initialize the margin accounts for each user
     user.create_account().await?;

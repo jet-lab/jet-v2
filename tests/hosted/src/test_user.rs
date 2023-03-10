@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
+use jet_instructions::control::get_control_authority_address;
 use jet_margin_sdk::cat;
 use jet_margin_sdk::ix_builder::MarginSwapRouteIxBuilder;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
@@ -11,8 +12,8 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_margin_pool::TokenChange;
-use jet_static_program_registry::orca_swap_v2;
 use spl_associated_token_account::get_associated_token_address;
+use spl_associated_token_account::instruction::create_associated_token_account;
 
 use crate::context::MarginTestContext;
 use crate::margin::MarginUser;
@@ -151,22 +152,28 @@ impl TestUser {
         src: &Pubkey,
         dst: &Pubkey,
         change: TokenChange,
+        is_liquidation: bool,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
 
         self.create_deposit_position(src).await?;
         self.create_deposit_position(dst).await?;
 
-        self.user
-            .swap(
-                &orca_swap_v2::id(),
-                src,
-                dst,
-                pool,
-                change,
-                1, // at least 1 token back
-            )
-            .await
+        let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+            jet_instructions::margin_swap::SwapContext::MarginPool,
+            *self.user.address(),
+            *src,
+            *dst,
+            change,
+            1,
+        )?;
+        if is_liquidation {
+            swap_builder.set_liquidation()?;
+        }
+        swap_builder.add_swap_leg(pool, 0)?;
+        swap_builder.finalize()?;
+
+        self.user.route_swap(&swap_builder, &[]).await
     }
 
     pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<()> {
@@ -272,7 +279,23 @@ impl TestLiquidator {
         repay: u64,
     ) -> Result<()> {
         let liq = self.begin(user, true).await?;
-        liq.swap(swaps, collateral, loan, change).await?;
+        // Create a fee account for the liquidator
+        let liquidator = self.wallet.pubkey();
+        let fee_destination = get_associated_token_address(&get_control_authority_address(), loan);
+
+        if self.ctx.rpc.get_account(&fee_destination).await?.is_none() {
+            let create_ata_ix = create_associated_token_account(
+                &liquidator,
+                &get_control_authority_address(),
+                loan,
+                &spl_token::id(),
+            );
+            self.ctx
+                .rpc
+                .send_and_confirm_1tx(&[create_ata_ix], &[&self.wallet])
+                .await?;
+        }
+        liq.swap(swaps, collateral, loan, change, true).await?;
         liq.margin_repay(loan, repay).await?;
         liq.liquidate_end(Some(self.wallet.pubkey())).await
     }

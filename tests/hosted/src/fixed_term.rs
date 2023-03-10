@@ -24,7 +24,10 @@ use jet_fixed_term::{
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
-use jet_instructions::{fixed_term::derive_market, margin::MarginConfigIxBuilder};
+use jet_instructions::{
+    fixed_term::derive_market,
+    margin::{derive_adapter_config, MarginConfigIxBuilder},
+};
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
@@ -33,13 +36,13 @@ use jet_margin_sdk::{
         settler::{settle_margin_users_loop, SettleMarginUsersConfig},
         FixedTermIxBuilder, OrderBookAddresses, OwnedEventQueue,
     },
-    ix_builder::{
-        get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
-    },
+    ix_builder::{get_control_authority_address, MarginIxBuilder},
     margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
-        transaction::{SendTransactionBuilder, TransactionBuilder, WithSigner},
+        transaction::{
+            InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder, WithSigner,
+        },
     },
     tx_builder::{
         fixed_term::FixedTermPositionRefresher, global_initialize_instructions, MarginTxBuilder,
@@ -286,7 +289,11 @@ impl TestManager {
     /// register relevant positions.
     pub async fn with_margin(self, airspace_authority: &Keypair) -> Result<Self> {
         self.create_authority_if_missing().await?;
-        self.register_adapter_if_unregistered(&jet_fixed_term::ID)
+        self.register_adapter_if_unregistered(&jet_fixed_term::ID, airspace_authority)
+            .await?;
+        self.register_adapter_if_unregistered(&jet_margin_pool::ID, airspace_authority)
+            .await?;
+        self.register_adapter_if_unregistered(&jet_margin_swap::ID, airspace_authority)
             .await?;
         self.register_tickets_position_metadatata(airspace_authority)
             .await?;
@@ -351,9 +358,8 @@ impl TestManager {
             if pending == 0 {
                 break;
             }
-
-            println!("pending = {pending}");
             self.event_consumer.consume().await?;
+            self.event_consumer.sync_queues().await?;
         }
         Ok(())
     }
@@ -406,6 +412,30 @@ impl TestManager {
         }
     }
 
+    pub async fn auto_roll_term_deposits(&self, margin_account: &Pubkey) -> Result<()> {
+        let mut mature_deposits = self.load_mature_deposits(margin_account).await?;
+        mature_deposits.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
+
+        let mut seq_no = self
+            .load_margin_user(margin_account)
+            .await?
+            .assets
+            .next_new_deposit_seqno();
+        let mut builder = Vec::<TransactionBuilder>::new();
+        for (key, deposit) in mature_deposits {
+            let ix = self.ix_builder.auto_roll_lend_order(
+                *margin_account,
+                key,
+                deposit.payer,
+                None,
+                seq_no,
+            );
+            seq_no += 1;
+            builder.push(ix.into())
+        }
+        builder.send_and_confirm_condensed(&self.client).await?;
+        Ok(())
+    }
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption();
 
@@ -467,14 +497,18 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_adapter_if_unregistered(&self, adapter: &Pubkey) -> Result<()> {
+    pub async fn register_adapter_if_unregistered(
+        &self,
+        adapter: &Pubkey,
+        authority: &Keypair,
+    ) -> Result<()> {
         if self
             .client
-            .get_account(&get_metadata_address(adapter))
+            .get_account(&derive_adapter_config(&self.airspace, adapter))
             .await?
             .is_none()
         {
-            self.register_adapter(adapter).await?;
+            self.register_adapter(adapter, authority).await?;
         }
 
         Ok(())
@@ -537,10 +571,15 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<()> {
-        let ix = ControlIxBuilder::new(self.client.payer().pubkey()).register_adapter(adapter);
+    pub async fn register_adapter(&self, adapter: &Pubkey, authority: &Keypair) -> Result<()> {
+        let ix = MarginConfigIxBuilder::new(
+            self.airspace,
+            self.client.payer().pubkey(),
+            Some(authority.pubkey()),
+        )
+        .configure_adapter(*adapter, true);
 
-        send_and_confirm(&self.client, &[ix], &[]).await?;
+        send_and_confirm(&self.client, &[ix], &[authority]).await?;
         Ok(())
     }
 
@@ -652,26 +691,97 @@ impl TestManager {
 
         T::try_deserialize(&mut data.as_slice()).map_err(anyhow::Error::from)
     }
+
+    pub async fn load_margin_user(&self, margin_account: &Pubkey) -> Result<MarginUser> {
+        let key = self.ix_builder.margin_user_account(*margin_account);
+
+        self.load_anchor(&key).await
+    }
+
+    pub async fn load_mature_deposits(
+        &self,
+        margin_account: &Pubkey,
+    ) -> Result<Vec<(Pubkey, TermDeposit)>> {
+        let current_time = self.client.get_clock().await?.unix_timestamp;
+
+        let deposits = self
+            .client
+            .get_program_accounts(
+                &jet_fixed_term::ID,
+                Some(std::mem::size_of::<TermDeposit>() + 8),
+            )
+            .await?
+            .into_iter()
+            .filter_map(|(k, a)| {
+                if let Ok(deposit) = TermDeposit::try_deserialize(&mut a.data.as_slice()) {
+                    if &deposit.owner == margin_account && deposit.matures_at <= current_time {
+                        return Some((k, deposit));
+                    }
+                }
+                None
+            })
+            .collect::<Vec<_>>();
+        Ok(deposits)
+    }
+
+    pub async fn load_outstanding_loans(
+        &self,
+        margin_account: Pubkey,
+    ) -> Result<Vec<(Pubkey, TermLoan)>> {
+        let margin_user = self.ix_builder.margin_user(margin_account).address;
+        let loans = self
+            .client
+            .get_program_accounts(
+                &jet_fixed_term::ID,
+                Some(std::mem::size_of::<TermLoan>() + 8),
+            )
+            .await?
+            .into_iter()
+            .filter_map(|(k, a)| {
+                if let Ok(loan) = TermLoan::try_deserialize(&mut a.data.as_slice()) {
+                    if loan.margin_user == margin_user {
+                        return Some((k, loan));
+                    }
+                }
+                None
+            })
+            .collect::<Vec<_>>();
+
+        Ok(loans)
+    }
 }
 
 #[async_trait]
 pub trait GenerateProxy {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self>
+    async fn generate(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+        owner: &Keypair,
+    ) -> Result<Self>
     where
         Self: Sized;
 }
 
 #[async_trait]
 impl GenerateProxy for NoProxy {
-    async fn generate(_manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
+    async fn generate(
+        _ctx: Arc<MarginTestContext>,
+        _manager: Arc<TestManager>,
+        owner: &Keypair,
+    ) -> Result<Self> {
         Ok(NoProxy(owner.pubkey()))
     }
 }
 
 #[async_trait]
 impl GenerateProxy for MarginIxBuilder {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
-        let margin = MarginIxBuilder::new(manager.ix_builder.airspace(), owner.pubkey(), 0);
+    async fn generate(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+        owner: &Keypair,
+    ) -> Result<Self> {
+        ctx.issue_permit(owner.pubkey()).await?;
+        let margin = MarginIxBuilder::new(manager.airspace, owner.pubkey(), 0);
         manager
             .sign_send_transaction(&[margin.create_account()], Some(&[owner]))
             .await?;
@@ -714,14 +824,17 @@ impl<P: Proxy> FixedTermUser<P> {
 }
 
 impl<P: Proxy + GenerateProxy> FixedTermUser<P> {
-    pub async fn new(manager: Arc<TestManager>) -> Result<Self> {
+    pub async fn new(ctx: Arc<MarginTestContext>, manager: Arc<TestManager>) -> Result<Self> {
         let owner = create_wallet(&manager.client, 10 * LAMPORTS_PER_SOL).await?;
-        let proxy = P::generate(manager.clone(), &owner).await?;
+        let proxy = P::generate(ctx.clone(), manager.clone(), &owner).await?;
         Self::new_with_proxy(manager, owner, proxy)
     }
 
-    pub async fn new_funded(manager: Arc<TestManager>) -> Result<Self> {
-        let user = Self::new(manager).await?;
+    pub async fn new_funded(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+    ) -> Result<Self> {
+        let user = Self::new(ctx.clone(), manager).await?;
         user.fund().await?;
         Ok(user)
     }
@@ -950,6 +1063,19 @@ impl<P: Proxy> FixedTermUser<P> {
             .data;
 
         T::try_deserialize(&mut data.as_slice()).map_err(anyhow::Error::from)
+    }
+
+    pub async fn try_repay_all(&self) -> Result<()> {
+        let mut outstanding_loans = self
+            .manager
+            .load_outstanding_loans(self.proxy.pubkey())
+            .await?;
+        outstanding_loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
+
+        for (_, loan) in outstanding_loans {
+            self.repay(loan.sequence_number, loan.balance).await?;
+        }
+        Ok(())
     }
 }
 

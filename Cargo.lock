@@ -2515,6 +2515,7 @@ dependencies = [
  "arrayref",
  "bitflags",
  "borsh 0.9.3",
+ "bs58 0.4.0",
  "bytemuck",
  "itertools 0.10.5",
  "jet-airspace",
@@ -2643,6 +2644,7 @@ dependencies = [
  "jet-simulation",
  "jet-static-program-registry",
  "jet-test-service",
+ "num-traits",
  "pyth-sdk-solana 0.7.0",
  "rand 0.8.5",
  "serde",
@@ -2669,6 +2671,7 @@ dependencies = [
  "bytemuck",
  "jet-margin",
  "jet-margin-pool",
+ "jet-program-common",
  "jet-static-program-registry",
  "stable-swap-anchor",
 ]
