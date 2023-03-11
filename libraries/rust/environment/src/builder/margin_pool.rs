@@ -4,7 +4,7 @@ use jet_instructions::{
     margin_pool::{derive_margin_pool, MarginPoolIxBuilder, MARGIN_POOL_PROGRAM},
 };
 use jet_margin_pool::MarginPool;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::{network::NetworkKind, NetworkUserInterface, NetworkUserInterfaceExt};
 
 use super::{Builder, BuilderError, TokenContext};
 
@@ -43,9 +43,10 @@ pub(crate) async fn configure_for_token<I: NetworkUserInterface>(
 
     if should_reconfigure {
         log::info!(
-            "configure margin pool for token {} at {}",
+            "configure margin pool for token {} at {}: {:#?}",
             &token.desc.name,
-            derive_margin_pool(&token.airspace, &token.mint)
+            derive_margin_pool(&token.airspace, &token.mint),
+            pool_config
         );
 
         configure_pool_ixns.push(ctrl_ix.configure_margin_pool(
@@ -65,6 +66,10 @@ pub(crate) async fn configure_for_token<I: NetworkUserInterface>(
 
     if !configure_pool_ixns.is_empty() {
         builder.propose(configure_pool_ixns);
+    }
+
+    if builder.network == NetworkKind::Mainnet {
+        return Ok(());
     }
 
     let note_configs = builder

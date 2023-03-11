@@ -68,16 +68,15 @@ pub(crate) async fn configure_airspace<I: NetworkUserInterface>(
         builder.proposal_authority(),
     );
 
-    if !builder.account_exists(&as_ix.address()).await? {
-        log::info!("create airspace '{}' as {}", &config.name, as_ix.address());
-        builder.propose([as_ix.create(builder.proposal_authority(), config.is_restricted)]);
-    }
-
     if builder.network != NetworkKind::Mainnet {
-        create_test_tokens(builder, oracle_authority, &config.tokens).await?;
-    }
+        if !builder.account_exists(&as_ix.address()).await? {
+            log::info!("create airspace '{}' as {}", &config.name, as_ix.address());
+            builder.propose([as_ix.create(builder.proposal_authority(), config.is_restricted)]);
+        }
 
-    register_airspace_adapters(builder, &as_ix.address(), DEFAULT_MARGIN_ADAPTERS).await?;
+        create_test_tokens(builder, oracle_authority, &config.tokens).await?;
+        register_airspace_adapters(builder, &as_ix.address(), DEFAULT_MARGIN_ADAPTERS).await?;
+    }
 
     configure_tokens(
         builder,
@@ -148,25 +147,27 @@ pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
             }
         };
 
-        // Set margin config for the token itself
-        configure_margin_token(
-            builder,
-            airspace,
-            &mint,
-            Some(TokenConfigUpdate {
-                underlying_mint: mint,
-                admin: TokenAdmin::Margin {
-                    oracle: TokenOracle::Pyth {
-                        price: pyth_price,
-                        product: pyth_product,
+        if builder.network != NetworkKind::Mainnet {
+            // Set margin config for the token itself
+            configure_margin_token(
+                builder,
+                airspace,
+                &mint,
+                Some(TokenConfigUpdate {
+                    underlying_mint: mint,
+                    admin: TokenAdmin::Margin {
+                        oracle: TokenOracle::Pyth {
+                            price: pyth_price,
+                            product: pyth_product,
+                        },
                     },
-                },
-                token_kind: TokenKind::Collateral,
-                value_modifier: desc.collateral_weight,
-                max_staleness: 0,
-            }),
-        )
-        .await?;
+                    token_kind: TokenKind::Collateral,
+                    value_modifier: desc.collateral_weight,
+                    max_staleness: 0,
+                }),
+            )
+            .await?;
+        }
 
         let token_context = TokenContext {
             airspace: *airspace,
@@ -180,10 +181,17 @@ pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
         // Create a pool if configured
         margin_pool::configure_for_token(builder, &token_context).await?;
 
-        // Create any fixed term markets
-        for market_config in &desc.fixed_term_markets {
-            fixed_term::configure_market_for_token(builder, cranks, &token_context, market_config)
+        if builder.network != NetworkKind::Mainnet {
+            // Create any fixed term markets
+            for market_config in &desc.fixed_term_markets {
+                fixed_term::configure_market_for_token(
+                    builder,
+                    cranks,
+                    &token_context,
+                    market_config,
+                )
                 .await?;
+            }
         }
     }
 
