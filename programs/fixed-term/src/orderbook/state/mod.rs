@@ -581,6 +581,12 @@ pub struct SensibleOrderSummary {
 // fixme i think most of these are wrong. there may be issues with the aaob
 // implementation which is a huge mess of spaghetti code
 impl SensibleOrderSummary {
+    pub fn new(limit_price: u64, order_summary: OrderSummary) -> Self {
+        Self {
+            limit_price,
+            summary: order_summary,
+        }
+    }
     pub fn summary(&self) -> OrderSummary {
         OrderSummary {
             posted_order_id: self.summary.posted_order_id,

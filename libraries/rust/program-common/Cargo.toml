@@ -22,3 +22,6 @@ borsh = "0.9.1"
 num-traits = "0.2"
 anchor-lang = "0.26"
 solana-program = "1.14"
+
+[dev-dependencies]
+rand_chacha = "0.3.1"

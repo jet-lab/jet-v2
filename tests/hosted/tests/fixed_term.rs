@@ -14,7 +14,7 @@ use hosted_tests::{
 };
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
-    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams},
+    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams, SensibleOrderSummary},
 };
 use jet_margin_sdk::{
     cat,
@@ -29,7 +29,10 @@ use jet_margin_sdk::{
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
-use jet_program_common::Fp32;
+use jet_program_common::{
+    interest_pricing::{InterestPricer, PricerImpl},
+    Fp32,
+};
 
 use solana_sdk::signer::Signer;
 
@@ -755,6 +758,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     .await;
     let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
+    let lend_params = underlying(1_001, 2_000);
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
@@ -765,11 +769,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(
-        lender
-            .refresh_and_margin_lend_order(underlying(1_001, 2_000))
-            .await?,
-    )
+    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -778,6 +778,10 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(1_000, lender.collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
+    let borrow_params = underlying(1_000, 2_000);
+    let simulated_order = manager
+        .simulate_new_order_with_fees(borrow_params, agnostic_orderbook::state::Side::Ask)
+        .await?;
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
@@ -790,7 +794,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     ]
     .cat(
         borrower
-            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
+            .refresh_and_margin_borrow_order(borrow_params)
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -803,6 +807,23 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     // FIXME: an exact number would be nice
     assert!(manager.collected_fees().await? > 0);
+
+    let loan = borrower.load_term_loan(0).await?;
+    let expected_tenor = manager.load_market().await?.borrow_tenor;
+    // FIXME
+    // to avoid subtle rounding issues, we calculate expected price manually, this is not as good as
+    // using the limit price of the order directly
+    let expected_price = {
+        let summary = SensibleOrderSummary::new(borrow_params.limit_price, simulated_order);
+        let price = Fp32::from(summary.quote_filled()?) / summary.base_filled();
+        price.downcast_u64().unwrap()
+    };
+    let expected_rate =
+        PricerImpl::price_fp32_to_bps_yearly_interest(expected_price, expected_tenor);
+
+    assert_eq!(loan.tenor()?, expected_tenor);
+    assert_eq!(loan.price()?.downcast_u64().unwrap(), expected_price);
+    assert_eq!(loan.rate()?, expected_rate);
 
     manager.consume_events().await?;
     // assert!(false);

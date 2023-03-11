@@ -599,6 +599,26 @@ impl TestManager {
             )
             .map_err(anyhow::Error::new)
     }
+
+    pub async fn simulate_new_order_with_fees(
+        &self,
+        mut params: OrderParams,
+        side: agnostic_orderbook::state::Side,
+    ) -> Result<OrderSummary> {
+        let mut eq = self.load_event_queue().await?;
+        let mut orderbook = self.load_orderbook().await?;
+        let market = self.load_market().await?;
+        params.max_ticket_qty = market.borrow_order_qty(params.max_ticket_qty);
+        params.max_underlying_token_qty = market.borrow_order_qty(params.max_underlying_token_qty);
+        orderbook
+            .inner()?
+            .new_order(
+                params.as_new_order_params(side, CallbackInfo::default()),
+                &mut eq.inner()?,
+                MIN_ORDER_SIZE,
+            )
+            .map_err(anyhow::Error::new)
+    }
 }
 
 #[derive(Clone)]
@@ -1052,6 +1072,17 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(repay)], &[&self.owner])
             .await
+    }
+
+    pub async fn get_active_term_loans(&self) -> Result<Vec<TermLoan>> {
+        let mut loans = vec![];
+
+        let user = self.load_margin_user().await?;
+        for seqno in user.debt.active_loans() {
+            loans.push(self.load_term_loan(seqno).await?);
+        }
+
+        Ok(loans)
     }
 
     pub async fn load_anchor<T: AccountDeserialize>(&self, key: &Pubkey) -> Result<T> {
