@@ -32,17 +32,19 @@ pub async fn configure_environment<I: NetworkUserInterface>(
     let as_ix = AirspaceIxBuilder::new("", payer, builder.authority);
     let ctrl_ix = ControlIxBuilder::new_for_authority(builder.authority, payer);
 
-    // global authority accounts
-    builder.setup(
-        filter_initializers(
-            builder,
-            [
-                (get_control_authority_address(), ctrl_ix.create_authority()),
-                (derive_governor_id(), as_ix.create_governor_id()),
-            ],
-        )
-        .await?,
-    );
+    if builder.network != NetworkKind::Mainnet {
+        // global authority accounts
+        builder.setup(
+            filter_initializers(
+                builder,
+                [
+                    (get_control_authority_address(), ctrl_ix.create_authority()),
+                    (derive_governor_id(), as_ix.create_governor_id()),
+                ],
+            )
+            .await?,
+        );
+    }
 
     let oracle_authority = config.oracle_authority.unwrap_or(payer);
 
