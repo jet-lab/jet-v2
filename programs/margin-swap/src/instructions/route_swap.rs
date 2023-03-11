@@ -556,6 +556,31 @@ fn exec_swap_split<'info>(
 
             dst_ata.to_account_info()
         }
+        SwapRouteIdentifier::OpenBook => {
+            let accounts = remaining_accounts.take(11).cloned().collect::<Vec<_>>();
+            let swap_accounts = OpenbookSwapInfo::try_accounts(
+                &anchor_spl::dex::id(),
+                &mut &accounts[..],
+                &[],
+                &mut scratch.bumps,
+                &mut scratch.reallocs,
+            )?;
+            // We don't need to check the destination balance on this leg
+            let dst_ata = next_account_info(remaining_accounts).unwrap();
+            dst_ata_opening = token::accessor::amount(dst_ata)?;
+
+            swap_accounts.swap(
+                src_ata,
+                dst_ata,
+                &authority.to_account_info(),
+                token_program,
+                swap_amount_in,
+                0,
+            )?;
+            dst_ata_closing = token::accessor::amount(dst_ata)?;
+
+            dst_ata.to_account_info()
+        }
     };
 
     Ok((dst_ata_opening, dst_ata_closing, dst_ata))

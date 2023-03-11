@@ -20,6 +20,7 @@ use std::sync::Arc;
 
 use anchor_spl::associated_token::get_associated_token_address;
 use async_trait::async_trait;
+use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
@@ -536,8 +537,8 @@ impl MarginTxBuilder {
         // We can't get the instruction if not finalized, get it to check.
         let inner_swap_ix = builder.get_instruction()?;
 
-        let setup_instructions = self.setup_swap(builder).await?;
         let mut transactions = vec![];
+        let setup_instructions = self.setup_swap(builder).await?;
         if !setup_instructions.is_empty() {
             transactions.push(self.create_transaction_builder(&setup_instructions)?);
         }
@@ -774,6 +775,30 @@ impl MarginTxBuilder {
         }
 
         Ok(instructions)
+    }
+
+    /// Create an open orders account
+    pub async fn create_openbook_open_orders(
+        &self,
+        market: &Pubkey,
+        program: &Pubkey,
+    ) -> Result<TransactionBuilder> {
+        let (open_orders_ix, _) =
+            create_open_orders(*self.address(), *market, self.rpc.payer().pubkey(), program);
+        let instruction = self.adapter_invoke_ix(open_orders_ix);
+        self.create_transaction_builder(&[instruction])
+    }
+
+    /// Close an open orders account
+    pub async fn close_openbook_open_orders(
+        &self,
+        market: &Pubkey,
+        program: &Pubkey,
+    ) -> Result<TransactionBuilder> {
+        let open_orders_ix =
+            close_open_orders(*self.address(), *market, self.rpc.payer().pubkey(), program);
+        let instruction = self.adapter_invoke_ix(open_orders_ix);
+        self.create_transaction_builder(&[instruction])
     }
 
     async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {

@@ -520,6 +520,28 @@ impl MarginUser {
         Ok(())
     }
 
+    /// Create OpenBook open orders account
+    pub async fn create_openbook_open_orders(
+        &self,
+        market: &Pubkey,
+        program: &Pubkey,
+    ) -> Result<(), Error> {
+        let tx = self.tx.create_openbook_open_orders(market, program).await?;
+        self.rpc.send_and_confirm(tx).await?;
+        Ok(())
+    }
+
+    /// Close OpenBook open orders account
+    pub async fn close_openbook_open_orders(
+        &self,
+        market: &Pubkey,
+        program: &Pubkey,
+    ) -> Result<(), Error> {
+        let tx = self.tx.close_openbook_open_orders(market, program).await?;
+        self.rpc.send_and_confirm(tx).await?;
+        Ok(())
+    }
+
     pub async fn positions(&self) -> Result<Vec<AccountPosition>, Error> {
         Ok(self
             .tx
