@@ -374,6 +374,9 @@ pub mod seeds {
     pub const TICKET_COLLATERAL_NOTES: &[u8] = b"ticket_collateral_notes";
 
     #[constant]
+    pub const TOKEN_COLLATERAL_NOTES: &[u8] = b"token_collateral_notes";
+
+    #[constant]
     pub const EVENT_ADAPTER: &[u8] = b"event_adapter";
 
     #[constant]

@@ -1810,6 +1810,15 @@ export type JetFixedTerm = {
             type: "publicKey"
           },
           {
+            name: "tokenCollateralMint"
+            docs: [
+              "Mint owned by fixed-term market to issue collateral value to a user for",
+              "positions that are priced as tokens. The collateral notes are monitored",
+              "by the margin program to track value"
+            ]
+            type: "publicKey"
+          },
+          {
             name: "underlyingOracle"
             docs: ["oracle that defines the value of the underlying asset"]
             type: "publicKey"
@@ -5258,6 +5267,15 @@ export const IDL: JetFixedTerm = {
             docs: [
               "Mint owned by fixed-term market to issue collateral value to a user for",
               "positions that are priced as tickets. The collateral notes are monitored",
+              "by the margin program to track value"
+            ],
+            type: "publicKey"
+          },
+          {
+            name: "tokenCollateralMint",
+            docs: [
+              "Mint owned by fixed-term market to issue collateral value to a user for",
+              "positions that are priced as tokens. The collateral notes are monitored",
               "by the margin program to track value"
             ],
             type: "publicKey"
