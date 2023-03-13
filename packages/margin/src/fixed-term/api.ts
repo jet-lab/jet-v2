@@ -18,7 +18,7 @@ export const withCreateFixedTermMarketAccounts = async ({
   market,
   provider,
   marginAccount,
-  walletAddress
+  walletAddress,
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.ticketMint
@@ -67,7 +67,7 @@ export const offerLoan = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address)
+    markets: markets.filter(m => m.address != market.market.address),
   })
   instructions.push(prefreshIXS)
 
@@ -86,7 +86,7 @@ export const offerLoan = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
 
@@ -143,7 +143,7 @@ export const requestLoan = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address)
+    markets: markets.filter(m => m.address != market.market.address),
   })
   instructions.push(prefreshIXS)
 
@@ -162,11 +162,18 @@ export const requestLoan = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
 
   const orderIXS: TransactionInstruction[] = []
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions: orderIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: market.config.underlyingOracle
+  })
+
   // Create borrow instruction
   const borrowOffer = await market.market.requestBorrowIx(
     marginAccount,
@@ -188,18 +195,11 @@ interface ICancelOrder {
   market: MarketAndConfig
   marginAccount: MarginAccount
   provider: AnchorProvider
-  orderId: BN
+  orderId: BN,
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
 }
-export const cancelOrder = async ({
-  market,
-  marginAccount,
-  provider,
-  orderId,
-  pools,
-  markets
-}: ICancelOrder): Promise<string> => {
+export const cancelOrder = async ({ market, marginAccount, provider, orderId, pools, markets }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions,
@@ -218,6 +218,7 @@ export const cancelOrder = async ({
     markets,
     marketAddress: market.market.address
   })
+
   return sendAll(provider, [instructions])
 }
 
@@ -249,7 +250,7 @@ export const borrowNow = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address)
+    markets: markets.filter(m => m.address != market.market.address),
   })
   instructions.push(prefreshIXS)
 
@@ -268,9 +269,15 @@ export const borrowNow = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions: postfreshIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
+  })
 
   // Create borrow instruction
   const orderIXS: TransactionInstruction[] = []
@@ -331,7 +338,7 @@ export const lendNow = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address)
+    markets: markets.filter(m => m.address != market.market.address),
   })
   instructions.push(prefreshIXS)
 
@@ -350,7 +357,7 @@ export const lendNow = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
 
@@ -395,7 +402,7 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: refreshIXS,
     pools,
-    markets: markets.map(m => m.market)
+    markets: markets.map(m => m.market),
   })
 
   instructions.push(refreshIXS)
@@ -426,22 +433,30 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
 }
 
 interface IRepay {
-  amount: BN
-  marginAccount: MarginAccount
-  market: MarketAndConfig
-  provider: AnchorProvider
+  amount: BN,
+  marginAccount: MarginAccount,
+  market: MarketAndConfig,
+  provider: AnchorProvider,
   termLoans: Array<{
-    address: Address
-    balance: number
+    address: Address,
+    balance: number,
     maturation_timestamp: number
-    sequence_number: number
+    sequence_number: number,
     payer: string
   }>
-  pools: Record<string, Pool>
-  markets: FixedTermMarket[]
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[],
 }
 
-export const repay = async ({ marginAccount, market, amount, provider, termLoans, pools, markets }: IRepay) => {
+export const repay = async ({
+  marginAccount,
+  market,
+  amount,
+  provider,
+  termLoans,
+  pools,
+  markets,
+}: IRepay) => {
   const instructions: TransactionInstruction[][] = []
 
   const poolIXS: TransactionInstruction[] = []
@@ -452,6 +467,12 @@ export const repay = async ({ marginAccount, market, amount, provider, termLoans
     marketAddress: market.market.address
   })
   instructions.push(poolIXS)
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions: poolIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
+  })
 
   const orderIXS: TransactionInstruction[] = []
   const pool = pools[market.token.symbol]
@@ -464,9 +485,7 @@ export const repay = async ({ marginAccount, market, amount, provider, termLoans
 
   let amountLeft = new BN(amount)
 
-  let sortedTermLoans = termLoans.sort(
-    (a, b) => a.maturation_timestamp - b.maturation_timestamp || a.sequence_number - b.sequence_number
-  )
+  let sortedTermLoans = termLoans.sort((a, b) => a.maturation_timestamp - b.maturation_timestamp || a.sequence_number - b.sequence_number)
   while (amountLeft.gt(new BN(0))) {
     const currentLoan = sortedTermLoans[0]
     const nextLoan = sortedTermLoans[1]
@@ -475,10 +494,10 @@ export const repay = async ({ marginAccount, market, amount, provider, termLoans
       const ix = await market.market.repay({
         user: marginAccount,
         termLoan: currentLoan.address,
-        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey("11111111111111111111111111111111").toBase58(),
+        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
         payer: currentLoan.payer,
         amount: amountLeft,
-        source
+        source,
       })
       await marginAccount.withAdapterInvoke({
         instructions: orderIXS,
@@ -489,10 +508,10 @@ export const repay = async ({ marginAccount, market, amount, provider, termLoans
       const ix = await market.market.repay({
         user: marginAccount,
         termLoan: currentLoan.address,
-        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey("11111111111111111111111111111111").toBase58(),
+        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
         payer: currentLoan.payer,
         amount: balance,
-        source
+        source,
       })
       await marginAccount.withAdapterInvoke({
         instructions: orderIXS,
@@ -514,6 +533,7 @@ export const repay = async ({ marginAccount, market, amount, provider, termLoans
   return sendAll(provider, [instructions])
 }
 
+
 interface IRedeem {
   marginAccount: MarginAccount
   pools: Record<string, Pool>
@@ -522,16 +542,23 @@ interface IRedeem {
   provider: AnchorProvider
   deposits: Array<{
     id: number
-    address: string
-    sequence_number: number
-    maturation_timestamp: number
-    balance: number
-    rate: number
-    payer: string
+    address: string,
+    sequence_number: number,
+    maturation_timestamp: number,
+    balance: number,
+    rate: number,
+    payer: string,
     created_timestamp: number
   }>
 }
-export const redeem = async ({ marginAccount, pools, markets, market, provider, deposits }: IRedeem) => {
+export const redeem = async ({
+  marginAccount,
+  pools,
+  markets,
+  market,
+  provider,
+  deposits
+}: IRedeem) => {
   const instructions: TransactionInstruction[][] = []
   const refreshIxs: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -547,7 +574,11 @@ export const redeem = async ({ marginAccount, pools, markets, market, provider, 
 
   for (let i = 0; i < sortedDeposits.length; i++) {
     const deposit = sortedDeposits[i]
-    const redeem = await market.market.redeemDeposit(marginAccount, deposit, market.market)
+    const redeem = await market.market.redeemDeposit(
+      marginAccount,
+      deposit,
+      market.market
+    )
     await marginAccount.withAdapterInvoke({
       instructions: redeemIxs,
       adapterInstruction: redeem
