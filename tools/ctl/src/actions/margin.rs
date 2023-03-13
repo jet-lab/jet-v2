@@ -19,6 +19,7 @@ use jet_margin_sdk::{
     jet_margin_pool::{self, MarginPool},
     jet_metadata::{self, PositionTokenMetadata},
 };
+use jet_program_common::DEFAULT_AIRSPACE;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use solana_sdk::{pubkey, pubkey::Pubkey};
@@ -411,6 +412,21 @@ pub async fn process_read_token_config(
 
     println!("{config:#?}");
     Ok(Plan::default())
+}
+
+pub async fn process_configure_account_airspaces(client: &Client) -> Result<Plan> {
+    let mut plan = client.plan()?.unordered();
+    let accounts = get_all_accounts(client, &Pubkey::default()).await?;
+
+    for (address, _) in accounts {
+        let builder =
+            MarginIxBuilder::new_for_address(DEFAULT_AIRSPACE, address, resolve_payer(client)?);
+        let ix = builder.configure_account_airspace();
+
+        plan = plan.instructions([], [format!("configure-account-airspace {address}")], [ix])
+    }
+
+    Ok(plan.build())
 }
 
 async fn refresh_account_positions(client: &Client, account: &mut MarginAccount) -> Result<bool> {

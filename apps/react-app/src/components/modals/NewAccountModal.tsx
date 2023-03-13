@@ -43,7 +43,6 @@ export function NewAccountModal(): JSX.Element {
 
   useEffect(() => {
     if (newAccountModalOpen) setActionRefresh(Date.now());
-
   }, [newAccountModalOpen]);
 
   // Create a new account with a deposit

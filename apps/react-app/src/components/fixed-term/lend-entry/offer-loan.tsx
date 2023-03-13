@@ -102,7 +102,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         refreshOrderBooks();
         notify(
           'Lend Offer Created',
-          `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+          `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+            basisPoints.toNumber() / 100
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
@@ -112,7 +113,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     } catch (e: any) {
       notify(
         'Lend Offer Failed',
-        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+          basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
@@ -242,9 +244,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
-            <span>
-              {`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}
-            </span>
+            <span>{`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}</span>
           )}
         </div>
         <div className="stat-line">
@@ -284,7 +284,9 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {!hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this offer</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && !basisPoints.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && !basisPoints.isZero() && (
+        <div className="fixed-term-warning">Not enough collateral to submit this request</div>
+      )}
     </div>
   );
 };

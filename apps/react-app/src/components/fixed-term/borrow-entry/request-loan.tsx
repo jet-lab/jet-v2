@@ -52,7 +52,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const { selectedPoolKey } = useJetStore(state => ({
-    selectedPoolKey: state.selectedPoolKey,
+    selectedPoolKey: state.selectedPoolKey
   }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -101,7 +101,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         refreshOrderBooks();
         notify(
           'Borrow Offer Created',
-          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+            basisPoints.toNumber() / 100
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
@@ -111,7 +112,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+          basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
@@ -143,8 +145,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
     const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
     const postedRate = sim.posted_vwar;
-    const matchedInterest = matchRepayAmount.sub(matchBorrowAmount)
-    const postedInterest = postedRepayAmount.sub(postedBorrowAmount)
+    const matchedInterest = matchRepayAmount.sub(matchBorrowAmount);
+    const postedInterest = postedRepayAmount.sub(postedBorrowAmount);
 
     setForecast({
       matchedAmount: matchRepayAmount.tokens,
@@ -156,7 +158,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       selfMatch: sim.self_match,
       riskIndicator: valuationEstimate?.riskIndicator,
       hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
-      fees: matchedInterest.tokens ? feesCalc(sim.filled_vwar, matchedInterest.tokens) : feesCalc(sim.posted_vwar, postedInterest.tokens)
+      fees: matchedInterest.tokens
+        ? feesCalc(sim.filled_vwar, matchedInterest.tokens)
+        : feesCalc(sim.posted_vwar, postedInterest.tokens)
     });
   }
 
@@ -246,9 +250,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
-            <span>
-              {`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}
-            </span>
+            <span>{`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}</span>
           )}
         </div>
         <div className="stat-line">
@@ -265,7 +267,11 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         </div>
         <div className="stat-line">
           <span>Fees</span>
-          {forecast && <span>{forecast?.fees} {token.symbol}</span>}
+          {forecast && (
+            <span>
+              {forecast?.fees} {token.symbol}
+            </span>
+          )}
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
@@ -289,7 +295,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The offer would match with your own requests in this market.</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
+      {!forecast?.hasEnoughCollateral && !amount.isZero() && (
+        <div className="fixed-term-warning">Not enough collateral to submit this request</div>
+      )}
     </div>
   );
 };

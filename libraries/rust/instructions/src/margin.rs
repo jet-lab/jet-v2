@@ -461,6 +461,20 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Configure this account to join the default airspace (if it is not bound to an airspace yet)
+    pub fn configure_account_airspace(&self) -> Instruction {
+        let accounts = ix_account::ConfigureAccountAirspace {
+            margin_account: self.address,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::ConfigureAccountAirspace.data(),
+            accounts,
+        }
+    }
+
     /// Helper function to get token account address for a position mint
     #[inline]
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> Pubkey {

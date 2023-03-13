@@ -474,6 +474,14 @@ pub mod jet_margin {
         configure_permit(ctx, is_liquidator, Permissions::LIQUIDATE)
     }
 
+    /// Configure an account to join the default airspace
+    ///
+    /// This can be used to migrate margin accounts existing before the introduction of airspaces
+    /// into the default airspace.
+    pub fn configure_account_airspace(ctx: Context<ConfigureAccountAirspace>) -> Result<()> {
+        configure_account_airspace_handler(ctx)
+    }
+
     pub fn configure_position_config_refresher(
         ctx: Context<ConfigurePermit>,
         may_refresh: bool,
@@ -596,11 +604,15 @@ pub enum ErrorCode {
 
     /// 141051 - Attempting to use or set configuration that is not valid
     #[msg("attempting to use or set invalid configuration")]
-    InvalidConfig = 135_051,
+    InvalidConfig,
 
     /// 141052 - Attempting to use or set an oracle that is not valid
     #[msg("attempting to use or set invalid configuration")]
-    InvalidOracle = 135_052,
+    InvalidOracle,
+
+    /// 141053 - Account already joined to an airspace
+    #[msg("account is already joined to an airspace")]
+    AlreadyJoinedAirspace,
 
     /// 141060
     #[msg("the permit does not authorize this action")]

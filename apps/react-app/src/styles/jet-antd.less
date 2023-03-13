@@ -1122,7 +1122,7 @@
       box-shadow: unset;
 
       &:checked {
-        +span {
+        + span {
           &::after {
             background: @jet-green;
           }
@@ -1134,7 +1134,7 @@
       }
 
       &[disabled] {
-        +span {
+        + span {
           cursor: not-allowed;
           opacity: @disabled-opacity;
 
@@ -1299,7 +1299,7 @@
           }
         }
 
-        +span {
+        + span {
           color: @jet-green !important;
         }
       }
@@ -1387,7 +1387,7 @@
             }
           }
 
-          +span {
+          + span {
             color: @secondary-3 !important;
           }
         }
@@ -1432,7 +1432,6 @@
       position: relative;
 
       tr {
-
         &:hover,
         &:active {
           background: inherit;
@@ -2132,7 +2131,6 @@
         }
 
         &:hover {
-
           &::before,
           &::after {
             background: @secondary;
@@ -2170,7 +2168,7 @@
 
   // When modal is closed
   .ant-fade-leave {
-    +.ant-modal-wrap {
+    + .ant-modal-wrap {
       display: none;
     }
   }
@@ -2695,7 +2693,6 @@
       }
 
       &.ant-typography-disabled {
-
         &:hover,
         &.ant-dropdown-open {
           color: @secondary-3;
@@ -2960,7 +2957,6 @@
 
     // Small card
     &-small {
-
       p,
       span {
         font-size: @sm-font-size;
@@ -3286,7 +3282,6 @@
     }
 
     &-active {
-
       .ant-skeleton-avatar,
       .ant-skeleton-title,
       .ant-skeleton-paragraph li {
@@ -3674,7 +3669,6 @@
     }
 
     &-with-description {
-
       .anticon,
       .jet-icon {
         position: absolute;
@@ -3747,7 +3741,6 @@
       &-success,
       &-warning,
       &-error {
-
         .ant-notification-notice-message,
         .ant-notification-notice-description {
           margin-left: @spacing-lg;
@@ -3830,7 +3823,6 @@
         }
 
         &:hover {
-
           &::before,
           &::after {
             background: @secondary;
@@ -3882,7 +3874,6 @@
     }
 
     &-success {
-
       .anticon,
       .jet-icon {
         * {
@@ -3896,7 +3887,6 @@
     }
 
     &-warning {
-
       .anticon,
       .jet-icon {
         * {
@@ -3910,7 +3900,6 @@
     }
 
     &-error {
-
       .anticon,
       .jet-icon {
         * {
@@ -4132,7 +4121,7 @@
         margin-left: -100vw;
       }
 
-      &+.view {
+      & + .view {
         margin-left: -50vw;
       }
     }
@@ -4247,7 +4236,6 @@
 // Larger screens
 @media screen and (min-width: 1700px) {
   .jet-app {
-
     // Antd Modal
     .ant-modal-wrap {
       .ant-modal-content {
@@ -4292,7 +4280,6 @@
 // Mobile styling
 @media screen and (max-width: 800px) {
   .jet-app {
-
     // Tables
     table {
       td {
@@ -4350,7 +4337,6 @@
         }
 
         .right-container {
-
           .nav-link,
           button {
             display: none;
