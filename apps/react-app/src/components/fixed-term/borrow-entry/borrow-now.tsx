@@ -216,7 +216,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Total Interest</span>
           {forecast && (
             <span>
-              {forecast.interest.toFixed(token.precision)} {token.symbol}
+              {`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
@@ -228,7 +228,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <span>Fees</span>
           {forecast && (
             <span>
-              {forecast?.fees.toFixed(token.precision)} {token.symbol}
+              {`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
