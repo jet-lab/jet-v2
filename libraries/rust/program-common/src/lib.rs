@@ -48,3 +48,5 @@ pub const GOVERNOR_DEVNET_PAYER: Pubkey = pubkey!("7etg4hgAdUjGnYAuj9E22MWNGLtHJ
 
 /// The control authority that owns accounts such as fee destinations.
 pub const CONTROL_AUTHORITY: Pubkey = pubkey!("4W1XXCnJs16UYNwJaGbwWbjPZyuLWeEJ4FfSHeMpdiXY");
+
+pub const DEFAULT_AIRSPACE: Pubkey = pubkey!("BwQhHumhyyyRBtCsiSrdnFCinJDCaaMBbbyRhqJ5p81d");
