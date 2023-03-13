@@ -101,8 +101,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         refreshOrderBooks();
         notify(
           'Borrow Offer Created',
-          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-            basisPoints.toNumber() / 100
+          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
@@ -112,8 +111,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-          basisPoints.toNumber() / 100
+        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
@@ -239,7 +237,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Posted Interest</span>
           {forecast?.postedInterest && (
             <span>
-              {forecast?.postedInterest.toFixed(token.precision)} {token.symbol}
+              {`~${forecast?.postedInterest.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
@@ -250,14 +248,14 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
-            <span>{`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}</span>
+            <span>{forecast.matchedAmount.toFixed(token.precision)} {token.symbol}</span>
           )}
         </div>
         <div className="stat-line">
           <span>Matched Interest</span>
           {forecast?.matchedInterest && (
             <span>
-              {forecast.matchedInterest.toFixed(token.precision)} {token.symbol}
+              {`~${forecast.matchedInterest.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
@@ -269,7 +267,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Fees</span>
           {forecast && (
             <span>
-              {forecast?.fees} {token.symbol}
+              {`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}
             </span>
           )}
         </div>
