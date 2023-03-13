@@ -1,6 +1,7 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor, mint_to, Mint, MintTo, Token, TokenAccount};
+use jet_program_common::traits::SafeAdd;
 
 use crate::{
     margin::state::{AutoRollConfig, MarginUser},
@@ -215,7 +216,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         let deposit = self.maybe_term_deposit(&info, &summary)?;
         self.margin_lend(&summary, deposit, requires_payment)?;
 
-        self.emit_margin_lend_order(params, &info, &summary);
+        self.emit_margin_lend_order(params, &info, &summary)?;
 
         Ok(())
     }
@@ -226,8 +227,10 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         deposit: Option<TermDepositWriter>,
         requires_payment: bool,
     ) -> Result<()> {
-        let staked = self.inner.lend(summary, deposit, requires_payment)?;
-        self.margin_user.assets.new_deposit(staked)?;
+        let tickets_staked = self.inner.lend(summary, deposit, requires_payment)?;
+        let tickets_posted = summary.base_posted();
+        self.margin_user
+            .post_lend_order(tickets_staked, tickets_posted)?;
 
         mint_to(
             CpiContext::new(
@@ -239,7 +242,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 },
             )
             .with_signer(&[&self.inner.orderbook_mut.market.load()?.authority_seeds()]),
-            staked + summary.quote_posted(RoundingAction::PostLend)?,
+            tickets_posted.safe_add(tickets_staked)?,
         )
     }
 
@@ -255,16 +258,11 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 payer: self.inner.payer.key(),
                 order_tag: info.order_tag.as_u128(),
                 tenor: self.inner.orderbook_mut.market.load()?.lend_tenor,
-                sequence_number: self.margin_user.assets.next_new_deposit_seqno(),
+                sequence_number: self.margin_user.next_term_deposit(),
                 amount: summary.base_filled(),
                 principal: summary.quote_filled(RoundingAction::FillLend)?,
                 flags: info.flags.into(),
-                seed: self
-                    .margin_user
-                    .assets
-                    .next_new_deposit_seqno()
-                    .to_le_bytes()
-                    .to_vec(),
+                seed: self.margin_user.next_term_deposit().to_le_bytes().to_vec(),
             }));
         }
         Ok(None)
@@ -297,7 +295,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         params: &OrderParams,
         info: &MarginCallbackInfo,
         summary: &SensibleOrderSummary,
-    ) {
+    ) -> Result<()> {
         emit!(crate::events::OrderPlaced {
             market: self.inner.orderbook_mut.market.key(),
             authority: self.inner.authority.key(),
@@ -310,6 +308,6 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
             limit_price: params.limit_price,
             order_type: crate::events::OrderType::MarginLend,
         });
-        self.margin_user.emit_asset_balances();
+        self.margin_user.emit_asset_balances()
     }
 }

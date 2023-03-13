@@ -143,14 +143,13 @@ fn handle_filled(
         .margin_user
         .taker_fill_borrow_order(filled_ticket_value, maturation_timestamp)?;
 
-    let filled = summary.quote_filled(RoundingAction::FillBorrow)?;
     let disburse = ctx
         .accounts
         .orderbook_mut
         .market
         .load()?
-        .loan_to_disburse(summary.quote_filled(RoundingAction::FillBorrow)?);
-    let fees = filled.safe_sub(disburse)?;
+        .loan_to_disburse(filled_token_value);
+    let fees = filled_token_value.safe_sub(disburse)?;
 
     // write a TermLoan account
     let builder = TermLoanBuilder::new_from_order(
@@ -185,7 +184,7 @@ fn handle_filled(
     Ok(disburse)
 }
 
-pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Result<()> {
+pub fn handler(mut ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Result<()> {
     ctx.accounts
         .orderbook_mut
         .market

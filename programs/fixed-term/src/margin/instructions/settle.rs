@@ -54,6 +54,13 @@ pub struct Settle<'info> {
     #[account(mut)]
     pub ticket_collateral_mint: UncheckedAccount<'info>,
 
+    #[account(mut)]
+    pub token_collateral: Account<'info, TokenAccount>,
+
+    /// CHECK: token program checks it
+    #[account(mut)]
+    pub token_collateral_mint: UncheckedAccount<'info>,
+
     /// CHECK: token program checks it
     #[account(mut)]
     pub underlying_token_vault: AccountInfo<'info>,
@@ -77,13 +84,10 @@ pub struct Settle<'info> {
 }
 
 pub fn handler(ctx: Context<Settle>) -> Result<()> {
-    let claim_balance = ctx.accounts.claims.amount;
-    let ctokens_held = ctx.accounts.ticket_collateral.amount;
-    let assets = &ctx.accounts.margin_user.assets;
-    let debt = ctx.accounts.margin_user.debt.total();
-    let ctokens_deserved = assets.collateral()?;
-
     // Notify margin of the current debt owed to fixed-term market
+    let claim_balance = ctx.accounts.claims.amount;
+    let debt = ctx.accounts.margin_user.total_debt();
+
     if claim_balance > debt {
         ctx.burn_notes(
             &ctx.accounts.claims_mint,
@@ -101,23 +105,47 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
 
     // Notify margin of the amount of collateral that will in the custody of
     // tickets after this settlement
-    if ctokens_held > ctokens_deserved {
+    let ctickets_held = ctx.accounts.ticket_collateral.amount;
+    let ctickets_deserved = ctx.accounts.margin_user.ticket_collateral()?;
+
+    if ctickets_held > ctickets_deserved {
         ctx.burn_notes(
             &ctx.accounts.ticket_collateral_mint,
             &ctx.accounts.ticket_collateral,
+            ctickets_held - ctickets_deserved,
+        )?;
+    }
+    if ctickets_held < ctickets_deserved {
+        ctx.mint(
+            &ctx.accounts.ticket_collateral_mint,
+            &ctx.accounts.ticket_collateral,
+            ctickets_deserved - ctickets_held,
+        )?;
+    }
+
+    // Notify margin of the amount of collateral that will in the custody of
+    // tokens after this settlement
+    let ctokens_held = ctx.accounts.token_collateral.amount;
+    let ctokens_deserved = ctx.accounts.margin_user.token_collateral();
+
+    if ctokens_held > ctokens_deserved {
+        ctx.burn_notes(
+            &ctx.accounts.token_collateral_mint,
+            &ctx.accounts.token_collateral,
             ctokens_held - ctokens_deserved,
         )?;
     }
     if ctokens_held < ctokens_deserved {
         ctx.mint(
-            &ctx.accounts.ticket_collateral_mint,
-            &ctx.accounts.ticket_collateral,
+            &ctx.accounts.token_collateral_mint,
+            &ctx.accounts.token_collateral,
             ctokens_deserved - ctokens_held,
         )?;
     }
 
     // Disburse entitled funds due to fills
-    if assets.entitled_tickets > 0 {
+    let entitled_tickets = ctx.accounts.margin_user.entitled_tickets();
+    if entitled_tickets > 0 {
         verify_settlement_account_registration(
             &*ctx.accounts.margin_account.load()?,
             ctx.accounts.ticket_mint.key(),
@@ -127,10 +155,12 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
         ctx.mint(
             &ctx.accounts.ticket_mint,
             &ctx.accounts.ticket_settlement,
-            assets.entitled_tickets,
+            entitled_tickets,
         )?;
     }
-    if assets.entitled_tokens > 0 {
+
+    let entitled_tokens = ctx.accounts.margin_user.entitled_tokens();
+    if entitled_tokens > 0 {
         verify_settlement_account_registration(
             &*ctx.accounts.margin_account.load()?,
             ctx.accounts.market.load()?.underlying_token_mint.key(),
@@ -140,15 +170,13 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
         ctx.withdraw(
             &ctx.accounts.underlying_token_vault,
             &ctx.accounts.underlying_settlement,
-            assets.entitled_tokens,
+            entitled_tokens,
         )?;
     }
 
     // Update margin user assets to reflect the settlement
-    ctx.accounts.margin_user.assets.entitled_tickets = 0;
-    ctx.accounts.margin_user.assets.entitled_tokens = 0;
-
-    ctx.accounts.margin_user.emit_all_balances();
+    ctx.accounts.margin_user.settlement_complete();
+    ctx.accounts.margin_user.emit_all_balances()?;
 
     return_to_margin(
         &ctx.accounts.margin_account.to_account_info(),
