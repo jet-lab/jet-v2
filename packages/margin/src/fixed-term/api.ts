@@ -474,7 +474,6 @@ export const repay = async ({
     priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
   })
 
-
   const orderIXS: TransactionInstruction[] = []
   const pool = pools[market.token.symbol]
   await pool.withWithdrawToMargin({
