@@ -14,8 +14,8 @@ pub mod client;
 pub mod config;
 
 mod anchor_ix_parser;
-mod ix_inspection_hooks;
 mod governance;
+mod ix_inspection_hooks;
 mod serum;
 
 #[derive(Debug, Parser)]
