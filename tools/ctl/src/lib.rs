@@ -15,6 +15,7 @@ pub mod config;
 
 mod anchor_ix_parser;
 mod governance;
+mod ix_inspectors;
 mod serum;
 
 #[derive(Debug, Parser)]
