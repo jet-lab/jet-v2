@@ -10,8 +10,12 @@ use jet_program_common::{
 };
 
 use crate::{
-    events::{AssetsUpdated, DebtUpdated},
-    orderbook::state::OrderTag,
+    events::{AssetsUpdated, DebtUpdated, TermLoanCreated},
+    instructions::MarginBorrowOrder,
+    orderbook::state::{
+        CallbackInfo, MarginCallbackInfo, OrderTag, RoundingAction, SensibleOrderSummary,
+    },
+    serialization::{self, AnchorAccount, Mut},
     FixedTermErrorCode,
 };
 
@@ -40,9 +44,9 @@ pub struct MarginUser {
     pub token_collateral: Pubkey,
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not tickets
-    pub debt: Debt,
+    debt: Debt,
     /// Accounting used to track assets in custody of the fixed term market
-    pub assets: Assets,
+    assets: Assets,
     /// Settings for borrow order "auto rolling"
     pub borrow_roll_config: AutoRollConfig,
     /// Settings for lend order "auto rolling"
@@ -50,6 +54,52 @@ pub struct MarginUser {
 }
 
 impl MarginUser {
+    /// Initialize a new [MarginUser]
+    pub fn new(
+        version: u8,
+        margin_account: Pubkey,
+        market: Pubkey,
+        claims: Pubkey,
+        ticket_collateral: Pubkey,
+        token_collateral: Pubkey,
+    ) -> Self {
+        Self {
+            version,
+            margin_account,
+            market,
+            claims,
+            ticket_collateral,
+            token_collateral,
+            borrow_roll_config: Default::default(),
+            lend_roll_config: Default::default(),
+            debt: Default::default(),
+            assets: Default::default(),
+        }
+    }
+
+    /// Account for a borrow order posted to the orderbook
+    pub fn post_borrow_order(
+        &mut self,
+        token_value_posted: u64,
+        ticket_value_posted: u64,
+    ) -> Result<()> {
+        self.assets
+            .tokens_posted
+            .try_add_assign(token_value_posted)?;
+        self.debt.post_borrow_order(ticket_value_posted)
+    }
+
+    /// Account for the filled portion of a borrow order as a taker
+    /// Returns the sequence number for the [TermLoan] to be created
+    pub fn taker_fill_borrow_order(
+        &mut self,
+        ticket_value_filled: u64,
+        maturation_timestamp: UnixTimestamp,
+    ) -> Result<SequenceNumber> {
+        self.debt
+            .new_term_loan_without_posting(ticket_value_filled, maturation_timestamp)
+    }
+
     /// Emits an Anchor event with the latest balances for [Assets] and [Debt].
     /// Callers should take care to invoke this function after mutating both assets
     /// and debts. When only mutating either, they can emit the individual balances.
@@ -85,7 +135,7 @@ impl MarginUser {
     }
 }
 
-#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Zeroable, Debug, Default, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next term loan to be created
     next_new_term_loan_seqno: u64,
@@ -133,10 +183,12 @@ impl Debt {
         self.next_new_term_loan_seqno - self.next_unpaid_term_loan_seqno
     }
 
-    pub fn post_borrow_order(&mut self, posted_amount: u64) -> Result<()> {
-        self.pending.try_add_assign(posted_amount)
+    /// Accounting for a borrow order posted on the orderbook
+    fn post_borrow_order(&mut self, ticket_value_posted: u64) -> Result<()> {
+        self.pending.try_add_assign(ticket_value_posted)
     }
 
+    /// A new term loan has been created from a taker fill
     pub fn new_term_loan_without_posting(
         &mut self,
         amount_filled_as_taker: u64,
@@ -233,11 +285,13 @@ pub struct Assets {
     /// The number of tickets locked up in ClaimTicket or SplitTicket
     tickets_staked: u64,
 
-    /// The amount of quote included in all orders posted by the user for both
-    /// bids and asks. Since the orderbook tracks base, not quote, this is only
-    /// an approximation. This value must always be less than or equal to the
-    /// actual posted quote.
-    posted_quote: u64,
+    /// The number of tickets that would be owned by the account should all
+    /// open lend orders be filled.
+    tickets_posted: u64,
+
+    /// The number of tokens that would be owned by the account should all
+    /// open borrow orders be filled.
+    tokens_posted: u64,
 
     /// reserved data that may be used to determine the size of a user's collateral
     /// pessimistically prepared to persist aggregated values for:
@@ -247,31 +301,6 @@ pub struct Assets {
 }
 
 impl Assets {
-    /// either a bid or ask was placed
-    /// quote: the amount of quote that was posted
-    /// IMPORTANT: always input the quote (underlying), not the base
-    /// always shorts by one lamport to be defensive
-    /// todo maybe this is too defensive
-    pub fn post_order(&mut self, quote: u64) -> Result<()> {
-        if quote > 1 {
-            return self.posted_quote.try_add_assign(quote - 1);
-        }
-        Ok(())
-    }
-
-    /// An order was filled or cancelled
-    /// quote: the amount of quote that was removed from the order
-    /// IMPORTANT: always input the quote (underlying), not the base
-    /// always subtracts an extra lamport to be defensive
-    /// todo maybe this is too defensive
-    pub fn reduce_order(&mut self, quote: u64) {
-        if quote + 1 >= self.posted_quote {
-            self.posted_quote = 0;
-        } else {
-            self.posted_quote -= quote + 1;
-        }
-    }
-
     /// make sure the order has already been accounted for before calling this method
     pub fn new_deposit(&mut self, tickets: u64) -> Result<SequenceNumber> {
         let seqno = self.next_deposit_seqno;
@@ -303,8 +332,15 @@ impl Assets {
     /// represents the amount of collateral in staked tickets and open orders.
     /// does not reflect the entitled tickets/tokens because they are expected
     /// to be disbursed whenever this value is used.
-    pub fn collateral(&self) -> Result<u64> {
-        self.tickets_staked.safe_add(self.posted_quote)
+    pub fn ticket_collateral(&self) -> Result<u64> {
+        self.tickets_staked.safe_add(self.tickets_posted)
+    }
+
+    /// Represents the amount of token collateral in open borrow orders
+    /// does not reflect the entitled tickets/tokens because they are expected
+    /// to be disbursed whenever this value is used.
+    pub fn token_collateral(&self) -> u64 {
+        self.tokens_posted
     }
 
     pub fn next_new_deposit_seqno(&self) -> SequenceNumber {
@@ -313,6 +349,21 @@ impl Assets {
 
     pub fn active_deposits(&self) -> Range<SequenceNumber> {
         self.next_unredeemed_deposit_seqno..self.next_deposit_seqno
+    }
+}
+
+impl Default for Assets {
+    fn default() -> Self {
+        Assets {
+            entitled_tokens: 0,
+            entitled_tickets: 0,
+            next_deposit_seqno: 0,
+            next_unredeemed_deposit_seqno: 0,
+            tickets_staked: 0,
+            tickets_posted: 0,
+            tokens_posted: 0,
+            _reserved0: [0u8; 64],
+        }
     }
 }
 
@@ -359,6 +410,12 @@ pub struct TermLoan {
 }
 
 impl TermLoan {
+    pub fn seeds<'a>(market: &'a [u8], margin_user: &'a [u8], seq_no: &'a [u8]) -> [&'a [u8]; 4] {
+        [crate::seeds::TERM_LOAN, market, margin_user, seq_no]
+    }
+}
+
+impl TermLoan {
     /// The annualized interest rate for this loan
     pub fn rate(&self) -> Result<u64> {
         let tenor = self.tenor()?;
@@ -381,6 +438,106 @@ impl TermLoan {
         self.maturation_timestamp
             .safe_sub(self.strike_timestamp)
             .map(|t| t as u64)
+    }
+}
+
+/// Struct for initializing and writing [TermLoan] accounts
+pub struct TermLoanBuilder {
+    pub market: Pubkey,
+    pub margin_account: Pubkey,
+    pub margin_user: Pubkey,
+    pub payer: Pubkey,
+    pub order_tag: OrderTag,
+    pub sequence_number: u64,
+    pub strike_timestamp: i64,
+    pub maturation_timestamp: i64,
+    pub base_filled: u64,
+    pub quote_filled: u64,
+    pub fees: u64,
+    pub flags: TermLoanFlags,
+}
+
+impl TermLoanBuilder {
+    /// Initialize a new builder from the information given by a borrow order
+    pub fn new_from_order(
+        accs: &MarginBorrowOrder,
+        summary: &SensibleOrderSummary,
+        info: &MarginCallbackInfo,
+        strike_timestamp: UnixTimestamp,
+        maturation_timestamp: UnixTimestamp,
+        fees: u64,
+        seq_no: u64,
+    ) -> Result<Self> {
+        Ok(Self {
+            market: accs.orderbook_mut.market.key(),
+            margin_account: accs.margin_account.key(),
+            margin_user: accs.margin_user.key(),
+            payer: accs.payer.key(),
+            order_tag: info.order_tag,
+            sequence_number: seq_no,
+            strike_timestamp,
+            maturation_timestamp,
+            base_filled: summary.base_filled(),
+            quote_filled: summary.quote_filled(RoundingAction::FillBorrow)?,
+            flags: TermLoanFlags::default(),
+            fees,
+        })
+    }
+
+    pub fn init_and_write<'info>(
+        self,
+        loan: impl ToAccountInfo<'info>,
+        payer: impl ToAccountInfo<'info>,
+        system_program: impl ToAccountInfo<'info>,
+    ) -> Result<()> {
+        let mut term_loan = self.init(loan, payer, system_program)?;
+
+        *term_loan = TermLoan {
+            sequence_number: self.sequence_number,
+            margin_user: self.margin_user,
+            market: self.market,
+            payer: self.payer,
+            order_tag: self.order_tag,
+            strike_timestamp: self.strike_timestamp,
+            maturation_timestamp: self.maturation_timestamp,
+            balance: self.base_filled,
+            principal: self.quote_filled,
+            interest: self.base_filled.safe_sub(self.quote_filled)?,
+            flags: self.flags,
+        };
+
+        emit!(TermLoanCreated {
+            term_loan: term_loan.key(),
+            authority: self.margin_account,
+            payer: self.payer,
+            order_tag: self.order_tag.as_u128(),
+            sequence_number: self.sequence_number,
+            market: term_loan.market,
+            maturation_timestamp: self.maturation_timestamp,
+            quote_filled: self.quote_filled,
+            base_filled: self.base_filled,
+            flags: term_loan.flags,
+            fees: self.fees,
+        });
+        Ok(())
+    }
+
+    pub fn init<'info>(
+        &self,
+        loan: impl ToAccountInfo<'info>,
+        payer: impl ToAccountInfo<'info>,
+        system_program: impl ToAccountInfo<'info>,
+    ) -> Result<AnchorAccount<'info, TermLoan, Mut>> {
+        serialization::init(
+            loan.to_account_info(),
+            payer.to_account_info(),
+            system_program.to_account_info(),
+            &TermLoan::seeds(
+                &self.market.to_bytes(),
+                &self.margin_user.to_bytes(),
+                &self.sequence_number.to_le_bytes(),
+            ),
+        )
     }
 }
 

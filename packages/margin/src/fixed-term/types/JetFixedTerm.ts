@@ -588,13 +588,13 @@ export type JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateral"
+          name: "tokenCollateral"
           isMut: true
           isSigner: false
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint"
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -4070,13 +4070,13 @@ export const IDL: JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateral",
+          name: "tokenCollateral",
           isMut: true,
           isSigner: false,
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint",
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false,
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]

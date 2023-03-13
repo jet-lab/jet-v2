@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 #[cfg(any(feature = "cli", test))]
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
-use crate::margin::origination_fee;
+use crate::{margin::origination_fee, orderbook::state::OrderParams};
 
 /// The `Market` contains all the information necessary to run the fixed term market
 ///
@@ -69,6 +69,12 @@ pub struct Market {
 }
 
 impl Market {
+    /// Mutates the `OrderParams` to add a market origination fee
+    pub fn add_origination_fee(&self, params: &mut OrderParams) {
+        params.max_ticket_qty = self.borrow_order_qty(params.max_ticket_qty);
+        params.max_underlying_token_qty = self.borrow_order_qty(params.max_underlying_token_qty);
+    }
+
     /// for signing CPIs with the market account
     pub fn authority_seeds(&self) -> [&[u8]; 5] {
         [
