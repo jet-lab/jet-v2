@@ -549,6 +549,12 @@ export type JetFixedTerm = {
           isMut: false
           isSigner: false
           docs: ["Token metadata account needed by the margin program to register the collateral position"]
+        },
+        {
+          name: "tokenCollateralMetadata"
+          isMut: false
+          isSigner: false
+          docs: ["Token metadata account needed by the margin program to register the collateral position"]
         }
       ]
       args: []
@@ -1150,6 +1156,16 @@ export type JetFixedTerm = {
         },
         {
           name: "ticketCollateralMint"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "tokenCollateral"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
         },
@@ -4031,6 +4047,12 @@ export const IDL: JetFixedTerm = {
           isMut: false,
           isSigner: false,
           docs: ["Token metadata account needed by the margin program to register the collateral position"]
+        },
+        {
+          name: "tokenCollateralMetadata",
+          isMut: false,
+          isSigner: false,
+          docs: ["Token metadata account needed by the margin program to register the collateral position"]
         }
       ],
       args: []
@@ -4632,6 +4654,16 @@ export const IDL: JetFixedTerm = {
         },
         {
           name: "ticketCollateralMint",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "tokenCollateral",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false
         },

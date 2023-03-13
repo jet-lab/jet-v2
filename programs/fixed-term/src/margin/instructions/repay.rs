@@ -24,7 +24,7 @@ pub struct Repay<'info> {
         has_one = margin_user @ FixedTermErrorCode::UserNotInMarket,
         has_one = payer,
         constraint = term_loan.sequence_number
-            == margin_user.debt.next_term_loan_to_repay().unwrap()
+            == margin_user.next_term_loan_to_repay().unwrap()
             @ FixedTermErrorCode::TermLoanHasWrongSequenceNumber
     )]
     pub term_loan: Account<'info, TermLoan>,
@@ -82,7 +82,11 @@ impl<'info> Repay<'info> {
 
 pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
     let amount = min(amount, ctx.accounts.term_loan.balance);
+
+    // return payment to market vault
     transfer(ctx.accounts.transfer_context(), amount)?;
+
+    // reduce claim on the margin account
     ctx.burn_notes(&ctx.accounts.claims_mint, &ctx.accounts.claims, amount)?;
 
     let term_loan = &mut ctx.accounts.term_loan;
@@ -91,8 +95,7 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
     term_loan.balance.try_sub_assign(amount)?;
 
     if term_loan.balance > 0 {
-        user.debt
-            .partially_repay_term_loan(term_loan.sequence_number, amount)?;
+        user.partially_repay_loan(term_loan, amount)?;
         emit!(TermLoanRepay {
             orderbook_user: ctx.accounts.margin_user.key(),
             term_loan: term_loan.key(),
@@ -100,20 +103,18 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
             final_balance: term_loan.balance,
         });
     } else {
-        term_loan.close(ctx.accounts.payer.to_account_info())?;
-
-        let user_key = user.key();
         let next_term_loan =
             Account::<TermLoan>::try_from(&ctx.accounts.next_term_loan).and_then(|ob| {
                 require_eq!(
                     ob.margin_user,
-                    user_key,
+                    user.key(),
                     FixedTermErrorCode::UserNotInMarket
                 );
                 Ok(ob)
             });
-        user.debt
-            .fully_repay_term_loan(term_loan.sequence_number, amount, next_term_loan)?;
+        user.fully_repay_term_loan(term_loan, amount, next_term_loan)?;
+
+        term_loan.close(ctx.accounts.payer.to_account_info())?;
 
         emit!(TermLoanFulfilled {
             term_loan: term_loan.key(),

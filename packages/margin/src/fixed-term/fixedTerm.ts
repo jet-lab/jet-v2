@@ -352,6 +352,7 @@ export class FixedTermMarket {
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const marketUser = await this.deriveMarginUserAddress(user)
     const ticketCollateral = await this.deriveTicketCollateral(marketUser)
+    const tokenCollateral = await this.deriveTokenCollateral(marketUser)
     const claims = await this.deriveMarginUserClaims(marketUser)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     return this.program.methods
@@ -361,6 +362,7 @@ export class FixedTermMarket {
         marginUser: marketUser,
         marginAccount: user.address,
         ticketCollateral,
+        tokenCollateral,
         tokenProgram: TOKEN_PROGRAM_ID,
         claims,
         underlyingSettlement,

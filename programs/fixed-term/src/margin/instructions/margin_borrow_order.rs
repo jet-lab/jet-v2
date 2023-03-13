@@ -23,7 +23,7 @@ pub struct MarginBorrowOrder<'info> {
         mut,
         has_one = margin_account,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
-        has_one = token_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        has_one = underlying_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -47,11 +47,11 @@ pub struct MarginBorrowOrder<'info> {
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub token_collateral: AccountInfo<'info>,
+    pub underlying_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(mut, address = orderbook_mut.token_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
-    pub token_collateral_mint: AccountInfo<'info>,
+    pub underlying_collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
@@ -117,8 +117,8 @@ fn handle_posted(
 
     // collateralize the tokens involved in the order
     ctx.mint(
-        &ctx.accounts.token_collateral_mint,
-        &ctx.accounts.token_collateral,
+        &ctx.accounts.underlying_collateral_mint,
+        &ctx.accounts.underlying_collateral,
         posted_token_value,
     )?;
 
@@ -143,14 +143,13 @@ fn handle_filled(
         .margin_user
         .taker_fill_borrow_order(filled_ticket_value, maturation_timestamp)?;
 
-    let filled = summary.quote_filled(RoundingAction::FillBorrow)?;
     let disburse = ctx
         .accounts
         .orderbook_mut
         .market
         .load()?
-        .loan_to_disburse(summary.quote_filled(RoundingAction::FillBorrow)?);
-    let fees = filled.safe_sub(disburse)?;
+        .loan_to_disburse(filled_token_value);
+    let fees = filled_token_value.safe_sub(disburse)?;
 
     // write a TermLoan account
     let builder = TermLoanBuilder::new_from_order(
@@ -185,7 +184,7 @@ fn handle_filled(
     Ok(disburse)
 }
 
-pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Result<()> {
+pub fn handler(mut ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Result<()> {
     ctx.accounts
         .orderbook_mut
         .market

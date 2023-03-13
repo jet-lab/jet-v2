@@ -219,7 +219,6 @@ impl<'a, 'info> MarginRedeemDepositAccounts<'a, 'info> {
         let redeemed = self.inner.redeem(is_withdrawing)?;
 
         self.margin_user
-            .assets
             .redeem_deposit(self.inner.deposit.sequence_number, redeemed)?;
 
         anchor_spl::token::burn(
@@ -235,7 +234,7 @@ impl<'a, 'info> MarginRedeemDepositAccounts<'a, 'info> {
             redeemed,
         )?;
 
-        self.margin_user.emit_asset_balances();
+        self.margin_user.emit_asset_balances()?;
 
         Ok(())
     }
