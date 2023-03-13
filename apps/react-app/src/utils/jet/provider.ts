@@ -27,22 +27,19 @@ export function useProvider() {
     return new AnchorProvider(connection, wallet as unknown as Wallet, confirmOptions);
   }, [connection, wallet]);
 
-  const programs = useMemo(
-    () => {
-      if (config && networkStatus === 'connected') {
-        // Allow this to fail, in case the currently connected network state is incompatible
-        // with the current versions of the libraries
-        try {
-          return MarginClient.getPrograms(provider, config);
-        } catch (e) {
-          console.error("failed to initialize program clients", e);
-        }
+  const programs = useMemo(() => {
+    if (config && networkStatus === 'connected') {
+      // Allow this to fail, in case the currently connected network state is incompatible
+      // with the current versions of the libraries
+      try {
+        return MarginClient.getPrograms(provider, config);
+      } catch (e) {
+        console.error('failed to initialize program clients', e);
       }
+    }
 
-      return undefined;
-    },
-    [config, provider, networkStatus]
-  );
+    return undefined;
+  }, [config, provider, networkStatus]);
 
   return { programs, provider };
 }

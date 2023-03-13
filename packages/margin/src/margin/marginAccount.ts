@@ -467,9 +467,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-              .div(collateralWeight.mul(warningRiskLevel))
-              .div(lamportPrice)
+            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+            .div(collateralWeight.mul(warningRiskLevel))
+            .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
@@ -1794,5 +1794,35 @@ export class MarginAccount {
       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount: this })
     }
     await refreshAllMarkets(markets, instructions, this, marketAddress)
+  }
+
+  /**
+* Refresh any deposit position
+*
+* @param {({
+  *     instructions: TransactionInstruction[] 
+  *     config: Address
+  *     priceOracle: PublicKey
+  *   })} {
+  *     instructions,
+  *     pools,
+  *     marginAccount
+  *   }
+  * @return {Promise<void>}
+  */
+  async withRefreshDepositPosition({
+    instructions,
+    config,
+    priceOracle
+  }: { instructions: TransactionInstruction[], config: Address, priceOracle: PublicKey }): Promise<void> {
+    const ix = await this.programs.margin.methods
+      .refreshDepositPosition()
+      .accounts({
+        marginAccount: this.address,
+        config,
+        priceOracle
+      })
+      .instruction()
+    instructions.push(ix)
   }
 }
