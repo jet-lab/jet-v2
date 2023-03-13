@@ -36,6 +36,10 @@ pub struct Market {
     /// positions that are priced as tickets. The collateral notes are monitored
     /// by the margin program to track value
     pub ticket_collateral_mint: Pubkey,
+    /// Mint owned by fixed-term market to issue collateral value to a user for
+    /// positions that are priced as tokens. The collateral notes are monitored
+    /// by the margin program to track value
+    pub token_collateral_mint: Pubkey,
     /// oracle that defines the value of the underlying asset
     pub underlying_oracle: Pubkey,
     /// oracle that defines the value of the tickets

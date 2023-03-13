@@ -34,6 +34,7 @@ export interface MarketInfo {
   ticketMint: PublicKey
   claimsMint: PublicKey
   ticketCollateralMint: PublicKey
+  tokenCollateralMint: PublicKey
   underlyingOracle: PublicKey
   ticketOracle: PublicKey
   feeVault: PublicKey
@@ -109,6 +110,8 @@ export class FixedTermMarket {
     claimsMetadata: PublicKey
     ticketCollateralMint: PublicKey
     ticketCollateralMetadata: PublicKey
+    tokenCollateralMint: PublicKey
+    tokenCollateralMetadata: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
     marginAdapterMetadata: PublicKey
@@ -120,6 +123,7 @@ export class FixedTermMarket {
     market: PublicKey,
     claimsMetadata: PublicKey,
     ticketCollateralMetadata: PublicKey,
+    tokenCollateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
     program: Program<JetFixedTerm>,
     info: MarketInfo
@@ -128,6 +132,7 @@ export class FixedTermMarket {
       ...info,
       claimsMetadata,
       ticketCollateralMetadata,
+      tokenCollateralMetadata,
       marginAdapterMetadata,
       market
     }
@@ -166,6 +171,10 @@ export class FixedTermMarket {
       ["token-config", info.airspace, info.ticketCollateralMint],
       new PublicKey(jetMarginProgramId)
     )
+    const tokenCollateralMetadata = await findFixedTermDerivedAccount(
+      ["token-config", info.airspace, info.tokenCollateralMint],
+      new PublicKey(jetMarginProgramId)
+    )
     const marginAdapterMetadata = await findFixedTermDerivedAccount(
       [program.programId],
       new PublicKey(jetMarginProgramId)
@@ -175,6 +184,7 @@ export class FixedTermMarket {
       new PublicKey(market),
       new PublicKey(claimsMetadata),
       new PublicKey(ticketCollateralMetadata),
+      new PublicKey(tokenCollateralMetadata),
       new PublicKey(marginAdapterMetadata),
       program,
       info
