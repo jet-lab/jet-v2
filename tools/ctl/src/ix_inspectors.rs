@@ -12,48 +12,47 @@ use jet_margin_sdk::{
 
 use crate::{anchor_ix_parser::ParsedInstruction, client::Client};
 
-pub fn all_hooks() -> Vec<IxInspectionHook> {
-    vec![ConfigureMarginPoolHook.wrap()]
+pub fn all_inspectors() -> Vec<IxInspector> {
+    vec![ConfigureMarginPoolInspector.wrap()]
 }
 
-pub async fn run_hooks(client: &Client, ix: &ParsedInstruction, hooks: Vec<IxInspectionHook>) {
-    let mut ran_a_hook = false;
-    for hook in hooks {
-        if hook.matches(ix) {
-            ran_a_hook = true;
-            if let Err(e) = hook.run(client, ix).await {
-                eprintln!(
-                    "failed to run hook for {:#?} - {:#?}: {e:#?}",
-                    hook.program_id(),
-                    hook.instruction_name()
-                );
+pub async fn inspect(client: &Client, ix: &ParsedInstruction, inspectors: Vec<IxInspector>) {
+    let mut ran_one = false;
+    for inspector in inspectors {
+        if inspector.matches(ix) {
+            ran_one = true;
+            if let Err(e) = inspector.run(client, ix).await {
+                eprintln!("failed to run {}: {e:#?}", inspector.name());
             }
         }
     }
-    if ran_a_hook {
+    if ran_one {
         println!("\n=====================================\n");
     }
 }
 
 /// this wrapper is needed due to https://github.com/rust-lang/rust/issues/63033
-pub struct IxInspectionHook(Box<dyn IxInspectionHookTrait>);
-impl std::ops::Deref for IxInspectionHook {
-    type Target = dyn IxInspectionHookTrait;
+pub struct IxInspector(Box<dyn CustomIxInspector>);
+impl std::ops::Deref for IxInspector {
+    type Target = dyn CustomIxInspector;
 
     fn deref(&self) -> &Self::Target {
         self.0.deref()
     }
 }
 
-/// A hook that can be applied to an instruction to print some information about
-/// what the instruction will do.
+/// Print some information about what the instruction will do.
 ///
-/// By default, hooks are applied to ALL instructions. To constrain the
-/// instructions that a hook will apply to, you can filter it by program_id and
-/// instruction_name, or you can implement the `matches` method for full
-/// customization.
+/// By default, inspectors are applicable to ALL instructions. To constrain the
+/// instructions that an inspector will apply to, you can filter it by
+/// program_id and instruction_name, or you can implement the `matches` method
+/// for full customization.
 #[async_trait(?Send)]
-pub trait IxInspectionHookTrait {
+pub trait CustomIxInspector {
+    fn name(&self) -> String {
+        std::any::type_name::<Self>().to_string()
+    }
+
     fn program_id(&self) -> Option<Pubkey> {
         None
     }
@@ -72,11 +71,11 @@ pub trait IxInspectionHookTrait {
 
     async fn run(&self, client: &Client, ix: &ParsedInstruction) -> Result<()>;
 
-    fn wrap(self) -> IxInspectionHook
+    fn wrap(self) -> IxInspector
     where
         Self: Sized + 'static,
     {
-        IxInspectionHook(Box::new(self))
+        IxInspector(Box::new(self))
     }
 }
 
@@ -84,9 +83,9 @@ pub trait IxInspectionHookTrait {
 /// - all current data in the accounts that will be mutated by this instruction
 /// - in a separate list, the specific fields that will be changed by this
 ///   instruction
-pub struct ConfigureMarginPoolHook;
+pub struct ConfigureMarginPoolInspector;
 #[async_trait(?Send)]
-impl IxInspectionHookTrait for ConfigureMarginPoolHook {
+impl CustomIxInspector for ConfigureMarginPoolInspector {
     fn program_id(&self) -> Option<Pubkey> {
         Some(jet_control::ID)
     }
@@ -118,7 +117,7 @@ impl IxInspectionHookTrait for ConfigureMarginPoolHook {
                 .get(name)
                 .context("could not find account {name} in this instruction.")?;
             if addr != current_value {
-                println!("- {name} in {ctx}: from {current_value} to {addr}");
+                println!(">>> {name} in {ctx}: {current_value} --> {addr}");
             }
         }
         for top in ix.data.try_as_struct()? {
@@ -129,7 +128,7 @@ impl IxInspectionHookTrait for ConfigureMarginPoolHook {
                     if name == "tokenKind"
                         && value.try_as_enum_tuple()?.0 != &format!("{:#?}", kind)
                     {
-                        println!("- tokenKind: from {:#?} to {value:#?}", kind);
+                        println!(">>> tokenKind: {:#?} --> {value:#?}", kind);
                     }
                     for (name_to_find, prior) in [
                         ("collateralWeight", deposit_metadata.value_modifier as u128),
@@ -145,7 +144,7 @@ impl IxInspectionHookTrait for ConfigureMarginPoolHook {
                         ("reserved", pool.config.reserved as u128),
                     ] {
                         if name == name_to_find && value.try_as_integer_unsigned()? != prior {
-                            println!("- {name}: from {prior:#?} to {value:#?}",);
+                            println!(">>> {name}: {prior:#?} --> {value:#?}",);
                         }
                     }
                 }

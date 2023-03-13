@@ -31,7 +31,7 @@ use spl_governance::state::{
 use crate::{
     anchor_ix_parser::{AnchorParser, ParsedAccountInput, ParsedInstruction},
     client::{Client, NetworkKind, Plan, TransactionEntry},
-    ix_inspection_hooks::{all_hooks, run_hooks},
+    ix_inspectors::{all_inspectors, inspect},
 };
 
 pub const JET_STAKING_PROGRAM: Pubkey = pubkey!("JPLockxtkngHkaQT5AuRYow3HyUv5qWzmhwsCPd653n");
@@ -169,7 +169,7 @@ pub async fn inspect_proposal_instructions(
                     let parsed =
                         try_parse_instruction(client, &mut anchor_parser, instruction).await?;
                     println!("{parsed:#?}");
-                    run_hooks(client, &parsed, all_hooks()).await;
+                    inspect(client, &parsed, all_inspectors()).await;
                 }
             } else {
                 println!("tx #{tx_index} not found, likely was removed: {tx_address}");
