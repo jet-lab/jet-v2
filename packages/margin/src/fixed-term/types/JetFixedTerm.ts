@@ -508,6 +508,17 @@ export type JetFixedTerm = {
           isSigner: false
         },
         {
+          name: "tokenCollateral"
+          isMut: true
+          isSigner: false
+          docs: ["Token account used by the margin program to track owned assets"]
+        },
+        {
+          name: "tokenCollateralMint"
+          isMut: false
+          isSigner: false
+        },
+        {
           name: "payer"
           isMut: true
           isSigner: true
@@ -1950,6 +1961,15 @@ export type JetFixedTerm = {
               "Token account used by the margin program to track the collateral value of positions",
               "which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.",
               "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
+            ]
+            type: "publicKey"
+          },
+          {
+            name: "tokenCollateral"
+            docs: [
+              "Token account used by the margin program to track the collateral value of positions",
+              "related to a collateralized value of a token as it rests in the control of the Fixed-Term orderbook",
+              "for now this specifically tracks the tokens locked in an open borrow order"
             ]
             type: "publicKey"
           },
@@ -3970,6 +3990,17 @@ export const IDL: JetFixedTerm = {
           isSigner: false
         },
         {
+          name: "tokenCollateral",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token account used by the margin program to track owned assets"]
+        },
+        {
+          name: "tokenCollateralMint",
+          isMut: false,
+          isSigner: false
+        },
+        {
           name: "payer",
           isMut: true,
           isSigner: true
@@ -5412,6 +5443,16 @@ export const IDL: JetFixedTerm = {
               "Token account used by the margin program to track the collateral value of positions",
               "which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.",
               "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
+            ],
+            type: "publicKey"
+          },
+
+          {
+            name: "tokenCollateral",
+            docs: [
+              "Token account used by the margin program to track the collateral value of positions",
+              "related to a collateralized value of a token as it rests in the control of the Fixed-Term orderbook",
+              "for now this specifically tracks the tokens locked in an open borrow order"
             ],
             type: "publicKey"
           },
