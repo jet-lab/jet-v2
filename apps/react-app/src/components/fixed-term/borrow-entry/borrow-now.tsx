@@ -25,7 +25,6 @@ import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Modal } from '@jet-lab/ui'
 
 interface RequestLoanProps {
   decimals: number;
@@ -173,7 +172,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   return (
     <div className="fixed-term order-entry-body">
       <div className="borrow-now fixed-order-entry-fields">
-        <Modal open={true} >Test</Modal>
         <label>
           Loan amount
           <InputNumber

@@ -5,24 +5,19 @@ import { useEffect, useState } from 'react';
 
 interface BaseModalProps {
     children: React.ReactNode
-    open: boolean
+    open?: boolean
 
 }
 
 export const Modal = ({ children, open }: BaseModalProps) => {
-    console.log('modal')
-    return <Portal.Root>
+    return <Portal.Root className='h-screen w-screen absolute top-0 right-0 left-0 bottom-0'>
         <Dialog.Root defaultOpen={true} open={open}>
-            <Dialog.Overlay />
-            <Dialog.Content>
-                <div className='p-4 absolute top-0 left-0 w-96 h-96 bg-red-500'>
-                    {children}
-                    <Dialog.Close asChild>
-                        <button aria-label="Close">
-                            <Cross2Icon />
-                        </button>
-                    </Dialog.Close>
-                </div>
+            <Dialog.Overlay className="opacity-40 bg-black absolute top-0 bottom-0 left-0 right-0 z-10" />
+            <Dialog.Content className='p-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-neutral-800 to-neutral-900 z-20 flex rounded-sm shadow'>
+                <Dialog.Close asChild className='cursor-pointer bg-gray-800 rounded-sm h-6 w-6 flex items-center justify-center' aria-label="Close">
+                    <Cross2Icon />
+                </Dialog.Close>
+                {children}
             </Dialog.Content>
         </Dialog.Root>
     </Portal.Root>
