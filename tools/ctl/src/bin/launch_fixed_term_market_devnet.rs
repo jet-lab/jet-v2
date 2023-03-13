@@ -46,6 +46,7 @@ lazy_static::lazy_static! {
     static ref OPTS: CliOpts = CliOpts {
         target_proposal: None,
         target_proposal_option: 0,
+        airspace: None,
         compute_budget: None,
         dry_run: false,
         no_confirm: false,

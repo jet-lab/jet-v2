@@ -4,6 +4,7 @@ use agnostic_orderbook::state::event_queue::EventRef;
 use anyhow::Result;
 use futures::{future::join_all, join};
 use hosted_tests::{
+    context::MarginTestContext,
     fixed_term::{
         create_and_fund_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
         TestManager as FixedTermTestManager, STARTING_TOKENS,
@@ -13,7 +14,7 @@ use hosted_tests::{
 };
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
-    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams},
+    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams, SensibleOrderSummary},
 };
 use jet_margin_sdk::{
     cat,
@@ -31,28 +32,34 @@ use jet_margin_sdk::{
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
-use jet_program_common::Fp32;
+use jet_program_common::{
+    interest_pricing::{InterestPricer, PricerImpl},
+    Fp32,
+};
 
 use solana_sdk::signer::Signer;
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders() -> Result<(), anyhow::Error> {
-    let manager = FixedTermTestManager::full(&margin_test_context!()).await?;
-    non_margin_orders_for_proxy::<NoProxy>(Arc::new(manager)).await
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
+    non_margin_orders_for_proxy::<NoProxy>(ctx, manager).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let manager = FixedTermTestManager::full(&margin_test_context!()).await?;
-    non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
+    non_margin_orders_for_proxy::<MarginIxBuilder>(ctx, manager).await
 }
 
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
+    ctx: Arc<MarginTestContext>,
     manager: Arc<FixedTermTestManager>,
 ) -> Result<()> {
-    let alice = FixedTermUser::<P>::generate_funded(manager.clone()).await?;
+    let alice = FixedTermUser::<P>::generate_funded(ctx.clone(), manager.clone()).await?;
 
     const START_TICKETS: u64 = 1_000_000;
     alice.convert_tokens(START_TICKETS).await?;
@@ -176,7 +183,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert_eq!(summary_b.total_quote_qty, 500);
 
     // send to validator
-    let bob = FixedTermUser::<P>::generate_funded(manager.clone()).await?;
+    let bob = FixedTermUser::<P>::generate_funded(ctx.clone(), manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
 
     assert_eq!(
@@ -339,7 +346,7 @@ async fn margin_repay() -> Result<()> {
     };
 
     // set a lend order on the book
-    let lender = FixedTermUser::<NoProxy>::generate_funded(manager.clone()).await?;
+    let lender = FixedTermUser::<NoProxy>::generate_funded(ctx.clone(), manager.clone()).await?;
     let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
 
     lender.lend_order(lend_params, &[]).await?;
@@ -426,11 +433,12 @@ async fn margin_repay() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 async fn can_consume_lots_of_events() -> Result<()> {
-    let manager = Arc::new(FixedTermTestManager::full(&margin_test_context!()).await?);
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
 
     // make and fund users
-    let alice = FixedTermUser::<NoProxy>::generate_funded(manager.clone()).await?;
-    let bob = FixedTermUser::<NoProxy>::generate_funded(manager.clone()).await?;
+    let alice = FixedTermUser::<NoProxy>::generate_funded(ctx.clone(), manager.clone()).await?;
+    let bob = FixedTermUser::<NoProxy>::generate_funded(ctx.clone(), manager.clone()).await?;
     alice.convert_tokens(1_000_000).await?;
 
     let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 1_000);
@@ -748,6 +756,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     .await;
     let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
+    let lend_params = underlying(1_001, 2_000);
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
@@ -758,11 +767,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(
-        lender
-            .refresh_and_margin_lend_order(underlying(1_001, 2_000))
-            .await?,
-    )
+    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -771,6 +776,10 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(1_000, lender.collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
+    let borrow_params = underlying(1_000, 2_000);
+    let simulated_order = manager
+        .simulate_new_order_with_fees(borrow_params, agnostic_orderbook::state::Side::Ask)
+        .await?;
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
@@ -783,7 +792,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     ]
     .cat(
         borrower
-            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
+            .refresh_and_margin_borrow_order(borrow_params)
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -796,6 +805,23 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     // FIXME: an exact number would be nice
     assert!(manager.collected_fees().await? > 0);
+
+    let loan = borrower.load_term_loan(0).await?;
+    let expected_tenor = manager.load_market().await?.borrow_tenor;
+    // FIXME
+    // to avoid subtle rounding issues, we calculate expected price manually, this is not as good as
+    // using the limit price of the order directly
+    let expected_price = {
+        let summary = SensibleOrderSummary::new(borrow_params.limit_price, simulated_order);
+        let price = Fp32::from(summary.quote_filled()?) / summary.base_filled();
+        price.downcast_u64().unwrap()
+    };
+    let expected_rate =
+        PricerImpl::price_fp32_to_bps_yearly_interest(expected_price, expected_tenor);
+
+    assert_eq!(loan.tenor()?, expected_tenor);
+    assert_eq!(loan.price()?.downcast_u64().unwrap(), expected_price);
+    assert_eq!(loan.rate()?, expected_rate);
 
     manager.consume_events().await?;
     // assert!(false);

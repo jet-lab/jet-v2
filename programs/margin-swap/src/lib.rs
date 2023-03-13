@@ -41,6 +41,13 @@ pub const ROUTE_SWAP_MAX_SPLIT: u8 = 90;
 /// The minimum swap split percentage
 pub const ROUTE_SWAP_MIN_SPLIT: u8 = 100 - ROUTE_SWAP_MAX_SPLIT;
 
+pub mod seeds {
+    use super::constant;
+
+    #[constant]
+    pub const OPENBOOK_OPEN_ORDERS: &[u8] = b"open_orders";
+}
+
 /// The fee charged for liquidation swaps (bps)
 pub const LIQUIDATION_FEE: u64 = 3_00;
 
@@ -106,6 +113,18 @@ mod jet_margin_swap {
     pub fn saber_stable_swap(_ctx: Context<SaberSwapInfo>) -> Result<()> {
         Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
     }
+
+    pub fn openbook_swap(_ctx: Context<OpenbookSwapInfo>) -> Result<()> {
+        Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
+    }
+
+    pub fn init_openbook_open_orders(ctx: Context<InitOpenOrders>) -> Result<()> {
+        init_open_orders_handler(ctx)
+    }
+
+    pub fn close_openbook_open_orders(ctx: Context<CloseOpenOrders>) -> Result<()> {
+        close_open_orders_handler(ctx)
+    }
 }
 
 #[derive(Accounts)]
@@ -167,6 +186,7 @@ pub enum SwapRouteIdentifier {
     Spl,
     Whirlpool,
     SaberStable,
+    OpenBook,
 }
 
 impl Default for SwapRouteIdentifier {

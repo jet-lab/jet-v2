@@ -195,29 +195,6 @@ pub mod jet_margin {
         update_position_balance_handler(ctx)
     }
 
-    /// Update the metadata for a position stored in the margin account,
-    /// in the case where the metadata has changed after the position was
-    /// created.
-    ///
-    /// # [Accounts](jet_margin::accounts::RefreshPositionMetadata)
-    ///
-    /// |     |     |     |
-    /// | --- | --- | --- |
-    /// | **Name** | **Type** | **Description** |
-    /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
-    /// | `metadata` | `read_only` | The metadata account for the token, which has been updated. |
-    ///
-    /// # Events
-    ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Event Name** | **Description** |
-    /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |
-    ///
-    pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
-        refresh_position_metadata_handler(ctx)
-    }
-
     /// Close out a position, removing it from the account.
     ///
     /// Since there is a finite number of positions a single account can maintain it may be
@@ -608,6 +585,10 @@ pub enum ErrorCode {
     /// 141041 - The liquidation attempted to extract too much value
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
+
+    /// 141042 - Submit the incorrect LiquidationState to the instruction
+    #[msg("liquidationState does not match given margin account")]
+    WrongLiquidationState,
 
     /// 141050 - The airspace does not match
     #[msg("attempting to mix entities from different airspaces")]

@@ -27,7 +27,7 @@ use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::{bail, Error};
 
 use jet_instructions::margin_swap::MarginSwapRouteIxBuilder;
-use jet_margin::{AccountPosition, MarginAccount, TokenKind};
+use jet_margin::{AccountPosition, MarginAccount, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::ix_builder::test_service::if_not_initialized;
 use jet_margin_sdk::ix_builder::{
     derive_airspace, derive_margin_permit, derive_permit, get_control_authority_address,
@@ -98,7 +98,7 @@ impl MarginClient {
             Some(clone(keypair)),
             keypair.pubkey(),
             seed,
-            self.tx_admin.airspace,
+            self.tx_admin.airspace(),
         );
 
         MarginUser {
@@ -226,19 +226,22 @@ impl MarginClient {
     }
 
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
-        self.rpc
-            .send_and_confirm(self.tx_admin.configure_margin_adapter(*adapter, true))
+        self.tx_admin
+            .configure_margin_adapter(*adapter, true)
+            .with_signer(clone(&self.airspace_authority))
+            .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
     }
 
+    /// Configure deposits for a given token (when placed directly into a margin account)
     pub async fn configure_token_deposits(
         &self,
-        token_mint: &Pubkey,
+        underlying_mint: &Pubkey,
         config: Option<&TokenDepositsConfig>,
     ) -> Result<(), Error> {
         self.tx_admin
-            .configure_margin_token_deposits(*token_mint, config.cloned())
+            .configure_margin_token_deposits(*underlying_mint, config.cloned())
             .with_signer(clone(&self.airspace_authority))
             .send_and_confirm(&self.rpc)
             .await?;
@@ -250,35 +253,39 @@ impl MarginClient {
         token: &Pubkey,
         config: &MarginPoolConfiguration,
     ) -> Result<(), Error> {
-        let ix =
-            ControlIxBuilder::new(self.rpc.payer().pubkey()).configure_margin_pool(token, config);
-
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
-
+        self.tx_admin
+            .configure_margin_pool(*token, config)
+            .with_signer(clone(&self.airspace_authority))
+            .send_and_confirm(&self.rpc)
+            .await?;
         Ok(())
     }
 
     /// Create a new margin pool for a token
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
-        let ix =
-            ControlIxBuilder::new(self.rpc.payer().pubkey()).create_margin_pool(&setup_info.token);
+        self.tx_admin
+            .create_margin_pool(setup_info.token)
+            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
+            .send_and_confirm(&self.rpc)
+            .await?;
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
-
-        self.configure_margin_pool(
-            &setup_info.token,
-            &MarginPoolConfiguration {
-                pyth_price: Some(setup_info.oracle.price),
-                pyth_product: Some(setup_info.oracle.product),
-                metadata: Some(TokenMetadataParams {
-                    token_kind: jet_metadata::TokenKind::Collateral,
-                    collateral_weight: setup_info.collateral_weight,
-                    max_leverage: setup_info.max_leverage,
-                }),
-                parameters: Some(setup_info.config),
-            },
-        )
-        .await?;
+        self.tx_admin
+            .configure_margin_pool(
+                setup_info.token,
+                &MarginPoolConfiguration {
+                    pyth_price: Some(setup_info.oracle.price),
+                    pyth_product: Some(setup_info.oracle.product),
+                    metadata: Some(TokenMetadataParams {
+                        token_kind: jet_metadata::TokenKind::Collateral,
+                        collateral_weight: setup_info.collateral_weight,
+                        max_leverage: setup_info.max_leverage,
+                    }),
+                    parameters: Some(setup_info.config),
+                },
+            )
+            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
+            .send_and_confirm(&self.rpc)
+            .await?;
 
         Ok(())
     }
@@ -288,21 +295,14 @@ impl MarginClient {
         liquidator: Pubkey,
         is_liquidator: bool,
     ) -> Result<(), Error> {
-        let control_ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
-            .set_liquidator(&liquidator, is_liquidator);
         let margin_ix = MarginConfigIxBuilder::new(
-            self.tx_admin.airspace,
+            self.tx_admin.airspace(),
             self.rpc.payer().pubkey(),
             Some(self.airspace_authority.pubkey()),
         )
         .configure_liquidator(liquidator, is_liquidator);
 
-        send_and_confirm(
-            &self.rpc,
-            &[control_ix, margin_ix],
-            &[&self.airspace_authority],
-        )
-        .await?;
+        send_and_confirm(&self.rpc, &[margin_ix], &[&self.airspace_authority]).await?;
 
         Ok(())
     }
@@ -391,13 +391,6 @@ impl MarginUser {
     }
 
     pub async fn create_account(&self) -> Result<(), Error> {
-        let permit_account = derive_permit(self.tx.airspace(), &self.signer());
-
-        if self.rpc.get_account(&permit_account).await?.is_none() {
-            let airspace = AirspaceIxBuilder::new("default", self.signer(), self.signer());
-            self.rpc
-                .send_and_confirm(vec![airspace.permit_create(self.signer())].into());
-        }
         self.send_confirm_tx(self.tx.create_account().await?).await
     }
 
@@ -577,6 +570,28 @@ impl MarginUser {
                 .await?;
             LookupTable::send_versioned_transaction(&self.rpc, &versioned_tx).await?;
         }
+        Ok(())
+    }
+
+    /// Create OpenBook open orders account
+    pub async fn create_openbook_open_orders(
+        &self,
+        market: &Pubkey,
+        program: &Pubkey,
+    ) -> Result<(), Error> {
+        let tx = self.tx.create_openbook_open_orders(market, program);
+        self.rpc.send_and_confirm(tx).await?;
+        Ok(())
+    }
+
+    /// Close OpenBook open orders account
+    pub async fn close_openbook_open_orders(
+        &self,
+        market: &Pubkey,
+        program: &Pubkey,
+    ) -> Result<(), Error> {
+        let tx = self.tx.close_openbook_open_orders(market, program);
+        self.rpc.send_and_confirm(tx).await?;
         Ok(())
     }
 

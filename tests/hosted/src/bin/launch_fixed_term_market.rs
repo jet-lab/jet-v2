@@ -1,14 +1,14 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::Result;
+
+use solana_sdk::{pubkey::Pubkey, signer::Signer};
+
+use jet_margin_sdk::{ix_builder::get_metadata_address, solana::keypair::clone};
+
 use hosted_tests::fixed_term::{initialize_test_mint, OrderbookKeypairs, TestManager};
 use hosted_tests::margin::MarginClient;
 use hosted_tests::solana_test_context;
-use jet_margin_sdk::{
-    ix_builder::{derive_airspace, get_metadata_address},
-    solana::keypair::clone,
-};
-use solana_sdk::signer::Signer;
 
 lazy_static::lazy_static! {
     static ref CONFIG_PATH: String = shellexpand::env("$PWD/tests/integration/fixed_term/config.json").unwrap().to_string();
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     initialize_test_mint(&ctx, &keys::mint(), &keys::mint().pubkey()).await?;
     let x = TestManager::new(
         ctx,
-        derive_airspace("default"),
+        Pubkey::default(), //derive_airspace("default"), TODO: ???
         &keys::mint().pubkey(),
         keys::mint(),
         OrderbookKeypairs {

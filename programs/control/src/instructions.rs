@@ -18,11 +18,7 @@
 mod configure_margin_pool;
 mod create_authority;
 mod create_margin_pool;
-mod register_adapter;
-mod set_liquidator;
 
 pub use configure_margin_pool::*;
 pub use create_authority::*;
 pub use create_margin_pool::*;
-pub use register_adapter::*;
-pub use set_liquidator::*;

@@ -1,3 +1,5 @@
+use anchor_lang::prelude::{AccountInfo, Pubkey};
+use solana_sdk::entrypoint::ProgramResult;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
@@ -121,7 +123,18 @@ async fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
             saber_program::id(),
             saber_program::processor::Processor::process
         ),
+        (anchor_spl::dex::id(), openbook_processor),
     ];
 
     Arc::new(runtime.rpc(payer))
+}
+
+// Register OpenBook, converting a DexError to ProgramError
+fn openbook_processor(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    input: &[u8],
+) -> ProgramResult {
+    anchor_spl::dex::serum_dex::state::State::process(program_id, accounts, input)
+        .map_err(|e| e.into())
 }

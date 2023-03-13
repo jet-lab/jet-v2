@@ -106,12 +106,16 @@ pub fn derive_spl_swap_authority(program: &Pubkey, pool: &Pubkey) -> Pubkey {
 
 /// Trait to get required information from a swap pool for the [MarginSwapRouteIxBuilder]
 pub trait SwapAccounts {
-    /// Convert the pool to a vec of [AccountMeta]
-    fn to_account_meta(&self) -> Vec<AccountMeta>;
+    /// Convert the pool to a vec of [AccountMeta], takes an optional authority
+    /// as some swap venues would require accounts owned by the authority.
+    /// An example is an open orders account for an OpenBook market.
+    fn to_account_meta(&self, authority: Pubkey) -> Vec<AccountMeta>;
     /// Determine the pool source and destination tokens
     fn pool_tokens(&self) -> (Pubkey, Pubkey);
     /// The identifier of the route
     fn route_type(&self) -> SwapRouteIdentifier;
+    /// Cast the trait to a concrete object, use `route_type()` to determine the type.
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 /// The context which a user wants to swap with. Indicates whether a user wants
@@ -290,7 +294,7 @@ impl MarginSwapRouteIxBuilder {
         }
 
         // Add swap pool accounts
-        let mut accounts = pool.to_account_meta();
+        let mut accounts = pool.to_account_meta(self.margin_account);
         self.account_metas.append(&mut accounts);
 
         if !self.expects_multi_route && swap_split > 0 {

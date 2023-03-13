@@ -30,6 +30,7 @@ impl PositionRefresher for FixedTermPositionRefresher {
                 if position.token == bldr.claims() || position.token == bldr.collateral() {
                     ret.push(
                         accounting_invoke(
+                            bldr.airspace(),
                             self.margin_account,
                             bldr.refresh_position(self.margin_account, false),
                         )

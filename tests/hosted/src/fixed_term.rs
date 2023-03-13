@@ -22,7 +22,7 @@ use jet_fixed_term::{
 };
 use jet_instructions::{
     fixed_term::{derive, InitializeMarketParams},
-    margin::MarginConfigIxBuilder,
+    margin::{derive_adapter_config, MarginConfigIxBuilder},
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
@@ -31,9 +31,7 @@ use jet_margin_sdk::{
         settler::{settle_margin_users_loop, SettleMarginUsersConfig},
         FixedTermIxBuilder, OrderbookAddresses, OwnedEventQueue,
     },
-    ix_builder::{
-        get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
-    },
+    ix_builder::{get_control_authority_address, MarginIxBuilder},
     margin_integrator::{NoProxy, Proxy, RefreshingProxy},
     solana::{
         keypair::clone,
@@ -217,7 +215,11 @@ impl TestManager {
     /// register relevant positions.
     pub async fn with_margin(self, airspace_authority: &Keypair) -> Result<Self> {
         self.create_authority_if_missing().await?;
-        self.register_adapter_if_unregistered(&jet_fixed_term::ID)
+        self.register_adapter_if_unregistered(&jet_fixed_term::ID, airspace_authority)
+            .await?;
+        self.register_adapter_if_unregistered(&jet_margin_pool::ID, airspace_authority)
+            .await?;
+        self.register_adapter_if_unregistered(&jet_margin_swap::ID, airspace_authority)
             .await?;
         self.register_tickets_position_metadatata(airspace_authority)
             .await?;
@@ -485,14 +487,18 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_adapter_if_unregistered(&self, adapter: &Pubkey) -> Result<()> {
+    pub async fn register_adapter_if_unregistered(
+        &self,
+        adapter: &Pubkey,
+        authority: &Keypair,
+    ) -> Result<()> {
         if self
             .client
-            .get_account(&get_metadata_address(adapter))
+            .get_account(&derive_adapter_config(&self.airspace, adapter))
             .await?
             .is_none()
         {
-            self.register_adapter(adapter).await?;
+            self.register_adapter(adapter, authority).await?;
         }
 
         Ok(())
@@ -555,10 +561,15 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<()> {
-        let ix = ControlIxBuilder::new(self.client.payer().pubkey()).register_adapter(adapter);
+    pub async fn register_adapter(&self, adapter: &Pubkey, authority: &Keypair) -> Result<()> {
+        let ix = MarginConfigIxBuilder::new(
+            self.airspace,
+            self.client.payer().pubkey(),
+            Some(authority.pubkey()),
+        )
+        .configure_adapter(*adapter, true);
 
-        send_and_confirm(&self.client, &[ix], &[]).await?;
+        send_and_confirm(&self.client, &[ix], &[authority]).await?;
         Ok(())
     }
 
@@ -569,6 +580,26 @@ impl TestManager {
     ) -> Result<OrderSummary> {
         let mut eq = self.load_event_queue().await?;
         let mut orderbook = self.load_orderbook().await?;
+        orderbook
+            .inner()?
+            .new_order(
+                params.as_new_order_params(side, CallbackInfo::default()),
+                &mut eq.inner()?,
+                MIN_ORDER_SIZE,
+            )
+            .map_err(anyhow::Error::new)
+    }
+
+    pub async fn simulate_new_order_with_fees(
+        &self,
+        mut params: OrderParams,
+        side: agnostic_orderbook::state::Side,
+    ) -> Result<OrderSummary> {
+        let mut eq = self.load_event_queue().await?;
+        let mut orderbook = self.load_orderbook().await?;
+        let market = self.load_market().await?;
+        params.max_ticket_qty = market.borrow_order_qty(params.max_ticket_qty);
+        params.max_underlying_token_qty = market.borrow_order_qty(params.max_underlying_token_qty);
         orderbook
             .inner()?
             .new_order(
@@ -730,22 +761,38 @@ impl TestManager {
 
 #[async_trait]
 pub trait GenerateProxy {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair, seed: u16) -> Result<Self>
+    async fn generate(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+        owner: &Keypair,
+        _seed: u16,
+    ) -> Result<Self>
     where
         Self: Sized;
 }
 
 #[async_trait]
 impl GenerateProxy for NoProxy {
-    async fn generate(_manager: Arc<TestManager>, owner: &Keypair, _seed: u16) -> Result<Self> {
+    async fn generate(
+        _ctx: Arc<MarginTestContext>,
+        _manager: Arc<TestManager>,
+        owner: &Keypair,
+        _seed: u16,
+    ) -> Result<Self> {
         Ok(NoProxy(owner.pubkey()))
     }
 }
 
 #[async_trait]
 impl GenerateProxy for MarginIxBuilder {
-    async fn generate(manager: Arc<TestManager>, owner: &Keypair, seed: u16) -> Result<Self> {
-        let margin = MarginIxBuilder::new(manager.ix_builder.airspace(), owner.pubkey(), seed);
+    async fn generate(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+        owner: &Keypair,
+        seed: u16,
+    ) -> Result<Self> {
+        ctx.issue_permit(owner.pubkey()).await?;
+        let margin = MarginIxBuilder::new(manager.airspace, owner.pubkey(), seed);
         manager
             .sign_send_transaction(&[margin.create_account()], &[owner])
             .await?;
@@ -801,26 +848,30 @@ impl FixedTermUser<RefreshingProxy<MarginIxBuilder>> {
 
 impl<P: Proxy + GenerateProxy> FixedTermUser<P> {
     pub async fn generate_for(
+        ctx: Arc<MarginTestContext>,
         manager: Arc<TestManager>,
         owner: Keypair,
         seed: u16,
     ) -> Result<Self> {
-        let proxy = P::generate(manager.clone(), &owner, seed).await?;
+        let proxy = P::generate(ctx, manager.clone(), &owner, seed).await?;
         Self::new(manager, owner, proxy)
     }
 
-    pub async fn generate(manager: Arc<TestManager>) -> Result<Self> {
+    pub async fn generate(ctx: Arc<MarginTestContext>, manager: Arc<TestManager>) -> Result<Self> {
         let owner = manager.keygen.generate_key();
         manager
             .client
             .airdrop(&owner.pubkey(), 10 * LAMPORTS_PER_SOL)
             .await?;
-        let proxy = P::generate(manager.clone(), &owner, 0).await?;
+        let proxy = P::generate(ctx, manager.clone(), &owner, 0).await?;
         Self::new(manager, owner, proxy)
     }
 
-    pub async fn generate_funded(manager: Arc<TestManager>) -> Result<Self> {
-        let user = Self::generate(manager).await?;
+    pub async fn generate_funded(
+        ctx: Arc<MarginTestContext>,
+        manager: Arc<TestManager>,
+    ) -> Result<Self> {
+        let user = Self::generate(ctx, manager).await?;
         user.fund().await?;
         Ok(user)
     }
@@ -1036,6 +1087,17 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(repay)], &[&self.owner])
             .await
+    }
+
+    pub async fn get_active_term_loans(&self) -> Result<Vec<TermLoan>> {
+        let mut loans = vec![];
+
+        let user = self.load_margin_user().await?;
+        for seqno in user.debt.active_loans() {
+            loans.push(self.load_term_loan(seqno).await?);
+        }
+
+        Ok(loans)
     }
 
     pub async fn load_anchor<T: AccountDeserialize>(&self, key: &Pubkey) -> Result<T> {

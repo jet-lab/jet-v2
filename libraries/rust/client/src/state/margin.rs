@@ -123,9 +123,8 @@ pub async fn load_user_margin_accounts<I: NetworkUserInterface>(
     const MAX_DERIVED_ACCOUNTS_TO_CHECK: u16 = 32;
 
     let user = states.network.signer();
-    let airspace = states.config.airspace;
     let possible_accounts = (0..MAX_DERIVED_ACCOUNTS_TO_CHECK)
-        .map(|seed| derive_margin_account(&airspace, &user, seed))
+        .map(|seed| derive_margin_account(&states.config.airspace, &user, seed))
         .collect::<Vec<_>>();
 
     let maybe_accounts = states

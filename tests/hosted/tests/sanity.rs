@@ -113,6 +113,10 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     let wallet_a = ctx.create_wallet(10).await?;
     let wallet_b = ctx.create_wallet(10).await?;
 
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
+
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
     let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
