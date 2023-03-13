@@ -15,4 +15,4 @@ solana-sdk = "1.14"
 
 spl-token = { version = "3", features = ["no-entrypoint"] }
 
-anchor-lang = "0.26"
+anchor-lang = "0.27"

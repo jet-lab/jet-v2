@@ -263,12 +263,12 @@ fn js_reflect_get_pubkey(obj: &JsValue, key: &str) -> Result<Pubkey, js_sys::Err
     if let Some(js_pubkey) = js_value.dyn_ref::<solana_web3::PublicKey>() {
         let buffer = js_pubkey.to_bytes();
 
-        Ok(Pubkey::new(&buffer))
+        Ok(Pubkey::try_from(buffer.as_slice()).unwrap())
     } else if let Some(array) = js_value.dyn_ref::<Uint8Array>() {
         let mut buffer = [0u8; 32];
         array.copy_to(&mut buffer[..32]);
 
-        Ok(Pubkey::new(&buffer))
+        Ok(Pubkey::try_from(buffer.as_slice()).unwrap())
     } else if let Some(string) = js_value.as_string() {
         Ok(Pubkey::from_str(&string).map_err(|_| js_sys::Error::new("could not parse pubkey"))?)
     } else {

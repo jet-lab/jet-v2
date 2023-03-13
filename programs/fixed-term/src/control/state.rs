@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use jet_program_common::pod::PodBool;
 #[cfg(any(feature = "cli", test))]
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
@@ -49,11 +50,11 @@ pub struct Market {
     /// The bump seed value for generating the authority address.
     pub(crate) bump: [u8; 1],
     /// Is the market taking orders
-    pub orderbook_paused: bool,
+    pub orderbook_paused: PodBool,
     /// Can tickets be redeemed
-    pub tickets_paused: bool,
+    pub tickets_paused: PodBool,
     /// reserved for future use
-    pub(crate) _reserved: [u8; 28],
+    pub(crate) _reserved: [u8; 29],
     /// Length of time before a borrow is marked as due, in seconds
     pub borrow_tenor: u64,
     /// Length of time before a claim is marked as mature, in seconds
@@ -154,8 +155,8 @@ fn serialize_market() {
       \"underlyingOracle\": \"11111111111111111111111111111111\",
       \"ticketOracle\": \"11111111111111111111111111111111\",
       \"seed\": \"11111111111111111111111111111111\",
-      \"orderbookPaused\": false,
-      \"ticketsPaused\": false,
+      \"orderbookPaused\": 0,
+      \"ticketsPaused\": 0,
       \"borrowTenor\": 0,
       \"lendTenor\": 0
     }";

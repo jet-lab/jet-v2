@@ -61,7 +61,6 @@ fn to_token(constraint: &Constraint, name: &Ident) -> proc_macro2::TokenStream {
 fn parse_args(args: &TokenStream) -> Vec<Constraint> {
     args.to_string()
         .split(',')
-        .into_iter()
         .map(|arg| {
             let standarg: String = arg
                 .to_string()

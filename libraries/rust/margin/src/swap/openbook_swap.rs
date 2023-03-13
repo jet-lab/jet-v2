@@ -159,7 +159,7 @@ impl OpenBookMarket {
 
 #[inline]
 fn pubkey_from_slice(slice: [u64; 4]) -> Pubkey {
-    Pubkey::new(bytemuck::cast_slice(&slice))
+    Pubkey::try_from(bytemuck::cast_slice(&slice)).unwrap()
 }
 
 impl SwapAccounts for OpenBookMarket {

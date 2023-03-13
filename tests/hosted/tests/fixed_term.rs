@@ -82,13 +82,13 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     manager.pause_ticket_redemption().await?;
     let market = manager.load_market().await?;
 
-    assert!(market.tickets_paused);
+    assert!(market.tickets_paused.as_bool());
     assert!(alice.redeem_claim_ticket(&ticket_seed).await.is_err());
 
     manager.resume_ticket_redemption().await?;
 
     let market = manager.load_market().await?;
-    assert!(!market.tickets_paused);
+    assert!(!market.tickets_paused.as_bool());
 
     // Scenario a: post a borrow order to an empty book
     let a_amount = OrderAmount::from_quote_amount_rate(1_000, 2_000);

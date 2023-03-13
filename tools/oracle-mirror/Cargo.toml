@@ -19,7 +19,7 @@ solana-sdk = "1.14"
 spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 spl-token = "3"
 
-anchor-lang = "0.26"
+anchor-lang = "0.27"
 
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-simulation = { path = "../../libraries/rust/simulation" }

@@ -32,7 +32,7 @@ spl-associated-token-account = "1"
 spl-token-swap = { version = "3", features = ["no-entrypoint"] }
 pyth-sdk-solana = "0.4"
 
-anchor-lang = "0.26"
+anchor-lang = "0.27"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
