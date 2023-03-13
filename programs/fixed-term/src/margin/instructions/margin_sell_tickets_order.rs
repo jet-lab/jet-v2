@@ -8,7 +8,7 @@ use crate::{
     market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::sell_tickets_order::*,
-        state::{CallbackFlags, OrderParams},
+        state::{CallbackFlags, OrderParams, RoundingAction},
     },
     serialization::RemainingAccounts,
     FixedTermErrorCode,
@@ -51,7 +51,7 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
     ctx.mint(
         &ctx.accounts.ticket_collateral_mint,
         &ctx.accounts.ticket_collateral,
-        order_summary.quote_posted()?,
+        order_summary.quote_posted(RoundingAction::PostLend)?,
     )?;
 
     ctx.accounts.inner.sell_tickets(

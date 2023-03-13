@@ -9,7 +9,7 @@ use crate::{
 };
 
 use super::{
-    CallbackFlags, CallbackInfo, MarginCallbackInfo, OrderParams, OrderbookMut,
+    CallbackFlags, CallbackInfo, MarginCallbackInfo, OrderParams, OrderbookMut, RoundingAction,
     SensibleOrderSummary,
 };
 
@@ -178,7 +178,7 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
                 payer: self.payer.key(),
                 order_tag: info.order_tag.as_u128(),
                 amount: summary.base_filled(),
-                principal: summary.quote_filled()?,
+                principal: summary.quote_filled(RoundingAction::FillLend)?,
                 tenor: self.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: 0,
                 flags: info.flags.into(),
@@ -239,7 +239,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 },
             )
             .with_signer(&[&self.inner.orderbook_mut.market.load()?.authority_seeds()]),
-            staked + summary.quote_posted()?,
+            staked + summary.quote_posted(RoundingAction::PostLend)?,
         )
     }
 
@@ -257,7 +257,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 tenor: self.inner.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: self.margin_user.assets.next_new_deposit_seqno(),
                 amount: summary.base_filled(),
-                principal: summary.quote_filled()?,
+                principal: summary.quote_filled(RoundingAction::FillLend)?,
                 flags: info.flags.into(),
                 seed: self
                     .margin_user

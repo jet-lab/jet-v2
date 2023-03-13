@@ -19,7 +19,8 @@ use jet_fixed_term::{
     control::state::Market,
     margin::state::MarginUser,
     orderbook::state::{
-        CallbackFlags, CallbackInfo, MarginCallbackInfo, SignerCallbackInfo, UserCallbackInfo,
+        CallbackFlags, CallbackInfo, EventQuote, MarginCallbackInfo, SignerCallbackInfo,
+        UserCallbackInfo,
     },
 };
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
@@ -411,7 +412,7 @@ impl MarketState {
 
                 *seed = maker_user
                     .debt
-                    .new_term_loan_from_fill(event.quote_size, matures_at as i64)
+                    .new_term_loan_from_fill(event.quote_size().unwrap(), matures_at as i64)
                     .unwrap()
                     .to_le_bytes()
                     .to_vec();

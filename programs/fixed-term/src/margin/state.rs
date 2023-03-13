@@ -362,7 +362,7 @@ impl TermLoan {
         let price = self
             .price()?
             .downcast_u64()
-            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointDivision))?;
+            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointMath))?;
         Ok(PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor))
     }
 
