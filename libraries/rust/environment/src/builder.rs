@@ -233,7 +233,7 @@ impl<I: NetworkUserInterface> Builder<I> {
     }
 
     pub(crate) fn control_ix(&self) -> ControlIxBuilder {
-        ControlIxBuilder::new_for_authority(self.proposal_authority(), self.proposal_payer())
+        ControlIxBuilder::new_for_authority(self.proposal_payer(), self.proposal_payer())
     }
 }
 
