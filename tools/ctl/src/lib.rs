@@ -185,10 +185,14 @@ pub enum MarginCommand {
         addresses: Vec<Pubkey>,
     },
 
+    /// Read the current state of the margin config for a token
     ReadTokenConfig {
         /// The token or config address
         address: Pubkey,
     },
+
+    /// Configure the airspace for accounts that are missing the airspace field
+    ConfigureAccountAirspaces,
 }
 
 #[serde_as]
@@ -462,6 +466,9 @@ async fn run_margin_command(
         }
         MarginCommand::ReadTokenConfig { address } => {
             actions::margin::process_read_token_config(client, airspace, address).await
+        }
+        MarginCommand::ConfigureAccountAirspaces => {
+            actions::margin::process_configure_account_airspaces(client).await
         }
     }
 }

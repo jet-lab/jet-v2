@@ -6,7 +6,6 @@ use solana_sdk::signer::Signer;
 use std::sync::Arc;
 
 use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
-use jet_simulation::TestRuntime;
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 
 pub use jet_simulation::{DeterministicKeygen, Keygen, RandomKeygen};
