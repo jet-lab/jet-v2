@@ -6,8 +6,8 @@ pub enum FixedTermErrorCode {
     ArithmeticOverflow,
     #[msg("underflow occured on checked_sub")]
     ArithmeticUnderflow,
-    #[msg("bad fixed-point division")]
-    FixedPointDivision,
+    #[msg("bad fixed-point operation")]
+    FixedPointMath,
     #[msg("owner does not own the ticket")]
     DoesNotOwnTicket,
     #[msg("signer does not own the event adapter")]

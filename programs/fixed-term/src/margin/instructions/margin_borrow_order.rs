@@ -136,7 +136,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
                 &sequence_number.to_le_bytes(),
             ],
         )?;
-        let quote_filled = order_summary.quote_filled()?;
+        let quote_filled = order_summary.quote_filled(RoundingAction::FillBorrow)?;
         let disburse = manager.loan_to_disburse(quote_filled);
         let fees = quote_filled.safe_sub(disburse)?;
         ctx.withdraw(
@@ -184,7 +184,10 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Resu
     ctx.mint(
         &ctx.accounts.ticket_collateral_mint,
         &ctx.accounts.ticket_collateral,
-        loan_to_disburse(order_summary.quote_posted()?, origination_fee),
+        loan_to_disburse(
+            order_summary.quote_posted(RoundingAction::PostBorrow)?,
+            origination_fee,
+        ),
     )?;
 
     emit!(OrderPlaced {

@@ -13,11 +13,10 @@ use async_trait::async_trait;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::{
-        instructions::MarketSide,
-        state::{AutoRollConfig, MarginUser, TermLoan},
+    margin::state::{AutoRollConfig, MarginUser, TermLoan},
+    orderbook::state::{
+        event_queue_len, orderbook_slab_len, CallbackInfo, MarketSide, OrderParams,
     },
-    orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
 use jet_instructions::{

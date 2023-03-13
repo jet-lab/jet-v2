@@ -16,7 +16,7 @@ use crate::{
     margin::state::{MarginUser, TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{
-        fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo, UserCallbackInfo,
+        CallbackFlags, CallbackInfo, EventQuote, FillInfo, MarketSide, OutInfo, UserCallbackInfo,
     },
     serialization::{AnchorAccount, Mut},
     tickets::state::TermDepositWriter,
@@ -94,18 +94,18 @@ fn handle_margin_fill<'info>(
 
     let FillEvent {
         taker_side,
-        quote_size,
         base_size,
         ..
     } = event;
 
-    let maker_side = Side::from_u8(taker_side).unwrap().opposite();
+    let quote_size = event.quote_size()?;
+    let maker_side: MarketSide = Side::from_u8(taker_side).unwrap().opposite().into();
     let user = &mut accounts.margin_user;
     let info = maker_info.unwrap_margin();
 
     let (order_type, sequence_number, tenor) = match maker_side {
         // maker has loaned tokens to the taker
-        Side::Bid => {
+        MarketSide::Lend => {
             let tenor = market.load()?.lend_tenor;
             let sequence_number = if let Some(term_account) = &mut accounts.term_account {
                 let sequence_number = user.assets.new_deposit(base_size)?;
@@ -136,7 +136,7 @@ fn handle_margin_fill<'info>(
         }
 
         // maker has borrowed tokens from the taker
-        Side::Ask => {
+        MarketSide::Borrow => {
             user.assets.reduce_order(quote_size);
             let tenor = market.load()?.borrow_tenor;
             let sequence_number = if let Some(term_account) = accounts.term_account {
@@ -241,16 +241,16 @@ fn handle_signer_fill<'info>(
 
     let FillEvent {
         taker_side,
-        quote_size,
         base_size,
         ..
     } = event;
 
-    let maker_side = Side::from_u8(taker_side).unwrap().opposite();
+    let quote_size = event.quote_size()?;
+    let maker_side: MarketSide = Side::from_u8(taker_side).unwrap().opposite().into();
     let info = maker_info.unwrap_signer();
 
     let (order_type, tenor) = match maker_side {
-        Side::Bid => {
+        MarketSide::Lend => {
             let tenor = ctx.accounts.market.load()?.lend_tenor;
             match account {
                 FillAccount::TermDeposit(mut deposit) => {
@@ -275,7 +275,7 @@ fn handle_signer_fill<'info>(
 
             (OrderType::Lend, tenor)
         }
-        Side::Ask => {
+        MarketSide::Borrow => {
             ctx.withdraw(
                 &ctx.accounts.underlying_token_vault,
                 account.as_token_account(),
@@ -337,16 +337,11 @@ fn handle_margin_out<'info>(
 ) -> Result<()> {
     let OutInfo { event, info } = out;
     let OutEvent {
-        side,
-        order_id,
-        base_size,
-        ..
+        side, base_size, ..
     } = event;
 
     let info = info.unwrap_margin();
-    let price = (order_id >> 64) as u64;
-    // todo defensive rounding
-    let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
+    let quote_size = event.quote_size()?;
 
     match Side::from_u8(side).unwrap() {
         Side::Bid => {
@@ -382,16 +377,12 @@ fn handle_signer_out<'info>(
 ) -> Result<()> {
     let OutInfo { event, info } = out;
     let OutEvent {
-        side,
-        order_id,
-        base_size,
-        ..
+        side, base_size, ..
     } = event;
 
     let info = info.unwrap_signer();
-    let price = (order_id >> 64) as u64;
-    // todo defensive rounding
-    let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
+    let quote_size = event.quote_size()?;
+
     match Side::from_u8(side).unwrap() {
         Side::Bid => ctx.withdraw(&ctx.accounts.underlying_token_vault, user, quote_size)?,
         Side::Ask => ctx.mint(&ctx.accounts.ticket_mint, user, base_size)?,

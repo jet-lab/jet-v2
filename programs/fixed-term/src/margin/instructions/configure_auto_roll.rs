@@ -1,20 +1,13 @@
 use anchor_lang::prelude::*;
 use jet_margin::MarginAccount;
 use jet_program_common::Fp32;
-use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
 use crate::{
     margin::state::{AutoRollConfig, MarginUser},
+    orderbook::state::MarketSide,
     FixedTermErrorCode,
 };
-
-#[derive(FromPrimitive, ToPrimitive, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
-#[repr(u8)]
-pub enum MarketSide {
-    Borrowing,
-    Lending,
-}
 
 #[derive(Accounts)]
 pub struct ConfigureAutoRoll<'info> {
@@ -48,8 +41,8 @@ pub fn handler(ctx: Context<ConfigureAutoRoll>, side: u8, config: AutoRollConfig
 
     let user = &mut ctx.accounts.margin_user;
     match MarketSide::from_u8(side).unwrap() {
-        MarketSide::Borrowing => user.borrow_roll_config = config,
-        MarketSide::Lending => user.lend_roll_config = config,
+        MarketSide::Borrow => user.borrow_roll_config = config,
+        MarketSide::Lend => user.lend_roll_config = config,
     }
     Ok(())
 }
