@@ -71,12 +71,6 @@ export const offerLoan = async ({
   })
   instructions.push(prefreshIXS)
 
-  await marginAccount.withRefreshDepositPosition({
-    instructions: prefreshIXS,
-    config: marginAccount.findTokenConfigAddress(market.token.mint),
-    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
-  })
-
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
     market: market.market,
@@ -153,12 +147,6 @@ export const requestLoan = async ({
   })
   instructions.push(prefreshIXS)
 
-  await marginAccount.withRefreshDepositPosition({
-    instructions: prefreshIXS,
-    config: marginAccount.findTokenConfigAddress(market.token.mint),
-    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
-  })
-
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
     market: market.market,
@@ -179,6 +167,13 @@ export const requestLoan = async ({
   instructions.push(postfreshIXS)
 
   const orderIXS: TransactionInstruction[] = []
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions: orderIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: market.config.underlyingOracle
+  })
+
   // Create borrow instruction
   const borrowOffer = await market.market.requestBorrowIx(
     marginAccount,
@@ -224,12 +219,6 @@ export const cancelOrder = async ({ market, marginAccount, provider, orderId, po
     marketAddress: market.market.address
   })
 
-  await marginAccount.withRefreshDepositPosition({
-    instructions,
-    config: marginAccount.findTokenConfigAddress(market.token.mint),
-    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
-  })
-
   return sendAll(provider, [instructions])
 }
 
@@ -265,12 +254,6 @@ export const borrowNow = async ({
   })
   instructions.push(prefreshIXS)
 
-  await marginAccount.withRefreshDepositPosition({
-    instructions: prefreshIXS,
-    config: marginAccount.findTokenConfigAddress(market.token.mint),
-    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
-  })
-
   // Create relevant accounts if they do not exist
   const { marketIXS, tokenMint } = await withCreateFixedTermMarketAccounts({
     market: market.market,
@@ -289,6 +272,12 @@ export const borrowNow = async ({
     marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions: postfreshIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
+  })
 
   // Create borrow instruction
   const orderIXS: TransactionInstruction[] = []
@@ -352,12 +341,6 @@ export const lendNow = async ({
     markets: markets.filter(m => m.address != market.market.address),
   })
   instructions.push(prefreshIXS)
-
-  await marginAccount.withRefreshDepositPosition({
-    instructions: prefreshIXS,
-    config: marginAccount.findTokenConfigAddress(market.token.mint),
-    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
-  })
 
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
@@ -491,6 +474,7 @@ export const repay = async ({
     priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
   })
 
+
   const orderIXS: TransactionInstruction[] = []
   const pool = pools[market.token.symbol]
   await pool.withWithdrawToMargin({
@@ -585,12 +569,6 @@ export const redeem = async ({
     marketAddress: market.market.address
   })
   instructions.push(refreshIxs)
-
-  await marginAccount.withRefreshDepositPosition({
-    instructions: refreshIxs,
-    config: marginAccount.findTokenConfigAddress(market.token.mint),
-    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
-  })
 
   const redeemIxs: TransactionInstruction[] = []
   const sortedDeposits = deposits.sort((a, b) => a.sequence_number - b.sequence_number)

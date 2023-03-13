@@ -1814,7 +1814,7 @@ export class MarginAccount {
     instructions,
     config,
     priceOracle
-  }: { instructions: TransactionInstruction[], config: Address, priceOracle: PublicKey }): Promise<void> {
+  }: { instructions: TransactionInstruction[], config: Address, priceOracle: Address }): Promise<void> {
     const ix = await this.programs.margin.methods
       .refreshDepositPosition()
       .accounts({
