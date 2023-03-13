@@ -69,6 +69,19 @@ pub struct InitializeMarginUser<'info> {
     pub ticket_collateral: Box<Account<'info, TokenAccount>>,
     pub ticket_collateral_mint: Box<Account<'info, Mint>>,
 
+    /// Token account used by the margin program to track owned assets
+    #[account(init,
+        seeds = [
+            seeds::TOKEN_COLLATERAL_NOTES,
+            margin_user.key().as_ref(),
+        ],
+        bump,
+        token::mint = token_collateral_mint,
+        token::authority = market,
+        payer = payer)]
+    pub token_collateral: Box<Account<'info, TokenAccount>>,
+    pub token_collateral_mint: Box<Account<'info, Mint>>,
+
     #[account(mut)]
     pub payer: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,
@@ -92,6 +105,7 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
             market: ctx.accounts.market.key(),
             claims: ctx.accounts.claims.key(),
             ticket_collateral: ctx.accounts.ticket_collateral.key(),
+            token_collateral: ctx.accounts.token_collateral.key(),
             borrow_roll_config: Default::default(),
             lend_roll_config: Default::default(),
         } ignoring {
