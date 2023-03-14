@@ -141,8 +141,8 @@ impl MarginUser {
         Ok(())
     }
 
-    /// Account for a lend order successfully posted to the orderbook
-    pub fn post_lend_order(&mut self, tickets_staked: u64, tickets_posted: u64) -> Result<()> {
+    /// Account for a lend order successfully posted to the orderbook and possibly filled
+    pub fn lend_order(&mut self, tickets_staked: u64, tickets_posted: u64) -> Result<()> {
         if tickets_staked > 0 {
             self.assets.new_deposit(tickets_staked)?;
         }
@@ -172,7 +172,12 @@ impl MarginUser {
         Ok(())
     }
 
-    /// Redeem the underlying tokens from a matured [TermDeposit]
+    /// Account for the exchange of market tickets on the orderbook
+    pub fn sell_tickets(&mut self, token_value_posted: u64) -> Result<()> {
+        self.assets.tokens_posted.try_add_assign(token_value_posted)
+    }
+
+    /// Account for the redemption of underlying tokens from a matured [TermDeposit]
     pub fn redeem_deposit(
         &mut self,
         deposit_seqno: SequenceNumber,

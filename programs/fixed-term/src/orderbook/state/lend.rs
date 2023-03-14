@@ -227,8 +227,9 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         let tickets_staked = self.inner.lend(summary, deposit, requires_payment)?;
         let tickets_posted = summary.base_posted();
         self.margin_user
-            .post_lend_order(tickets_staked, tickets_posted)?;
+            .lend_order(tickets_staked, tickets_posted)?;
 
+        // collateralize the ticket value of the order
         mint_to(
             CpiContext::new(
                 self.inner.token_program.to_account_info(),
