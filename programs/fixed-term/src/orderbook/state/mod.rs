@@ -596,6 +596,8 @@ impl SensibleOrderSummary {
             summary: order_summary,
         }
     }
+
+    /// Returns the inner [OrderSummary]
     pub fn summary(&self) -> OrderSummary {
         OrderSummary {
             posted_order_id: self.summary.posted_order_id,
@@ -605,34 +607,34 @@ impl SensibleOrderSummary {
         }
     }
 
-    // todo defensive rounding - depends on how this function is used
+    /// Value of the posted portion of the order denominated in underlying (quote) tokens
     pub fn quote_posted(&self, action: RoundingAction) -> Result<u64> {
         quote_from_base(self.summary.total_base_qty_posted, self.limit_price, action)
     }
 
+    /// Value of the posted portion of the order denominated in market tickets
     pub fn base_posted(&self) -> u64 {
         self.summary.total_base_qty_posted
     }
 
+    /// Value of the filled portion of the order denominated in underlying (quote) tokens
     pub fn quote_filled(&self, action: RoundingAction) -> Result<u64> {
         Ok(self.summary.total_quote_qty - self.quote_posted(action)?)
     }
 
+    /// Value of the the filled portion of the order denominated in market tickets
     pub fn base_filled(&self) -> u64 {
         self.summary.total_base_qty - self.summary.total_base_qty_posted
     }
 
-    /// the total of all quote posted and filled
-    /// NOT the same as the "max quote"
+    /// The total value of the order both posted and filled denominated in underlying (quote) tokens
     pub fn quote_combined(&self) -> Result<u64> {
         // Ok(self.quote_posted()? + self.quote_filled())
         Ok(self.summary.total_quote_qty)
     }
 
-    /// the total of all base posted and filled
-    /// NOT the same as the "max base"
+    /// The total value of the order both posted and filled denominated in market tickets
     pub fn base_combined(&self) -> u64 {
-        // self.base_posted() + self.base_filled()
         self.summary.total_base_qty
     }
 }
@@ -667,6 +669,7 @@ impl EventQuote for OutEvent {
     }
 }
 
+/// Simple enum to make it more clear which action is being perfomed in the context of the fixed-term orderbook
 #[derive(FromPrimitive, ToPrimitive, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
 #[repr(u8)]
 pub enum MarketSide {

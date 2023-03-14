@@ -215,10 +215,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
 
         let deposit = self.maybe_term_deposit(&info, &summary)?;
         self.margin_lend(&summary, deposit, requires_payment)?;
-
-        self.emit_margin_lend_order(params, &info, &summary)?;
-
-        Ok(())
+        self.emit_margin_lend_order(params, &info, &summary)
     }
 
     fn margin_lend(
