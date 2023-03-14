@@ -4,16 +4,20 @@ use anchor_lang::prelude::*;
 
 use crate::{
     events::skip_err,
-    margin::state::TermLoan,
+    margin::state::{MarginUser, TermLoan},
     orderbook::state::{
-        CallbackFlags, CallbackInfo, EventQueue, FillInfo, OrderbookEvent, OutInfo, QueueIterator,
+        CallbackFlags, EventQueue, FillInfo, OrderbookEvent, OutInfo, QueueIterator,
+        TryPushAdapterEvent, UserCallbackInfo,
     },
-    serialization::RemainingAccounts,
+    serialization::{AnchorAccount, Mut, RemainingAccounts},
     tickets::state::TermDeposit,
     FixedTermErrorCode,
 };
 
-use super::{ConsumeEvents, FillAccounts, LoanAccount, OutAccounts, UserAccount};
+use super::{
+    ConsumeEvents, FillAccount, FillAccounts, MarginFillAccounts, OutAccounts, TermAccount,
+    UserAccount,
+};
 
 pub fn queue<'c, 'info>(
     ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
@@ -41,6 +45,7 @@ pub struct EventIterator<'a, 'info> {
 impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
     type Item = Result<PreparedEvent<'info>>;
 
+    #[inline(never)]
     fn next(&mut self) -> Option<Result<PreparedEvent<'info>>> {
         let event = self.queue.next()?;
         Some(self.join_with_accounts(event))
@@ -54,87 +59,119 @@ pub enum PreparedEvent<'info> {
 }
 
 impl<'a, 'info> EventIterator<'a, 'info> {
+    #[inline(never)]
     fn join_with_accounts(&mut self, event: OrderbookEvent) -> Result<PreparedEvent<'info>> {
         Ok(match event {
-            OrderbookEvent::Fill(fill) => PreparedEvent::Fill(
-                self.extract_fill_accounts(&fill.maker_info, &fill.taker_info)?,
-                fill,
-            ),
-            OrderbookEvent::Out(out) => PreparedEvent::Out(
-                OutAccounts {
-                    user: self.accounts.next_user_account(out.info.out_account)?,
-                    user_adapter_account: self.accounts.next_adapter_if_needed(&out.info)?,
-                },
-                out,
-            ),
+            OrderbookEvent::Fill(fill) => {
+                PreparedEvent::Fill(self.extract_fill_accounts(&fill)?, fill)
+            }
+            OrderbookEvent::Out(out) => PreparedEvent::Out(self.extract_out_accounts(&out)?, out),
         })
     }
 
-    fn extract_fill_accounts(
-        &mut self,
-        maker_info: &CallbackInfo,
-        taker_info: &CallbackInfo,
-    ) -> Result<FillAccounts<'info>> {
-        let maker = self.accounts.next_user_account(maker_info.fill_account)?;
-        let maker_adapter = self.accounts.next_adapter_if_needed(maker_info)?;
-        let taker_adapter = self.accounts.next_adapter_if_needed(taker_info)?;
+    #[inline(never)]
+    pub fn extract_fill_accounts(&mut self, fill: &FillInfo) -> Result<FillAccounts<'info>> {
+        self.try_update_fill_adapters(fill)?;
 
-        let mut seed = [0u8; 8];
-
-        let loan = if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-            match maker.margin_user() {
-                Ok(user) => {
-                    seed[..8].copy_from_slice(&user.assets.next_new_deposit_seqno().to_le_bytes())
+        let accounts = match &fill.maker_info {
+            UserCallbackInfo::Margin(info) => FillAccounts::Margin({
+                let margin_user = self.accounts.next_margin_user(&info.margin_user)?;
+                let term_account = if info.flags.contains(CallbackFlags::AUTO_STAKE) {
+                    let seed = margin_user.assets.next_new_deposit_seqno().to_le_bytes();
+                    Some(TermAccount::Deposit(
+                        self.accounts.init_next::<TermDeposit>(
+                            self.payer.to_account_info(),
+                            self.system_program.to_account_info(),
+                            &TermDeposit::seeds(
+                                self.market.as_ref(),
+                                info.margin_account.as_ref(),
+                                &seed,
+                            ),
+                        )?,
+                    ))
+                } else if info.flags.contains(CallbackFlags::NEW_DEBT) {
+                    let seed = margin_user.debt.next_new_loan_seqno().to_le_bytes();
+                    Some(TermAccount::Loan(self.accounts.init_next::<TermLoan>(
+                        self.payer.to_account_info(),
+                        self.system_program.to_account_info(),
+                        &[
+                            crate::seeds::TERM_LOAN,
+                            self.market.as_ref(),
+                            info.margin_account.as_ref(),
+                            &seed,
+                        ],
+                    )?))
+                } else {
+                    None
+                };
+                MarginFillAccounts {
+                    margin_user,
+                    term_account,
                 }
-
-                Err(_) => self.next_seed(&mut seed),
-            };
-
-            Some(LoanAccount::AutoStake(
-                self.accounts.init_next::<TermDeposit>(
-                    self.payer.to_account_info(),
-                    self.system_program.to_account_info(),
-                    &[
-                        crate::seeds::TERM_DEPOSIT,
-                        self.market.as_ref(),
-                        &maker_info.fill_account.to_bytes(),
-                        &seed,
-                    ],
-                )?,
-            ))
-        } else if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-            match maker.margin_user() {
-                Ok(user) => {
-                    seed[..8].copy_from_slice(&user.debt.next_new_loan_seqno().to_le_bytes());
-                }
-
-                Err(_) => self.next_seed(&mut seed),
-            };
-
-            Some(LoanAccount::NewDebt(self.accounts.init_next::<TermLoan>(
-                self.payer.to_account_info(),
-                self.system_program.to_account_info(),
-                &[
-                    crate::seeds::TERM_LOAN,
-                    self.market.as_ref(),
-                    &maker_info.fill_account.to_bytes(),
-                    &seed,
-                ],
-            )?))
-        } else {
-            None
+            }),
+            UserCallbackInfo::Signer(info) => {
+                FillAccounts::Signer(if info.flags.contains(CallbackFlags::AUTO_STAKE) {
+                    let mut seed = [0u8; 8];
+                    self.next_seed(&mut seed);
+                    FillAccount::TermDeposit(self.accounts.init_next::<TermDeposit>(
+                        self.payer.to_account_info(),
+                        self.system_program.to_account_info(),
+                        &TermDeposit::seeds(self.market.as_ref(), info.signer.as_ref(), &seed),
+                    )?)
+                } else {
+                    FillAccount::Token(self.accounts.next_token_account(&info.ticket_account)?)
+                })
+            }
         };
-        Ok(FillAccounts {
-            maker,
-            loan,
-            maker_adapter,
-            taker_adapter,
-        })
+        Ok(accounts)
     }
 
+    #[inline(never)]
+    pub fn extract_out_accounts(&mut self, out: &OutInfo) -> Result<OutAccounts<'info>> {
+        self.try_update_out_adapter(out)?;
+        let accounts = match &out.info {
+            UserCallbackInfo::Margin(info) => {
+                OutAccounts::Margin(self.accounts.next_margin_user(&info.margin_user)?)
+            }
+            UserCallbackInfo::Signer(info) => {
+                OutAccounts::Signer(self.accounts.next_token_account(&info.token_account)?)
+            }
+        };
+
+        Ok(accounts)
+    }
     fn next_seed(&mut self, seed: &mut [u8; 8]) {
         seed[..self.seed.len()].copy_from_slice(&self.seed);
         self.seed[0] = self.seed[0].wrapping_add(1);
+    }
+
+    #[inline(never)]
+    pub fn try_update_fill_adapters(&mut self, fill: &FillInfo) -> Result<()> {
+        self.accounts
+            .maybe_adapter(fill.maker_info.adapter())?
+            .try_push_event(
+                fill.event,
+                Some(&(&fill.maker_info).into()),
+                Some(&(&fill.taker_info).into()),
+            );
+        self.accounts
+            .maybe_adapter(fill.taker_info.adapter())?
+            .try_push_event(
+                fill.event,
+                Some(&(&fill.maker_info).into()),
+                Some(&(&fill.taker_info).into()),
+            );
+
+        Ok(())
+    }
+
+    #[inline(never)]
+    pub fn try_update_out_adapter(&mut self, out: &OutInfo) -> Result<()> {
+        self.accounts
+            .maybe_adapter(out.info.adapter())?
+            .try_push_event(out.event, Some(&(&out.info).into()), None);
+
+        Ok(())
     }
 }
 
@@ -152,15 +189,24 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
         Ok(UserAccount::new(account.clone()))
     }
 
-    fn next_adapter_if_needed(
-        &mut self,
-        callback_info: &CallbackInfo,
-    ) -> Result<Option<EventQueue<'info>>> {
-        if let Some(key) = callback_info.adapter() {
+    fn next_token_account(&mut self, key: &Pubkey) -> Result<AccountInfo<'info>> {
+        self.next_user_account(*key).map(|a| a.as_token_account())
+    }
+
+    fn next_margin_user(&mut self, key: &Pubkey) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
+        self.next_user_account(*key).map(|a| a.margin_user())?
+    }
+
+    fn maybe_adapter(&mut self, adapter_key: &Pubkey) -> Result<Option<EventQueue<'info>>> {
+        if adapter_key != &Pubkey::default() {
             match self.next_adapter() {
                 Ok(adapter) => {
                     // this needs to fail the ix because it means the crank passed the wrong account
-                    require_eq!(key, adapter.key(), FixedTermErrorCode::WrongAdapter);
+                    require_eq!(
+                        adapter_key,
+                        &adapter.key(),
+                        FixedTermErrorCode::WrongAdapter
+                    );
                     Ok(Some(adapter))
                 }
                 Err(e) => {

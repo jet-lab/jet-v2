@@ -1,4 +1,5 @@
 .anchor/
+.cargo/
 .github/
 libraries/ts
 node_modules/

@@ -1,6 +1,7 @@
 import { Address, AnchorProvider, translateAddress } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { Airspace } from "../airspace"
 import { findDerivedAccount } from "../../utils/pda"
 import { MarginTokenConfig } from "../config"
 import { MarginPrograms } from "../marginClient"
@@ -266,16 +267,19 @@ export class PoolManager {
    * @returns {PublicKey} Margin Pool Address
    */
   private _derive({ programs, tokenMint }: { programs: MarginPrograms; tokenMint: Address }): PoolAddresses {
+    const airspace = Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name)
+
     const tokenMintAddress = translateAddress(tokenMint)
     const programId = translateAddress(programs.config.marginPoolProgramId)
     const marginPool = findDerivedAccount(programId, tokenMintAddress)
     const vault = findDerivedAccount(programId, marginPool, "vault")
     const depositNoteMint = findDerivedAccount(programId, marginPool, "deposit-notes")
     const loanNoteMint = findDerivedAccount(programId, marginPool, "loan-notes")
-    const marginPoolAdapterMetadata = findDerivedAccount(programs.config.metadataProgramId, programId)
-    const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMintAddress)
-    const depositNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, depositNoteMint)
-    const loanNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, loanNoteMint)
+
+    const marginPoolAdapterMetadata = findDerivedAccount(programs.config.marginPoolProgramId, "adapter-config", airspace, programId)
+    const tokenMetadata = findDerivedAccount(programs.config.marginProgramId, "token-config", airspace, tokenMint)
+    const depositNoteMetadata = findDerivedAccount(programs.config.marginProgramId, "token-config", airspace, depositNoteMint)
+    const loanNoteMetadata = findDerivedAccount(programs.config.marginProgramId, "token-config", airspace, loanNoteMint)
     const controlAuthority = findDerivedAccount(programs.config.controlProgramId)
 
     return {

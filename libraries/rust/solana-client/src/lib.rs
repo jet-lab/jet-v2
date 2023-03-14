@@ -8,11 +8,11 @@ use solana_sdk::{
     account::Account, hash::Hash, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
     signature::Signature, transaction::VersionedTransaction,
 };
-use transaction::{condense, ToTransaction, TransactionBuilder};
+use transaction::{condense, condense_fast, ToTransaction, TransactionBuilder};
 
 pub mod network;
 pub mod transaction;
-mod util;
+pub mod util;
 
 /// A type that provides an interface to interact with the Solana network, and an associated
 /// wallet that can sign transactions to be sent to the network.
@@ -173,7 +173,8 @@ pub trait NetworkUserInterfaceExt: NetworkUserInterface {
         &self,
         txns: &[TransactionBuilder],
     ) -> (Vec<Signature>, Option<ExtError<Self>>) {
-        let txns = condense(txns).unwrap();
+        let payer = self.signer();
+        let txns = condense(txns, &payer).unwrap();
         let blockhash = match self.get_latest_blockhash().await {
             Ok(hash) => hash,
             Err(e) => return (vec![], Some(ExtError::Interface(e))),
@@ -181,7 +182,7 @@ pub trait NetworkUserInterfaceExt: NetworkUserInterface {
 
         let txns = txns
             .into_iter()
-            .map(|tx| tx.to_transaction(&self.signer(), blockhash))
+            .map(|tx| tx.to_transaction(&payer, blockhash))
             .collect::<Vec<_>>();
 
         let (sigs, error) = self.send_ordered(&txns).await;
@@ -193,7 +194,8 @@ pub trait NetworkUserInterfaceExt: NetworkUserInterface {
         &self,
         txns: &[TransactionBuilder],
     ) -> Vec<Result<Signature, ExtError<Self>>> {
-        let txns = condense(txns).unwrap();
+        let payer = self.signer();
+        let txns = condense_fast(txns, &payer).unwrap();
         let blockhash = match self.get_latest_blockhash().await {
             Ok(hash) => hash,
             Err(e) => return vec![Err(ExtError::Interface(e))],
@@ -201,7 +203,7 @@ pub trait NetworkUserInterfaceExt: NetworkUserInterface {
 
         let txns = txns
             .into_iter()
-            .map(|tx| tx.to_transaction(&self.signer(), blockhash))
+            .map(|tx| tx.to_transaction(&payer, blockhash))
             .collect::<Vec<_>>();
 
         self.send_unordered(&txns, Some(blockhash))

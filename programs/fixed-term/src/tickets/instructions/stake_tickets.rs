@@ -5,7 +5,10 @@ use crate::{
     control::state::Market,
     events::TermDepositCreated,
     seeds,
-    tickets::{events::TicketsStaked, state::TermDeposit},
+    tickets::{
+        events::TicketsStaked,
+        state::{TermDeposit, TermDepositFlags},
+    },
     FixedTermErrorCode,
 };
 
@@ -97,6 +100,7 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
         payer: ctx.accounts.payer.key(),
         amount: params.amount,
         principal: params.amount,
+        flags: TermDepositFlags::default(),
     };
 
     emit!(TicketsStaked {

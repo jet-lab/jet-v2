@@ -17,29 +17,10 @@
 
 use solana_sdk::pubkey::Pubkey;
 
-use jet_instructions::{
-    control::ControlIxBuilder, get_metadata_address, test_service::if_not_initialized,
-};
-
-use crate::{
-    cat, solana::transaction::TransactionBuilder, tx_builder::global_initialize_instructions,
-};
-
-static ADAPTERS: &[Pubkey] = &[jet_margin_pool::ID, jet_margin_swap::ID, jet_fixed_term::ID];
+use crate::{solana::transaction::TransactionBuilder, tx_builder::global_initialize_instructions};
 
 /// Basic environment setup for hosted tests that has only the necessary global
 /// state initialized
 pub fn minimal_environment(authority: Pubkey) -> Vec<TransactionBuilder> {
-    cat![
-        global_initialize_instructions(authority),
-        create_global_adapter_register_tx(authority),
-    ]
-}
-
-fn create_global_adapter_register_tx(authority: Pubkey) -> Vec<TransactionBuilder> {
-    let ctrl_ix = ControlIxBuilder::new(authority);
-    ADAPTERS
-        .iter()
-        .map(|a| if_not_initialized(get_metadata_address(a), ctrl_ix.register_adapter(a)).into())
-        .collect()
+    global_initialize_instructions(authority)
 }

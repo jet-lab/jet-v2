@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
+use jet_airspace::state::AirspacePermit;
 
 use crate::{events, MarginAccount};
 
@@ -24,6 +25,10 @@ use crate::{events, MarginAccount};
 pub struct CreateAccount<'info> {
     /// The owner of the new margin account
     pub owner: Signer<'info>,
+
+    /// A permission given to a user address that enables them to use resources within an airspace.
+    #[account(has_one = owner)]
+    pub permit: Account<'info, AirspacePermit>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -44,6 +49,7 @@ pub fn create_account_handler(ctx: Context<CreateAccount>, seed: u16) -> Result<
     let mut account = ctx.accounts.margin_account.load_init()?;
 
     account.initialize(
+        ctx.accounts.permit.airspace,
         *ctx.accounts.owner.key,
         seed,
         *ctx.bumps.get("margin_account").unwrap(),

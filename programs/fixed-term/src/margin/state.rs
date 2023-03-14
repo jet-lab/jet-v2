@@ -3,7 +3,11 @@ use std::ops::Range;
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
-use jet_program_common::traits::{SafeAdd, TryAddAssign, TrySubAssign};
+use jet_program_common::{
+    interest_pricing::{InterestPricer, PricerImpl},
+    traits::{SafeAdd, SafeSub, TryAddAssign, TrySubAssign},
+    Fp32,
+};
 
 use crate::{
     events::{AssetsUpdated, DebtUpdated},
@@ -269,14 +273,21 @@ impl Assets {
     pub fn new_deposit(&mut self, tickets: u64) -> Result<SequenceNumber> {
         let seqno = self.next_deposit_seqno;
 
-        self.next_deposit_seqno += 1;
-        self.tickets_staked.try_add_assign(tickets)?;
+        if tickets > 0 {
+            self.next_deposit_seqno += 1;
+            self.tickets_staked.try_add_assign(tickets)?;
+        }
 
         Ok(seqno)
     }
 
     pub fn redeem_deposit(&mut self, seqno: SequenceNumber, tickets: u64) -> Result<()> {
         if seqno != self.next_unredeemed_deposit_seqno {
+            msg!(
+                "Given sequence number: [{}] Expected sequence number: [{}]",
+                seqno,
+                self.next_unredeemed_deposit_seqno
+            );
             return Err(FixedTermErrorCode::TermDepositHasWrongSequenceNumber.into());
         }
 
@@ -328,11 +339,46 @@ pub struct TermLoan {
     /// The time that the term loan must be repaid
     pub maturation_timestamp: UnixTimestamp,
 
-    /// The remaining amount due by the end of the loan term
+    /// The slot at which the term loan was struck
+    pub strike_timestamp: UnixTimestamp,
+
+    /// The total principal of the loan
+    pub principal: u64,
+
+    /// The total interest owed on the loan
+    pub interest: u64,
+
+    /// The remaining balance to repay
     pub balance: u64,
 
     /// Any boolean flags for this data type compressed to a single byte
     pub flags: TermLoanFlags,
+}
+
+impl TermLoan {
+    /// The annualized interest rate for this loan
+    pub fn rate(&self) -> Result<u64> {
+        let tenor = self.tenor()?;
+        let price = self
+            .price()?
+            .downcast_u64()
+            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointDivision))?;
+        Ok(PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor))
+    }
+
+    /// The "price" (that is, the ratio of principal to total repayment) of this loan, expressed as
+    /// a fp32 value
+    pub fn price(&self) -> Result<Fp32> {
+        let base = self.principal.safe_add(self.interest)?;
+        Ok(Fp32::from(self.principal) / base)
+    }
+
+    /// Determines the loan tenor
+    pub fn tenor(&self) -> Result<u64> {
+        self.maturation_timestamp
+            .safe_sub(self.strike_timestamp)
+            .map(|t| t as u64)
+    }
 }
 
 bitflags! {

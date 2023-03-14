@@ -23,6 +23,7 @@ use jet_airspace::seeds::{AIRSPACE, AIRSPACE_PERMIT, AIRSPACE_PERMIT_ISSUER, GOV
 pub use jet_airspace::ID as AIRSPACE_PROGRAM;
 
 /// A builder for [`jet_airspace::instruction`] instructions.
+#[derive(Debug, Clone)]
 pub struct AirspaceIxBuilder {
     /// The user address that will pay for the transactions
     payer: Pubkey,
@@ -50,10 +51,25 @@ impl AirspaceIxBuilder {
         }
     }
 
+    /// Create a new instruction builder referencing an airspace by its address
+    pub fn new_from_address(address: Pubkey, payer: Pubkey, authority: Pubkey) -> Self {
+        Self {
+            payer,
+            address,
+            authority,
+            seed: "".to_owned(),
+        }
+    }
+
     /// making the field public would allow invalid states because it can
     /// diverge from the seed.
     pub fn address(&self) -> Pubkey {
         self.address
+    }
+
+    /// getter for the seed to derive the address
+    pub fn seed(&self) -> String {
+        self.seed.clone()
     }
 
     /// Create the governor identity account

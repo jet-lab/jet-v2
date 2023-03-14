@@ -5,7 +5,7 @@ import { ParentSizeModern, ScaleSVG } from '@visx/responsive';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
 import { Tooltip, useTooltip, defaultStyles, TooltipWithBounds } from '@visx/tooltip';
 import { AxisLeft, AxisBottom } from '@visx/axis';
-import { createRef, useCallback, useMemo, useRef } from 'react';
+import { createRef, RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Group } from '@visx/group';
 import { localPoint } from '@visx/event';
 import { pointAtCoordinateX } from './utils';
@@ -67,7 +67,11 @@ export const LineChart = ({
   const xMax = width - paddingLeft - paddingRight;
   const yMax = height - paddingTop - paddingBottom;
 
-  const linesPathsRefs = useRef(series.map(() => createRef<SVGPathElement>()));
+  const linesPathsRefs = useRef<RefObject<SVGPathElement>[]>([]);
+
+  useEffect(() => {
+    linesPathsRefs.current = series.map(() => createRef<SVGPathElement>());
+  }, [series]);
 
   const { xScale, yScale, ordinalColorScale } = useMemo(() => {
     const maxValueOfX = series.reduce((max, series) => {

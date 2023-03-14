@@ -43,13 +43,17 @@ const getPostOrderColumns = ({
     title: 'Issue date',
     dataIndex: 'created_timestamp',
     key: 'created_timestamp',
-    render: (date: number) => `${formatDistanceToNowStrict(date)} ago`
+    render: (date: number) => `${formatDistanceToNowStrict(date)} ago`,
+    sorter: (a, b) => a.created_timestamp - b.created_timestamp,
+    sortDirections: ['descend']
   },
   {
     title: 'Total QTY',
     dataIndex: 'total_quote_qty',
     key: 'total_quote_qty',
-    render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`
+    render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), 6).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.total_quote_qty - b.total_quote_qty,
+    sortDirections: ['descend']
   },
   {
     title: 'Filled QTY',
@@ -57,13 +61,17 @@ const getPostOrderColumns = ({
     key: 'filled_quote_qty',
     render: (filled: number) => {
       return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
-    }
+    },
+    sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
+    sortDirections: ['descend']
   },
   {
     title: 'Rate',
     dataIndex: 'rate',
     key: 'rate',
-    render: (rate: number) => `${(100 * rate).toFixed(3)}%`
+    render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
+    sorter: (a, b) => a.rate - b.rate,
+    sortDirections: ['descend']
   },
   {
     title: 'Cancel',

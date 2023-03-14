@@ -29,7 +29,7 @@ use async_trait::async_trait;
 use itertools::Itertools;
 use jet_margin_sdk::swap::saber_swap::SaberSwapPool;
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use saber_client::state::SwapInfo;
 use solana_sdk::signature::Signer;
 use solana_sdk::{program_pack::Pack, system_instruction};
@@ -99,7 +99,7 @@ impl SaberSwapPoolConfig for SaberSwapPool {
 
         // Create a TokenManager instance
         let token_manager = TokenManager::new(ctx.clone());
-        let keypair = generate_keypair();
+        let keypair = ctx.keygen.generate_key();
 
         // Token mint decimals must be the same, check them early
         let mint_a_account = token_manager.get_mint(mint_a).await?;
@@ -154,16 +154,16 @@ impl SaberSwapPoolConfig for SaberSwapPool {
             &pool_mint,
             &lp_destination,
             pool_nonce,
-            100,
+            50,
             saber_client::fees::Fees {
-                admin_trade_fee_numerator: 1,
-                admin_trade_fee_denominator: 400,
-                admin_withdraw_fee_numerator: 2,
-                admin_withdraw_fee_denominator: 500,
-                trade_fee_numerator: 4,
-                trade_fee_denominator: 100,
-                withdraw_fee_numerator: 1,
-                withdraw_fee_denominator: 100,
+                admin_trade_fee_numerator: 0,
+                admin_trade_fee_denominator: 10000,
+                admin_withdraw_fee_numerator: 0,
+                admin_withdraw_fee_denominator: 10000,
+                trade_fee_numerator: 1,
+                trade_fee_denominator: 100000,
+                withdraw_fee_numerator: 0,
+                withdraw_fee_denominator: 10000,
             },
         )?;
 

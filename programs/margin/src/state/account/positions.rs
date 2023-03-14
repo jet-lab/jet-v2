@@ -27,7 +27,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{ErrorCode, TokenKind};
+use crate::{ErrorCode, TokenConfig, TokenKind};
 const POS_PRICE_VALID: u8 = 1;
 
 #[assert_size(24)]
@@ -404,5 +404,54 @@ impl AccountPositionList {
         self.map[..usize::try_from(self.length).unwrap()]
             .binary_search_by_key(mint, |p| p.mint)
             .ok()
+    }
+}
+
+/// Data neccessary to register a position
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct PositionConfigUpdate {
+    /// The token mint for the position token
+    pub mint: Pubkey,
+
+    /// The number of decimals for the position token
+    pub decimals: u8,
+
+    /// The address of the account holding the tokens
+    pub address: Pubkey,
+
+    /// The airspace this position token belongs to
+    pub airspace: Pubkey,
+
+    /// The adapter registering this position
+    pub adapter: Pubkey,
+
+    /// Description of the position token
+    pub kind: TokenKind,
+
+    /// A weight on the value of this asset when counting collateral
+    pub value_modifier: u16,
+
+    /// Max staleness in seconds for the position balance
+    pub max_staleness: u64,
+}
+
+impl PositionConfigUpdate {
+    /// Generate the configuration from `TokenConfig` account data
+    pub fn new_from_config(
+        config: &Account<TokenConfig>,
+        mint_decimals: u8,
+        address: Pubkey,
+        adapter: Pubkey,
+    ) -> Self {
+        Self {
+            mint: config.mint,
+            decimals: mint_decimals,
+            address,
+            airspace: config.airspace,
+            adapter,
+            kind: config.token_kind,
+            value_modifier: config.value_modifier,
+            max_staleness: config.max_staleness,
+        }
     }
 }

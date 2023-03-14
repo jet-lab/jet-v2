@@ -7,6 +7,6 @@ dist
 .github
 package-lock.json
 README.md
-types
+# types
 keypairs
 packages/margin/src/fixed-term/types/JetMarket.ts

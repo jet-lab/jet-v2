@@ -10,7 +10,7 @@ use jet_fixed_term::{
     orderbook::state::OrderParams,
     tickets::state::TermDeposit,
 };
-use jet_instructions::fixed_term::{derive_term_deposit, FixedTermIxBuilder};
+use jet_instructions::fixed_term::{derive, FixedTermIxBuilder};
 
 use crate::{
     bail,
@@ -336,10 +336,11 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
             .await?;
 
         ixns.extend(matured_deposits.into_iter().map(|d| {
-            let user_key = self.builder.margin_user_account(self.account.address());
-            let deposit_key =
-                derive_term_deposit(&self.builder.market(), &user_key, d.sequence_number);
-
+            let deposit_key = derive::term_deposit(
+                &self.builder.market(),
+                &self.account.address(),
+                d.sequence_number,
+            );
             self.account
                 .builder
                 .adapter_invoke(self.builder.margin_redeem_deposit(
@@ -400,8 +401,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     pub async fn request_loan_with_params(&self, params: OrderParams) -> ClientResult<I, ()> {
         let mut ixns = vec![];
 
-        let token_account = self
-            .account
+        self.account
             .with_deposit_position(&self.builder.token_mint(), &mut ixns)
             .await?;
 
@@ -412,7 +412,6 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
                 .builder
                 .adapter_invoke(self.builder.margin_borrow_order(
                     self.account.address,
-                    Some(token_account),
                     params,
                     self.get_next_loan_seq_no(),
                 )),

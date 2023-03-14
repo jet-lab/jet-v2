@@ -5,31 +5,40 @@ import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useMemo } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
-const getDepositsColumns = (market: MarketAndConfig) => [
+import { ColumnsType } from 'antd/lib/table';
+const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
   {
     title: 'Created',
     dataIndex: 'created_timestamp',
     key: 'created_timestamp',
-    render: (date: string) => formatDistanceToNowStrict(new Date(date), { addSuffix: true })
+    render: (date: string) => formatDistanceToNowStrict(new Date(date), { addSuffix: true }),
+    sorter: (a, b) => a.created_timestamp - b.created_timestamp,
+    sortDirections: ['descend']
   },
   {
     title: 'Maturity',
     dataIndex: 'maturation_timestamp',
     key: 'maturation_timestamp',
-    render: (date: string) => formatDistanceToNowStrict(new Date(date), { addSuffix: true })
+    render: (date: string) => formatDistanceToNowStrict(new Date(date), { addSuffix: true }),
+    sorter: (a, b) => a.maturation_timestamp - b.maturation_timestamp,
+    sortDirections: ['descend']
   },
   {
     title: 'Balance',
     dataIndex: 'balance',
     key: 'balance',
     render: (value: number) =>
-      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`
+      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.balance - b.balance,
+    sortDirections: ['descend']
   },
   {
     title: 'Rate',
     dataIndex: 'rate',
     key: 'rate',
-    render: (rate: number) => `${(100 * rate).toFixed(3)}%`
+    render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
+    sorter: (a, b) => a.rate - b.rate,
+    sortDirections: ['descend']
   }
 ];
 

@@ -203,6 +203,11 @@ pub mod jet_fixed_term {
     // =============================================
     //
 
+    /// Instruction for authorized servicer to auto roll a matured `TermDeposit` into another order
+    pub fn auto_roll_lend_order(ctx: Context<AutoRollLendOrder>) -> Result<()> {
+        instructions::auto_roll_lend_order::handler(ctx)
+    }
+
     /// Configure settings for rolling orders
     pub fn configure_auto_roll(
         ctx: Context<ConfigureAutoRoll>,

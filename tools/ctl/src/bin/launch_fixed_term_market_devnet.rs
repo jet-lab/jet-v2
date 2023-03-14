@@ -1,6 +1,6 @@
 use anyhow::Result;
 use jet_margin_sdk::{
-    fixed_term::{event_queue_len, orderbook_slab_len, FixedTermIxBuilder, OrderBookAddresses},
+    fixed_term::{event_queue_len, orderbook_slab_len, FixedTermIxBuilder, OrderbookAddresses},
     jet_fixed_term,
 };
 use jetctl::{
@@ -46,6 +46,7 @@ lazy_static::lazy_static! {
     static ref OPTS: CliOpts = CliOpts {
         target_proposal: None,
         target_proposal_option: 0,
+        airspace: None,
         compute_budget: None,
         dry_run: false,
         no_confirm: false,
@@ -105,7 +106,7 @@ async fn create_orderbook_accounts(
     params: MarketParameters,
     queue_capacity: usize,
     book_capacity: usize,
-) -> Result<(OrderBookAddresses, Plan)> {
+) -> Result<(OrderbookAddresses, Plan)> {
     let eq = map_keypair_file(params.event_queue)?;
     let bids = map_keypair_file(params.bids)?;
     let asks = map_keypair_file(params.asks)?;
@@ -152,7 +153,7 @@ async fn create_orderbook_accounts(
         format!("initialize-asks-slab {}", asks.pubkey()),
     ];
 
-    let orderbook = OrderBookAddresses {
+    let orderbook = OrderbookAddresses {
         bids: bids.pubkey(),
         asks: asks.pubkey(),
         event_queue: eq.pubkey(),

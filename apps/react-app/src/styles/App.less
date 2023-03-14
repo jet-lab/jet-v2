@@ -2818,9 +2818,24 @@ html {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  margin-left: 16px;
 
   input {
     max-width: 240px;
+  }
+
+  .click-to-repay {
+    text-decoration: underline;
+    cursor: pointer;
+    margin: 0 8px;
+  }
+
+  .input-and-button {
+    display: flex;
+
+    input {
+      margin-right: 16px;
+    }
   }
 }
 
@@ -2894,7 +2909,7 @@ html {
 }
 
 .fixed-term-warning {
-  padding: 2px 4px;
+  padding: 4px 8px;
   border: 1px solid rosybrown;
   border-radius: 4px;
   margin: 4px;
