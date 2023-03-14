@@ -119,17 +119,9 @@ impl Keygen for Arc<dyn Keygen> {
 pub struct DeterministicKeygen(Arc<Mutex<RefCell<MockRng>>>);
 impl DeterministicKeygen {
     pub fn new(seed: &str) -> Self {
-        let seed: u64 = seed
-            .as_bytes()
-            .chunks(8)
-            .map(|chunk| {
-                let mut a = [0u8; 8];
-                a[..chunk.len()].copy_from_slice(chunk);
-                u64::from_le_bytes(a)
-            })
-            .fold(0, |acc, next| acc.wrapping_add(next));
         Self(Arc::new(Mutex::new(RefCell::new(MockRng(StepRng::new(
-            seed, 1,
+            hash(seed),
+            1,
         ))))))
     }
 }
@@ -166,4 +158,10 @@ impl rand::RngCore for MockRng {
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand::Error> {
         self.0.try_fill_bytes(dest)
     }
+}
+
+fn hash<T: std::hash::Hash + ?Sized>(item: &T) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    item.hash(&mut hasher);
+    std::hash::Hasher::finish(&hasher)
 }

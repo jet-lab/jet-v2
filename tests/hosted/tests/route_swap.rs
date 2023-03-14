@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "localnet"), allow(unused))]
-
 use std::{collections::HashSet, num::NonZeroU64, sync::Arc, time::Duration};
 
 use anchor_lang::Id;
@@ -132,7 +130,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 }
 
 async fn setup_swap_accounts<'a>(
-    ctx: &Arc<MarginTestContext>,
     pool: &impl SwapAccounts,
     margin_user: &MarginUser,
 ) -> anyhow::Result<()> {
@@ -150,7 +147,7 @@ async fn setup_swap_accounts<'a>(
     }
 }
 
-#[cfg(feature = "localnet")]
+#[cfg_attr(not(feature = "localnet"), ignore = "only runs on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_swap() -> anyhow::Result<()> {
@@ -416,8 +413,8 @@ async fn single_leg_swap_margin(
     let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
 
     // Perform any setup required based on pool type (e.g. create open_orders)
-    setup_swap_accounts(ctx, &pool, &user_a).await?;
-    setup_swap_accounts(ctx, &pool, &user_b).await?;
+    setup_swap_accounts(&pool, &user_a).await?;
+    setup_swap_accounts(&pool, &user_b).await?;
 
     let user_a_msol_account = ctx
         .tokens
@@ -528,7 +525,7 @@ async fn single_leg_swap(
     let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
 
     // Perform any setup required based on pool type (e.g. create open_orders)
-    setup_swap_accounts(ctx, &pool, &user_a).await?;
+    setup_swap_accounts(&pool, &user_a).await?;
 
     ctx.tokens
         .set_price(
@@ -590,7 +587,7 @@ async fn single_leg_swap(
 
 // The tests create duplicate accounts, causing failures in localnet.
 // They are however useful for coverage and testing logic, so we run them on the sim.
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_spl_swap() -> anyhow::Result<()> {
@@ -630,7 +627,7 @@ async fn route_spl_swap() -> anyhow::Result<()> {
 
 // The tests create duplicate accounts, causing failures in localnet.
 // They are however useful for coverage and testing logic, so we run them on the sim.
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_saber_swap() -> anyhow::Result<()> {
@@ -665,7 +662,7 @@ async fn route_saber_swap() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_openbook_swap() -> anyhow::Result<()> {
