@@ -1,3 +1,5 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
 name = "jet-fixed-terms-crank-service"
 version = "0.1.0"
