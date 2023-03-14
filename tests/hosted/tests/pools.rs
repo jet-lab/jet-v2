@@ -1,15 +1,9 @@
-use hosted_tests::{
-    actions::*,
-    context::{default_test_setup, TestContext},
-    util::assert_program_error,
-};
+use hosted_tests::{actions::*, test_context, util::assert_program_error};
 use jet_client::state::margin_pool::MarginPoolCacheExt;
 
 #[tokio::test]
 async fn simple_pool_lend_borrow_workflow() -> anyhow::Result<()> {
-    let ctx = TestContext::new("simple-pool-lend-borrow", &default_test_setup())
-        .await
-        .unwrap();
+    let ctx = test_context!();
 
     // derive mints for default config tokens
     let usdc = Token::from_context(&ctx, "USDC");
@@ -107,9 +101,7 @@ async fn simple_pool_lend_borrow_workflow() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn max_pool_util_ratio_after_borrow() -> anyhow::Result<()> {
-    let ctx = TestContext::new("max-pool-util-ratio-after-borrow", &default_test_setup())
-        .await
-        .unwrap();
+    let ctx = test_context!();
 
     // derive mints for default config tokens
     let usdc = Token::from_context(&ctx, "USDC");
