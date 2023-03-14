@@ -186,6 +186,11 @@ impl MarginUser {
         self.debt.next_new_loan_seqno()
     }
 
+    /// Get the [SequenceNumber] of the next [TermDeposit]
+    pub fn next_term_deposit(&self) -> SequenceNumber {
+        self.assets.next_new_deposit_seqno()
+    }
+
     /// Get the [SequenceNumber] of the next [TermLoan] in need of repayment
     pub fn next_term_loan_to_repay(&self) -> Option<SequenceNumber> {
         self.debt.next_term_loan_to_repay()
@@ -196,9 +201,14 @@ impl MarginUser {
         self.debt.outstanding_term_loans()
     }
 
-    /// Get the [SequenceNumber] of the next [TermDeposit] in sequence
-    pub fn next_term_deposit(&self) -> SequenceNumber {
-        self.assets.next_new_deposit_seqno()
+    /// Range of active [TermLoan] sequence numbers
+    pub fn active_loans(&self) -> Range<SequenceNumber> {
+        self.debt.active_loans()
+    }
+
+    /// Range of active [TermDeposit] sequence numbers
+    pub fn active_deposits(&self) -> Range<SequenceNumber> {
+        self.assets.active_deposits()
     }
 
     pub fn ticket_collateral(&self) -> Result<u64> {
@@ -220,6 +230,16 @@ impl MarginUser {
     /// Total value of debt owed by the [MarginUser]
     pub fn total_debt(&self) -> u64 {
         self.debt.total()
+    }
+
+    /// Value of debt owed by the [MarginUser] by anticipated order fills
+    pub fn pending_debt(&self) -> u64 {
+        self.debt.pending
+    }
+
+    /// Value of debt owed by the [MarginUser] already filled
+    pub fn committed_debt(&self) -> u64 {
+        self.debt.committed
     }
 
     /// Have any of the unpaid [TermLoan]s reached maturity

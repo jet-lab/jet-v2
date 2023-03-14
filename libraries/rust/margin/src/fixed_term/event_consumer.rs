@@ -1,11 +1,10 @@
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
-    time::SystemTime,
 };
 
 use agnostic_orderbook::state::{
-    event_queue::{EventQueue, EventRef, FillEvent, FillEventRef, OutEventRef},
+    event_queue::{EventQueue, EventRef, FillEventRef, OutEventRef},
     AccountTag,
 };
 use anchor_lang::AccountDeserialize;
@@ -19,8 +18,7 @@ use jet_fixed_term::{
     control::state::Market,
     margin::state::MarginUser,
     orderbook::state::{
-        CallbackFlags, CallbackInfo, EventQuote, MarginCallbackInfo, SignerCallbackInfo,
-        UserCallbackInfo,
+        CallbackFlags, CallbackInfo, MarginCallbackInfo, SignerCallbackInfo, UserCallbackInfo,
     },
 };
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
@@ -278,7 +276,6 @@ impl MarketState {
                 EventRef::Fill(FillEventRef {
                     maker_callback_info,
                     taker_callback_info,
-                    event,
                     ..
                 }) => {
                     let maker_user_callback_info = UserCallbackInfo::from(*maker_callback_info);
@@ -292,8 +289,7 @@ impl MarketState {
                             margin_accounts_to_settle.push(info.margin_account);
 
                             FillAccounts {
-                                user_accounts: self
-                                    .margin_fill_accounts(&mut seed, event, &info)?,
+                                user_accounts: self.margin_fill_accounts(&mut seed, &info)?,
                                 maker_queue: maybe_adapter!(info),
                                 taker_queue: taker_callback_info.adapter(),
                             }
@@ -372,7 +368,6 @@ impl MarketState {
     fn margin_fill_accounts(
         &mut self,
         seed: &mut Vec<u8>,
-        event: &FillEvent,
         info: &MarginCallbackInfo,
     ) -> Result<UserFillAccounts, EventConsumerError> {
         let term_account = if info.flags.contains(CallbackFlags::AUTO_STAKE) {
@@ -383,9 +378,7 @@ impl MarketState {
                 .users
                 .get_mut(&info.margin_user)
                 .ok_or(EventConsumerError::InvalidUserKey(info.margin_user))?
-                .assets
-                .new_deposit(event.base_size)
-                .unwrap()
+                .next_term_deposit()
                 .to_le_bytes()
                 .to_vec();
 
@@ -404,18 +397,7 @@ impl MarketState {
                 // In this case, the maker is using a margin account, so we
                 // derive the new `TermLoan` account based on the debt sequence
                 // number in the account state
-                let matures_at = self.market.borrow_tenor
-                    + SystemTime::now()
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs();
-
-                *seed = maker_user
-                    .debt
-                    .new_term_loan_from_fill(event.quote_size().unwrap(), matures_at as i64)
-                    .unwrap()
-                    .to_le_bytes()
-                    .to_vec();
+                *seed = maker_user.next_term_loan().to_le_bytes().to_vec();
 
                 let loan_account = Some(self.builder.term_loan_key(&info.margin_account, seed));
 
