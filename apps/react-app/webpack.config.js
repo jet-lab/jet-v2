@@ -3,7 +3,6 @@ const { ProvidePlugin, DefinePlugin } = require('webpack');
 const dotenv = require('dotenv');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
 const SwcMinifyWebpackPlugin = require('swc-minify-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
