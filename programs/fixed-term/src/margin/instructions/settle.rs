@@ -21,7 +21,7 @@ pub struct Settle<'info> {
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
-    pub margin_user: Account<'info, MarginUser>,
+    pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// use accounting_invoke
     pub margin_account: AccountLoader<'info, MarginAccount>,
@@ -40,7 +40,7 @@ pub struct Settle<'info> {
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub claims: Account<'info, TokenAccount>,
+    pub claims: Box<Account<'info, TokenAccount>>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     /// CHECK: token program checks it
@@ -48,14 +48,14 @@ pub struct Settle<'info> {
     pub claims_mint: UncheckedAccount<'info>,
 
     #[account(mut)]
-    pub ticket_collateral: Account<'info, TokenAccount>,
+    pub ticket_collateral: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: token program checks it
     #[account(mut)]
     pub ticket_collateral_mint: UncheckedAccount<'info>,
 
     #[account(mut)]
-    pub token_collateral: Account<'info, TokenAccount>,
+    pub token_collateral: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: token program checks it
     #[account(mut)]
@@ -91,14 +91,14 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     if claim_balance > debt {
         ctx.burn_notes(
             &ctx.accounts.claims_mint,
-            &ctx.accounts.claims,
+            ctx.accounts.claims.to_account_info(),
             claim_balance - debt,
         )?;
     }
     if claim_balance < debt {
         ctx.mint(
             &ctx.accounts.claims_mint,
-            &ctx.accounts.claims,
+            ctx.accounts.claims.to_account_info(),
             debt - claim_balance,
         )?;
     }
@@ -111,14 +111,14 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     if ctickets_held > ctickets_deserved {
         ctx.burn_notes(
             &ctx.accounts.ticket_collateral_mint,
-            &ctx.accounts.ticket_collateral,
+            ctx.accounts.ticket_collateral.to_account_info(),
             ctickets_held - ctickets_deserved,
         )?;
     }
     if ctickets_held < ctickets_deserved {
         ctx.mint(
             &ctx.accounts.ticket_collateral_mint,
-            &ctx.accounts.ticket_collateral,
+            ctx.accounts.ticket_collateral.to_account_info(),
             ctickets_deserved - ctickets_held,
         )?;
     }
@@ -131,14 +131,14 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     if ctokens_held > ctokens_deserved {
         ctx.burn_notes(
             &ctx.accounts.token_collateral_mint,
-            &ctx.accounts.token_collateral,
+            ctx.accounts.token_collateral.to_account_info(),
             ctokens_held - ctokens_deserved,
         )?;
     }
     if ctokens_held < ctokens_deserved {
         ctx.mint(
             &ctx.accounts.token_collateral_mint,
-            &ctx.accounts.token_collateral,
+            ctx.accounts.token_collateral.to_account_info(),
             ctokens_deserved - ctokens_held,
         )?;
     }

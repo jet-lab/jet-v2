@@ -470,12 +470,8 @@ async fn settle_many_margin_accounts() -> Result<()> {
 
     let mut trades = vec![];
 
-    // TODO: increase this to be the same as localnet.
-    // for now it seems there is a bug in the solana runtime simulator.
-    #[cfg(not(feature = "localnet"))]
+    // TODO: find exact value
     let n_trades = SETTLES_PER_TX;
-    #[cfg(feature = "localnet")]
-    let n_trades = SETTLES_PER_TX * 3 + 1;
 
     for _ in 0..n_trades {
         trades.push(async {
