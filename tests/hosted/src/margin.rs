@@ -35,9 +35,11 @@ use jet_margin_sdk::ix_builder::{
     MarginPoolConfiguration, MarginPoolIxBuilder,
 };
 use jet_margin_sdk::lookup_tables::LookupTable;
+use jet_margin_sdk::margin_integrator::PositionRefresher;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{
-    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder, WithSigner,
+    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder,
+    TransactionBuilderExt, WithSigner,
 };
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
@@ -49,7 +51,8 @@ use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 use jet_control::TokenMetadataParams;
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::{
-    global_initialize_instructions, AirspaceAdmin, MarginTxBuilder, TokenDepositsConfig,
+    global_initialize_instructions, AirspaceAdmin, MarginActionAuthority, MarginTxBuilder,
+    TokenDepositsConfig,
 };
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -89,20 +92,20 @@ impl MarginClient {
         }
     }
 
-    pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
+    pub fn user(&self, keypair: &Keypair, seed: u16) -> MarginUser {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            Some(clone(keypair)),
             keypair.pubkey(),
             seed,
             self.tx_admin.airspace(),
         );
 
-        Ok(MarginUser {
+        MarginUser {
             tx,
             signer: clone(keypair),
             rpc: self.rpc.clone(),
-        })
+        }
     }
 
     pub fn airspace(&self) -> Pubkey {
@@ -117,7 +120,7 @@ impl MarginClient {
     ) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            Keypair::from_bytes(&keypair.to_bytes())?,
             self.airspace(),
             *owner,
             seed,
@@ -360,9 +363,17 @@ impl MarginUser {
             .into_iter()
             .collect()
     }
-}
 
-impl MarginUser {
+    /// Creates a new Self for actions on the same margin account, but
+    /// authorized by provided liquidator.
+    pub fn liquidator(&self, liquidator: Keypair) -> Self {
+        Self {
+            signer: clone(&liquidator),
+            tx: self.tx.liquidator(liquidator),
+            rpc: self.rpc.clone(),
+        }
+    }
+
     pub fn owner(&self) -> &Pubkey {
         self.tx.owner()
     }
@@ -383,6 +394,11 @@ impl MarginUser {
         self.send_confirm_tx(self.tx.create_account().await?).await
     }
 
+    pub async fn created(self) -> Result<Self, Error> {
+        self.create_account().await?;
+        Ok(self)
+    }
+
     /// Close the margin account
     ///
     /// # Error
@@ -394,13 +410,26 @@ impl MarginUser {
     }
 
     pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.refresh_pool_position(token_mint).await?)
-            .await
+        self.tx
+            .refresh_pool_position(token_mint)
+            .await?
+            .with_signers(&[])
+            .send_and_confirm(&self.rpc)
+            .await?;
+        Ok(())
     }
 
     pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Signature>, Error> {
         self.rpc
             .send_and_confirm_condensed(self.tx.refresh_all_pool_positions().await?)
+            .await
+    }
+
+    pub async fn refresh_positions(&self) -> Result<Vec<Signature>, Error> {
+        self.tx
+            .refresh_positions()
+            .await?
+            .send_and_confirm_condensed(&self.rpc)
             .await
     }
 
@@ -415,14 +444,27 @@ impl MarginUser {
             .map(|_| ())
     }
 
+    // todo this is a leaky abstraction because it allows a source to be
+    // specified without allowing the caller to specify the authority. may be
+    // better to expose the authority as well.
     pub async fn deposit(
         &self,
         mint: &Pubkey,
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.deposit(mint, source, change).await?)
-            .await
+        self.tx
+            .pool_deposit(
+                mint,
+                Some(*source),
+                change,
+                MarginActionAuthority::AccountAuthority,
+            )
+            .await?
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
     }
 
     pub async fn withdraw(
@@ -448,14 +490,25 @@ impl MarginUser {
             .map(|_| ())
     }
 
+    // todo this is a leaky abstraction because it allows a source to be
+    // specified without allowing the caller to specify the authority. may be
+    // better to expose the authority as well.
     pub async fn repay(
         &self,
         mint: &Pubkey,
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.repay(mint, source, change).await?)
-            .await
+        self.tx
+            .pool_repay(
+                *mint,
+                Some(*source),
+                change,
+                MarginActionAuthority::AccountAuthority,
+            )
+            .send_and_confirm(&self.rpc)
+            .await?;
+        Ok(())
     }
 
     /// Swap between two tokens using a swap pool.
@@ -526,7 +579,7 @@ impl MarginUser {
         market: &Pubkey,
         program: &Pubkey,
     ) -> Result<(), Error> {
-        let tx = self.tx.create_openbook_open_orders(market, program).await?;
+        let tx = self.tx.create_openbook_open_orders(market, program);
         self.rpc.send_and_confirm(tx).await?;
         Ok(())
     }
@@ -537,7 +590,7 @@ impl MarginUser {
         market: &Pubkey,
         program: &Pubkey,
     ) -> Result<(), Error> {
-        let tx = self.tx.close_openbook_open_orders(market, program).await?;
+        let tx = self.tx.close_openbook_open_orders(market, program);
         self.rpc.send_and_confirm(tx).await?;
         Ok(())
     }
@@ -584,14 +637,14 @@ impl MarginUser {
             .map(|_| ())
     }
 
-    /// Close a user's token positions for a specific mint.
-    pub async fn close_token_positions(&self, token_mint: &Pubkey) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.close_token_positions(token_mint).await?)
+    /// Close a user's lending pool positions for a specific mint.
+    pub async fn close_pool_positions(&self, token_mint: &Pubkey) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.close_pool_positions(token_mint).await?)
             .await
     }
 
-    /// Close a user's token position for a mint, with the specified and token kind.
-    pub async fn close_token_position(
+    /// Close a user's lending pool position for a mint, with the specified and token kind.
+    pub async fn close_pool_position(
         &self,
         token_mint: &Pubkey,
         kind: TokenKind,
@@ -623,11 +676,12 @@ impl MarginUser {
         destination: &Pubkey,
         amount: u64,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(
-            self.tx
-                .transfer_deposit(*mint, *source_owner, *source, *destination, amount)
-                .await?,
-        )
-        .await
+        self.tx
+            .transfer_deposit(*mint, *source_owner, *source, *destination, amount)
+            .await?
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
     }
 }

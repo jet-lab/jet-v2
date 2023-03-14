@@ -2643,6 +2643,7 @@ dependencies = [
  "jet-metadata",
  "jet-program-common",
  "jet-simulation",
+ "jet-solana-client",
  "jet-static-program-registry",
  "jet-test-service",
  "num-traits",
@@ -2767,8 +2768,10 @@ dependencies = [
  "async-trait",
  "base64 0.13.1",
  "bincode",
+ "paste",
  "serde",
  "solana-sdk",
+ "spl-associated-token-account",
  "spl-token 3.5.0",
  "thiserror",
 ]

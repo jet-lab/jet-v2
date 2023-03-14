@@ -83,3 +83,5 @@ pub use jet_margin_pool;
 pub use jet_margin_swap;
 pub use jet_metadata;
 pub use jet_test_service;
+
+pub use jet_solana_client::cat; // TODO: remove

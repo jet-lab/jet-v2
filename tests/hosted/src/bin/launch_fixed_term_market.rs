@@ -6,7 +6,7 @@ use solana_sdk::{pubkey::Pubkey, signer::Signer};
 
 use jet_margin_sdk::{ix_builder::get_metadata_address, solana::keypair::clone};
 
-use hosted_tests::fixed_term::TestManager;
+use hosted_tests::fixed_term::{initialize_test_mint, OrderbookKeypairs, TestManager};
 use hosted_tests::margin::MarginClient;
 use hosted_tests::solana_test_context;
 
@@ -27,19 +27,25 @@ async fn main() -> Result<()> {
         .register_adapter_if_unregistered(&jet_fixed_term::ID)
         .await?;
 
+    initialize_test_mint(&ctx, &keys::mint(), &keys::mint().pubkey()).await?;
     let x = TestManager::new(
         ctx,
-        Pubkey::default(),
-        &keys::mint(),
-        &keys::event_queue(),
-        &keys::bids(),
-        &keys::asks(),
+        Pubkey::default(), //derive_airspace("default"), TODO: ???
+        &keys::mint().pubkey(),
+        keys::mint(),
+        OrderbookKeypairs {
+            event_queue: keys::event_queue(),
+            bids: keys::bids(),
+            asks: keys::asks(),
+        },
         keys::usdc_price().pubkey(),
         keys::ticket_price().pubkey(),
     )
+    .with_market()
     .await?
     .with_margin(&airspace_authority)
     .await?;
+
     x.pause_orders().await?;
 
     {

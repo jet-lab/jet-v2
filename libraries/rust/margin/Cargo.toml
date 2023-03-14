@@ -52,6 +52,7 @@ jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint", "
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+jet-solana-client  = { path = "../solana-client" }
 
 # Token swaps
 spl-token = "3"

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
+use jet_instructions::fixed_term::derive::market_from_tenor;
 use jet_margin_sdk::tx_builder::AirspaceAdmin;
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
@@ -18,7 +18,6 @@ use jet_environment::{
     programs::ORCA_V2,
 };
 use jet_instructions::airspace::{derive_airspace, AirspaceIxBuilder};
-use jet_instructions::fixed_term::derive_market_from_tenor;
 use jet_instructions::margin::MarginConfigIxBuilder;
 use jet_instructions::test_service::{
     derive_pyth_price, derive_token_mint, token_update_pyth_price,
@@ -26,13 +25,16 @@ use jet_instructions::test_service::{
 use jet_margin_pool::{MarginPoolConfig, PoolFlags};
 use jet_margin_sdk::ix_builder::test_service::derive_spl_swap_pool;
 use jet_margin_sdk::solana::keypair::clone;
-use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder};
+use jet_margin_sdk::solana::transaction::{
+    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilderExt,
+};
 use jet_margin_sdk::test_service::minimal_environment;
 use jet_margin_sdk::util::data::With;
 use jet_metadata::TokenKind;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
+use crate::margin::MarginUser;
 use crate::runtime::SolanaTestContext;
 use crate::{margin::MarginClient, tokens::TokenManager};
 
@@ -129,6 +131,11 @@ impl MarginTestContext {
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
         self.solana.create_wallet(sol_amount).await
+    }
+
+    pub async fn create_margin_user(&self, sol_amount: u64) -> Result<MarginUser, Error> {
+        let wallet = self.solana.create_wallet(sol_amount).await?;
+        self.margin.user(&wallet, 0).created().await
     }
 
     pub fn generate_key(&self) -> Keypair {
@@ -230,7 +237,7 @@ impl TestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
-        jet_simulation::create_wallet(&self.inner.rpc, sol_amount * LAMPORTS_PER_SOL).await
+        self.inner.create_wallet(sol_amount).await
     }
 
     pub async fn create_user(&self) -> Result<JetSimulationClient, Error> {
@@ -395,9 +402,9 @@ impl TestContextSetupInfo {
                     .flat_map(|t| {
                         let token = derive_token_mint(&t.name);
 
-                        t.fixed_term_markets.iter().map(move |m| {
-                            derive_market_from_tenor(&airspace, &token, m.borrow_tenor)
-                        })
+                        t.fixed_term_markets
+                            .iter()
+                            .map(move |m| market_from_tenor(&airspace, &token, m.borrow_tenor))
                     })
                     .collect(),
             }],

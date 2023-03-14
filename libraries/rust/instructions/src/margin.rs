@@ -108,6 +108,14 @@ impl MarginIxBuilder {
         self.payer.unwrap_or_else(|| self.authority())
     }
 
+    /// the instruction is expected to be signed by the margin account
+    pub fn needs_signature(&self, inner: &Instruction) -> bool {
+        inner
+            .accounts
+            .iter()
+            .any(|a| a.is_signer && self.address == a.pubkey)
+    }
+
     /// Get instruction to create the account
     pub fn create_account(&self) -> Instruction {
         let accounts = ix_account::CreateAccount {

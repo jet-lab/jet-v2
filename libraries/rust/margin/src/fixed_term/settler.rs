@@ -6,7 +6,10 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use super::FixedTermIxBuilder;
-use crate::{solana::transaction::WithSigner, util::no_dupe_queue::AsyncNoDupeQueue};
+use crate::{
+    solana::transaction::{TransactionBuilderExt, WithSigner},
+    util::no_dupe_queue::AsyncNoDupeQueue,
+};
 
 pub const SETTLES_PER_TX: usize = 3;
 
