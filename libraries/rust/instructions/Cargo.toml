@@ -16,7 +16,7 @@ spl-associated-token-account = "1"
 
 jet-program-common = { path = "../program-common" }
 
-agnostic-orderbook = { workspace = true, features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint"] }

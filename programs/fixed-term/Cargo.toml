@@ -33,7 +33,7 @@ num-traits = "0.2"
 pyth-sdk-solana = "0.7"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
-agnostic-orderbook = { workspace = true, features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 anchor-lang = "0.26"
 anchor-spl =  "0.26"

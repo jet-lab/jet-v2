@@ -36,7 +36,7 @@ solana-sdk = "1.14"
 solana-client = "1.14"
 solana-cli-config = "1.14"
 
-agnostic-orderbook = { workspace = true, features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 anchor-lang = "0.26"
 anchor-spl = { version = "0.26", features = ["dex", "devnet"] }

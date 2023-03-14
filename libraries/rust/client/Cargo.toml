@@ -34,7 +34,7 @@ pyth-sdk-solana = "0.4"
 
 anchor-lang = "0.26"
 
-agnostic-orderbook = { workspace = true, features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 jet-solana-client = { path = "../solana-client" }
 jet-program-common = { path = "../program-common" }

@@ -7,6 +7,3 @@ members = [
     "packages/margin",
     "tools/*"
 ]
-
-[workspace.dependencies]
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event" }
