@@ -56,6 +56,8 @@ pub fn settle(market: Pubkey, underlying_mint: Pubkey, margin_account: Pubkey) -
         claims_mint: claims_mint(&market),
         ticket_collateral: user_ticket_collateral(&margin_user),
         ticket_collateral_mint: ticket_collateral_mint(&market),
+        token_collateral: user_token_collateral(&margin_user),
+        token_collateral_mint: token_collateral_mint(&market),
         underlying_token_vault: underlying_token_vault(&market),
         underlying_settlement: ata(&margin_account, &underlying_mint),
         ticket_settlement: ata(&margin_account, &ticket_mint),

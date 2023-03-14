@@ -28,6 +28,10 @@ pub fn ticket_collateral_mint(market: &Pubkey) -> Pubkey {
     fixed_term_address(&[seeds::TICKET_COLLATERAL_NOTES, market.as_ref()])
 }
 
+pub fn token_collateral_mint(market: &Pubkey) -> Pubkey {
+    fixed_term_address(&[seeds::TOKEN_COLLATERAL_NOTES, market.as_ref()])
+}
+
 pub fn fixed_term_address(seeds: &[&[u8]]) -> Pubkey {
     Pubkey::find_program_address(seeds, &jet_fixed_term::ID).0
 }
@@ -102,6 +106,13 @@ pub fn user_claims(margin_user: &Pubkey) -> Pubkey {
 pub fn user_ticket_collateral(margin_user: &Pubkey) -> Pubkey {
     fixed_term_address(&[
         jet_fixed_term::seeds::TICKET_COLLATERAL_NOTES,
+        margin_user.as_ref(),
+    ])
+}
+
+pub fn user_token_collateral(margin_user: &Pubkey) -> Pubkey {
+    fixed_term_address(&[
+        jet_fixed_term::seeds::TOKEN_COLLATERAL_NOTES,
         margin_user.as_ref(),
     ])
 }
