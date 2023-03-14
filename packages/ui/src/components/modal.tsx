@@ -18,7 +18,7 @@ export const Modal = ({ children, open, title, overlay = true }: BaseModalProps)
     return <Portal.Root className='h-screen w-screen absolute top-0 right-0 left-0 bottom-0'>
         <Dialog.Root defaultOpen={true} open={open}>
             {overlay && <Dialog.Overlay className="opacity-40 bg-slate-900 absolute top-0 bottom-0 left-0 right-0 z-10" />}
-            <Dialog.Content className='p-6 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-[#292929] to-[#0E0E0E] z-20 flex rounded shadow flex flex-col'>
+            <Dialog.Content className='p-6 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-[#292929] to-[#0E0E0E] z-20 flex rounded shadow flex-col'>
                 <Dialog.Close asChild className='absolute right-3 top-3 cursor-pointer bg-neutral-700 rounded-sm h-5 w-5 flex items-center justify-center' aria-label="Close">
                     <Cross2Icon />
                 </Dialog.Close>
@@ -49,7 +49,7 @@ interface DismissModalProps extends Omit<BaseModalProps, 'children'> {
  * ```
  */
 export const DismissModal = ({ children, storageKey, title }: DismissModalProps) => {
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState<boolean | undefined>(false)
 
     const dismiss = useCallback(() => {
         localStorage.setItem(storageKey, new Date().toUTCString())
@@ -58,7 +58,7 @@ export const DismissModal = ({ children, storageKey, title }: DismissModalProps)
 
     useEffect(() => {
         const dismissedDate = localStorage.getItem(storageKey)
-        !dismissedDate && setOpen(true)
+        !dismissedDate && setOpen(undefined)
     }, [])
 
     return <Modal title={title} open={open}>{children({
