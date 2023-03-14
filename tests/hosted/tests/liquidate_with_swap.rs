@@ -16,9 +16,10 @@ use jet_margin_pool::TokenChange;
 /// it isn't using the scenario in that file and instead uses these helper
 /// methods to do additional and more generic setup, plus executes an actual
 /// swap, which the other liquidate tests are not equipped to do.
-#[cfg(not(feature = "localnet"))]
-// Note: this requires a lookup table to run on localnet as the transaction is otherwise too large
+///
+/// Note: this requires a lookup table to run on localnet as the transaction is otherwise too large
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 async fn liquidate_with_swap() -> Result<()> {
     let ctx = margin_test_context!();
     let ([usdc, sol], swaps, pricer) = tokens(&ctx).await.unwrap();

@@ -17,22 +17,33 @@ pub use jet_simulation::{DeterministicKeygen, Keygen, RandomKeygen};
 #[macro_export]
 macro_rules! solana_test_context {
     () => {
-        $crate::runtime::SolanaTestContext::new($crate::fn_name!()).await
+        $crate::runtime::SolanaTestContext::new(&$crate::fn_name_and_try_num!()).await
     };
     ($name:expr) => {
         $crate::runtime::SolanaTestContext::new($name).await
     };
 }
 
-/// Generates a string that is unique to the containing function.
+/// Returns a string with the fully qualified name of the current function,
+/// followed by the nextest attempt number (increments on retry).  
+/// Example: "liquidate::can_withdraw_some_during_liquidation-try_1"
 #[macro_export]
-macro_rules! fn_name {
+macro_rules! fn_name_and_try_num {
     () => {
-        $crate::runtime::__type_name_of(|| {})
+        format!(
+            "{}-try_{}",
+            $crate::runtime::__type_name_of(|| {}).replace("::{{closure}}", ""),
+            $crate::runtime::current_test_attempt_number()
+        )
     };
 }
+
 pub fn __type_name_of<T>(_: T) -> &'static str {
     std::any::type_name::<T>()
+}
+
+pub fn current_test_attempt_number() -> String {
+    std::env::var("__NEXTEST_ATTEMPT").unwrap_or("1".to_string())
 }
 
 #[derive(Clone)]
@@ -43,7 +54,7 @@ pub struct SolanaTestContext {
 
 impl SolanaTestContext {
     pub async fn new(test_name: &str) -> SolanaTestContext {
-        let keygen = init_keygen(test_name);
+        let keygen = Arc::new(DeterministicKeygen::new(test_name));
         let rpc = init_runtime(keygen.generate_key()).await;
 
         rpc.airdrop(&rpc.payer().pubkey(), 10_000 * LAMPORTS_PER_SOL)
@@ -64,14 +75,6 @@ impl SolanaTestContext {
             .await?;
 
         Ok(wallet)
-    }
-}
-
-fn init_keygen(seed: &str) -> Arc<dyn Keygen> {
-    if cfg!(feature = "localnet") {
-        Arc::new(RandomKeygen)
-    } else {
-        Arc::new(DeterministicKeygen::new(seed))
     }
 }
 
