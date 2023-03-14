@@ -19,17 +19,17 @@ pub struct MarginSellTicketsOrder<'info> {
     /// The account tracking borrower debts
     #[account(mut,
         constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::UnauthorizedCaller,
-        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        has_one = token_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub ticket_collateral: AccountInfo<'info>,
+    pub token_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub ticket_collateral_mint: AccountInfo<'info>,
+    pub token_collateral_mint: AccountInfo<'info>,
 
     #[market(orderbook_mut)]
     #[token_program]
@@ -48,10 +48,14 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
             .map(|a| a.key()),
         CallbackFlags::MARGIN,
     )?;
+
+    // collateral accounting
+    let posted_token_value = order_summary.quote_posted(RoundingAction::PostLend)?;
+    ctx.accounts.margin_user.sell_tickets(posted_token_value)?;
     ctx.mint(
-        &ctx.accounts.ticket_collateral_mint,
-        &ctx.accounts.ticket_collateral,
-        order_summary.quote_posted(RoundingAction::PostLend)?,
+        &ctx.accounts.token_collateral_mint,
+        &ctx.accounts.token_collateral,
+        posted_token_value,
     )?;
 
     ctx.accounts.inner.sell_tickets(

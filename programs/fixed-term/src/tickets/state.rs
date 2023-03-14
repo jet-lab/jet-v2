@@ -221,6 +221,7 @@ impl<'a, 'info> MarginRedeemDepositAccounts<'a, 'info> {
         self.margin_user
             .redeem_deposit(self.inner.deposit.sequence_number, redeemed)?;
 
+        // remove the collateral for the redeemed tickets
         anchor_spl::token::burn(
             CpiContext::new(
                 self.inner.token_program.to_account_info(),
