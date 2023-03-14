@@ -63,11 +63,12 @@ macro_rules! margin_test_context {
 /// Instantiate a TestContext  
 /// Uses struct-like syntax. Fields may be omitted to use the default.
 /// ```ignore
-/// let ctx = test_context! {
-///     name: String,
+/// test_context! {
+///     name: &str,
 ///     setup: &TestContextSetupInfo,
 /// };
-/// let ctx = test_context!();
+/// test_context!();
+/// test_context!(setup, name);
 /// ```
 /// - name: Default gets the name of the current function name and uses it to
 ///         create a test context. Only use this way when called directly in the
@@ -78,25 +79,46 @@ macro_rules! margin_test_context {
 /// - setup: see the TestDefault implementation.
 #[macro_export]
 macro_rules! test_context {
-    () => {
-        $crate::context::TestContext::new(&$crate::fn_name_and_try_num!(), &$crate::test_default())
+    (
+        $(name $(: $name:expr)? ,)?
+        $(setup $(: $setup:expr)? )?
+        $(,)?
+    ) => {
+        $crate::context::TestContext::new(
+            $crate::first!($($($name)?, name)?, &$crate::fn_name_and_try_num!()),
+            $crate::first!($($($setup)?, setup)?, &$crate::test_default()),
+        )
             .await
             .unwrap()
     };
-    (name: $name:expr$(,)?) => {
-        $crate::context::TestContext::new(&name, &$crate::test_default())
-            .await
-            .unwrap()
+    (
+        $(setup $(: $setup:expr)? ,)?
+        $(name $(: $name:expr)? )?
+        $(,)?
+    ) => {
+        $crate::test_context!{
+            $(name: $($name)?,)?
+            $(setup: $($setup)?,)?
+        }
     };
-    (setup: $setup:expr$(,)?) => {
-        $crate::context::TestContext::new(&$crate::fn_name_and_try_num!(), setup)
-            .await
-            .unwrap()
-    };
-    (name: $name:expr, setup: $setup:expr$(,)?) => {
-        $crate::context::TestContext::new($name, $setup)
-            .await
-            .unwrap()
+}
+
+/// Returns the first item.
+///
+/// Useful within in macro definitions where it is uncertain whether an item
+/// will be expanded to anything.
+///
+/// Delimit items with ",". Extra commas are allowed anywhere.
+/// ```
+/// use hosted_tests::first;
+/// let (one, two, three) = (1, 2, 3);
+/// assert_eq!(1, first!(one, two, three,,));
+/// assert_eq!(2, first!(, two,,, three));
+/// ```
+#[macro_export]
+macro_rules! first {
+    ($(,)* $item:expr $($(,)+ $default:expr)* $(,)*) => {
+        $item
     };
 }
 
@@ -132,7 +154,7 @@ impl std::fmt::Debug for MarginTestContext {
 
 impl From<SolanaTestContext> for MarginTestContext {
     fn from(solana: SolanaTestContext) -> Self {
-        let payer = Keypair::from_bytes(&solana.rpc.payer().to_bytes()).unwrap();
+        let payer = clone(solana.rpc.payer());
         let airspace_authority = solana.keygen.generate_key();
         let margin = MarginClient::new(
             solana.rpc.clone(),
@@ -181,6 +203,7 @@ impl MarginTestContext {
 
     pub async fn create_margin_user(&self, sol_amount: u64) -> Result<MarginUser, Error> {
         let wallet = self.solana.create_wallet(sol_amount).await?;
+        self.issue_permit(wallet.pubkey()).await?;
         self.margin.user(&wallet, 0).created().await
     }
 
