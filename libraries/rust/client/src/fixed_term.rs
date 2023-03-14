@@ -490,15 +490,13 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
 
     fn get_next_loan_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
-        user_account
-            .map(|u| u.debt.next_new_loan_seqno())
-            .unwrap_or_default()
+        user_account.map(|u| u.next_term_loan()).unwrap_or_default()
     }
 
     fn get_next_deposit_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
         user_account
-            .map(|u| u.assets.next_new_deposit_seqno())
+            .map(|u| u.next_term_deposit())
             .unwrap_or_default()
     }
 
@@ -522,7 +520,9 @@ pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
     refreshing_tokens: &mut HashSet<Pubkey>,
 ) -> ClientResult<I, Instruction> {
     let found = account.client.state().filter(|_, state: &MarketState| {
-        state.market.claims_mint == *token || state.market.ticket_collateral_mint == *token
+        state.market.claims_mint == *token
+            || state.market.ticket_collateral_mint == *token
+            || state.market.token_collateral_mint == *token
     });
 
     let Some((_, market_state)) = found.into_iter().next() else {

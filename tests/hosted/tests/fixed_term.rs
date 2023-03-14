@@ -383,9 +383,9 @@ async fn margin_repay() -> Result<()> {
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.debt.pending(), posted_order.base_quantity,);
+    assert_eq!(margin_user.pending_debt(), posted_order.base_quantity,);
     assert_eq!(
-        margin_user.debt.total(),
+        margin_user.total_debt(),
         posted_order.base_quantity + term_loan.balance
     );
 
@@ -395,28 +395,25 @@ async fn margin_repay() -> Result<()> {
     // TODO: assert balances on claims and user wallet
 
     let pre_repayment_term_loan = user.load_term_loan(0).await?;
-    let pre_repayment_debt = user.load_margin_user().await?.debt;
+    let pre_repayment_user = user.load_margin_user().await?;
     let repayment = 400;
     user.repay(0, repayment).await?;
 
     let post_repayment_term_loan = user.load_term_loan(0).await?;
-    let post_repayment_debt = user.load_margin_user().await?.debt;
+    let post_repayment_user = user.load_margin_user().await?;
     assert_eq!(
         pre_repayment_term_loan.balance - repayment,
         post_repayment_term_loan.balance
     );
     assert_eq!(
-        pre_repayment_debt.committed() - repayment,
-        post_repayment_debt.committed()
+        pre_repayment_user.committed_debt() - repayment,
+        post_repayment_user.committed_debt()
     );
 
     user.repay(0, post_repayment_term_loan.balance).await?;
 
-    let repaid_term_loan_debt = user.load_margin_user().await?.debt;
-    assert_eq!(
-        repaid_term_loan_debt.total(),
-        repaid_term_loan_debt.pending()
-    );
+    let margin_user = user.load_margin_user().await?;
+    assert_eq!(margin_user.total_debt(), margin_user.pending_debt());
 
     Ok(())
 }
@@ -559,12 +556,12 @@ async fn margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(1_000, user.token_collateral().await?);
     assert_eq!(1_201, user.claims().await?);
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.debt.total(), posted_order.base_quantity,);
+    assert_eq!(margin_user.total_debt(), posted_order.base_quantity,);
 
     Ok(())
 }
@@ -602,12 +599,12 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
     {
         assert_eq!(STARTING_TOKENS, user.tokens().await?);
         assert_eq!(0, user.tickets().await?);
-        assert_eq!(0, user.collateral().await?);
+        assert_eq!(0, user.ticket_collateral().await?);
         assert_eq!(0, user.claims().await?);
         let asks = manager.load_orderbook().await?.asks()?;
         assert_eq!(0, asks.len());
         let margin_user = user.load_margin_user().await.unwrap();
-        assert_eq!(0, margin_user.debt.total());
+        assert_eq!(0, margin_user.total_debt());
     }
 
     Ok(())
@@ -644,7 +641,7 @@ async fn margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_000, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(1_200, user.ticket_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())
@@ -688,7 +685,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(999, borrower.collateral().await?);
+    assert_eq!(1_000, borrower.token_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
     // No tokens have been disbursed, so this should be 0
     assert_eq!(0, manager.collected_fees().await?);
@@ -701,7 +698,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
@@ -717,12 +714,12 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     // FIXME: an exact number would be nice
@@ -764,7 +761,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_000, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     let borrow_params = underlying(1_000, 2_000);
@@ -791,7 +788,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     // FIXME: an exact number would be nice
@@ -822,12 +819,12 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     // todo improve the rounding situation to make this 1_000
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     Ok(())
@@ -862,7 +859,7 @@ async fn margin_sell_tickets() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 10_000, user.tokens().await?);
     assert_eq!(8_800, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(999, user.ticket_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())
