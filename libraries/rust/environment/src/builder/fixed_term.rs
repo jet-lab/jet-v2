@@ -157,10 +157,10 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     market_address: &Pubkey,
     config: &FixedTermMarketConfig,
 ) -> Result<(), BuilderError> {
-    let claims_mint = FixedTermIxBuilder::claims_mint(market_address);
-    let ticket_collateral_mint = FixedTermIxBuilder::ticket_collateral_mint(market_address);
-    let token_collateral_mint = FixedTermIxBuilder::token_collateral_mint(market_address);
-    let ticket_mint = derive_ticket_mint(market_address);
+    let claims_mint = derive::claims_mint(market_address);
+    let ticket_collateral_mint = derive::ticket_collateral_mint(market_address);
+    let token_collateral_mint = derive::token_collateral_mint(market_address);
+    let ticket_mint = test_service::derive_ticket_mint(market_address);
 
     let ticket_oracle = match builder.network {
         NetworkKind::Localnet | NetworkKind::Devnet => Some(TokenOracle::Pyth {

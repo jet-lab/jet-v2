@@ -31,4 +31,5 @@ pub struct MarginUser {
     pub address: Pubkey,
     pub claims: Pubkey,
     pub ticket_collateral: Pubkey,
+    pub token_collateral: Pubkey,
 }
