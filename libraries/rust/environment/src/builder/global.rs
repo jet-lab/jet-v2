@@ -29,8 +29,8 @@ pub async fn configure_environment<I: NetworkUserInterface>(
     }
 
     let payer = builder.payer();
-    let as_ix = AirspaceIxBuilder::new("", payer, builder.authority);
-    let ctrl_ix = ControlIxBuilder::new_for_authority(builder.authority, payer);
+    let as_ix = AirspaceIxBuilder::new("", payer, builder.proposal_authority());
+    let ctrl_ix = ControlIxBuilder::new_for_authority(builder.proposal_authority(), payer);
 
     // global authority accounts
     builder.setup(
