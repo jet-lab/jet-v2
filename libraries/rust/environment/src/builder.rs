@@ -145,7 +145,7 @@ impl<I: NetworkUserInterface> Builder<I> {
 
     pub fn proposal_authority(&self) -> Pubkey {
         match &self.proposal_context {
-            None => self.payer(),
+            None => self.authority,
             Some(ctx) => ctx.governance,
         }
     }

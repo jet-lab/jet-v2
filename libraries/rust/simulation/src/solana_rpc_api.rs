@@ -42,6 +42,7 @@ use solana_transaction_status::TransactionStatus;
 #[async_trait]
 pub trait SolanaRpcClient: Send + Sync {
     fn as_any(&self) -> &dyn std::any::Any;
+    fn clone_with_payer(&self, payer: Keypair) -> Box<dyn SolanaRpcClient>;
     async fn get_account(&self, address: &Pubkey) -> Result<Option<Account>>;
     async fn get_multiple_accounts(&self, pubkeys: &[Pubkey]) -> Result<Vec<Option<Account>>>;
     async fn get_genesis_hash(&self) -> Result<Hash>;
@@ -108,21 +109,20 @@ pub trait SolanaRpcClient: Send + Sync {
     fn payer(&self) -> &Keypair;
 }
 
-pub struct RpcConnection(Arc<RpcContext>);
-
-struct RpcContext {
-    rpc: RpcClient,
+pub struct RpcConnection {
+    rpc: Arc<RpcClient>,
     payer: Keypair,
     tx_config: Option<RpcSendTransactionConfig>,
 }
 
 impl RpcConnection {
     pub fn new(payer: Keypair, rpc: RpcClient) -> RpcConnection {
-        RpcConnection(Arc::new(RpcContext {
-            rpc,
+        // rpc.clone();
+        RpcConnection {
+            rpc: Arc::new(rpc),
             payer,
             tx_config: None,
-        }))
+        }
     }
 
     pub fn new_with_config(
@@ -130,11 +130,11 @@ impl RpcConnection {
         rpc: RpcClient,
         tx_config: Option<RpcSendTransactionConfig>,
     ) -> RpcConnection {
-        RpcConnection(Arc::new(RpcContext {
-            rpc,
+        RpcConnection {
+            rpc: Arc::new(rpc),
             payer,
             tx_config,
-        }))
+        }
     }
 
     /// Optimistic = assume there is no risk. so we don't need:
@@ -146,29 +146,37 @@ impl RpcConnection {
     /// - validator logs are more comprehensive (preflight checks obscure error logs)
     /// - there is nothing at stake in a local test validator
     pub fn new_optimistic(payer: Keypair, url: &str) -> RpcConnection {
-        RpcConnection(Arc::new(RpcContext {
-            rpc: RpcClient::new_with_commitment(
+        RpcConnection {
+            rpc: Arc::new(RpcClient::new_with_commitment(
                 url.to_owned(),
                 CommitmentConfig {
                     commitment: CommitmentLevel::Processed,
                 },
-            ),
+            )),
             payer,
             tx_config: Some(solana_client::rpc_config::RpcSendTransactionConfig {
                 skip_preflight: true,
                 ..Default::default()
             }),
-        }))
+        }
     }
 
     /// Get the underlying [RpcClient]
     pub fn client(&self) -> &RpcClient {
-        &self.0.rpc
+        &self.rpc
     }
 
     /// Get the underlying transaction config
     pub fn tx_config(&self) -> Option<&RpcSendTransactionConfig> {
-        self.0.tx_config.as_ref()
+        self.tx_config.as_ref()
+    }
+
+    pub fn clone_with_payer(&self, payer: Keypair) -> Self {
+        Self {
+            rpc: self.rpc.clone(),
+            tx_config: self.tx_config,
+            payer,
+        }
     }
 }
 
@@ -177,15 +185,19 @@ impl SolanaRpcClient for RpcConnection {
     fn as_any(&self) -> &dyn std::any::Any {
         self as &dyn std::any::Any
     }
+
+    fn clone_with_payer(&self, payer: Keypair) -> Box<dyn SolanaRpcClient> {
+        Box::new(Self::clone_with_payer(self, payer))
+    }
+
     async fn send_and_confirm_transaction(&self, transaction: &Transaction) -> Result<Signature> {
-        let commitment = self.0.rpc.commitment();
-        let tx_config = self.0.tx_config.unwrap_or(RpcSendTransactionConfig {
+        let commitment = self.rpc.commitment();
+        let tx_config = self.tx_config.unwrap_or(RpcSendTransactionConfig {
             preflight_commitment: Some(commitment.commitment),
             ..Default::default()
         });
 
         Ok(self
-            .0
             .rpc
             .send_and_confirm_transaction_with_spinner_and_config(
                 transaction,
@@ -197,7 +209,6 @@ impl SolanaRpcClient for RpcConnection {
 
     async fn get_account(&self, address: &Pubkey) -> Result<Option<Account>> {
         Ok(self
-            .0
             .rpc
             .get_multiple_accounts(&[*address])
             .await?
@@ -206,7 +217,7 @@ impl SolanaRpcClient for RpcConnection {
     }
 
     async fn get_multiple_accounts(&self, pubkeys: &[Pubkey]) -> Result<Vec<Option<Account>>> {
-        Ok(self.0.rpc.get_multiple_accounts(pubkeys).await?)
+        Ok(self.rpc.get_multiple_accounts(pubkeys).await?)
     }
 
     async fn get_program_accounts(
@@ -217,7 +228,6 @@ impl SolanaRpcClient for RpcConnection {
         let filters = size.map(|s| vec![RpcFilterType::DataSize(s as u64)]);
 
         Ok(self
-            .0
             .rpc
             .get_program_accounts_with_config(
                 program_id,
@@ -234,45 +244,44 @@ impl SolanaRpcClient for RpcConnection {
     }
 
     async fn airdrop(&self, account: &Pubkey, amount: u64) -> Result<()> {
-        self.0.rpc.request_airdrop(account, amount).await?;
+        self.rpc.request_airdrop(account, amount).await?;
 
         Ok(())
     }
 
     async fn get_genesis_hash(&self) -> Result<Hash> {
-        let hash = self.0.rpc.get_genesis_hash().await?;
+        let hash = self.rpc.get_genesis_hash().await?;
 
         Ok(hash)
     }
 
     async fn get_latest_blockhash(&self) -> Result<Hash> {
-        let blockhash = self.0.rpc.get_latest_blockhash().await?;
+        let blockhash = self.rpc.get_latest_blockhash().await?;
 
         Ok(blockhash)
     }
 
     async fn get_minimum_balance_for_rent_exemption(&self, length: usize) -> Result<u64> {
         Ok(self
-            .0
             .rpc
             .get_minimum_balance_for_rent_exemption(length)
             .await?)
     }
 
     async fn send_transaction(&self, transaction: &Transaction) -> Result<Signature> {
-        Ok(self.0.rpc.send_transaction(transaction).await?)
+        Ok(self.rpc.send_transaction(transaction).await?)
     }
 
     async fn get_signature_statuses(
         &self,
         signatures: &[Signature],
     ) -> Result<Vec<Option<TransactionStatus>>> {
-        Ok(self.0.rpc.get_signature_statuses(signatures).await?.value)
+        Ok(self.rpc.get_signature_statuses(signatures).await?.value)
     }
 
     async fn get_clock(&self) -> Result<Clock> {
-        let slot = self.0.rpc.get_slot().await?;
-        let unix_timestamp = self.0.rpc.get_block_time(slot).await?;
+        let slot = self.rpc.get_slot().await?;
+        let unix_timestamp = self.rpc.get_block_time(slot).await?;
 
         Ok(Clock {
             slot,
@@ -283,12 +292,10 @@ impl SolanaRpcClient for RpcConnection {
 
     async fn get_slot(&self, commitment_config: Option<CommitmentConfig>) -> Result<Slot> {
         match commitment_config {
-            Some(commitment_config) => Ok(self
-                .0
-                .rpc
-                .get_slot_with_commitment(commitment_config)
-                .await?),
-            None => Ok(self.0.rpc.get_slot().await?),
+            Some(commitment_config) => {
+                Ok(self.rpc.get_slot_with_commitment(commitment_config).await?)
+            }
+            None => Ok(self.rpc.get_slot().await?),
         }
     }
 
@@ -297,6 +304,6 @@ impl SolanaRpcClient for RpcConnection {
     }
 
     fn payer(&self) -> &Keypair {
-        &self.0.payer
+        &self.payer
     }
 }
