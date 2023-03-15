@@ -96,7 +96,7 @@ export function useAccountsSyncer() {
   const walletTokens = useRecoilValue(WalletTokens);
   const setAccountNames = useSetRecoilState(AccountNames);
   const [currentAccountAddress, setCurrentAccountAddress] = useRecoilState(CurrentAccountAddress);
-  const setAccounts = useSetRecoilState(Accounts);
+  const [accounts, setAccounts] = useRecoilState(Accounts);
   const resetAccounts = useResetRecoilState(Accounts);
   const currentAccount = useRecoilValue(CurrentAccount);
   const setCurrentAccountHistory = useSetRecoilState(CurrentAccountHistory);
@@ -106,6 +106,14 @@ export function useAccountsSyncer() {
 
   // When we change address
   useEffect(() => setAccountHistoryLoaded(false), [currentAccountAddress, setAccountHistoryLoaded]);
+
+  useEffect(() => {
+    if (accounts.length > 0) {
+      setCurrentAccountAddress(accounts[0].address.toBase58());
+    } else {
+      setCurrentAccountAddress('');
+    }
+  }, [accounts, publicKey]);
 
   // Fetch all margin accounts on wallet init
   useEffect(() => {
@@ -163,7 +171,7 @@ export function useAccountsSyncer() {
     const accountsInterval = setInterval(getAccounts, ACTION_REFRESH_INTERVAL);
     return () => clearInterval(accountsInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pools, owner, provider.connection, actionRefresh]);
+  }, [pools, owner, provider.connection, actionRefresh, publicKey]);
 
   // Update current account history
   useEffect(() => {
