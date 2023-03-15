@@ -1,6 +1,6 @@
 use jet_client::fixed_term::{util::rate_to_price, MarketInfo};
 use jet_instructions::fixed_term::OrderParams;
-use jet_margin_sdk::fixed_term::event_consumer::EventConsumer;
+use jet_margin_sdk::{fixed_term::event_consumer::EventConsumer, solana::keypair::KeypairExt};
 use solana_sdk::{clock::Clock, pubkey::Pubkey};
 
 use jet_client_native::{JetSimulationClient, JetSimulationClientResult, SimulationClient};
@@ -299,7 +299,7 @@ pub async fn redeem_term_deposits(
 }
 
 pub async fn consume_events(ctx: &TestContext, market: &MarketInfo) {
-    let consumer = EventConsumer::new(ctx.rpc().clone());
+    let consumer = EventConsumer::new(ctx.rpc().clone_with_payer(ctx.admins.crank.clone()).into());
 
     consumer.load_markets(&[market.address]).await.unwrap();
     consumer.sync_users().await.unwrap();
