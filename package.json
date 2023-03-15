@@ -27,6 +27,8 @@
     "data:clean": "docker compose -f .github/e2e-docker-compose.yml down --volumes"
   },
   "devDependencies": {
+    "prettier": "^2.8.4",
+    "prettier-plugin-tailwindcss": "^0.2.4",
     "turbo": "^1.6.3"
   }
 }
