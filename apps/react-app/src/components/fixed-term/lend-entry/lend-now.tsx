@@ -59,7 +59,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     [selectedPoolKey, pools]
   );
   const wallet = useWallet();
-  const [amount, setAmount] = useState(new BN(0));
+  const [amount, setAmount] = useState<BN | undefined>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
@@ -67,14 +67,14 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const [pending, setPending] = useState(false);
 
   const tokenBalance = marginAccount?.poolPositions[token.symbol].depositBalance;
-  const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount, token.decimals));
+  const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount || new BN(0), token.decimals));
 
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
     !currentPool ||
     !pools ||
-    amount.lte(new BN(0)) ||
+    amount?.lte(new BN(0)) ||
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
@@ -124,6 +124,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   };
 
   const marketLendOrder = async () => {
+    if (!amount) return;
     setPending(true);
     let signature: string;
     try {
@@ -155,12 +156,14 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         getExplorerUrl(e.signature, cluster, explorer)
       );
       setPending(false);
-      throw e;
+      console.error(e);
+    } finally {
+      setAmount(undefined);
     }
   };
 
   useEffect(() => {
-    handleForecast(amount);
+    if (amount) handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 
   return (
@@ -246,14 +249,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       {!hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this request</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && (
+      {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
       )}
       {forecast && forecast.unfilledQty > 0 && (
-        <div className="fixed-term-warning">
-          Current max liquidity on this market is{' '}
-          {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}
-        </div>
+        <div className="fixed-term-warning">Not enough liquidity on this market, try a smaller amount.</div>
       )}
       {forecast && forecast.effectiveRate === 0 && (
         <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing lend amount.</div>
