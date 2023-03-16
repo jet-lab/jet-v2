@@ -299,6 +299,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f32390ce8356f54c0f0245ea156f8190717e37285b8bf4f406a613dc4b954cde"
 dependencies = [
  "anchor-lang",
+ "serum_dex 0.4.0",
  "solana-program",
  "spl-associated-token-account",
  "spl-token 3.5.0",
@@ -449,9 +450,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.63"
+version = "0.1.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eff18d764974428cf3a9328e23fc5c986f5fbed46e6cd4cdf42544df5d297ec1"
+checksum = "b84f9ebcc6c1f5b8cb160f6990096a5c127f423fcb6e1ccc46c370cbdfb75dfc"
 dependencies = [
  "proc-macro2 1.0.50",
  "quote 1.0.23",
@@ -2443,6 +2444,7 @@ dependencies = [
  "anchor-lang",
  "anchor-syn",
  "anyhow",
+ "async-trait",
  "bincode",
  "borsh 0.9.3",
  "bs58 0.4.0",
@@ -2466,7 +2468,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "serum_dex",
+ "serum_dex 0.5.4",
  "shellexpand",
  "solana-account-decoder",
  "solana-clap-utils",
@@ -2514,6 +2516,7 @@ dependencies = [
  "arrayref",
  "bitflags",
  "borsh 0.9.3",
+ "bs58 0.4.0",
  "bytemuck",
  "itertools 0.10.5",
  "jet-airspace",
@@ -2640,8 +2643,10 @@ dependencies = [
  "jet-metadata",
  "jet-program-common",
  "jet-simulation",
+ "jet-solana-client",
  "jet-static-program-registry",
  "jet-test-service",
+ "num-traits",
  "pyth-sdk-solana 0.7.0",
  "rand 0.8.5",
  "serde",
@@ -2661,12 +2666,14 @@ dependencies = [
 
 [[package]]
 name = "jet-margin-swap"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "bytemuck",
  "jet-margin",
  "jet-margin-pool",
+ "jet-program-common",
  "jet-static-program-registry",
  "stable-swap-anchor",
 ]
@@ -2710,6 +2717,7 @@ dependencies = [
  "borsh 0.9.3",
  "bytemuck",
  "num-traits",
+ "rand_chacha 0.3.1",
  "solana-program",
  "static_assertions",
  "thiserror",
@@ -2760,8 +2768,10 @@ dependencies = [
  "async-trait",
  "base64 0.13.1",
  "bincode",
+ "paste",
  "serde",
  "solana-sdk",
+ "spl-associated-token-account",
  "spl-token 3.5.0",
  "thiserror",
 ]
@@ -4404,6 +4414,30 @@ dependencies = [
  "quote 1.0.23",
  "rustversion",
  "syn 1.0.107",
+]
+
+[[package]]
+name = "serum_dex"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02705854bae4622e552346c8edd43ab90c7425da35d63d2c689f39238f8d8b25"
+dependencies = [
+ "arrayref",
+ "bincode",
+ "bytemuck",
+ "byteorder",
+ "enumflags2 0.6.4",
+ "field-offset",
+ "itertools 0.9.0",
+ "num-traits",
+ "num_enum",
+ "safe-transmute",
+ "serde",
+ "solana-program",
+ "spl-token 3.5.0",
+ "static_assertions",
+ "thiserror",
+ "without-alloc",
 ]
 
 [[package]]

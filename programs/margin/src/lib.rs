@@ -59,18 +59,8 @@ pub const MAX_ORACLE_STALENESS: i64 = 30;
 pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
 /// The maximum amount of equity that can be deducted from an account during liquidation
-/// as a fraction of the total dollar value that is expected to need to be liquidated
-pub const LIQUIDATION_MAX_EQUITY_LOSS_BPS: u16 = 10_00;
-
-/// The maximum c-ratio that an account can end a liquidation with.
-///
-/// Note: This is not a traditional c-ratio, because it's based on the ratio of
-///       the effective_collateral / required_collateral.
-pub const LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = 125_00;
-
-/// The threshold at which accounts can have all their debts closed. Accounts with
-/// total exposure below this value can have their exposure reduced to zero.
-pub const LIQUIDATION_CLOSE_THRESHOLD_USD: u64 = 100;
+/// as a fraction of the account's entire liabilities value
+pub const LIQUIDATION_MAX_TOTAL_EQUITY_LOSS_BPS: u16 = 4_00;
 
 /// The maximum duration in seconds of a liquidation before another user may cancel it
 #[constant]
@@ -203,29 +193,6 @@ pub mod jet_margin {
     ///
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
-    }
-
-    /// Update the metadata for a position stored in the margin account,
-    /// in the case where the metadata has changed after the position was
-    /// created.
-    ///
-    /// # [Accounts](jet_margin::accounts::RefreshPositionMetadata)
-    ///
-    /// |     |     |     |
-    /// | --- | --- | --- |
-    /// | **Name** | **Type** | **Description** |
-    /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
-    /// | `metadata` | `read_only` | The metadata account for the token, which has been updated. |
-    ///
-    /// # Events
-    ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Event Name** | **Description** |
-    /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |
-    ///
-    pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
-        refresh_position_metadata_handler(ctx)
     }
 
     /// Close out a position, removing it from the account.
@@ -507,6 +474,14 @@ pub mod jet_margin {
         configure_permit(ctx, is_liquidator, Permissions::LIQUIDATE)
     }
 
+    /// Configure an account to join the default airspace
+    ///
+    /// This can be used to migrate margin accounts existing before the introduction of airspaces
+    /// into the default airspace.
+    pub fn configure_account_airspace(ctx: Context<ConfigureAccountAirspace>) -> Result<()> {
+        configure_account_airspace_handler(ctx)
+    }
+
     pub fn configure_position_config_refresher(
         ctx: Context<ConfigurePermit>,
         may_refresh: bool,
@@ -619,17 +594,25 @@ pub enum ErrorCode {
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
 
+    /// 141042 - Submit the incorrect LiquidationState to the instruction
+    #[msg("liquidationState does not match given margin account")]
+    WrongLiquidationState,
+
     /// 141050 - The airspace does not match
     #[msg("attempting to mix entities from different airspaces")]
     WrongAirspace = 135_050,
 
     /// 141051 - Attempting to use or set configuration that is not valid
     #[msg("attempting to use or set invalid configuration")]
-    InvalidConfig = 135_051,
+    InvalidConfig,
 
     /// 141052 - Attempting to use or set an oracle that is not valid
     #[msg("attempting to use or set invalid configuration")]
-    InvalidOracle = 135_052,
+    InvalidOracle,
+
+    /// 141053 - Account already joined to an airspace
+    #[msg("account is already joined to an airspace")]
+    AlreadyJoinedAirspace,
 
     /// 141060
     #[msg("the permit does not authorize this action")]

@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
+use jet_instructions::fixed_term::derive::market_from_tenor;
+use jet_margin_sdk::tx_builder::AirspaceAdmin;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
 use jet_client::NetworkKind;
@@ -16,25 +17,31 @@ use jet_environment::{
     },
     programs::ORCA_V2,
 };
-use jet_instructions::airspace::derive_airspace;
-use jet_instructions::fixed_term::derive_market_from_tenor;
+use jet_instructions::airspace::{derive_airspace, AirspaceIxBuilder};
 use jet_instructions::margin::MarginConfigIxBuilder;
 use jet_instructions::test_service::{
     derive_pyth_price, derive_token_mint, token_update_pyth_price,
 };
-use jet_margin_pool::{MarginPoolConfig, PoolFlags};
+use jet_margin_pool::MarginPoolConfig;
 use jet_margin_sdk::ix_builder::test_service::derive_spl_swap_pool;
 use jet_margin_sdk::solana::keypair::clone;
-use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder};
+use jet_margin_sdk::solana::transaction::{
+    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilderExt,
+};
 use jet_margin_sdk::test_service::minimal_environment;
 use jet_margin_sdk::util::data::With;
 use jet_metadata::TokenKind;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
+use crate::environment::TestToken;
+use crate::margin::MarginUser;
 use crate::runtime::SolanaTestContext;
+use crate::TestDefault;
 use crate::{margin::MarginClient, tokens::TokenManager};
 
+/// Instantiate an Arc<MarginTestContext>
+///
 /// If you don't provide a name, gets the name of the current function name and
 /// uses it to create a test context. Only use this way when called directly in
 /// the test function. If you want to call this in a helper function, pass a
@@ -42,7 +49,7 @@ use crate::{margin::MarginClient, tokens::TokenManager};
 #[macro_export]
 macro_rules! margin_test_context {
     () => {
-        $crate::margin_test_context!($crate::fn_name!())
+        $crate::margin_test_context!(&$crate::fn_name_and_try_num!())
     };
     ($name:expr) => {
         std::sync::Arc::new(
@@ -50,6 +57,68 @@ macro_rules! margin_test_context {
                 .await
                 .unwrap(),
         )
+    };
+}
+
+/// Instantiate a TestContext  
+/// Uses struct-like syntax. Fields may be omitted to use the default.
+/// ```ignore
+/// test_context! {
+///     name: &str,
+///     setup: &TestContextSetupInfo,
+/// };
+/// test_context!();
+/// test_context!(setup, name);
+/// ```
+/// - name: Default gets the name of the current function name and uses it to
+///         create a test context. Only use this way when called directly in the
+///         test function. If you want to call this in a helper function, pass a
+///         name to the helper function that is unique to the individual test
+///         that called the helper function.
+///
+/// - setup: see the TestDefault implementation.
+#[macro_export]
+macro_rules! test_context {
+    (
+        $(name $(: $name:expr)? ,)?
+        $(setup $(: $setup:expr)? )?
+        $(,)?
+    ) => {
+        $crate::context::TestContext::new(
+            $crate::first!($($($name)?, name)?, &$crate::fn_name_and_try_num!()),
+            $crate::first!($($($setup)?, setup)?, &$crate::test_default()),
+        )
+            .await
+            .unwrap()
+    };
+    (
+        $(setup $(: $setup:expr)? ,)?
+        $(name $(: $name:expr)? )?
+        $(,)?
+    ) => {
+        $crate::test_context!{
+            $(name: $($name)?,)?
+            $(setup: $($setup)?,)?
+        }
+    };
+}
+
+/// Returns the first item.
+///
+/// Useful within in macro definitions where it is uncertain whether an item
+/// will be expanded to anything.
+///
+/// Delimit items with ",". Extra commas are allowed anywhere.
+/// ```
+/// use hosted_tests::first;
+/// let (one, two, three) = (1, 2, 3);
+/// assert_eq!(1, first!(one, two, three,,));
+/// assert_eq!(2, first!(, two,,, three));
+/// ```
+#[macro_export]
+macro_rules! first {
+    ($(,)* $item:expr $($(,)+ $default:expr)* $(,)*) => {
+        $item
     };
 }
 
@@ -62,6 +131,8 @@ pub struct MarginPoolSetupInfo {
 }
 
 /// Utilities for testing things in the context of the margin system
+/// Sets up a barebones test environment that only initializes a blank airspace.
+/// Facilitates individual tests to set up their own state.
 pub struct MarginTestContext {
     pub rpc: Arc<dyn SolanaRpcClient>,
     pub tokens: TokenManager,
@@ -83,7 +154,7 @@ impl std::fmt::Debug for MarginTestContext {
 
 impl From<SolanaTestContext> for MarginTestContext {
     fn from(solana: SolanaTestContext) -> Self {
-        let payer = Keypair::from_bytes(&solana.rpc.payer().to_bytes()).unwrap();
+        let payer = clone(solana.rpc.payer());
         let airspace_authority = solana.keygen.generate_key();
         let margin = MarginClient::new(
             solana.rpc.clone(),
@@ -119,11 +190,21 @@ impl MarginTestContext {
             .send_and_confirm_condensed(&ctx.rpc)
             .await?;
 
+        ctx.margin.register_adapter(&jet_margin_pool::ID).await?;
+        ctx.margin.register_adapter(&jet_margin_swap::ID).await?;
+        ctx.margin.register_adapter(&jet_fixed_term::ID).await?;
+
         Ok(ctx)
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
         self.solana.create_wallet(sol_amount).await
+    }
+
+    pub async fn create_margin_user(&self, sol_amount: u64) -> Result<MarginUser, Error> {
+        let wallet = self.solana.create_wallet(sol_amount).await?;
+        self.issue_permit(wallet.pubkey()).await?;
+        self.margin.user(&wallet, 0).created().await
     }
 
     pub fn generate_key(&self) -> Keypair {
@@ -140,8 +221,23 @@ impl MarginTestContext {
             .await?;
         Ok(liquidator)
     }
+
+    pub async fn issue_permit(&self, user: Pubkey) -> Result<Signature, Error> {
+        let ix = AirspaceIxBuilder::new_from_address(
+            self.margin.airspace(),
+            self.payer.pubkey(),
+            self.airspace_authority.pubkey(),
+        )
+        .permit_create(user);
+
+        self.rpc
+            .send_and_confirm_1tx(&[ix], &[&self.airspace_authority])
+            .await
+    }
 }
 
+/// Sets up a comprehensive test environment with tokens, pools, markets, etc.
+/// as defined by the provided configuration.
 pub struct TestContext {
     pub config: JetAppConfig,
     inner: SolanaTestContext,
@@ -149,15 +245,10 @@ pub struct TestContext {
 
 impl TestContext {
     pub async fn new(name: &str, setup: &TestContextSetupInfo) -> Result<Self, Error> {
-        let mut seed = match cfg!(feature = "localnet") {
-            false => name.to_owned(),
-            true => format!("{name}_{}", rand::random::<u16>()),
-        };
-
-        seed.drain(0..seed.len().saturating_sub(24));
-
-        let inner = SolanaTestContext::new(&seed).await;
-        let setup_config = setup.to_config(&seed);
+        let inner = SolanaTestContext::new(name).await;
+        let mut airspace_name = name.to_owned();
+        airspace_name.drain(0..airspace_name.len().saturating_sub(24));
+        let setup_config = setup.to_config(&airspace_name);
 
         let init_env_config = EnvironmentConfig {
             network: NetworkKind::Localnet,
@@ -175,7 +266,7 @@ impl TestContext {
                 })
                 .collect(),
             airspaces: vec![AirspaceConfig {
-                name: seed.to_string(),
+                name: airspace_name.to_string(),
                 is_restricted: setup.is_restricted,
                 tokens: setup_config.tokens.clone(),
                 cranks: vec![],
@@ -212,11 +303,13 @@ impl TestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
-        jet_simulation::create_wallet(&self.inner.rpc, sol_amount * LAMPORTS_PER_SOL).await
+        self.inner.create_wallet(sol_amount).await
     }
 
     pub async fn create_user(&self) -> Result<JetSimulationClient, Error> {
         let wallet = self.create_wallet(1_000).await?;
+        self.issue_permit(wallet.pubkey()).await?;
+
         let client = SimulationClient::new(self.inner.rpc.clone(), Some(wallet));
 
         Ok(JetSimulationClient::new(
@@ -255,53 +348,23 @@ impl TestContext {
         )
         .await
     }
+
+    pub async fn issue_permit(&self, owner: Pubkey) -> Result<Signature, Error> {
+        AirspaceAdmin::new(
+            &self.config.airspaces[0].name,
+            self.rpc().payer().pubkey(),
+            self.rpc().payer().pubkey(),
+        )
+        .issue_user_permit(owner)
+        .send_and_confirm(self.rpc())
+        .await
+    }
 }
 
 pub struct PriceUpdate {
     pub price: i64,
     pub confidence: i64,
     pub exponent: i32,
-}
-
-pub const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
-    borrow_rate_0: 10,
-    borrow_rate_1: 20,
-    borrow_rate_2: 30,
-    borrow_rate_3: 40,
-    utilization_rate_1: 10,
-    utilization_rate_2: 20,
-    management_fee_rate: 10,
-    flags: PoolFlags::ALLOW_LENDING.bits(),
-    reserved: 0,
-};
-
-pub fn default_test_setup() -> TestContextSetupInfo {
-    TestContextSetupInfo {
-        is_restricted: false,
-        tokens: vec![
-            TokenDescription {
-                name: "TSOL".to_string(),
-                symbol: "TSOL".to_string(),
-                decimals: Some(9),
-                collateral_weight: 100,
-                max_leverage: 20_00,
-                margin_pool: Some(DEFAULT_POOL_CONFIG),
-                fixed_term_markets: vec![],
-                ..Default::default()
-            },
-            TokenDescription {
-                name: "USDC".to_string(),
-                symbol: "".to_string(),
-                decimals: Some(6),
-                collateral_weight: 100,
-                max_leverage: 20_00,
-                margin_pool: Some(DEFAULT_POOL_CONFIG),
-                fixed_term_markets: vec![],
-                ..Default::default()
-            },
-        ],
-        spl_swap_pools: vec!["TSOL/USDC"],
-    }
 }
 
 #[derive(Default, Clone)]
@@ -311,6 +374,19 @@ pub struct TestContextSetupInfo {
     pub spl_swap_pools: Vec<&'static str>,
 }
 
+impl TestDefault for TestContextSetupInfo {
+    fn test_default() -> Self {
+        TestContextSetupInfo {
+            is_restricted: false,
+            tokens: vec![
+                TestToken::with_pool("TSOL").into(),
+                TestToken::with_pool("USDC").into(),
+            ],
+            spl_swap_pools: vec!["TSOL/USDC"],
+        }
+    }
+}
+
 struct SetupOutput {
     config: JetAppConfig,
     tokens: Vec<TokenDescription>,
@@ -318,13 +394,13 @@ struct SetupOutput {
 }
 
 impl TestContextSetupInfo {
-    fn to_config(&self, seed: &str) -> SetupOutput {
-        let airspace = derive_airspace(seed);
+    fn to_config(&self, airspace_name: &str) -> SetupOutput {
+        let airspace = derive_airspace(airspace_name);
         let tokens = self
             .tokens
             .iter()
             .map(|t| TokenDescription {
-                name: format!("{seed}-{}", &t.name),
+                name: format!("{airspace_name}-{}", &t.name),
                 ..t.clone()
             })
             .collect::<Vec<_>>();
@@ -334,8 +410,8 @@ impl TestContextSetupInfo {
             .iter()
             .map(|pair_string| {
                 let (name_a, name_b) = pair_string.split_once('/').unwrap();
-                let token_a_name = format!("{seed}-{name_a}");
-                let token_b_name = format!("{seed}-{name_b}");
+                let token_a_name = format!("{airspace_name}-{name_a}");
+                let token_b_name = format!("{airspace_name}-{name_b}");
 
                 (token_a_name, token_b_name)
             })
@@ -357,16 +433,16 @@ impl TestContextSetupInfo {
                 })
                 .collect(),
             airspaces: vec![AirspaceInfo {
-                name: seed.to_string(),
+                name: airspace_name.to_string(),
                 tokens: tokens.iter().map(|t| t.name.clone()).collect(),
                 fixed_term_markets: tokens
                     .iter()
                     .flat_map(|t| {
                         let token = derive_token_mint(&t.name);
 
-                        t.fixed_term_markets.iter().map(move |m| {
-                            derive_market_from_tenor(&airspace, &token, m.borrow_tenor)
-                        })
+                        t.fixed_term_markets
+                            .iter()
+                            .map(move |m| market_from_tenor(&airspace, &token, m.borrow_tenor))
                     })
                     .collect(),
             }],

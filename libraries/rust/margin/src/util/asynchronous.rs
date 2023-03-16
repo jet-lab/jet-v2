@@ -128,7 +128,7 @@ mod test {
     #[tokio::test(flavor = "multi_thread")]
     async fn retry_test() -> Result<(), anyhow::Error> {
         let x = with_retries(counter, Duration::from_millis(1)).await;
-        assert_eq!(x, 3);
+        assert_eq!(3, x);
         Ok(())
     }
 
@@ -136,7 +136,7 @@ mod test {
         unsafe {
             COUNT += 1;
             if COUNT < 3 {
-                tokio::time::sleep(Duration::from_millis(10)).await;
+                tokio::time::sleep(Duration::from_millis(100)).await;
             }
 
             COUNT

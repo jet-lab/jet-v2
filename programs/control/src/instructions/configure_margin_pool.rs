@@ -58,10 +58,16 @@ pub struct ConfigureMarginPool<'info> {
     #[account(mut, has_one = token_mint)]
     pub token_metadata: Box<Account<'info, TokenMetadata>>,
 
-    #[account(mut, constraint = deposit_metadata.underlying_token_mint == token_mint.key())]
+    #[account(mut,
+        constraint = deposit_metadata.underlying_token_mint == token_mint.key(),
+        constraint = deposit_metadata.position_token_mint == margin_pool.deposit_note_mint
+    )]
     pub deposit_metadata: Box<Account<'info, PositionTokenMetadata>>,
 
-    #[account(mut, constraint = loan_metadata.underlying_token_mint == token_mint.key())]
+    #[account(mut,
+        constraint = loan_metadata.underlying_token_mint == token_mint.key(),
+        constraint = loan_metadata.position_token_mint == margin_pool.loan_note_mint
+    )]
     pub loan_metadata: Box<Account<'info, PositionTokenMetadata>>,
 
     /// CHECK:

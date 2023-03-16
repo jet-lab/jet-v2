@@ -68,32 +68,6 @@ impl ControlIxBuilder {
         }
     }
 
-    /// Instruction to register a margin adapter with the control program.
-    ///
-    /// An adapter must be registered with the control program before users can
-    /// interact with it.
-    pub fn register_adapter(&self, adapter: &Pubkey) -> Instruction {
-        let accounts = jet_control::accounts::RegisterAdapter {
-            requester: self.requester,
-            authority: get_control_authority_address(),
-
-            adapter: *adapter,
-            metadata_account: get_metadata_address(adapter),
-
-            payer: self.payer,
-
-            metadata_program: jet_metadata::ID,
-            system_program: system_program::ID,
-        }
-        .to_account_metas(None);
-
-        Instruction {
-            accounts,
-            program_id: jet_control::ID,
-            data: jet_control::instruction::RegisterAdapter {}.data(),
-        }
-    }
-
     /// Instruction to register a margin pool.
     ///
     /// The margin pool is created with default settings, and must be configured
@@ -166,31 +140,6 @@ impl ControlIxBuilder {
                 pool_config: config.parameters,
             }
             .data(),
-        }
-    }
-
-    /// Instruction to enable or disable a liquidator.
-    ///
-    /// Only authorised accounts are allowed to liquidate margin accounts.
-    pub fn set_liquidator(&self, liquidator: &Pubkey, is_liquidator: bool) -> Instruction {
-        let accounts = jet_control::accounts::SetLiquidator {
-            requester: self.requester,
-            authority: get_control_authority_address(),
-
-            liquidator: *liquidator,
-            metadata_account: get_metadata_address(liquidator),
-
-            payer: self.payer,
-
-            metadata_program: jet_metadata::ID,
-            system_program: system_program::ID,
-        }
-        .to_account_metas(None);
-
-        Instruction {
-            accounts,
-            program_id: jet_control::ID,
-            data: jet_control::instruction::SetLiquidator { is_liquidator }.data(),
         }
     }
 }

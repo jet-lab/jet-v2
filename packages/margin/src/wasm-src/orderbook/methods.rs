@@ -1,9 +1,11 @@
 use std::ops::Div;
 
+#[cfg(test)]
+use jet_program_common::interest_pricing::f64_to_fp32;
 use jet_program_common::Fp32;
 use wasm_bindgen::prelude::*;
 
-use super::interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl};
+use jet_program_common::interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl};
 
 /// Given some bytes, reconstruct the u128 order_id and pass it back as a string
 #[wasm_bindgen]
@@ -69,11 +71,7 @@ fn test_price_to_rate() {
 #[test]
 fn test_price_to_rate_2() {
     assert_eq!(
-        price_to_rate(
-            crate::orderbook::interest_pricing::f64_to_fp32(0.9980840295893417),
-            154828800
-        ) as f64
-            / 10_000_f64,
+        price_to_rate(f64_to_fp32(0.9980840295893417), 154828800) as f64 / 10_000_f64,
         0.0004
     );
 }
@@ -123,10 +121,7 @@ fn test_calculate_implied_price() {
         ((7834 * 10_000_000_000 / 23454) << 32) / 10_000_000_000
     );
 
-    assert_eq!(
-        calculate_implied_price(345, 3464),
-        crate::orderbook::interest_pricing::f64_to_fp32(10.04057971),
-    );
+    assert_eq!(calculate_implied_price(345, 3464), f64_to_fp32(10.04057971),);
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,

@@ -12,7 +12,7 @@ import {
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
-import { marketToString } from '@utils/jet/fixed-term-utils';
+import { feesCalc, marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
@@ -42,13 +42,14 @@ interface Forecast {
   riskIndicator?: number;
   unfilledQty: number;
   hasEnoughCollateral: boolean;
+  fees: number;
 }
 
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const { selectedPoolKey } = useJetStore(state => ({
-    selectedPoolKey: state.selectedPoolKey,
+    selectedPoolKey: state.selectedPoolKey
   }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -57,7 +58,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     [selectedPoolKey, pools]
   );
   const wallet = useWallet();
-  const [amount, setAmount] = useState(new BN(0));
+  const [amount, setAmount] = useState<BN | undefined>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
@@ -67,7 +68,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    handleForecast(amount);
+    if (amount) handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 
   const disabled =
@@ -75,7 +76,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !wallet.publicKey ||
     !currentPool ||
     !pools ||
-    amount.lte(new BN(0)) ||
+    amount?.lte(new BN(0)) ||
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
@@ -110,17 +111,19 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
       const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals)
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals);
+      const totalInterest = repayAmount.sub(borrowedAmount);
 
       setForecast({
         repayAmount: repayAmount.tokens,
-        interest: repayAmount.sub(borrowedAmount).tokens,
+        interest: totalInterest.tokens,
         effectiveRate: sim.filled_vwar,
         selfMatch: sim.self_match,
         fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
         riskIndicator: valuationEstimate?.riskIndicator,
         unfilledQty: unfilledQty.tokens,
-        hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
+        hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
+        fees: feesCalc(sim.filled_vwar, totalInterest.tokens)
       });
     } catch (e) {
       console.log(e);
@@ -128,6 +131,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   };
 
   const createBorrowOrder = async () => {
+    if (!amount) return;
     setPending(true);
     let signature: string;
     try {
@@ -159,7 +163,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         getExplorerUrl(e.signature, cluster, explorer)
       );
       setPending(false);
-      throw e;
+      console.error(e);
+    } finally {
+      setAmount(undefined);
     }
   };
 
@@ -170,6 +176,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           Loan amount
           <InputNumber
             className="input-amount"
+            value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
               setAmount(new BN(e * 10 ** decimals));
             }, 300)}
@@ -211,21 +218,16 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          {forecast && (
-            <span>
-              {forecast.interest.toFixed(token.precision)} {token.symbol}
-            </span>
-          )}
+          {forecast && <span>{`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}</span>}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
           <RateDisplay rate={forecast?.effectiveRate} />
         </div>
-        {/* <div className="stat-line">
-          // NOTE calculate this from wasm module as it need sto be 50 bps ANNUALISED
+        <div className="stat-line">
           <span>Fees</span>
-          {forecast && <span>{new TokenAmount(amount.muln(0.005), token.decimals).tokens.toFixed(token.precision)} {token.symbol}</span>}
-        </div> */}
+          {forecast && <span>{`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}</span>}
+        </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
           {forecast && (
@@ -248,9 +250,15 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && <div className="fixed-term-warning">Not enough collateral to submit this request</div>}
-      {forecast && forecast.unfilledQty > 0 && <div className="fixed-term-warning">Current max liquidity on this market is {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}</div>}
-      {forecast && forecast.effectiveRate === 0 && <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>}
+      {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && (
+        <div className="fixed-term-warning">Not enough collateral to submit this request</div>
+      )}
+      {forecast && forecast.unfilledQty > 0 && (
+        <div className="fixed-term-warning">Not enough liquidity on this market, try a smaller amount.</div>
+      )}
+      {forecast && forecast.effectiveRate === 0 && (
+        <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>
+      )}
     </div>
   );
 };

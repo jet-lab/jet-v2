@@ -1,6 +1,8 @@
 import { getAccount, NATIVE_MINT } from "@solana/spl-token"
 import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import {
+  JetAirspace,
+  JetAirspaceIdl,
   JetControl,
   JetControlIdl,
   JetMargin,
@@ -62,6 +64,7 @@ export interface AccountTransaction {
 }
 
 export interface MarginPrograms {
+  airspace: Program<JetAirspace>
   config: MarginConfig
   connection: Connection
   control: Program<JetControl>
@@ -95,6 +98,7 @@ export class MarginClient {
       config,
       connection: provider.connection,
 
+      airspace: new Program(JetAirspaceIdl, config.airspaceProgramId, provider),
       control: new Program(JetControlIdl, config.controlProgramId, provider),
       margin: new Program(JetMarginIdl, config.marginProgramId, provider),
       marginPool: new Program(JetMarginPoolIdl, config.marginPoolProgramId, provider),

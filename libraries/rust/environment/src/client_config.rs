@@ -8,7 +8,7 @@ use solana_sdk::{program_error::ProgramError, pubkey::Pubkey};
 
 use jet_instructions::{
     airspace::derive_airspace,
-    fixed_term::derive_market_from_tenor,
+    fixed_term,
     test_service::{derive_pyth_price, derive_spl_swap_pool, derive_token_mint},
 };
 use jet_solana_client::{ExtError, NetworkUserInterface, NetworkUserInterfaceExt};
@@ -132,10 +132,9 @@ impl From<AirspaceConfig> for AirspaceInfo {
                 .flat_map(|token| {
                     let mint = token.mint.unwrap_or_else(|| derive_token_mint(&token.name));
 
-                    token
-                        .fixed_term_markets
-                        .iter()
-                        .map(move |m| derive_market_from_tenor(&airspace, &mint, m.borrow_tenor))
+                    token.fixed_term_markets.iter().map(move |m| {
+                        fixed_term::derive::market_from_tenor(&airspace, &mint, m.borrow_tenor)
+                    })
                 })
                 .collect(),
         }

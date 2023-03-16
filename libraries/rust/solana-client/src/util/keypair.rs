@@ -1,5 +1,6 @@
 //! missing implementations for keypair
 
+use crate::seal;
 use solana_sdk::signature::Keypair;
 
 /// Clone is not implemented for Keypair
@@ -10,4 +11,23 @@ pub fn clone(keypair: &Keypair) -> Keypair {
 /// Clone is not implemented for Keypair
 pub fn clone_vec(vec: &[Keypair]) -> Vec<Keypair> {
     vec.iter().map(clone).collect()
+}
+
+/// Clone is not implemented for Keypair
+pub fn clone_refs(vec: &[&Keypair]) -> Vec<Keypair> {
+    vec.iter().map(|k| clone(k)).collect()
+}
+
+/// additional methods for keypair
+pub trait KeypairExt: Sealed {
+    /// Clone is not implemented for Keypair. This lets you write the same
+    /// code you could use if Clone were implemented.
+    fn clone(&self) -> Self;
+}
+seal!(Keypair);
+
+impl KeypairExt for Keypair {
+    fn clone(&self) -> Self {
+        clone(self)
+    }
 }

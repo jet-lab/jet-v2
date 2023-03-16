@@ -325,10 +325,13 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
         match self.client.account_exists(&loan_account).await? {
             true => Ok(vec![]),
             false => Ok(vec![
-                self.account.builder.adapter_invoke(
-                    self.builder
-                        .register_loan(self.account.address, self.client.signer()),
-                ),
+                self.account
+                    .builder
+                    .adapter_invoke(self.builder.register_loan(
+                        self.account.address,
+                        self.client.signer(),
+                        self.account.airspace(),
+                    )),
                 self.instruction_for_refresh()?,
             ]),
         }

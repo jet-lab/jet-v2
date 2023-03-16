@@ -24,6 +24,7 @@ use anyhow::Result;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
+pub mod openbook_swap;
 pub mod saber_swap;
 pub mod spl_swap;
 

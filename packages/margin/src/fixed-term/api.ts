@@ -167,6 +167,13 @@ export const requestLoan = async ({
   instructions.push(postfreshIXS)
 
   const orderIXS: TransactionInstruction[] = []
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions: orderIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: market.config.underlyingOracle
+  })
+
   // Create borrow instruction
   const borrowOffer = await market.market.requestBorrowIx(
     marginAccount,
@@ -211,6 +218,7 @@ export const cancelOrder = async ({ market, marginAccount, provider, orderId, po
     markets,
     marketAddress: market.market.address
   })
+
   return sendAll(provider, [instructions])
 }
 
@@ -237,7 +245,7 @@ export const borrowNow = async ({
 }: IBorrowNow): Promise<string> => {
   const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
-  
+
   const prefreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
@@ -264,6 +272,12 @@ export const borrowNow = async ({
     marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions: postfreshIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
+  })
 
   // Create borrow instruction
   const orderIXS: TransactionInstruction[] = []
@@ -454,6 +468,12 @@ export const repay = async ({
   })
   instructions.push(poolIXS)
 
+  await marginAccount.withRefreshDepositPosition({
+    instructions: poolIXS,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
+  })
+
   const orderIXS: TransactionInstruction[] = []
   const pool = pools[market.token.symbol]
   await pool.withWithdrawToMargin({
@@ -550,7 +570,7 @@ export const redeem = async ({
   instructions.push(refreshIxs)
 
   const redeemIxs: TransactionInstruction[] = []
-  const sortedDeposits = deposits.sort((a, b) => a.sequence_number - b.sequence_number )
+  const sortedDeposits = deposits.sort((a, b) => a.sequence_number - b.sequence_number)
 
   for (let i = 0; i < sortedDeposits.length; i++) {
     const deposit = sortedDeposits[i]
@@ -564,7 +584,7 @@ export const redeem = async ({
       adapterInstruction: redeem
     })
   }
-  
+
   instructions.push(redeemIxs)
   return sendAll(provider, [instructions])
 }

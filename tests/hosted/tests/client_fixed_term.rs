@@ -1,15 +1,15 @@
 use std::time::SystemTime;
 
+use hosted_tests::environment::TestToken;
 use hosted_tests::util::assert_program_error;
 use jet_client::fixed_term::MarketInfo;
 
 use jet_client::margin::MarginAccountClient;
 use jet_client_native::{JetSimulationClient, SimulationClient};
-use jet_environment::config::{FixedTermMarketConfig, TokenDescription};
-use jet_instructions::fixed_term::FixedTermIxBuilder;
+use jet_instructions::fixed_term::derive;
 
 use hosted_tests::actions::*;
-use hosted_tests::context::{TestContext, TestContextSetupInfo, DEFAULT_POOL_CONFIG};
+use hosted_tests::context::{TestContext, TestContextSetupInfo};
 
 type MarginSimulationClient = MarginAccountClient<SimulationClient>;
 
@@ -26,36 +26,13 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
     let setup_config = TestContextSetupInfo {
         is_restricted: false,
         tokens: vec![
-            TokenDescription {
-                name: "TSOL".to_string(),
-                symbol: "TSOL".to_string(),
-                decimals: Some(9),
-                collateral_weight: 100,
-                max_leverage: 20_00,
-                margin_pool: Some(DEFAULT_POOL_CONFIG),
-                fixed_term_markets: vec![],
-                ..Default::default()
-            },
-            TokenDescription {
+            TestToken::new("TSOL").into(),
+            TestToken {
                 name: "USDC".to_string(),
-                symbol: "".to_string(),
-                decimals: Some(6),
-                collateral_weight: 100,
-                max_leverage: 20_00,
-                margin_pool: Some(DEFAULT_POOL_CONFIG),
-                fixed_term_markets: vec![FixedTermMarketConfig {
-                    borrow_tenor: tenor,
-                    lend_tenor: tenor,
-                    origination_fee: 0,
-                    min_order_size: 1_000_000,
-                    paused: false,
-                    ticket_price: Some(0.9),
-                    ticket_collateral_weight: 90,
-                    ticket_pyth_price: None,
-                    ticket_pyth_product: None,
-                }],
-                ..Default::default()
-            },
+                margin_pool: true,
+                fixed_term_tenors: vec![tenor],
+            }
+            .into(),
         ],
         spl_swap_pools: vec!["TSOL/USDC"],
     };
@@ -115,7 +92,7 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
 
 macro_rules! setup_context {
     ($tenor:expr) => {{
-        let name = format!("{}_{}", module_path!(), line!());
+        let name = hosted_tests::fn_name_and_try_num!();
         setup_context(&name, $tenor).await
     }};
 }
@@ -382,7 +359,7 @@ async fn can_cancel_orders() -> anyhow::Result<()> {
 
     let orders = accounts[0].fixed_term(&market.address).unwrap().orders();
     let claims_token = Token {
-        mint: FixedTermIxBuilder::claims_mint(&market.address),
+        mint: derive::claims_mint(&market.address),
         decimals: usdc.decimals,
     };
 

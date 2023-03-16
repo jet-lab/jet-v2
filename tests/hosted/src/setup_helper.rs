@@ -6,16 +6,17 @@ use anyhow::{Error, Result};
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
 use jet_margin_sdk::solana::keypair::clone;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, WithSigner};
+use jet_margin_sdk::solana::transaction::{
+    SendTransactionBuilder, TransactionBuilderExt, WithSigner,
+};
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::tx_builder::TokenDepositsConfig;
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::{create_wallet, SolanaRpcClient};
+use jet_simulation::SolanaRpcClient;
 use tokio::try_join;
 
 use crate::margin_test_context;
@@ -76,7 +77,6 @@ pub async fn setup_token(
         },
         collateral_weight,
     };
-
     try_join!(
         ctx.margin.create_pool(&setup),
         ctx.tokens.set_price(&token, &price),
@@ -143,14 +143,14 @@ pub async fn setup_user(
     tokens: Vec<(Pubkey, u64, u64)>,
 ) -> Result<TestUser> {
     // Create our two user wallets, with some SOL funding to get started
-    let wallet = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet = ctx.create_wallet(10).await?;
+
+    // Add an airspace permit for the user
+    ctx.issue_permit(wallet.pubkey()).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user = ctx.margin.user(&wallet, 0)?;
-
-    // Initialize the margin accounts for each user
-    user.create_account().await?;
+    let user = ctx.margin.user(&wallet, 0).created().await?;
 
     let mut mint_to_token_account = HashMap::new();
     for (mint, in_wallet, in_pool) in tokens {
@@ -192,6 +192,7 @@ pub async fn register_deposit(
     airspace: Pubkey,
     airspace_authority: &Keypair,
     mint: Pubkey,
+    collateral_weight: Option<u16>,
 ) -> Result<Signature> {
     let config_builder = MarginConfigIxBuilder::new(
         airspace,
@@ -218,7 +219,7 @@ pub async fn register_deposit(
                     },
                 },
                 token_kind: TokenKind::Collateral,
-                value_modifier: 100,
+                value_modifier: collateral_weight.unwrap_or(100),
                 max_staleness: 0,
             }),
         )

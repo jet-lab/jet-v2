@@ -12,3 +12,10 @@ export const friendlyMarketName = (symbol: string, tenor: number): string => {
 export const marketToString = (market: FixedTermMarketConfig): string => {
   return friendlyMarketName(market.symbol, market.borrowTenor);
 };
+
+export const feesCalc = (rate: number, interest: number) => {
+  const feesRate = 0.005; // hardcoded 50 basis points
+  const ratio = rate / feesRate;
+  const fees = interest / ratio;
+  return fees;
+};

@@ -11,13 +11,13 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
 use hosted_tests::{
-    context::MarginTestContext, fn_name, margin::MarginPoolSetupInfo, margin_test_context,
-    spl_swap::SwapPoolConfig,
+    context::MarginTestContext, fn_name_and_try_num, margin::MarginPoolSetupInfo,
+    margin_test_context, spl_swap::SwapPoolConfig,
 };
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::{assert_custom_program_error, create_wallet};
+use jet_simulation::assert_custom_program_error;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -38,7 +38,7 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn spl_swap_v2() -> Result<(), anyhow::Error> {
-    let result = swap_test_impl(fn_name!(), spl_token_swap_v2::id()).await;
+    let result = swap_test_impl(&fn_name_and_try_num!(), spl_token_swap_v2::id()).await;
     println!("{:#?}", &result);
 
     result
@@ -48,14 +48,14 @@ async fn spl_swap_v2() -> Result<(), anyhow::Error> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v1() -> Result<(), anyhow::Error> {
-    swap_test_impl(fn_name!(), orca_swap_v1::id()).await
+    swap_test_impl(&fn_name_and_try_num!(), orca_swap_v1::id()).await
 }
 
 /// Test token swaps for orca v2
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v2() -> Result<(), anyhow::Error> {
-    swap_test_impl(fn_name!(), orca_swap_v2::id()).await
+    swap_test_impl(&fn_name_and_try_num!(), orca_swap_v2::id()).await
 }
 
 struct TestEnv {
@@ -113,17 +113,17 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
     let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = ctx.create_wallet(10).await?;
+    let wallet_b = ctx.create_wallet(10).await?;
+
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
-
-    // Initialize the margin accounts for each user
-    user_a.create_account().await?;
-    user_b.create_account().await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
 
     // Create a swap pool with sufficient liquidity
     let swap_pool = SplSwapPool::configure(

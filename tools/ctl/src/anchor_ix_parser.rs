@@ -18,9 +18,42 @@ pub struct ParsedInstruction {
     pub accounts: Vec<ParsedAccountInput>,
     pub data: DataValue,
 }
+
+impl ParsedInstruction {
+    pub fn account_map(&self) -> HashMap<String, Pubkey> {
+        let mut map = HashMap::new();
+        for account in &self.accounts {
+            map.extend(account.map());
+        }
+        map
+    }
+}
+
+#[derive(Debug)]
 pub enum ParsedAccountInput {
     Account(String, Pubkey),
     Group(String, Vec<ParsedAccountInput>),
+}
+
+impl ParsedAccountInput {
+    /// Nested accounts are fully qualified with periods:
+    /// "topField.middleField.bottomField"
+    fn map(&self) -> HashMap<String, Pubkey> {
+        let mut map = HashMap::new();
+        match self {
+            ParsedAccountInput::Account(name, addr) => {
+                map.insert(name.to_owned(), *addr);
+            }
+            ParsedAccountInput::Group(name, accounts) => {
+                for account in accounts {
+                    for (subname, addr) in account.map() {
+                        map.insert(format!("{name}.{subname}"), addr);
+                    }
+                }
+            }
+        }
+        map
+    }
 }
 
 pub struct AnchorParser<'a> {
@@ -120,6 +153,53 @@ pub enum DataValue {
     Struct(Vec<(String, DataValue)>),
     EnumTuple(String, Vec<DataValue>),
     EnumStruct(String, Vec<(String, DataValue)>),
+}
+
+impl DataValue {
+    pub fn try_as_integer_unsigned(&self) -> Result<u128> {
+        match self {
+            DataValue::IntegerUnsigned(n) => Ok(*n),
+            _ => bail!("unexpected variant: {}", self.variant_name()),
+        }
+    }
+
+    pub fn try_as_enum_tuple(&self) -> Result<(&String, &Vec<DataValue>)> {
+        match self {
+            DataValue::EnumTuple(name, items) => Ok((name, items)),
+            _ => bail!("unexpected variant: {}", self.variant_name()),
+        }
+    }
+
+    pub fn try_as_struct(&self) -> Result<&Vec<(String, DataValue)>> {
+        match self {
+            DataValue::Struct(fields) => Ok(fields),
+            _ => bail!("unexpected variant: {}", self.variant_name()),
+        }
+    }
+
+    pub fn try_as_optional(&self) -> Result<&Option<Box<DataValue>>> {
+        match self {
+            DataValue::Optional(fields) => Ok(fields),
+            _ => bail!("unexpected variant: {}", self.variant_name()),
+        }
+    }
+
+    pub fn variant_name(&self) -> String {
+        match self {
+            DataValue::IntegerUnsigned(_) => "IntegerUnsigned".to_owned(),
+            DataValue::Bool(_) => "Bool".to_owned(),
+            DataValue::IntegerSigned(_) => "IntegerSigned".to_owned(),
+            DataValue::FloatingPoint(_) => "FloatingPoint".to_owned(),
+            DataValue::String(_) => "String".to_owned(),
+            DataValue::Blob(_) => "Blob".to_owned(),
+            DataValue::PublicKey(_) => "PublicKey".to_owned(),
+            DataValue::Optional(_) => "Optional".to_owned(),
+            DataValue::Array(_) => "Array".to_owned(),
+            DataValue::Struct(_) => "Struct".to_owned(),
+            DataValue::EnumTuple(_, _) => "EnumTuple".to_owned(),
+            DataValue::EnumStruct(_, _) => "EnumStruct".to_owned(),
+        }
+    }
 }
 
 impl Debug for DataValue {

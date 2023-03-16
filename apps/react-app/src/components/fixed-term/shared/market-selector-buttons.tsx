@@ -20,10 +20,10 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-          ? process.env.REACT_APP_DEV_DATA_API
-          : cluster === 'localnet'
-            ? process.env.REACT_APP_LOCAL_DATA_API
-            : '',
+        ? process.env.REACT_APP_DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.REACT_APP_LOCAL_DATA_API
+        : '',
     [cluster]
   );
   const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market, marginAccount);
@@ -136,7 +136,13 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         </div>
       ) : hasToRepay ? (
         <div className="assets-to-settle">
-          <span>You owe <span className="click-to-repay" onClick={() => setRepayAmount(totalBorrowed.tokens.toString())}>{totalBorrowed.tokens} {token.symbol}</span> on this market.</span>
+          <span>
+            You owe{' '}
+            <span className="click-to-repay" onClick={() => setRepayAmount(totalBorrowed.tokens.toString())}>
+              {totalBorrowed.tokens} {token.symbol}
+            </span>{' '}
+            on this market.
+          </span>
           <span className="input-and-button">
             <input
               value={repayAmount}
