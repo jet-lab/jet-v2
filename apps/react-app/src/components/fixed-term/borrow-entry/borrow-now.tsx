@@ -176,6 +176,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           Loan amount
           <InputNumber
             className="input-amount"
+            value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
               setAmount(new BN(e * 10 ** decimals));
             }, 300)}
