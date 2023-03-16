@@ -50,9 +50,8 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
         ctx.create_user().await.unwrap(),
     ];
 
-    // create margin accounts for each user, and sync the client state
+    // sync the client state
     for user in &users {
-        user.margin().create_account().await.unwrap();
         user.state().sync_all().await.unwrap();
     }
 

@@ -720,7 +720,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         .proxy
         .create_deposit_position(mint)
         .with_signers(&[borrower.owner.clone()])
-        .send_and_confirm(&ctx.rpc)
+        .send_and_confirm(&ctx.rpc())
         .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;
 

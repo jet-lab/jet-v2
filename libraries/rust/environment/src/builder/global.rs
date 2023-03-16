@@ -114,7 +114,7 @@ async fn register_airspace_adapters<'a, I: NetworkUserInterface>(
     Ok(())
 }
 
-pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
+pub async fn configure_tokens<'a, I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     airspace: &Pubkey,
     cranks: &[Pubkey],
@@ -190,7 +190,7 @@ pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn create_test_tokens<'a, I: NetworkUserInterface>(
+pub async fn create_test_tokens<'a, I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     oracle_authority: &Pubkey,
     tokens: impl IntoIterator<Item = &'a TokenDescription>,

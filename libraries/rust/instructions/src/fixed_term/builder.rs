@@ -1,9 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use jet_fixed_term::{
-    margin::{instructions::MarketSide, state::AutoRollConfig},
-    seeds,
-};
+use jet_fixed_term::margin::{instructions::MarketSide, state::AutoRollConfig};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
@@ -58,12 +55,7 @@ impl FixedTermIxBuilder {
         FixedTermIxBuilder {
             airspace: market.airspace,
             authority: Pubkey::default(), //todo
-            market: derive::fixed_term_address(&[
-                seeds::MARKET,
-                market.airspace.as_ref(),
-                market.underlying_token_mint.as_ref(),
-                &market.seed,
-            ]),
+            market: derive::market(&market.airspace, &market.underlying_token_mint, market.seed),
             underlying_mint: market.underlying_token_mint,
             underlying_oracle: market.underlying_oracle,
             ticket_oracle: market.ticket_oracle,

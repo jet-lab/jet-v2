@@ -125,7 +125,7 @@ impl TestManager {
             .await?;
         let ticket_mint = derive::fixed_term_address(&[
             jet_fixed_term::seeds::TICKET_MINT,
-            derive::market(&client.margin.airspace(), &mint, MARKET_SEED).as_ref(),
+            derive::market(&client.airspace, &mint, MARKET_SEED).as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.solana.clone())
             .create_oracle(&ticket_mint)
@@ -133,7 +133,7 @@ impl TestManager {
 
         Self::new(
             client.solana.clone(),
-            client.margin.airspace(),
+            client.airspace,
             &mint,
             mint_authority,
             OrderbookKeypairs::generate(&client.solana.keygen),
@@ -1342,7 +1342,7 @@ pub async fn create_and_fund_fixed_term_market_margin_user(
     let wallet = user.user.signer;
 
     // set up proxy
-    let proxy = RefreshingProxy::full(&ctx.rpc, &wallet, 0, ctx.margin.airspace());
+    let proxy = RefreshingProxy::full(&ctx.solana.rpc, &wallet, 0, ctx.airspace);
 
     let user = FixedTermUser::new_funded(manager.clone(), wallet, proxy.clone())
         .await

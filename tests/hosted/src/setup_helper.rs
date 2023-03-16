@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 
+use jet_environment::config::TokenDescription;
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
 use jet_margin_sdk::solana::keypair::clone;
@@ -19,6 +20,7 @@ use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_simulation::SolanaRpcClient;
 use tokio::try_join;
 
+use crate::environment::TestToken;
 use crate::margin_test_context;
 use crate::pricing::TokenPricer;
 use crate::spl_swap::{create_swap_pools, SwapRegistry};
@@ -51,10 +53,10 @@ pub async fn setup_token(
 ) -> Result<Pubkey, Error> {
     let token_keypair = ctx.generate_key();
     let token = token_keypair.pubkey();
+    let token_manager = ctx.tokens();
     let (token, token_oracle) = try_join!(
-        ctx.tokens
-            .create_token_from(token_keypair, decimals, None, None),
-        ctx.tokens.create_oracle(&token)
+        token_manager.create_token_from(token_keypair, decimals, None, None),
+        token_manager.create_oracle(&token)
     )?;
     let setup = MarginPoolSetupInfo {
         token,
@@ -77,12 +79,37 @@ pub async fn setup_token(
         },
         collateral_weight,
     };
+    let margin_client = ctx.margin_client();
     try_join!(
-        ctx.margin.create_pool(&setup),
-        ctx.tokens.set_price(&token, &price),
-        ctx.margin
-            .configure_token_deposits(&token, Some(&deposit_config))
+        margin_client.create_pool(&setup),
+        token_manager.set_price(&token, &price),
+        margin_client.configure_token_deposits(&token, Some(&deposit_config))
     )?;
+
+    Ok(token)
+}
+
+/// TODO: Most of the code in this file can be rewritten like this function,
+/// which could supersede `setup_token`, but it requires several things to be
+/// migrated at the same time, since it uses a different approach to storing
+/// prices on chain.
+#[allow(unused)]
+async fn __setup_token2(
+    ctx: &MarginTestContext,
+    decimals: u8,
+    collateral_weight: u16,
+    max_leverage: u16,
+    price: f64,
+) -> Result<Pubkey, Error> {
+    let name = ctx.generate_key().pubkey().to_string()[..4].to_string();
+    let token = TokenDescription {
+        decimals: Some(decimals),
+        collateral_weight,
+        max_leverage,
+        ..TestToken::with_pool(&name).into()
+    };
+    let token = ctx.create_token(token).await?;
+    ctx.set_price(&token, price, 0.01).await?;
 
     Ok(token)
 }
@@ -120,12 +147,13 @@ pub async fn create_tokens(
     let tokens: Vec<Pubkey> = (0..n)
         .map_async(|_| setup_token(ctx, 9, 1_00, 4_00, 1.0))
         .await?;
-    let owner = ctx.rpc.payer().pubkey();
+    let owner = ctx.solana.rpc.payer().pubkey();
+    let token_manager = ctx.tokens();
     let (swaps, vaults) = try_join!(
         create_swap_pools(&ctx.solana, &tokens),
         tokens
             .iter()
-            .map_async(|mint| { ctx.tokens.create_account_funded(mint, &owner, u64::MAX / 4) })
+            .map_async(|mint| { token_manager.create_account_funded(mint, &owner, u64::MAX / 4) })
     )?;
     let vaults = tokens
         .clone()
@@ -143,20 +171,20 @@ pub async fn setup_user(
     tokens: Vec<(Pubkey, u64, u64)>,
 ) -> Result<TestUser> {
     // Create our two user wallets, with some SOL funding to get started
-    let wallet = ctx.create_wallet(10).await?;
+    let wallet = ctx.solana.create_wallet(10).await?;
 
     // Add an airspace permit for the user
     ctx.issue_permit(wallet.pubkey()).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user = ctx.margin.user(&wallet, 0).created().await?;
+    let user = ctx.margin_client().user(&wallet, 0).created().await?;
 
     let mut mint_to_token_account = HashMap::new();
     for (mint, in_wallet, in_pool) in tokens {
         // Create some tokens for each user to deposit
         let token_account = ctx
-            .tokens
+            .tokens()
             .create_account_funded(&mint, &wallet.pubkey(), in_wallet + in_pool)
             .await?;
         mint_to_token_account.insert(mint, token_account);
@@ -168,7 +196,7 @@ pub async fn setup_user(
         }
 
         // Verify user tokens have been deposited
-        assert_eq!(in_wallet, ctx.tokens.get_balance(&token_account).await?);
+        assert_eq!(in_wallet, ctx.tokens().get_balance(&token_account).await?);
     }
 
     let test_user = TestUser {
@@ -180,6 +208,7 @@ pub async fn setup_user(
     // todo try to remove this and let tests do it instead only when necessary
     test_user
         .ctx
+        .solana
         .rpc
         .send_and_confirm_condensed(test_user.refresh_positions_with_oracles_txs().await?)
         .await?;

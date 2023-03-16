@@ -55,7 +55,10 @@ pub async fn add_time(ctx: &TestContext, increment: i64) {
 
 /// change price of a token
 pub async fn set_price(ctx: &TestContext, token: &Token, price: f64, confidence: f64) {
-    ctx.set_price(&token.mint, price, confidence).await.unwrap()
+    ctx.inner
+        .set_price(&token.mint, price, confidence)
+        .await
+        .unwrap()
 }
 
 /// airdrop tokens to a user client
@@ -299,7 +302,7 @@ pub async fn redeem_term_deposits(
 }
 
 pub async fn consume_events(ctx: &TestContext, market: &MarketInfo) {
-    let consumer = EventConsumer::new(ctx.rpc().clone_with_payer(ctx.admins.crank.clone()).into());
+    let consumer = EventConsumer::new(ctx.rpc().clone_with_payer(ctx.inner.crank.clone()).into());
 
     consumer.load_markets(&[market.address]).await.unwrap();
     consumer.sync_users().await.unwrap();

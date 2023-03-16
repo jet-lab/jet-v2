@@ -27,10 +27,13 @@ pub(crate) mod margin;
 pub(crate) mod margin_pool;
 pub(crate) mod swap;
 
-pub use global::configure_environment;
+pub use global::{configure_environment, configure_tokens, create_test_tokens};
 pub use swap::resolve_swap_program;
 
 /// Descriptions for errors while building the configuration instructions
+/// - TODO: It would be great to find a way to make this Sync + Send, but it's
+///   not straightforward due to the wasm error not being Sync or Send, which
+///   needs to go into InterfaceError.
 #[derive(Error, Debug)]
 pub enum BuilderError {
     #[error("error using network interface: {0:?}")]
@@ -119,6 +122,21 @@ impl<I: NetworkUserInterface> Builder<I> {
             setup_tx: vec![],
             propose_tx: vec![],
         })
+    }
+
+    /// Variant of the normal constructor, with three differences:  
+    /// ✓ never need to be awaited  
+    /// ✓ never returns an error  
+    /// 🗴 NetworkKind must be known in advance  
+    pub fn new_infallible(network_interface: I, authority: Pubkey, network: NetworkKind) -> Self {
+        Self {
+            authority,
+            network,
+            interface: network_interface,
+            proposal_context: None,
+            setup_tx: vec![],
+            propose_tx: vec![],
+        }
     }
 
     pub fn build(self) -> PlanInstructions {
