@@ -58,7 +58,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     [selectedPoolKey, pools]
   );
   const wallet = useWallet();
-  const [amount, setAmount] = useState(new BN(0));
+  const [amount, setAmount] = useState<BN | undefined>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
@@ -68,7 +68,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    handleForecast(amount);
+    if (amount) handleForecast(amount);
   }, [amount, marginAccount?.address, marketAndConfig]);
 
   const disabled =
@@ -76,7 +76,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !wallet.publicKey ||
     !currentPool ||
     !pools ||
-    amount.lte(new BN(0)) ||
+    amount?.lte(new BN(0)) ||
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
@@ -131,6 +131,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   };
 
   const createBorrowOrder = async () => {
+    if (!amount) return;
     setPending(true);
     let signature: string;
     try {
@@ -162,7 +163,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         getExplorerUrl(e.signature, cluster, explorer)
       );
       setPending(false);
-      throw e;
+      console.error(e);
+    } finally {
+      setAmount(undefined);
     }
   };
 
@@ -173,6 +176,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           Loan amount
           <InputNumber
             className="input-amount"
+            value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
               setAmount(new BN(e * 10 ** decimals));
             }, 300)}
@@ -214,11 +218,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          {forecast && (
-            <span>
-              {`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}
-            </span>
-          )}
+          {forecast && <span>{`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}</span>}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
@@ -226,11 +226,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Fees</span>
-          {forecast && (
-            <span>
-              {`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}
-            </span>
-          )}
+          {forecast && <span>{`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}</span>}
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
@@ -254,14 +250,11 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The request would match with your own offers in this market.</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && (
+      {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
       )}
       {forecast && forecast.unfilledQty > 0 && (
-        <div className="fixed-term-warning">
-          Current max liquidity on this market is{' '}
-          {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}
-        </div>
+        <div className="fixed-term-warning">Not enough liquidity on this market, try a smaller amount.</div>
       )}
       {forecast && forecast.effectiveRate === 0 && (
         <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>
