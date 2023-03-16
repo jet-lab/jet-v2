@@ -1,128 +1,228 @@
-import { airdrop, borrow, deposit, loadPageAndCreateAccount } from '../support/actions';
+import { airdrop, borrow, deposit, loadPageAndFundSol, createAccount } from '../support/actions';
 
 describe('Fixed Term Market', () => {
-  it('can get data from the API endpoint', () => {
-    const res = cy.request('http://localhost:3002/health').as('status');
-    cy.get('@status').should((response: any) => {
-      expect(response.body).to.have.property('database', 'Ready');
-      expect(response).to.have.property('headers');
-      expect(response).to.have.property('duration');
+  describe('Setup', () => {
+    it('can get data from the API endpoint', () => {
+      const res = cy.request('http://localhost:3002/health').as('status');
+      cy.get('@status').should((response: any) => {
+        expect(response.body).to.have.property('database', 'Ready');
+        expect(response).to.have.property('headers');
+        expect(response).to.have.property('duration');
+      });
+    });
+
+    it('loads the page', () => {
+      loadPageAndFundSol();
+    });
+
+    describe('funds the lender account', () => {
+      it('creates a lender account', () => {
+        // Account 1 = Lender
+        createAccount();
+      });
+
+      it('airdrops USDC', () => {
+        airdrop('USDC', 'USDC');
+      });
+
+      it('deposits USDC', () => {
+        deposit('USDC', 50000);
+      });
+    });
+
+    describe('funds the borrower account', () => {
+      it('creates a borrower account', () => {
+        // Account 2 = Borrower
+        createAccount();
+      });
+      it('airdrops USDC', () => {
+        airdrop('USDC', 'USDC');
+      });
+
+      it('deposits USDC', () => {
+        deposit('USDC', 50000);
+      });
     });
   });
-  it('creates a market maker account', () => {
-    loadPageAndCreateAccount();
+
+  describe('can create one fixed rate lend order', () => {
+    const lendAmtString = '1000';
+    const interestString = '10';
+
+    it('selects the lender account', () => {
+      cy.contains('ACCOUNT 1').as('lenderAccount');
+      cy.get('@lenderAccount').click();
+    });
+
+    it('selects the offer loan tab', () => {
+      const lendLink = cy.contains('.nav-link', 'Lend');
+      lendLink.click();
+      cy.contains('lend now'); // ensure we loaded the page fully
+    });
+
+    it('inputs the lend amount', () => {
+      const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
+      amountInput.click();
+      amountInput.type(lendAmtString);
+      amountInput.blur();
+    });
+
+    it('inputs the interest rate', () => {
+      const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
+      interestInput.click();
+      interestInput.type(interestString);
+      interestInput.blur();
+    });
+    it('clicks the button once enabled', () => {
+      const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
+      submitButton.click();
+    });
+
+    it('successfully receives confirmation', () => {
+      cy.contains(`Your lend offer for ${lendAmtString} USDC at ${interestString}% was created successfully`);
+    });
   });
 
-  it('funds the market maker account', () => {
-    airdrop('SOL', 'SOL');
-    airdrop('USDC', 'USDC');
-    airdrop('BTC', 'BTC');
-    airdrop('USDT', 'USDT');
-    deposit('SOL', 1);
-    deposit('BTC', 1);
-    deposit('USDT', 1);
-    deposit('USDC', 50000);
+  describe('can create one fixed rate borrow order', () => {
+    const borrowAmtString = '100';
+    const interestString = '5';
+
+    it('selects the borrower account', () => {
+      cy.contains('ACCOUNT 2').as('borrowerAccount');
+      cy.get('@borrowerAccount').click();
+    });
+
+    it('selects the request loan tab', () => {
+      const borrowLink = cy.contains('.nav-link', 'Borrow');
+      borrowLink.click();
+      cy.contains('borrow now'); // ensure we loaded the page fully
+    });
+
+    it('inputs the borrow amount', () => {
+      const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
+      amountInput.clear();
+      amountInput.click().type(borrowAmtString);
+      amountInput.blur();
+    });
+
+    it('inputs the interest rate', () => {
+      const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
+      interestInput.clear();
+      interestInput.click().type(interestString);
+      interestInput.blur();
+    });
+
+    it('clicks the button once enabled', () => {
+      const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
+      submitButton.click();
+    });
+
+    it('successfully receives confirmation', () => {
+      cy.contains(`Your borrow offer for ${borrowAmtString} USDC at ${interestString}% was created successfully`);
+    });
   });
 
-  it('can create one fixed rate lend order', () => {
-    cy.wait(1000);
-    const lendLink = cy.contains('.nav-link', 'Lend');
-    lendLink.click();
-    const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
-    const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
-    amountInput.click().type(`1000`);
-    interestInput.click().type(`10`);
-    const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-    submitButton.click();
-    cy.contains('Your lend offer for 1000 USDC at 10% was created successfully');
+  describe('issues a lend now order', () => {
+    const lendAmtString = '20';
+
+    it('selects the lender account', () => {
+      cy.contains('ACCOUNT 1').as('lenderAccount');
+      cy.get('@lenderAccount').click();
+    });
+
+    it('selects the lend now tab', () => {
+      const lendLink = cy.contains('.nav-link', 'Lend');
+      lendLink.click();
+      const lendNow = cy.contains('lend now');
+      lendNow.click();
+      cy.contains('Lend 1 day USDC');
+    });
+
+    it('enters the amount', () => {
+      const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
+      amountInput.clear();
+      amountInput.click();
+      amountInput.type(lendAmtString);
+      amountInput.blur();
+    });
+
+    it('clicks the button once enabled', () => {
+      const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
+      submitButton.click();
+    });
+
+    it('received the correct notification', () => {
+      cy.contains(`Your lend order for ${lendAmtString} USDC was filled successfully`);
+    });
   });
 
-  it('can create a second fixed rate lend order', () => {
-    const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
-    const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
-    amountInput.focus().clear();
-    amountInput.click().type(`2000`);
-    interestInput.focus().clear();
-    interestInput.click().type(`10`);
-    const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-    submitButton.click();
-    cy.contains('Your lend offer for 2000 USDC at 10% was created successfully');
+  describe('issues a borrow now order', () => {
+    const lendAmtString = '20';
+
+    it('selects the borrower account', () => {
+      cy.contains('ACCOUNT 2').as('borrowerAccount');
+      cy.get('@borrowerAccount').click();
+    });
+
+    it('selects the borrow now tab', () => {
+      const borrowLink = cy.contains('.nav-link', 'Borrow');
+      borrowLink.click();
+      const borrowNowTab = cy.contains('borrow now');
+      borrowNowTab.click();
+      cy.contains('Borrow 1 day USDC');
+    });
+
+    it('enters the loan amount', () => {
+      const amountInput = cy.get('.fixed-term .borrow-now .input-amount input').should('not.be.disabled');
+      amountInput.click();
+      amountInput.type(lendAmtString);
+      amountInput.blur();
+    });
+    it('submits the transaction', () => {
+      const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
+      submitButton.click();
+    });
+
+    it('receives the correct notification', () => {
+      cy.contains(`Your borrow order for ${lendAmtString} USDC was filled successfully`);
+    });
   });
 
-  it('can create one fixed rate borrow order', () => {
-    cy.wait(1000);
-    const borrowLink = cy.contains('.nav-link', 'Borrow');
-    borrowLink.click();
-    const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
-    const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
-    amountInput.click().type(`1000`);
-    interestInput.click().type(`5`);
-    const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-    submitButton.click();
-    cy.contains('Your borrow offer for 1000 USDC at 5% was created successfully');
+  describe('can cancel an outstanding order', () => {
+    it('selects the lender account', () => {
+      cy.contains('ACCOUNT 1').as('lenderAccount');
+      cy.get('@lenderAccount').click();
+    });
+
+    it('submits the order cancellation', () => {
+      cy.get('.debt-detail tr .anticon-close').first().click();
+    });
+    it('receives the correct notification', () => {
+      cy.contains('Order Cancelled');
+    });
   });
 
-  it('can create a second fixed rate borrow order', () => {
-    const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
-    const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
-    amountInput.focus().clear();
-    amountInput.click().type(`2000`);
-    interestInput.focus().clear();
-    interestInput.click().type(`5`);
-    const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-    submitButton.click();
-    cy.contains('Your borrow offer for 2000 USDC at 5% was created successfully');
-  });
+  describe('can repay and outstanding borrow', () => {
+    it('selects the borrower account', () => {
+      cy.contains('ACCOUNT 2').as('borrowerAccount');
+      cy.get('@borrowerAccount').click();
+      cy.contains('You owe');
+    });
 
-  it('creates a market taker account', () => {
-    loadPageAndCreateAccount();
-  });
+    it('enters the repayment amount', () => {
+      const repayInput = cy.get('.assets-to-settle input').should('not.be.disabled');
+      repayInput.clear();
+      repayInput.click();
+      repayInput.type('110');
+      repayInput.blur();
+    });
 
-  it('funds the market taker account', () => {
-    airdrop('SOL', 'SOL');
-    airdrop('USDC', 'USDC');
-    airdrop('BTC', 'BTC');
-    airdrop('USDT', 'USDT');
-    deposit('SOL', 1);
-    deposit('BTC', 1);
-    deposit('USDT', 1);
-    deposit('USDC', 50000);
-  });
-
-  it('issues a lend now order', () => {
-    cy.wait(1000);
-    const lendLink = cy.contains('.nav-link', 'Lend');
-    lendLink.click();
-    const lendNow = cy.contains('lend now');
-    lendNow.click();
-    const amountInput = cy.get('.fixed-term .lend-now .input-amount input').should('not.be.disabled');
-    amountInput.click();
-    cy.wait(5000);
-    amountInput.type(`1000`);
-    const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-    submitButton.click();
-    cy.contains('Your lend order for 1000 USDC was filled successfully');
-  });
-
-  it('issues a borrow now order', () => {
-    cy.wait(1000);
-    const borrowLink = cy.contains('.nav-link', 'Borrow');
-    borrowLink.click();
-    const borrowNowTab = cy.contains('borrow now');
-    borrowNowTab.click();
-    const amountInput = cy.get('.fixed-term .borrow-now .input-amount input').should('not.be.disabled');
-    amountInput.click();
-    cy.wait(5000);
-    amountInput.type(`100`);
-    const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
-    submitButton.click();
-    cy.contains('Your borrow order for 100 USDC was filled successfully');
-  });
-
-  it('can perform a borrow on a pool after a position on a fixed market could have gone stale', () => {
-    cy.wait(31000); // current stale time is 30 seconds
-    const poolsLink = cy.contains('.nav-link', 'Pools');
-    poolsLink.click();
-    borrow('USDC', 10);
+    it('submits the order', () => {
+      const repayButton = cy.contains('Repay Now');
+      repayButton.click();
+    });
+    it('receives the correct notification', () => {
+      cy.contains('Repay Successful');
+    });
   });
 });

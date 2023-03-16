@@ -8,12 +8,12 @@ use spl_associated_token_account::{
 use jet_instructions::{
     control::get_control_authority_address,
     fixed_term::{
-        derive_market_from_tenor, event_queue_len, orderbook_slab_len, FixedTermIxBuilder, Market,
-        OrderBookAddresses, FIXED_TERM_PROGRAM,
+        derive::{self, market_from_tenor},
+        event_queue_len, orderbook_slab_len, FixedTermIxBuilder, InitializeMarketParams, Market,
+        OrderbookAddresses, FIXED_TERM_PROGRAM,
     },
     test_service::{
-        self, derive_pyth_price, derive_pyth_product, derive_ticket_mint, derive_token_info,
-        TokenCreateParams,
+        self, derive_pyth_price, derive_pyth_product, derive_token_info, TokenCreateParams,
     },
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
@@ -36,8 +36,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
 ) -> Result<(), BuilderError> {
     let payer = builder.payer();
 
-    let market_address =
-        derive_market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
+    let market_address = market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
 
     let control_authority = get_control_authority_address();
     let fee_destination = get_associated_token_address(&control_authority, &token.mint);
@@ -67,7 +66,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
             token.pyth_price,
             token.pyth_price,
             Some(fee_destination),
-            OrderBookAddresses {
+            OrderbookAddresses {
                 bids: market.bids,
                 asks: market.asks,
                 event_queue: market.event_queue,
@@ -77,7 +76,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
 
     if builder.network != NetworkKind::Mainnet {
         // Register to get an oracle for the ticket token on testing networks
-        let ticket_mint = derive_ticket_mint(&market_address);
+        let ticket_mint = derive::ticket_mint(&market_address);
         let ticket_info = derive_token_info(&ticket_mint);
 
         log::info!(
@@ -158,9 +157,9 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     market_address: &Pubkey,
     config: &FixedTermMarketConfig,
 ) -> Result<(), BuilderError> {
-    let claims_mint = FixedTermIxBuilder::claims_mint(market_address);
-    let ticket_collateral_mint = FixedTermIxBuilder::ticket_collateral_mint(market_address);
-    let ticket_mint = derive_ticket_mint(market_address);
+    let claims_mint = derive::claims_mint(market_address);
+    let ticket_collateral_mint = derive::ticket_collateral_mint(market_address);
+    let ticket_mint = derive::ticket_mint(market_address);
 
     let ticket_oracle = match builder.network {
         NetworkKind::Localnet | NetworkKind::Devnet => Some(TokenOracle::Pyth {
@@ -230,7 +229,7 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     let key_bids = Keypair::new();
     let key_asks = Keypair::new();
 
-    let orderbook = OrderBookAddresses {
+    let orderbook = OrderbookAddresses {
         bids: key_bids.pubkey(),
         asks: key_asks.pubkey(),
         event_queue: key_eq.pubkey(),
@@ -302,11 +301,13 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     builder.propose([
         ix_builder.initialize_market(
             builder.proposal_payer(),
-            1,
-            seed,
-            config.borrow_tenor,
-            config.lend_tenor,
-            config.origination_fee,
+            InitializeMarketParams {
+                version_tag: 1,
+                seed,
+                borrow_tenor: config.borrow_tenor,
+                lend_tenor: config.lend_tenor,
+                origination_fee: config.origination_fee,
+            },
         ),
         ix_builder.initialize_orderbook(builder.proposal_payer(), config.min_order_size),
     ]);

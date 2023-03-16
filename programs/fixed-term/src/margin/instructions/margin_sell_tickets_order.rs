@@ -37,11 +37,10 @@ pub struct MarginSellTicketsOrder<'info> {
 }
 
 pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Result<()> {
-    let (info, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
-        ctx.accounts.inner.authority.key(),
+    let (info, order_summary) = ctx.accounts.inner.orderbook_mut.place_margin_order(
         Side::Ask,
         params,
-        ctx.accounts.margin_user.key(),
+        ctx.accounts.inner.authority.key(),
         ctx.accounts.margin_user.key(),
         ctx.remaining_accounts
             .iter()
@@ -56,7 +55,7 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
     )?;
 
     ctx.accounts.inner.sell_tickets(
-        info,
+        info.order_tag.as_u128(),
         order_summary,
         &params,
         Some(ctx.accounts.margin_user.key()),

@@ -590,7 +590,7 @@ macro_rules! create_test_runtime {
     [$($program:tt),+$(,)?] => {{
         let mut programs = vec![];
         $(programs.push($crate::program!($program));)+
-        TestRuntime::new(programs, [])
+        $crate::TestRuntime::new(programs, [])
     }}
 }
 

@@ -1,10 +1,10 @@
 use agnostic_orderbook::state::critbit::Slab;
 use bonfida_utils::fp_math::{fp32_div, fp32_mul_ceil, fp32_mul_floor};
 use jet_fixed_term::orderbook::state::{CallbackInfo, OrderTag};
-use serde::Serialize;
+use jet_program_common::interest_pricing::{f64_to_fp32, fp32_to_f64};
+use serde::{Deserialize, Serialize};
 use solana_program::pubkey::Pubkey;
 
-use crate::orderbook::interest_pricing::{f64_to_fp32, fp32_to_f64};
 use crate::orderbook::methods::price_to_rate;
 
 pub struct OrderbookModel {
@@ -13,7 +13,7 @@ pub struct OrderbookModel {
     asks: Vec<Order>,
 }
 
-#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Order {
     /// Pukbey of the signer allowed to make changes to this order
     pub owner: Pubkey,
@@ -129,6 +129,12 @@ pub struct LiquidityObservation {
     pub cumulative_rate: f64,
 }
 
+#[derive(Deserialize)]
+pub struct OrderbookSnapshot {
+    pub bids: Vec<Order>,
+    pub asks: Vec<Order>,
+}
+
 // TODO Include more info and checks, eg price bounds and minimum posted order sizes.
 const MIN_BASE_SIZE_POSTED: u64 = 10;
 impl OrderbookModel {
@@ -154,8 +160,8 @@ impl OrderbookModel {
                     let handle = slab1.find_by_key(leaf.key).unwrap();
                     let callback = slab1.get_callback_info(handle);
                     Order {
-                        owner: callback.owner,
-                        order_tag: callback.order_tag,
+                        owner: callback.owner(),
+                        order_tag: callback.order_tag(),
                         base_size: leaf.base_quantity,
                         price: leaf.price(),
                     }
@@ -165,6 +171,11 @@ impl OrderbookModel {
 
         self.bids = extract_orders(bids_buffer, false);
         self.asks = extract_orders(asks_buffer, true);
+    }
+
+    pub fn refresh_from_snapshot(&mut self, snapshot: OrderbookSnapshot) {
+        self.bids = snapshot.bids;
+        self.asks = snapshot.asks;
     }
 
     // TODO Interpolate on a set of points instead
@@ -694,5 +705,35 @@ mod test {
         assert!(sim.would_post);
         println!("{:?}", sim.fills);
         assert_eq!(sim.posted_quote_qty, 668);
+    }
+
+    #[test]
+    fn test_refresh_from_snapshot() {
+        let bids = vec![Order {
+            owner: Pubkey::default(),
+            order_tag: OrderTag::default(),
+            base_size: 123,
+            price: 456,
+        }];
+        let asks = vec![Order {
+            owner: Pubkey::default(),
+            order_tag: OrderTag::default(),
+            base_size: 789,
+            price: 101112,
+        }];
+
+        let mut om = OrderbookModel {
+            tenor: 11,
+            bids: vec![],
+            asks: vec![],
+        };
+
+        om.refresh_from_snapshot(OrderbookSnapshot {
+            bids: bids.clone(),
+            asks: asks.clone(),
+        });
+
+        assert_eq!(om.bids, bids);
+        assert_eq!(om.asks, asks);
     }
 }

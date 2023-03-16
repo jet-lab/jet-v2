@@ -450,9 +450,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.63"
+version = "0.1.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eff18d764974428cf3a9328e23fc5c986f5fbed46e6cd4cdf42544df5d297ec1"
+checksum = "b84f9ebcc6c1f5b8cb160f6990096a5c127f423fcb6e1ccc46c370cbdfb75dfc"
 dependencies = [
  "proc-macro2 1.0.50",
  "quote 1.0.23",
@@ -2456,6 +2456,7 @@ dependencies = [
  "anchor-lang",
  "anchor-syn",
  "anyhow",
+ "async-trait",
  "bincode",
  "borsh 0.9.3",
  "bs58 0.4.0",
@@ -2527,6 +2528,7 @@ dependencies = [
  "arrayref",
  "bitflags",
  "borsh 0.9.3",
+ "bs58 0.4.0",
  "bytemuck",
  "itertools 0.10.5",
  "jet-airspace",
@@ -2653,8 +2655,10 @@ dependencies = [
  "jet-metadata",
  "jet-program-common",
  "jet-simulation",
+ "jet-solana-client",
  "jet-static-program-registry",
  "jet-test-service",
+ "num-traits",
  "pyth-sdk-solana 0.7.0",
  "rand 0.8.5",
  "serde",
@@ -2725,6 +2729,7 @@ dependencies = [
  "borsh 0.9.3",
  "bytemuck",
  "num-traits",
+ "rand_chacha 0.3.1",
  "solana-program",
  "static_assertions",
  "thiserror",
@@ -2775,8 +2780,10 @@ dependencies = [
  "async-trait",
  "base64 0.13.1",
  "bincode",
+ "paste",
  "serde",
  "solana-sdk",
+ "spl-associated-token-account",
  "spl-token 3.5.0",
  "thiserror",
 ]

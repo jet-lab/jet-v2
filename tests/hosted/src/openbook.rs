@@ -12,13 +12,13 @@ use anchor_spl::dex::{serum_dex, Dex};
 use async_trait::async_trait;
 use jet_margin_sdk::swap::openbook_swap::OpenBookMarket;
 use jet_program_common::CONTROL_AUTHORITY;
-use jet_simulation::{generate_keypair, send_and_confirm};
+use jet_simulation::send_and_confirm;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::{system_instruction, sysvar::SysvarId};
 
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use spl_associated_token_account::instruction::{create_associated_token_account_idempotent};
+use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 
 use crate::runtime::SolanaTestContext;
 use crate::tokens::TokenManager;
@@ -63,6 +63,7 @@ pub trait OpenBookMarketConfig: Sized {
     async fn init_open_orders(
         &self,
         rpc: &Arc<dyn SolanaRpcClient>,
+        open_orders: Keypair,
         authority: &Keypair,
     ) -> Result<Pubkey, Error>;
 }
@@ -81,7 +82,7 @@ impl OpenBookMarketConfig for OpenBookMarket {
         // Initialize a market
         let token_manager = TokenManager::new(ctx.clone());
 
-        let market = generate_keypair();
+        let market = ctx.keygen.generate_key();
         let market_size = std::mem::size_of::<serum_dex::state::MarketState>() + 12;
         let market_lamports = ctx
             .rpc
@@ -114,8 +115,8 @@ impl OpenBookMarketConfig for OpenBookMarket {
             .rpc
             .get_minimum_balance_for_rent_exemption(bid_ask_size)
             .await?;
-        let bids = generate_keypair();
-        let asks = generate_keypair();
+        let bids = ctx.keygen.generate_key();
+        let asks = ctx.keygen.generate_key();
         let bids_ix = system_instruction::create_account(
             &ctx.rpc.payer().pubkey(),
             &bids.pubkey(),
@@ -141,8 +142,8 @@ impl OpenBookMarketConfig for OpenBookMarket {
             .rpc
             .get_minimum_balance_for_rent_exemption(request_queue_size)
             .await?;
-        let events = generate_keypair();
-        let requests = generate_keypair();
+        let events = ctx.keygen.generate_key();
+        let requests = ctx.keygen.generate_key();
         let events_ix = system_instruction::create_account(
             &ctx.rpc.payer().pubkey(),
             &events.pubkey(),
@@ -193,7 +194,12 @@ impl OpenBookMarketConfig for OpenBookMarket {
         )?;
 
         // Create the referrer fee account
-        let referrer_ix = create_associated_token_account_idempotent(&ctx.rpc.payer().pubkey(), &CONTROL_AUTHORITY, &quote_mint, &spl_token::id());
+        let referrer_ix = create_associated_token_account_idempotent(
+            &ctx.rpc.payer().pubkey(),
+            &CONTROL_AUTHORITY,
+            &quote_mint,
+            &spl_token::id(),
+        );
 
         send_and_confirm(&ctx.rpc, &[referrer_ix, init_ix], &[]).await?;
 
@@ -222,9 +228,9 @@ impl OpenBookMarketConfig for OpenBookMarket {
     async fn init_open_orders(
         &self,
         rpc: &Arc<dyn SolanaRpcClient>,
+        open_orders: Keypair,
         authority: &Keypair,
     ) -> Result<Pubkey, Error> {
-        let open_orders = generate_keypair();
         let open_orders_size = std::mem::size_of::<OpenOrders>() + 12;
 
         let open_orders_lamports = rpc

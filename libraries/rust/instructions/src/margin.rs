@@ -32,6 +32,8 @@ use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
 pub use jet_margin::ID as MARGIN_PROGRAM;
 pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 
+use crate::airspace::derive_permit;
+
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
 #[derive(Clone)]
@@ -45,7 +47,7 @@ pub struct MarginIxBuilder {
     /// The address of the margin account.
     pub address: Pubkey,
 
-    /// The address of the airspace the margin account belongs to.
+    /// The airspace the margin account belongs to
     pub airspace: Pubkey,
 
     /// The account paying for any rent.
@@ -106,15 +108,23 @@ impl MarginIxBuilder {
         self.payer.unwrap_or_else(|| self.authority())
     }
 
+    /// the instruction is expected to be signed by the margin account
+    pub fn needs_signature(&self, inner: &Instruction) -> bool {
+        inner
+            .accounts
+            .iter()
+            .any(|a| a.is_signer && self.address == a.pubkey)
+    }
+
     /// Get instruction to create the account
     pub fn create_account(&self) -> Instruction {
         let accounts = ix_account::CreateAccount {
             owner: self.owner,
+            permit: derive_permit(&self.airspace, &self.owner),
             payer: self.payer(),
             margin_account: self.address,
             system_program: SYSTEM_PROGAM_ID,
         };
-
         Instruction {
             program_id: JetMargin::id(),
             data: ix_data::CreateAccount { seed: self.seed }.data(),
@@ -170,15 +180,15 @@ impl MarginIxBuilder {
     pub fn register_position(&self, position_token_mint: Pubkey) -> Instruction {
         let token_account = derive_position_token_account(&self.address, &position_token_mint);
 
-        let (metadata, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
+        let config = MarginConfigIxBuilder::new(self.airspace, self.payer(), None)
+            .derive_token_config(&position_token_mint);
 
         let accounts = ix_account::RegisterPosition {
             authority: self.authority(),
             payer: self.payer(),
             margin_account: self.address,
             position_token_mint,
-            metadata,
+            config,
             token_account,
             token_program: spl_token::ID,
             system_program: System::id(),
@@ -216,29 +226,6 @@ impl MarginIxBuilder {
         Instruction {
             program_id: JetMargin::id(),
             data: ix_data::ClosePosition.data(),
-            accounts: accounts.to_account_metas(None),
-        }
-    }
-
-    /// Get instruction to refresh the metadata for a position
-    ///
-    /// # Params
-    ///
-    /// `position_token_mint` - The mint for the position to be refreshed
-    pub fn refresh_position_metadata(&self, position_token_mint: &Pubkey) -> Instruction {
-        let (metadata, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
-
-        let accounts = ix_account::RefreshPositionMetadata {
-            metadata,
-            margin_account: self.address,
-            permit: derive_margin_permit(&self.airspace, &self.authority()),
-            refresher: self.authority(),
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            data: ix_data::RefreshPositionMetadata.data(),
             accounts: accounts.to_account_metas(None),
         }
     }
@@ -297,6 +284,7 @@ impl MarginIxBuilder {
     /// `adapter_ix` - The instruction to be invoked
     pub fn adapter_invoke(&self, adapter_ix: Instruction) -> Instruction {
         invoke!(
+            self.airspace,
             self.address,
             adapter_ix,
             AdapterInvoke { owner: self.owner }
@@ -309,7 +297,7 @@ impl MarginIxBuilder {
     ///
     /// `adapter_ix` - The instruction to be invoked
     pub fn accounting_invoke(&self, adapter_ix: Instruction) -> Instruction {
-        accounting_invoke(self.address, adapter_ix)
+        accounting_invoke(self.airspace, self.address, adapter_ix)
     }
 
     /// Begin liquidating a margin account
@@ -319,8 +307,7 @@ impl MarginIxBuilder {
     /// `liquidator` - The address of the liquidator
     pub fn liquidate_begin(&self) -> Instruction {
         let liquidator = self.authority();
-        let (liquidator_metadata, _) =
-            Pubkey::find_program_address(&[liquidator.as_ref()], &jet_metadata::id());
+        let permit = derive_margin_permit(&self.airspace, &liquidator);
 
         let (liquidation, _) = Pubkey::find_program_address(
             &[b"liquidation", self.address.as_ref(), liquidator.as_ref()],
@@ -331,7 +318,7 @@ impl MarginIxBuilder {
             margin_account: self.address,
             payer: self.payer(),
             liquidator,
-            liquidator_metadata,
+            permit,
             liquidation,
             system_program: SYSTEM_PROGAM_ID,
         };
@@ -352,6 +339,7 @@ impl MarginIxBuilder {
         );
 
         invoke!(
+            self.airspace,
             self.address,
             adapter_ix,
             LiquidatorInvoke {
@@ -481,6 +469,20 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Configure this account to join the default airspace (if it is not bound to an airspace yet)
+    pub fn configure_account_airspace(&self) -> Instruction {
+        let accounts = ix_account::ConfigureAccountAirspace {
+            margin_account: self.address,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::ConfigureAccountAirspace.data(),
+            accounts,
+        }
+    }
+
     /// Helper function to get token account address for a position mint
     #[inline]
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> Pubkey {
@@ -493,8 +495,12 @@ impl MarginIxBuilder {
 /// # Params
 ///
 /// `adapter_ix` - The instruction to be invoked
-pub fn accounting_invoke(margin_account: Pubkey, adapter_ix: Instruction) -> Instruction {
-    invoke!(margin_account, adapter_ix, AccountingInvoke)
+pub fn accounting_invoke(
+    airspace: Pubkey,
+    margin_account: Pubkey,
+    adapter_ix: Instruction,
+) -> Instruction {
+    invoke!(airspace, margin_account, adapter_ix, AccountingInvoke)
 }
 
 /// Utility for creating instructions that modify configuration for the margin program within
@@ -681,19 +687,19 @@ pub fn derive_margin_permit(airspace: &Pubkey, owner: &Pubkey) -> Pubkey {
 /// instruction, such as adapter_invoke, liquidate_invoke, and accounting_invoke
 macro_rules! invoke {
     (
+        $airspace:expr,
         $margin_account:expr,
         $adapter_ix:ident,
         $Instruction:ident $({
             $($additional_field:ident$(: $value:expr)?),* $(,)?
         })?
     ) => {{
-        let (adapter_metadata, _) =
-            Pubkey::find_program_address(&[$adapter_ix.program_id.as_ref()], &jet_metadata::ID);
+        let adapter_config = derive_adapter_config(&$airspace, &$adapter_ix.program_id);
 
         let mut accounts = ix_account::$Instruction {
             margin_account: $margin_account,
             adapter_program: $adapter_ix.program_id,
-            adapter_metadata,
+            adapter_config,
             $($($additional_field$(: $value)?),*)?
         }
         .to_account_metas(None);

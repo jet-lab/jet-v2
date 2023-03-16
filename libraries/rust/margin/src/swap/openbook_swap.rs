@@ -177,7 +177,7 @@ impl SwapAccounts for OpenBookMarket {
 
         let referrer = get_associated_token_address(&CONTROL_AUTHORITY, &self.quote_mint);
 
-        dbg!(ix_accounts::OpenbookSwapInfo {
+        ix_accounts::OpenbookSwapInfo {
             market: self.market,
             /// This relies on a deterministic open orders account
             open_orders,
@@ -192,7 +192,7 @@ impl SwapAccounts for OpenBookMarket {
             dex_program: self.program,
             rent: Rent::id(),
         }
-        .to_account_metas(None))
+        .to_account_metas(None)
     }
 
     fn pool_tokens(&self) -> (Pubkey, Pubkey) {

@@ -13,7 +13,7 @@ import {
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
-import { marketToString } from '@utils/jet/fixed-term-utils';
+import { feesCalc, marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
@@ -26,6 +26,7 @@ import { formatWithCommas } from '@utils/format';
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
+import { LoadingOutlined } from '@ant-design/icons';
 
 interface RequestLoanProps {
   decimals: number;
@@ -35,20 +36,24 @@ interface RequestLoanProps {
 }
 
 interface Forecast {
-  postedRepayAmount?: string;
-  postedInterest?: string;
+  postedRepayAmount?: number;
+  postedInterest?: number;
   postedRate?: number;
-  matchedAmount?: string;
-  matchedInterest?: string;
+  matchedAmount?: number;
+  matchedInterest?: number;
   matchedRate?: number;
   selfMatch: boolean;
   riskIndicator?: number;
+  hasEnoughCollateral: boolean;
+  fees: number;
 }
 
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const { selectedPoolKey } = useJetStore(state => ({
+    selectedPoolKey: state.selectedPoolKey
+  }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -56,24 +61,29 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     [selectedPoolKey, pools]
   );
   const wallet = useWallet();
-  const [amount, setAmount] = useState(new BN(0));
-  const [basisPoints, setBasisPoints] = useState(new BN(0));
+  const [amount, setAmount] = useState<BN | undefined>();
+  const [basisPoints, setBasisPoints] = useState<BN | undefined>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
+  const [pending, setPending] = useState(false);
+
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
     !currentPool ||
     !pools ||
-    basisPoints.lte(new BN(0)) ||
-    amount.lte(new BN(0)) ||
-    forecast?.selfMatch;
+    basisPoints?.lte(new BN(0)) ||
+    amount?.lte(new BN(0)) ||
+    forecast?.selfMatch ||
+    !forecast?.hasEnoughCollateral;
 
-  const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
+  const createBorrowOrder = async () => {
+    if (!amount || !basisPoints) return;
+    setPending(true);
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -83,20 +93,23 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         provider,
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
-        amount: amountParam || amount,
-        basisPoints: basisPointsParam || basisPoints,
+        amount: amount,
+        basisPoints: basisPoints,
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market)
       });
-      notify(
-        'Borrow Offer Created',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-          basisPoints.toNumber() / 100
-        }% was created successfully`,
-        'success',
-        getExplorerUrl(signature, cluster, explorer)
-      );
-      refreshOrderBooks();
+      setTimeout(() => {
+        refreshOrderBooks();
+        notify(
+          'Borrow Offer Created',
+          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
+            basisPoints.toNumber() / 100
+          }% was created successfully`,
+          'success',
+          getExplorerUrl(signature, cluster, explorer)
+        );
+        setPending(false);
+      }, 2000); // TODO: Ugly / unneded update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
@@ -106,7 +119,11 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
-      throw e;
+      setPending(false);
+      console.error(e);
+    } finally {
+      setAmount(undefined);
+      setBasisPoints(undefined);
     }
   };
 
@@ -114,28 +131,17 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     const sim = model.simulateMaker('borrow', amount, limitPrice, marginAccount?.address.toBytes());
-
-    if (sim.self_match) {
-      // FIXME Integrate with forecast panel
-      console.log('ERROR Order would be rejected for self-matching');
-
-      return;
-    }
-
     let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
     if (correspondingPool == undefined) {
       console.log('ERROR `correspondingPool` must be defined.');
       return;
     }
 
-    const productModel = marginAccount? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool) : undefined;
-    const setupCheckEstimate = productModel?.makerAccountForecast("borrow", sim, "setup");
-    if (setupCheckEstimate && setupCheckEstimate.riskIndicator >= 1.0) {
-      // FIXME Disable form submission
-      console.log("WARNING Trade violates setup check and should not be allowed")
-    }
-
-    const valuationEstimate = productModel?.makerAccountForecast("borrow", sim);
+    const productModel = marginAccount
+      ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
+      : undefined;
+    const setupCheckEstimate = productModel?.makerAccountForecast('borrow', sim, 'setup');
+    const valuationEstimate = productModel?.makerAccountForecast('borrow', sim);
 
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
     const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
@@ -143,20 +149,27 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
     const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
     const postedRate = sim.posted_vwar;
+    const matchedInterest = matchRepayAmount.sub(matchBorrowAmount);
+    const postedInterest = postedRepayAmount.sub(postedBorrowAmount);
 
     setForecast({
-      matchedAmount: matchRepayAmount.uiTokens,
-      matchedInterest: matchRepayAmount.sub(matchBorrowAmount).uiTokens,
+      matchedAmount: matchRepayAmount.tokens,
+      matchedInterest: matchedInterest.tokens,
       matchedRate: matchRate,
-      postedRepayAmount: postedRepayAmount.uiTokens,
-      postedInterest: postedRepayAmount.sub(postedBorrowAmount).uiTokens,
+      postedRepayAmount: postedRepayAmount.tokens,
+      postedInterest: postedInterest.tokens,
       postedRate,
       selfMatch: sim.self_match,
       riskIndicator: valuationEstimate?.riskIndicator,
+      hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
+      fees: matchedInterest.tokens
+        ? feesCalc(sim.filled_vwar, matchedInterest.tokens)
+        : feesCalc(sim.posted_vwar, postedInterest.tokens)
     });
   }
 
   useEffect(() => {
+    if (!amount || !basisPoints) return;
     if (amount.eqn(0) || basisPoints.eqn(0)) return;
     orderbookModelLogic(
       bnToBigInt(amount),
@@ -172,6 +185,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           Loan amount
           <InputNumber
             className="input-amount"
+            value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
               setAmount(new BN(e * 10 ** decimals));
             }, 300)}
@@ -183,9 +197,10 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           />
         </label>
         <label>
-          Max Interest Rate
+          Interest Rate
           <InputNumber
             className="input-rate"
+            value={basisPoints && !basisPoints.isZero() ? basisPoints.toNumber() / 100 : ''}
             onChange={debounce(e => {
               setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
             }, 300)}
@@ -222,7 +237,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Posted Repayment Amount</span>
           {forecast?.postedRepayAmount && (
             <span>
-              {forecast?.postedRepayAmount}
+              {forecast?.postedRepayAmount.toFixed(token.precision)}
               {token.symbol}
             </span>
           )}
@@ -230,9 +245,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         <div className="stat-line">
           <span>Posted Interest</span>
           {forecast?.postedInterest && (
-            <span>
-              {forecast?.postedInterest} {token.symbol}
-            </span>
+            <span>{`~${forecast?.postedInterest.toFixed(token.precision)} ${token.symbol}`}</span>
           )}
         </div>
         <div className="stat-line">
@@ -243,17 +256,14 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <span>Matched Repayment Amount</span>
           {forecast?.matchedAmount && (
             <span>
-              {forecast.matchedAmount}
-              {token.symbol}
+              {forecast.matchedAmount.toFixed(token.precision)} {token.symbol}
             </span>
           )}
         </div>
         <div className="stat-line">
           <span>Matched Interest</span>
           {forecast?.matchedInterest && (
-            <span>
-              {forecast.matchedInterest} {token.symbol}
-            </span>
+            <span>{`~${forecast.matchedInterest.toFixed(token.precision)} ${token.symbol}`}</span>
           )}
         </div>
         <div className="stat-line">
@@ -261,21 +271,34 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <RateDisplay rate={forecast?.matchedRate} />
         </div>
         <div className="stat-line">
+          <span>Fees</span>
+          {forecast && <span>{`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}</span>}
+        </div>
+        <div className="stat-line">
           <span>Risk Indicator</span>
           {forecast && (
             <span>
-              {forecast.riskIndicator}
+              {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
             </span>
           )}
         </div>
-        <div className="stat-line">
-          <span>Auto Roll</span>
-          <span>Off</span>
-        </div>
       </div>
-      <Button className="submit-button" disabled={disabled} onClick={() => createBorrowOrder()}>
-        Request {marketToString(marketAndConfig.config)} loan
+      <Button className="submit-button" disabled={disabled || pending} onClick={() => createBorrowOrder()}>
+        {pending ? (
+          <>
+            <LoadingOutlined />
+            Sending transaction
+          </>
+        ) : (
+          `Request ${marketToString(marketAndConfig.config)} loan`
+        )}
       </Button>
+      {forecast?.selfMatch && (
+        <div className="fixed-term-warning">The offer would match with your own requests in this market.</div>
+      )}
+      {!forecast?.hasEnoughCollateral && (!amount || amount.isZero()) && (
+        <div className="fixed-term-warning">Not enough collateral to submit this request</div>
+      )}
     </div>
   );
 };

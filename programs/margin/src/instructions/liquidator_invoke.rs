@@ -17,11 +17,11 @@
 
 use anchor_lang::prelude::*;
 
-use jet_metadata::MarginAdapterMetadata;
-
 use crate::adapter::{self, InvokeAdapter};
 use crate::syscall::{sys, Sys};
-use crate::{events, ErrorCode, Liquidation, LiquidationState, MarginAccount, Valuation};
+use crate::{
+    events, AdapterConfig, ErrorCode, Liquidation, LiquidationState, MarginAccount, Valuation,
+};
 
 #[derive(Accounts)]
 pub struct LiquidatorInvoke<'info> {
@@ -29,13 +29,14 @@ pub struct LiquidatorInvoke<'info> {
     pub liquidator: Signer<'info>,
 
     /// Account to persist the state of the liquidation
-    #[account(mut)]
+    #[account(mut,
+        has_one = liquidator,
+        has_one = margin_account,
+    )]
     pub liquidation: AccountLoader<'info, LiquidationState>,
 
     /// The margin account to proxy an action for
-    #[account(mut,
-              has_one = liquidation,
-              has_one = liquidator)]
+    #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The program to be invoked
@@ -43,8 +44,10 @@ pub struct LiquidatorInvoke<'info> {
     pub adapter_program: AccountInfo<'info>,
 
     /// The metadata about the proxy program
-    #[account(has_one = adapter_program)]
-    pub adapter_metadata: Account<'info, MarginAdapterMetadata>,
+    #[account(has_one = adapter_program,
+              constraint = adapter_config.airspace == margin_account.load()?.airspace @ ErrorCode::WrongAirspace
+    )]
+    pub adapter_config: Account<'info, AdapterConfig>,
 }
 
 pub fn liquidator_invoke_handler<'info>(
@@ -96,16 +99,16 @@ fn update_and_verify_liquidation(
 ) -> Result<Valuation> {
     let end_value = margin_account.valuation(sys().unix_timestamp())?;
 
-    *liquidation.equity_change_mut() += end_value.equity - start_value.equity; // side effects
+    *liquidation.equity_loss_mut() += start_value.equity - end_value.equity;
 
-    if liquidation.equity_change() < &liquidation.min_equity_change() {
+    if liquidation.equity_loss() > &liquidation.max_equity_loss() {
         msg!(
-            "Illegal liquidation: net loss of {} equity which exceeds the min equity change of {}",
-            liquidation.equity_change(),
-            liquidation.min_equity_change()
+            "Illegal liquidation: net loss of {} equity which exceeds the max equity loss of {}",
+            liquidation.equity_loss(),
+            liquidation.max_equity_loss()
         );
-        err!(ErrorCode::LiquidationLostValue)
-    } else {
-        Ok(end_value)
+        return err!(ErrorCode::LiquidationLostValue);
     }
+
+    Ok(end_value)
 }

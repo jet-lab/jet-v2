@@ -1,0 +1,64 @@
+name: Deploy Devnet Frontend
+
+on:
+  push:
+    branches:
+      - "devnet"
+  workflow_dispatch: {}
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    env:
+      REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
+      REACT_APP_RPC_DEV_TOKEN: ''
+      REACT_APP_RPC_TOKEN: ''
+      REACT_APP_LOGROCKET_PROJECT: ''
+      
+      REACT_APP_LOCAL_DATA_API: ${{ secrets.REACT_APP_LOCAL_DATA_API }}
+      REACT_APP_DEV_DATA_API: ${{ secrets.REACT_APP_DEV_DATA_API }}
+      REACT_APP_DATA_API: ${{ secrets.REACT_APP_DATA_API }}
+
+      REACT_APP_LOCAL_WS_API: ${{ secrets.REACT_APP_LOCAL_WS_API }}
+      REACT_APP_DEV_WS_API: ${{ secrets.REACT_APP_DEV_WS_API }}
+      REACT_APP_WS_API: ${{ secrets.REACT_APP_WS_API }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - id: cachedeps
+        name: Get cache
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-devnet-deploy-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          path: |
+            ~/.cache/act
+            ~/.cache/solana
+            ~/.cargo/
+            ~/.local/share/solana/
+            ~/.npm
+            ~/.yarn
+            target/
+
+      - id: install-os-deps
+        run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev net-tools
+
+      - name: Install wasm-pack
+        if: steps.cachedeps.outputs.cache-hit != 'true'
+        run: cargo install wasm-pack
+
+      - name: Build
+        run: yarn install --frozen-lockfile && yarn build
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.DEVNET_FRONTEND_UPLOADER }}'
+
+      - id: 'deploy'
+        uses: 'google-github-actions/upload-cloud-storage@v0'
+        with:
+          predefinedAcl: 'publicRead'
+          path: 'apps/react-app/build'
+          destination: 'devnet.jetprotocol.io/'
+          parent: false

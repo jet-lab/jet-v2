@@ -27,6 +27,8 @@ use jet_margin_pool::{accounts as ix_accounts, TokenChange};
 
 pub use jet_margin_pool::ID as MARGIN_POOL_PROGRAM;
 
+use crate::margin::MarginConfigIxBuilder;
+
 /// Utility for creating instructions to interact with the margin
 /// pools program for a specific pool.
 #[derive(Clone)]
@@ -56,7 +58,7 @@ impl MarginPoolIxBuilder {
     ///
     /// `token_mint` - The token mint which whose tokens the pool stores
     pub fn new(token_mint: Pubkey) -> Self {
-        let address = derive_margin_pool(&Pubkey::default(), &token_mint);
+        let address = derive_margin_pool(&Default::default(), &token_mint);
 
         let (vault, _) = Pubkey::find_program_address(
             &[address.as_ref(), b"vault".as_ref()],
@@ -353,14 +355,19 @@ impl MarginPoolIxBuilder {
     }
 
     /// Instruction to register a loan position with a margin pool.
-    pub fn register_loan(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
+    pub fn register_loan(
+        &self,
+        margin_account: Pubkey,
+        payer: Pubkey,
+        airspace: Pubkey,
+    ) -> Instruction {
         let loan_note_account = derive_loan_account(&margin_account, &self.loan_note_mint);
-        let position_token_metadata =
-            Pubkey::find_program_address(&[self.loan_note_mint.as_ref()], &jet_metadata::ID).0;
+        let loan_token_config = MarginConfigIxBuilder::new(airspace, payer, None)
+            .derive_token_config(&self.loan_note_mint);
 
         let accounts = ix_accounts::RegisterLoan {
             margin_account,
-            position_token_metadata,
+            loan_token_config,
             margin_pool: self.address,
             loan_note_account,
             loan_note_mint: self.loan_note_mint,

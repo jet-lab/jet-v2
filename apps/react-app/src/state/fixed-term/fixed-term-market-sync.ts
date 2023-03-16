@@ -8,6 +8,7 @@ import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useLocation } from 'react-router-dom';
+import { getOrderbookSnapshot, useJetStore } from '@jet-lab/store';
 
 export const AllFixedTermMarketsAtom = atom<Array<MarketAndConfig>>({
   key: 'allFixedTermMarkets',
@@ -46,11 +47,21 @@ export interface ExtendedOrderBook {
 export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   key: 'allFixedTermMarketOrderBooks',
   get: async ({ get }) => {
+    const { cluster } = useJetStore.getState().settings;
+    const apiEndpoint =
+      cluster === 'mainnet-beta'
+        ? process.env.REACT_APP_DATA_API
+        : cluster === 'devnet'
+        ? process.env.REACT_APP_DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.REACT_APP_LOCAL_DATA_API
+        : undefined;
     const list = get(AllFixedTermMarketsAtom);
     const markets = await Promise.all(
       list.map(async market => {
         const tenor = BigInt(market.config.borrowTenor);
-        const model = await market.market.fetchOrderbook(tenor);
+        const snapshot = await getOrderbookSnapshot(apiEndpoint || 'http://localhost:3002', market.market);
+        const model = market.market.getOrderbookModel(tenor, snapshot);
         return {
           name: market.name,
           orderbook: model

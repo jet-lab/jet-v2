@@ -48,7 +48,10 @@ export function usePoolsSyncer() {
   const { programs, provider } = useProvider();
   const setPools = useSetRecoilState(Pools);
   const networkState = useRecoilValue(NetworkStateAtom);
-  const state = useJetStore();
+  const { initAllPools, poolsLastUpdated } = useJetStore(state => ({
+    initAllPools: state.initAllPools,
+    poolsLastUpdated: state.poolsLastUpdated
+  }));
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
@@ -104,7 +107,7 @@ export function usePoolsSyncer() {
         };
       }
 
-      state.initAllPools(poolsToInit);
+      initAllPools(poolsToInit);
 
       setPools({
         totalSupply,
@@ -122,5 +125,5 @@ export function usePoolsSyncer() {
     };
     // TODO remove resetting pools upon action
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programs?.config, networkState]);
+  }, [programs?.config, networkState, poolsLastUpdated]);
 }

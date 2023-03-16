@@ -3,7 +3,6 @@ const { ProvidePlugin, DefinePlugin } = require('webpack');
 const dotenv = require('dotenv');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
 const SwcMinifyWebpackPlugin = require('swc-minify-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
@@ -19,7 +18,22 @@ module.exports = (_env, arg) => {
       Buffer: ['buffer', 'Buffer']
     }),
     new DefinePlugin({
-      'process.env': JSON.stringify(dotenv.config().parsed || {})
+      'process.env': JSON.stringify(
+        dotenv.config().parsed || {
+          REACT_APP_LOCAL_DATA_API: process.env.REACT_APP_LOCAL_DATA_API,
+          REACT_APP_DEV_DATA_API: process.env.REACT_APP_DEV_DATA_API,
+          REACT_APP_DATA_API: process.env.REACT_APP_DATA_API,
+
+          REACT_APP_LOCAL_WS_API: process.env.REACT_APP_LOCAL_WS_API,
+          REACT_APP_DEV_WS_API: process.env.REACT_APP_DEV_WS_API,
+          REACT_APP_WS_API: process.env.REACT_APP_WS_API,
+
+          REACT_APP_RPC_DEV_TOKEN: process.env.REACT_APP_RPC_DEV_TOKEN,
+          REACT_APP_RPC_TOKEN: process.env.REACT_APP_RPC_TOKEN,
+          REACT_APP_IP_REGISTRY: process.env.REACT_APP_IP_REGISTRY,
+          REACT_APP_LOGROCKET_PROJECT: process.env.REACT_APP_LOGROCKET_PROJECT
+        }
+      )
     })
   ];
 
@@ -70,8 +84,9 @@ module.exports = (_env, arg) => {
           }
         },
         {
-          test: /\.css$/,
-          use: ['style-loader', 'css-loader']
+          test: /\.css$/i,
+          include: path.resolve(__dirname, 'src'),
+          use: ['style-loader', 'css-loader', 'postcss-loader']
         },
         {
           test: /\.less$/i,

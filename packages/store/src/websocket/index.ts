@@ -3,8 +3,9 @@ import { APPLICATION_WS_EVENTS, JET_WS_EVENTS } from '../events';
 import { PoolDataUpdate } from '../slices/pools';
 import { useJetStore } from '../store';
 
-let ws: WebSocket;
+export let ws: WebSocket;
 export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
+  console.log('Connecting WS: ', cluster, wallet)
   if (ws) {
     ws.close();
   }
@@ -22,7 +23,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         endpoint = process.env.REACT_APP_WS_API;
         break;
     }
-    
+
     console.log('initialising websocket for ', cluster, endpoint);
     if (!endpoint) throw `No websocket environment variable set up.`;
 
@@ -36,7 +37,6 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         type: 'SUBSCRIBE',
         payload: {
           wallet,
-          // It's safe not to pass in margin accounts
           margin_accounts: []
         }
       };
@@ -59,6 +59,12 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
       } else if (data.type === 'PRICE-UPDATE') {
         useJetStore.getState().updatePrices(data);
       }
+    };
+
+    ws.onerror = (_: Event) => {
+      setTimeout(() => {
+        initWebsocket(cluster, wallet);
+      }, 1000);
     };
   } catch (e) {
     console.log(e);

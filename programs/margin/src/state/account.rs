@@ -58,8 +58,8 @@ pub struct MarginAccount {
     /// The owner of this account, which generally has to sign for any changes to it
     pub owner: Pubkey,
 
-    /// The state of an active liquidation for this account
-    pub liquidation: Pubkey,
+    /// The airspace this account belongs to
+    pub airspace: Pubkey,
 
     /// The active liquidator for this account
     pub liquidator: Pubkey,
@@ -77,7 +77,7 @@ impl Serialize for MarginAccount {
         let mut s = serializer.serialize_struct("MarginAccount", 5)?;
         s.serialize_field("version", &self.version)?;
         s.serialize_field("owner", &self.owner.to_string())?;
-        s.serialize_field("liquidation", &self.liquidation.to_string())?;
+        s.serialize_field("airspace", &self.airspace.to_string())?;
         s.serialize_field("liquidator", &self.liquidator.to_string())?;
         s.serialize_field("positions", &self.positions().collect::<Vec<_>>())?;
         s.end()
@@ -93,7 +93,7 @@ impl std::fmt::Debug for MarginAccount {
             .field("reserved0", &self.reserved0)
             .field("invocation", &self.invocation)
             .field("owner", &self.owner)
-            .field("liquidation", &self.liquidation)
+            .field("airspace", &self.airspace)
             .field("liquidator", &self.liquidator);
 
         if self.positions().next().is_some() {
@@ -135,13 +135,11 @@ pub trait AnchorVerify: Discriminator + Owner {
 impl AnchorVerify for MarginAccount {}
 
 impl MarginAccount {
-    pub fn start_liquidation(&mut self, liquidation: Pubkey, liquidator: Pubkey) {
-        self.liquidation = liquidation;
+    pub fn start_liquidation(&mut self, liquidator: Pubkey) {
         self.liquidator = liquidator;
     }
 
     pub fn end_liquidation(&mut self) {
-        self.liquidation = Pubkey::default();
         self.liquidator = Pubkey::default();
     }
 
@@ -155,11 +153,12 @@ impl MarginAccount {
     }
 
     pub fn is_liquidating(&self) -> bool {
-        self.liquidation != Pubkey::default()
+        self.liquidator != Pubkey::default()
     }
 
-    pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
+    pub fn initialize(&mut self, airspace: Pubkey, owner: Pubkey, seed: u16, bump_seed: u8) {
         self.version = MARGIN_ACCOUNT_VERSION;
+        self.airspace = airspace;
         self.owner = owner;
         self.bump_seed = [bump_seed];
         self.user_seed = seed.to_le_bytes();
@@ -178,29 +177,26 @@ impl MarginAccount {
     #[allow(clippy::too_many_arguments)]
     pub fn register_position(
         &mut self,
-        token: Pubkey,
-        decimals: u8,
-        address: Pubkey,
-        adapter: Pubkey,
-        kind: TokenKind,
-        value_modifier: u16,
-        max_staleness: u64,
+        config: PositionConfigUpdate,
         approvals: &[Approver],
     ) -> AnchorResult<AccountPositionKey> {
         if !self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
             return err!(ErrorCode::MaxPositions);
         }
+        if self.airspace != config.airspace {
+            return err!(ErrorCode::WrongAirspace);
+        }
 
-        let (key, free_position) = self.position_list_mut().add(token)?;
+        let (key, free_position) = self.position_list_mut().add(config.mint)?;
 
         if let Some(free_position) = free_position {
-            free_position.exponent = -(decimals as i16);
-            free_position.address = address;
-            free_position.adapter = adapter;
-            free_position.kind = kind.into_integer();
+            free_position.exponent = -(config.decimals as i16);
+            free_position.address = config.address;
+            free_position.adapter = config.adapter;
+            free_position.kind = config.kind.into_integer();
             free_position.balance = 0;
-            free_position.value_modifier = value_modifier;
-            free_position.max_staleness = max_staleness;
+            free_position.value_modifier = config.value_modifier;
+            free_position.max_staleness = config.max_staleness;
 
             if !free_position.may_be_registered_or_closed(approvals) {
                 msg!(
@@ -348,17 +344,12 @@ impl MarginAccount {
     pub fn verify_healthy_positions(&self, timestamp: u64) -> AnchorResult<()> {
         let info = self.valuation(timestamp)?;
 
-        if info.required_collateral > info.effective_collateral || info.past_due {
-            let due_status = match info.past_due {
-                true => "overdue",
-                false => "not overdue",
-            };
-
+        if info.required_collateral > info.effective_collateral {
+            msg!("{:#?}", &info);
             msg!(
-                "account is unhealthy: K_e = {}, K_r = {} ({})",
+                "account is unhealthy: K_e = {}, K_r = {}",
                 info.effective_collateral,
-                info.required_collateral,
-                due_status
+                info.required_collateral
             );
             return err!(ErrorCode::Unhealthy);
         }
@@ -522,6 +513,10 @@ pub enum Approver {
 #[account(zero_copy)]
 #[repr(C, align(8))]
 pub struct LiquidationState {
+    /// The signer responsible for liquidation
+    pub liquidator: Pubkey,
+    /// The margin account being liquidated
+    pub margin_account: Pubkey,
     /// The state object
     pub state: Liquidation,
 }
@@ -532,22 +527,19 @@ pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation
     pub start_time: i64,
 
-    /// cumulative change in equity caused by invocations during the liquidation so far
-    /// negative if equity is lost
-    pub equity_change: i128,
+    /// The cumulative amount of equity lost during liquidation so far
+    pub equity_loss: i128,
 
-    /// lowest amount of equity change that is allowed during invoke steps
-    /// typically negative or zero
-    /// if equity_change goes lower than this number, liquidate_invoke should fail
-    pub min_equity_change: i128,
+    /// The maximum amount of collateral allowed to be lost during all steps
+    pub max_equity_loss: i128,
 }
 
 impl Liquidation {
-    pub fn new(start_time: i64, min_equity_change: Number128) -> Self {
+    pub fn new(start_time: i64, max_equity_loss: Number128) -> Self {
         Self {
             start_time,
-            equity_change: 0,
-            min_equity_change: min_equity_change.to_i128(),
+            equity_loss: 0,
+            max_equity_loss: max_equity_loss.to_i128(),
         }
     }
 
@@ -555,16 +547,16 @@ impl Liquidation {
         self.start_time
     }
 
-    pub fn equity_change_mut(&mut self) -> &mut Number128 {
-        bytemuck::cast_mut(&mut self.equity_change)
+    pub fn equity_loss_mut(&mut self) -> &mut Number128 {
+        bytemuck::cast_mut(&mut self.equity_loss)
     }
 
-    pub fn equity_change(&self) -> &Number128 {
-        bytemuck::cast_ref(&self.equity_change)
+    pub fn equity_loss(&self) -> &Number128 {
+        bytemuck::cast_ref(&self.equity_loss)
     }
 
-    pub fn min_equity_change(&self) -> Number128 {
-        Number128::from_i128(self.min_equity_change)
+    pub fn max_equity_loss(&self) -> Number128 {
+        Number128::from_i128(self.max_equity_loss)
     }
 }
 
@@ -595,6 +587,14 @@ pub struct Valuation {
 impl Valuation {
     pub fn available_collateral(&self) -> Number128 {
         self.effective_collateral - self.required_collateral
+    }
+
+    pub fn effective_c_ratio(&self) -> Number128 {
+        if self.liabilities == Number128::ZERO {
+            Number128::MAX
+        } else {
+            self.effective_collateral / self.required_collateral
+        }
     }
 
     pub fn past_due(&self) -> bool {
@@ -633,7 +633,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation,
             positions: [0; 7432],
@@ -647,7 +647,7 @@ mod tests {
                 caller_heights: BitSet(0b10010111)
             },
             owner: 11111111111111111111111111111111,
-            liquidation: 11111111111111111111111111111111,
+            airspace: 11111111111111111111111111111111,
             liquidator: 11111111111111111111111111111111,
             positions: []
         }"
@@ -659,13 +659,16 @@ mod tests {
         let key = crate::id();
         let approvals = &[Approver::MarginAccountAuthority];
         acc.register_position(
-            key,
-            2,
-            key,
-            key,
-            TokenKind::Collateral,
-            5000,
-            1000,
+            PositionConfigUpdate {
+                mint: key,
+                decimals: 2,
+                airspace: Default::default(),
+                address: key,
+                adapter: key,
+                kind: TokenKind::Collateral,
+                value_modifier: 5000,
+                max_staleness: 1000,
+            },
             approvals,
         )
         .unwrap();
@@ -702,7 +705,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -719,7 +722,7 @@ mod tests {
                 Token::U8(1),
                 Token::Str("owner"),
                 Token::Str("11111111111111111111111111111111"),
-                Token::Str("liquidation"),
+                Token::Str("airspace"),
                 Token::Str("11111111111111111111111111111111"),
                 Token::Str("liquidator"),
                 Token::Str("11111111111111111111111111111111"),
@@ -789,7 +792,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -810,7 +813,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -852,7 +855,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -869,39 +872,48 @@ mod tests {
 
         margin_account
             .register_position(
-                token_a,
-                6,
-                address_a,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_a,
+                    decimals: 6,
+                    airspace: Default::default(),
+                    address: address_a,
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 user_approval,
             )
             .unwrap();
 
         margin_account
             .register_position(
-                token_b,
-                6,
-                address_b,
-                adapter,
-                TokenKind::Claim,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_b,
+                    decimals: 6,
+                    address: address_b,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Claim,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 adapter_approval,
             )
             .unwrap();
 
         margin_account
             .register_position(
-                token_c,
-                6,
-                address_c,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_c,
+                    decimals: 6,
+                    address: address_c,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 user_approval,
             )
             .unwrap();
@@ -926,13 +938,16 @@ mod tests {
 
         margin_account
             .register_position(
-                token_e,
-                9,
-                address_e,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                100,
+                PositionConfigUpdate {
+                    mint: token_e,
+                    decimals: 9,
+                    address: address_e,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 100,
+                },
                 user_approval,
             )
             .unwrap();
@@ -940,13 +955,16 @@ mod tests {
 
         margin_account
             .register_position(
-                token_d,
-                9,
-                address_d,
-                adapter,
-                TokenKind::Collateral,
-                0,
-                100,
+                PositionConfigUpdate {
+                    mint: token_d,
+                    decimals: 9,
+                    address: address_d,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::Collateral,
+                    value_modifier: 0,
+                    max_staleness: 100,
+                },
                 user_approval,
             )
             .unwrap();
@@ -982,7 +1000,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -994,49 +1012,61 @@ mod tests {
 
         margin_account
             .register_position(
-                token_a,
-                6,
-                address_a,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_a,
+                    decimals: 6,
+                    address: address_a,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[],
             )
             .unwrap_err();
         margin_account
             .register_position(
-                token_b,
-                6,
-                address_b,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_b,
+                    decimals: 6,
+                    address: address_b,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::MarginAccountAuthority],
             )
             .unwrap_err();
         margin_account
             .register_position(
-                token_c,
-                6,
-                address_c,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_c,
+                    decimals: 6,
+                    address: address_c,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::Adapter(adapter)],
             )
             .unwrap_err();
         margin_account
             .register_position(
-                token_d,
-                6,
-                address_d,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token_d,
+                    decimals: 6,
+                    address: address_d,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
             )
             .unwrap();
@@ -1052,7 +1082,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::new_unique(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -1061,13 +1091,16 @@ mod tests {
 
         margin_account
             .register_position(
-                token,
-                6,
-                address,
-                adapter,
-                TokenKind::AdapterCollateral,
-                0,
-                0,
+                PositionConfigUpdate {
+                    mint: token,
+                    decimals: 6,
+                    address,
+                    airspace: Default::default(),
+                    adapter,
+                    kind: TokenKind::AdapterCollateral,
+                    value_modifier: 0,
+                    max_staleness: 0,
+                },
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
             )
             .unwrap();
@@ -1081,7 +1114,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],
@@ -1099,7 +1132,7 @@ mod tests {
         assert_healthy(&acc);
         // but when past due, the account is unhealthy
         acc.get_position_mut(&claim).require().unwrap().flags |= AdapterPositionFlags::PAST_DUE;
-        assert_unhealthy(&acc);
+        acc.verify_unhealthy_positions(ARBITRARY_TIME).unwrap();
     }
 
     fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
@@ -1121,7 +1154,19 @@ mod tests {
             _ => (),
         }
 
-        acc.register_position(key, 2, key, key, kind, 10000, 0, &approvals)?;
+        acc.register_position(
+            PositionConfigUpdate {
+                mint: key,
+                decimals: 2,
+                address: key,
+                airspace: Default::default(),
+                adapter: key,
+                kind,
+                value_modifier: 10000,
+                max_staleness: 0,
+            },
+            &approvals,
+        )?;
 
         Ok(key)
     }
@@ -1223,7 +1268,7 @@ mod tests {
     #[test]
     fn margin_account_32_positions_with_liquidator() {
         let mut account = blank_account();
-        account.liquidation = pda(234);
+        account.liquidator = pda(234);
         for i in 0..30 {
             try_register_position(&mut account, i, TokenKind::Collateral).unwrap();
         }
@@ -1233,7 +1278,6 @@ mod tests {
     fn margin_account_authority() {
         let mut account = blank_account();
         account.owner = pda(0);
-        account.liquidator = pda(1);
         account.verify_authority(pda(0)).unwrap();
         account.verify_authority(pda(1)).unwrap_err();
         account.verify_authority(pda(2)).unwrap_err();
@@ -1245,7 +1289,7 @@ mod tests {
         let mut account = blank_account();
         account.owner = pda(0);
         account.liquidator = pda(1);
-        account.liquidation = pda(2);
+        account.airspace = pda(2);
         account.verify_authority(pda(0)).unwrap_err();
         account.verify_authority(pda(1)).unwrap();
         account.verify_authority(pda(2)).unwrap_err();
@@ -1263,7 +1307,7 @@ mod tests {
             user_seed: [0; 2],
             reserved0: [0; 3],
             owner: Pubkey::default(),
-            liquidation: Pubkey::default(),
+            airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
             positions: [0; 7432],

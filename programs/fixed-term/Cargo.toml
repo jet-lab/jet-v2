@@ -26,6 +26,7 @@ overflow-checks = true
 arrayref = "0.3.6"
 bitflags = "1.0.3"
 borsh = "0.9.1"
+bs58 = "0.4"
 bytemuck = {version = "1.7.2", features = ["derive"]}
 num-derive = "0.3.3"
 num-traits = "0.2"

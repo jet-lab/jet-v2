@@ -12,7 +12,7 @@ import {
   SelectedFixedTermMarketAtom
 } from '@state/fixed-term/fixed-term-market-sync';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
 import { MarketAndConfig } from '@jet-lab/margin';
 interface FixedChart {
@@ -35,13 +35,10 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
 };
 
 const asksKeys = ['lend-now', 'request-loan'];
-const immediateKeys = ['lend-now', 'borrow-now'];
+const requestKeys = ['lend-now', 'borrow-now'];
 
-export const FixedPriceChartContainer = ({ type }: FixedChart) => {
-  const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
-  const currentTab = useRecoilValue(CurrentOrderTabAtom);
+const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; currentTab: string }) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
-  const market = useRecoilValue(FixedTermMarketAtom);
   const allMarkets = useRecoilValue(AllFixedTermMarketsAtom);
   const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
   const marginConfig = useRecoilValue(MainConfig);
@@ -61,9 +58,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const series = useMemo(() => {
     let target = openOrders;
     // If market order we display only the currently selected market
-    if (immediateKeys.includes(currentTab)) {
-      target = [openOrders[selectedMarketIndex]];
-    }
+    target = [openOrders[selectedMarketIndex]];
 
     const orderTypeKey = asksKeys.includes(currentTab) ? 'asks' : 'bids';
     return target.reduce((all, current) => {
@@ -89,6 +84,17 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   }, [openOrders, currentTab, selectedMarketIndex]);
 
   return (
+    <ResponsiveLineChart symbol={market.token.symbol} isRequest={requestKeys.includes(currentTab)} series={series} />
+  );
+};
+
+export const FixedPriceChartContainer = ({ type }: FixedChart) => {
+  const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
+  const currentTab = useRecoilValue(CurrentOrderTabAtom);
+
+  const market = useRecoilValue(FixedTermMarketAtom);
+
+  return (
     <div className="fixed-term-graph view-element view-element-hidden flex align-center justify-end column">
       <div className="fixed-term-graph-head view-element-item view-element-item-hidden flex justify-center column">
         <div className="fixed-term-graph-head-info flex align-end">
@@ -97,7 +103,11 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
           </div>
         </div>
       </div>
-      <ResponsiveLineChart series={series} />
+      {market && (
+        <Suspense>
+          <LineChartWithData market={market} currentTab={currentTab} />
+        </Suspense>
+      )}
       <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
     </div>
   );

@@ -23,7 +23,10 @@ interface HasPublicKey {
 
 type DerivedAccountSeed = HasPublicKey | ToBytes | Uint8Array | string
 
-export async function findFixedTermDerivedAccount(seeds: DerivedAccountSeed[], programId: PublicKey): Promise<PublicKey> {
+export async function findFixedTermDerivedAccount(
+  seeds: DerivedAccountSeed[],
+  programId: PublicKey
+): Promise<PublicKey> {
   const seedBytes = seeds.map(s => {
     if (typeof s == "string") {
       return Buffer.from(s)
@@ -54,7 +57,6 @@ export const logAccounts = ({ ...accounts }) => {
   }
 }
 
-
 export const refreshAllMarkets = async (
   markets: FixedTermMarket[],
   ixs: TransactionInstruction[],
@@ -65,8 +67,8 @@ export const refreshAllMarkets = async (
     markets.map(async market => {
       const marketUserInfo = await market.fetchMarginUser(marginAccount)
       const marketUser = await market.deriveMarginUserAddress(marginAccount)
-       // We need to refresh the currnet market being created
-       // as the market gets created with an existing position, but the user will not yet be found
+      // We need to refresh the currnet market being created
+      // as the market gets created with an existing position, but the user will not yet be found
       if (marketUserInfo || marketAddres?.equals(market.address)) {
         const refreshIx = await market.program.methods
           .refreshPosition(true)

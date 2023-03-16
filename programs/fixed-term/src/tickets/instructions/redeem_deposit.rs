@@ -4,8 +4,7 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     control::state::Market,
-    market_token_manager::MarketTokenManager,
-    tickets::{events::DepositRedeemed, state::TermDeposit},
+    tickets::state::{RedeemDepositAccounts, TermDeposit, TermDepositFlags},
     FixedTermErrorCode,
 };
 
@@ -14,17 +13,14 @@ pub struct RedeemDeposit<'info> {
     /// The tracking account for the deposit
     #[account(mut,
               close = payer,
-              has_one = owner,
+              has_one = owner @ FixedTermErrorCode::WrongDepositOwner,
               has_one = payer
     )]
     pub deposit: Account<'info, TermDeposit>,
 
     /// The account that owns the deposit
     #[account(mut)]
-    pub owner: AccountInfo<'info>,
-
-    /// The authority that must sign to redeem the deposit
-    pub authority: Signer<'info>,
+    pub owner: Signer<'info>,
 
     /// Receiver for the rent used to track the deposit
     #[account(mut)]
@@ -50,47 +46,29 @@ pub struct RedeemDeposit<'info> {
 }
 
 impl<'info> RedeemDeposit<'info> {
-    pub fn redeem(&self) -> Result<u64> {
-        let current_time = Clock::get()?.unix_timestamp;
-        if current_time < self.deposit.matures_at {
-            msg!(
-                "Matures at time: [{:?}]\nCurrent time: [{:?}]",
-                self.deposit.matures_at,
-                current_time
-            );
-            return err!(FixedTermErrorCode::ImmatureTicket);
+    fn check(&self) -> Result<()> {
+        if self.deposit.flags.contains(TermDepositFlags::MARGIN) {
+            return err!(FixedTermErrorCode::MarginUserCannotUseInstruction);
         }
 
-        // transfer from the vault to the deposit_holder
-        self.withdraw(
-            &self.underlying_token_vault,
-            &self.token_account,
-            self.deposit.amount,
-        )?;
-
-        emit!(DepositRedeemed {
-            deposit: self.deposit.key(),
-            deposit_holder: self.owner.key(),
-            redeemed_value: self.deposit.amount,
-            redeemed_timestamp: current_time,
-        });
-
-        Ok(self.deposit.amount)
+        Ok(())
     }
 }
 
 pub fn handler(ctx: Context<RedeemDeposit>) -> Result<()> {
-    if ctx.accounts.owner.key != ctx.accounts.authority.key {
-        msg!(
-            "signer {} is not the deposit owner {}",
-            ctx.accounts.authority.key,
-            ctx.accounts.owner.key
-        );
+    let accs = ctx.accounts;
+    accs.check()?;
 
-        return Err(FixedTermErrorCode::DoesNotOwnTicket.into());
-    }
-
-    let _ = ctx.accounts.redeem()?;
+    let accounts = RedeemDepositAccounts {
+        deposit: &accs.deposit,
+        owner: &accs.owner,
+        payer: &accs.payer,
+        token_account: accs.token_account.as_ref(),
+        market: &accs.market,
+        underlying_token_vault: &accs.underlying_token_vault,
+        token_program: &accs.token_program,
+    };
+    accounts.redeem(true)?;
 
     Ok(())
 }

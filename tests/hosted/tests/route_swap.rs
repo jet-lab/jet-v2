@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "localnet"), allow(unused))]
-
 use std::{collections::HashSet, num::NonZeroU64, sync::Arc, time::Duration};
 
 use anchor_lang::Id;
@@ -37,7 +35,6 @@ use hosted_tests::{
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::create_wallet;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_USDT: u64 = 1_000_000;
@@ -133,7 +130,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 }
 
 async fn setup_swap_accounts<'a>(
-    ctx: &Arc<MarginTestContext>,
     pool: &impl SwapAccounts,
     margin_user: &MarginUser,
 ) -> anyhow::Result<()> {
@@ -151,7 +147,7 @@ async fn setup_swap_accounts<'a>(
     }
 }
 
-#[cfg(feature = "localnet")]
+#[cfg_attr(not(feature = "localnet"), ignore = "only runs on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_swap() -> anyhow::Result<()> {
@@ -161,17 +157,17 @@ async fn route_swap() -> anyhow::Result<()> {
     let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = ctx.create_wallet(10).await?;
+    let wallet_b = ctx.create_wallet(10).await?;
+
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
-
-    // Initialize the margin accounts for each user
-    user_a.create_account().await?;
-    user_b.create_account().await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
 
     // Create swap pools with some liquidity
     let swap_pool_spl_usdc_tsol = SplSwapPool::configure(
@@ -404,17 +400,21 @@ async fn single_leg_swap_margin(
     pool: impl SwapAccounts,
 ) -> anyhow::Result<()> {
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = ctx.create_wallet(10).await?;
+    let wallet_b = ctx.create_wallet(10).await?;
+
+    // issue permits for the users
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    ctx.issue_permit(wallet_b.pubkey()).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
+    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
 
-    // Initialize the margin accounts for each user
-    user_a.create_account().await?;
-    user_b.create_account().await?;
+    // Perform any setup required based on pool type (e.g. create open_orders)
+    setup_swap_accounts(&pool, &user_a).await?;
+    setup_swap_accounts(&pool, &user_b).await?;
 
     // Perform any setup required based on pool type (e.g. create open_orders)
     setup_swap_accounts(ctx, &pool, &user_a).await?;
@@ -523,13 +523,13 @@ async fn single_leg_swap(
     ctx: &Arc<MarginTestContext>,
     env: &TestEnv,
     pool: impl SwapAccounts,
-) -> anyhow::Result<()> {
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    user_a.create_account().await?;
+) -> Result<(), anyhow::Error> {
+    let wallet_a = ctx.create_wallet(10).await?; // issue permits for the user
+    ctx.issue_permit(wallet_a.pubkey()).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
 
     // Perform any setup required based on pool type (e.g. create open_orders)
-    setup_swap_accounts(ctx, &pool, &user_a).await?;
+    setup_swap_accounts(&pool, &user_a).await?;
 
     ctx.tokens
         .set_price(
@@ -591,7 +591,7 @@ async fn single_leg_swap(
 
 // The tests create duplicate accounts, causing failures in localnet.
 // They are however useful for coverage and testing logic, so we run them on the sim.
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_spl_swap() -> anyhow::Result<()> {
@@ -631,7 +631,7 @@ async fn route_spl_swap() -> anyhow::Result<()> {
 
 // The tests create duplicate accounts, causing failures in localnet.
 // They are however useful for coverage and testing logic, so we run them on the sim.
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_saber_swap() -> anyhow::Result<()> {
@@ -666,7 +666,7 @@ async fn route_saber_swap() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_openbook_swap() -> anyhow::Result<()> {
@@ -687,8 +687,6 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
     )
     .await?;
 
-    dbg!(&market);
-
     // Check that we can find the market
     let mut supported_mints = HashSet::new();
     supported_mints.insert(env.msol);
@@ -698,7 +696,7 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
     assert_eq!(markets.len(), 1);
 
     // Add liquidity on the market
-    let maker = create_wallet(&ctx.rpc, 2 * LAMPORTS_PER_SOL).await?;
+    let maker = ctx.create_wallet(2).await?;
     let maker_msol_account = ctx
         .tokens
         .create_account_funded(&env.msol, &maker.pubkey(), 10000 * ONE_MSOL)
@@ -709,7 +707,9 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
         .await?;
 
     // Create a maker's open orders account
-    let open_orders = market.init_open_orders(&ctx.rpc, &maker).await?;
+    let open_orders = market
+        .init_open_orders(&ctx.rpc, ctx.solana.keygen.generate_key(), &maker)
+        .await?;
 
     // Place an order each on both sides
     let mut bid = OpenBookOrderParams {
@@ -745,8 +745,6 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
         self_trade_behavior: SelfTradeBehavior::AbortTransaction,
         limit: u16::MAX,
     };
-
-    dbg!(ctx.rpc.payer().pubkey());
 
     market
         .new_order(
