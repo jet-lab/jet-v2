@@ -96,7 +96,7 @@ export function useAccountsSyncer() {
   const walletTokens = useRecoilValue(WalletTokens);
   const setAccountNames = useSetRecoilState(AccountNames);
   const [currentAccountAddress, setCurrentAccountAddress] = useRecoilState(CurrentAccountAddress);
-  const [accounts, setAccounts] = useRecoilState(Accounts);
+  const setAccounts = useSetRecoilState(Accounts);
   const resetAccounts = useResetRecoilState(Accounts);
   const currentAccount = useRecoilValue(CurrentAccount);
   const setCurrentAccountHistory = useSetRecoilState(CurrentAccountHistory);
@@ -106,14 +106,6 @@ export function useAccountsSyncer() {
 
   // When we change address
   useEffect(() => setAccountHistoryLoaded(false), [currentAccountAddress, setAccountHistoryLoaded]);
-
-  useEffect(() => {
-    if (accounts.length > 0) {
-      setCurrentAccountAddress(accounts[0].address.toBase58());
-    } else {
-      setCurrentAccountAddress('');
-    }
-  }, [accounts, publicKey]);
 
   // Fetch all margin accounts on wallet init
   useEffect(() => {
@@ -147,18 +139,27 @@ export function useAccountsSyncer() {
       const sortedAccountNames: Record<string, string> = {};
       for (const account of accounts) {
         const accountKey = account.address.toString();
-        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${
-          account.seed + 1
-        }`;
+        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${account.seed + 1
+          }`;
 
         // If account is currently being liquidated, switch to that account
         if (account.isBeingLiquidated) {
           setCurrentAccountAddress(accountKey);
         }
       }
+
       // If no currentAccount select first
-      if (!currentAccountAddress && accounts.length > 0) {
-        setCurrentAccountAddress(accounts[0].address.toString());
+      if (accounts.length > 0) {
+        if (currentAccountAddress) {
+          const match = accounts.find(acc => acc.address.toBase58() === currentAccountAddress)
+          if (!match) {
+            setCurrentAccountAddress(accounts[0].address.toBase58())
+          }
+        } else {
+          setCurrentAccountAddress(accounts[0].address.toBase58());
+        }
+      } else {
+        setCurrentAccountAddress('')
       }
 
       setAccounts(accounts);
@@ -171,7 +172,7 @@ export function useAccountsSyncer() {
     const accountsInterval = setInterval(getAccounts, ACTION_REFRESH_INTERVAL);
     return () => clearInterval(accountsInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pools, owner, provider.connection, actionRefresh, publicKey]);
+  }, [pools, owner, provider.connection, actionRefresh, publicKey, currentAccountAddress]);
 
   // Update current account history
   useEffect(() => {
