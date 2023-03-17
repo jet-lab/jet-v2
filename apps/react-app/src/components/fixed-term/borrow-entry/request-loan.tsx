@@ -102,7 +102,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         refreshOrderBooks();
         notify(
           'Borrow Offer Created',
-          `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+          `Your borrow offer for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(2)
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
@@ -112,7 +112,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
+        `Your borrow offer for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(2)
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)

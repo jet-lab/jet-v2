@@ -146,7 +146,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         refreshOrderBooks();
         notify(
           'Lend Successful',
-          `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
+          `Your lend order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} was filled successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -155,7 +155,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     } catch (e: any) {
       notify(
         'Lend Order Failed',
-        `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
+        `Your lend order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );

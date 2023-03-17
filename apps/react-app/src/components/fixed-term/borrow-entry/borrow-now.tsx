@@ -157,7 +157,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         refreshOrderBooks();
         notify(
           'Borrow Successful',
-          `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
+          `Your borrow order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} was filled successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -166,7 +166,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     } catch (e: any) {
       notify(
         'Borrow Order Failed',
-        `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
+        `Your borrow order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
