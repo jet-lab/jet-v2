@@ -184,7 +184,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
             className="input-amount"
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
-              setAmount(new BN(e * 10 ** decimals));
+              if (!e) {
+                setAmount(undefined)
+              } else {
+                setAmount(new BN(e * 10 ** decimals));
+              }
             }, 300)}
             placeholder={'10,000'}
             min={0}

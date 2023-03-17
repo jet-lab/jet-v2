@@ -184,7 +184,11 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
             className="input-amount"
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
-              setAmount(new BN(e * 10 ** decimals));
+              if (!e) {
+                setAmount(undefined)
+              } else {
+                setAmount(new BN(e * 10 ** decimals));
+              }
             }, 300)}
             placeholder={'10,000'}
             min={0}
@@ -199,7 +203,11 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
             className="input-rate"
             value={basisPoints && !basisPoints.isZero() ? basisPoints.toNumber() / 100 : ''}
             onChange={debounce(e => {
-              setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
+              if (!e) {
+                setBasisPoints(undefined)
+              } else {
+                setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
+              }
             }, 300)}
             placeholder={'6.50'}
             type="number"

@@ -65,6 +65,7 @@ describe('Fixed Term Market', () => {
       amountInput.click();
       amountInput.type(lendAmtString);
       amountInput.blur();
+      cy.wait(1000) // wait for debounce
     });
 
     it('inputs the interest rate', () => {
@@ -72,6 +73,7 @@ describe('Fixed Term Market', () => {
       interestInput.click();
       interestInput.type(interestString);
       interestInput.blur();
+      cy.wait(1000) // wait for debounce
     });
     it('clicks the button once enabled', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
@@ -103,6 +105,7 @@ describe('Fixed Term Market', () => {
       amountInput.clear();
       amountInput.click().type(borrowAmtString);
       amountInput.blur();
+      cy.wait(1000) // wait for debounce
     });
 
     it('inputs the interest rate', () => {
@@ -110,6 +113,7 @@ describe('Fixed Term Market', () => {
       interestInput.clear();
       interestInput.click().type(interestString);
       interestInput.blur();
+      cy.wait(1000) // wait for debounce
     });
 
     it('clicks the button once enabled', () => {
@@ -144,6 +148,7 @@ describe('Fixed Term Market', () => {
       amountInput.click();
       amountInput.type(lendAmtString);
       amountInput.blur();
+      cy.wait(1000) // wait for debounce
     });
 
     it('clicks the button once enabled', () => {
@@ -177,6 +182,7 @@ describe('Fixed Term Market', () => {
       amountInput.click();
       amountInput.type(lendAmtString);
       amountInput.blur();
+      cy.wait(1000) // wait for debounce
     });
     it('submits the transaction', () => {
       const submitButton = cy.get('.fixed-term .submit-button').should('not.be.disabled');
@@ -215,6 +221,7 @@ describe('Fixed Term Market', () => {
       repayInput.click();
       repayInput.type('110');
       repayInput.blur();
+      cy.wait(1000) // wait for debounce
     });
 
     it('submits the order', () => {

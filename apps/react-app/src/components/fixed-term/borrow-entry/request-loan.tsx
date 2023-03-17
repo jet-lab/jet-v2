@@ -188,7 +188,11 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
             className="input-amount"
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
-              setAmount(new BN(e * 10 ** decimals));
+              if (!e) {
+                setAmount(undefined)
+              } else {
+                setAmount(new BN(e * 10 ** decimals));
+              }
             }, 300)}
             placeholder={'10,000'}
             min={0}
@@ -203,7 +207,11 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
             className="input-rate"
             value={basisPoints && !basisPoints.isZero() ? basisPoints.toNumber() / 100 : ''}
             onChange={debounce(e => {
-              setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
+              if (!e) {
+                setBasisPoints(undefined)
+              } else {
+                setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
+              }
             }, 300)}
             placeholder={'6.50'}
             type="number"
@@ -297,7 +305,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The offer would match with your own requests in this market.</div>
       )}
-      {!forecast?.hasEnoughCollateral && (!amount || amount.isZero()) && (
+      {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && basisPoints && !basisPoints.isZero() && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
       )}
     </div>
