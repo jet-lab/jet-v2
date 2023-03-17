@@ -103,8 +103,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         refreshOrderBooks();
         notify(
           'Lend Offer Created',
-          `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-            basisPoints.toNumber() / 100
+          `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
           }% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
@@ -114,8 +113,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     } catch (e: any) {
       notify(
         'Lend Offer Failed',
-        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
-          basisPoints.toNumber() / 100
+        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100
         }% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
@@ -125,6 +123,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     } finally {
       setAmount(undefined);
       setBasisPoints(undefined);
+      setForecast(undefined)
     }
   };
 
@@ -165,8 +164,10 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   }
 
   useEffect(() => {
-    if (!amount || !basisPoints) return;
-    if (amount.eqn(0) || basisPoints.eqn(0)) return;
+    if (!amount || !basisPoints || amount.eqn(0) || basisPoints.eqn(0)) {
+      setForecast(undefined)
+      return
+    };
     orderbookModelLogic(
       bnToBigInt(amount),
       rate_to_price(bnToBigInt(basisPoints), BigInt(marketAndConfig.config.borrowTenor))
@@ -231,20 +232,20 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Posted Repayment Amount</span>
-          {forecast?.postedRepayAmount && (
+          {forecast?.postedRepayAmount ? (
             <span>
               {forecast?.postedRepayAmount.toFixed(token.precision)}
               {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Posted Interest</span>
-          {forecast?.postedInterest && (
+          {forecast?.postedInterest ? (
             <span>
               {forecast?.postedInterest.toFixed(token.precision)} {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Posted Rate</span>
@@ -252,17 +253,17 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Matched Repayment Amount</span>
-          {forecast?.matchedAmount && (
+          {forecast?.matchedAmount ? (
             <span>{`${forecast.matchedAmount.toFixed(token.precision)} ${token.symbol}`}</span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Matched Interest</span>
-          {forecast?.matchedInterest && (
+          {forecast?.matchedInterest ? (
             <span>
               {forecast.matchedInterest.toFixed(token.precision)} {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Matched Effective Rate</span>

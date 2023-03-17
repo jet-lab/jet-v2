@@ -68,8 +68,14 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    if (amount) handleForecast(amount);
+    if (amount) {
+      handleForecast(amount);
+    } else {
+      setForecast(undefined)
+    }
   }, [amount, marginAccount?.address, marketAndConfig]);
+
+  const enoughLiquidity = forecast && forecast.unfilledQty <= 0
 
   const disabled =
     !marginAccount ||
@@ -80,8 +86,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
-    forecast.unfilledQty > 0 ||
+    !enoughLiquidity ||
     !forecast?.hasEnoughCollateral;
+
+
 
   const handleForecast = (amount: BN) => {
     if (bnToBigInt(amount) === BigInt(0)) {
@@ -166,6 +174,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       console.error(e);
     } finally {
       setAmount(undefined);
+      setForecast(undefined)
     }
   };
 
@@ -210,15 +219,15 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Repayment Amount</span>
-          {forecast && (
+          {forecast && enoughLiquidity ? (
             <span>
               {forecast.repayAmount.toFixed(token.precision)} {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          {forecast && <span>{`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}</span>}
+          {forecast && enoughLiquidity ? <span>{`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}</span> : null}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
@@ -226,7 +235,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Fees</span>
-          {forecast && <span>{`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}</span>}
+          {forecast?.fees ? <span>{`~${forecast?.fees.toFixed(token.precision)} ${token.symbol}`}</span> : null}
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
@@ -253,7 +262,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
       )}
-      {forecast && forecast.unfilledQty > 0 && (
+      {forecast && !enoughLiquidity && (
         <div className="fixed-term-warning">Not enough liquidity on this market, try a smaller amount.</div>
       )}
       {forecast && forecast.effectiveRate === 0 && (
