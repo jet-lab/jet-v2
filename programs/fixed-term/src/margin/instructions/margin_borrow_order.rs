@@ -8,7 +8,7 @@ use jet_program_proc_macros::MarketTokenManager;
 use crate::{
     margin::{
         events::{OrderPlaced, OrderType},
-        state::{return_to_margin, AutoRollConfig, MarginUser, TermLoanBuilder},
+        state::{return_to_margin, BorrowAutoRollConfig, MarginUser, TermLoanBuilder},
     },
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
@@ -86,7 +86,7 @@ pub struct MarginBorrowOrder<'info> {
 impl<'info> MarginBorrowOrder<'info> {
     pub fn callback_flags(&self, params: &OrderParams) -> Result<CallbackFlags> {
         let auto_roll = if params.auto_roll {
-            if self.margin_user.borrow_roll_config == AutoRollConfig::default() {
+            if self.margin_user.borrow_roll_config == BorrowAutoRollConfig::default() {
                 msg!(
                     "Auto roll settings have not been configured for margin user [{}]",
                     self.margin_user.key()

@@ -1,6 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
-use jet_fixed_term::{margin::state::AutoRollConfig, orderbook::state::MarketSide};
+use anchor_lang::AnchorSerialize;
+use jet_fixed_term::{
+    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig},
+    orderbook::state::MarketSide,
+    seeds,
+};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
@@ -477,11 +482,11 @@ impl FixedTermIxBuilder {
     pub fn configure_auto_roll(
         &self,
         margin_account: Pubkey,
-        side: MarketSide,
         config: AutoRollConfig,
     ) -> Instruction {
         let margin_user = derive::margin_user(&self.market, &margin_account);
-        ix::configure_auto_roll(side, config, margin_user, margin_account)
+        let (side, bytes) = config.as_params();
+        ix::configure_auto_roll(side, bytes, margin_user, margin_account, self.market)
     }
 }
 
@@ -511,5 +516,30 @@ impl FixedTermIxBuilder {
 
     pub fn crank_authorization(&self, crank: &Pubkey) -> Pubkey {
         derive::crank_authorization(&self.market, crank)
+    }
+}
+
+pub enum AutoRollConfig {
+    Lend(LendAutoRollConfig),
+    Borrow(BorrowAutoRollConfig),
+}
+
+impl AutoRollConfig {
+    pub fn as_params(self) -> (MarketSide, Vec<u8>) {
+        let mut bytes = vec![];
+        let side = match self {
+            AutoRollConfig::Lend(config) => {
+                config.serialize(&mut bytes).unwrap();
+
+                MarketSide::Lend
+            }
+            AutoRollConfig::Borrow(config) => {
+                config.serialize(&mut bytes).unwrap();
+
+                MarketSide::Borrow
+            }
+        };
+
+        (side, bytes)
     }
 }

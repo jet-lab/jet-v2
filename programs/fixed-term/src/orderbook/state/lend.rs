@@ -4,7 +4,7 @@ use anchor_spl::token::{accessor, mint_to, Mint, MintTo, Token, TokenAccount};
 use jet_program_common::traits::SafeAdd;
 
 use crate::{
-    margin::state::{AutoRollConfig, MarginUser},
+    margin::state::{LendAutoRollConfig, MarginUser},
     tickets::state::{InitTermDepositAccounts, TermDepositWriter},
     FixedTermErrorCode,
 };
@@ -268,7 +268,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
 
     fn order_flags(&self, params: &OrderParams) -> Result<CallbackFlags> {
         let auto_roll = if params.auto_roll {
-            if self.margin_user.lend_roll_config == AutoRollConfig::default() {
+            if self.margin_user.lend_roll_config == LendAutoRollConfig::default() {
                 msg!(
                     "Auto roll settings have not been configured for margin user [{}]",
                     self.margin_user.key()

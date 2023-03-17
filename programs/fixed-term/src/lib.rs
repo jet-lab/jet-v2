@@ -127,7 +127,6 @@ pub(crate) mod utils;
 
 pub(crate) mod instructions;
 use instructions::*;
-use margin::state::AutoRollConfig;
 
 #[macro_use]
 extern crate bitflags;
@@ -212,9 +211,9 @@ pub mod jet_fixed_term {
     pub fn configure_auto_roll(
         ctx: Context<ConfigureAutoRoll>,
         side: u8,
-        config: AutoRollConfig,
+        config_bytes: Vec<u8>,
     ) -> Result<()> {
-        instructions::configure_auto_roll::handler(ctx, side, config)
+        instructions::configure_auto_roll::handler(ctx, side, config_bytes)
     }
 
     /// Create a new borrower account

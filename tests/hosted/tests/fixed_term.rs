@@ -14,10 +14,9 @@ use hosted_tests::{
     test_default,
 };
 use jet_fixed_term::{
-    margin::state::AutoRollConfig,
+    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig},
     orderbook::state::{
-        CallbackFlags, MarginCallbackInfo, MarketSide, OrderParams, RoundingAction,
-        SensibleOrderSummary,
+        CallbackFlags, MarginCallbackInfo, OrderParams, RoundingAction, SensibleOrderSummary,
     },
 };
 use jet_margin_sdk::{
@@ -876,30 +875,48 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
     .await;
 
     // can properly set config
+    let market_tenor = manager.load_market().await?.borrow_tenor;
     let lend_price = OrderAmount::from_base_amount_rate(1_000, 1_000).price;
     let borrow_price = OrderAmount::from_base_amount_rate(1_000, 900).price;
-    user.set_roll_config(
-        MarketSide::Lend,
-        AutoRollConfig {
-            limit_price: lend_price,
-        },
-    )
+    let borrow_roll_tenor = market_tenor - 1;
+    user.set_lend_roll_config(LendAutoRollConfig {
+        limit_price: lend_price,
+    })
     .await?;
-    user.set_roll_config(
-        MarketSide::Borrow,
-        AutoRollConfig {
-            limit_price: borrow_price,
-        },
-    )
+    user.set_borrow_roll_config(BorrowAutoRollConfig {
+        limit_price: borrow_price,
+        roll_tenor: borrow_roll_tenor,
+    })
     .await?;
 
     let margin_user = user.load_margin_user().await?;
     assert_eq!(margin_user.lend_roll_config.limit_price, lend_price);
     assert_eq!(margin_user.borrow_roll_config.limit_price, borrow_price);
+    assert_eq!(margin_user.borrow_roll_config.roll_tenor, borrow_roll_tenor);
 
     // cannot set a bad config
     assert!(user
-        .set_roll_config(MarketSide::Lend, AutoRollConfig { limit_price: 0 })
+        .set_lend_roll_config(LendAutoRollConfig { limit_price: 0 })
+        .await
+        .is_err());
+    assert!(user
+        .set_lend_roll_config(LendAutoRollConfig {
+            limit_price: jet_program_common::FP32_ONE as u64 + 1
+        })
+        .await
+        .is_err());
+    assert!(user
+        .set_borrow_roll_config(BorrowAutoRollConfig {
+            limit_price: borrow_price,
+            roll_tenor: market_tenor + 1,
+        })
+        .await
+        .is_err());
+    assert!(user
+        .set_borrow_roll_config(BorrowAutoRollConfig {
+            limit_price: borrow_price,
+            roll_tenor: 0,
+        })
         .await
         .is_err());
 
@@ -942,12 +959,10 @@ async fn auto_roll_flags() -> Result<()> {
         .await;
     assert!(res.is_err());
 
-    user.set_roll_config(
-        MarketSide::Borrow,
-        AutoRollConfig {
-            limit_price: params.limit_price,
-        },
-    )
+    user.set_borrow_roll_config(BorrowAutoRollConfig {
+        limit_price: params.limit_price,
+        roll_tenor: manager.load_market().await?.borrow_tenor - 1,
+    })
     .await?;
 
     borrow_order
@@ -993,12 +1008,9 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     .await;
     let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     lender
-        .set_roll_config(
-            MarketSide::Lend,
-            AutoRollConfig {
-                limit_price: underlying(1_001, 2_000).limit_price,
-            },
-        )
+        .set_lend_roll_config(LendAutoRollConfig {
+            limit_price: underlying(1_001, 2_000).limit_price,
+        })
         .await?;
     let mut lend_params = underlying(1_001, 2_000);
     lend_params.auto_roll = true;

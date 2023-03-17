@@ -13,14 +13,12 @@ use async_trait::async_trait;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::state::{AutoRollConfig, MarginUser, TermLoan},
-    orderbook::state::{
-        event_queue_len, orderbook_slab_len, CallbackInfo, MarketSide, OrderParams,
-    },
+    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig, MarginUser, TermLoan},
+    orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
 use jet_instructions::{
-    fixed_term::{derive, InitializeMarketParams},
+    fixed_term::{derive, AutoRollConfig, InitializeMarketParams},
     margin::{derive_adapter_config, MarginConfigIxBuilder},
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
@@ -1048,15 +1046,21 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 
-    pub async fn set_roll_config(
-        &self,
-        side: MarketSide,
-        config: AutoRollConfig,
-    ) -> Result<Signature> {
-        let set_config =
-            self.manager
-                .ix_builder
-                .configure_auto_roll(self.proxy.pubkey(), side, config);
+    pub async fn set_lend_roll_config(&self, config: LendAutoRollConfig) -> Result<Signature> {
+        let set_config = self
+            .manager
+            .ix_builder
+            .configure_auto_roll(self.proxy.pubkey(), AutoRollConfig::Lend(config));
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
+            .await
+    }
+
+    pub async fn set_borrow_roll_config(&self, config: BorrowAutoRollConfig) -> Result<Signature> {
+        let set_config = self
+            .manager
+            .ix_builder
+            .configure_auto_roll(self.proxy.pubkey(), AutoRollConfig::Borrow(config));
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
             .await

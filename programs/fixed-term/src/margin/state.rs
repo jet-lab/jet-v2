@@ -46,9 +46,9 @@ pub struct MarginUser {
     /// Accounting used to track assets in custody of the fixed term market
     assets: Assets,
     /// Settings for borrow order "auto rolling"
-    pub borrow_roll_config: AutoRollConfig,
+    pub borrow_roll_config: BorrowAutoRollConfig,
     /// Settings for lend order "auto rolling"
-    pub lend_roll_config: AutoRollConfig,
+    pub lend_roll_config: LendAutoRollConfig,
 }
 
 impl MarginUser {
@@ -544,7 +544,18 @@ impl Default for Assets {
 }
 
 #[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
-pub struct AutoRollConfig {
+pub struct BorrowAutoRollConfig {
+    /// the limit price at which orders may be placed by an authority
+    pub limit_price: u64,
+
+    /// The 'auto-roll' function for borrowers is determined by a user-controlled tenor. The auto-roll
+    /// service will attempt to auto-roll any orders with a matured `roll_tenor`, regardless of the
+    /// maturity of the `TermLoan`
+    pub roll_tenor: u64,
+}
+
+#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub struct LendAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,
 }

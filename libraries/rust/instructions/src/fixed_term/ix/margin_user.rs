@@ -2,9 +2,7 @@
 
 use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
 use jet_fixed_term::orderbook::state::MarketSide;
-use jet_fixed_term::{
-    accounts::OrderbookMut, margin::state::AutoRollConfig, orderbook::state::OrderParams,
-};
+use jet_fixed_term::{accounts::OrderbookMut, orderbook::state::OrderParams};
 use solana_sdk::instruction::Instruction;
 use spl_associated_token_account::get_associated_token_address as ata;
 
@@ -178,18 +176,20 @@ pub fn margin_repay(
 
 pub fn configure_auto_roll(
     side: MarketSide,
-    config: AutoRollConfig,
+    config_bytes: Vec<u8>,
     margin_user: Pubkey,
     margin_account: Pubkey,
+    market: Pubkey,
 ) -> Instruction {
     let data = jet_fixed_term::instruction::ConfigureAutoRoll {
         side: side as u8,
-        config,
+        config_bytes,
     }
     .data();
     let accounts = jet_fixed_term::accounts::ConfigureAutoRoll {
         margin_user,
         margin_account,
+        market,
     }
     .to_account_metas(None);
 
