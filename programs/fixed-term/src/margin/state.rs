@@ -11,8 +11,10 @@ use jet_program_common::{
 
 use crate::{
     events::{AssetsUpdated, DebtUpdated, TermLoanCreated},
-    instructions::MarginBorrowOrder,
-    orderbook::state::{MarginCallbackInfo, OrderTag, RoundingAction, SensibleOrderSummary},
+    orderbook::state::{
+        MarginBorrowOrderAccounts, MarginCallbackInfo, OrderTag, RoundingAction,
+        SensibleOrderSummary,
+    },
     serialization::{self, AnchorAccount, Mut},
     FixedTermErrorCode,
 };
@@ -647,7 +649,7 @@ pub struct TermLoanBuilder {
 impl TermLoanBuilder {
     /// Initialize a new builder from the information given by a borrow order
     pub fn new_from_order(
-        accs: &MarginBorrowOrder,
+        accs: &MarginBorrowOrderAccounts,
         summary: &SensibleOrderSummary,
         info: &MarginCallbackInfo,
         strike_timestamp: UnixTimestamp,
