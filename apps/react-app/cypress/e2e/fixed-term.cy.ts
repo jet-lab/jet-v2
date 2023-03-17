@@ -46,8 +46,8 @@ describe('Fixed Term Market', () => {
   });
 
   describe('can create one fixed rate lend order', () => {
-    const lendAmtString = '1000';
-    const interestString = '10';
+    const lendAmtString = '1000.00';
+    const interestString = '10.00';
 
     it('selects the lender account', () => {
       cy.contains('ACCOUNT 1').as('lenderAccount');
@@ -84,8 +84,8 @@ describe('Fixed Term Market', () => {
   });
 
   describe('can create one fixed rate borrow order', () => {
-    const borrowAmtString = '100';
-    const interestString = '5';
+    const borrowAmtString = '100.00';
+    const interestString = '5.00';
 
     it('selects the borrower account', () => {
       cy.contains('ACCOUNT 2').as('borrowerAccount');
@@ -123,7 +123,7 @@ describe('Fixed Term Market', () => {
   });
 
   describe('issues a lend now order', () => {
-    const lendAmtString = '20';
+    const lendAmtString = '20.00';
 
     it('selects the lender account', () => {
       cy.contains('ACCOUNT 1').as('lenderAccount');
@@ -157,7 +157,7 @@ describe('Fixed Term Market', () => {
   });
 
   describe('issues a borrow now order', () => {
-    const lendAmtString = '20';
+    const lendAmtString = '20.00';
 
     it('selects the borrower account', () => {
       cy.contains('ACCOUNT 2').as('borrowerAccount');
