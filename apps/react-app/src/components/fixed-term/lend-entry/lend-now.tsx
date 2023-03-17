@@ -92,7 +92,6 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     }
     const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
     try {
-      console.log('simulating transaction for ', marginAccount?.address.toBase58())
       const sim = orderbookModel.simulateTaker('lend', bnToBigInt(amount), undefined, marginAccount?.address.toBytes());
 
       let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
