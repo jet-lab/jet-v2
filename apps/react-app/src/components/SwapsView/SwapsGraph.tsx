@@ -44,7 +44,7 @@ export function SwapsGraph(): JSX.Element {
   const [oraclePrice, setOraclePrice] = useState(0);
   const [poolPrice, setPoolPrice] = useState(0);
   const { Title, Text } = Typography;
-  const endpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_WS_API;
+  const swapEndpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API;
 
 
   // Create and render chart on new data / market pair
@@ -65,12 +65,6 @@ export function SwapsGraph(): JSX.Element {
 
     // Current pool price
     let poolPrice = 0.0;
-    // if (swapPool.pool.swapType === 'constantProduct') {
-    //   const maybePrice = balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource);
-    //   poolPrice = !true ? maybePrice : 1.0 / maybePrice;
-    // } else if (swapPool.pool.swapType === 'stable') {
-    //   poolPrice = oraclePrice;
-    // }
     setPoolPrice(poolPrice);
     const priceWithFee = !true ? 1 - swapFees : 1 + swapFees;
 
@@ -342,7 +336,7 @@ export function SwapsGraph(): JSX.Element {
       return;
     }
     axios
-      .get(`${endpoint}/swap/plotdata/${from}/${to}/${maxAmount * 2}`)
+      .get(`${swapEndpoint}/swap/plotdata/${from}/${to}/${maxAmount * 2}`)
       .then(resp => {
         // TODO: normalise to floats
         const out = resp.data.map((r: any) => {

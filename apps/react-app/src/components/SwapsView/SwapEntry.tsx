@@ -17,7 +17,7 @@ import { formatPriceImpact, formatRiskIndicator } from '@utils/format';
 import { notify } from '@utils/notify';
 import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
 import { DEFAULT_DECIMALS, useCurrencyFormatting } from '@utils/currency';
-import { getSwapRoutes, useSwapReviewMessage } from '@utils/actions/swap';
+import { getSwapRoutes, SwapStep, useSwapReviewMessage } from '@utils/actions/swap';
 import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
 import { Info } from '@components/misc/Info';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
@@ -26,7 +26,7 @@ import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/Connecti
 import { ArrowRight } from '@components/modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import SwapIcon from '@assets/icons/function-swap.svg';
-import { SwapFees, SwapPoolTokenAmounts, SwapRoutes } from '@state/swap/splSwap';
+import { SelectedSwapQuote, SwapFees, SwapPoolTokenAmounts, SwapQuotes } from '@state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
 import debounce from 'lodash.debounce';
 import { useJetStore } from '@jet-lab/store';
@@ -46,7 +46,8 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const { selectedPoolKey, selectPool } = useJetStore(state => ({
+  const { prices, selectedPoolKey, selectPool } = useJetStore(state => ({
+    prices: state.prices,
     selectedPoolKey: state.selectedPoolKey,
     selectPool: state.selectPool
   }));
@@ -73,7 +74,8 @@ export function SwapEntry(): JSX.Element {
     : 0;
   const hasOutputLoan = outputPoolPosition ? !outputPoolPosition.loanBalance.isZero() : false;
   const swapPoolTokenAmounts = useRecoilValue(SwapPoolTokenAmounts);
-  const swapRoutes = useRecoilValue(SwapRoutes);
+  const swapQuotes = useRecoilValue(SwapQuotes);
+  const [selectedSwapQuote, setSelectedSwapQuote] = useRecoilState(SelectedSwapQuote);
   const swapFees = useRecoilValue(SwapFees);
   const [slippage, setSlippage] = useState(0.001);
   const [slippageInput, setSlippageInput] = useState('');
@@ -85,30 +87,9 @@ export function SwapEntry(): JSX.Element {
   // Get the swap pool account balances
   const balanceSourceToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.source.lamports.toNumber() : 0;
   const balanceDestinationToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.destination.lamports.toNumber() : 0;
-  // const poolPrice =
-  //   !swapPool || !currentPool || !outputToken
-  //     ? 0.0
-  //     : swapPool.pool.swapType === 'stable'
-  //     ? !swapPool.inverted
-  //       ? currentPool.tokenPrice / outputToken.tokenPrice
-  //       : outputToken.tokenPrice / currentPool.tokenPrice
-  //     : !swapPool.inverted
-  //     ? balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource)
-  //     : balanceSourceToken / expoSource / (balanceDestinationToken / expoDestination);
-  // const swapPrice =
-  //   !swapPool || !minOutAmount || minOutAmount.isZero() || !tokenInputAmount || tokenInputAmount.isZero()
-  //     ? 0.0
-  //     : !swapPool.inverted
-  //     ? minOutAmount.lamports.toNumber() / expoDestination / (tokenInputAmount.lamports.toNumber() / expoSource)
-  //     : tokenInputAmount.lamports.toNumber() / expoSource / (minOutAmount.lamports.toNumber() / expoDestination);
-  // const priceImpact = !swapPool
-  //   ? 0.0
-  //   : !swapPool.inverted
-  //   ? (poolPrice - swapPrice) / poolPrice
-  //   : (swapPrice - poolPrice) / poolPrice;
-  const poolPrice = 0.0;
-  const swapPrice = 0.0;
-  const priceImpact = 0.0;
+  const priceImpact = !selectedSwapQuote
+    ? 0.0
+    : selectedSwapQuote.price_impact;
   const [swapFeeUsd, setSwapFeeUsd] = useState(0.0);
   const priceImpactStyle = priceImpact <= 0.01 ? 'success' : priceImpact <= 0.03 ? 'warning' : 'danger';
   const [repayLoanWithOutput, setRepayLoanWithOutput] = useState(false);
@@ -136,10 +117,10 @@ export function SwapEntry(): JSX.Element {
   const errorMessage = useTokenInputErrorMessage(undefined, projectedRiskIndicator);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const [switchingAssets, setSwitchingAssets] = useState(false);
-  const disabled =
+  const disabled = 
     sendingTransaction || !currentPool || !outputToken || projectedRiskIndicator >= 1 || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
-  const endpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_WS_API;
+  const swapEndpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API;
 
   // Parse slippage input
   function getSlippageInput() {
@@ -155,27 +136,35 @@ export function SwapEntry(): JSX.Element {
     if (!outputToken || !pools) {
       return;
     }
-    if (!swapRoutes.length) {
+    if (!swapQuotes.length) {
       setSwapOutputTokens(TokenAmount.zero(0));
       setMinOutAmount(TokenAmount.zero(0));
       setSwapFeeUsd(0.0);
       return;
     }
     // TODO: assume that the user will take the cheapest route always
-    const currentRoute = swapRoutes[0];
-    setSwapOutputTokens(new TokenAmount(new BN(currentRoute.output), outputToken.decimals));
-    setMinOutAmount(new TokenAmount(new BN(Math.round(currentRoute.output * (1 - slippage))), outputToken.decimals));
+    setSelectedSwapQuote(swapQuotes[0]);
+    if (!selectedSwapQuote) {
+      // provide a hint that this isn't null at this point
+      return;
+    }
+    setSwapOutputTokens(new TokenAmount(new BN(selectedSwapQuote.tokens_out), outputToken.decimals));
+    setMinOutAmount(new TokenAmount(new BN(Math.round(selectedSwapQuote.tokens_out * (1 - slippage))), outputToken.decimals));
     let totalFee = 0.0;
-    currentRoute.fees.forEach((fee: any) => { // TODO: add type
+    for (let fee of Object.keys(selectedSwapQuote.fees)) {
+      const price = prices && prices[fee].price;
+      const swapFee = selectedSwapQuote.fees[fee];
       const pool = Object.values(pools.tokenPools).find(p => {
-        return p.tokenMint.toBase58() === fee.mint;
+        return p.tokenMint.toBase58() === fee;
       });
-      if (pool) {
-        totalFee += (pool.tokenPrice * fee.tokens) / Math.pow(10, pool.decimals);
+      let decimals = pool && -pool.decimals;
+      if (price) {
+        // TODO: hardcoded as a common decimal length
+        totalFee += price * swapFee * (Math.pow(10, decimals || -6));
       }
-    });
+    }
     setSwapFeeUsd(totalFee);
-  }, [swapRoutes, slippage, outputToken?.decimals, pools]);
+  }, [swapQuotes, slippage, outputToken?.decimals, pools]);
 
   // Renders the user's collateral balance for input token
   function renderInputCollateralBalance() {
@@ -291,7 +280,7 @@ export function SwapEntry(): JSX.Element {
     const [txId, resp] = await routeSwap(
       currentPool,
       outputToken,
-      swapRoutes[0].path, // TODO: must not be empty
+      swapQuotes[0].swaps.map(step => step[0] as SwapStep), // TODO: must not be empty
       tokenInputAmount,
       minOutAmount,
       hasOutputLoan && repayLoanWithOutput
@@ -337,7 +326,7 @@ export function SwapEntry(): JSX.Element {
     if (!currentPool || !outputToken || !tokenInputAmount || tokenInputAmount.isZero()) {
       return;
     }
-    getSwapRoutes(endpoint || "", currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount)
+    getSwapRoutes(swapEndpoint || "", currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount)
       .then(routes => {})
       .catch(e => console.error(e));
   }, [tokenInputAmount, currentPool?.symbol, outputToken?.symbol]); // TODO: input and output pools

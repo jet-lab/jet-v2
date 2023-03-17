@@ -80,7 +80,7 @@ export async function getSwapRoutes(
   sourceToken: PublicKey,
   targetToken: PublicKey,
   swapAmount: TokenAmount
-): Promise<SwapRoute[] | undefined> {
+): Promise<SwapQuote[] | undefined> {
   return (
     await axios.get<any, any>(
       `${endpoint}/swap/quote/${sourceToken.toBase58()}/${targetToken.toBase58()}/${swapAmount.lamports.toNumber()}`
@@ -88,22 +88,38 @@ export async function getSwapRoutes(
   ).data;
 }
 
-export interface SwapRoute {
-  input: number;
-  output: number;
-  path: SwapPath[];
-  fees: {
-    fee_bps: number;
-    tokens: number;
-    mint: string;
-  }[];
+export interface SwapQuote {
+  token_in: string;
+  token_out: string;
+  tokens_in: number;
+  tokens_out: number;
+  market_price: number;
+  trade_price: number;
+  effective_price: number;
+  price_impact: number;
+  fees: Record<string, number>;
+  swaps: SwapStepOutput[][];
 }
 
-export interface SwapPath {
+type SwapStepOutput = SwapStep | SwapOutput;
+
+export interface SwapStep {
   from_token: string;
   to_token: string;
   program: string;
   swap_pool: string;
+}
+
+export interface SwapOutput {
+  tokens_out: number;
+  tokens_in: number;
+  fee_tokens_in: number;
+  fee_tokens_out: number;
+  market_price: number;
+  trade_price: number;
+  effective_price: number;
+  price_impact: number;
+  unfilled_tokens_in: number;
 }
 
 // Show review message for swap

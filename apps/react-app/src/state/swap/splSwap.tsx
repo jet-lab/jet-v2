@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { SPLSwapPool, TokenAmount } from '@jet-lab/margin';
+import { TokenAmount } from '@jet-lab/margin';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL, CurrentSwapOutput, TokenInputAmount } from '../actions/actions';
 import { useProvider } from '@utils/jet/provider';
 import { Pools } from '../pools/pools';
@@ -8,7 +8,7 @@ import { Pools } from '../pools/pools';
 import { MainConfig } from '@state/config/marginConfig';
 import { useJetStore } from '@jet-lab/store';
 
-import { getSwapRoutes, SwapRoute } from '@utils/actions/swap';
+import { getSwapRoutes, SwapQuote } from '@utils/actions/swap';
 
 
 export const SwapPair = atom({
@@ -28,9 +28,13 @@ export const SwapPoolTokenAmounts = atom({
       }
     | undefined
 });
-export const SwapRoutes = atom({
-  key: 'swapRoutes',
-  default: [] as SwapRoute[]
+export const SwapQuotes = atom({
+  key: 'swapQuotes',
+  default: [] as SwapQuote[]
+});
+export const SelectedSwapQuote = atom({
+  key: 'selectedSwapQuote',
+  default: undefined as SwapQuote | undefined
 });
 export function useSplSwapSyncer() {
   const cluster = useJetStore(state => state.settings.cluster);
@@ -45,10 +49,11 @@ export function useSplSwapSyncer() {
   );
   const outputToken = useRecoilValue(CurrentSwapOutput);
   const setSwapPoolTokenAmounts = useSetRecoilState(SwapPoolTokenAmounts);
-  const setSwapRoutes = useSetRecoilState(SwapRoutes);
+  const setSwapRoutes = useSetRecoilState(SwapQuotes);
   const setSwapFees = useSetRecoilState(SwapFees);
   const actionRefresh = useRecoilValue(ActionRefresh);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
+  const swapEndpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API;
 
   // Set the swap pool when input or output tokens change
   useEffect(() => {
@@ -77,7 +82,7 @@ export function useSplSwapSyncer() {
         return;
       }
       try {
-        const routes = await getSwapRoutes(currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount);
+        const routes = await getSwapRoutes(swapEndpoint || "", currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount);
         if (!routes) {
           return;
         }

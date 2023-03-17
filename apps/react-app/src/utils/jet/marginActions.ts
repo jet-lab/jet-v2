@@ -21,7 +21,7 @@ import { message } from 'antd';
 import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { useJetStore } from '@jet-lab/store';
 import { useMemo } from 'react';
-import { SwapPath } from '@utils/actions/swap';
+import { SwapStep } from '@utils/actions/swap';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -49,7 +49,7 @@ export function useMarginActions() {
   const accountPoolPosition = currentPool?.symbol && currentAccount?.poolPositions[currentPool.symbol];
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
-  const endpoint: string = (cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_WS_API) || "";
+  const swapEndpoint: string = (cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API) || "";
 
   // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
@@ -274,7 +274,7 @@ export function useMarginActions() {
   async function routeSwap(
     inputToken: Pool,
     outputToken: Pool,
-    swapPaths: SwapPath[],
+    swapPaths: SwapStep[],
     swapAmount: TokenAmount,
     minAmountOut: TokenAmount,
     repayWithOutput: boolean
@@ -286,7 +286,7 @@ export function useMarginActions() {
 
     try {
       const txId = await inputToken.routeSwap({
-        endpoint,
+        endpoint: swapEndpoint,
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
         markets: markets.map(m => m.market),
