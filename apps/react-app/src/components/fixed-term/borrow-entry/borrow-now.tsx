@@ -98,6 +98,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     }
     const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
     try {
+      console.log('simulating transaction for ', marginAccount?.address.toBase58())
       const sim = orderbookModel.simulateTaker(
         'borrow',
         bnToBigInt(amount),
