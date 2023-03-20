@@ -616,7 +616,7 @@ export class MarginAccount {
       if (equity.lt(Number128.ZERO) || equity.eq(Number128.ZERO)) {
         leverage = Infinity
       } else {
-        collateralValue.div(equity).toNumber()
+        leverage = collateralValue.div(equity).toNumber()
       }
     }
 
