@@ -55,6 +55,10 @@
     "term": "Available Collateral",
     "definition": "The difference between your effective collateral and required collateral, quoted in USD. This represents the collateral available for setting up new positions, or your buffer against liquidation. When available collateral reaches zero, your margin account is sunject to liquidation."
   },
+  "accountLeverage": {
+    "term": "Account Leverage",
+    "definition": "Leverage is the ratio of assets to equity in your account."
+  },
   "riskLevel": {
     "term": "Risk Level",
     "definition": "The ratio of liabilities and required collateral to the (weight-adjusted) collateral in your account."
