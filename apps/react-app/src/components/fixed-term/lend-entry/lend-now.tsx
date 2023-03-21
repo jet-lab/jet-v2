@@ -69,6 +69,9 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const tokenBalance = marginAccount?.poolPositions[token.symbol].depositBalance;
   const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount || new BN(0), token.decimals));
 
+  const enoughLiquidity = forecast && forecast.unfilledQty <= 0
+
+
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
@@ -79,6 +82,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     forecast.selfMatch ||
     !forecast.fulfilled ||
     !hasEnoughTokens ||
+    !enoughLiquidity ||
     !forecast?.hasEnoughCollateral;
 
   const handleForecast = (amount: BN) => {
@@ -88,7 +92,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     }
     const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
     try {
-      const sim = orderbookModel.simulateTaker('lend', bnToBigInt(amount), undefined);
+      const sim = orderbookModel.simulateTaker('lend', bnToBigInt(amount), undefined, marginAccount?.address.toBytes());
 
       let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
       if (correspondingPool == undefined) {
@@ -142,7 +146,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         refreshOrderBooks();
         notify(
           'Lend Successful',
-          `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
+          `Your lend order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} was filled successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -151,7 +155,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     } catch (e: any) {
       notify(
         'Lend Order Failed',
-        `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
+        `Your lend order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
@@ -159,11 +163,16 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       console.error(e);
     } finally {
       setAmount(undefined);
+      setForecast(undefined)
     }
   };
 
   useEffect(() => {
-    if (amount) handleForecast(amount);
+    if (amount) {
+      handleForecast(amount);
+    } else {
+      setForecast(undefined)
+    }
   }, [amount, marginAccount?.address, marketAndConfig]);
 
   return (
@@ -175,7 +184,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
             className="input-amount"
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
-              setAmount(new BN(e * 10 ** decimals));
+              if (!e) {
+                setAmount(undefined)
+              } else {
+                setAmount(new BN(e * 10 ** decimals));
+              }
             }, 300)}
             placeholder={'10,000'}
             min={0}
@@ -207,23 +220,23 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         </div>
         <div className="stat-line">
           <span>Repayment Amount</span>
-          {forecast?.repayAmount && (
+          {forecast?.repayAmount && enoughLiquidity ? (
             <span>
               {forecast.repayAmount.toFixed(token.precision)} {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          {forecast?.interest && (
+          {forecast?.interest && enoughLiquidity ? (
             <span>
               {forecast.interest.toFixed(token.precision)} {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
-          <RateDisplay rate={forecast?.effectiveRate} />
+          {enoughLiquidity && <RateDisplay rate={forecast?.effectiveRate} />}
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
@@ -253,7 +266,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
       )}
-      {forecast && forecast.unfilledQty > 0 && (
+      {forecast && !enoughLiquidity && (
         <div className="fixed-term-warning">Not enough liquidity on this market, try a smaller amount.</div>
       )}
       {forecast && forecast.effectiveRate === 0 && (
