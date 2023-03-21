@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { CSVDownload } from 'react-csv';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { AccountTransaction } from '@jet-lab/margin';
+import { FlightLog, PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
 import { AccountsViewOrder } from '@state/views/views';
 import { WalletTokens } from '@state/user/walletTokens';
-import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '@state/user/accounts';
+import { Accounts, CurrentAccountHistory, AccountHistoryLoaded } from '@state/user/accounts';
 import { ActionRefresh } from '@state/actions/actions';
 import { createDummyArray, getExplorerUrl, openLinkInBrowser } from '@utils/ui';
 import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '@utils/time';
@@ -29,10 +29,9 @@ export function FullAccountHistory(): JSX.Element {
   const walletTokens = useRecoilValue(WalletTokens);
   const accountHistoryLoaded = useRecoilValue(AccountHistoryLoaded);
   const currentAccountHistory = useRecoilValue(CurrentAccountHistory);
-  const [filteredTxHistory, setFilteredTxHistory] = useState<AccountTransaction[] | undefined>(
+  const [filteredTxHistory, setFilteredTxHistory] = useState<FlightLog[] | undefined>(
     currentAccountHistory?.transactions
   );
-  const accountNames = useRecoilValue(AccountNames);
   const accounts = useRecoilValue(Accounts);
   const actionRefresh = useRecoilValue(ActionRefresh);
   const [currentTable, setCurrentTable] = useState('transactions');
@@ -43,13 +42,13 @@ export function FullAccountHistory(): JSX.Element {
   const { Paragraph, Text } = Typography;
 
   // Renders the date/time column for table
-  function renderDateColumn(transaction: AccountTransaction) {
+  function renderDateColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-left" paragraph={false} active={loadingAccounts} />;
     if (accounts && transaction?.timestamp) {
       const dateTime =
         preferredTimeDisplay === 'local'
-          ? `${localDayMonthYear(transaction.timestamp, preferDayMonthYear)}, ${unixToLocalTime(transaction.timestamp)}`
-          : `${utcDayMonthYear(transaction.timestamp, preferDayMonthYear)}, ${unixToUtcTime(transaction.timestamp)}`;
+          ? `${localDayMonthYear(transaction.timestamp!.valueOf(), preferDayMonthYear)}, ${unixToLocalTime(transaction.timestamp!.valueOf())}`
+          : `${utcDayMonthYear(transaction.timestamp!.valueOf(), preferDayMonthYear)}, ${unixToUtcTime(transaction.timestamp!.valueOf())}`;
       render = <Text>{dateTime}</Text>;
     }
 
@@ -57,25 +56,40 @@ export function FullAccountHistory(): JSX.Element {
   }
 
   // Renders the activity column for table
-  function renderActivityColumn(transaction: AccountTransaction) {
+  function renderActivityColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-center" paragraph={false} active={loadingAccounts} />;
     if (accounts && transaction?.timestamp) {
-      const action = transaction.tradeAction.includes('repay') ? 'repay' : transaction.tradeAction;
+      // TODO: no longer just a pool action, should include fixed term
+      let action: PoolAction = "deposit";
+      switch(transaction.activity_type) {
+        case "Deposit":
+          action = "deposit";
+          break;
+        case "Withdraw":
+          action = "withdraw";
+          break;
+        case "MarginSwap":
+          action = "swap";
+          break;
+        case "RouteSwap":
+          action = "swap";
+          break;
+        case "MarginBorrow":
+          action = "borrow";
+          break;
+        case "MarginRepay":
+          action = "repay";
+          break;
+        case "Repay":
+          action = "repay";
+          break;
+        // TODO: fixed term events
+      }
       render = (
         <div className={`account-table-action-${action} flex-centered`}>
           <ActionIcon action={action} />
           &nbsp;
-          {transaction.tradeAction === 'transfer' && transaction.fromAccount
-            ? dictionary.accountsView.transferFrom.replace(
-                '{{TRANSFER_ACCOUNT_NAME}}',
-                accountNames[transaction.fromAccount.toString()] ?? ''
-              )
-            : transaction.toAccount
-            ? dictionary.accountsView.transferTo.replace(
-                '{{TRANSFER_ACCOUNT_NAME}}',
-                accountNames[transaction.toAccount.toString()] ?? ''
-              )
-            : dictionary.actions[transaction.tradeAction.includes('repay') ? 'repay' : transaction.tradeAction]?.title}
+          {transaction.activity_type}
         </div>
       );
     }
@@ -84,14 +98,14 @@ export function FullAccountHistory(): JSX.Element {
   }
 
   // Renders the token column for table
-  function renderTokenColumn(transaction: AccountTransaction) {
+  function renderTokenColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-center" paragraph={false} active={loadingAccounts} />;
-    if (accounts && transaction?.tokenSymbol) {
+    if (accounts && transaction?.token1_symbol) {
       render = (
         <Text>
-          {transaction.tokenSymbolInput
-            ? `${transaction.tokenSymbolInput} → ${transaction.tokenSymbol}`
-            : transaction.tokenSymbol}
+          {transaction.token2_symbol
+            ? `${transaction.token1_symbol} → ${transaction.token2_symbol}`
+            : transaction.token1_symbol}
         </Text>
       );
     }
@@ -100,13 +114,30 @@ export function FullAccountHistory(): JSX.Element {
   }
 
   // Renders the amount column for table
-  function renderAmountColumn(transaction: AccountTransaction) {
+  function renderAmountColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
-    if (accounts && transaction?.tradeAmount) {
+    if (accounts && transaction.activity_value) {
       render = (
         <Text>
-          {transaction.tradeAmountInput && `${transaction.tradeAmountInput?.uiTokens} → `}{' '}
-          {transaction.tradeAmount.uiTokens}
+          {transaction.token1_amount}
+          {transaction.token2_amount !== 0.0 && ` → ${transaction.token2_amount}`}
+        </Text>
+      );
+    }
+
+    return render;
+  }
+
+  // Renders the value column for table
+  function renderValueColumn(transaction: FlightLog) {
+    let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
+    if (accounts && transaction.activity_value) {
+      const token1_value = transaction.activity_value;
+      const token2_value = transaction.token2_amount * transaction.token2_price;
+      render = (
+        <Text>
+          {token1_value}
+          {token2_value !== 0.0 && ` → ${token2_value}`}
         </Text>
       );
     }
@@ -121,25 +152,31 @@ export function FullAccountHistory(): JSX.Element {
       key: 'time',
       align: 'left' as any,
       width: 200,
-      render: (_: string, transaction: AccountTransaction) => renderDateColumn(transaction)
+      render: (_: string, transaction: FlightLog) => renderDateColumn(transaction)
     },
     {
       title: dictionary.accountsView.activity,
       key: 'action',
       align: 'center' as any,
-      render: (_: string, transaction: AccountTransaction) => renderActivityColumn(transaction)
+      render: (_: string, transaction: FlightLog) => renderActivityColumn(transaction)
     },
     {
       title: dictionary.common.token,
       key: 'token',
       align: 'center' as any,
-      render: (_: string, transaction: AccountTransaction) => renderTokenColumn(transaction)
+      render: (_: string, transaction: FlightLog) => renderTokenColumn(transaction)
     },
     {
       title: dictionary.common.amount,
       key: 'amount',
       align: 'right' as any,
-      render: (_: string, transaction: AccountTransaction) => renderAmountColumn(transaction)
+      render: (_: string, transaction: FlightLog) => renderAmountColumn(transaction)
+    },
+    {
+      title: dictionary.common.usdValue,
+      key: 'value',
+      align: 'right' as any,
+      render: (_: string, transaction: FlightLog) => renderValueColumn(transaction)
     }
   ];
 
@@ -159,7 +196,7 @@ export function FullAccountHistory(): JSX.Element {
   function filterTxHistory(queryString: string) {
     const query = queryString.toLowerCase();
     if (currentAccountHistory?.transactions) {
-      const filteredTxHistory: AccountTransaction[] = [];
+      const filteredTxHistory: FlightLog[] = [];
       for (const transaction of currentAccountHistory?.transactions) {
         const orderDate =
           preferredTimeDisplay === 'local'
@@ -173,9 +210,9 @@ export function FullAccountHistory(): JSX.Element {
           transaction.signature.toLowerCase().includes(query) ||
           orderDate.toLowerCase().includes(query) ||
           orderTime.toLowerCase().includes(query) ||
-          transaction.tokenName.toLowerCase().includes(query) ||
-          transaction.tokenName.toLowerCase().includes(query) ||
-          transaction.tradeAction?.toLowerCase().includes(query)
+          transaction.token1_name.toLowerCase().includes(query) ||
+          transaction.token1_name.toLowerCase().includes(query) ||
+          transaction.activity_type.toLowerCase().includes(query)
         ) {
           filteredTxHistory.push(transaction);
         }
@@ -220,9 +257,9 @@ export function FullAccountHistory(): JSX.Element {
                 columns={transactionHistoryColumns}
                 pagination={{ pageSize }}
                 className={accounts && filteredTxHistory?.length ? '' : 'no-row-interaction'}
-                rowKey={row => `${row.tokenSymbol}-${Math.random()}`}
+                rowKey={row => `${row.token1_symbol}-${Math.random()}`}
                 rowClassName={(_transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
-                onRow={(transaction: AccountTransaction) => ({
+                onRow={(transaction: FlightLog) => ({
                   onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, explorer))
                 })}
                 locale={{ emptyText: dictionary.accountsView.noAccountHistory }}
