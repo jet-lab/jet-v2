@@ -167,7 +167,7 @@ jobs:
       - name: Install Solana
         if: steps.cachedeps.outputs.cache-hit != 'true'
         # run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.14.17/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.14.16/install)"
 
       - name: Install wasm-pack
         if: steps.cachedeps.outputs.cache-hit != 'true'
