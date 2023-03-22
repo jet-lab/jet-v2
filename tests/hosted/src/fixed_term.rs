@@ -76,8 +76,8 @@ pub const MARKET_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
-pub const BORROW_TENOR: u64 = 3;
-pub const LEND_TENOR: u64 = 5; // in seconds
+pub const BORROW_TENOR: u64 = 6;
+pub const LEND_TENOR: u64 = 7; // in seconds
 pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 pub const ORDERBOOK_PARAMS: InitializeMarketParams = InitializeMarketParams {
@@ -354,6 +354,38 @@ impl TestManager {
         builder.send_and_confirm_condensed(&self.client).await?;
         Ok(())
     }
+
+    pub async fn auto_roll_term_loans(&self, margin_account: &Pubkey) -> Result<()> {
+        let roll_tenor = self
+            .load_margin_user(margin_account)
+            .await?
+            .borrow_roll_config
+            .roll_tenor;
+        let current_time = self.client.get_clock().await?.unix_timestamp;
+        let mut loans = self
+            .load_outstanding_loans(*margin_account)
+            .await?
+            .into_iter()
+            .filter(|(_, l)| l.strike_timestamp + roll_tenor as i64 >= current_time)
+            .collect::<Vec<_>>();
+
+        loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
+        let mut builder = Vec::<TransactionBuilder>::new();
+        for (key, loan) in loans {
+            let ix = self.ix_builder.auto_roll_borrow_order(
+                *margin_account,
+                key,
+                loan.payer,
+                self.load_margin_user(margin_account)
+                    .await?
+                    .next_term_loan(),
+            );
+            builder.push(ix.into())
+        }
+        builder.send_and_confirm_condensed(&self.client).await?;
+        Ok(())
+    }
+
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption();
 

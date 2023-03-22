@@ -97,5 +97,6 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams) -> Result<(
             .maybe_next_adapter()?
             .map(|a| a.key()),
     }
-    .borrow_order(params)
+    .borrow_order(params)?;
+    Ok(())
 }

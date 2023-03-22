@@ -198,13 +198,13 @@ pub fn configure_auto_roll(
 
 pub fn auto_roll_lend_order(
     deposit_seqno: u64,
-    market: &Pubkey,
     margin_account: Pubkey,
     deposit: Pubkey,
     rent_receiver: Pubkey,
     orderbook_mut: OrderbookMut,
     payer: Pubkey,
 ) -> Instruction {
+    let market = &orderbook_mut.market;
     let margin_user = margin_user(market, &margin_account);
     let data = jet_fixed_term::instruction::AutoRollLendOrder {}.data();
     let accounts = jet_fixed_term::accounts::AutoRollLendOrder {
@@ -219,6 +219,39 @@ pub fn auto_roll_lend_order(
         margin_account,
         margin_user,
         orderbook_mut,
+        token_program: spl_token::ID,
+        system_program: solana_sdk::system_program::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
+}
+
+pub fn auto_roll_borrow_order(
+    next_debt_seqno: u64,
+    margin_account: Pubkey,
+    loan: Pubkey,
+    rent_receiver: Pubkey,
+    orderbook_mut: OrderbookMut,
+    payer: Pubkey,
+) -> Instruction {
+    let market = &orderbook_mut.market;
+    let margin_user = margin_user(market, &margin_account);
+    let data = jet_fixed_term::instruction::AutoRollBorrowOrder {}.data();
+    let accounts = jet_fixed_term::accounts::AutoRollBorrowOrder {
+        margin_user,
+        margin_account,
+        loan,
+        new_loan: term_loan(market, &margin_user, next_debt_seqno),
+        claims: user_claims(&margin_user),
+        claims_mint: claims_mint(market),
+        token_collateral: user_token_collateral(&margin_user),
+        token_collateral_mint: token_collateral_mint(market),
+        underlying_token_vault: underlying_token_vault(market),
+        fee_vault: fee_vault(market),
+        rent_receiver,
+        orderbook_mut,
+        payer,
         token_program: spl_token::ID,
         system_program: solana_sdk::system_program::ID,
     }

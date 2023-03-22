@@ -63,7 +63,7 @@ pub struct MarginBorrowOrderAccounts<'a, 'info> {
 }
 
 impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
-    pub fn borrow_order(&mut self, mut params: OrderParams) -> Result<()> {
+    pub fn borrow_order(&mut self, mut params: OrderParams) -> Result<SensibleOrderSummary> {
         self.orderbook_mut
             .market
             .load()?
@@ -121,7 +121,9 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
                     vec![PositionChange::Register(self.claims.key())],
                 )],
             },
-        )
+        )?;
+
+        Ok(order_summary)
     }
 
     fn handle_posted(&mut self, summary: &SensibleOrderSummary) -> Result<()> {

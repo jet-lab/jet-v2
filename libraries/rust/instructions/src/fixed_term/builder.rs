@@ -420,9 +420,25 @@ impl FixedTermIxBuilder {
     ) -> Instruction {
         ix::auto_roll_lend_order(
             deposit_seqno,
-            &self.market,
             margin_account,
             deposit,
+            rent_receiver,
+            self.orderbook_mut(),
+            self.payer,
+        )
+    }
+
+    pub fn auto_roll_borrow_order(
+        &self,
+        margin_account: Pubkey,
+        loan: Pubkey,
+        rent_receiver: Pubkey,
+        next_debt_seqno: u64,
+    ) -> Instruction {
+        ix::auto_roll_borrow_order(
+            next_debt_seqno,
+            margin_account,
+            loan,
             rent_receiver,
             self.orderbook_mut(),
             self.payer,
