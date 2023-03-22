@@ -132,12 +132,12 @@ export function FullAccountHistory(): JSX.Element {
   function renderValueColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && transaction.activity_value) {
-      const token1_value = transaction.activity_value;
-      const token2_value = transaction.token2_amount * transaction.token2_price;
+      const token1_value = transaction.activity_value.toFixed(2);
+      const token2_value = (transaction.token2_amount * transaction.token2_price).toFixed(2);
       render = (
         <Text>
           {token1_value}
-          {token2_value !== 0.0 && ` → ${token2_value}`}
+          {token2_value !== '0.00' && ` → ${token2_value}`}
         </Text>
       );
     }
