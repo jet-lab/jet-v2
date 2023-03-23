@@ -12,6 +12,7 @@ html {
 
 // App
 .jet-app {
+
   // Views
   .view {
     &-element {
@@ -214,6 +215,7 @@ html {
 
   // Token Input
   .token-input {
+
     // If there's a specified external value
     &.external-value {
       input {
@@ -809,6 +811,7 @@ html {
     }
 
     .slippage-btns {
+
       .ant-radio-button-wrapper,
       .swap-slippage-input {
         padding-left: 0;
@@ -1046,7 +1049,7 @@ html {
       padding: @spacing-lg @spacing-xl @spacing-xl @spacing-xl;
 
       &-item {
-        width: 33%;
+        width: 25%;
 
         h1 {
           margin: @spacing-sm 0 @spacing-xs 0;
@@ -1147,6 +1150,7 @@ html {
   // Swap And Fixed View
   .swaps-view,
   .fixed-term-view {
+
     // Order Entry, Orderbook and Trades Table
     .order-entry,
     .orderbook,
@@ -1235,7 +1239,7 @@ html {
               color: @jet-green;
             }
 
-            + .ant-tabs-tab {
+            +.ant-tabs-tab {
               &:hover {
                 color: @danger;
               }
@@ -1363,7 +1367,7 @@ html {
           }
         }
 
-        .ant-checkbox-wrapper + .ant-typography {
+        .ant-checkbox-wrapper+.ant-typography {
           text-align: left !important;
         }
 
@@ -1523,6 +1527,7 @@ html {
       }
 
       .apexcharts {
+
         &-xcrosshairs,
         &-ycrosshairs {
           stroke: @jet-blue;
@@ -1545,7 +1550,7 @@ html {
               rx: 0;
             }
 
-            + text {
+            +text {
               fill: @primary-2;
             }
           }
@@ -1585,6 +1590,7 @@ html {
             }
 
             &:hover {
+
               svg,
               path:last-of-type {
                 fill: @secondary-3;
@@ -1617,6 +1623,7 @@ html {
         }
 
         &-selected {
+
           svg,
           path:last-of-type {
             fill: @secondary-3 !important;
@@ -1697,7 +1704,7 @@ html {
       }
     }
 
-    .apexcharts-xaxis-title + line {
+    .apexcharts-xaxis-title+line {
       display: none;
     }
 
@@ -1737,7 +1744,7 @@ html {
       ry: 10;
       rx: 10;
 
-      + text {
+      +text {
         stroke: @primary-3;
         stroke-width: 0px;
         fill: @primary-3;
@@ -2445,6 +2452,7 @@ html {
 // Tablet styling
 @media screen and (max-width: 1000px) {
   .jet-app {
+
     .table-token,
     .price {
       min-width: unset;
@@ -2467,6 +2475,7 @@ html {
 // Mobile styling
 @media screen and (max-width: 800px) {
   .jet-app {
+
     // Reorder Arrows && TPS Banner
     .reorder-arrows,
     .tps-banner {
@@ -2575,6 +2584,7 @@ html {
 
     // Any Account Table
     .account-table {
+
       &-search,
       .download-btns,
       .full-accounts-text {
@@ -2659,7 +2669,6 @@ html {
   .fixed-order-entry-fields {
     display: flex;
     align-items: center;
-    padding-top: 24px;
 
     label {
       text-transform: uppercase;
@@ -2741,7 +2750,7 @@ html {
     border: 1px solid @jet-green;
     display: flex;
     flex-direction: column;
-    margin: 0 5px 36px;
+    margin: 0 6px 8px;
 
     .stat-line {
       padding: 4px;

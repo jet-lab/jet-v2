@@ -143,6 +143,12 @@ export function SnapshotBody(): JSX.Element {
         </div>
       </div>
       <div className="account-snapshot-body-item flex-centered column">
+        <Info term="accountLeverage">
+          <Text className="small-accent-text info-element">Account Leverage</Text>
+        </Info>
+        <Title>{currentAccount?.summary.leverage ? `${currentAccount.summary.leverage.toFixed(2)}x` : '1.00x'}</Title>
+      </div>
+      <div className="account-snapshot-body-item flex-centered column">
         <Info term="riskLevel">
           <Text className="small-accent-text info-element">{dictionary.common.riskLevel}</Text>
         </Info>

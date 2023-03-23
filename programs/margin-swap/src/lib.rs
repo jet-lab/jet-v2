@@ -171,12 +171,12 @@ pub enum ErrorCode {
 
 #[event]
 pub struct RouteSwapped {
-    margin_account: Pubkey,
-    token_in: Pubkey,
-    amount_in: u64,
-    amount_out: u64,
-    liquidation_fees: u64,
-    routes: [SwapRouteDetail; 3],
+    pub margin_account: Pubkey,
+    pub token_in: Pubkey,
+    pub amount_in: u64,
+    pub amount_out: u64,
+    pub liquidation_fees: u64,
+    pub routes: [SwapRouteDetail; 3],
 }
 
 #[repr(u8)]

@@ -10,7 +10,7 @@
     "build": "rm -rf ./build && webpack --mode production && cp -r public/* build",
     "clean": "rm -rf ./build & rm -rf .turbo",
     "dev": "webpack serve --mode development",
-    "e2e": "ELECTRON_ENABLE_LOGGING=true DEBUG=cypress:server:browsers:electron cypress run --headless",
+    "e2e": "ELECTRON_ENABLE_LOGGING=true DEBUG=cypress:server:browsers:electron cypress run --headless --record",
     "e2e:ci": "start-server-and-test start http://localhost:3000 e2e",
     "e2e:gui": "ELECTRON_ENABLE_LOGGING=1 yarn cypress open",
     "start": "serve -s build --no-request-logging",
