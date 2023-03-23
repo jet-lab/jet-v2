@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use anchor_spl::token::Token;
 use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange};
 use pyth_sdk_solana::PriceFeed;
@@ -40,6 +40,7 @@ pub struct RefreshPosition<'info> {
 }
 
 pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
+    let unix_timestamp = Clock::get().unwrap().unix_timestamp;
     let adapter_result = refresh_positions_deserialized(
         RefreshPositionsDeserialized {
             market: &*ctx.accounts.market.load()?,
@@ -48,6 +49,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
             margin_user: &ctx.accounts.margin_user,
         },
         expect_price,
+        unix_timestamp,
     )?;
 
     emit!(PositionRefreshed {
@@ -72,11 +74,12 @@ pub struct RefreshPositionsDeserialized<'a> {
 pub fn refresh_positions_deserialized(
     accounts: RefreshPositionsDeserialized,
     expect_price: bool,
+    unix_timestamp: UnixTimestamp,
 ) -> Result<AdapterResult> {
     let market = accounts.market;
     let mut claim_changes = vec![PositionChange::Flags(
         AdapterPositionFlags::PAST_DUE,
-        accounts.margin_user.debt.is_past_due(),
+        accounts.margin_user.debt.is_past_due(unix_timestamp),
     )];
     let mut collateral_changes = vec![];
 

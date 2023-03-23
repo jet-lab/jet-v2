@@ -1,11 +1,17 @@
 use jet_client::fixed_term::{util::rate_to_price, MarketInfo};
 use jet_instructions::fixed_term::OrderParams;
-use jet_margin_sdk::{fixed_term::event_consumer::EventConsumer, solana::keypair::KeypairExt};
+use jet_margin_sdk::{
+    fixed_term::event_consumer::EventConsumer,
+    solana::{keypair::KeypairExt, transaction::TransactionBuilderExt},
+};
 use solana_sdk::{clock::Clock, pubkey::Pubkey};
 
 use jet_client_native::{JetSimulationClient, JetSimulationClientResult, SimulationClient};
 
-use crate::context::TestContext;
+use crate::{
+    context::{token::PriceUpdate, TestContext},
+    TestDefault,
+};
 
 pub type MarginAccountClient = jet_client::margin::MarginAccountClient<SimulationClient>;
 
@@ -56,9 +62,15 @@ pub async fn add_time(ctx: &TestContext, increment: i64) {
 /// change price of a token
 pub async fn set_price(ctx: &TestContext, token: &Token, price: f64, confidence: f64) {
     ctx.inner
-        .set_price(&token.mint, price, confidence)
+        .update_price(
+            token.mint,
+            &PriceUpdate::test_default()
+                .with_price(price)
+                .with_confidence(confidence),
+        )
+        .send_and_confirm(ctx.rpc())
         .await
-        .unwrap()
+        .unwrap();
 }
 
 /// airdrop tokens to a user client

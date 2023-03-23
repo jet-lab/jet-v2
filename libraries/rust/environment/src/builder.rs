@@ -27,7 +27,8 @@ pub(crate) mod margin;
 pub(crate) mod margin_pool;
 pub(crate) mod swap;
 
-pub use global::{configure_environment, configure_tokens, create_test_tokens};
+pub use fixed_term::configure_market_for_token;
+pub use global::{configure_environment, configure_tokens, create_test_tokens, token_context};
 pub use swap::resolve_swap_program;
 
 /// Descriptions for errors while building the configuration instructions
@@ -87,13 +88,13 @@ pub struct ProposalContext {
 }
 
 #[derive(Debug)]
-pub(crate) struct TokenContext {
+pub struct TokenContext {
     airspace: Pubkey,
     mint: Pubkey,
     pyth_price: Pubkey,
     pyth_product: Pubkey,
     oracle_authority: Pubkey,
-    desc: TokenDescription,
+    desc: TokenDescription, // TODO: is this whole thing really needed?
 }
 
 pub struct PlanInstructions {

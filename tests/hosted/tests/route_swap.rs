@@ -13,7 +13,7 @@ use anyhow::Error;
 use jet_margin_sdk::{
     ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts, SwapContext},
     lookup_tables::LookupTable,
-    margin_integrator::PositionRefresher,
+    refresh::position_refresher::PositionRefresher,
     swap::{openbook_swap::OpenBookMarket, saber_swap::SaberSwapPool, spl_swap::SplSwapPool},
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
@@ -561,7 +561,7 @@ async fn single_leg_swap(
         .mint(&env.msol, &user_a_msol, 10 * ONE_MSOL)
         .await?;
 
-    user_a.tx.refresh_positions().await?;
+    user_a.tx.refresh_positions(&()).await?;
 
     // Create a swap route and execute it
     let mut swap_builder = MarginSwapRouteIxBuilder::try_new(

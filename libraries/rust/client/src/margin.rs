@@ -340,7 +340,6 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
 
             match position.adapter {
                 id if id == Pubkey::default() => {
-                    let token_config_addr = derive_token_config(&self.airspace(), &position.token);
                     let oracle = match token_config.oracle() {
                         Some(TokenOracle::Pyth { price, .. }) => price,
                         _ => bail!("deposit position should have an oracle: {}", position.token),
@@ -348,7 +347,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
 
                     txns.push(
                         self.builder
-                            .refresh_deposit_position(&token_config_addr, &oracle)
+                            .refresh_deposit_position(position.token, &oracle)
                             .into(),
                     );
                 }

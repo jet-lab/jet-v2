@@ -92,12 +92,13 @@ pub struct DebtUpdated {
 
 impl DebtUpdated {
     pub fn new(margin_user: Pubkey, debt: &Debt) -> Self {
+        let unix_timestamp = Clock::get().unwrap().unix_timestamp;
         Self {
             margin_user,
             total_debt: debt.total(),
             next_obligation_to_repay: debt.next_term_loan_to_repay(),
             outstanding_obligations: debt.outstanding_term_loans(),
-            is_past_due: debt.is_past_due(),
+            is_past_due: debt.is_past_due(unix_timestamp),
         }
     }
 }

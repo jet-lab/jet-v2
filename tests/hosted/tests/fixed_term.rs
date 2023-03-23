@@ -28,16 +28,13 @@ use jet_margin_sdk::{
             WithSigner,
         },
     },
-    tx_builder::fixed_term::FixedTermPositionRefresher,
     util::data::Concat,
 };
-use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
+use jet_margin_sdk::{margin_integrator::RefreshingProxy, refresh::canonical_position_refresher};
 use jet_program_common::{
     interest_pricing::{InterestPricer, PricerImpl},
     Fp32,
 };
-
-use solana_sdk::signer::Signer;
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -330,19 +327,7 @@ async fn margin_repay() -> Result<()> {
     // set up proxy
     let proxy = RefreshingProxy {
         proxy: margin.clone(),
-        refreshers: vec![
-            Arc::new(MarginTxBuilder::new(
-                client.clone(),
-                None,
-                wallet.pubkey(),
-                0,
-                margin.airspace,
-            )),
-            Arc::new(FixedTermPositionRefresher::new(
-                margin.pubkey(),
-                client.clone(),
-            )),
-        ],
+        refresher: canonical_position_refresher(client.clone()).for_address(margin.address),
     };
 
     // set a lend order on the book

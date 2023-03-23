@@ -1,24 +1,28 @@
+//! General Airspace administration helper functions for tests.  
+//! See token.rs for token-specific administration.
+
 use anyhow::Result;
 use jet_client::config::JetAppConfig;
+use jet_client::NetworkKind;
 use jet_environment::builder::{
-    configure_environment, configure_tokens, create_test_tokens, PlanInstructions,
+    configure_environment, configure_market_for_token, token_context, PlanInstructions,
 };
-use jet_instructions::test_service::{derive_token_mint, token_update_pyth_price};
+use jet_instructions::fixed_term::FixedTermIxBuilder;
+use jet_instructions::test_service::derive_token_mint;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
-use jet_environment::config::TokenDescription;
+use crate::actions::Token;
+use crate::margin::MarginUser;
+use jet_environment::config::{FixedTermMarketConfig, TokenDescription};
 use jet_margin_sdk::solana::keypair::KeypairExt;
-use jet_margin_sdk::solana::transaction::{
-    InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilderExt,
-};
+use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, TransactionBuilderExt};
 use jet_simulation::Keygen;
 use jet_solana_client::transaction::WithSigner;
 
-use crate::margin::MarginUser;
-
 use super::{MarginTestContext, TestContextSetupInfo};
 
+/// general margin or airspace administration
 impl MarginTestContext {
     /// Create the airspace plus all tokens, pools, swaps, and markets.
     ///
@@ -40,7 +44,7 @@ impl MarginTestContext {
         Ok(setup_config.app_config)
     }
 
-    async fn execute_plan(&self, plan: PlanInstructions) -> Result<()> {
+    pub(super) async fn execute_plan(&self, plan: PlanInstructions) -> Result<()> {
         plan.setup
             .send_and_confirm_condensed(&self.solana.rpc)
             .await?;
@@ -90,64 +94,43 @@ impl MarginTestContext {
             .await?;
         Ok(liquidator)
     }
+}
 
-    pub async fn create_token(&self, mut token: TokenDescription) -> Result<Pubkey> {
-        token.name = format!("{}-{}", self.airspace_name, &token.name);
+/// Fixed term
+impl MarginTestContext {
+    pub async fn create_fixed_term_market(
+        &self,
+        underlying_token_mint: TokenDescription,
+        config: FixedTermMarketConfig,
+    ) -> Result<FixedTermIxBuilder> {
         let mut builder = self.env_builder();
-        let oracle_authority = &self.solana.rpc.payer().pubkey();
-        create_test_tokens(&mut builder, oracle_authority, vec![&token])
-            .await
-            .unwrap();
-        configure_tokens(
-            &mut builder,
+        let token_context = token_context(
+            NetworkKind::Localnet,
             &self.airspace,
+            self.payer().pubkey(),
+            &underlying_token_mint,
+        )
+        .unwrap();
+        let ix_builder = configure_market_for_token(
+            &mut builder,
             &[self.crank.pubkey()],
-            oracle_authority,
-            vec![&token],
+            &token_context,
+            &config,
         )
         .await
         .unwrap();
+
         self.execute_plan(builder.build()).await?;
 
-        Ok(derive_token_mint(&token.name))
-    }
-
-    /// This manages oracles with the test service. Some other code uses the
-    /// metadata program. These two approaches are not compatible.
-    pub async fn set_price(&self, mint: &Pubkey, price: f64, confidence: f64) -> Result<()> {
-        let exponent = -7;
-        let one = 10_000_000.0;
-        let price = (one * price).round() as i64;
-        let confidence = (one * confidence).round() as i64;
-        self.update_price(
-            mint,
-            &PriceUpdate {
-                price,
-                confidence,
-                exponent,
-            },
-        )
-        .await
-    }
-
-    /// This manages oracles with the test service. Some other code uses the
-    /// metadata program. These two approaches are not compatible.
-    pub async fn update_price(&self, mint: &Pubkey, update: &PriceUpdate) -> Result<()> {
-        let ix = token_update_pyth_price(
-            &self.solana.rpc.payer().pubkey(),
-            mint,
-            update.price,
-            update.confidence,
-            update.exponent,
-        );
-
-        self.solana.rpc.send_and_confirm(ix.into()).await?;
-        Ok(())
+        Ok(ix_builder)
     }
 }
 
-pub struct PriceUpdate {
-    pub price: i64,
-    pub confidence: i64,
-    pub exponent: i32,
+impl From<TokenDescription> for Token {
+    fn from(value: TokenDescription) -> Self {
+        Self {
+            mint: derive_token_mint(&value.name),
+            decimals: value.decimals.unwrap(),
+        }
+    }
 }

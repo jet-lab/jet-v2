@@ -24,8 +24,10 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use crate::environment::TestToken;
 use crate::TestDefault;
 
+pub mod admin;
 pub mod margin;
-pub mod setup;
+pub mod margin_account;
+pub mod token;
 pub use margin::MarginTestContext;
 
 /// Instantiate an Arc<MarginTestContext>

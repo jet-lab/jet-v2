@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 
-use jet_environment::config::TokenDescription;
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
 use jet_margin_sdk::solana::keypair::clone;
@@ -20,7 +19,6 @@ use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_simulation::SolanaRpcClient;
 use tokio::try_join;
 
-use crate::environment::TestToken;
 use crate::margin_test_context;
 use crate::pricing::TokenPricer;
 use crate::spl_swap::{create_swap_pools, SwapRegistry};
@@ -85,31 +83,6 @@ pub async fn setup_token(
         token_manager.set_price(&token, &price),
         margin_client.configure_token_deposits(&token, Some(&deposit_config))
     )?;
-
-    Ok(token)
-}
-
-/// TODO: Most of the code in this file can be rewritten like this function,
-/// which could supersede `setup_token`, but it requires several things to be
-/// migrated at the same time, since it uses a different approach to storing
-/// prices on chain.
-#[allow(unused)]
-async fn __setup_token2(
-    ctx: &MarginTestContext,
-    decimals: u8,
-    collateral_weight: u16,
-    max_leverage: u16,
-    price: f64,
-) -> Result<Pubkey, Error> {
-    let name = ctx.generate_key().pubkey().to_string()[..4].to_string();
-    let token = TokenDescription {
-        decimals: Some(decimals),
-        collateral_weight,
-        max_leverage,
-        ..TestToken::with_pool(&name).into()
-    };
-    let token = ctx.create_token(token).await?;
-    ctx.set_price(&token, price, 0.01).await?;
 
     Ok(token)
 }

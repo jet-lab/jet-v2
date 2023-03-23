@@ -28,12 +28,12 @@ use super::{margin::configure_margin_token, Builder, BuilderError, NetworkKind, 
 const EVENT_QUEUE_CAPACITY: usize = 8192;
 const ORDERBOOK_CAPACITY: usize = 16384;
 
-pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
+pub async fn configure_market_for_token<I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     cranks: &[Pubkey],
     token: &TokenContext,
     config: &FixedTermMarketConfig,
-) -> Result<(), BuilderError> {
+) -> Result<FixedTermIxBuilder, BuilderError> {
     let payer = builder.payer();
 
     let market_address = market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
@@ -64,7 +64,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
             market_address,
             builder.authority,
             token.pyth_price,
-            token.pyth_price,
+            token.pyth_price, // TODO: reconsider for mainnet
             Some(fee_destination),
             OrderbookAddresses {
                 bids: market.bids,
@@ -114,7 +114,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
     // set permissions for cranks
     configure_cranks_for_market(builder, &ix_builder, cranks).await?;
 
-    Ok(())
+    Ok(ix_builder)
 }
 
 async fn configure_cranks_for_market<I: NetworkUserInterface>(

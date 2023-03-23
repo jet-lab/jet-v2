@@ -200,9 +200,8 @@ impl Debt {
         Ok(())
     }
 
-    pub fn is_past_due(&self) -> bool {
-        self.outstanding_term_loans() > 0
-            && self.next_term_loan_maturity <= Clock::get().unwrap().unix_timestamp
+    pub fn is_past_due(&self, unix_timestamp: UnixTimestamp) -> bool {
+        self.outstanding_term_loans() > 0 && self.next_term_loan_maturity <= unix_timestamp
     }
 
     pub fn pending(&self) -> u64 {

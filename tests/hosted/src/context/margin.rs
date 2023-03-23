@@ -1,3 +1,5 @@
+//! Defines the MarginTestContext data structure
+
 use std::sync::Arc;
 
 use jet_client::NetworkKind;
@@ -17,9 +19,13 @@ use crate::{margin::MarginClient, tokens::TokenManager};
 
 use super::TestContextSetupInfo;
 
-/// Data structure containing:
-/// - solana test runtime
-/// - information about an airspace that can be used in a test
+/// Data structure containing the minimal state needed to run client-side
+/// integration tests for the entire on-chain margin ecosystem:
+/// - solana test context.
+/// - keys that are necessary to administrate an airspace
+///
+/// This should not become a bucket for random test state. It should be
+/// immutable, aside from the internals of SolanaTestContext.
 ///
 /// Reduces test boilerplate via:
 /// - Helper methods to set up and administer the test environment, such as
@@ -28,8 +34,13 @@ use super::TestContextSetupInfo;
 pub struct MarginTestContext {
     pub solana: SolanaTestContext,
     pub airspace: Pubkey,
+    /// Seed used to generate the airspace address
     pub airspace_name: String,
+    /// Account authorized by the airspaces program to register and administrate
+    /// margin adapters.
     pub airspace_authority: Keypair,
+    /// Account authorized in adapter programs to execute privileged crank
+    /// functions such as consume_events and settle in fixed term.
     pub crank: Keypair,
 }
 

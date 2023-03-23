@@ -22,9 +22,10 @@ use anchor_spl::associated_token::get_associated_token_address;
 use async_trait::async_trait;
 use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
-use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
+use jet_solana_client::signature::{Authorization, NeedsSignature};
+use jet_solana_client::util::keypair::KeypairExt;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
@@ -34,13 +35,18 @@ use solana_sdk::transaction::{Transaction, VersionedTransaction};
 
 use anchor_lang::{AccountDeserialize, Id};
 
-use jet_margin::{MarginAccount, TokenConfig, TokenKind, TokenOracle};
+use jet_margin::{MarginAccount, TokenKind};
 use jet_margin_pool::{MarginPool, TokenChange};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
+use crate::get_state::{get_margin_account, get_token_metadata};
 use crate::lookup_tables::LookupTable;
-use crate::margin_integrator::PositionRefresher;
+use crate::refresh::deposit::refresh_deposit_positions;
+use crate::refresh::pool::{
+    refresh_all_pool_positions, refresh_all_pool_positions_underlying_to_tx,
+};
+use crate::refresh::position_refresher::{HasMarginAccountAddress, HasRpc, PositionRefresher};
 use crate::solana::pubkey::OrAta;
 use crate::solana::transaction::WithSigner;
 use crate::util::data::Join;
@@ -84,12 +90,25 @@ impl Clone for MarginTxBuilder {
 }
 
 #[async_trait]
-impl PositionRefresher for MarginTxBuilder {
-    async fn refresh_positions(&self) -> Result<Vec<TransactionBuilder>> {
+impl PositionRefresher<MarginAccount> for MarginTxBuilder {
+    async fn refresh_positions(
+        &self,
+        margin_account: &MarginAccount,
+    ) -> Result<Vec<TransactionBuilder>> {
         Ok(cat![
-            self.refresh_all_pool_positions().await?,
-            self.refresh_deposit_positions().await?,
+            refresh_all_pool_positions(&self.rpc, margin_account).await?,
+            refresh_deposit_positions(&self.rpc, margin_account).await?,
         ])
+    }
+}
+impl HasRpc for MarginTxBuilder {
+    fn rpc(&self) -> Arc<dyn SolanaRpcClient> {
+        self.rpc.clone()
+    }
+}
+impl HasMarginAccountAddress for MarginTxBuilder {
+    fn margin_account_address(&self) -> Pubkey {
+        self.ix.address
     }
 }
 
@@ -143,6 +162,11 @@ impl MarginTxBuilder {
             signer: Some(liquidator),
             is_liquidator: true,
         }
+    }
+
+    /// whether the current builder is for a liquidator
+    pub fn is_liquidator(&self) -> bool {
+        self.is_liquidator
     }
 
     /// Creates a new Self for actions on the same margin account, but
@@ -344,7 +368,7 @@ impl MarginTxBuilder {
     ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
-        let token_metadata = self.get_token_metadata(token_mint).await?;
+        let token_metadata = get_token_metadata(&self.rpc, token_mint).await?;
 
         let deposit_position = self
             .get_or_push_create_position(&mut instructions, &pool.deposit_note_mint)
@@ -473,7 +497,7 @@ impl MarginTxBuilder {
             .get_or_push_create_position(&mut instructions, &destination_pool.deposit_note_mint)
             .await?;
 
-        let destination_metadata = self.get_token_metadata(destination_token_mint).await?;
+        let destination_metadata = get_token_metadata(&self.rpc, destination_token_mint).await?;
 
         // Only refreshing the destination due to transaction size.
         // The most common scenario would be that a new margin position is created
@@ -723,18 +747,9 @@ impl MarginTxBuilder {
 
     /// Get the latest [MarginAccount] state
     pub async fn get_account_state(&self) -> Result<Box<MarginAccount>> {
-        let account_data = self.rpc.get_account(&self.ix.address).await?;
-
-        match account_data {
-            None => bail!(
-                "no account state found for account {} belonging to {}",
-                self.ix.owner,
-                self.ix.address
-            ),
-            Some(account) => Ok(Box::new(MarginAccount::try_deserialize(
-                &mut &account.data[..],
-            )?)),
-        }
+        Ok(Box::new(
+            get_margin_account(&self.rpc, &self.ix.address).await?,
+        ))
     }
 
     /// Append instructions to refresh pool positions to instructions
@@ -742,53 +757,13 @@ impl MarginTxBuilder {
         &self,
     ) -> Result<HashMap<Pubkey, TransactionBuilder>> {
         let state = self.get_account_state().await?;
-        let mut txns = HashMap::new();
-
-        for position in state.positions() {
-            if position.adapter != jet_margin_pool::ID {
-                continue;
-            }
-            let p_metadata = self.get_position_metadata(&position.token).await?;
-            if txns.contains_key(&p_metadata.underlying_token_mint) {
-                continue;
-            }
-            let t_metadata = self
-                .get_token_metadata(&p_metadata.underlying_token_mint)
-                .await?;
-            let ix_builder = MarginPoolIxBuilder::new(p_metadata.underlying_token_mint);
-            let ix = self.ix.accounting_invoke(
-                ix_builder.margin_refresh_position(self.ix.address, t_metadata.pyth_price),
-            );
-
-            txns.insert(p_metadata.underlying_token_mint, ix.into());
-        }
-
-        Ok(txns)
+        refresh_all_pool_positions_underlying_to_tx(&self.rpc, &state).await
     }
 
     /// Append instructions to refresh deposit positions
     pub async fn refresh_deposit_positions(&self) -> Result<Vec<TransactionBuilder>> {
         let state = self.get_account_state().await?;
-        let mut instructions = vec![];
-        for position in state.positions() {
-            let (cfg_addr, p_config) = match self.get_position_config(&position.token).await? {
-                None => continue,
-                Some(r) => r,
-            };
-
-            if position.token != p_config.underlying_mint {
-                continue;
-            }
-
-            let token_oracle = match p_config.oracle().unwrap() {
-                TokenOracle::Pyth { price, .. } => price,
-            };
-
-            let refresh = self.ix.refresh_deposit_position(&cfg_addr, &token_oracle);
-            instructions.push(refresh.into());
-        }
-
-        Ok(instructions)
+        refresh_deposit_positions(&self.rpc, &state).await
     }
 
     /// Create an open orders account
@@ -815,17 +790,6 @@ impl MarginTxBuilder {
         self.create_transaction_builder(&[instruction])
     }
 
-    async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {
-        let (md_address, _) =
-            Pubkey::find_program_address(&[token_mint.as_ref()], &jet_metadata::ID);
-        let account_data = self.rpc.get_account(&md_address).await?;
-
-        match account_data {
-            None => bail!("no metadata {} found for token {}", md_address, token_mint),
-            Some(account) => Ok(TokenMetadata::try_deserialize(&mut &account.data[..])?),
-        }
-    }
-
     async fn get_pool(&self, token_mint: &Pubkey) -> Result<MarginPool> {
         let pool_builder = MarginPoolIxBuilder::new(*token_mint);
         let account = self
@@ -835,43 +799,6 @@ impl MarginTxBuilder {
             .context("could not find pool")?;
 
         Ok(MarginPool::try_deserialize(&mut &account.data[..])?)
-    }
-
-    async fn get_position_metadata(
-        &self,
-        position_token_mint: &Pubkey,
-    ) -> Result<PositionTokenMetadata> {
-        let (md_address, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
-
-        let account_data = self.rpc.get_account(&md_address).await?;
-
-        match account_data {
-            None => bail!(
-                "no metadata {} found for position token {}",
-                md_address,
-                position_token_mint
-            ),
-            Some(account) => Ok(PositionTokenMetadata::try_deserialize(
-                &mut &account.data[..],
-            )?),
-        }
-    }
-
-    async fn get_position_config(
-        &self,
-        token_mint: &Pubkey,
-    ) -> Result<Option<(Pubkey, TokenConfig)>> {
-        let cfg_address = self.config_ix.derive_token_config(token_mint);
-        let account_data = self.rpc.get_account(&cfg_address).await?;
-
-        match account_data {
-            None => Ok(None),
-            Some(account) => Ok(Some((
-                cfg_address,
-                TokenConfig::try_deserialize(&mut &account.data[..])?,
-            ))),
-        }
     }
 
     async fn get_or_push_create_position(
@@ -936,12 +863,124 @@ impl MarginTxBuilder {
 
     /// If the margin account needs to sign, then use adapter or liquidator
     /// invoke, otherwise use accounting invoke.
-    fn smart_invoke(&self, inner: Instruction) -> Instruction {
+    pub fn smart_invoke(&self, inner: Instruction) -> Instruction {
         if self.ix.needs_signature(&inner) {
             self.adapter_invoke_ix(inner)
         } else {
             self.ix.accounting_invoke(inner)
         }
+    }
+}
+
+/// Minimum information necessary to wrap an instruction in a margin invoke and
+/// sign the transaction. Simpler alternative to MarginTxBuilder, to minimize
+/// dependencies.
+pub struct MarginInvokeContext {
+    /// The airspace where the margin account is authorized.
+    pub airspace: Pubkey,
+    /// The margin account that will wrap the instruction.
+    pub margin_account: Pubkey,
+    /// The signer who may authorize actions for the margin account.
+    pub authority: Keypair,
+    /// Is the authority a liquidator?
+    pub is_liquidator: bool,
+}
+
+impl MarginInvokeContext {
+    /// conversion
+    pub fn auth(&self) -> Authorization {
+        Authorization {
+            address: self.margin_account,
+            authority: self.authority.clone(),
+        }
+    }
+}
+
+impl Clone for MarginInvokeContext {
+    fn clone(&self) -> Self {
+        Self {
+            airspace: self.airspace,
+            margin_account: self.margin_account,
+            authority: self.authority.clone(),
+            is_liquidator: self.is_liquidator,
+        }
+    }
+}
+
+///
+pub trait MarginInvoke {
+    /// Invoke a margin adapter through a margin account using whichever wrapper
+    /// is needed: adapter_invoke, accounting_invoke, or liquidator_invoke. If
+    /// there are multiple instructions, they are combined into a single
+    /// TransactionBuilder
+    fn invoke(self, ctx: MarginInvokeContext) -> TransactionBuilder;
+
+    /// Separately invokes each instruction into a separate TransactionBuilder
+    fn invoke_each(self, ctx: MarginInvokeContext) -> Vec<TransactionBuilder>;
+}
+
+impl MarginInvoke for Instruction {
+    fn invoke(
+        self,
+        MarginInvokeContext {
+            airspace,
+            margin_account,
+            authority,
+            is_liquidator,
+        }: MarginInvokeContext,
+    ) -> TransactionBuilder {
+        if self.needs_signature(margin_account) {
+            if is_liquidator {
+                liquidator_invoke(airspace, authority.pubkey(), margin_account, self)
+                    .with_signer(authority.clone())
+            } else {
+                adapter_invoke(airspace, authority.pubkey(), margin_account, self)
+                    .with_signer(authority.clone())
+            }
+        } else {
+            accounting_invoke(airspace, margin_account, self).into()
+        }
+    }
+
+    fn invoke_each(self, ctx: MarginInvokeContext) -> Vec<TransactionBuilder> {
+        vec![self.invoke(ctx)]
+    }
+}
+
+impl MarginInvoke for Vec<Instruction> {
+    fn invoke(
+        self,
+        MarginInvokeContext {
+            airspace,
+            margin_account,
+            authority,
+            is_liquidator,
+        }: MarginInvokeContext,
+    ) -> TransactionBuilder {
+        let mut needs_signer = false;
+        let mut instructions = vec![];
+        for inner in self {
+            let wrapped = if inner.needs_signature(margin_account) {
+                needs_signer = true;
+                if is_liquidator {
+                    liquidator_invoke(airspace, authority.pubkey(), margin_account, inner)
+                } else {
+                    adapter_invoke(airspace, authority.pubkey(), margin_account, inner)
+                }
+            } else {
+                accounting_invoke(airspace, margin_account, inner)
+            };
+            instructions.push(wrapped);
+        }
+        if needs_signer {
+            instructions.with_signer(authority)
+        } else {
+            instructions.into()
+        }
+    }
+
+    fn invoke_each(self, ctx: MarginInvokeContext) -> Vec<TransactionBuilder> {
+        self.into_iter().map(|ix| ix.invoke(ctx.clone())).collect()
     }
 }
 

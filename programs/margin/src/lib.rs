@@ -567,6 +567,10 @@ pub enum ErrorCode {
     #[msg("a position balance is outdated")]
     OutdatedBalance,
 
+    /// 141061
+    #[msg("the position does not match the token account")]
+    WrongPositionTokenAccount,
+
     /// 141030 - The account is not healthy
     #[msg("the account is not healthy")]
     Unhealthy = 135_030,
