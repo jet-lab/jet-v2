@@ -1,15 +1,10 @@
-use std::cmp::min;
-
-use anchor_lang::{prelude::*, AccountsClose};
-use anchor_spl::token::{transfer, Token, Transfer};
-use jet_program_common::traits::TrySubAssign;
+use anchor_lang::prelude::*;
+use anchor_spl::token::Token;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     control::state::Market,
-    events::{TermLoanFulfilled, TermLoanRepay},
-    margin::state::{MarginUser, TermLoan},
-    market_token_manager::MarketTokenManager,
+    margin::state::{MarginUser, RepayAccounts, TermLoan},
     FixedTermErrorCode,
 };
 
@@ -67,63 +62,20 @@ pub struct Repay<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> Repay<'info> {
-    pub fn transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            Transfer {
-                from: self.source.to_account_info(),
-                to: self.underlying_token_vault.to_account_info(),
-                authority: self.source_authority.to_account_info(),
-            },
-        )
-    }
-}
-
 pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
-    let amount = min(amount, ctx.accounts.term_loan.balance);
-
-    // return payment to market vault
-    transfer(ctx.accounts.transfer_context(), amount)?;
-
-    // reduce claim on the margin account
-    ctx.burn_notes(&ctx.accounts.claims_mint, &ctx.accounts.claims, amount)?;
-
-    let term_loan = &mut ctx.accounts.term_loan;
-    let user = &mut ctx.accounts.margin_user;
-
-    term_loan.balance.try_sub_assign(amount)?;
-
-    if term_loan.balance > 0 {
-        user.partially_repay_loan(term_loan, amount)?;
-        emit!(TermLoanRepay {
-            orderbook_user: ctx.accounts.margin_user.key(),
-            term_loan: term_loan.key(),
-            repayment_amount: amount,
-            final_balance: term_loan.balance,
-        });
-    } else {
-        let next_term_loan =
-            Account::<TermLoan>::try_from(&ctx.accounts.next_term_loan).and_then(|ob| {
-                require_eq!(
-                    ob.margin_user,
-                    user.key(),
-                    FixedTermErrorCode::UserNotInMarket
-                );
-                Ok(ob)
-            });
-        user.fully_repay_term_loan(term_loan, amount, next_term_loan)?;
-
-        term_loan.close(ctx.accounts.payer.to_account_info())?;
-
-        emit!(TermLoanFulfilled {
-            term_loan: term_loan.key(),
-            orderbook_user: user.key(),
-            borrower: term_loan.margin_user,
-            repayment_amount: amount,
-            timestamp: Clock::get()?.unix_timestamp,
-        });
+    let a = ctx.accounts;
+    RepayAccounts {
+        margin_user: &mut a.margin_user,
+        term_loan: &mut a.term_loan,
+        next_term_loan: &a.next_term_loan,
+        source: &a.source,
+        source_authority: &a.source_authority,
+        payer: &a.payer,
+        underlying_token_vault: &a.underlying_token_vault,
+        claims: &a.claims,
+        claims_mint: &a.claims_mint,
+        market: &a.market,
+        token_program: &a.token_program,
     }
-
-    Ok(())
+    .repay(amount, false)
 }

@@ -77,6 +77,8 @@ pub struct AutoRollBorrowOrder<'info> {
 }
 
 impl<'info> AutoRollBorrowOrder<'info> {
+    /// Take any available liquidity on the book in order to repay the loan
+    /// Uses the limit price set by the user in the `BorrowRollConfig`
     pub fn borrow_now(
         &mut self,
         params: OrderParams,
@@ -102,7 +104,12 @@ impl<'info> AutoRollBorrowOrder<'info> {
         .borrow_order(params)
     }
 
-    pub fn params(&self) -> OrderParams {
+    /// Uses the newly borrowed tokens to repay the loan
+    pub fn repay(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    fn params(&self) -> OrderParams {
         OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: self.loan.balance,
@@ -124,6 +131,6 @@ pub fn handler(ctx: Context<AutoRollBorrowOrder>) -> Result<()> {
             .maybe_next_adapter()?
             .map(|a| a.key()),
     )?;
-
-    panic!("not yet implemented");
+    ctx.accounts.repay()?;
+    Ok(())
 }

@@ -356,6 +356,11 @@ impl TestManager {
     }
 
     pub async fn auto_roll_term_loans(&self, margin_account: &Pubkey) -> Result<()> {
+        let margin_ix = MarginIxBuilder::new_for_address(
+            self.airspace,
+            *margin_account,
+            self.client.payer().pubkey(),
+        );
         let roll_tenor = self
             .load_margin_user(margin_account)
             .await?
@@ -372,7 +377,7 @@ impl TestManager {
         loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
         let mut builder = Vec::<TransactionBuilder>::new();
         for (key, loan) in loans {
-            let ix = self.ix_builder.auto_roll_borrow_order(
+            let roll_ix = self.ix_builder.auto_roll_borrow_order(
                 *margin_account,
                 key,
                 loan.payer,
@@ -380,7 +385,8 @@ impl TestManager {
                     .await?
                     .next_term_loan(),
             );
-            builder.push(ix.into())
+            let accounting_ix = margin_ix.accounting_invoke(roll_ix);
+            builder.push(accounting_ix.into())
         }
         builder.send_and_confirm_condensed(&self.client).await?;
         Ok(())
