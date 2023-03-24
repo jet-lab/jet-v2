@@ -125,19 +125,17 @@ const cancel = async (
       pools,
       markets
     });
-    console.log('Order Cancelled Successfully')
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
     setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
     refreshOrderBooks();
   } catch (e: any) {
-    console.error('Order Cancellation Failed', order.order_id, order.order_tag)
     notify(
       'Cancel order failed',
       'There was an error cancelling your order',
       'error',
       getExplorerUrl(e.signature, cluster, explorer)
     );
-    console.log(e)
+    console.error(e)
   }
 };
 

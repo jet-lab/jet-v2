@@ -198,7 +198,6 @@ export async function sendAll(
           })
           txnArray.push(sent)
         } catch (e) {
-          console.log('Faild to send tx')
           console.error(e)
         }
       }
