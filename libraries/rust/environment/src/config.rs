@@ -65,6 +65,9 @@ pub struct AirspaceConfig {
 
     /// The tokens to be configured for use in the airspace
     pub tokens: Vec<TokenDescription>,
+
+    /// The lookup registry authority
+    pub lookup_registry_authority: Option<Pubkey>,
 }
 
 /// A description for a token to be created
@@ -192,6 +195,8 @@ struct EnvRootAirspaceConfig {
     #[serde_as(as = "Vec<DisplayFromStr>")]
     #[serde(default)]
     cranks: Vec<Pubkey>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    lookup_registry_authority: Option<Pubkey>,
 }
 
 #[serde_as]
@@ -207,6 +212,10 @@ struct EnvRootConfigFile {
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(default)]
     oracle_authority: Option<Pubkey>,
+
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde(default)]
+    lookup_registry_authority: Option<Pubkey>,
 }
 
 pub fn read_env_config_dir(path: &Path) -> Result<EnvironmentConfig, ConfigError> {
@@ -284,6 +293,7 @@ fn read_airspace_dir(
         name: config.name,
         cranks: config.cranks,
         is_restricted: config.is_restricted,
+        lookup_registry_authority: config.lookup_registry_authority,
     })
 }
 
