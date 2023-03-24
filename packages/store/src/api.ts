@@ -7,11 +7,7 @@ export const useOrdersForUser = (apiEndpoint: string, market?: FixedTermMarket, 
   const path = `fixed/open-orders/${market?.address}/${account?.address}`;
   return useSWR<OpenOrders>(path, async () => {
     if (account && market) {
-      return fetch(`${apiEndpoint}/${path}`).then(r => {
-        const out = r.json();
-        console.log('open-orders', out);
-        return out
-      });
+      return fetch(`${apiEndpoint}/${path}`).then(r => r.json());
     } else {
       return null;
     }
