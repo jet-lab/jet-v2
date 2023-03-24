@@ -117,6 +117,8 @@ pub struct AirspaceInfo {
 
     #[serde_as(as = "Vec<DisplayFromStr>")]
     pub fixed_term_markets: Vec<Pubkey>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub lookup_registry_authority: Option<Pubkey>,
 }
 
 impl From<AirspaceConfig> for AirspaceInfo {
@@ -137,6 +139,7 @@ impl From<AirspaceConfig> for AirspaceInfo {
                     })
                 })
                 .collect(),
+            lookup_registry_authority: config.lookup_registry_authority,
         }
     }
 }
@@ -147,6 +150,7 @@ impl Default for AirspaceInfo {
             name: "default".to_owned(),
             tokens: vec![],
             fixed_term_markets: vec![],
+            lookup_registry_authority: None,
         }
     }
 }
