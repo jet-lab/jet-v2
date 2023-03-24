@@ -3,7 +3,7 @@ use anchor_spl::token::Token;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::{MarginUser, TermLoan},
+    margin::state::{MarginUser, RepayAccounts, TermLoan},
     orderbook::state::*,
     serialization::RemainingAccounts,
     FixedTermErrorCode,
@@ -83,7 +83,7 @@ impl<'info> AutoRollBorrowOrder<'info> {
         &mut self,
         params: OrderParams,
         event_adapter: Option<Pubkey>,
-    ) -> Result<SensibleOrderSummary> {
+    ) -> Result<u64> {
         MarginBorrowOrderAccounts {
             margin_user: &mut self.margin_user,
             term_loan: &self.new_loan,
@@ -94,6 +94,7 @@ impl<'info> AutoRollBorrowOrder<'info> {
             token_collateral_mint: &self.token_collateral_mint,
             underlying_token_vault: &self.underlying_token_vault,
             fee_vault: &self.fee_vault,
+            // returns funds directly to the market
             underlying_settlement: &self.underlying_token_vault,
             orderbook_mut: &mut self.orderbook_mut,
             payer: &self.payer.to_account_info(),
@@ -105,12 +106,27 @@ impl<'info> AutoRollBorrowOrder<'info> {
     }
 
     /// Uses the newly borrowed tokens to repay the loan
-    pub fn repay(&mut self) -> Result<()> {
-        Ok(())
+    pub fn repay(&mut self, amount: u64) -> Result<()> {
+        RepayAccounts {
+            margin_user: &mut self.margin_user,
+            term_loan: &mut self.loan,
+            next_term_loan: &self.new_loan,
+            // arbitrary here
+            source: &self.margin_account,
+            source_authority: &self.margin_account,
+
+            claims: &self.claims,
+            claims_mint: &self.claims_mint,
+            payer: &self.payer,
+            underlying_token_vault: &self.underlying_token_vault,
+            market: &self.orderbook_mut.market,
+            token_program: &self.token_program,
+        }
+        .repay(amount, true)
     }
 
-    fn params(&self) -> OrderParams {
-        OrderParams {
+    fn params(&self) -> Result<OrderParams> {
+        let mut params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: self.loan.balance,
             limit_price: self.margin_user.borrow_roll_config.limit_price,
@@ -119,18 +135,23 @@ impl<'info> AutoRollBorrowOrder<'info> {
             post_allowed: false,
             auto_stake: false,
             auto_roll: true,
-        }
+        };
+        self.orderbook_mut
+            .market
+            .load()?
+            .add_origination_fee(&mut params);
+
+        Ok(params)
     }
 }
 
 pub fn handler(ctx: Context<AutoRollBorrowOrder>) -> Result<()> {
-    let _order_summary = ctx.accounts.borrow_now(
-        ctx.accounts.params(),
+    let filled = ctx.accounts.borrow_now(
+        ctx.accounts.params()?,
         ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
     )?;
-    ctx.accounts.repay()?;
-    Ok(())
+    ctx.accounts.repay(filled)
 }

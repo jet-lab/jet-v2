@@ -1212,9 +1212,18 @@ async fn auto_roll_borrow_order_is_correct() -> Result<()> {
         std::thread::sleep(std::time::Duration::from_secs(roll_tenor));
     }
 
+    let pre_roll_loan = borrower.get_active_term_loans().await?[0].clone();
     manager
         .auto_roll_term_loans(&borrower.proxy.pubkey())
         .await?;
+    let post_roll_loans = borrower.get_active_term_loans().await?;
+
+    // we had enough liquidity, so the first loan should be fully repaid, leaving only one
+    assert!(post_roll_loans.len() < 2);
+
+    // FIXME: add the fee calculation to get an exact number
+    // The principal of the new loan is the balance of the previous, plus an originiation fee
+    assert!(pre_roll_loan.balance < post_roll_loans[0].principal);
 
     Ok(())
 }

@@ -63,7 +63,8 @@ pub struct MarginBorrowOrderAccounts<'a, 'info> {
 }
 
 impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
-    pub fn borrow_order(&mut self, mut params: OrderParams) -> Result<SensibleOrderSummary> {
+    /// Returns the value of disbursed tokens
+    pub fn borrow_order(&mut self, mut params: OrderParams) -> Result<u64> {
         self.orderbook_mut
             .market
             .load()?
@@ -79,9 +80,11 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
         )?;
 
         self.handle_posted(&order_summary)?;
-        if order_summary.base_filled() > 0 {
-            self.handle_filled(&order_summary, &callback_info)?;
-        }
+        let disbursed = if order_summary.base_filled() > 0 {
+            self.handle_filled(&order_summary, &callback_info)?
+        } else {
+            0
+        };
 
         // place a claim for the borrowed tokens
         mint_to(
@@ -123,7 +126,7 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
             },
         )?;
 
-        Ok(order_summary)
+        Ok(disbursed)
     }
 
     fn handle_posted(&mut self, summary: &SensibleOrderSummary) -> Result<()> {
@@ -150,6 +153,7 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
         Ok(())
     }
 
+    /// Returns the disbursed token amount
     fn handle_filled(
         &mut self,
         summary: &SensibleOrderSummary,
