@@ -207,6 +207,15 @@ export const cancelOrder = async ({ market, marginAccount, provider, orderId, po
     markets,
     marketAddress: market.market.address
   })
+
+
+  await marginAccount.withRefreshDepositPosition({
+    instructions,
+    config: marginAccount.findTokenConfigAddress(market.token.mint),
+    priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
+  })
+
+
   const cancelLoan = await market.market.cancelOrderIx(marginAccount, orderId)
   await marginAccount.withAdapterInvoke({
     instructions,

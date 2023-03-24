@@ -54,7 +54,8 @@
     "size": "Size",
     "amount": "Amount",
     "maximum": "Maximum",
-    "comingSoon": "Coming Soon"
+    "comingSoon": "Coming Soon",
+    "usdValue": "USD Value"
   },
   "actions": {
     "deposit": {

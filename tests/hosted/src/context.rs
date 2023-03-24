@@ -270,6 +270,7 @@ impl TestContext {
                 is_restricted: setup.is_restricted,
                 tokens: setup_config.tokens.clone(),
                 cranks: vec![],
+                lookup_registry_authority: None,
             }],
         };
 
@@ -445,6 +446,7 @@ impl TestContextSetupInfo {
                             .map(move |m| market_from_tenor(&airspace, &token, m.borrow_tenor))
                     })
                     .collect(),
+                lookup_registry_authority: None,
             }],
             exchanges: spl_swap_pools
                 .iter()

@@ -198,3 +198,20 @@ jobs:
       - name: E2E
         run: |
           SOLANA_LOGS=false ./check e2e
+      
+      - name: Save cache
+        uses: actions/cache/save@v3
+        # always save the cache even if build fails
+        if: always()
+        with:
+          key: ${{ runner.os }}-e2e
+          path: |
+            ~/.cache/act
+            ~/.cache/solana
+            ~/.cargo/
+            ~/.local/share/solana/
+            ~/.npm
+            ~/.yarn
+            target/
+            !target/idl
+            !target/deploy
