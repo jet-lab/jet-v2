@@ -225,6 +225,7 @@ pub mod legacy {
 
     use jet_instructions::{fixed_term::Market, margin_swap::derive_spl_swap_authority};
     use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+    use jet_static_program_registry::orca_swap_v2;
 
     use crate::programs::{ORCA_V2, ORCA_V2_DEVNET};
 
@@ -304,7 +305,7 @@ pub mod legacy {
                     continue;
                 }
 
-                Some(d) => spl_token_swap::state::SwapVersion::unpack(&d.data)
+                Some(d) => orca_swap_v2::state::SwapVersion::unpack(&d.data)
                     .map_err(|e| ConfigError::UnpackError(e))?,
             };
 

@@ -12,7 +12,6 @@ anchor-lang = "0.26"
 anchor-spl = "0.26"
 
 spl-token = "3"
-spl-token-swap = "2"
 spl-associated-token-account = "1"
 
 jet-program-common = { path = "../program-common" }

@@ -44,7 +44,6 @@ solana-cli-config = "1.14"
 solana-client = "1.14"
 solana-sdk = "1.14"
 spl-token = "3"
-spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 
 # not used directly, but indirectly to enable ledger support via `solana-clap-utils`
 solana-remote-wallet = "1.14"
