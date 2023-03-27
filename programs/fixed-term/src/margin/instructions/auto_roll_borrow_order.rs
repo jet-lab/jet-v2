@@ -34,11 +34,11 @@ pub struct AutoRollBorrowOrder<'info> {
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub token_collateral: AccountInfo<'info>,
+    pub underlying_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut, address = orderbook_mut.token_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
-    pub token_collateral_mint: AccountInfo<'info>,
+    #[account(mut, address = orderbook_mut.underlying_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
+    pub underlying_collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
@@ -90,8 +90,8 @@ impl<'info> AutoRollBorrowOrder<'info> {
             margin_account: &self.margin_account.to_account_info(),
             claims: &self.claims,
             claims_mint: &self.claims_mint,
-            token_collateral: &self.token_collateral,
-            token_collateral_mint: &self.token_collateral_mint,
+            underlying_collateral: &self.underlying_collateral,
+            underlying_collateral_mint: &self.underlying_collateral_mint,
             underlying_token_vault: &self.underlying_token_vault,
             fee_vault: &self.fee_vault,
             // returns funds directly to the market
