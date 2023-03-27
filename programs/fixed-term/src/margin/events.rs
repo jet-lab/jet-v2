@@ -108,7 +108,7 @@ pub struct AssetsUpdated {
     pub entitled_tokens: u64,
     pub entitled_tickets: u64,
     pub ticket_collateral: u64,
-    pub token_collateral: u64,
+    pub underlying_collateral: u64,
 }
 
 impl AssetsUpdated {
@@ -118,7 +118,7 @@ impl AssetsUpdated {
             entitled_tokens: user.entitled_tokens(),
             entitled_tickets: user.entitled_tickets(),
             ticket_collateral: user.ticket_collateral()?,
-            token_collateral: user.token_collateral(),
+            underlying_collateral: user.underlying_collateral(),
         })
     }
 }

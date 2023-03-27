@@ -70,15 +70,15 @@ pub struct InitializeMarginUser<'info> {
     /// Token account used by the margin program to track owned assets
     #[account(init,
         seeds = [
-            seeds::TOKEN_COLLATERAL_NOTES,
+            seeds::UNDERLYING_COLLATERAL_NOTES,
             margin_user.key().as_ref(),
         ],
         bump,
-        token::mint = token_collateral_mint,
+        token::mint = underlying_collateral_mint,
         token::authority = market,
         payer = payer)]
-    pub token_collateral: Box<Account<'info, TokenAccount>>,
-    pub token_collateral_mint: Box<Account<'info, Mint>>,
+    pub underlying_collateral: Box<Account<'info, TokenAccount>>,
+    pub underlying_collateral_mint: Box<Account<'info, Mint>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -93,7 +93,7 @@ pub struct InitializeMarginUser<'info> {
     pub ticket_collateral_metadata: AccountInfo<'info>,
 
     /// Token metadata account needed by the margin program to register the collateral position
-    pub token_collateral_metadata: AccountInfo<'info>,
+    pub underlying_collateral_metadata: AccountInfo<'info>,
 }
 
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
@@ -105,7 +105,7 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
         ctx.accounts.market.key(),
         ctx.accounts.claims.key(),
         ctx.accounts.ticket_collateral.key(),
-        ctx.accounts.token_collateral.key(),
+        ctx.accounts.underlying_collateral.key(),
     );
 
     emit!(MarginUserInitialized {
@@ -129,9 +129,9 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
                     )],
                 ),
                 (
-                    ctx.accounts.token_collateral_mint.key(),
+                    ctx.accounts.underlying_collateral_mint.key(),
                     vec![PositionChange::Register(
-                        ctx.accounts.token_collateral.key(),
+                        ctx.accounts.underlying_collateral.key(),
                     )],
                 ),
             ],

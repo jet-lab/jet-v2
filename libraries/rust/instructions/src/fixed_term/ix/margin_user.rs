@@ -21,7 +21,7 @@ pub fn initialize_margin_user(
     payer: Pubkey,
 ) -> Instruction {
     let ticket_collateral_mint = ticket_collateral_mint(&market);
-    let token_collateral_mint = token_collateral_mint(&market);
+    let underlying_collateral_mint = underlying_collateral_mint(&market);
     let claims_mint = claims_mint(&market);
     let margin_user = margin_user(&market, &owner);
     let accounts = jet_fixed_term::accounts::InitializeMarginUser {
@@ -31,16 +31,16 @@ pub fn initialize_margin_user(
         margin_account: owner,
         claims: user_claims(&margin_user),
         ticket_collateral: user_ticket_collateral(&margin_user),
-        token_collateral: user_token_collateral(&margin_user),
+        underlying_collateral: user_underlying_collateral(&margin_user),
         claims_mint,
         ticket_collateral_mint,
-        token_collateral_mint,
+        underlying_collateral_mint,
         rent: solana_sdk::sysvar::rent::ID,
         token_program: spl_token::ID,
         system_program: solana_sdk::system_program::ID,
         claims_metadata: derive_token_config(&airspace, &claims_mint),
         ticket_collateral_metadata: derive_token_config(&airspace, &ticket_collateral_mint),
-        token_collateral_metadata: derive_token_config(&airspace, &token_collateral_mint),
+        underlying_collateral_metadata: derive_token_config(&airspace, &underlying_collateral_mint),
     }
     .to_account_metas(None);
     Instruction::new_with_bytes(
@@ -75,8 +75,8 @@ pub fn margin_sell_tickets_order(
 ) -> Instruction {
     let data = jet_fixed_term::instruction::MarginSellTicketsOrder { params }.data();
     let accounts = jet_fixed_term::accounts::MarginSellTicketsOrder {
-        token_collateral: user_token_collateral(&margin_user),
-        token_collateral_mint: token_collateral_mint(&inner.orderbook_mut.market),
+        underlying_collateral: user_underlying_collateral(&margin_user),
+        underlying_collateral_mint: underlying_collateral_mint(&inner.orderbook_mut.market),
         inner,
         margin_user,
     }

@@ -33,7 +33,7 @@ pub fn initialize_market(
         ticket_mint: ticket_mint(&market),
         claims: claims_mint(&market),
         ticket_collateral: ticket_collateral_mint(&market),
-        token_collateral: token_collateral_mint(&market),
+        underlying_collateral: underlying_collateral_mint(&market),
         market,
         underlying_token_mint,
         airspace,

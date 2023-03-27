@@ -112,7 +112,7 @@ pub struct InitializeMarket<'info> {
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
         seeds = [
-            seeds::TOKEN_COLLATERAL_NOTES,
+            seeds::UNDERLYING_COLLATERAL_NOTES,
             market.key().as_ref(),
         ],
         bump,
@@ -121,7 +121,7 @@ pub struct InitializeMarket<'info> {
         mint::authority = market,
         mint::freeze_authority = market,
     )]
-    pub token_collateral: Box<Account<'info, Mint>>,
+    pub underlying_collateral: Box<Account<'info, Mint>>,
 
     /// The authority that must sign to make this change
     pub authority: Signer<'info>,
@@ -181,7 +181,7 @@ pub fn handler(ctx: Context<InitializeMarket>, params: InitializeMarketParams) -
             ticket_mint: ctx.accounts.ticket_mint.key(),
             claims_mint: ctx.accounts.claims.key(),
             ticket_collateral_mint: ctx.accounts.ticket_collateral.key(),
-            token_collateral_mint: ctx.accounts.token_collateral.key(),
+            underlying_collateral_mint: ctx.accounts.underlying_collateral.key(),
             seed: params.seed,
             bump: [*ctx.bumps.get("market").unwrap()],
             orderbook_paused: false,

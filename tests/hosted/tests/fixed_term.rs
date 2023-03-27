@@ -552,7 +552,7 @@ async fn margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
-    assert_eq!(1_000, user.token_collateral().await?);
+    assert_eq!(1_000, user.underlying_collateral().await?);
     assert_eq!(1_201, user.claims().await?);
 
     let margin_user = user.load_margin_user().await.unwrap();
@@ -681,7 +681,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(1_000, borrower.token_collateral().await?);
+    assert_eq!(1_000, borrower.underlying_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
     // No tokens have been disbursed, so this should be 0
     assert_eq!(0, manager.collected_fees().await?);
@@ -855,7 +855,7 @@ async fn margin_sell_tickets() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 10_000, user.tokens().await?);
     assert_eq!(8_800, user.tickets().await?);
-    assert_eq!(999, user.token_collateral().await?);
+    assert_eq!(1200, user.underlying_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())

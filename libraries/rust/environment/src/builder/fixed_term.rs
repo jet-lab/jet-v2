@@ -159,7 +159,7 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
 ) -> Result<(), BuilderError> {
     let claims_mint = derive::claims_mint(market_address);
     let ticket_collateral_mint = derive::ticket_collateral_mint(market_address);
-    let token_collateral_mint = derive::token_collateral_mint(market_address);
+    let underlying_collateral_mint = derive::underlying_collateral_mint(market_address);
     let ticket_mint = test_service::derive_ticket_mint(market_address);
 
     let ticket_oracle = match builder.network {
@@ -208,7 +208,7 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     configure_margin_token(
         builder,
         &token.airspace,
-        &token_collateral_mint,
+        &underlying_collateral_mint,
         Some(TokenConfigUpdate {
             underlying_mint: token.mint,
             admin: TokenAdmin::Adapter(FIXED_TERM_PROGRAM),

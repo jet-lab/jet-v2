@@ -492,7 +492,7 @@ impl FixedTermIxBuilder {
         MarginUser {
             address,
             ticket_collateral: derive::user_ticket_collateral(&address),
-            token_collateral: derive::user_token_collateral(&address),
+            underlying_collateral: derive::user_underlying_collateral(&address),
             claims: derive::user_claims(&address),
         }
     }

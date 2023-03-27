@@ -59,7 +59,7 @@ impl MarginUser {
         market: Pubkey,
         claims: Pubkey,
         ticket_collateral: Pubkey,
-        token_collateral: Pubkey,
+        underlying_collateral: Pubkey,
     ) -> Self {
         Self {
             version,
@@ -173,8 +173,10 @@ impl MarginUser {
     }
 
     /// Account for the exchange of market tickets on the orderbook
-    pub fn sell_tickets(&mut self, token_value_posted: u64) -> Result<()> {
-        self.assets.tokens_posted.try_add_assign(token_value_posted)
+    pub fn sell_tickets(&mut self, ticket_value_posted: u64) -> Result<()> {
+        self.assets
+            .tokens_posted
+            .try_add_assign(ticket_value_posted)
     }
 
     /// Account for the redemption of underlying tokens from a matured [TermDeposit]
@@ -220,8 +222,8 @@ impl MarginUser {
         self.assets.ticket_collateral()
     }
 
-    pub fn token_collateral(&self) -> u64 {
-        self.assets.token_collateral()
+    pub fn underlying_collateral(&self) -> u64 {
+        self.assets.underlying_collateral()
     }
 
     pub fn entitled_tickets(&self) -> u64 {
@@ -515,7 +517,7 @@ impl Assets {
     /// Represents the amount of token collateral in open borrow orders
     /// does not reflect the entitled tickets/tokens because they are expected
     /// to be disbursed whenever this value is used.
-    pub fn token_collateral(&self) -> u64 {
+    pub fn underlying_collateral(&self) -> u64 {
         self.tokens_posted
     }
 

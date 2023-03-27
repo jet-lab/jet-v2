@@ -55,11 +55,11 @@ pub struct Settle<'info> {
     pub ticket_collateral_mint: UncheckedAccount<'info>,
 
     #[account(mut)]
-    pub token_collateral: Box<Account<'info, TokenAccount>>,
+    pub underlying_collateral: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: token program checks it
     #[account(mut)]
-    pub token_collateral_mint: UncheckedAccount<'info>,
+    pub underlying_collateral_mint: UncheckedAccount<'info>,
 
     /// CHECK: token program checks it
     #[account(mut)]
@@ -125,20 +125,20 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
 
     // Notify margin of the amount of collateral that will in the custody of
     // tokens after this settlement
-    let ctokens_held = ctx.accounts.token_collateral.amount;
-    let ctokens_deserved = ctx.accounts.margin_user.token_collateral();
+    let ctokens_held = ctx.accounts.underlying_collateral.amount;
+    let ctokens_deserved = ctx.accounts.margin_user.underlying_collateral();
 
     if ctokens_held > ctokens_deserved {
         ctx.burn_notes(
-            &ctx.accounts.token_collateral_mint,
-            ctx.accounts.token_collateral.to_account_info(),
+            &ctx.accounts.underlying_collateral_mint,
+            ctx.accounts.underlying_collateral.to_account_info(),
             ctokens_held - ctokens_deserved,
         )?;
     }
     if ctokens_held < ctokens_deserved {
         ctx.mint(
-            &ctx.accounts.token_collateral_mint,
-            ctx.accounts.token_collateral.to_account_info(),
+            &ctx.accounts.underlying_collateral_mint,
+            ctx.accounts.underlying_collateral.to_account_info(),
             ctokens_deserved - ctokens_held,
         )?;
     }

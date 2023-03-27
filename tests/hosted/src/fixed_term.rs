@@ -521,7 +521,7 @@ impl TestManager {
         )
         .await?;
         self.register_position_metadata_impl(
-            market.token_collateral_mint,
+            market.underlying_collateral_mint,
             market.underlying_token_mint,
             TokenKind::AdapterCollateral,
             1_00,
@@ -1193,12 +1193,12 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     /// loads the current state of the user token collateral balance
-    pub async fn token_collateral(&self) -> Result<u64> {
+    pub async fn underlying_collateral(&self) -> Result<u64> {
         let key = self
             .manager
             .ix_builder
             .margin_user(self.proxy.pubkey())
-            .token_collateral;
+            .underlying_collateral;
         self.manager
             .load_anchor::<TokenAccount>(&key)
             .await

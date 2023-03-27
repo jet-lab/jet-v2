@@ -522,7 +522,7 @@ pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
     let found = account.client.state().filter(|_, state: &MarketState| {
         state.market.claims_mint == *token
             || state.market.ticket_collateral_mint == *token
-            || state.market.token_collateral_mint == *token
+            || state.market.underlying_collateral_mint == *token
     });
 
     let Some((_, market_state)) = found.into_iter().next() else {

@@ -103,7 +103,7 @@ pub fn refresh_positions_deserialized(
     Ok(AdapterResult {
         position_changes: vec![
             (market.claims_mint, claim_changes),
-            (market.token_collateral_mint, collateral_token_changes),
+            (market.underlying_collateral_mint, collateral_token_changes),
             (market.ticket_collateral_mint, collateral_ticket_changes),
         ],
     })

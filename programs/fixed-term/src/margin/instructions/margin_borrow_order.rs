@@ -50,7 +50,7 @@ pub struct MarginBorrowOrder<'info> {
     pub underlying_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut, address = orderbook_mut.token_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
+    #[account(mut, address = orderbook_mut.underlying_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
     pub underlying_collateral_mint: AccountInfo<'info>,
 
     /// The market token vault

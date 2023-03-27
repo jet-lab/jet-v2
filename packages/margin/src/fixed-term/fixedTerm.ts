@@ -500,7 +500,7 @@ export class FixedTermMarket {
   }
 
   async deriveTokenCollateral(marginUser: Address): Promise<PublicKey> {
-    return await findFixedTermDerivedAccount(["token_collateral_notes", marginUser], this.program.programId)
+    return await findFixedTermDerivedAccount(["underlying_collateral_notes", marginUser], this.program.programId)
   }
 
   async deriveTermLoanAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {
