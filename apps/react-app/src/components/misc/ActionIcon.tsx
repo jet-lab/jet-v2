@@ -11,7 +11,7 @@ import TransferIcon from '@assets/icons/function-transfer.svg';
 import BorrowNowIcon from '@assets/icons/function-borrownow.svg';
 import LendNowIcon from '@assets/icons/function-lendnow.svg';
 import RequestLoanIcon from '@assets/icons/function-requestloan.svg';
-import OfferLoanIcon from '@assets/icons/function-offerLoan.svg';
+import OfferLoanIcon from '@assets/icons/function-offerloan.svg';
 
 export type FixedTermAction = 'borrow-now' | 'lend-now' | 'offer-loan' | 'request-loan'
 

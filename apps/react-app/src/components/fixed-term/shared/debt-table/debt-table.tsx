@@ -54,10 +54,10 @@ export function DebtTable() {
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.REACT_APP_DEV_DATA_API
-        : cluster === 'localnet'
-        ? process.env.REACT_APP_LOCAL_DATA_API
-        : '',
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === 'localnet'
+            ? process.env.REACT_APP_LOCAL_DATA_API
+            : '',
     [cluster]
   );
 
@@ -66,13 +66,13 @@ export function DebtTable() {
     error: ordersError,
     isLoading: ordersLoading,
     mutate: ordersRefresh
-  } = useOrdersForUser(String(apiEndpoint), market?.market, account);
+  } = useOrdersForUser(String(apiEndpoint), market?.market.address.toBase58(), account?.address.toBase58());
   const {
     data: positionsData,
     error: positionsError,
     isLoading: positionsLoading,
     mutate: positionsRefresh
-  } = useOpenPositions(String(apiEndpoint), market?.market, account);
+  } = useOpenPositions(String(apiEndpoint), market?.market.address.toBase58(), account?.address.toBase58());
 
   useEffect(() => {
     ordersRefresh();
