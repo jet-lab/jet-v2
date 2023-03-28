@@ -183,7 +183,6 @@ impl MarginTxBuilder {
             authority: self
                 .signer
                 .as_ref()
-                .clone()
                 .map(|k| k.pubkey())
                 .unwrap_or_else(|| self.ix.authority()),
             is_liquidator: self.is_liquidator,

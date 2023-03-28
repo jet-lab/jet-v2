@@ -65,7 +65,7 @@ impl Key for Pubkey {
     }
 
     fn clone_key(&self) -> Self {
-        self.clone()
+        *self
     }
 }
 
