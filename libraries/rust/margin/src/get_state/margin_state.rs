@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use anchor_lang::AccountDeserialize;
-use anyhow::{bail, Result};
+use anyhow::{Context, Result};
 use jet_instructions::margin::derive_token_config;
 use jet_margin::{MarginAccount, TokenConfig};
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 use jet_simulation::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
+
+use super::get_anchor_account;
 
 pub(crate) async fn get_position_metadata(
     rpc: &Arc<dyn SolanaRpcClient>,
@@ -15,18 +17,9 @@ pub(crate) async fn get_position_metadata(
     let (md_address, _) =
         Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
 
-    let account_data = rpc.get_account(&md_address).await?;
-
-    match account_data {
-        None => bail!(
-            "no metadata {} found for position token {}",
-            md_address,
-            position_token_mint
-        ),
-        Some(account) => Ok(PositionTokenMetadata::try_deserialize(
-            &mut &account.data[..],
-        )?),
-    }
+    get_anchor_account(rpc, &md_address)
+        .await
+        .with_context(|| format!("metadata for position token {position_token_mint}"))
 }
 
 pub(crate) async fn get_position_config(
@@ -51,12 +44,9 @@ pub(crate) async fn get_token_metadata(
     token_mint: &Pubkey,
 ) -> Result<TokenMetadata> {
     let (md_address, _) = Pubkey::find_program_address(&[token_mint.as_ref()], &jet_metadata::ID);
-    let account_data = rpc.get_account(&md_address).await?;
-
-    match account_data {
-        None => bail!("no metadata {} found for token {}", md_address, token_mint),
-        Some(account) => Ok(TokenMetadata::try_deserialize(&mut &account.data[..])?),
-    }
+    get_anchor_account(rpc, &md_address)
+        .await
+        .with_context(|| format!("metadata for token_mint {token_mint}"))
 }
 
 /// Get the latest [MarginAccount] state
@@ -64,10 +54,7 @@ pub async fn get_margin_account(
     rpc: &Arc<dyn SolanaRpcClient>,
     address: &Pubkey,
 ) -> Result<MarginAccount> {
-    let account_data = rpc.get_account(address).await?;
-
-    match account_data {
-        None => bail!("no margin account state found for account {}", address),
-        Some(account) => Ok(MarginAccount::try_deserialize(&mut &account.data[..])?),
-    }
+    get_anchor_account(rpc, address)
+        .await
+        .context("margin account")
 }
