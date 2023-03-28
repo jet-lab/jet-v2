@@ -21,7 +21,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
-use anchor_lang::prelude::{Id, System, ToAccountMetas};
+use anchor_lang::prelude::{AccountMeta, Id, System, ToAccountMetas};
 use anchor_lang::{system_program, InstructionData};
 
 use jet_margin::instruction as ix_data;
@@ -259,8 +259,19 @@ impl MarginIxBuilder {
     ///
     /// `token_config` - The token config for the position to be refreshed
     /// `price_oracle` - The price oracle for the token, stored in the token config
-    pub fn refresh_deposit_position(&self, mint: Pubkey, price_oracle: &Pubkey) -> Instruction {
-        refresh_deposit_position(&self.airspace, self.address, mint, *price_oracle)
+    pub fn refresh_deposit_position(
+        &self,
+        mint: Pubkey,
+        price_oracle: &Pubkey,
+        refresh_balance: bool,
+    ) -> Instruction {
+        refresh_deposit_position(
+            &self.airspace,
+            self.address,
+            mint,
+            *price_oracle,
+            refresh_balance,
+        )
     }
 
     /// Get instruction to invoke through an adapter
@@ -473,18 +484,26 @@ pub fn refresh_deposit_position(
     margin_account: Pubkey,
     mint: Pubkey,
     price_oracle: Pubkey,
+    refresh_balance: bool,
 ) -> Instruction {
-    let accounts = ix_account::RefreshDepositPosition {
+    let mut accounts = ix_account::RefreshDepositPosition {
         config: derive_token_config(airspace, &mint),
         price_oracle,
         margin_account,
-        position_token_account: get_associated_token_address(&margin_account, &mint),
-    };
+    }
+    .to_account_metas(None);
+    if refresh_balance {
+        accounts.push(AccountMeta {
+            pubkey: get_associated_token_address(&margin_account, &mint),
+            is_signer: false,
+            is_writable: false,
+        });
+    }
 
     Instruction {
         program_id: JetMargin::id(),
         data: ix_data::RefreshDepositPosition.data(),
-        accounts: accounts.to_account_metas(None),
+        accounts,
     }
 }
 

@@ -36,7 +36,7 @@ pub async fn refresh_deposit_positions(
         };
 
         let refresh =
-            refresh_deposit_position(&state.airspace, address, position.token, token_oracle);
+            refresh_deposit_position(&state.airspace, address, position.token, token_oracle, true);
         instructions.push(refresh.into());
     }
 

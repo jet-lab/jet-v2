@@ -347,7 +347,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
 
                     txns.push(
                         self.builder
-                            .refresh_deposit_position(position.token, &oracle)
+                            .refresh_deposit_position(position.token, &oracle, true)
                             .into(),
                     );
                 }

@@ -53,5 +53,12 @@ pub(super) fn refresh_deposit(
     margin_account: Pubkey,
     airspace: &Pubkey,
 ) -> TransactionBuilder {
-    refresh_deposit_position(airspace, margin_account, mint, derive_pyth_price(&mint)).into()
+    refresh_deposit_position(
+        airspace,
+        margin_account,
+        mint,
+        derive_pyth_price(&mint),
+        true,
+    )
+    .into()
 }
