@@ -156,7 +156,6 @@ pub struct PriceUpdate {
 impl PriceUpdate {
     pub fn with_price(mut self, price: f64) -> Self {
         self.price = (price * self.one() as f64) as i64;
-        println!("price: {}", self.price);
         self
     }
 
@@ -178,7 +177,7 @@ impl TestDefault for PriceUpdate {
     fn test_default() -> Self {
         Self {
             price: 10_000_000,
-            confidence: 100_000,
+            confidence: 0,
             exponent: -7,
         }
     }

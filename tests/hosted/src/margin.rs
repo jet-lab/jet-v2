@@ -386,7 +386,7 @@ impl MarginUser {
         }
     }
 
-    pub fn ctx(&self) -> MarginInvokeContext {
+    pub fn ctx(&self) -> MarginInvokeContext<Keypair> {
         MarginInvokeContext {
             margin_account: *self.address(),
             authority: self.signer.clone(),

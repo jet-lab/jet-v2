@@ -24,7 +24,6 @@ use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
-use jet_solana_client::signature::{Authorization, NeedsSignature};
 use jet_solana_client::util::keypair::KeypairExt;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
@@ -57,6 +56,8 @@ use crate::{
         transaction::{SendTransactionBuilder, TransactionBuilder},
     },
 };
+
+use super::MarginInvokeContext;
 
 /// [Transaction] builder for a margin account, which supports invoking adapter
 /// actions signed as the margin account.
@@ -161,6 +162,31 @@ impl MarginTxBuilder {
             config_ix,
             signer: Some(liquidator),
             is_liquidator: true,
+        }
+    }
+
+    /// returns None if there is no signer.
+    pub fn invoke_ctx(&self) -> Option<MarginInvokeContext<Keypair>> {
+        Some(MarginInvokeContext {
+            authority: self.signer.as_ref()?.clone(),
+            airspace: self.airspace(),
+            margin_account: *self.address(),
+            is_liquidator: self.is_liquidator,
+        })
+    }
+
+    /// Uses ix_builder's authority if there is no signer
+    pub fn invoke_ctx_unsigned(&self) -> MarginInvokeContext<Pubkey> {
+        MarginInvokeContext {
+            airspace: self.airspace(),
+            margin_account: *self.address(),
+            authority: self
+                .signer
+                .as_ref()
+                .clone()
+                .map(|k| k.pubkey())
+                .unwrap_or_else(|| self.ix.authority()),
+            is_liquidator: self.is_liquidator,
         }
     }
 
@@ -869,118 +895,6 @@ impl MarginTxBuilder {
         } else {
             self.ix.accounting_invoke(inner)
         }
-    }
-}
-
-/// Minimum information necessary to wrap an instruction in a margin invoke and
-/// sign the transaction. Simpler alternative to MarginTxBuilder, to minimize
-/// dependencies.
-pub struct MarginInvokeContext {
-    /// The airspace where the margin account is authorized.
-    pub airspace: Pubkey,
-    /// The margin account that will wrap the instruction.
-    pub margin_account: Pubkey,
-    /// The signer who may authorize actions for the margin account.
-    pub authority: Keypair,
-    /// Is the authority a liquidator?
-    pub is_liquidator: bool,
-}
-
-impl MarginInvokeContext {
-    /// conversion
-    pub fn auth(&self) -> Authorization {
-        Authorization {
-            address: self.margin_account,
-            authority: self.authority.clone(),
-        }
-    }
-}
-
-impl Clone for MarginInvokeContext {
-    fn clone(&self) -> Self {
-        Self {
-            airspace: self.airspace,
-            margin_account: self.margin_account,
-            authority: self.authority.clone(),
-            is_liquidator: self.is_liquidator,
-        }
-    }
-}
-
-///
-pub trait MarginInvoke {
-    /// Invoke a margin adapter through a margin account using whichever wrapper
-    /// is needed: adapter_invoke, accounting_invoke, or liquidator_invoke. If
-    /// there are multiple instructions, they are combined into a single
-    /// TransactionBuilder
-    fn invoke(self, ctx: MarginInvokeContext) -> TransactionBuilder;
-
-    /// Separately invokes each instruction into a separate TransactionBuilder
-    fn invoke_each(self, ctx: MarginInvokeContext) -> Vec<TransactionBuilder>;
-}
-
-impl MarginInvoke for Instruction {
-    fn invoke(
-        self,
-        MarginInvokeContext {
-            airspace,
-            margin_account,
-            authority,
-            is_liquidator,
-        }: MarginInvokeContext,
-    ) -> TransactionBuilder {
-        if self.needs_signature(margin_account) {
-            if is_liquidator {
-                liquidator_invoke(airspace, authority.pubkey(), margin_account, self)
-                    .with_signer(authority.clone())
-            } else {
-                adapter_invoke(airspace, authority.pubkey(), margin_account, self)
-                    .with_signer(authority.clone())
-            }
-        } else {
-            accounting_invoke(airspace, margin_account, self).into()
-        }
-    }
-
-    fn invoke_each(self, ctx: MarginInvokeContext) -> Vec<TransactionBuilder> {
-        vec![self.invoke(ctx)]
-    }
-}
-
-impl MarginInvoke for Vec<Instruction> {
-    fn invoke(
-        self,
-        MarginInvokeContext {
-            airspace,
-            margin_account,
-            authority,
-            is_liquidator,
-        }: MarginInvokeContext,
-    ) -> TransactionBuilder {
-        let mut needs_signer = false;
-        let mut instructions = vec![];
-        for inner in self {
-            let wrapped = if inner.needs_signature(margin_account) {
-                needs_signer = true;
-                if is_liquidator {
-                    liquidator_invoke(airspace, authority.pubkey(), margin_account, inner)
-                } else {
-                    adapter_invoke(airspace, authority.pubkey(), margin_account, inner)
-                }
-            } else {
-                accounting_invoke(airspace, margin_account, inner)
-            };
-            instructions.push(wrapped);
-        }
-        if needs_signer {
-            instructions.with_signer(authority)
-        } else {
-            instructions.into()
-        }
-    }
-
-    fn invoke_each(self, ctx: MarginInvokeContext) -> Vec<TransactionBuilder> {
-        self.into_iter().map(|ix| ix.invoke(ctx.clone())).collect()
     }
 }
 
