@@ -49,3 +49,15 @@ export interface Deposit {
   payer: string,
   created_timestamp: number
 }
+
+export type Order = {
+  owner: any,
+  order_tag: any,
+  base_size: bigint,
+  price: bigint,
+}
+
+export type OrderbookSnapshot = {
+  bids: Array<Order>,
+  asks: Array<Order>,
+};
