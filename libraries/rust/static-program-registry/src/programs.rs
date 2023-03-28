@@ -1,5 +1,6 @@
+/// uses the same code as orca swap v2
 pub mod spl_token_swap_v2 {
-    pub use spl_token_swap_v200::*;
+    pub use spl_token_swap_813aa3::*;
 
     crate::program!(Spl2, "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8");
 }

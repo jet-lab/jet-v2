@@ -53,12 +53,9 @@ jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
 jet-solana-client  = { path = "../solana-client" }
+jet-static-program-registry = { path = "../static-program-registry" }
 
 # Token swaps
 spl-token = "3"
-spl-token-swap = { version = "2", features = ["no-entrypoint"] }
 spl-associated-token-account = "1"
 saber-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
-
-[dev-dependencies]
-jet-static-program-registry = { path = "../static-program-registry" }
