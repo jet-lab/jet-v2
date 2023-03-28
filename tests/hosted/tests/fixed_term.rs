@@ -11,6 +11,7 @@ use hosted_tests::{
     },
     margin_test_context,
     setup_helper::{setup_user, tokens},
+    test_default,
 };
 use jet_fixed_term::{
     margin::{instructions::MarketSide, state::AutoRollConfig},
@@ -28,6 +29,7 @@ use jet_margin_sdk::{
             WithSigner,
         },
     },
+    tx_builder::MarginInvoke,
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, refresh::canonical_position_refresher};
@@ -35,6 +37,7 @@ use jet_program_common::{
     interest_pricing::{InterestPricer, PricerImpl},
     Fp32,
 };
+use jet_solana_client::transactions;
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -1073,6 +1076,56 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
             .margin_user(lender.proxy.pubkey())
             .address
     );
+
+    Ok(())
+}
+
+/// This mirrors the setup for the direct_repay_fixed_term_loan test in the liquidator
+#[tokio::test]
+async fn fixed_term_borrow_becomes_unhealthy_without_collateral() -> Result<(), anyhow::Error> {
+    let ctx = margin_test_context!();
+    let (usdc, usdc_description) = ctx.basic_token(1.0).await?;
+    let tsol = ctx.basic_token(10.0).await?.0;
+    let mkt = ctx
+        .create_fixed_term_market(usdc_description, test_default())
+        .await?;
+
+    // Users
+    let lender = ctx.create_margin_user(100).await?;
+    let borrower = ctx.create_margin_user(100).await?;
+    let params = OrderAmount::from_base_amount_rate(usdc.amount(100.0), 10).default_order_params();
+
+    transactions! {
+        // collateral positions
+        ctx.margin_airdrop(usdc.mint, lender.auth(), usdc.amount(100.0)),
+        ctx.margin_airdrop(tsol.mint, borrower.auth(), tsol.amount(100.0)),
+        ctx.register_deposit_position(usdc.mint, borrower.auth()),
+
+        // add liquidity, so a borrow is possible
+        mkt.initialize_margin_user(*lender.address())
+            .invoke(&lender.ctx()),
+        mkt.margin_lend_order(*lender.address(), None, params, 0)
+            .invoke(&lender.ctx()),
+
+        // borrow with fill
+        ctx.refresh_deposit(tsol.mint, *borrower.address()),
+        mkt.initialize_margin_user(*borrower.address())
+            .invoke(&borrower.ctx()),
+        vec![
+            mkt.refresh_position(*borrower.address(), true),
+            mkt.margin_borrow_order(*borrower.address(), params, 0)
+        ]
+        .invoke(&borrower.ctx()),
+
+        // make user unhealthy
+        ctx.set_price(tsol.mint, 0.01),
+        ctx.refresh_deposit(tsol.mint, *borrower.address()),
+        ctx.refresh_deposit(usdc.mint, *borrower.address()),
+    }
+    .send_and_confirm_condensed_in_order(&ctx.rpc())
+    .await?;
+
+    assert!(borrower.verify_healthy().await.is_err());
 
     Ok(())
 }
