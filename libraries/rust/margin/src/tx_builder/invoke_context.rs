@@ -1,6 +1,6 @@
 use jet_instructions::margin::{accounting_invoke, adapter_invoke, liquidator_invoke};
 use jet_solana_client::{
-    signature::{Authorization, NeedsSignature},
+    signature::NeedsSignature,
     transaction::{TransactionBuilder, WithSigner},
     util::{data::With, keypair::KeypairExt, Key},
 };
@@ -86,27 +86,6 @@ impl MarginInvokeContext<Keypair> {
     /// Provides a signer for any transactions that need it.
     pub fn invoke_each(&self, ixs: Vec<Instruction>) -> Vec<TransactionBuilder> {
         ixs.into_iter().map(|ix| self.invoke(ix)).collect()
-    }
-}
-
-impl MarginInvokeContext<Keypair> {
-    /// conversion
-    pub fn auth(&self) -> Authorization {
-        Authorization {
-            address: self.margin_account,
-            authority: self.authority.clone(),
-        }
-    }
-}
-
-impl<K: Key> Clone for MarginInvokeContext<K> {
-    fn clone(&self) -> Self {
-        Self {
-            airspace: self.airspace,
-            margin_account: self.margin_account,
-            authority: self.authority.clone_key(),
-            is_liquidator: self.is_liquidator,
-        }
     }
 }
 

@@ -1,8 +1,6 @@
 use anchor_lang::prelude::Pubkey;
 use solana_sdk::{signature::Keypair, signer::Signer};
 
-use self::keypair::clone;
-
 pub mod data;
 pub mod keypair;
 pub mod pubkey;
@@ -53,18 +51,10 @@ macro_rules! seal {
 pub trait Key {
     /// The public key of the account.
     fn address(&self) -> Pubkey;
-
-    /// This is annoyingly needed due to Keypair not implementing Clone. It has
-    /// a distinct name to avoid ambiguity in the compiler.
-    fn clone_key(&self) -> Self;
 }
 
 impl Key for Pubkey {
     fn address(&self) -> Pubkey {
-        *self
-    }
-
-    fn clone_key(&self) -> Self {
         *self
     }
 }
@@ -72,9 +62,5 @@ impl Key for Pubkey {
 impl Key for Keypair {
     fn address(&self) -> Pubkey {
         self.pubkey()
-    }
-
-    fn clone_key(&self) -> Self {
-        clone(self)
     }
 }

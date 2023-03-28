@@ -1102,20 +1102,18 @@ async fn fixed_term_borrow_becomes_unhealthy_without_collateral() -> Result<(), 
         ctx.register_deposit_position(usdc.mint, borrower.auth()),
 
         // add liquidity, so a borrow is possible
-        mkt.initialize_margin_user(*lender.address())
-            .invoke(&lender.ctx()),
-        mkt.margin_lend_order(*lender.address(), None, params, 0)
-            .invoke(&lender.ctx()),
+        vec![
+            mkt.initialize_margin_user(*lender.address()),
+            mkt.margin_lend_order(*lender.address(), None, params, 0),
+        ].invoke_each(&lender.ctx()),
 
         // borrow with fill
         ctx.refresh_deposit(tsol.mint, *borrower.address()),
-        mkt.initialize_margin_user(*borrower.address())
-            .invoke(&borrower.ctx()),
+        mkt.initialize_margin_user(*borrower.address()).invoke(&borrower.ctx()),
         vec![
             mkt.refresh_position(*borrower.address(), true),
             mkt.margin_borrow_order(*borrower.address(), params, 0)
-        ]
-        .invoke(&borrower.ctx()),
+        ].invoke(&borrower.ctx()),
 
         // make user unhealthy
         ctx.set_price(tsol.mint, 0.01),
