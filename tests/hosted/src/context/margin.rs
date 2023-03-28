@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use jet_client::NetworkKind;
 use jet_client_native::SimulationClient;
-use jet_environment::builder::Builder;
+use jet_environment::builder::{Builder, ProposalExecution};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -108,9 +108,10 @@ impl MarginTestContext {
 
     pub fn env_builder(&self) -> Builder<SimulationClient> {
         let interface = SimulationClient::new(self.solana.rpc.clone(), None);
+        let authority = self.airspace_authority.pubkey();
         Builder::new_infallible(
             interface,
-            self.airspace_authority.pubkey(),
+            ProposalExecution::Direct { authority },
             NetworkKind::Localnet,
         )
     }

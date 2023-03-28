@@ -246,7 +246,7 @@ pub async fn create_test_tokens<'a, I: NetworkUserInterface>(
                             &TokenCreateParams {
                                 symbol: desc.symbol.clone(),
                                 name: desc.name.clone(),
-                                authority: builder.authority,
+                                authority: builder.proposal_authority(),
                                 oracle_authority: *oracle_authority,
                                 source_symbol: desc.symbol.clone(),
                                 price_ratio: 1.0,

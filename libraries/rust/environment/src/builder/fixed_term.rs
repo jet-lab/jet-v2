@@ -62,7 +62,7 @@ pub async fn configure_market_for_token<I: NetworkUserInterface>(
             token.airspace,
             token.mint,
             market_address,
-            builder.authority,
+            builder.proposal_authority(),
             token.pyth_price,
             token.pyth_price, // TODO: reconsider for mainnet
             Some(fee_destination),
@@ -92,7 +92,7 @@ pub async fn configure_market_for_token<I: NetworkUserInterface>(
                     &payer,
                     ticket_mint,
                     &TokenCreateParams {
-                        authority: builder.authority,
+                        authority: builder.proposal_authority(),
                         oracle_authority: token.oracle_authority,
                         decimals: token.desc.decimals.unwrap(),
                         max_amount: u64::MAX,
@@ -138,12 +138,12 @@ async fn configure_cranks_for_market<I: NetworkUserInterface>(
     }
 
     if builder.network == NetworkKind::Localnet && cranks.is_empty() {
-        let authorization = ix_builder.crank_authorization(&builder.authority);
+        let authorization = ix_builder.crank_authorization(&builder.proposal_authority());
 
         if !builder.account_exists(&authorization).await? {
             builder.propose([test_service::if_not_initialized(
                 authorization,
-                ix_builder.authorize_crank(builder.authority),
+                ix_builder.authorize_crank(builder.proposal_authority()),
             )]);
         }
     }
@@ -247,7 +247,7 @@ async fn create_market_for_token<I: NetworkUserInterface>(
         &token.airspace,
         &token.mint,
         seed,
-        builder.authority,
+        builder.proposal_authority(),
         token.pyth_price,
         token.pyth_price,
         Some(fee_destination),
