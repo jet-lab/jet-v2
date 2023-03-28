@@ -1,12 +1,7 @@
 import { initWebsocket } from '../websocket';
 import { StateCreator } from 'zustand';
 import { JetStore } from '../store';
-import { Number128 } from 'utils/Number128';
-import BN from 'bn.js';
-import { PriceInfo } from './prices';
-import { TokenConfigInfo } from '@jet-lab/margin/dist/margin/tokenConfig';
 
-const SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(50), -2);
 
 // interface WalletToken {
 //   address: string;
@@ -89,15 +84,14 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
 export interface MarginAccountData {
   address: string;
   owner: string;
-  airspace: string;
+  liquidator: string;
   positions: MarginPosition[],
-  // poolPositions: Record<string, PoolPosition>;
 }
 
 export interface MarginAccountUpdate {
   address: string;
+  liquidator: string;
   positions: MarginPosition[];
-  // poolPositions: Record<string, PoolPosition>;
 }
 
 export interface MarginPosition {
@@ -108,7 +102,12 @@ export interface MarginPosition {
   exponent: number;
   kind: 'Collateral' | 'AdapterCollateral' | 'Claim';
   maxStaleness: number;
-  price: any; // TODO
+  price: {
+    exponent: number;
+    isValid: number;
+    timestamp: number;
+    value: number;
+  }
   token: string;
   value: string; // Number192 formatted as decimal string
   valueModifier: number;
