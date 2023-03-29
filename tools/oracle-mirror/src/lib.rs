@@ -349,17 +349,15 @@ async fn sync_oracles(
         .collect::<Vec<_>>();
 
     let recent_blockhash = target.get_latest_blockhash().await?;
-    let update_price_tx = Transaction::new_signed_with_payer(
-        // TODO: use a transaction builder in case transaction size is large
-        &instructions,
-        Some(&signer.pubkey()),
-        &[signer],
-        recent_blockhash,
-    );
-
-    match target.send_and_confirm_transaction(&update_price_tx).await {
-        Ok(_) => (),
-        Err(e) => {
+    for instructions in instructions.chunks(6) {
+        let tx = Transaction::new_signed_with_payer(
+            // TODO: use a transaction builder in case transaction size is large
+            &instructions,
+            Some(&signer.pubkey()),
+            &[signer],
+            recent_blockhash,
+        );
+        if let Err(e) = target.send_transaction(&tx).await {
             eprintln!("{e}");
 
             if let ClientErrorKind::RpcError(RpcError::RpcResponseError {
