@@ -56,6 +56,10 @@ pub struct CliOpts {
     /// Don't try to sync the oracles
     #[clap(long)]
     pub no_oracle_sync: bool,
+
+    /// Don't try to rebalance swap pools
+    #[clap(long)]
+    pub no_pool_sync: bool,
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
@@ -103,8 +107,10 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         if !opts.no_oracle_sync {
             sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
         }
-        sync_pool_balances(&target_client, &signer, &spl_pool_list, &spl_swap_program).await?;
-        sync_pool_balances(&target_client, &signer, &saber_pool_list, &SABER).await?;
+        if !opts.no_pool_sync {
+            sync_pool_balances(&target_client, &signer, &spl_pool_list, &spl_swap_program).await?;
+            sync_pool_balances(&target_client, &signer, &saber_pool_list, &SABER).await?;
+        }
 
         if id_file.is_none() {
             id_file = Some(RunningProcessIdFile::new());
