@@ -21,7 +21,7 @@ export interface AccountsSlice {
   selectedWallet: string | null;
   connectWallet: (wallet: string) => void;
   disconnectWallet: () => void;
-  updateMarginAccount: (update: MarginAccountUpdate) => void;
+  updateMarginAccount: (update: MarginAccountData) => void;
   initAllMarginAccounts: (update: Record<string, MarginAccountData>) => void;
   selectMarginAccount: (address: string) => void;
 }
@@ -37,7 +37,7 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
     }, false, 'CONNECT_WALLET');
   },
   disconnectWallet: () => set(() => ({ selectedWallet: null }), false, 'DISCONNECT_WALLET'),
-  updateMarginAccount: (update: MarginAccountUpdate) => {
+  updateMarginAccount: (update: MarginAccountData) => {
     return set(
       state => {
         if (!state.selectedWallet) {
@@ -88,11 +88,6 @@ export interface MarginAccountData {
   positions: MarginPosition[],
 }
 
-export interface MarginAccountUpdate {
-  address: string;
-  liquidator: string;
-  positions: MarginPosition[];
-}
 
 export interface MarginPosition {
   adapter: string;

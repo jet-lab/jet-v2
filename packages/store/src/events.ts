@@ -1,5 +1,7 @@
 //  *** PRICE UPDATE EVENT ***
 
+import { MarginAccountData } from "./slices/accounts";
+
 export interface TOKEN_PRICE_UPDATE {
   id: string;
   price: {
@@ -39,6 +41,15 @@ interface MARGIN_POOL_UPDATE {
 
 // *** END MARGIN POOL UPDATE EVENT ***
 
+// *** MARGIN ACCOUNT UPDATE EVENT ***
+
+export interface MARGIN_ACCOUNT_UPDATE {
+  type: 'MARGIN-ACCOUNT-UPDATE',
+  payload: MarginAccountData
+}
+
+// *** END MARGIN ACCOUNT UPDATE EVENT ***
+
 // *** SUBSCRIBE EVENT ***
 interface SUBSCRIBE {
   type: 'SUBSCRIBE';
@@ -51,4 +62,4 @@ interface SUBSCRIBE {
 
 export type APPLICATION_WS_EVENTS = SUBSCRIBE;
 
-export type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE;
+export type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE | MARGIN_ACCOUNT_UPDATE;
