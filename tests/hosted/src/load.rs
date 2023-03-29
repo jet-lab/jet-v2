@@ -49,7 +49,9 @@ pub async fn unhealthy_accounts_load_test(
         keep_looping,
         liquidator,
     } = scenario;
-    ctx.margin.set_liquidator_metadata(liquidator, true).await?;
+    ctx.margin_client()
+        .set_liquidator_metadata(liquidator, true)
+        .await?;
     println!("creating tokens");
     let (mut mints, _, pricer) = create_tokens(&ctx, mint_count).await?;
     println!("creating users");
@@ -110,7 +112,9 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
         keep_looping,
         liquidator,
     } = scenario;
-    ctx.margin.set_liquidator_metadata(liquidator, true).await?;
+    ctx.margin_client()
+        .set_liquidator_metadata(liquidator, true)
+        .await?;
 
     // println!("creating users with collateral");
     // let users = create_users(&ctx, user_count + 1).await?;

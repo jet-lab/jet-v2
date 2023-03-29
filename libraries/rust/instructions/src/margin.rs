@@ -21,13 +21,13 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
-use anchor_lang::prelude::{Id, System, ToAccountMetas};
+use anchor_lang::prelude::{AccountMeta, Id, System, ToAccountMetas};
 use anchor_lang::{system_program, InstructionData};
 
-use jet_margin::accounts as ix_account;
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
 use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
+use jet_margin::{accounts as ix_account, MarginAccount};
 
 pub use jet_margin::ID as MARGIN_PROGRAM;
 pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
@@ -261,20 +261,17 @@ impl MarginIxBuilder {
     /// `price_oracle` - The price oracle for the token, stored in the token config
     pub fn refresh_deposit_position(
         &self,
-        token_config: &Pubkey,
+        mint: Pubkey,
         price_oracle: &Pubkey,
+        refresh_balance: bool,
     ) -> Instruction {
-        let accounts = ix_account::RefreshDepositPosition {
-            config: *token_config,
-            price_oracle: *price_oracle,
-            margin_account: self.address,
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            data: ix_data::RefreshDepositPosition.data(),
-            accounts: accounts.to_account_metas(None),
-        }
+        refresh_deposit_position(
+            &self.airspace,
+            self.address,
+            mint,
+            *price_oracle,
+            refresh_balance,
+        )
     }
 
     /// Get instruction to invoke through an adapter
@@ -332,21 +329,7 @@ impl MarginIxBuilder {
 
     /// Invoke action as liquidator
     pub fn liquidator_invoke(&self, adapter_ix: Instruction) -> Instruction {
-        let liquidator = self.authority();
-        let (liquidation, _) = Pubkey::find_program_address(
-            &[b"liquidation", self.address.as_ref(), liquidator.as_ref()],
-            &jet_margin::id(),
-        );
-
-        invoke!(
-            self.airspace,
-            self.address,
-            adapter_ix,
-            LiquidatorInvoke {
-                liquidator,
-                liquidation,
-            }
-        )
+        liquidator_invoke(self.airspace, self.authority(), self.address, adapter_ix)
     }
 
     /// End liquidating a margin account
@@ -488,6 +471,82 @@ impl MarginIxBuilder {
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> Pubkey {
         derive_position_token_account(&self.address, position_token_mint)
     }
+}
+
+/// Get instruction to refresh the price and balance value for a deposit account
+///
+/// # Params
+///
+/// `token_config` - The token config for the position to be refreshed
+/// `price_oracle` - The price oracle for the token, stored in the token config
+pub fn refresh_deposit_position(
+    airspace: &Pubkey,
+    margin_account: Pubkey,
+    mint: Pubkey,
+    price_oracle: Pubkey,
+    refresh_balance: bool,
+) -> Instruction {
+    let mut accounts = ix_account::RefreshDepositPosition {
+        config: derive_token_config(airspace, &mint),
+        price_oracle,
+        margin_account,
+    }
+    .to_account_metas(None);
+    if refresh_balance {
+        accounts.push(AccountMeta {
+            pubkey: get_associated_token_address(&margin_account, &mint),
+            is_signer: false,
+            is_writable: false,
+        });
+    }
+
+    Instruction {
+        program_id: JetMargin::id(),
+        data: ix_data::RefreshDepositPosition.data(),
+        accounts,
+    }
+}
+
+/// Get instruction to invoke through an adapter
+///
+/// # Params
+///
+/// `adapter_ix` - The instruction to be invoked
+pub fn adapter_invoke(
+    airspace: Pubkey,
+    owner: Pubkey,
+    margin_account: Pubkey,
+    adapter_ix: Instruction,
+) -> Instruction {
+    invoke!(
+        airspace,
+        margin_account,
+        adapter_ix,
+        AdapterInvoke { owner }
+    )
+}
+
+/// Invoke action as liquidator
+pub fn liquidator_invoke(
+    airspace: Pubkey,
+    liquidator: Pubkey,
+    margin_account: Pubkey,
+    adapter_ix: Instruction,
+) -> Instruction {
+    let (liquidation, _) = Pubkey::find_program_address(
+        &[b"liquidation", margin_account.as_ref(), liquidator.as_ref()],
+        &jet_margin::id(),
+    );
+
+    invoke!(
+        airspace,
+        margin_account,
+        adapter_ix,
+        LiquidatorInvoke {
+            liquidator,
+            liquidation,
+        }
+    )
 }
 
 /// Get instruction to invoke through an adapter for permissionless accounting instructions
@@ -644,6 +703,15 @@ pub fn derive_margin_account(_airspace: &Pubkey, owner: &Pubkey, seed: u16) -> P
         &jet_margin::ID,
     )
     .0
+}
+
+/// Derive the address for a user's margin account from the data in that account
+pub fn derive_margin_account_from_state(state: &MarginAccount) -> Pubkey {
+    derive_margin_account(
+        &state.airspace,
+        &state.owner,
+        u16::from_le_bytes(state.user_seed),
+    )
 }
 
 /// Derive address for the config account for a given token

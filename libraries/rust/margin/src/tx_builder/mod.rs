@@ -16,9 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod airspace;
-/// fixed term market-margin integration code
-pub mod fixed_term;
+mod invoke_context;
 mod user;
 
 pub use airspace::*;
+pub use invoke_context::*;
 pub use user::*;

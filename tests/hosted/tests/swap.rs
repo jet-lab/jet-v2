@@ -64,10 +64,10 @@ struct TestEnv {
 }
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
-    let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
-    let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
+    let usdc = ctx.tokens().create_token(6, None, None).await?;
+    let usdc_oracle = ctx.tokens().create_oracle(&usdc).await?;
+    let tsol = ctx.tokens().create_token(9, None, None).await?;
+    let tsol_oracle = ctx.tokens().create_oracle(&tsol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
@@ -89,7 +89,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     ];
 
     for pool_info in pools {
-        ctx.margin
+        ctx.margin_client()
             .configure_token_deposits(
                 &pool_info.token,
                 Some(&TokenDepositsConfig {
@@ -101,7 +101,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
                 }),
             )
             .await?;
-        ctx.margin.create_pool(&pool_info).await?;
+        ctx.margin_client().create_pool(&pool_info).await?;
     }
 
     Ok(TestEnv { usdc, tsol })
@@ -122,8 +122,8 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
-    let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
+    let user_a = ctx.margin_client().user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin_client().user(&wallet_b, 0).created().await?;
 
     // Create a swap pool with sufficient liquidity
     let swap_pool = SplSwapPool::configure(
@@ -141,7 +141,7 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
     supported_mints.insert(env.usdc);
     supported_mints.insert(env.tsol);
 
-    let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id)
+    let swap_pools = SplSwapPool::get_pools(&ctx.rpc(), &supported_mints, swap_program_id)
         .await
         .unwrap();
     assert_eq!(swap_pools.len(), 1);
@@ -155,20 +155,20 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.usdc, &wallet_a.pubkey(), 1_000 * ONE_USDC)
         .await?;
     let user_a_tsol_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.tsol, &wallet_a.pubkey(), 100 * ONE_TSOL)
         .await?;
     let user_b_tsol_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10 * ONE_TSOL)
         .await?;
 
     // Set the prices for each token
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 1 USD +- 0.01
             &env.usdc,
@@ -180,7 +180,7 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
             },
         )
         .await?;
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 100 USD +- 1
             &env.tsol,
@@ -217,12 +217,12 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
         .await?;
 
     // Verify user tokens have been deposited
-    assert_eq!(0, ctx.tokens.get_balance(&user_a_usdc_account).await?);
+    assert_eq!(0, ctx.tokens().get_balance(&user_a_usdc_account).await?);
     assert_eq!(
         90 * ONE_TSOL,
-        ctx.tokens.get_balance(&user_a_tsol_account).await?
+        ctx.tokens().get_balance(&user_a_tsol_account).await?
     );
-    assert_eq!(0, ctx.tokens.get_balance(&user_b_tsol_account).await?);
+    assert_eq!(0, ctx.tokens().get_balance(&user_b_tsol_account).await?);
 
     user_a.refresh_all_pool_positions().await?;
     user_b.refresh_all_pool_positions().await?;
@@ -244,12 +244,12 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
     assert_eq!(
         // There was 1 million USDC as a start
         1_000_100 * ONE_USDC,
-        ctx.tokens.get_balance(&swap_pool.token_a).await?
+        ctx.tokens().get_balance(&swap_pool.token_a).await?
     );
 
     assert!(
         // Pool balance less almost 1 SOL
-        10_000 * ONE_TSOL - 900_000_000 >= ctx.tokens.get_balance(&swap_pool.token_b).await?
+        10_000 * ONE_TSOL - 900_000_000 >= ctx.tokens().get_balance(&swap_pool.token_b).await?
     );
 
     // Trying to withdraw by setting balance > actual should return an error
@@ -297,7 +297,7 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
     assert_eq!(
         // There was 1 million USDC as a start
         1_000_201 * ONE_USDC,
-        ctx.tokens.get_balance(&swap_pool.token_a).await?
+        ctx.tokens().get_balance(&swap_pool.token_a).await?
     );
 
     // Swap in a different order
@@ -316,9 +316,9 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
     // Verify that swap has taken place in the pool
     assert!(
         1_000_201 * ONE_USDC - (90 * 10 * ONE_USDC)
-            >= ctx.tokens.get_balance(&swap_pool.token_a).await?
+            >= ctx.tokens().get_balance(&swap_pool.token_a).await?
     );
-    assert!((10_000 + 10) * ONE_TSOL >= ctx.tokens.get_balance(&swap_pool.token_b).await?);
+    assert!((10_000 + 10) * ONE_TSOL >= ctx.tokens().get_balance(&swap_pool.token_b).await?);
 
     Ok(())
 }

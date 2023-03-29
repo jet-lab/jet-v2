@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
+use anchor_spl::token;
 use solana_program::clock::UnixTimestamp;
 
 use crate::{
@@ -34,6 +35,8 @@ pub struct RefreshDepositPosition<'info> {
 
     /// The oracle for the token
     pub price_oracle: AccountInfo<'info>,
+    // Optional account (remaining accounts)
+    // pub position_token_account: Account<'info, TokenAccount>,
 }
 
 pub fn refresh_deposit_position_handler(ctx: Context<RefreshDepositPosition>) -> Result<()> {
@@ -70,8 +73,21 @@ pub fn refresh_deposit_position_handler(ctx: Context<RefreshDepositPosition>) ->
                 publish_time: price_obj.publish_time,
             };
 
-            let position = margin_account.get_position_mut(&config.mint).unwrap();
-            position.set_price(&price_info.try_into(sys().unix_timestamp() as UnixTimestamp)?)?;
+            if let Some(position_token_account) = ctx.remaining_accounts.first() {
+                let balance = token::accessor::amount(position_token_account)?;
+
+                margin_account.set_position_balance(
+                    &config.mint,
+                    &position_token_account.key(),
+                    balance,
+                    sys().unix_timestamp(),
+                )?;
+            }
+
+            margin_account.set_position_price(
+                &config.mint,
+                &price_info.try_into(sys().unix_timestamp() as UnixTimestamp)?,
+            )?;
         }
 
         None => {

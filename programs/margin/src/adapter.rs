@@ -115,7 +115,7 @@ impl PriceChangeInfo {
 
         if twap == Number128::ZERO {
             msg!("avg price cannot be zero");
-            return err!(ErrorCode::InvalidPrice);
+            return Ok(PriceInfo::new_invalid());
         }
 
         let price = match (confidence, self.publish_time) {
