@@ -10,7 +10,7 @@ import { FixedTermMarketSelector } from '@components/fixed-term/shared/market-se
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 import { DebtTable } from '@components/fixed-term/shared/debt-table/debt-table';
-import { Modal, Carousel } from '@jet-lab/ui';
+import { DismissModal, Modal, Carousel } from '@jet-lab/ui';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedLendEntry: FixedLendOrderEntry,
@@ -70,11 +70,13 @@ const MainView = (): JSX.Element => {
       1. how to style the modal to contain all content
       2. how to scroll to the last page? currently nextPage doesn't take to the last page
       3. why is the app unresponsive when the modal is closed?
+      4. how to use dismiss modal with carousel?
 
       // todo: add pictures from figma
       */}
       <div className="relative top-44 left-96 rounded">
         <Modal title="Fixed Rate Debt Markets">
+        {/* <DismissModal storageKey='fixed-term-guide' title="Fixed Rate Debt Markets"> */}
           <Carousel
             pages={({ previousPage, nextPage }) => [
               <div key="1" className="flex">
@@ -199,6 +201,7 @@ const MainView = (): JSX.Element => {
               </div>
             ]}
           />
+        {/* </DismissModal> */}
         </Modal>
       </div>
 
