@@ -5,5 +5,66 @@ members = [
     "tests/mock-adapter",
     "libraries/rust/*",
     "packages/margin",
-    "tools/*"
+    "tools/*",
 ]
+
+[workspace.dependencies]
+
+# Solana
+solana-program = "1.14"
+solana-sdk = "1.14"
+solana-client = "1.14"
+solana-runtime = "1.14"
+solana-program-runtime = "1.14"
+solana-bpf-loader-program = "1.14"
+solana-address-lookup-table-program = "1.14"
+solana-transaction-status = "1.14"
+solana-account-decoder = "1.14"
+solana-clap-utils = "1.14"
+solana-cli-config = "1.14"
+
+# Anchor
+anchor-lang = "0.26"
+anchor-syn = "0.26"
+anchor-spl = "0.26"
+
+# SPL
+spl-token = { version = "3", features = ["no-entrypoint"] }
+spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
+spl-token-swap = { version = "3", features = ["no-entrypoint"] }
+spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
+
+# Pyth
+pyth-sdk-solana = "0.7"
+
+# Jet
+jet-solana-client = { path = "libraries/rust/solana-client" }
+jet-client = { path = "libraries/rust/client" }
+jet-client-native = { path = "libraries/rust/client-native" }
+jet-client-web = { path = "libraries/rust/client-web" }
+
+jet-ctl-cli = { path = "tools/ctl" }
+
+jet-margin-sdk = { path = "libraries/rust/margin" }
+jet-simulation = { path = "libraries/rust/simulation" }
+jet-environment = { path = "libraries/rust/environment" }
+jet-instructions = { path = "libraries/rust/instructions" }
+
+jet-program-common = { path = "libraries/rust/program-common" }
+jet-program-proc-macros = { path = "libraries/rust/program-proc-macros" }
+jet-static-program-registry = { path = "libraries/rust/static-program-registry" }
+
+jet-test-service = { path = "programs/test-service", features = ["no-entrypoint"] }
+jet-fixed-term = { path = "programs/fixed-term", features = ["no-entrypoint", "cli"] }
+jet-airspace = { path = "programs/airspace", features = ["no-entrypoint"] }
+jet-control = { path = "programs/control", features = ["no-entrypoint"] }
+jet-margin = { path = "programs/margin", features = ["no-entrypoint"] }
+jet-metadata = { path = "programs/metadata", features = ["no-entrypoint"] }
+jet-margin-pool = { path = "programs/margin-pool", features = ["no-entrypoint"] }
+jet-margin-swap = { path = "programs/margin-swap", features = ["no-entrypoint"] }
+
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+
+# Common General Rust Libraries
+tokio = "1"
+serde = { version = "1", features = ["derive"] }

@@ -13,11 +13,11 @@ tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-anchor-lang = "0.26"
+anchor-lang = { workspace = true }
 
-solana-client = "1.14"
-solana-cli-config = "1.14"
-solana-clap-utils = "1.14"
+solana-client = { workspace = true }
+solana-cli-config = { workspace = true }
+solana-clap-utils = { workspace = true }
 solana-sdk = "1.14"
 
 serde = { version = "1.0", features = ["derive"] }
@@ -25,7 +25,7 @@ serde_json = "1.0"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-jet-ctl-cli = { path = "../ctl" }
-jet-margin-sdk = { path = "../../libraries/rust/margin" }
-jet-environment = { path = "../../libraries/rust/environment" }
-jet-simulation = { path = "../../libraries/rust/simulation" }
+jet-ctl-cli = { workspace = true }
+jet-margin-sdk = { workspace = true }
+jet-environment = { workspace = true }
+jet-simulation = { workspace = true }

@@ -25,30 +25,30 @@ serde = { version = "1.0", features = ["derive"] }
 
 tokio = "1"
 
-solana-sdk = "1.10"
+solana-sdk = { workspace = true }
 
-spl-token = "3"
-spl-associated-token-account = "1"
-spl-token-swap = { version = "3", features = ["no-entrypoint"] }
-pyth-sdk-solana = "0.4"
+spl-token = { workspace = true }
+spl-associated-token-account = { workspace = true }
+spl-token-swap = { workspace = true }
+pyth-sdk-solana = { workspace = true }
 
-anchor-lang = "0.26"
+anchor-lang = { workspace = true }
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+agnostic-orderbook = { workspace = true }
 
-jet-solana-client = { path = "../solana-client" }
-jet-program-common = { path = "../program-common" }
-jet-instructions = { path = "../instructions" }
-jet-environment = { path = "../environment" }
-jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
-jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint", "cli"] }
-jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }
-jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
-jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
-jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
-jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
-jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+jet-solana-client = { workspace = true }
+jet-program-common = { workspace = true }
+jet-instructions = { workspace = true }
+jet-environment = { workspace = true }
+jet-test-service = { workspace = true }
+jet-fixed-term = { workspace = true }
+jet-airspace = { workspace = true }
+jet-control = { workspace = true }
+jet-margin = { workspace = true }
+jet-metadata = { workspace = true }
+jet-margin-pool = { workspace = true }
+jet-margin-swap = { workspace = true }
 
 [dev-dependencies]
 rand_chacha = "0.3.1"
-tokio = { version = "1", features = ["rt-multi-thread"] }
+tokio = { workspace = true, features = ["rt-multi-thread"] }

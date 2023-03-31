@@ -38,9 +38,9 @@ log = "0.4"
 serde_json = "1"
 bincode = "1"
 
-solana-sdk = "1.10"
-spl-token = "3"
+solana-sdk = { workspace = true }
+spl-token = { workspace = true }
 
-jet-client = { path = "../client" }
-jet-solana-client = { path = "../solana-client" }
-#jet-margin-sdk = { path = "../margin" }
+jet-client = { workspace = true }
+jet-solana-client = { workspace = true }
+#jet-margin-sdk = { workspace = true }

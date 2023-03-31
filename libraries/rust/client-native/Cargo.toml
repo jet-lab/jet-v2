@@ -10,9 +10,9 @@ async-trait = "0.1"
 futures = "0.3"
 anyhow = "1"
 
-solana-client = "1.10"
-solana-sdk = "1.10"
+solana-client = { workspace = true }
+solana-sdk = { workspace = true }
 
-jet-client = { path = "../client" }
-jet-solana-client = { path = "../solana-client" }
-jet-simulation = { path = "../simulation" }
+jet-client = { workspace = true }
+jet-solana-client = { workspace = true }
+jet-simulation = { workspace = true }

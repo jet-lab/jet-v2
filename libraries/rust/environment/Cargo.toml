@@ -12,16 +12,16 @@ serde_with = "1.5"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 
-solana-sdk = "1.14"
-spl-token = { version = "3", features = ["no-entrypoint"] }
-spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
+solana-sdk = { workspace = true }
+spl-token = { workspace = true }
+spl-associated-token-account = { workspace = true }
 
-spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
+spl-governance = { workspace = true }
 
-jet-solana-client = { path = "../solana-client" }
-jet-instructions = { path = "../instructions" }
-jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"]}
-jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint"]}
-jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"]}
-jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"]}
-jet-static-program-registry = { path = "../static-program-registry" }
+jet-solana-client = { workspace = true }
+jet-instructions = { workspace = true }
+jet-margin = { workspace = true }
+jet-fixed-term = { workspace = true }
+jet-margin-pool = { workspace = true }
+jet-metadata = { workspace = true }
+jet-static-program-registry = { workspace = true }

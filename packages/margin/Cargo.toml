@@ -25,10 +25,10 @@ wasm-bindgen = "0.2.83"
 serde-wasm-bindgen = "0.4"
 console_error_panic_hook = "0.1.7"
 
-solana-program = "1.14"
+solana-program = { workspace = true }
 
-jet-program-common = { path = "../../libraries/rust/program-common" }
-jet-fixed-term = { path = "../../programs/fixed-term", features = ["cli"] }
+jet-program-common = { workspace = true }
+jet-fixed-term = { workspace = true }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["utils"]}
 bonfida-utils = { git = "https://github.com/Bonfida/bonfida-utils.git", branch = "add-rounding-direction" }

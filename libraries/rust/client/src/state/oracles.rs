@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use jet_margin::MAX_ORACLE_STALENESS;
 use jet_program_common::Number128;
 use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
@@ -43,12 +44,15 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
             }
         };
 
-        let current_price = price_feed.get_current_price_unchecked();
+        let current_price = price_feed.get_price_unchecked();
+        let current_time = chrono::Utc::now().timestamp();
 
         let price = Number128::from_decimal(current_price.price, current_price.expo);
         let state = PriceOracleState {
             price,
-            is_valid: price_feed.get_current_price().is_some(),
+            is_valid: price_feed
+                .get_price_no_older_than(current_time, MAX_ORACLE_STALENESS as u64)
+                .is_some(),
         };
 
         states.cache.set(&address, state);

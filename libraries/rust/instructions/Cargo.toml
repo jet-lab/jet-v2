@@ -5,24 +5,24 @@ edition = "2021"
 
 [dependencies]
 log = "0.4"
-solana-sdk = "1.14"
+solana-sdk = { workspace = true }
 thiserror = "1"
 
-anchor-lang = "0.26"
-anchor-spl = "0.26"
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
 
-spl-token = "3"
+spl-token = { workspace = true }
 spl-associated-token-account = "1"
 
-jet-program-common = { path = "../program-common" }
+jet-program-common = { workspace = true }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
-jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint"] }
-jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }
-jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
-jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
-jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
-jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
-jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+jet-test-service = { workspace = true }
+jet-fixed-term = { workspace = true }
+jet-airspace = { workspace = true }
+jet-control = { workspace = true }
+jet-margin = { workspace = true }
+jet-metadata = { workspace = true }
+jet-margin-pool = { workspace = true }
+jet-margin-swap = { workspace = true }

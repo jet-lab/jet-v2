@@ -26,47 +26,47 @@ rand_distr = "0.3.0"
 lazy_static = "1.4.0"
 shellexpand = "2.1.0"
 env_logger = "0.9"
-solana-clap-utils = "1.14"
+solana-program = { workspace = true }
 serde_json = "1"
 
 tokio = { version = "1", features = ["macros", "time"] }
 serial_test = "0.6.0"
 
-solana-sdk = "1.14"
-solana-client = "1.14"
-solana-cli-config = "1.14"
+solana-sdk = { workspace = true }
+solana-client = { workspace = true }
+solana-cli-config = { workspace = true }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-anchor-lang = "0.26"
+anchor-lang = { workspace = true }
 anchor-spl = { version = "0.26", features = ["dex", "devnet"] }
 
-jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
-spl-token = "3.1.0"
-spl-associated-token-account = "1.0"
+jet-static-program-registry = { workspace = true }
+spl-token = { workspace = true }
+spl-associated-token-account = { workspace = true }
 saber-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
 saber-program = { package = "stable-swap", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
-pyth-sdk-solana = "0.7"
+pyth-sdk-solana = { workspace = true }
 
-jet-fixed-term = { path = "../../programs/fixed-term", features = ["no-entrypoint", "testing"] }
-jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
-jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
-jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "testing"] }
-jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint", "testing"] }
-jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "testing"] }
-jet-airspace = { path = "../../programs/airspace", features = ["no-entrypoint", "testing"] }
-jet-test-service = { path = "../../programs/test-service", features = ["no-entrypoint"] }
+jet-fixed-term = { workspace = true, features = ["testing"] }
+jet-control = { workspace = true, features = ["testing"] }
+jet-margin = { workspace = true }
+jet-margin-pool = { workspace = true }
+jet-margin-swap = { workspace = true }
+jet-metadata = { workspace = true }
+jet-airspace = { workspace = true, features = ["testing"] }
+jet-test-service = { workspace = true }
 
-jet-instructions = { path = "../../libraries/rust/instructions" }
-jet-solana-client = { path = "../../libraries/rust/solana-client" }
-jet-client = { path = "../../libraries/rust/client" }
-jet-client-native = { path = "../../libraries/rust/client-native" }
-jet-margin-sdk = { path = "../../libraries/rust/margin", features = ["testing"] }
-jet-environment = { path = "../../libraries/rust/environment" }
-jet-program-common = { path = "../../libraries/rust/program-common" }
+jet-instructions = { workspace = true }
+jet-solana-client = { workspace = true }
+jet-client = { workspace = true }
+jet-client-native = { workspace = true }
+jet-margin-sdk = { workspace = true }
+jet-environment = { workspace = true }
+jet-program-common = { workspace = true }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { path = "../../libraries/rust/simulation" }
+jet-simulation = { workspace = true }
 
 itertools = "0.10.3"
