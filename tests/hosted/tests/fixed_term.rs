@@ -855,7 +855,7 @@ async fn margin_sell_tickets() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 10_000, user.tokens().await?);
     assert_eq!(8_800, user.tickets().await?);
-    assert_eq!(1200, user.underlying_collateral().await?);
+    assert_eq!(999, user.ticket_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())

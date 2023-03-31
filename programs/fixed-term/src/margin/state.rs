@@ -173,10 +173,8 @@ impl MarginUser {
     }
 
     /// Account for the exchange of market tickets on the orderbook
-    pub fn sell_tickets(&mut self, ticket_value_posted: u64) -> Result<()> {
-        self.assets
-            .tokens_posted
-            .try_add_assign(ticket_value_posted)
+    pub fn sell_tickets(&mut self, value_posted: u64) -> Result<()> {
+        self.assets.tickets_posted.try_add_assign(value_posted)
     }
 
     /// Account for the redemption of underlying tokens from a matured [TermDeposit]

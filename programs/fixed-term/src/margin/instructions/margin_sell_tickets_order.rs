@@ -8,7 +8,7 @@ use crate::{
     market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::sell_tickets_order::*,
-        state::{CallbackFlags, OrderParams},
+        state::{CallbackFlags, OrderParams, RoundingAction},
     },
     serialization::RemainingAccounts,
     FixedTermErrorCode,
@@ -19,17 +19,18 @@ pub struct MarginSellTicketsOrder<'info> {
     /// The account tracking borrower debts
     #[account(mut,
         constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::UnauthorizedCaller,
-        has_one = underlying_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub underlying_collateral: AccountInfo<'info>,
+    pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
+    /// CHECK: instruction logic
     #[account(mut)]
-    pub underlying_collateral_mint: AccountInfo<'info>,
+    pub ticket_collateral_mint: AccountInfo<'info>,
 
     #[market(orderbook_mut)]
     #[token_program]
@@ -50,12 +51,15 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
     )?;
 
     // collateral accounting
-    let posted_ticket_value = order_summary.base_posted();
-    ctx.accounts.margin_user.sell_tickets(posted_ticket_value)?;
+    // The order might settle to either tickets or underlying. To be completely safe,
+    // it needs to be priced as the less valuable one (tickets)
+    // and counted as the less numerous one (underlying).
+    let posted_value = order_summary.quote_posted(RoundingAction::PostBorrow)?;
+    ctx.accounts.margin_user.sell_tickets(posted_value)?;
     ctx.mint(
-        &ctx.accounts.underlying_collateral_mint,
-        &ctx.accounts.underlying_collateral,
-        posted_ticket_value,
+        &ctx.accounts.ticket_collateral_mint,
+        &ctx.accounts.ticket_collateral,
+        posted_value,
     )?;
 
     ctx.accounts.inner.sell_tickets(

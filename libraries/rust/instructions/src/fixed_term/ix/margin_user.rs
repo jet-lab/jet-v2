@@ -75,8 +75,8 @@ pub fn margin_sell_tickets_order(
 ) -> Instruction {
     let data = jet_fixed_term::instruction::MarginSellTicketsOrder { params }.data();
     let accounts = jet_fixed_term::accounts::MarginSellTicketsOrder {
-        underlying_collateral: user_underlying_collateral(&margin_user),
-        underlying_collateral_mint: underlying_collateral_mint(&inner.orderbook_mut.market),
+        ticket_collateral: user_ticket_collateral(&margin_user),
+        ticket_collateral_mint: ticket_collateral_mint(&inner.orderbook_mut.market),
         inner,
         margin_user,
     }

@@ -20,6 +20,7 @@ pub struct Settle<'info> {
         has_one = market @ FixedTermErrorCode::UserNotInMarket,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        has_one = underlying_collateral @ FixedTermErrorCode::WrongUnderlyingCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -39,6 +40,7 @@ pub struct Settle<'info> {
     pub token_program: Program<'info, Token>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
+    /// CHECK: margin user
     #[account(mut)]
     pub claims: Box<Account<'info, TokenAccount>>,
 
@@ -47,6 +49,7 @@ pub struct Settle<'info> {
     #[account(mut)]
     pub claims_mint: UncheckedAccount<'info>,
 
+    /// CHECK: margin user
     #[account(mut)]
     pub ticket_collateral: Box<Account<'info, TokenAccount>>,
 
@@ -54,6 +57,7 @@ pub struct Settle<'info> {
     #[account(mut)]
     pub ticket_collateral_mint: UncheckedAccount<'info>,
 
+    /// CHECK: margin user
     #[account(mut)]
     pub underlying_collateral: Box<Account<'info, TokenAccount>>,
 
