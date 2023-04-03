@@ -7,7 +7,7 @@ use hosted_tests::{
     context::MarginTestContext,
     fixed_term::{
         create_and_fund_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
-        TestManager as FixedTermTestManager, BORROW_TENOR, STARTING_TOKENS,
+        TestManager as FixedTermTestManager, STARTING_TOKENS,
     },
     margin_test_context,
     setup_helper::{setup_user, tokens},
@@ -1158,7 +1158,7 @@ async fn auto_roll_borrow_order_is_correct() -> Result<()> {
     };
     let lend_params = underlying(1_000_000, 2000);
 
-    let roll_tenor = BORROW_TENOR - 3;
+    let roll_tenor = 1;
     borrower
         .set_borrow_roll_config(BorrowAutoRollConfig {
             limit_price: borrow_params.limit_price,
