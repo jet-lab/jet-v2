@@ -22,10 +22,17 @@ export const Carousel = ({ pages }: ICarouselProps) => {
   const [page, setPage] = useState(0);
 
   const nextPage = useCallback(() => {
-    if (page <= pages.length) {
-      setPage(page + 1);
-    } else {
+    //   if (page <= pages.length) {
+    //     setPage(page + 1);
+    //   } else {
+    //     console.log('reached last page');
+    //   }
+    // }, [page, pages]);
+
+    if (!!isEndPage) {
       console.log('reached last page');
+    } else {
+      setPage(page + 1);
     }
   }, [page, pages]);
 
