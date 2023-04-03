@@ -179,7 +179,7 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
                 payer: self.payer.key(),
                 order_tag: info.order_tag.as_u128(),
                 amount: summary.base_filled(),
-                principal: summary.quote_filled(RoundingAction::FillLend)?,
+                principal: summary.quote_filled(RoundingAction::FillLend.direction())?,
                 tenor: self.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: 0,
                 flags: info.flags.into(),
@@ -258,7 +258,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 tenor: self.inner.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: self.margin_user.next_term_deposit(),
                 amount: summary.base_filled(),
-                principal: summary.quote_filled(RoundingAction::FillLend)?,
+                principal: summary.quote_filled(RoundingAction::FillLend.direction())?,
                 flags: info.flags.into(),
                 seed: self.margin_user.next_term_deposit().to_le_bytes().to_vec(),
             }));

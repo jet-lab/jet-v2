@@ -43,8 +43,8 @@ impl RoundingAction {
 }
 
 /// FIXME: Rounding
-pub fn quote_from_base(base: u64, price: u64, rounding: RoundingAction) -> Result<u64> {
-    match rounding.direction() {
+pub fn quote_from_base(base: u64, price: u64, rounding: RoundingDirection) -> Result<u64> {
+    match rounding {
         RoundingDirection::Up => fp32_mul_ceil(base, price),
         RoundingDirection::Down => fp32_mul_floor(base, price),
     }

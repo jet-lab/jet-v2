@@ -108,7 +108,7 @@ fn handle_posted(
     ctx: &mut Context<MarginBorrowOrder>,
     summary: &SensibleOrderSummary,
 ) -> Result<()> {
-    let posted_token_value = summary.quote_posted(RoundingAction::PostBorrow)?;
+    let posted_token_value = summary.quote_posted(RoundingAction::PostBorrow.direction())?;
     let posted_ticket_value = summary.base_posted();
 
     ctx.accounts
@@ -133,7 +133,7 @@ fn handle_filled(
     info: &MarginCallbackInfo,
 ) -> Result<u64> {
     let filled_ticket_value = summary.base_filled();
-    let filled_token_value = summary.quote_filled(RoundingAction::FillBorrow)?;
+    let filled_token_value = summary.quote_filled(RoundingAction::FillBorrow.direction())?;
     let current_time = Clock::get()?.unix_timestamp;
     let maturation_timestamp =
         ctx.accounts.orderbook_mut.market.load()?.borrow_tenor as i64 + current_time;

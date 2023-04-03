@@ -797,8 +797,8 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     // using the limit price of the order directly
     let expected_price = {
         let summary = SensibleOrderSummary::new(borrow_params.limit_price, simulated_order);
-        let price =
-            Fp32::from(summary.quote_filled(RoundingAction::FillBorrow)?) / summary.base_filled();
+        let price = Fp32::from(summary.quote_filled(RoundingAction::FillBorrow.direction())?)
+            / summary.base_filled();
         price.downcast_u64().unwrap()
     };
     let expected_rate =

@@ -608,8 +608,12 @@ impl SensibleOrderSummary {
     }
 
     /// Value of the posted portion of the order denominated in underlying (quote) tokens
-    pub fn quote_posted(&self, action: RoundingAction) -> Result<u64> {
-        quote_from_base(self.summary.total_base_qty_posted, self.limit_price, action)
+    pub fn quote_posted(&self, rounding: RoundingDirection) -> Result<u64> {
+        quote_from_base(
+            self.summary.total_base_qty_posted,
+            self.limit_price,
+            rounding,
+        )
     }
 
     /// Value of the posted portion of the order denominated in market tickets
@@ -618,8 +622,8 @@ impl SensibleOrderSummary {
     }
 
     /// Value of the filled portion of the order denominated in underlying (quote) tokens
-    pub fn quote_filled(&self, action: RoundingAction) -> Result<u64> {
-        Ok(self.summary.total_quote_qty - self.quote_posted(action)?)
+    pub fn quote_filled(&self, rounding: RoundingDirection) -> Result<u64> {
+        Ok(self.summary.total_quote_qty - self.quote_posted(rounding)?)
     }
 
     /// Value of the the filled portion of the order denominated in market tickets
@@ -652,7 +656,7 @@ impl EventQuote for FillEvent {
             MarketSide::Borrow => RoundingAction::FillBorrow,
             MarketSide::Lend => RoundingAction::FillLend,
         };
-        quote_from_base(self.base_size, self.trade_price, rounding)
+        quote_from_base(self.base_size, self.trade_price, rounding.direction())
     }
 }
 
@@ -665,7 +669,7 @@ impl EventQuote for OutEvent {
         };
         let price = (self.order_id >> 64) as u64;
 
-        quote_from_base(self.base_size, price, rounding)
+        quote_from_base(self.base_size, price, rounding.direction())
     }
 }
 

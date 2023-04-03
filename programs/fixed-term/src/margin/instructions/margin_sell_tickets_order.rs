@@ -54,7 +54,7 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
     // The order might settle to either tickets or underlying. To be completely safe,
     // it needs to be priced as the less valuable one (tickets)
     // and counted as the less numerous one (underlying).
-    let posted_value = order_summary.quote_posted(RoundingAction::PostBorrow)?;
+    let posted_value = order_summary.quote_posted(RoundingAction::PostBorrow.direction())?;
     ctx.accounts.margin_user.sell_tickets(posted_value)?;
     ctx.mint(
         &ctx.accounts.ticket_collateral_mint,

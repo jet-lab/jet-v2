@@ -654,7 +654,7 @@ impl TermLoanBuilder {
             strike_timestamp,
             maturation_timestamp,
             base_filled: summary.base_filled(),
-            quote_filled: summary.quote_filled(RoundingAction::FillBorrow)?,
+            quote_filled: summary.quote_filled(RoundingAction::FillBorrow.direction())?,
             flags: TermLoanFlags::default(),
             fees,
         })
