@@ -72,10 +72,6 @@ export interface AccountSummary {
   accountBalance: number
   availableCollateral: number
   leverage: number
-  /** @deprecated use riskIndicator */
-  cRatio: number
-  /** @deprecated use riskIndicator */
-  minCRatio: number
 }
 
 /** A summation of the USD values of various positions used in margin accounting. */
@@ -90,6 +86,7 @@ export interface Valuation {
   staleCollateralList: [PublicKey, ErrorCode][]
   pastDue: boolean
   claimErrorList: [PublicKey, ErrorCode][]
+  assets: Number128
 }
 
 /**
@@ -593,43 +590,28 @@ export class MarginAccount {
   }
 
   private getSummary(): AccountSummary {
-    let collateralValue = Number128.ZERO
-
-    for (const position of this.positions) {
-      const kind = position.kind
-      if (kind === PositionKind.Deposit) {
-        collateralValue = collateralValue.add(position.valueRaw)
-      }
-    }
-
-    const equity = collateralValue.sub(this.valuation.liabilities)
-
-    const exposureNumber = this.valuation.liabilities.toNumber()
-    const cRatio = exposureNumber === 0 ? Infinity : collateralValue.toNumber() / exposureNumber
-    const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.toNumber() / exposureNumber
-    const depositedValue = collateralValue.toNumber()
-    const borrowedValue = this.valuation.liabilities.toNumber()
-    const accountBalance = equity.toNumber()
 
     let leverage = 1.0
-    if (this.valuation.liabilities.gt(Number128.ZERO)) {
-      if (equity.lt(Number128.ZERO) || equity.eq(Number128.ZERO)) {
+    const assets = this.valuation.assets
+    const liabilities = this.valuation.liabilities
+    const equity = assets.sub(liabilities)
+
+    if (liabilities.gt(Number128.ZERO)) {
+      if (assets.lt(Number128.ZERO) || assets.eq(Number128.ZERO)) {
         leverage = Infinity
       } else {
-        leverage = collateralValue.div(equity).toNumber()
+        leverage = assets.div(equity).toNumber()
       }
     }
 
     const availableCollateral = this.valuation.effectiveCollateral.sub(this.valuation.requiredCollateral).toNumber()
 
     return {
-      depositedValue,
-      borrowedValue,
-      accountBalance,
+      depositedValue: assets.toNumber(),
+      borrowedValue: liabilities.toNumber(),
+      accountBalance: equity.toNumber(),
       availableCollateral,
       leverage,
-      cRatio,
-      minCRatio
     }
   }
 
@@ -721,12 +703,15 @@ export class MarginAccount {
     let requiredCollateral = Number128.ZERO
     let requiredSetupCollateral = Number128.ZERO
     let weightedCollateral = Number128.ZERO
+    let assets = Number128.ZERO
+
     const staleCollateralList: [PublicKey, ErrorCode][] = []
     const claimErrorList: [PublicKey, ErrorCode][] = []
 
     const constants = this.programs.margin.idl.constants
     const MAX_PRICE_QUOTE_AGE = new BN(constants.find(constant => constant.name === "MAX_PRICE_QUOTE_AGE")?.value ?? 0)
     const POS_PRICE_VALID = 1
+
 
     for (const position of this.positions) {
       const kind = position.kind
@@ -770,6 +755,7 @@ export class MarginAccount {
       } else if (kind === PositionKind.Deposit || kind === PositionKind.AdapterCollateral) {
         if (staleReason === undefined || includeStalePositions) {
           weightedCollateral = weightedCollateral.add(position.collateralValue())
+          assets = assets.add(position.valueRaw)
         }
         if (staleReason !== undefined) {
           staleCollateralList.push([position.token, staleReason])
@@ -793,7 +779,8 @@ export class MarginAccount {
         return effectiveCollateral.sub(requiredSetupCollateral)
       },
       staleCollateralList,
-      claimErrorList
+      claimErrorList,
+      assets
     }
   }
 
