@@ -1,4 +1,5 @@
-import { Carousel, DismissModal } from '@jet-lab/ui';
+import { Carousel, DismissModal, Title, SubTitle, Paragraph } from '@jet-lab/ui';
+import { useNavigate } from 'react-router-dom'
 
 interface IUserGuidePage {
   nextPage: () => void;
@@ -8,7 +9,7 @@ interface IUserGuidePage {
   totalPages: number;
   headline: string;
   content: JSX.Element;
-  picture?: string;
+  sidebar: JSX.Element;
   isEndPage: boolean;
   isFirstPage: boolean;
 }
@@ -21,26 +22,20 @@ const UserGuidePage = ({
   totalPages,
   headline,
   content,
-  picture,
+  sidebar,
   isFirstPage,
   isEndPage
 }: IUserGuidePage) => (
   <div className="flex flex-col">
     <div className="flex pt-12">
       <div className="flex flex-col flex-1 px-4">
-        <p className="font-light my-2 text-4xl leading-normal">
-          {currentPage}/{totalPages}
-        </p>
-        <p className="font-normal my-2 text-2xl">{headline}</p>
+        <Title>{currentPage}/{totalPages}</Title>
+        <SubTitle classNameOverride="my-2">{headline}</SubTitle>
         {content}
       </div>
-      {picture && (
-        <div className="flex flex-1">
-          <img src={picture} />
-        </div>
-      )}
+      {sidebar}
     </div>
-    <div className="flex font-normal items-center text-2xl my-2 pt-20">
+    <div className="flex font-normal items-center text-2xl my-2 pt-8">
       <a
         className="flex-1 pr-6 font-normal text-sm"
         href="https://uploads-ssl.webflow.com/620e4761998cce492a7c9c8d/62ebf0ff41fac7359bfb2964_litepaper-v0.0.1.pdf"
@@ -68,16 +63,27 @@ const UserGuidePage = ({
 );
 
 const Page1Content = () => (
-  <p className="font-normal my-2 text-base">
+  <Paragraph>
     The term of a fixed rate loan is determined in advance by the market you choose to transact in. For example, in a
     7-day SOL market loans are repaid after seven days, and in a 1-day USDC market loans are repaid after 1 day.
     <br />
     The interest rate of a fixed rate loan is also determined in advance by the market participants.
-  </p>
+  </Paragraph>
 );
 
+const Page1Sidebar = () => <div className='flex flex-1 items-center justify-center'>
+  <img className='object-contain' srcSet="img/guide/page_1_sidebar/bg@1x.png 480w,
+             img/guide/page_1_sidebar/bg@2x.png 800w,
+             img/guide/page_1_sidebar/bg@3x.png 2000w"
+    sizes="(max-width: 600px) 480px,
+            (max-width: 1000px) 800px,
+            1000px"
+    src="img/guide/page_1_sidebar/bg@1x.png"
+  />
+</div>
+
 const Page2Content = () => (
-  <p className="font-normal text-base">
+  <Paragraph>
     Interest rates in a fixed rate market are determined by lenders and borrowers who are transacting as makers by{' '}
     <b className="font-bold">offering loans</b> and <b className="font-bold">requesting loans</b>. Each loan offer has a
     fixed rate chosen by the lender and each loan request has has a fixed rate chosen by the borrowers.
@@ -86,30 +92,99 @@ const Page2Content = () => (
     offer which will determine in advance the interest rate for a loan of whatever size they choose. Lenders may choose
     to <b className="font-bold">lend now</b> by satisfying loan requests on the book. The interest rate will be
     determined in advance by the rate associated with the requests that are filled.
-  </p>
+  </Paragraph>
 );
 
+const Page2Sidebar = () => <div className='flex flex-1 items-center justify-center'>
+  <img className='object-contain' srcSet="img/guide/page_2_sidebar/bg@1x.png 480w,
+           img/guide/page_2_sidebar/bg@2x.png 800w,
+           img/guide/page_2_sidebar/bg@3x.png 2000w"
+    sizes="(max-width: 600px) 480px,
+          (max-width: 1000px) 800px,
+          1000px"
+    src="img/guide/page_2_sidebar/bg@1x.png"
+  />
+</div>
+
 const Page3Content = () => (
-  <p className="font-normal text-base">
+  <Paragraph>
     However you choose to transact you will be shown a plot of the available liquidity in the market and an order input
     panel. If you are a taker lending or borrowing immediately you only have to input the amount you'd like to borrow.
     If you are a maker offering or requesting a loan you have to input the amount and the interest rate.
     <br />
     Once you have completed the order form a summary of the expected outcome will be presented for your review prior to
     submitting the order.
-  </p>
+  </Paragraph>
 );
 
+const Page3Sidebar = () => <div className='flex flex-1 items-center justify-center'>
+  <img className='object-contain' srcSet="img/guide/page_3_sidebar/bg@1x.png 480w,
+         img/guide/page_3_sidebar/bg@2x.png 800w,
+         img/guide/page_3_sidebar/bg@3x.png 2000w"
+    sizes="(max-width: 600px) 480px,
+        (max-width: 1000px) 800px,
+        1000px"
+    src="img/guide/page_3_sidebar/bg@1x.png"
+  />
+</div>
+
 const Page4Content = () => (
-  <p className="font-normal text-base">
+  <Paragraph>
     When you have borrowed tokens in a fixed rate market you end up with a <b className="font-bold">term loan</b>. It is
     important to keep track of your term loans and repay them by their maturity date. Otherwise some of your collateral
     may be sold by the protocol to repay them for you.
     <br />
     It is possible to configure term loans and deposits to be automatically rolled for another term at maturity by using
     the <b className="font-bold">auto roll</b> feature.
-  </p>
+  </Paragraph>
 );
+
+const Page4Sidebar = () => {
+  const navigate = useNavigate()
+  return <div className='flex flex-col flex-1 items-center justify-center'>
+    <Title classNameOverride='my-2'>Explore more on the Protocol</Title>
+    <div onClick={() => navigate('/swaps')} className='my-2 relative cursor-pointer'>
+      <div className='absolute top-0 left-0 right-0 bottom-0 h-full w-full flex flex-col rounded-lg p-4 bg-opacity-0 hover:bg-opacity-60 bg-slate-900 transition-colors'>
+        <div className='flex items-center justify-between'>
+          <SubTitle>Swaps</SubTitle>
+          <span>Explore &#8594;</span>
+        </div>
+        <div className='h-full flex items-center'>
+          <Paragraph>Trade on margin with Jet’s integrated swap routing service.</Paragraph>
+        </div>
+      </div>
+      <img className='object-contain' srcSet="img/guide/page_4_sidebar/swaps@1x.png 480w,
+           img/guide/page_4_sidebar/swaps@2x.png 800w,
+           img/guide/page_4_sidebar/swaps@3x.png 2000w"
+        sizes="(max-width: 600px) 480px,
+          (max-width: 1000px) 800px,
+          1000px"
+        src="img/guide/page_4_sidebar/swaps@1x.png"
+      />
+    </div>
+    <div onClick={() => navigate('/')} className='my-2 relative cursor-pointer'>
+      <div className='absolute top-0 left-0 right-0 bottom-0 h-full w-full flex flex-col rounded-lg p-4 bg-opacity-0 hover:bg-opacity-60 bg-slate-900 transition-colors'>
+        <div className='flex items-center justify-between'>
+          <SubTitle>Pools</SubTitle>
+          <span>Explore &#8594;</span>
+        </div>
+        <div className='h-full flex items-center'>
+          <Paragraph>Lend and borrow with Jet’s variable rate pools.</Paragraph>
+        </div>
+      </div>
+      <img className='object-contain' srcSet="img/guide/page_4_sidebar/pools@1x.png 480w,
+           img/guide/page_4_sidebar/pools@2x.png 800w,
+           img/guide/page_4_sidebar/pools@3x.png 2000w"
+        sizes="(max-width: 600px) 480px,
+          (max-width: 1000px) 800px,
+          1000px"
+        src="img/guide/page_4_sidebar/pools@1x.png"
+      />
+    </div>
+  </div>
+}
+
+
 
 export const UserGuide = () => (
   // <div className="relative top-44 left-96 rounded">
@@ -128,7 +203,7 @@ export const UserGuide = () => (
             currentPage={pageNumber}
             totalPages={4}
             content={<Page1Content />}
-            picture="img/guide/dropdown.png"
+            sidebar={<Page1Sidebar />}
           />,
           <UserGuidePage
             key={2}
@@ -140,7 +215,7 @@ export const UserGuide = () => (
             currentPage={pageNumber}
             totalPages={4}
             content={<Page2Content />}
-            picture="img/guide/entry_chart.png"
+            sidebar={<Page2Sidebar />}
           />,
           <UserGuidePage
             key={3}
@@ -152,7 +227,7 @@ export const UserGuide = () => (
             currentPage={pageNumber}
             totalPages={4}
             content={<Page3Content />}
-            picture="img/guide/lend_borrow.png"
+            sidebar={<Page3Sidebar />}
           />,
           <UserGuidePage
             dismiss={dismiss}
@@ -165,6 +240,7 @@ export const UserGuide = () => (
             currentPage={pageNumber}
             totalPages={4}
             content={<Page4Content />}
+            sidebar={<Page4Sidebar />}
           />
         ]}
       />

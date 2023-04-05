@@ -10,34 +10,34 @@ interface BaseModalProps {
   title?: string;
   overlay?: boolean;
   className?: string
+  onClose?: () => void
 }
 
 /**
  * Base modal component
  */
-export const Modal = ({ children, open, title, overlay = true, className }: BaseModalProps) => {
+export const Modal = ({ children, title, overlay = true, className, onClose }: BaseModalProps) => {
   return (
     <>
-      {open && (
-        <Portal.Root className="absolute top-0 right-0 left-0 bottom-0 h-screen w-screen">
-          <Dialog.Root defaultOpen={true} open={open}>
-            {overlay && (
-              <Dialog.Overlay className="absolute top-0 bottom-0 left-0 right-0 z-10 bg-slate-900 opacity-40" />
-            )}
-            <Dialog.Content className={`absolute top-1/2 left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 transform flex-col rounded bg-gradient-to-r from-[#292929] to-[#0E0E0E] p-6 shadow ${className ? className : ''}`}>
-              <Dialog.Close
-                asChild
-                className="absolute right-3 top-3 flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-neutral-700"
-                aria-label="Close"
-              >
-                <Cross2Icon />
-              </Dialog.Close>
-              {title && <Title classNameOverride="mr-8" text={title} />}
-              {children}
-            </Dialog.Content>
-          </Dialog.Root>
-        </Portal.Root>
-      )}
+      <Portal.Root className="absolute top-0 right-0 left-0 bottom-0 h-screen w-screen">
+        <Dialog.Root defaultOpen={true}>
+          {overlay && (
+            <Dialog.Overlay className="absolute top-0 bottom-0 left-0 right-0 z-10 bg-slate-900 opacity-40" />
+          )}
+          <Dialog.Content className={`absolute top-1/2 left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 transform flex-col rounded bg-gradient-to-r from-[#292929] to-[#0E0E0E] p-6 shadow ${className ? className : ''}`}>
+            <Dialog.Close
+              asChild
+              className="absolute right-3 top-3 flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-neutral-700"
+              aria-label="Close"
+              onClick={onClose}
+            >
+              <Cross2Icon />
+            </Dialog.Close>
+            {title && <Title classNameOverride="mr-8">{title}</Title>}
+            {children}
+          </Dialog.Content>
+        </Dialog.Root>
+      </Portal.Root>
     </>
   );
 };
@@ -71,10 +71,10 @@ export const DismissModal = ({ children, storageKey, title, className }: Dismiss
   }, [storageKey]);
 
   return (
-    <Modal title={title} open={open} className={className}>
+    open ? <Modal title={title} className={className} onClose={() => setOpen(false)}>
       {children({
         dismiss
       })}
-    </Modal>
+    </Modal> : null
   );
 };
