@@ -4,7 +4,7 @@ interface ITitleProps {
 }
 // TODO change to H2 after removing antd global styles
 export const Title = ({ classNameOverride, text }: ITitleProps) => (
-  <div className={`text-xl font-normal normal-case text-white ${classNameOverride ? classNameOverride : ''}`}>
+  <div className={`text-3xl font-normal normal-case text-white ${classNameOverride ? classNameOverride : ''}`}>
     {text}
   </div>
 );
