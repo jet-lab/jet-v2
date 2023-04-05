@@ -154,7 +154,7 @@ describe('Fixed Term Market', () => {
     });
 
     it('received the correct notification', () => {
-      cy.contains(/(Your lend order for\s+).*?(\s+was filled successfully)/);
+      cy.contains(/(Your loan order for\s+).*?(\s+was filled successfully)/);
     });
   });
 
