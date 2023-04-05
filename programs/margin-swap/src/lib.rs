@@ -118,6 +118,10 @@ mod jet_margin_swap {
         Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
     }
 
+    pub fn whirlpool_swap(_ctx: Context<OrcaWhirlpoolSwapPoolInfo>) -> Result<()> {
+        Err(error!(crate::ErrorCode::DisallowedDirectInstruction))
+    }
+
     pub fn init_openbook_open_orders(ctx: Context<InitOpenOrders>) -> Result<()> {
         init_open_orders_handler(ctx)
     }

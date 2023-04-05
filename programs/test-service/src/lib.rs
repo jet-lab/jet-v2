@@ -61,6 +61,9 @@ pub mod seeds {
 
     #[constant]
     pub const SWAP_POOL_FEES: &[u8] = b"swap-pool-fees";
+
+    #[constant]
+    pub const ORCA_WHIRLPOOL_CONFIG: &[u8] = b"orca-whirlpool-config";
 }
 
 #[program]
@@ -142,5 +145,14 @@ pub mod jet_test_service {
     /// Balance an SPL swap pool based on current oracle prices
     pub fn saber_swap_pool_balance(ctx: Context<SaberSwapPoolBalance>) -> Result<()> {
         saber_swap_pool_balance_handler(ctx)
+    }
+
+    /// Create a whirlpools config
+    pub fn orca_whirlpool_create_config(
+        ctx: Context<OrcaWhirlpoolCreateConfig>,
+        authority: Pubkey,
+        default_fee_rate: u16,
+    ) -> Result<()> {
+        orca_whirlpool_create_config_handler(ctx, authority, default_fee_rate)
     }
 }

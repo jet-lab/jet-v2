@@ -33,6 +33,8 @@ solana_rbpf = "0.2.31"
 
 jet-solana-client = { path = "../solana-client" }
 
+spl-token = { version = "3", features = ["no-entrypoint"] }
+
 [dependencies.solana-address-lookup-table-program]
 package = "solana-address-lookup-table-program-gateway"
 git = "https://github.com/jet-lab/lookup-table-registry"

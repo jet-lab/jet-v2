@@ -1,19 +1,27 @@
 use async_trait::async_trait;
-use solana_account_decoder::UiAccountEncoding;
-use std::sync::Arc;
+use serde_json::json;
+use std::{str::FromStr, sync::Arc};
 
+use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
     nonblocking::rpc_client::RpcClient,
-    rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSendTransactionConfig},
+    rpc_config::{
+        RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSendTransactionConfig,
+        RpcTokenAccountsFilter,
+    },
+    rpc_request::RpcRequest,
+    rpc_response::{Response, RpcKeyedAccount},
 };
 use solana_sdk::{
     account::Account,
     clock::SLOT_MS,
     commitment_config::{CommitmentConfig, CommitmentLevel},
     hash::Hash,
+    program_pack::Pack,
     pubkey::Pubkey,
     signature::Signature,
 };
+use spl_token::state::Account as TokenAccount;
 
 use super::{AccountFilter, ClientError, ClientResult, SolanaRpc};
 
@@ -192,6 +200,59 @@ impl SolanaRpc for RpcConnection {
             .get_program_accounts_with_config(program, config)
             .await
             .map_err(convert_err)
+    }
+
+    async fn get_token_accounts_by_owner(
+        &self,
+        owner: &Pubkey,
+    ) -> Result<Vec<(Pubkey, TokenAccount)>, ClientError> {
+        let token_account_filter = RpcTokenAccountsFilter::ProgramId(spl_token::ID.to_string());
+
+        let config = RpcAccountInfoConfig {
+            encoding: Some(UiAccountEncoding::Base64),
+            commitment: Some(CommitmentConfig::processed()),
+            data_slice: None,
+            min_context_slot: None,
+        };
+
+        let accounts: Response<Vec<RpcKeyedAccount>> = self
+            .rpc
+            .send(
+                RpcRequest::GetTokenAccountsByOwner,
+                json!([owner.to_string(), token_account_filter, config]),
+            )
+            .await
+            .map_err(convert_err)?;
+
+        let mut token_accounts = vec![];
+
+        for account in accounts.value {
+            let address = Pubkey::from_str(&account.pubkey).map_err(|_| {
+                ClientError::InvalidResponse(format!(
+                    "cannot read public key value from get_token_accounts_by_owner: '{}'",
+                    account.pubkey
+                ))
+            })?;
+
+            let data = account
+                .account
+                .decode::<Account>()
+                .ok_or(ClientError::InvalidResponse(format!(
+                    "cannot read account data from get_token_accounts_by_owner: '{:?}'",
+                    account.account
+                )))?;
+
+            let token_account_data = TokenAccount::unpack(&data.data).map_err(|e| {
+                ClientError::InvalidResponse(format!(
+                    "cannot parse token account data from get_token_accounts_by_owner: '{:?}'",
+                    e
+                ))
+            })?;
+
+            token_accounts.push((address, token_account_data));
+        }
+
+        Ok(token_accounts)
     }
 }
 
