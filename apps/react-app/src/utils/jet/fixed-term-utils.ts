@@ -1,4 +1,4 @@
-import { FixedTermMarketConfig } from '@jet-lab/margin';
+import { FixedTermMarketConfig, MarginAccount } from '@jet-lab/margin';
 import { formatDuration, intervalToDuration } from 'date-fns';
 
 export const friendlyMarketName = (symbol: string, tenor: number): string => {
@@ -14,7 +14,7 @@ export const marketToString = (market: FixedTermMarketConfig): string => {
 };
 
 export const feesCalc = (rate: number, interest: number) => {
-  const feesRate = 0.005; // hardcoded 50 basis points
+  const feesRate = MarginAccount.ORIGINATION_FEE;
   const ratio = rate / feesRate;
   const fees = interest / ratio;
   return fees;

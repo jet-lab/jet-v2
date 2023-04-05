@@ -57,12 +57,12 @@ const getPostOrderColumns = ({
     },
     {
       title: 'Filled QTY',
-      dataIndex: 'filled_quote_qty',
-      key: 'filled_quote_qty',
+      dataIndex: 'filledQuoteQty',
+      key: 'filledQuoteQty',
       render: (filled: number) => {
         return `${market.token.symbol} ${new TokenAmount(new BN(filled), 6).tokens.toFixed(2)}`;
       },
-      sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
+      sorter: (a, b) => a.filledQuoteQty - b.filledQuoteQty,
       sortDirections: ['descend']
     },
     {

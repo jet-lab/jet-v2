@@ -123,6 +123,9 @@ export class MarginAccount {
 
   static readonly MAX_POOL_UTIL_RATIO_AFTER_BORROW = 0.95
 
+  /** Hard code fixed rate market annualised origination fee */
+  static readonly ORIGINATION_FEE = 0.005;
+
   /** The raw accounts associated with the margin account. */
   info?: {
     /** The decoded [[MarginAccountData]]. */

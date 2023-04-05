@@ -106,16 +106,16 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       const setupCheckEstimate = productModel?.takerAccountForecast('lend', sim, 'setup');
       const valuationEstimate = productModel?.takerAccountForecast('lend', sim);
 
-      const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-      const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals);
+      const repayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+      const lendAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilledQuoteQty - sim.matches), token.decimals);
 
       setForecast({
         repayAmount: repayAmount.tokens,
         interest: repayAmount.sub(lendAmount).tokens,
-        effectiveRate: sim.filled_vwar,
-        selfMatch: sim.self_match,
-        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches,
+        effectiveRate: sim.filledVwar,
+        selfMatch: sim.selfMatch,
+        fulfilled: sim.filledQuoteQty >= sim.totalQuoteQty - BigInt(1) * sim.matches,
         riskIndicator: valuationEstimate?.riskIndicator,
         unfilledQty: unfilledQty.tokens,
         hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false

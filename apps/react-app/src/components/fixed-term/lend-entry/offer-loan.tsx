@@ -143,12 +143,12 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     const setupCheckEstimate = productModel?.makerAccountForecast('lend', sim, 'setup');
     const valuationEstimate = productModel?.makerAccountForecast('lend', sim);
 
-    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-    const matchRate = sim.filled_vwar;
-    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
-    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
-    const postedRate = sim.posted_vwar;
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
+    const matchRate = sim.filledVwar;
+    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.postedBaseQty), token.decimals);
+    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.postedQuoteQty), token.decimals);
+    const postedRate = sim.postedVwar;
 
     setForecast({
       matchedAmount: matchRepayAmount.tokens,
@@ -157,7 +157,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       postedRepayAmount: postedRepayAmount.tokens,
       postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
       postedRate,
-      selfMatch: sim.self_match,
+      selfMatch: sim.selfMatch,
       riskIndicator: valuationEstimate?.riskIndicator,
       hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
     });

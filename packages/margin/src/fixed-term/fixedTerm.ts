@@ -46,6 +46,7 @@ export interface MarketInfo {
   reserved: number[]
   borrowTenor: BN
   lendTenor: BN
+  originationFee: BN
   nonce: BN
 }
 
@@ -515,7 +516,8 @@ export class FixedTermMarket {
   }
 
   getOrderbookModel(tenor: bigint, snapshot: OrderbookSnapshot): OrderbookModel {
-    const model = new OrderbookModel(BigInt(tenor))
+    const originationFee = bnToBigInt(this.info.originationFee)
+    const model = new OrderbookModel(BigInt(tenor), originationFee)
     model.refreshFromSnapshot(snapshot)
     this.orderbookModel = model
 
@@ -643,16 +645,16 @@ export class FixedTermProductModel {
     let delta: ValuationDelta
 
     if (action == "lend") {
-      const principalAmount = this.valueOf(sim.filled_quote_qty)
-      const repaymentAmount = this.valueOf(sim.filled_base_qty)
+      const principalAmount = this.valueOf(sim.filledQuoteQty)
+      const repaymentAmount = this.valueOf(sim.filledBaseQty)
       const principalWeight = this.collateralWeight
       const repaymentWeight = this.collateralWeight
 
       delta = this.accounting.termDeposit(principalAmount, repaymentAmount, principalWeight, repaymentWeight)
     } else if (action == "borrow") {
       // TODO Fees
-      const receivedAmount = this.valueOf(sim.filled_quote_qty)
-      const repaymentAmount = this.valueOf(sim.filled_base_qty)
+      const receivedAmount = this.valueOf(sim.filledQuoteQty)
+      const repaymentAmount = this.valueOf(sim.filledBaseQty)
       const receivedWeight = this.collateralWeight
       let repaymentFactor = this.requiredCollateralFactor
       if (mode == "setup") {
@@ -676,10 +678,10 @@ export class FixedTermProductModel {
     let delta: ValuationDelta
 
     if (action == "lend") {
-      const fillPrincipalAmount = this.valueOf(sim.filled_quote_qty)
-      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty)
-      const postPrincipalAmount = this.valueOf(sim.posted_quote_qty)
-      const postRepaymentAmount = this.valueOf(sim.posted_base_qty)
+      const fillPrincipalAmount = this.valueOf(sim.filledQuoteQty)
+      const fillRepaymentAmount = this.valueOf(sim.filledBaseQty)
+      const postPrincipalAmount = this.valueOf(sim.postedQuoteQty)
+      const postRepaymentAmount = this.valueOf(sim.postedBaseQty)
 
       const principalWeight = this.collateralWeight
       const repaymentWeight = this.requiredCollateralFactor
@@ -690,10 +692,10 @@ export class FixedTermProductModel {
       )
     } else if (action == "borrow") {
       // TODO Fees
-      const fillReceivedAmount = this.valueOf(sim.filled_quote_qty)
-      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty)
-      const postReceivedAmount = this.valueOf(sim.posted_quote_qty)
-      const postRepaymentAmount = this.valueOf(sim.posted_base_qty)
+      const fillReceivedAmount = this.valueOf(sim.filledQuoteQty)
+      const fillRepaymentAmount = this.valueOf(sim.filledBaseQty)
+      const postReceivedAmount = this.valueOf(sim.postedQuoteQty)
+      const postRepaymentAmount = this.valueOf(sim.postedBaseQty)
 
       const receivedWeight = this.collateralWeight
       let repaymentFactor = this.requiredCollateralFactor
@@ -723,6 +725,10 @@ export class FixedTermProductModel {
       principalWeight: number,
       repaymentWeight: number
     ): ValuationDelta {
+      // Term deposits are not current credited as collateral, pending a good solution to the ALM
+      // problem posed by their liquidation. Until then, use a weight of zero in the forecast.
+      repaymentWeight = 0;
+
       return {
         liabilities: 0,
         requiredCollateral: 0,

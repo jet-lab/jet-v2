@@ -142,12 +142,12 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const setupCheckEstimate = productModel?.makerAccountForecast('borrow', sim, 'setup');
     const valuationEstimate = productModel?.makerAccountForecast('borrow', sim);
 
-    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-    const matchRate = sim.filled_vwar;
-    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
-    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
-    const postedRate = sim.posted_vwar;
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
+    const matchRate = sim.filledVwar;
+    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.postedBaseQty), token.decimals);
+    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.postedQuoteQty), token.decimals);
+    const postedRate = sim.postedVwar;
     const matchedInterest = matchRepayAmount.sub(matchBorrowAmount);
     const postedInterest = postedRepayAmount.sub(postedBorrowAmount);
 
@@ -158,12 +158,12 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       postedRepayAmount: postedRepayAmount.tokens,
       postedInterest: postedInterest.tokens,
       postedRate,
-      selfMatch: sim.self_match,
+      selfMatch: sim.selfMatch,
       riskIndicator: valuationEstimate?.riskIndicator,
       hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
       fees: matchedInterest.tokens
-        ? feesCalc(sim.filled_vwar, matchedInterest.tokens)
-        : feesCalc(sim.posted_vwar, postedInterest.tokens)
+        ? feesCalc(sim.filledVwar, matchedInterest.tokens)
+        : feesCalc(sim.postedVwar, postedInterest.tokens)
     });
   }
 

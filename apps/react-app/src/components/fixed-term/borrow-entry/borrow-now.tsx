@@ -117,21 +117,21 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       const setupCheckEstimate = productModel?.takerAccountForecast('borrow', sim, 'setup');
       const valuationEstimate = productModel?.takerAccountForecast('borrow', sim);
 
-      const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-      const borrowedAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals);
+      const repayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+      const borrowedAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilledQuoteQty - sim.matches), token.decimals);
       const totalInterest = repayAmount.sub(borrowedAmount);
 
       setForecast({
         repayAmount: repayAmount.tokens,
         interest: totalInterest.tokens,
-        effectiveRate: sim.filled_vwar,
-        selfMatch: sim.self_match,
-        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
+        effectiveRate: sim.filledVwar,
+        selfMatch: sim.selfMatch,
+        fulfilled: sim.filledQuoteQty >= sim.totalQuoteQty - BigInt(1) * sim.matches, // allow 1 lamport rounding per match
         riskIndicator: valuationEstimate?.riskIndicator,
         unfilledQty: unfilledQty.tokens,
         hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
-        fees: feesCalc(sim.filled_vwar, totalInterest.tokens)
+        fees: feesCalc(sim.filledVwar, totalInterest.tokens)
       });
     } catch (e) {
       console.log(e);
