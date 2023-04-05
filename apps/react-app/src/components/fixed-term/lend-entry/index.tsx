@@ -10,7 +10,7 @@ import { OfferLoan } from './offer-loan';
 import { LendNow } from './lend-now';
 import { WalletTokens } from '@state/user/walletTokens';
 import { Accounts } from '@state/user/accounts';
-import { UserGuide } from './user-guide'
+import { UserGuide } from '../shared/user-guide'
 
 export const FixedLendOrderEntry = () => {
   const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);

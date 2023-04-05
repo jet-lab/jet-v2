@@ -10,6 +10,7 @@ import { RequestLoan } from './request-loan';
 import { BorrowNow } from './borrow-now';
 import { WalletTokens } from '@state/user/walletTokens';
 import { Accounts } from '@state/user/accounts';
+import { UserGuide } from '../shared/user-guide'
 
 export const FixedBorrowOrderEntry = () => {
   const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);
@@ -39,6 +40,7 @@ export const FixedBorrowOrderEntry = () => {
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
+      <UserGuide />
       <div className="order-entry-head view-element-item view-element-item-hidden flex column">
         <ReorderArrows component="fixedLendEntry" order={rowOrder} setOrder={setRowOrder} />
         <div className="order-entry-head-top flex-centered">
