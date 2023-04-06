@@ -7,6 +7,7 @@ import { OfferLoan } from './offer-loan';
 import { LendNow } from './lend-now';
 import { WalletTokens } from '@state/user/walletTokens';
 import { Accounts } from '@state/user/accounts';
+import { UserGuide } from '../shared/user-guide'
 import { CopyableField } from '@components/misc/CopyableField';
 
 export const FixedLendOrderEntry = () => {
@@ -34,6 +35,7 @@ export const FixedLendOrderEntry = () => {
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
+      <UserGuide />
       <div className="order-entry-head view-element-item view-element-item-hidden flex column">
         <div className="order-entry-head-top flex-centered">
           <CopyableField content={marketAndConfig.market.address.toBase58()} />
