@@ -1,14 +1,15 @@
 //! Instructions that are invoked by an end user through a margin account.
 
 use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
-use jet_fixed_term::orderbook::state::MarketSide;
-use jet_fixed_term::{accounts::OrderbookMut, orderbook::state::OrderParams};
 use solana_sdk::instruction::Instruction;
 use spl_associated_token_account::get_associated_token_address as ata;
 
-use crate::margin::derive_token_config;
+use jet_fixed_term::{
+    accounts::OrderbookMut, margin::state::AutoRollConfig, orderbook::state::OrderParams,
+};
 
 use crate::fixed_term::derive::*;
+use crate::margin::derive_token_config;
 
 use super::lend_order_accounts;
 
@@ -175,17 +176,11 @@ pub fn margin_repay(
 }
 
 pub fn configure_auto_roll(
-    side: MarketSide,
-    config_bytes: Vec<u8>,
-    margin_user: Pubkey,
-    margin_account: Pubkey,
     market: Pubkey,
+    margin_account: Pubkey,
+    margin_user: Pubkey,
+    config: AutoRollConfig,
 ) -> Instruction {
-    let data = jet_fixed_term::instruction::ConfigureAutoRoll {
-        side: side as u8,
-        config_bytes,
-    }
-    .data();
     let accounts = jet_fixed_term::accounts::ConfigureAutoRoll {
         margin_user,
         margin_account,
@@ -193,7 +188,52 @@ pub fn configure_auto_roll(
     }
     .to_account_metas(None);
 
-    Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
+    match config {
+        AutoRollConfig::Borrow(config) => Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &jet_fixed_term::instruction::ConfigureAutoRollBorrow { config }.data(),
+            accounts,
+        ),
+
+        AutoRollConfig::Lend(config) => Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &jet_fixed_term::instruction::ConfigureAutoRollLend { config }.data(),
+            accounts,
+        ),
+    }
+}
+
+pub fn stop_auto_roll_deposit(margin_account: Pubkey, deposit: Pubkey) -> Instruction {
+    let accounts = jet_fixed_term::accounts::StopAutoRollDeposit {
+        margin_account,
+        deposit,
+    }
+    .to_account_metas(None);
+
+    Instruction::new_with_bytes(
+        jet_fixed_term::ID,
+        &jet_fixed_term::instruction::StopAutoRollDeposit {}.data(),
+        accounts,
+    )
+}
+
+pub fn stop_auto_roll_loan(
+    margin_account: Pubkey,
+    margin_user: Pubkey,
+    loan: Pubkey,
+) -> Instruction {
+    let accounts = jet_fixed_term::accounts::StopAutoRollLoan {
+        margin_account,
+        margin_user,
+        loan,
+    }
+    .to_account_metas(None);
+
+    Instruction::new_with_bytes(
+        jet_fixed_term::ID,
+        &jet_fixed_term::instruction::StopAutoRollLoan {}.data(),
+        accounts,
+    )
 }
 
 pub fn auto_roll_lend_order(

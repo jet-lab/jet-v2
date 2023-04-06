@@ -6,7 +6,7 @@ use jet_program_common::traits::SafeSub;
 
 use crate::{
     events::{OrderPlaced, OrderType},
-    margin::state::{return_to_margin, BorrowAutoRollConfig, MarginUser, TermLoanBuilder},
+    margin::state::{return_to_margin, MarginUser, TermLoanBuilder, TermLoanFlags},
     FixedTermErrorCode,
 };
 
@@ -177,7 +177,7 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
         let fees = filled_token_value.safe_sub(disburse)?;
 
         // write a TermLoan account
-        let builder = TermLoanBuilder::new_from_order(
+        let mut builder = TermLoanBuilder::new_from_order(
             self,
             summary,
             info,
@@ -186,6 +186,11 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
             fees,
             sequence_number,
         )?;
+
+        if info.flags.contains(CallbackFlags::AUTO_ROLL) {
+            builder.flags |= TermLoanFlags::AUTO_ROLL;
+        }
+
         builder.init_and_write(self.term_loan, self.payer, self.system_program)?;
 
         // Allot the borrower the tokens from the filled order
@@ -221,7 +226,7 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
 
     fn callback_flags(&self, params: &OrderParams) -> Result<CallbackFlags> {
         let auto_roll = if params.auto_roll {
-            if self.margin_user.borrow_roll_config == BorrowAutoRollConfig::default() {
+            if self.margin_user.borrow_roll_config.is_none() {
                 msg!(
                     "Auto roll settings have not been configured for margin user [{}]",
                     self.margin_user.key()

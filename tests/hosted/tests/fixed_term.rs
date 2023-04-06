@@ -890,9 +890,12 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
     .await?;
 
     let margin_user = user.load_margin_user().await?;
-    assert_eq!(margin_user.lend_roll_config.limit_price, lend_price);
-    assert_eq!(margin_user.borrow_roll_config.limit_price, borrow_price);
-    assert_eq!(margin_user.borrow_roll_config.roll_tenor, borrow_roll_tenor);
+    let borrow_roll_config = margin_user.borrow_roll_config.as_ref().unwrap();
+    let lend_roll_config = margin_user.lend_roll_config.as_ref().unwrap();
+
+    assert_eq!(lend_roll_config.limit_price, lend_price);
+    assert_eq!(borrow_roll_config.limit_price, borrow_price);
+    assert_eq!(borrow_roll_config.roll_tenor, borrow_roll_tenor);
 
     // cannot set a bad config
     assert!(user

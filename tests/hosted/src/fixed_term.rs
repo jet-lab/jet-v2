@@ -13,12 +13,14 @@ use async_trait::async_trait;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig, MarginUser, TermLoan},
+    margin::state::{
+        AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig, MarginUser, TermLoan,
+    },
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
 };
 use jet_instructions::{
-    fixed_term::{derive, AutoRollConfig, InitializeMarketParams},
+    fixed_term::{derive, InitializeMarketParams},
     margin::{derive_adapter_config, MarginConfigIxBuilder},
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
@@ -365,6 +367,7 @@ impl TestManager {
             .load_margin_user(margin_account)
             .await?
             .borrow_roll_config
+            .unwrap()
             .roll_tenor;
         let current_time = self.client.get_clock().await?.unix_timestamp;
         let mut loans = self

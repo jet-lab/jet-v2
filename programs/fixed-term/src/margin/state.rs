@@ -50,9 +50,9 @@ pub struct MarginUser {
     /// Accounting used to track assets in custody of the fixed term market
     assets: Assets,
     /// Settings for borrow order "auto rolling"
-    pub borrow_roll_config: BorrowAutoRollConfig,
+    pub borrow_roll_config: Option<BorrowAutoRollConfig>,
     /// Settings for lend order "auto rolling"
-    pub lend_roll_config: LendAutoRollConfig,
+    pub lend_roll_config: Option<LendAutoRollConfig>,
 }
 
 impl MarginUser {
@@ -547,6 +547,12 @@ impl Default for Assets {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AutoRollConfig {
+    Borrow(BorrowAutoRollConfig),
+    Lend(LendAutoRollConfig),
+}
+
 #[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub struct BorrowAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
@@ -713,7 +719,7 @@ impl TermLoanBuilder {
         Ok(())
     }
 
-    pub fn init<'info>(
+    fn init<'info>(
         &self,
         loan: impl ToAccountInfo<'info>,
         payer: impl ToAccountInfo<'info>,
@@ -736,7 +742,10 @@ bitflags! {
     #[derive(Default, AnchorSerialize, AnchorDeserialize)]
     pub struct TermLoanFlags: u8 {
         /// This term loan has already been marked as due.
-        const MARKED_DUE = 0b00000001;
+        const MARKED_DUE = 1 << 0;
+
+        /// The loan can be auto rolled
+        const AUTO_ROLL = 1 << 1;
     }
 }
 

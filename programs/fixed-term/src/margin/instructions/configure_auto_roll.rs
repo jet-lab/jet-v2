@@ -1,12 +1,10 @@
 use anchor_lang::prelude::*;
 use jet_margin::MarginAccount;
 use jet_program_common::Fp32;
-use num_traits::FromPrimitive;
 
 use crate::{
     control::state::Market,
-    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig, MarginUser},
-    orderbook::state::MarketSide,
+    margin::state::{AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig, MarginUser},
     FixedTermErrorCode,
 };
 
@@ -60,19 +58,19 @@ fn check_borrow_config(config: &BorrowAutoRollConfig, market_tenor: u64) -> Resu
     Ok(())
 }
 
-pub fn handler(ctx: Context<ConfigureAutoRoll>, side: u8, config_bytes: Vec<u8>) -> Result<()> {
+pub fn handler(ctx: Context<ConfigureAutoRoll>, config: AutoRollConfig) -> Result<()> {
     let user = &mut ctx.accounts.margin_user;
-    match MarketSide::from_u8(side).unwrap() {
-        MarketSide::Borrow => {
-            let config = BorrowAutoRollConfig::deserialize(&mut config_bytes.as_slice())?;
+
+    match config {
+        AutoRollConfig::Borrow(config) => {
             check_borrow_config(&config, ctx.accounts.market.load()?.borrow_tenor)?;
-            user.borrow_roll_config = config;
+            user.borrow_roll_config = Some(config);
         }
-        MarketSide::Lend => {
-            let config = LendAutoRollConfig::deserialize(&mut config_bytes.as_slice())?;
+        AutoRollConfig::Lend(config) => {
             check_lend_config(&config)?;
-            user.lend_roll_config = config;
+            user.lend_roll_config = Some(config);
         }
     }
+
     Ok(())
 }

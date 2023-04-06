@@ -1,15 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
-use anchor_lang::AnchorSerialize;
-use jet_fixed_term::{
-    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig},
-    orderbook::state::MarketSide,
-};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
 use jet_fixed_term::{
     control::{instructions::InitializeMarketParams, state::Market},
+    margin::state::AutoRollConfig,
     orderbook::state::OrderParams,
 };
 
@@ -500,8 +496,16 @@ impl FixedTermIxBuilder {
         config: AutoRollConfig,
     ) -> Instruction {
         let margin_user = derive::margin_user(&self.market, &margin_account);
-        let (side, bytes) = config.as_params();
-        ix::configure_auto_roll(side, bytes, margin_user, margin_account, self.market)
+        ix::configure_auto_roll(self.market, margin_account, margin_user, config)
+    }
+
+    pub fn stop_auto_roll_deposit(&self, margin_account: Pubkey, deposit: Pubkey) -> Instruction {
+        ix::stop_auto_roll_deposit(margin_account, deposit)
+    }
+
+    pub fn stop_auto_roll_loan(&self, margin_account: Pubkey, loan: Pubkey) -> Instruction {
+        let margin_user = derive::margin_user(&self.market, &margin_account);
+        ix::stop_auto_roll_loan(margin_account, margin_user, loan)
     }
 }
 
@@ -531,30 +535,5 @@ impl FixedTermIxBuilder {
 
     pub fn crank_authorization(&self, crank: &Pubkey) -> Pubkey {
         derive::crank_authorization(&self.market, crank)
-    }
-}
-
-pub enum AutoRollConfig {
-    Lend(LendAutoRollConfig),
-    Borrow(BorrowAutoRollConfig),
-}
-
-impl AutoRollConfig {
-    pub fn as_params(self) -> (MarketSide, Vec<u8>) {
-        let mut bytes = vec![];
-        let side = match self {
-            AutoRollConfig::Lend(config) => {
-                config.serialize(&mut bytes).unwrap();
-
-                MarketSide::Lend
-            }
-            AutoRollConfig::Borrow(config) => {
-                config.serialize(&mut bytes).unwrap();
-
-                MarketSide::Borrow
-            }
-        };
-
-        (side, bytes)
     }
 }

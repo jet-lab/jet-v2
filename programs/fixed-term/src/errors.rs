@@ -132,8 +132,10 @@ pub enum FixedTermErrorCode {
     ZeroDivision,
     #[msg("missing authority signature")]
     MissingAuthoritySignature,
-    #[msg("this deposit is not configured for an auto roll")]
-    TermDepositIsNotAutoRoll,
+    #[msg("auto roll is not enabled for this item")]
+    AutoRollDisabled,
+    #[msg("auto roll requirements not met")]
+    AutoRollNotReady,
     #[msg("missing TermDeposit initialization parameters")]
     MissingTermDepositParameters,
     #[msg("incorrect margin account was sent to the instruction")]

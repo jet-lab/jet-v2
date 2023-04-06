@@ -25,14 +25,14 @@ pub struct RepayAccounts<'a, 'info> {
 }
 
 impl<'a, 'info> RepayAccounts<'a, 'info> {
-    /// The internal call flag determines whether funds must be deposited in the vault
+    /// The `skip_token_transfer` flag determines whether funds must be deposited in the vault
     /// If set to `true` then a transfer from the caller to the market vault is unnecessary
     /// Use caution to prevent leaking funds
-    pub fn repay(&mut self, amount: u64, internal_call: bool) -> Result<()> {
+    pub fn repay(&mut self, amount: u64, skip_token_transfer: bool) -> Result<()> {
         let amount = std::cmp::min(amount, self.term_loan.balance);
 
         // return payment to market vault
-        if !internal_call {
+        if !skip_token_transfer {
             transfer(self.transfer_context(), amount)?;
         }
 

@@ -3,7 +3,7 @@ use anchor_spl::token::Token;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    margin::state::{MarginUser, RepayAccounts, TermLoan},
+    margin::state::{MarginUser, RepayAccounts, TermLoan, TermLoanFlags},
     orderbook::state::*,
     serialization::RemainingAccounts,
     FixedTermErrorCode,
@@ -15,6 +15,7 @@ pub struct AutoRollBorrowOrder<'info> {
     #[account(
         mut,
         constraint = margin_user.market == orderbook_mut.market.key() @ FixedTermErrorCode::WrongMarket,
+        has_one = underlying_collateral @ FixedTermErrorCode::WrongUnderlyingCollateralAccount,
         has_one = margin_account @ FixedTermErrorCode::WrongMarginAccount,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
 	)]
@@ -126,10 +127,15 @@ impl<'info> AutoRollBorrowOrder<'info> {
     }
 
     fn params(&self) -> Result<OrderParams> {
+        let config = match &self.margin_user.borrow_roll_config {
+            Some(config) => config,
+            None => return err!(FixedTermErrorCode::InvalidAutoRollConfig),
+        };
+
         let mut params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: self.loan.balance,
-            limit_price: self.margin_user.borrow_roll_config.limit_price,
+            limit_price: config.limit_price,
             match_limit: u64::MAX,
             post_only: false,
             post_allowed: false,
@@ -143,9 +149,36 @@ impl<'info> AutoRollBorrowOrder<'info> {
 
         Ok(params)
     }
+
+    fn assert_can_auto_roll(&self) -> Result<()> {
+        if !self.loan.flags.contains(TermLoanFlags::AUTO_ROLL) {
+            return err!(FixedTermErrorCode::AutoRollDisabled);
+        }
+
+        let config = match &self.margin_user.borrow_roll_config {
+            Some(config) => config,
+            None => return err!(FixedTermErrorCode::InvalidAutoRollConfig),
+        };
+
+        let current_time = Clock::get()?.unix_timestamp as u64;
+        let auto_roll_threshold = config.roll_tenor + self.loan.strike_timestamp as u64;
+
+        if current_time < auto_roll_threshold {
+            msg!(
+                "cannot auto roll before {} (currently {})",
+                auto_roll_threshold,
+                current_time
+            );
+            return err!(FixedTermErrorCode::AutoRollNotReady);
+        }
+
+        Ok(())
+    }
 }
 
 pub fn handler(ctx: Context<AutoRollBorrowOrder>) -> Result<()> {
+    ctx.accounts.assert_can_auto_roll()?;
+
     let filled = ctx.accounts.borrow_now(
         ctx.accounts.params()?,
         ctx.remaining_accounts

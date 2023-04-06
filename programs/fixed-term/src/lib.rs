@@ -132,12 +132,15 @@ use instructions::*;
 extern crate bitflags;
 
 use anchor_lang::prelude::*;
+use margin::state::{AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig};
 use orderbook::state::OrderParams;
 
 declare_id!("JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc");
 
 #[program]
 pub mod jet_fixed_term {
+    use crate::margin::state::BorrowAutoRollConfig;
+
     use super::*;
 
     //
@@ -213,12 +216,29 @@ pub mod jet_fixed_term {
     }
 
     /// Configure settings for rolling orders
-    pub fn configure_auto_roll(
+    pub fn configure_auto_roll_borrow(
         ctx: Context<ConfigureAutoRoll>,
-        side: u8,
-        config_bytes: Vec<u8>,
+        config: BorrowAutoRollConfig,
     ) -> Result<()> {
-        instructions::configure_auto_roll::handler(ctx, side, config_bytes)
+        instructions::configure_auto_roll::handler(ctx, AutoRollConfig::Borrow(config))
+    }
+
+    /// Configure settings for rolling orders
+    pub fn configure_auto_roll_lend(
+        ctx: Context<ConfigureAutoRoll>,
+        config: LendAutoRollConfig,
+    ) -> Result<()> {
+        instructions::configure_auto_roll::handler(ctx, AutoRollConfig::Lend(config))
+    }
+
+    /// Prevent a deposit from auto rolling
+    pub fn stop_auto_roll_deposit(ctx: Context<StopAutoRollDeposit>) -> Result<()> {
+        instructions::stop_auto_roll_deposit::handler(ctx)
+    }
+
+    /// Prevent a loan from auto rolling
+    pub fn stop_auto_roll_loan(ctx: Context<StopAutoRollLoan>) -> Result<()> {
+        instructions::stop_auto_roll_loan::handler(ctx)
     }
 
     /// Create a new borrower account

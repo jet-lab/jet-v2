@@ -161,7 +161,11 @@ fn handle_margin_fill<'info>(
                     base_size,
                     maturation_timestamp,
                 )?;
-                let flags = TermLoanFlags::empty();
+                let mut flags = TermLoanFlags::empty();
+
+                if info.flags.contains(CallbackFlags::AUTO_ROLL) {
+                    flags |= TermLoanFlags::AUTO_ROLL;
+                }
 
                 let mut loan = term_account.term_loan()?;
                 *loan = TermLoan {
