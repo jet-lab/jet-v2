@@ -508,6 +508,17 @@ export type JetFixedTerm = {
           isSigner: false
         },
         {
+          name: "tokenCollateral"
+          isMut: true
+          isSigner: false
+          docs: ["Token account used by the margin program to track owned assets"]
+        },
+        {
+          name: "tokenCollateralMint"
+          isMut: false
+          isSigner: false
+        },
+        {
           name: "payer"
           isMut: true
           isSigner: true
@@ -535,6 +546,12 @@ export type JetFixedTerm = {
         },
         {
           name: "ticketCollateralMetadata"
+          isMut: false
+          isSigner: false
+          docs: ["Token metadata account needed by the margin program to register the collateral position"]
+        },
+        {
+          name: "tokenCollateralMetadata"
           isMut: false
           isSigner: false
           docs: ["Token metadata account needed by the margin program to register the collateral position"]
@@ -577,13 +594,13 @@ export type JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateral"
+          name: "tokenCollateral"
           isMut: true
           isSigner: false
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint"
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -675,13 +692,13 @@ export type JetFixedTerm = {
           docs: ["The account tracking borrower debts"]
         },
         {
-          name: "ticketCollateral"
+          name: "tokenCollateral"
           isMut: true
           isSigner: false
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint"
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -1139,6 +1156,16 @@ export type JetFixedTerm = {
         },
         {
           name: "ticketCollateralMint"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "tokenCollateral"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
         },
@@ -1810,6 +1837,15 @@ export type JetFixedTerm = {
             type: "publicKey"
           },
           {
+            name: "tokenCollateralMint"
+            docs: [
+              "Mint owned by fixed-term market to issue collateral value to a user for",
+              "positions that are priced as tokens. The collateral notes are monitored",
+              "by the margin program to track value"
+            ]
+            type: "publicKey"
+          },
+          {
             name: "underlyingOracle"
             docs: ["oracle that defines the value of the underlying asset"]
             type: "publicKey"
@@ -1941,6 +1977,15 @@ export type JetFixedTerm = {
               "Token account used by the margin program to track the collateral value of positions",
               "which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.",
               "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
+            ]
+            type: "publicKey"
+          },
+          {
+            name: "tokenCollateral"
+            docs: [
+              "Token account used by the margin program to track the collateral value of positions",
+              "related to a collateralized value of a token as it rests in the control of the Fixed-Term orderbook",
+              "for now this specifically tracks the tokens locked in an open borrow order"
             ]
             type: "publicKey"
           },
@@ -3961,6 +4006,17 @@ export const IDL: JetFixedTerm = {
           isSigner: false
         },
         {
+          name: "tokenCollateral",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token account used by the margin program to track owned assets"]
+        },
+        {
+          name: "tokenCollateralMint",
+          isMut: false,
+          isSigner: false
+        },
+        {
           name: "payer",
           isMut: true,
           isSigner: true
@@ -3988,6 +4044,12 @@ export const IDL: JetFixedTerm = {
         },
         {
           name: "ticketCollateralMetadata",
+          isMut: false,
+          isSigner: false,
+          docs: ["Token metadata account needed by the margin program to register the collateral position"]
+        },
+        {
+          name: "tokenCollateralMetadata",
           isMut: false,
           isSigner: false,
           docs: ["Token metadata account needed by the margin program to register the collateral position"]
@@ -4030,13 +4092,13 @@ export const IDL: JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateral",
+          name: "tokenCollateral",
           isMut: true,
           isSigner: false,
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint",
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false,
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -4128,13 +4190,13 @@ export const IDL: JetFixedTerm = {
           docs: ["The account tracking borrower debts"]
         },
         {
-          name: "ticketCollateral",
+          name: "tokenCollateral",
           isMut: true,
           isSigner: false,
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint",
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false,
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -4592,6 +4654,16 @@ export const IDL: JetFixedTerm = {
         },
         {
           name: "ticketCollateralMint",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "tokenCollateral",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false
         },
@@ -5263,6 +5335,15 @@ export const IDL: JetFixedTerm = {
             type: "publicKey"
           },
           {
+            name: "tokenCollateralMint",
+            docs: [
+              "Mint owned by fixed-term market to issue collateral value to a user for",
+              "positions that are priced as tokens. The collateral notes are monitored",
+              "by the margin program to track value"
+            ],
+            type: "publicKey"
+          },
+          {
             name: "underlyingOracle",
             docs: ["oracle that defines the value of the underlying asset"],
             type: "publicKey"
@@ -5394,6 +5475,16 @@ export const IDL: JetFixedTerm = {
               "Token account used by the margin program to track the collateral value of positions",
               "which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.",
               "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
+            ],
+            type: "publicKey"
+          },
+
+          {
+            name: "tokenCollateral",
+            docs: [
+              "Token account used by the margin program to track the collateral value of positions",
+              "related to a collateralized value of a token as it rests in the control of the Fixed-Term orderbook",
+              "for now this specifically tracks the tokens locked in an open borrow order"
             ],
             type: "publicKey"
           },

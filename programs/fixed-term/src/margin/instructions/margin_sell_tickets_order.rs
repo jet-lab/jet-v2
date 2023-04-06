@@ -8,7 +8,7 @@ use crate::{
     market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::sell_tickets_order::*,
-        state::{CallbackFlags, OrderParams},
+        state::{CallbackFlags, OrderParams, RoundingAction},
     },
     serialization::RemainingAccounts,
     FixedTermErrorCode,
@@ -28,6 +28,7 @@ pub struct MarginSellTicketsOrder<'info> {
     pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
+    /// CHECK: instruction logic
     #[account(mut)]
     pub ticket_collateral_mint: AccountInfo<'info>,
 
@@ -48,10 +49,17 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
             .map(|a| a.key()),
         CallbackFlags::MARGIN,
     )?;
+
+    // collateral accounting
+    // The order might settle to either tickets or underlying. To be completely safe,
+    // it needs to be priced as the less valuable one (tickets)
+    // and counted as the less numerous one (underlying).
+    let posted_value = order_summary.quote_posted(RoundingAction::PostBorrow.direction())?;
+    ctx.accounts.margin_user.sell_tickets(posted_value)?;
     ctx.mint(
         &ctx.accounts.ticket_collateral_mint,
         &ctx.accounts.ticket_collateral,
-        order_summary.quote_posted()?,
+        posted_value,
     )?;
 
     ctx.accounts.inner.sell_tickets(

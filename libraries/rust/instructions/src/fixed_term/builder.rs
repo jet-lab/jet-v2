@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use jet_fixed_term::margin::{instructions::MarketSide, state::AutoRollConfig};
+use jet_fixed_term::{margin::state::AutoRollConfig, orderbook::state::MarketSide};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
@@ -492,6 +492,7 @@ impl FixedTermIxBuilder {
         MarginUser {
             address,
             ticket_collateral: derive::user_ticket_collateral(&address),
+            underlying_collateral: derive::user_underlying_collateral(&address),
             claims: derive::user_claims(&address),
         }
     }

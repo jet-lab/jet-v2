@@ -8,7 +8,7 @@ use agnostic_orderbook::{
 use anchor_lang::prelude::*;
 use num_traits::FromPrimitive;
 
-use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
+use jet_program_common::traits::{SafeAdd, SafeSub};
 
 use crate::{
     control::state::Market,
@@ -16,7 +16,7 @@ use crate::{
     margin::state::{MarginUser, TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{
-        fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo, UserCallbackInfo,
+        CallbackFlags, CallbackInfo, EventQuote, FillInfo, MarketSide, OutInfo, UserCallbackInfo,
     },
     serialization::{AnchorAccount, Mut},
     tickets::state::TermDepositWriter,
@@ -94,21 +94,21 @@ fn handle_margin_fill<'info>(
 
     let FillEvent {
         taker_side,
-        quote_size,
         base_size,
         ..
     } = event;
 
-    let maker_side = Side::from_u8(taker_side).unwrap().opposite();
+    let quote_size = event.quote_size()?;
+    let maker_side: MarketSide = Side::from_u8(taker_side).unwrap().opposite().into();
     let user = &mut accounts.margin_user;
     let info = maker_info.unwrap_margin();
 
     let (order_type, sequence_number, tenor) = match maker_side {
         // maker has loaned tokens to the taker
-        Side::Bid => {
+        MarketSide::Lend => {
             let tenor = market.load()?.lend_tenor;
             let sequence_number = if let Some(term_account) = &mut accounts.term_account {
-                let sequence_number = user.assets.new_deposit(base_size)?;
+                let sequence_number = user.maker_fill_lend_order(true, base_size)?;
                 TermDepositWriter {
                     market: user.market,
                     owner: user.margin_account,
@@ -125,22 +125,27 @@ fn handle_margin_fill<'info>(
 
                 sequence_number
             } else {
-                user.assets.reduce_order(quote_size);
-                user.assets.entitled_tickets.try_add_assign(base_size)?;
-                user.emit_asset_balances();
-
+                user.maker_fill_lend_order(false, base_size)?;
                 0
             };
+            user.emit_asset_balances()?;
 
             (OrderType::MarginLend, sequence_number, tenor)
         }
 
         // maker has borrowed tokens from the taker
-        Side::Ask => {
-            user.assets.reduce_order(quote_size);
-            let tenor = market.load()?.borrow_tenor;
+        MarketSide::Borrow => {
+            let (tenor, disburse) = {
+                let market = market.load()?;
+                let tenor = market.borrow_tenor;
+                let disburse = market.loan_to_disburse(quote_size);
+
+                (tenor, disburse)
+            };
+            let strike_timestamp = Clock::get()?.unix_timestamp;
+            let maturation_timestamp = strike_timestamp.safe_add(tenor as i64)?;
+
             let sequence_number = if let Some(term_account) = accounts.term_account {
-                let disburse = market.load()?.loan_to_disburse(quote_size);
                 let fees = quote_size.safe_sub(disburse)?;
 
                 ctx.withdraw(
@@ -149,12 +154,13 @@ fn handle_margin_fill<'info>(
                     fees,
                 )?;
 
-                user.assets.entitled_tokens.try_add_assign(disburse)?;
-                let strike_timestamp = Clock::get()?.unix_timestamp;
-                let maturation_timestamp = strike_timestamp.safe_add(tenor as i64)?;
-                let sequence_number = user
-                    .debt
-                    .new_term_loan_from_fill(base_size, maturation_timestamp)?;
+                let sequence_number = user.maker_fill_borrow_order(
+                    true,
+                    disburse,
+                    quote_size,
+                    base_size,
+                    maturation_timestamp,
+                )?;
                 let flags = TermLoanFlags::empty();
 
                 let mut loan = term_account.term_loan()?;
@@ -187,13 +193,18 @@ fn handle_margin_fill<'info>(
                     fees,
                     flags,
                 });
-                user.emit_all_balances();
+                user.emit_all_balances()?;
 
                 sequence_number
             } else {
-                user.assets.entitled_tokens.try_add_assign(quote_size)?;
-                user.emit_asset_balances();
-
+                user.maker_fill_borrow_order(
+                    false,
+                    disburse,
+                    quote_size,
+                    base_size,
+                    maturation_timestamp,
+                )?;
+                user.emit_asset_balances()?;
                 0
             };
 
@@ -241,16 +252,16 @@ fn handle_signer_fill<'info>(
 
     let FillEvent {
         taker_side,
-        quote_size,
         base_size,
         ..
     } = event;
 
-    let maker_side = Side::from_u8(taker_side).unwrap().opposite();
+    let quote_size = event.quote_size()?;
+    let maker_side: MarketSide = Side::from_u8(taker_side).unwrap().opposite().into();
     let info = maker_info.unwrap_signer();
 
     let (order_type, tenor) = match maker_side {
-        Side::Bid => {
+        MarketSide::Lend => {
             let tenor = ctx.accounts.market.load()?.lend_tenor;
             match account {
                 FillAccount::TermDeposit(mut deposit) => {
@@ -275,7 +286,7 @@ fn handle_signer_fill<'info>(
 
             (OrderType::Lend, tenor)
         }
-        Side::Ask => {
+        MarketSide::Borrow => {
             ctx.withdraw(
                 &ctx.accounts.underlying_token_vault,
                 account.as_token_account(),
@@ -337,31 +348,20 @@ fn handle_margin_out<'info>(
 ) -> Result<()> {
     let OutInfo { event, info } = out;
     let OutEvent {
-        side,
-        order_id,
-        base_size,
-        ..
+        side, base_size, ..
     } = event;
 
     let info = info.unwrap_margin();
-    let price = (order_id >> 64) as u64;
-    // todo defensive rounding
-    let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
+    let quote_size = event.quote_size()?;
+    let side: MarketSide = Side::from_u8(side).unwrap().into();
 
-    match Side::from_u8(side).unwrap() {
-        Side::Bid => {
-            user.assets.entitled_tokens.try_add_assign(quote_size)?;
-            user.emit_asset_balances()
-        }
-        Side::Ask => {
-            if info.flags.contains(CallbackFlags::NEW_DEBT) {
-                user.debt.process_out(base_size)?;
-                user.emit_debt_balances();
-            } else {
-                user.assets.entitled_tickets += base_size;
-                user.emit_asset_balances();
-            }
-        }
+    match side {
+        MarketSide::Borrow => user.cancel_borrow_order(
+            quote_size,
+            base_size,
+            info.flags.contains(CallbackFlags::NEW_DEBT),
+        )?,
+        MarketSide::Lend => user.cancel_lend_order(quote_size)?,
     }
 
     emit!(OrderRemoved {
@@ -382,16 +382,12 @@ fn handle_signer_out<'info>(
 ) -> Result<()> {
     let OutInfo { event, info } = out;
     let OutEvent {
-        side,
-        order_id,
-        base_size,
-        ..
+        side, base_size, ..
     } = event;
 
     let info = info.unwrap_signer();
-    let price = (order_id >> 64) as u64;
-    // todo defensive rounding
-    let quote_size = fp32_mul(base_size, price).ok_or(FixedTermErrorCode::ArithmeticOverflow)?;
+    let quote_size = event.quote_size()?;
+
     match Side::from_u8(side).unwrap() {
         Side::Bid => ctx.withdraw(&ctx.accounts.underlying_token_vault, user, quote_size)?,
         Side::Ask => ctx.mint(&ctx.accounts.ticket_mint, user, base_size)?,

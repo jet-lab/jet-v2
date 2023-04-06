@@ -27,7 +27,7 @@ serde = { version = "1", features = ["derive"] }
 # Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
 serde_json = "1"
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 pyth-sdk-solana = "0.7"
 solana-sdk = "1.14"

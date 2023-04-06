@@ -1,7 +1,10 @@
 mod event_queue;
 mod lend;
+mod rounding;
+
 pub use event_queue::*;
 pub use lend::*;
+pub use rounding::*;
 
 use std::convert::TryInto;
 
@@ -10,7 +13,7 @@ use agnostic_orderbook::{
     state::{
         critbit::Slab,
         critbit::{InnerNode, LeafNode, SlabHeader},
-        event_queue::{EventQueueHeader, FillEvent},
+        event_queue::{EventQueueHeader, FillEvent, OutEvent},
         get_side_from_order_id, OrderSummary, SelfTradeBehavior, Side,
     },
 };
@@ -19,6 +22,8 @@ use anchor_lang::{
     solana_program::{clock::UnixTimestamp, hash::hash},
 };
 use bytemuck::{Pod, Zeroable};
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
 
 use crate::{
     control::state::Market, events::OrderCancelled, utils::orderbook_accounts, FixedTermErrorCode,
@@ -89,6 +94,10 @@ impl<'info> OrderbookMut<'info> {
 
     pub fn ticket_collateral_mint(&self) -> Pubkey {
         self.market.load().unwrap().ticket_collateral_mint
+    }
+
+    pub fn underlying_collateral_mint(&self) -> Pubkey {
+        self.market.load().unwrap().underlying_collateral_mint
     }
 
     pub fn claims_mint(&self) -> Pubkey {
@@ -587,6 +596,8 @@ impl SensibleOrderSummary {
             summary: order_summary,
         }
     }
+
+    /// Returns the inner [OrderSummary]
     pub fn summary(&self) -> OrderSummary {
         OrderSummary {
             posted_order_id: self.summary.posted_order_id,
@@ -596,59 +607,94 @@ impl SensibleOrderSummary {
         }
     }
 
-    // todo defensive rounding - depends on how this function is used
-    pub fn quote_posted(&self) -> Result<u64> {
-        fp32_mul(self.summary.total_base_qty_posted, self.limit_price)
-            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointDivision))
+    /// Value of the posted portion of the order denominated in underlying (quote) tokens
+    pub fn quote_posted(&self, rounding: RoundingDirection) -> Result<u64> {
+        quote_from_base(
+            self.summary.total_base_qty_posted,
+            self.limit_price,
+            rounding,
+        )
     }
 
+    /// Value of the posted portion of the order denominated in market tickets
     pub fn base_posted(&self) -> u64 {
         self.summary.total_base_qty_posted
     }
 
-    pub fn quote_filled(&self) -> Result<u64> {
-        Ok(self.summary.total_quote_qty - self.quote_posted()?)
+    /// Value of the filled portion of the order denominated in underlying (quote) tokens
+    pub fn quote_filled(&self, rounding: RoundingDirection) -> Result<u64> {
+        Ok(self.summary.total_quote_qty - self.quote_posted(rounding)?)
     }
 
+    /// Value of the the filled portion of the order denominated in market tickets
     pub fn base_filled(&self) -> u64 {
         self.summary.total_base_qty - self.summary.total_base_qty_posted
     }
 
-    /// the total of all quote posted and filled
-    /// NOT the same as the "max quote"
+    /// The total value of the order both posted and filled denominated in underlying (quote) tokens
     pub fn quote_combined(&self) -> Result<u64> {
         // Ok(self.quote_posted()? + self.quote_filled())
         Ok(self.summary.total_quote_qty)
     }
 
-    /// the total of all base posted and filled
-    /// NOT the same as the "max base"
+    /// The total value of the order both posted and filled denominated in market tickets
     pub fn base_combined(&self) -> u64 {
-        // self.base_posted() + self.base_filled()
         self.summary.total_base_qty
     }
 }
 
-/// Multiply a `u64` with a fixed point 32 number
-/// a is fp0, b is fp32 and result is a*b fp0
-pub fn fp32_mul(a: u64, b_fp32: u64) -> Option<u64> {
-    (a as u128)
-        .checked_mul(b_fp32 as u128)
-        .and_then(|e| safe_downcast(e >> 32))
+pub trait EventQuote {
+    /// Derives the quote size of the order
+    fn quote_size(&self) -> Result<u64>;
 }
 
-/// a is fp0, b is fp32 and result is a/b fp0
-pub fn fp32_div(a: u64, b_fp32: u64) -> Option<u64> {
-    ((a as u128) << 32)
-        .checked_div(b_fp32 as u128)
-        .and_then(|x| x.try_into().ok())
+impl EventQuote for FillEvent {
+    fn quote_size(&self) -> Result<u64> {
+        let maker_side: MarketSide = Side::from_u8(self.taker_side).unwrap().opposite().into();
+
+        let rounding = match maker_side {
+            MarketSide::Borrow => RoundingAction::FillBorrow,
+            MarketSide::Lend => RoundingAction::FillLend,
+        };
+        quote_from_base(self.base_size, self.trade_price, rounding.direction())
+    }
 }
 
-fn safe_downcast(n: u128) -> Option<u64> {
-    static BOUND: u128 = u64::MAX as u128;
-    if n > BOUND {
-        None
-    } else {
-        Some(n as u64)
+impl EventQuote for OutEvent {
+    fn quote_size(&self) -> Result<u64> {
+        let side = Side::from_u8(self.side).unwrap().opposite().into();
+        let rounding = match side {
+            MarketSide::Borrow => RoundingAction::CancelBorrow,
+            MarketSide::Lend => RoundingAction::CancelLend,
+        };
+        let price = (self.order_id >> 64) as u64;
+
+        quote_from_base(self.base_size, price, rounding.direction())
+    }
+}
+
+/// Simple enum to make it more clear which action is being perfomed in the context of the fixed-term orderbook
+#[derive(FromPrimitive, ToPrimitive, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
+#[repr(u8)]
+pub enum MarketSide {
+    Borrow,
+    Lend,
+}
+
+impl From<Side> for MarketSide {
+    fn from(side: Side) -> Self {
+        match side {
+            Side::Bid => Self::Lend,
+            Side::Ask => Self::Borrow,
+        }
+    }
+}
+
+impl From<MarketSide> for Side {
+    fn from(side: MarketSide) -> Self {
+        match side {
+            MarketSide::Lend => Self::Bid,
+            MarketSide::Borrow => Self::Ask,
+        }
     }
 }

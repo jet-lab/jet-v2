@@ -14,8 +14,11 @@ use hosted_tests::{
     test_default,
 };
 use jet_fixed_term::{
-    margin::{instructions::MarketSide, state::AutoRollConfig},
-    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams, SensibleOrderSummary},
+    margin::state::AutoRollConfig,
+    orderbook::state::{
+        CallbackFlags, MarginCallbackInfo, MarketSide, OrderParams, RoundingAction,
+        SensibleOrderSummary,
+    },
 };
 use jet_margin_sdk::{
     cat,
@@ -380,9 +383,9 @@ async fn margin_repay() -> Result<()> {
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.debt.pending(), posted_order.base_quantity,);
+    assert_eq!(margin_user.pending_debt(), posted_order.base_quantity,);
     assert_eq!(
-        margin_user.debt.total(),
+        margin_user.total_debt(),
         posted_order.base_quantity + term_loan.balance
     );
 
@@ -392,28 +395,25 @@ async fn margin_repay() -> Result<()> {
     // TODO: assert balances on claims and user wallet
 
     let pre_repayment_term_loan = user.load_term_loan(0).await?;
-    let pre_repayment_debt = user.load_margin_user().await?.debt;
+    let pre_repayment_user = user.load_margin_user().await?;
     let repayment = 400;
     user.repay(0, repayment).await?;
 
     let post_repayment_term_loan = user.load_term_loan(0).await?;
-    let post_repayment_debt = user.load_margin_user().await?.debt;
+    let post_repayment_user = user.load_margin_user().await?;
     assert_eq!(
         pre_repayment_term_loan.balance - repayment,
         post_repayment_term_loan.balance
     );
     assert_eq!(
-        pre_repayment_debt.committed() - repayment,
-        post_repayment_debt.committed()
+        pre_repayment_user.committed_debt() - repayment,
+        post_repayment_user.committed_debt()
     );
 
     user.repay(0, post_repayment_term_loan.balance).await?;
 
-    let repaid_term_loan_debt = user.load_margin_user().await?.debt;
-    assert_eq!(
-        repaid_term_loan_debt.total(),
-        repaid_term_loan_debt.pending()
-    );
+    let margin_user = user.load_margin_user().await?;
+    assert_eq!(margin_user.total_debt(), margin_user.pending_debt());
 
     Ok(())
 }
@@ -470,12 +470,8 @@ async fn settle_many_margin_accounts() -> Result<()> {
 
     let mut trades = vec![];
 
-    // TODO: increase this to be the same as localnet.
-    // for now it seems there is a bug in the solana runtime simulator.
-    #[cfg(not(feature = "localnet"))]
+    // TODO: find exact value
     let n_trades = SETTLES_PER_TX;
-    #[cfg(feature = "localnet")]
-    let n_trades = SETTLES_PER_TX * 3 + 1;
 
     for _ in 0..n_trades {
         trades.push(async {
@@ -556,12 +552,12 @@ async fn margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(1_000, user.underlying_collateral().await?);
     assert_eq!(1_201, user.claims().await?);
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.debt.total(), posted_order.base_quantity,);
+    assert_eq!(margin_user.total_debt(), posted_order.base_quantity,);
 
     Ok(())
 }
@@ -599,12 +595,12 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
     {
         assert_eq!(STARTING_TOKENS, user.tokens().await?);
         assert_eq!(0, user.tickets().await?);
-        assert_eq!(0, user.collateral().await?);
+        assert_eq!(0, user.ticket_collateral().await?);
         assert_eq!(0, user.claims().await?);
         let asks = manager.load_orderbook().await?.asks()?;
         assert_eq!(0, asks.len());
         let margin_user = user.load_margin_user().await.unwrap();
-        assert_eq!(0, margin_user.debt.total());
+        assert_eq!(0, margin_user.total_debt());
     }
 
     Ok(())
@@ -641,7 +637,7 @@ async fn margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_000, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(1_200, user.ticket_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())
@@ -685,7 +681,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(999, borrower.collateral().await?);
+    assert_eq!(1_000, borrower.underlying_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
     // No tokens have been disbursed, so this should be 0
     assert_eq!(0, manager.collected_fees().await?);
@@ -698,7 +694,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
@@ -712,14 +708,14 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;
 
-    assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
+    assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     // FIXME: an exact number would be nice
@@ -761,7 +757,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_000, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     let borrow_params = underlying(1_000, 2_000);
@@ -788,7 +784,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     // FIXME: an exact number would be nice
@@ -801,7 +797,8 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     // using the limit price of the order directly
     let expected_price = {
         let summary = SensibleOrderSummary::new(borrow_params.limit_price, simulated_order);
-        let price = Fp32::from(summary.quote_filled()?) / summary.base_filled();
+        let price = Fp32::from(summary.quote_filled(RoundingAction::FillBorrow.direction())?)
+            / summary.base_filled();
         price.downcast_u64().unwrap()
     };
     let expected_rate =
@@ -818,12 +815,12 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     // todo improve the rounding situation to make this 1_000
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     Ok(())
@@ -858,7 +855,7 @@ async fn margin_sell_tickets() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 10_000, user.tokens().await?);
     assert_eq!(8_800, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(999, user.ticket_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())
@@ -882,14 +879,14 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
     let lend_price = OrderAmount::from_base_amount_rate(1_000, 1_000).price;
     let borrow_price = OrderAmount::from_base_amount_rate(1_000, 900).price;
     user.set_roll_config(
-        MarketSide::Lending,
+        MarketSide::Lend,
         AutoRollConfig {
             limit_price: lend_price,
         },
     )
     .await?;
     user.set_roll_config(
-        MarketSide::Borrowing,
+        MarketSide::Borrow,
         AutoRollConfig {
             limit_price: borrow_price,
         },
@@ -902,7 +899,7 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
 
     // cannot set a bad config
     assert!(user
-        .set_roll_config(MarketSide::Lending, AutoRollConfig { limit_price: 0 })
+        .set_roll_config(MarketSide::Lend, AutoRollConfig { limit_price: 0 })
         .await
         .is_err());
 
@@ -946,7 +943,7 @@ async fn auto_roll_flags() -> Result<()> {
     assert!(res.is_err());
 
     user.set_roll_config(
-        MarketSide::Borrowing,
+        MarketSide::Borrow,
         AutoRollConfig {
             limit_price: params.limit_price,
         },
@@ -997,7 +994,7 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     lender
         .set_roll_config(
-            MarketSide::Lending,
+            MarketSide::Lend,
             AutoRollConfig {
                 limit_price: underlying(1_001, 2_000).limit_price,
             },

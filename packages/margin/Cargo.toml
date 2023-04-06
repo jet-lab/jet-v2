@@ -30,7 +30,7 @@ solana-program = "1.14"
 jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["cli"] }
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["utils"]}
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["utils"]}
 bonfida-utils = { git = "https://github.com/Bonfida/bonfida-utils.git", branch = "add-rounding-direction" }
 
 [dev-dependencies]
