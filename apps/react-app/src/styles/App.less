@@ -1172,6 +1172,14 @@ html {
           margin: @spacing-xs;
         }
 
+        .copiable-field {
+          margin-top: 12px;
+
+          .ant-typography {
+            margin: 0;
+          }
+        }
+
         &-top {
           position: absolute;
           top: 0;
@@ -2885,7 +2893,7 @@ html {
   }
 }
 
-.pool-details-address {
+.copiable-field {
   display: flex;
   transition: all 0.3s;
   padding: 2px 4px;
@@ -2893,6 +2901,7 @@ html {
 
   cursor: pointer;
   align-items: center;
+  justify-content: center;
 
   & svg {
     margin-right: 8px;

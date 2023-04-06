@@ -1,18 +1,15 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { ReorderArrows } from '@components/misc/ReorderArrows';
-import { Tabs, Typography } from 'antd';
+import { Tabs } from 'antd';
 import { useMemo } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
-import { FixedLendRowOrder } from '@state/views/fixed-term';
 import { CurrentOrderTab, CurrentOrderTabAtom, FixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
-import { marketToString } from '@utils/jet/fixed-term-utils';
 import { OfferLoan } from './offer-loan';
 import { LendNow } from './lend-now';
 import { WalletTokens } from '@state/user/walletTokens';
 import { Accounts } from '@state/user/accounts';
+import { CopyableField } from '@components/misc/CopyableField';
 
 export const FixedLendOrderEntry = () => {
-  const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);
   const marketAndConfig = useRecoilValue(FixedTermMarketAtom);
   const marginConfig = useRecoilValue(MainConfig);
   const walletTokens = useRecoilValue(WalletTokens);
@@ -33,15 +30,13 @@ export const FixedLendOrderEntry = () => {
     return token.decimals;
   }, [token]);
 
-  const { Paragraph } = Typography;
   if (!decimals || noAccount || !marketAndConfig || !token || !marginConfig) return null;
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
       <div className="order-entry-head view-element-item view-element-item-hidden flex column">
-        <ReorderArrows component="fixedLendEntry" order={rowOrder} setOrder={setRowOrder} />
         <div className="order-entry-head-top flex-centered">
-          <Paragraph className="order-entry-head-top-title">{marketToString(marketAndConfig.config)}</Paragraph>
+          <CopyableField content={marketAndConfig.market.address.toBase58()} />
         </div>
       </div>
       <Tabs
