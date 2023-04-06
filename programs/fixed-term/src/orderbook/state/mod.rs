@@ -1,7 +1,9 @@
+mod borrow;
 mod event_queue;
 mod lend;
 mod rounding;
 
+pub use borrow::*;
 pub use event_queue::*;
 pub use lend::*;
 pub use rounding::*;

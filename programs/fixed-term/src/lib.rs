@@ -127,18 +127,20 @@ pub(crate) mod utils;
 
 pub(crate) mod instructions;
 use instructions::*;
-use margin::state::AutoRollConfig;
 
 #[macro_use]
 extern crate bitflags;
 
 use anchor_lang::prelude::*;
+use margin::state::{AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig};
 use orderbook::state::OrderParams;
 
 declare_id!("JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc");
 
 #[program]
 pub mod jet_fixed_term {
+    use crate::margin::state::BorrowAutoRollConfig;
+
     use super::*;
 
     //
@@ -203,18 +205,40 @@ pub mod jet_fixed_term {
     // =============================================
     //
 
+    /// Instruction for authorized servicer to auto roll a `TermLoan` into another order
+    pub fn auto_roll_borrow_order(ctx: Context<AutoRollBorrowOrder>) -> Result<()> {
+        instructions::auto_roll_borrow_order::handler(ctx)
+    }
+
     /// Instruction for authorized servicer to auto roll a matured `TermDeposit` into another order
     pub fn auto_roll_lend_order(ctx: Context<AutoRollLendOrder>) -> Result<()> {
         instructions::auto_roll_lend_order::handler(ctx)
     }
 
     /// Configure settings for rolling orders
-    pub fn configure_auto_roll(
+    pub fn configure_auto_roll_borrow(
         ctx: Context<ConfigureAutoRoll>,
-        side: u8,
-        config: AutoRollConfig,
+        config: BorrowAutoRollConfig,
     ) -> Result<()> {
-        instructions::configure_auto_roll::handler(ctx, side, config)
+        instructions::configure_auto_roll::handler(ctx, AutoRollConfig::Borrow(config))
+    }
+
+    /// Configure settings for rolling orders
+    pub fn configure_auto_roll_lend(
+        ctx: Context<ConfigureAutoRoll>,
+        config: LendAutoRollConfig,
+    ) -> Result<()> {
+        instructions::configure_auto_roll::handler(ctx, AutoRollConfig::Lend(config))
+    }
+
+    /// Prevent a deposit from auto rolling
+    pub fn stop_auto_roll_deposit(ctx: Context<StopAutoRollDeposit>) -> Result<()> {
+        instructions::stop_auto_roll_deposit::handler(ctx)
+    }
+
+    /// Prevent a loan from auto rolling
+    pub fn stop_auto_roll_loan(ctx: Context<StopAutoRollLoan>) -> Result<()> {
+        instructions::stop_auto_roll_loan::handler(ctx)
     }
 
     /// Create a new borrower account
