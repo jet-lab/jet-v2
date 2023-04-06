@@ -43,7 +43,7 @@ const getPostOrderColumns = ({
       title: 'Issue date',
       dataIndex: 'created_timestamp',
       key: 'created_timestamp',
-      render: (date: number) => `${formatDistanceToNowStrict(date)} ago`,
+      render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
       sorter: (a, b) => a.created_timestamp - b.created_timestamp,
       sortDirections: ['descend']
     },

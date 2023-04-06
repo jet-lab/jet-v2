@@ -10,7 +10,7 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
     title: 'Created',
     dataIndex: 'created_timestamp',
     key: 'created_timestamp',
-    render: (date: string) => `${formatDistanceToNowStrict(new Date(date), { addSuffix: true })}`,
+    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
     sorter: (a, b) => a.created_timestamp - b.created_timestamp,
     sortDirections: ['descend']
   },
@@ -18,7 +18,7 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
     title: 'Maturity',
     dataIndex: 'maturation_timestamp',
     key: 'maturation_timestamp',
-    render: (date: string) => `${formatDistanceToNowStrict(new Date(date), { addSuffix: true })}`,
+    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
     sorter: (a, b) => a.maturation_timestamp - b.maturation_timestamp,
     sortDirections: ['descend']
   },
