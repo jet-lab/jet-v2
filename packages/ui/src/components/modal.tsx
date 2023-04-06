@@ -26,12 +26,11 @@ export const Modal = ({ children, title, overlay = true, className, onClose }: B
           )}
           <Dialog.Content className="absolute top-0 right-0 left-0 bottom-0 h-screen w-screen">
             <div
-              className={`absolute top-1/2 left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 transform flex-col rounded bg-gradient-to-r from-[#292929] to-[#0E0E0E] p-6 shadow ${
-                className ? className : ''
-              }`}>
+              className={`absolute top-1/2 left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 transform flex-col rounded bg-gradient-to-r from-[#292929] to-[#0E0E0E] p-6 shadow ${className ? className : ''
+                }`}>
               <Dialog.Close
                 asChild
-                className="absolute right-3 top-3 flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-neutral-700"
+                className="absolute right-3 top-3 flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-neutral-700 close-modal-button"
                 aria-label="Close"
                 onClick={onClose}>
                 <Cross2Icon />
