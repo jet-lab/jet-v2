@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{events, MarginAccount, Permissions, Permit, TokenConfig};
+use crate::{events, ErrorCode, MarginAccount, Permissions, Permit, TokenConfig};
 
 #[derive(Accounts)]
 pub struct RefreshPositionConfig<'info> {
@@ -26,9 +26,11 @@ pub struct RefreshPositionConfig<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The config account for the token, which has been updated
+    #[account(constraint = config.airspace == margin_account.load()?.airspace @ ErrorCode::WrongAirspace)]
     pub config: Account<'info, TokenConfig>,
 
     /// permit that authorizes the refresher
+    #[account(constraint = permit.airspace == margin_account.load()?.airspace @ ErrorCode::WrongAirspace)]
     pub permit: Account<'info, Permit>,
 
     /// account that is authorized to refresh position metadata
