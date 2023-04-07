@@ -4,6 +4,7 @@ import { E2EWalletAdapter } from '@jet-lab/e2e-react-adapter';
 import { WalletProvider } from '@solana/wallet-adapter-react';
 import {
   // PhantomWalletAdapter,
+  BackpackWalletAdapter,
   MathWalletAdapter,
   SolflareWalletAdapter,
   SolongWalletAdapter,
@@ -30,6 +31,7 @@ export const App = (): JSX.Element => {
   const wallets = useMemo(
     () => [
       // new PhantomWalletAdapter(),
+      new BackpackWalletAdapter(),
       new BraveWalletAdapter(),
       new SolflareWalletAdapter(),
       new SolongWalletAdapter(),
