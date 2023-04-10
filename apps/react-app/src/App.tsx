@@ -30,8 +30,6 @@ const isDebug = window.location.href.includes('localhost');
 export const App = (): JSX.Element => {
   const wallets = useMemo(
     () => [
-      // new PhantomWalletAdapter(),
-      new BackpackWalletAdapter(),
       new BraveWalletAdapter(),
       new SolflareWalletAdapter(),
       new SolongWalletAdapter(),
