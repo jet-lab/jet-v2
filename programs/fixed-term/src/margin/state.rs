@@ -1,3 +1,5 @@
+pub use super::repay::*;
+
 use std::ops::Range;
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
@@ -11,8 +13,10 @@ use jet_program_common::{
 
 use crate::{
     events::{AssetsUpdated, DebtUpdated, TermLoanCreated},
-    instructions::MarginBorrowOrder,
-    orderbook::state::{MarginCallbackInfo, OrderTag, RoundingAction, SensibleOrderSummary},
+    orderbook::state::{
+        MarginBorrowOrderAccounts, MarginCallbackInfo, OrderTag, RoundingAction,
+        SensibleOrderSummary,
+    },
     serialization::{self, AnchorAccount, Mut},
     FixedTermErrorCode,
 };
@@ -46,9 +50,9 @@ pub struct MarginUser {
     /// Accounting used to track assets in custody of the fixed term market
     assets: Assets,
     /// Settings for borrow order "auto rolling"
-    pub borrow_roll_config: AutoRollConfig,
+    pub borrow_roll_config: Option<BorrowAutoRollConfig>,
     /// Settings for lend order "auto rolling"
-    pub lend_roll_config: AutoRollConfig,
+    pub lend_roll_config: Option<LendAutoRollConfig>,
 }
 
 impl MarginUser {
@@ -543,8 +547,25 @@ impl Default for Assets {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AutoRollConfig {
+    Borrow(BorrowAutoRollConfig),
+    Lend(LendAutoRollConfig),
+}
+
 #[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
-pub struct AutoRollConfig {
+pub struct BorrowAutoRollConfig {
+    /// the limit price at which orders may be placed by an authority
+    pub limit_price: u64,
+
+    /// The 'auto-roll' function for borrowers is determined by a user-controlled tenor. The auto-roll
+    /// service will attempt to auto-roll any orders with a matured `roll_tenor`, regardless of the
+    /// maturity of the `TermLoan`
+    pub roll_tenor: u64,
+}
+
+#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub struct LendAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,
 }
@@ -636,7 +657,7 @@ pub struct TermLoanBuilder {
 impl TermLoanBuilder {
     /// Initialize a new builder from the information given by a borrow order
     pub fn new_from_order(
-        accs: &MarginBorrowOrder,
+        accs: &MarginBorrowOrderAccounts,
         summary: &SensibleOrderSummary,
         info: &MarginCallbackInfo,
         strike_timestamp: UnixTimestamp,
@@ -698,7 +719,7 @@ impl TermLoanBuilder {
         Ok(())
     }
 
-    pub fn init<'info>(
+    fn init<'info>(
         &self,
         loan: impl ToAccountInfo<'info>,
         payer: impl ToAccountInfo<'info>,
@@ -721,7 +742,10 @@ bitflags! {
     #[derive(Default, AnchorSerialize, AnchorDeserialize)]
     pub struct TermLoanFlags: u8 {
         /// This term loan has already been marked as due.
-        const MARKED_DUE = 0b00000001;
+        const MARKED_DUE = 1 << 0;
+
+        /// The loan can be auto rolled
+        const AUTO_ROLL = 1 << 1;
     }
 }
 

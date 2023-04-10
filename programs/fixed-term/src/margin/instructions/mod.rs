@@ -1,3 +1,4 @@
+pub mod auto_roll_borrow_order;
 pub mod auto_roll_lend_order;
 pub mod configure_auto_roll;
 pub mod initialize_margin_user;
@@ -8,7 +9,10 @@ pub mod margin_sell_tickets_order;
 pub mod refresh_position;
 pub mod repay;
 pub mod settle;
+pub mod stop_auto_roll_deposit;
+pub mod stop_auto_roll_loan;
 
+pub use auto_roll_borrow_order::*;
 pub use auto_roll_lend_order::*;
 pub use configure_auto_roll::*;
 pub use initialize_margin_user::*;
@@ -19,3 +23,5 @@ pub use margin_sell_tickets_order::*;
 pub use refresh_position::*;
 pub use repay::*;
 pub use settle::*;
+pub use stop_auto_roll_deposit::*;
+pub use stop_auto_roll_loan::*;
