@@ -10,7 +10,7 @@ services:
     # ports:
     #   - 27017:27017
   postgres:
-    image: gcr.io/kubernetes-608504/jet-data-postgres:pr
+    image: gcr.io/kubernetes-608504/jet-data-postgres:development
     environment:
       - POSTGRES_PASSWORD=password123
       - POSTGRES_DB=flightlogs
@@ -18,7 +18,7 @@ services:
     # ports:
     #   - 5432:5432
   api:
-    image: gcr.io/kubernetes-608504/jet-data-v2-black-box:pr
+    image: gcr.io/kubernetes-608504/jet-data-v2-black-box:development
     environment:
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
       - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
@@ -28,14 +28,14 @@ services:
       - 3002:3002
     restart: always
   poller:
-    image: gcr.io/kubernetes-608504/jet-data-v2-eventpoller:pr
+    image: gcr.io/kubernetes-608504/jet-data-v2-eventpoller:development
     environment:
       - POLLER_PROGRAMS=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8,JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ,JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG,JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN,JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp,JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi,JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc
       - SOLANA_ENDPOINT=http://172.17.0.1:8899
       - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
     restart: always
   parser:
-    image: gcr.io/kubernetes-608504/jet-data-v2-eventparser:pr
+    image: gcr.io/kubernetes-608504/jet-data-v2-eventparser:development
     environment:
       - SOLANA_ENDPOINT=http://172.17.0.1:8899
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
