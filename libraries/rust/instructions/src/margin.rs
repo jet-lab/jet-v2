@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::collections::HashSet;
+
 use anchor_spl::associated_token::get_associated_token_address;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
@@ -23,6 +25,10 @@ use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
 use anchor_lang::prelude::{AccountMeta, Id, System, ToAccountMetas};
 use anchor_lang::{system_program, InstructionData};
+
+use lookup_table_registry_client::{
+    derive_lookup_table_address, LOOKUP_TABLE_ID, LOOKUP_TABLE_REGISTRY_ID,
+};
 
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
@@ -144,6 +150,92 @@ impl MarginIxBuilder {
             program_id: JetMargin::id(),
             data: ix_data::CloseAccount.data(),
             accounts: accounts.to_account_metas(None),
+        }
+    }
+
+    /// Get instruction to create address lookup registry account
+    pub fn init_lookup_registry(&self) -> Instruction {
+        let registry_account = self.registry_address();
+        let accounts = ix_account::InitLookupRegistry {
+            margin_authority: self.owner,
+            payer: self.payer(),
+            margin_account: self.address,
+            registry_account,
+            registry_program: LOOKUP_TABLE_REGISTRY_ID,
+            system_program: SYSTEM_PROGAM_ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: JetMargin::id(),
+            data: ix_data::InitLookupRegistry.data(),
+            accounts,
+        }
+    }
+
+    /// Get instruction to create a new lookup table in a lookup registry account
+    pub fn create_lookup_table(&self, slot: u64) -> (Instruction, Pubkey) {
+        let lookup_table = derive_lookup_table_address(&self.address, slot);
+        let accounts = ix_account::CreateLookupTable {
+            margin_authority: self.owner,
+            payer: self.payer(),
+            margin_account: self.address,
+            registry_account: self.registry_address(),
+            registry_program: LOOKUP_TABLE_REGISTRY_ID,
+            system_program: SYSTEM_PROGAM_ID,
+            lookup_table,
+            address_lookup_table_program: LOOKUP_TABLE_ID,
+        }
+        .to_account_metas(None);
+
+        (
+            Instruction {
+                program_id: JetMargin::id(),
+                data: ix_data::CreateLookupTable {
+                    recent_slot: slot,
+                    discriminator: 10, // TODO: determine a stable discriminator
+                }
+                .data(),
+                accounts,
+            },
+            lookup_table,
+        )
+    }
+
+    /// Get instruction to append accounts to a lookup table
+    pub fn append_to_lookup_table(
+        &self,
+        lookup_table: Pubkey,
+        addresses: &[Pubkey],
+    ) -> Instruction {
+        // TODO: Deduplicate accounts before appending.
+        // We have to determine how we'd interact with the registry Rust client,
+        // as it already does this. Perhaps move the logic into a shared utility.
+        let accounts = ix_account::AppendToLookup {
+            margin_authority: self.owner,
+            payer: self.payer(),
+            margin_account: self.address,
+            registry_account: self.registry_address(),
+            registry_program: LOOKUP_TABLE_REGISTRY_ID,
+            system_program: SYSTEM_PROGAM_ID,
+            lookup_table,
+            address_lookup_table_program: LOOKUP_TABLE_ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: JetMargin::id(),
+            data: ix_data::AppendToLookup {
+                discriminator: 10, // TODO: determine a stable discriminator
+                addresses: addresses
+                    .iter()
+                    .cloned()
+                    .collect::<HashSet<_>>()
+                    .into_iter()
+                    .collect(),
+            }
+            .data(),
+            accounts,
         }
     }
 
@@ -470,6 +562,10 @@ impl MarginIxBuilder {
     #[inline]
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> Pubkey {
         derive_position_token_account(&self.address, position_token_mint)
+    }
+
+    fn registry_address(&self) -> Pubkey {
+        Pubkey::find_program_address(&[self.address.as_ref()], &LOOKUP_TABLE_REGISTRY_ID).0
     }
 }
 
