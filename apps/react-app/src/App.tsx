@@ -3,8 +3,6 @@ import { RecoilRoot } from 'recoil';
 import { E2EWalletAdapter } from '@jet-lab/e2e-react-adapter';
 import { WalletProvider } from '@solana/wallet-adapter-react';
 import {
-  // PhantomWalletAdapter,
-  BackpackWalletAdapter,
   MathWalletAdapter,
   SolflareWalletAdapter,
   SolongWalletAdapter,
