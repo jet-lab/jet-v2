@@ -55,8 +55,9 @@ async fn margin_lookup_table_registry() -> anyhow::Result<()> {
     {
         use std::time::Duration;
 
-        use jet_simulation::generate_keypair;
-        use solana_sdk::signature::Signer;
+        use jet_simulation::{Keygen, RandomKeygen};
+
+        let keygen = RandomKeygen;
 
         // Create a lookup table in a registry
         let lookup_table = user.create_lookup_table().await?;
@@ -68,7 +69,7 @@ async fn margin_lookup_table_registry() -> anyhow::Result<()> {
         // TODO: The library should have control over accounts to prevent
         // a free-for-all
         let addresses = (0..12)
-            .map(|_| generate_keypair().pubkey())
+            .map(|_| keygen.generate_key().pubkey())
             .collect::<Vec<_>>();
         user.append_to_lookup_table(lookup_table, &addresses[..])
             .await?;
