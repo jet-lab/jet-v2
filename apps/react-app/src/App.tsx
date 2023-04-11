@@ -3,7 +3,6 @@ import { RecoilRoot } from 'recoil';
 import { E2EWalletAdapter } from '@jet-lab/e2e-react-adapter';
 import { WalletProvider } from '@solana/wallet-adapter-react';
 import {
-  // PhantomWalletAdapter,
   MathWalletAdapter,
   SolflareWalletAdapter,
   SolongWalletAdapter,
@@ -29,7 +28,6 @@ const isDebug = window.location.href.includes('localhost');
 export const App = (): JSX.Element => {
   const wallets = useMemo(
     () => [
-      // new PhantomWalletAdapter(),
       new BraveWalletAdapter(),
       new SolflareWalletAdapter(),
       new SolongWalletAdapter(),
