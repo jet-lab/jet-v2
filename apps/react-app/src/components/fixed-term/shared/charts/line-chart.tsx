@@ -10,10 +10,17 @@ import { Group } from '@visx/group';
 import { localPoint } from '@visx/event';
 import { pointAtCoordinateX } from './utils';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
-import { useSetRecoilState } from 'recoil';
-import { SelectedFixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
+import { useSetRecoilState, useRecoilValue } from 'recoil';
+import {
+  SelectedFixedTermMarketAtom,
+  CurrentOrderTab,
+  CurrentOrderTabAtom,
+  FixedTermMarketAtom
+} from '@state/fixed-term/fixed-term-market-sync';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useCurrencyFormatting } from '@utils/currency';
+import {  } from 'recoil';
+import { MarketAndConfig } from '@jet-lab/margin';
 
 const tooltipStyles = {
   ...defaultStyles,
@@ -294,10 +301,11 @@ export const LineChart = ({
 
 interface ResponsiveLineChartProps {
   series: ISeries[];
-  isRequest: boolean;
   symbol: string;
 }
-export const ResponsiveLineChart = ({ series, isRequest, symbol }: ResponsiveLineChartProps) => {
+export const ResponsiveLineChart = ({ series, symbol }: ResponsiveLineChartProps) => {
+  const market = useRecoilValue(FixedTermMarketAtom);
+  const currentTab = useRecoilValue(CurrentOrderTabAtom);
   return (
     <div className="responsive-line-chart-container">
       <div className="responsive-line-chart-y-label">Annualised interest rate</div>
@@ -320,8 +328,23 @@ export const ResponsiveLineChart = ({ series, isRequest, symbol }: ResponsiveLin
         }
       </ParentSizeModern>
       <div className="responsive-line-chart-x-label">
-        {isRequest ? `Cumulative ${symbol} requests` : `Cumulative ${symbol} offers`}
+        {getChartXAxisLabel(currentTab, market)}
       </div>
     </div>
   );
+};
+
+const getChartXAxisLabel = (currentTab: CurrentOrderTab, market: MarketAndConfig | null) => {
+  if (!market?.config?.symbol) return '';
+  switch (currentTab) {
+    case 'borrow-now':
+      return `Cumulative ${market.config.symbol} offers`;
+    case 'lend-now':
+      return `Cumulative ${market.config.symbol} requests`;
+    case 'offer-loan':
+      return `Cumulative ${market.config.symbol} offers`;
+    case 'request-loan':
+      return `Cumulative ${market.config.symbol} requests`
+  }
+  return '';
 };
