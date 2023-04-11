@@ -34,6 +34,7 @@ export interface MarketInfo {
   ticketMint: PublicKey
   claimsMint: PublicKey
   ticketCollateralMint: PublicKey
+  tokenCollateralMint: PublicKey
   underlyingOracle: PublicKey
   ticketOracle: PublicKey
   feeVault: PublicKey
@@ -54,8 +55,8 @@ export interface MarginUserInfo {
   marginAccount: PublicKey
   market: PublicKey
   claims: PublicKey
-  collateral: PublicKey
   ticketCollateral: PublicKey
+  tokenCollateral: PublicKey
   debt: DebtInfo
   assets: AssetInfo
   borrowRollConfig: AutoRollConfig
@@ -109,6 +110,8 @@ export class FixedTermMarket {
     claimsMetadata: PublicKey
     ticketCollateralMint: PublicKey
     ticketCollateralMetadata: PublicKey
+    tokenCollateralMint: PublicKey
+    tokenCollateralMetadata: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
     marginAdapterMetadata: PublicKey
@@ -120,6 +123,7 @@ export class FixedTermMarket {
     market: PublicKey,
     claimsMetadata: PublicKey,
     ticketCollateralMetadata: PublicKey,
+    tokenCollateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
     program: Program<JetFixedTerm>,
     info: MarketInfo
@@ -128,6 +132,7 @@ export class FixedTermMarket {
       ...info,
       claimsMetadata,
       ticketCollateralMetadata,
+      tokenCollateralMetadata,
       marginAdapterMetadata,
       market
     }
@@ -166,6 +171,10 @@ export class FixedTermMarket {
       ["token-config", info.airspace, info.ticketCollateralMint],
       new PublicKey(jetMarginProgramId)
     )
+    const tokenCollateralMetadata = await findFixedTermDerivedAccount(
+      ["token-config", info.airspace, info.tokenCollateralMint],
+      new PublicKey(jetMarginProgramId)
+    )
     const marginAdapterMetadata = await findFixedTermDerivedAccount(
       [program.programId],
       new PublicKey(jetMarginProgramId)
@@ -175,6 +184,7 @@ export class FixedTermMarket {
       new PublicKey(market),
       new PublicKey(claimsMetadata),
       new PublicKey(ticketCollateralMetadata),
+      new PublicKey(tokenCollateralMetadata),
       new PublicKey(marginAdapterMetadata),
       program,
       info
@@ -234,7 +244,7 @@ export class FixedTermMarket {
     const marginUser = await this.deriveMarginUserAddress(user)
     const termLoan = await this.deriveTermLoanAddress(marginUser, seed)
     const claims = await this.deriveMarginUserClaims(marginUser)
-    const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    const tokenCollateral = await this.deriveTokenCollateral(marginUser)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
 
     return this.program.methods
@@ -246,7 +256,7 @@ export class FixedTermMarket {
         marginAccount: user.address,
         termLoan,
         claims,
-        ticketCollateral,
+        tokenCollateral,
         payer,
         underlyingSettlement: underlyingSettlement,
         systemProgram: SystemProgram.programId,
@@ -342,6 +352,7 @@ export class FixedTermMarket {
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const marketUser = await this.deriveMarginUserAddress(user)
     const ticketCollateral = await this.deriveTicketCollateral(marketUser)
+    const tokenCollateral = await this.deriveTokenCollateral(marketUser)
     const claims = await this.deriveMarginUserClaims(marketUser)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     return this.program.methods
@@ -351,6 +362,7 @@ export class FixedTermMarket {
         marginUser: marketUser,
         marginAccount: user.address,
         ticketCollateral,
+        tokenCollateral,
         tokenProgram: TOKEN_PROGRAM_ID,
         claims,
         underlyingSettlement,
@@ -418,6 +430,7 @@ export class FixedTermMarket {
     const marginUser = await this.deriveMarginUserAddress(user)
     const claims = await this.deriveMarginUserClaims(marginUser)
     const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    const tokenCollateral = await this.deriveTokenCollateral(marginUser)
     return await this.program.methods
       .initializeMarginUser()
       .accounts({
@@ -426,6 +439,7 @@ export class FixedTermMarket {
         marginAccount: user.address,
         claims,
         ticketCollateral,
+        tokenCollateral,
         payer,
         rent: SYSVAR_RENT_PUBKEY,
         systemProgram: SystemProgram.programId,
@@ -483,6 +497,10 @@ export class FixedTermMarket {
 
   async deriveTicketCollateral(marginUser: Address): Promise<PublicKey> {
     return await findFixedTermDerivedAccount(["ticket_collateral_notes", marginUser], this.program.programId)
+  }
+
+  async deriveTokenCollateral(marginUser: Address): Promise<PublicKey> {
+    return await findFixedTermDerivedAccount(["underlying_collateral_notes", marginUser], this.program.programId)
   }
 
   async deriveTermLoanAddress(marginUser: Address, seed: Uint8Array): Promise<PublicKey> {

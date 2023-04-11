@@ -14,8 +14,10 @@ use hosted_tests::{
     test_default,
 };
 use jet_fixed_term::{
-    margin::{instructions::MarketSide, state::AutoRollConfig},
-    orderbook::state::{CallbackFlags, MarginCallbackInfo, OrderParams, SensibleOrderSummary},
+    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig},
+    orderbook::state::{
+        CallbackFlags, MarginCallbackInfo, OrderParams, RoundingAction, SensibleOrderSummary,
+    },
 };
 use jet_margin_sdk::{
     cat,
@@ -380,9 +382,9 @@ async fn margin_repay() -> Result<()> {
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.debt.pending(), posted_order.base_quantity,);
+    assert_eq!(margin_user.pending_debt(), posted_order.base_quantity,);
     assert_eq!(
-        margin_user.debt.total(),
+        margin_user.total_debt(),
         posted_order.base_quantity + term_loan.balance
     );
 
@@ -392,28 +394,25 @@ async fn margin_repay() -> Result<()> {
     // TODO: assert balances on claims and user wallet
 
     let pre_repayment_term_loan = user.load_term_loan(0).await?;
-    let pre_repayment_debt = user.load_margin_user().await?.debt;
+    let pre_repayment_user = user.load_margin_user().await?;
     let repayment = 400;
     user.repay(0, repayment).await?;
 
     let post_repayment_term_loan = user.load_term_loan(0).await?;
-    let post_repayment_debt = user.load_margin_user().await?.debt;
+    let post_repayment_user = user.load_margin_user().await?;
     assert_eq!(
         pre_repayment_term_loan.balance - repayment,
         post_repayment_term_loan.balance
     );
     assert_eq!(
-        pre_repayment_debt.committed() - repayment,
-        post_repayment_debt.committed()
+        pre_repayment_user.committed_debt() - repayment,
+        post_repayment_user.committed_debt()
     );
 
     user.repay(0, post_repayment_term_loan.balance).await?;
 
-    let repaid_term_loan_debt = user.load_margin_user().await?.debt;
-    assert_eq!(
-        repaid_term_loan_debt.total(),
-        repaid_term_loan_debt.pending()
-    );
+    let margin_user = user.load_margin_user().await?;
+    assert_eq!(margin_user.total_debt(), margin_user.pending_debt());
 
     Ok(())
 }
@@ -470,12 +469,8 @@ async fn settle_many_margin_accounts() -> Result<()> {
 
     let mut trades = vec![];
 
-    // TODO: increase this to be the same as localnet.
-    // for now it seems there is a bug in the solana runtime simulator.
-    #[cfg(not(feature = "localnet"))]
+    // TODO: find exact value
     let n_trades = SETTLES_PER_TX;
-    #[cfg(feature = "localnet")]
-    let n_trades = SETTLES_PER_TX * 3 + 1;
 
     for _ in 0..n_trades {
         trades.push(async {
@@ -556,12 +551,12 @@ async fn margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(1_000, user.underlying_collateral().await?);
     assert_eq!(1_201, user.claims().await?);
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.debt.total(), posted_order.base_quantity,);
+    assert_eq!(margin_user.total_debt(), posted_order.base_quantity,);
 
     Ok(())
 }
@@ -599,12 +594,12 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
     {
         assert_eq!(STARTING_TOKENS, user.tokens().await?);
         assert_eq!(0, user.tickets().await?);
-        assert_eq!(0, user.collateral().await?);
+        assert_eq!(0, user.ticket_collateral().await?);
         assert_eq!(0, user.claims().await?);
         let asks = manager.load_orderbook().await?.asks()?;
         assert_eq!(0, asks.len());
         let margin_user = user.load_margin_user().await.unwrap();
-        assert_eq!(0, margin_user.debt.total());
+        assert_eq!(0, margin_user.total_debt());
     }
 
     Ok(())
@@ -641,7 +636,7 @@ async fn margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_000, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(1_200, user.ticket_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())
@@ -685,7 +680,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(999, borrower.collateral().await?);
+    assert_eq!(1_000, borrower.underlying_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
     // No tokens have been disbursed, so this should be 0
     assert_eq!(0, manager.collected_fees().await?);
@@ -698,7 +693,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
@@ -712,14 +707,14 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;
 
-    assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
+    assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     // FIXME: an exact number would be nice
@@ -761,7 +756,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_000, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     let borrow_params = underlying(1_000, 2_000);
@@ -788,7 +783,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     // FIXME: an exact number would be nice
@@ -801,7 +796,8 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     // using the limit price of the order directly
     let expected_price = {
         let summary = SensibleOrderSummary::new(borrow_params.limit_price, simulated_order);
-        let price = Fp32::from(summary.quote_filled()?) / summary.base_filled();
+        let price = Fp32::from(summary.quote_filled(RoundingAction::FillBorrow.direction())?)
+            / summary.base_filled();
         price.downcast_u64().unwrap()
     };
     let expected_rate =
@@ -818,12 +814,12 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     // todo improve the rounding situation to make this 1_000
     assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
-    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(0, borrower.ticket_collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(1_201, lender.ticket_collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     Ok(())
@@ -858,7 +854,7 @@ async fn margin_sell_tickets() -> Result<()> {
 
     assert_eq!(STARTING_TOKENS - 10_000, user.tokens().await?);
     assert_eq!(8_800, user.tickets().await?);
-    assert_eq!(999, user.collateral().await?);
+    assert_eq!(999, user.ticket_collateral().await?);
     assert_eq!(0, user.claims().await?);
 
     Ok(())
@@ -879,30 +875,51 @@ async fn auto_roll_settings_are_correct() -> Result<()> {
     .await;
 
     // can properly set config
+    let market_tenor = manager.load_market().await?.borrow_tenor;
     let lend_price = OrderAmount::from_base_amount_rate(1_000, 1_000).price;
     let borrow_price = OrderAmount::from_base_amount_rate(1_000, 900).price;
-    user.set_roll_config(
-        MarketSide::Lending,
-        AutoRollConfig {
-            limit_price: lend_price,
-        },
-    )
+    let borrow_roll_tenor = market_tenor - 1;
+    user.set_lend_roll_config(LendAutoRollConfig {
+        limit_price: lend_price,
+    })
     .await?;
-    user.set_roll_config(
-        MarketSide::Borrowing,
-        AutoRollConfig {
-            limit_price: borrow_price,
-        },
-    )
+    user.set_borrow_roll_config(BorrowAutoRollConfig {
+        limit_price: borrow_price,
+        roll_tenor: borrow_roll_tenor,
+    })
     .await?;
 
     let margin_user = user.load_margin_user().await?;
-    assert_eq!(margin_user.lend_roll_config.limit_price, lend_price);
-    assert_eq!(margin_user.borrow_roll_config.limit_price, borrow_price);
+    let borrow_roll_config = margin_user.borrow_roll_config.as_ref().unwrap();
+    let lend_roll_config = margin_user.lend_roll_config.as_ref().unwrap();
+
+    assert_eq!(lend_roll_config.limit_price, lend_price);
+    assert_eq!(borrow_roll_config.limit_price, borrow_price);
+    assert_eq!(borrow_roll_config.roll_tenor, borrow_roll_tenor);
 
     // cannot set a bad config
     assert!(user
-        .set_roll_config(MarketSide::Lending, AutoRollConfig { limit_price: 0 })
+        .set_lend_roll_config(LendAutoRollConfig { limit_price: 0 })
+        .await
+        .is_err());
+    assert!(user
+        .set_lend_roll_config(LendAutoRollConfig {
+            limit_price: jet_program_common::FP32_ONE as u64 + 1
+        })
+        .await
+        .is_err());
+    assert!(user
+        .set_borrow_roll_config(BorrowAutoRollConfig {
+            limit_price: borrow_price,
+            roll_tenor: market_tenor + 1,
+        })
+        .await
+        .is_err());
+    assert!(user
+        .set_borrow_roll_config(BorrowAutoRollConfig {
+            limit_price: borrow_price,
+            roll_tenor: 0,
+        })
         .await
         .is_err());
 
@@ -945,12 +962,10 @@ async fn auto_roll_flags() -> Result<()> {
         .await;
     assert!(res.is_err());
 
-    user.set_roll_config(
-        MarketSide::Borrowing,
-        AutoRollConfig {
-            limit_price: params.limit_price,
-        },
-    )
+    user.set_borrow_roll_config(BorrowAutoRollConfig {
+        limit_price: params.limit_price,
+        roll_tenor: manager.load_market().await?.borrow_tenor - 1,
+    })
     .await?;
 
     borrow_order
@@ -996,12 +1011,9 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     .await;
     let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     lender
-        .set_roll_config(
-            MarketSide::Lending,
-            AutoRollConfig {
-                limit_price: underlying(1_001, 2_000).limit_price,
-            },
-        )
+        .set_lend_roll_config(LendAutoRollConfig {
+            limit_price: underlying(1_001, 2_000).limit_price,
+        })
         .await?;
     let mut lend_params = underlying(1_001, 2_000);
     lend_params.auto_roll = true;
@@ -1045,7 +1057,7 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     #[cfg(not(feature = "localnet"))]
     {
         let mut clock = manager.client.get_clock().await?;
-        clock.unix_timestamp += 6;
+        clock.unix_timestamp += hosted_tests::fixed_term::LEND_TENOR as i64 + 1;
         manager.client.set_clock(clock).await?;
     }
     #[cfg(feature = "localnet")]
@@ -1124,6 +1136,97 @@ async fn fixed_term_borrow_becomes_unhealthy_without_collateral() -> Result<(), 
     .await?;
 
     assert!(borrower.verify_healthy().await.is_err());
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn auto_roll_borrow_order_is_correct() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    let borrower = create_and_fund_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+    let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
+
+    let borrow_params = OrderParams {
+        auto_roll: true,
+        ..underlying(1_000, 2_000)
+    };
+    let lend_params = underlying(1_000_000, 2000);
+
+    let roll_tenor = 1;
+    borrower
+        .set_borrow_roll_config(BorrowAutoRollConfig {
+            limit_price: borrow_params.limit_price,
+            roll_tenor,
+        })
+        .await?;
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(
+        borrower
+            .refresh_and_margin_borrow_order(borrow_params)
+            .await?,
+    )
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    manager.consume_events().await?;
+
+    // let the `TermDeposit` mature
+    #[cfg(not(feature = "localnet"))]
+    {
+        let mut clock = manager.client.get_clock().await?;
+        clock.unix_timestamp += roll_tenor as i64;
+        manager.client.set_clock(clock).await?;
+    }
+    #[cfg(feature = "localnet")]
+    {
+        std::thread::sleep(std::time::Duration::from_secs(roll_tenor));
+    }
+
+    let pre_roll_loan = borrower.get_active_term_loans().await?[0].clone();
+    manager
+        .auto_roll_term_loans(&borrower.proxy.pubkey())
+        .await?;
+    let post_roll_loans = borrower.get_active_term_loans().await?;
+
+    // we had enough liquidity, so the first loan should be fully repaid, leaving only one
+    assert!(post_roll_loans.len() < 2);
+
+    // FIXME: add the fee calculation to get an exact number
+    // The principal of the new loan is the balance of the previous, plus an originiation fee
+    assert!(pre_roll_loan.balance < post_roll_loans[0].principal);
 
     Ok(())
 }

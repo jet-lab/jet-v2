@@ -31,6 +31,7 @@ pub struct RefreshDepositPosition<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The margin config for the token
+    #[account(constraint = config.airspace == margin_account.load()?.airspace @ ErrorCode::WrongAirspace)]
     pub config: Account<'info, TokenConfig>,
 
     /// The oracle for the token

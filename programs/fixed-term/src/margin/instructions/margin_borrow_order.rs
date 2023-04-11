@@ -1,20 +1,9 @@
-use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token::get_associated_token_address, token::Token};
-use jet_margin::{AdapterResult, PositionChange};
-use jet_program_common::traits::SafeSub;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    events::TermLoanCreated,
-    margin::{
-        events::{OrderPlaced, OrderType},
-        origination_fee::loan_to_disburse,
-        state::{return_to_margin, AutoRollConfig, MarginUser, TermLoan, TermLoanFlags},
-    },
-    market_token_manager::MarketTokenManager,
-    orderbook::state::*,
-    serialization::{self, RemainingAccounts},
+    margin::state::MarginUser, orderbook::state::*, serialization::RemainingAccounts,
     FixedTermErrorCode,
 };
 
@@ -25,7 +14,7 @@ pub struct MarginBorrowOrder<'info> {
         mut,
         has_one = margin_account,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
-        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        has_one = underlying_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -49,11 +38,11 @@ pub struct MarginBorrowOrder<'info> {
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
-    pub ticket_collateral: AccountInfo<'info>,
+    pub underlying_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut, address = orderbook_mut.ticket_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
-    pub ticket_collateral_mint: AccountInfo<'info>,
+    #[account(mut, address = orderbook_mut.underlying_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint)]
+    pub underlying_collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
     #[account(mut, address = orderbook_mut.vault() @ FixedTermErrorCode::WrongVault)]
@@ -85,131 +74,29 @@ pub struct MarginBorrowOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<MarginBorrowOrder>, mut params: OrderParams) -> Result<()> {
-    let origination_fee = {
-        let manager = ctx.accounts.orderbook_mut.market.load()?;
-        params.max_ticket_qty = manager.borrow_order_qty(params.max_ticket_qty);
-        params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
-        manager.origination_fee
-    };
-    let auto_roll = if params.auto_roll {
-        if ctx.accounts.margin_user.borrow_roll_config == AutoRollConfig::default() {
-            msg!(
-                "Auto roll settings have not been configured for margin user [{}]",
-                ctx.accounts.margin_user.key()
-            );
-            return err!(FixedTermErrorCode::InvalidAutoRollConfig);
-        }
-        CallbackFlags::AUTO_ROLL
-    } else {
-        CallbackFlags::default()
-    };
-    let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_margin_order(
-        Side::Ask,
-        params,
-        ctx.accounts.margin_account.key(),
-        ctx.accounts.margin_user.key(),
-        ctx.remaining_accounts
+pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams) -> Result<()> {
+    let a = ctx.accounts;
+    MarginBorrowOrderAccounts {
+        margin_user: &mut a.margin_user,
+        term_loan: &a.term_loan,
+        margin_account: &a.margin_account,
+        claims: &a.claims,
+        claims_mint: &a.claims_mint,
+        underlying_collateral: &a.underlying_collateral,
+        underlying_collateral_mint: &a.underlying_collateral_mint,
+        underlying_token_vault: &a.underlying_token_vault,
+        fee_vault: &a.fee_vault,
+        underlying_settlement: &a.underlying_settlement,
+        orderbook_mut: &mut a.orderbook_mut,
+        payer: &a.payer,
+        system_program: &a.system_program.to_account_info(),
+        token_program: &a.token_program.to_account_info(),
+        event_adapter: ctx
+            .remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::NEW_DEBT | CallbackFlags::MARGIN | auto_roll,
-    )?;
-
-    let debt = &mut ctx.accounts.margin_user.debt;
-    debt.post_borrow_order(order_summary.base_posted())?;
-    if order_summary.base_filled() > 0 {
-        let manager = ctx.accounts.orderbook_mut.market.load()?;
-        let current_time = Clock::get()?.unix_timestamp;
-        let maturation_timestamp = manager.borrow_tenor as i64 + current_time;
-        let sequence_number =
-            debt.new_term_loan_without_posting(order_summary.base_filled(), maturation_timestamp)?;
-
-        let mut term_loan = serialization::init::<TermLoan>(
-            ctx.accounts.term_loan.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-            &[
-                crate::seeds::TERM_LOAN,
-                ctx.accounts.orderbook_mut.market.key().as_ref(),
-                ctx.accounts.margin_user.key().as_ref(),
-                &sequence_number.to_le_bytes(),
-            ],
-        )?;
-        let quote_filled = order_summary.quote_filled()?;
-        let disburse = manager.loan_to_disburse(quote_filled);
-        let fees = quote_filled.safe_sub(disburse)?;
-        ctx.withdraw(
-            &ctx.accounts.underlying_token_vault,
-            &ctx.accounts.fee_vault,
-            fees,
-        )?;
-        let base_filled = order_summary.base_filled();
-        *term_loan = TermLoan {
-            sequence_number,
-            margin_user: ctx.accounts.margin_user.key(),
-            market: ctx.accounts.orderbook_mut.market.key(),
-            payer: ctx.accounts.payer.key(),
-            order_tag: callback_info.order_tag,
-            maturation_timestamp,
-            strike_timestamp: current_time,
-            principal: quote_filled,
-            interest: base_filled.safe_sub(quote_filled)?,
-            balance: base_filled,
-            flags: TermLoanFlags::default(),
-        };
-        drop(manager);
-        ctx.withdraw(
-            &ctx.accounts.underlying_token_vault,
-            &ctx.accounts.underlying_settlement,
-            disburse,
-        )?;
-
-        emit!(TermLoanCreated {
-            term_loan: term_loan.key(),
-            authority: ctx.accounts.margin_account.key(),
-            payer: ctx.accounts.payer.key(),
-            order_tag: callback_info.order_tag.as_u128(),
-            sequence_number,
-            market: ctx.accounts.orderbook_mut.market.key(),
-            maturation_timestamp,
-            quote_filled,
-            base_filled,
-            flags: term_loan.flags,
-            fees,
-        });
     }
-    let total_debt = order_summary.base_combined();
-    ctx.mint(&ctx.accounts.claims_mint, &ctx.accounts.claims, total_debt)?;
-    ctx.mint(
-        &ctx.accounts.ticket_collateral_mint,
-        &ctx.accounts.ticket_collateral,
-        loan_to_disburse(order_summary.quote_posted()?, origination_fee),
-    )?;
-
-    emit!(OrderPlaced {
-        market: ctx.accounts.orderbook_mut.market.key(),
-        authority: ctx.accounts.margin_account.key(),
-        margin_user: Some(ctx.accounts.margin_user.key()),
-        order_tag: callback_info.order_tag.as_u128(),
-        order_summary: order_summary.summary(),
-        limit_price: params.limit_price,
-        auto_stake: params.auto_stake,
-        post_only: params.post_only,
-        post_allowed: params.post_allowed,
-        order_type: OrderType::MarginBorrow,
-    });
-    ctx.accounts.margin_user.emit_debt_balances();
-
-    // this is just used to make sure the position is still registered.
-    // it's actually registered by initialize_margin_user
-    return_to_margin(
-        &ctx.accounts.margin_account.to_account_info(),
-        &AdapterResult {
-            position_changes: vec![(
-                ctx.accounts.claims_mint.key(),
-                vec![PositionChange::Register(ctx.accounts.claims.key())],
-            )],
-        },
-    )
+    .borrow_order(params)?;
+    Ok(())
 }

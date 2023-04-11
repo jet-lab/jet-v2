@@ -6,8 +6,8 @@ pub enum FixedTermErrorCode {
     ArithmeticOverflow,
     #[msg("underflow occured on checked_sub")]
     ArithmeticUnderflow,
-    #[msg("bad fixed-point division")]
-    FixedPointDivision,
+    #[msg("bad fixed-point operation")]
+    FixedPointMath,
     #[msg("owner does not own the ticket")]
     DoesNotOwnTicket,
     #[msg("signer does not own the event adapter")]
@@ -102,6 +102,10 @@ pub enum FixedTermErrorCode {
         "the wrong account was provided for the token account that represents a user's collateral"
     )]
     WrongTicketCollateralAccount,
+    #[msg(
+        "the wrong account was provided for the token account that represents a user's collateral"
+    )]
+    WrongUnderlyingCollateralAccount,
     #[msg("the wrong account was provided for the claims token mint")]
     WrongClaimMint,
     #[msg("the wrong account was provided for the collateral token mint")]
@@ -128,8 +132,10 @@ pub enum FixedTermErrorCode {
     ZeroDivision,
     #[msg("missing authority signature")]
     MissingAuthoritySignature,
-    #[msg("this deposit is not configured for an auto roll")]
-    TermDepositIsNotAutoRoll,
+    #[msg("auto roll is not enabled for this item")]
+    AutoRollDisabled,
+    #[msg("auto roll requirements not met")]
+    AutoRollNotReady,
     #[msg("missing TermDeposit initialization parameters")]
     MissingTermDepositParameters,
     #[msg("incorrect margin account was sent to the instruction")]

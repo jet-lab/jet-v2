@@ -1,15 +1,16 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor, mint_to, Mint, MintTo, Token, TokenAccount};
+use jet_program_common::traits::SafeAdd;
 
 use crate::{
-    margin::state::{AutoRollConfig, MarginUser},
+    margin::state::MarginUser,
     tickets::state::{InitTermDepositAccounts, TermDepositWriter},
     FixedTermErrorCode,
 };
 
 use super::{
-    CallbackFlags, CallbackInfo, MarginCallbackInfo, OrderParams, OrderbookMut,
+    CallbackFlags, CallbackInfo, MarginCallbackInfo, OrderParams, OrderbookMut, RoundingAction,
     SensibleOrderSummary,
 };
 
@@ -178,7 +179,7 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
                 payer: self.payer.key(),
                 order_tag: info.order_tag.as_u128(),
                 amount: summary.base_filled(),
-                principal: summary.quote_filled()?,
+                principal: summary.quote_filled(RoundingAction::FillLend.direction())?,
                 tenor: self.orderbook_mut.market.load()?.lend_tenor,
                 sequence_number: 0,
                 flags: info.flags.into(),
@@ -214,10 +215,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
 
         let deposit = self.maybe_term_deposit(&info, &summary)?;
         self.margin_lend(&summary, deposit, requires_payment)?;
-
-        self.emit_margin_lend_order(params, &info, &summary);
-
-        Ok(())
+        self.emit_margin_lend_order(params, &info, &summary)
     }
 
     fn margin_lend(
@@ -226,9 +224,12 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         deposit: Option<TermDepositWriter>,
         requires_payment: bool,
     ) -> Result<()> {
-        let staked = self.inner.lend(summary, deposit, requires_payment)?;
-        self.margin_user.assets.new_deposit(staked)?;
+        let tickets_staked = self.inner.lend(summary, deposit, requires_payment)?;
+        let tickets_posted = summary.base_posted();
+        self.margin_user
+            .lend_order(tickets_staked, tickets_posted)?;
 
+        // collateralize the ticket value of the order
         mint_to(
             CpiContext::new(
                 self.inner.token_program.to_account_info(),
@@ -239,7 +240,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 },
             )
             .with_signer(&[&self.inner.orderbook_mut.market.load()?.authority_seeds()]),
-            staked + summary.quote_posted()?,
+            tickets_posted.safe_add(tickets_staked)?,
         )
     }
 
@@ -255,16 +256,11 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 payer: self.inner.payer.key(),
                 order_tag: info.order_tag.as_u128(),
                 tenor: self.inner.orderbook_mut.market.load()?.lend_tenor,
-                sequence_number: self.margin_user.assets.next_new_deposit_seqno(),
+                sequence_number: self.margin_user.next_term_deposit(),
                 amount: summary.base_filled(),
-                principal: summary.quote_filled()?,
+                principal: summary.quote_filled(RoundingAction::FillLend.direction())?,
                 flags: info.flags.into(),
-                seed: self
-                    .margin_user
-                    .assets
-                    .next_new_deposit_seqno()
-                    .to_le_bytes()
-                    .to_vec(),
+                seed: self.margin_user.next_term_deposit().to_le_bytes().to_vec(),
             }));
         }
         Ok(None)
@@ -272,7 +268,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
 
     fn order_flags(&self, params: &OrderParams) -> Result<CallbackFlags> {
         let auto_roll = if params.auto_roll {
-            if self.margin_user.lend_roll_config == AutoRollConfig::default() {
+            if self.margin_user.lend_roll_config.is_none() {
                 msg!(
                     "Auto roll settings have not been configured for margin user [{}]",
                     self.margin_user.key()
@@ -297,7 +293,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
         params: &OrderParams,
         info: &MarginCallbackInfo,
         summary: &SensibleOrderSummary,
-    ) {
+    ) -> Result<()> {
         emit!(crate::events::OrderPlaced {
             market: self.inner.orderbook_mut.market.key(),
             authority: self.inner.authority.key(),
@@ -310,6 +306,6 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
             limit_price: params.limit_price,
             order_type: crate::events::OrderType::MarginLend,
         });
-        self.margin_user.emit_asset_balances();
+        self.margin_user.emit_asset_balances()
     }
 }

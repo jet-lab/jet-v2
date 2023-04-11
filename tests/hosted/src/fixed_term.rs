@@ -13,9 +13,8 @@ use async_trait::async_trait;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::{
-        instructions::MarketSide,
-        state::{AutoRollConfig, MarginUser, TermLoan},
+    margin::state::{
+        AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig, MarginUser, TermLoan,
     },
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::TermDeposit,
@@ -79,8 +78,8 @@ pub const MARKET_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
-pub const BORROW_TENOR: u64 = 3;
-pub const LEND_TENOR: u64 = 5; // in seconds
+pub const BORROW_TENOR: u64 = 6;
+pub const LEND_TENOR: u64 = 7; // in seconds
 pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 pub const ORDERBOOK_PARAMS: InitializeMarketParams = InitializeMarketParams {
@@ -221,7 +220,7 @@ impl TestManager {
             .await?;
         self.register_adapter_if_unregistered(&jet_margin_swap::ID, airspace_authority)
             .await?;
-        self.register_tickets_position_metadatata(airspace_authority)
+        self.register_position_metadatata(airspace_authority)
             .await?;
         register_deposit(
             &self.client,
@@ -345,8 +344,7 @@ impl TestManager {
         let mut seq_no = self
             .load_margin_user(margin_account)
             .await?
-            .assets
-            .next_new_deposit_seqno();
+            .next_term_deposit();
         let mut builder = Vec::<TransactionBuilder>::new();
         for (key, deposit) in mature_deposits {
             let ix =
@@ -358,6 +356,45 @@ impl TestManager {
         builder.send_and_confirm_condensed(&self.client).await?;
         Ok(())
     }
+
+    pub async fn auto_roll_term_loans(&self, margin_account: &Pubkey) -> Result<()> {
+        let margin_ix = MarginIxBuilder::new_for_address(
+            self.airspace,
+            *margin_account,
+            self.client.payer().pubkey(),
+        );
+        let roll_tenor = self
+            .load_margin_user(margin_account)
+            .await?
+            .borrow_roll_config
+            .unwrap()
+            .roll_tenor;
+        let current_time = self.client.get_clock().await?.unix_timestamp;
+        let mut loans = self
+            .load_outstanding_loans(*margin_account)
+            .await?
+            .into_iter()
+            .filter(|(_, l)| l.strike_timestamp + roll_tenor as i64 >= current_time)
+            .collect::<Vec<_>>();
+
+        loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
+        let mut builder = Vec::<TransactionBuilder>::new();
+        for (key, loan) in loans {
+            let roll_ix = self.ix_builder.auto_roll_borrow_order(
+                *margin_account,
+                key,
+                loan.payer,
+                self.load_margin_user(margin_account)
+                    .await?
+                    .next_term_loan(),
+            );
+            let accounting_ix = margin_ix.accounting_invoke(roll_ix);
+            builder.push(accounting_ix.into())
+        }
+        builder.send_and_confirm_condensed(&self.client).await?;
+        Ok(())
+    }
+
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption();
 
@@ -504,12 +541,9 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_tickets_position_metadatata(
-        &self,
-        airspace_authority: &Keypair,
-    ) -> Result<()> {
+    pub async fn register_position_metadatata(&self, airspace_authority: &Keypair) -> Result<()> {
         let market = self.load_market().await?;
-        self.register_tickets_position_metadatata_impl(
+        self.register_position_metadata_impl(
             market.claims_mint,
             market.underlying_token_mint,
             TokenKind::Claim,
@@ -517,9 +551,17 @@ impl TestManager {
             airspace_authority,
         )
         .await?;
-        self.register_tickets_position_metadatata_impl(
+        self.register_position_metadata_impl(
             market.ticket_collateral_mint,
             market.ticket_mint,
+            TokenKind::AdapterCollateral,
+            1_00,
+            airspace_authority,
+        )
+        .await?;
+        self.register_position_metadata_impl(
+            market.underlying_collateral_mint,
+            market.underlying_token_mint,
             TokenKind::AdapterCollateral,
             1_00,
             airspace_authority,
@@ -529,7 +571,7 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_tickets_position_metadatata_impl(
+    pub async fn register_position_metadata_impl(
         &self,
         position_token_mint: Pubkey,
         underlying_token_mint: Pubkey,
@@ -985,7 +1027,7 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn margin_borrow_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
-        let debt_seqno = self.load_margin_user().await?.debt.next_new_loan_seqno();
+        let debt_seqno = self.load_margin_user().await?.next_term_loan();
         let borrow =
             self.manager
                 .ix_builder
@@ -1007,11 +1049,7 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn margin_lend_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
-        let deposit_seqno = self
-            .load_margin_user()
-            .await?
-            .assets
-            .next_new_deposit_seqno();
+        let deposit_seqno = self.load_margin_user().await?.next_term_deposit();
         let ix = self.manager.ix_builder.margin_lend_order(
             self.proxy.pubkey(),
             None,
@@ -1049,15 +1087,21 @@ impl<P: Proxy> FixedTermUser<P> {
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 
-    pub async fn set_roll_config(
-        &self,
-        side: MarketSide,
-        config: AutoRollConfig,
-    ) -> Result<Signature> {
-        let set_config =
-            self.manager
-                .ix_builder
-                .configure_auto_roll(self.proxy.pubkey(), side, config);
+    pub async fn set_lend_roll_config(&self, config: LendAutoRollConfig) -> Result<Signature> {
+        let set_config = self
+            .manager
+            .ix_builder
+            .configure_auto_roll(self.proxy.pubkey(), AutoRollConfig::Lend(config));
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
+            .await
+    }
+
+    pub async fn set_borrow_roll_config(&self, config: BorrowAutoRollConfig) -> Result<Signature> {
+        let set_config = self
+            .manager
+            .ix_builder
+            .configure_auto_roll(self.proxy.pubkey(), AutoRollConfig::Borrow(config));
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
             .await
@@ -1093,7 +1137,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let mut loans = vec![];
 
         let user = self.load_margin_user().await?;
-        for seqno in user.debt.active_loans() {
+        for seqno in user.active_loans() {
             loans.push(self.load_term_loan(seqno).await?);
         }
 
@@ -1181,12 +1225,25 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     /// loads the current state of the user collateral balance
-    pub async fn collateral(&self) -> Result<u64> {
+    pub async fn ticket_collateral(&self) -> Result<u64> {
         let key = self
             .manager
             .ix_builder
             .margin_user(self.proxy.pubkey())
             .ticket_collateral;
+        self.manager
+            .load_anchor::<TokenAccount>(&key)
+            .await
+            .map(|a| a.amount)
+    }
+
+    /// loads the current state of the user token collateral balance
+    pub async fn underlying_collateral(&self) -> Result<u64> {
+        let key = self
+            .manager
+            .ix_builder
+            .margin_user(self.proxy.pubkey())
+            .underlying_collateral;
         self.manager
             .load_anchor::<TokenAccount>(&key)
             .await

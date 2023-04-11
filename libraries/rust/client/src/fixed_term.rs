@@ -6,7 +6,10 @@ use spl_associated_token_account::get_associated_token_address;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::{origination_fee::FEE_UNIT, state::TermLoan},
+    margin::{
+        origination_fee::FEE_UNIT,
+        state::{AutoRollConfig, TermLoan},
+    },
     orderbook::state::OrderParams,
     tickets::state::TermDeposit,
 };
@@ -452,6 +455,61 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
         self.account.send_with_refresh(&ixns).await
     }
 
+    /// Configure the auto-roll setting for this account
+    ///
+    /// # Parameters
+    ///
+    /// * `config` - The auto-roll configuration
+    pub async fn configure_auto_roll(&self, config: AutoRollConfig) -> ClientResult<I, ()> {
+        let mut ixns = vec![];
+
+        self.with_user_registration(&mut ixns).await?;
+
+        ixns.push(
+            self.account.builder.adapter_invoke(
+                self.builder
+                    .configure_auto_roll(self.account.address, config),
+            ),
+        );
+
+        self.account.send_with_refresh(&ixns).await
+    }
+
+    /// Stop a deposit from auto-rolling
+    ///
+    /// # Parameters
+    ///
+    /// * `deposit` - The address of the deposit that has been configured to auto-roll
+    pub async fn stop_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<I, ()> {
+        let mut ixns = vec![];
+
+        ixns.push(
+            self.account.builder.adapter_invoke(
+                self.builder
+                    .stop_auto_roll_deposit(self.account.address, deposit),
+            ),
+        );
+
+        self.account.send_with_refresh(&ixns).await
+    }
+
+    /// Stop a loan from auto-rolling
+    ///
+    /// # Parameters
+    ///
+    /// * `loan` - The address of the loan that has been configured to auto-roll
+    pub async fn stop_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<I, ()> {
+        let mut ixns = vec![];
+
+        ixns.push(
+            self.account
+                .builder
+                .adapter_invoke(self.builder.stop_auto_roll_loan(self.account.address, loan)),
+        );
+
+        self.account.send_with_refresh(&ixns).await
+    }
+
     async fn with_user_registration(&self, ixns: &mut Vec<Instruction>) -> ClientResult<I, ()> {
         let user_market_account = self.builder.margin_user_account(self.account.address);
 
@@ -478,27 +536,25 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
 
     fn should_auto_roll_lend_order(&self) -> bool {
         self.get_user_market_state()
-            .map(|s| s.borrow_roll_config.limit_price > 0)
+            .map(|s| s.lend_roll_config.is_some())
             .unwrap_or_default()
     }
 
     fn should_auto_roll_borrow_order(&self) -> bool {
         self.get_user_market_state()
-            .map(|s| s.borrow_roll_config.limit_price > 0)
+            .map(|s| s.borrow_roll_config.is_some())
             .unwrap_or_default()
     }
 
     fn get_next_loan_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
-        user_account
-            .map(|u| u.debt.next_new_loan_seqno())
-            .unwrap_or_default()
+        user_account.map(|u| u.next_term_loan()).unwrap_or_default()
     }
 
     fn get_next_deposit_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
         user_account
-            .map(|u| u.assets.next_new_deposit_seqno())
+            .map(|u| u.next_term_deposit())
             .unwrap_or_default()
     }
 
@@ -522,7 +578,9 @@ pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
     refreshing_tokens: &mut HashSet<Pubkey>,
 ) -> ClientResult<I, Instruction> {
     let found = account.client.state().filter(|_, state: &MarketState| {
-        state.market.claims_mint == *token || state.market.ticket_collateral_mint == *token
+        state.market.claims_mint == *token
+            || state.market.ticket_collateral_mint == *token
+            || state.market.underlying_collateral_mint == *token
     });
 
     let Some((_, market_state)) = found.into_iter().next() else {
