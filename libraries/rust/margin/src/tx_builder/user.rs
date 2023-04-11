@@ -25,6 +25,7 @@ use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
 use jet_solana_client::util::keypair::KeypairExt;
+use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
@@ -281,6 +282,34 @@ impl MarginTxBuilder {
     /// Transaction to close the user's margin account
     pub async fn close_account(&self) -> Result<Transaction> {
         self.create_transaction(&[self.ix.close_account()]).await
+    }
+
+    /// Transaction to create an address lookup registry account
+    pub async fn init_lookup_registry(&self) -> Result<Transaction> {
+        self.create_transaction(&[self.ix.init_lookup_registry()])
+            .await
+    }
+
+    /// Transaction to create a lookup table account
+    pub async fn create_lookup_table(&self) -> Result<(Transaction, Pubkey)> {
+        let recent_slot = self
+            .rpc
+            .get_slot(Some(CommitmentConfig::finalized()))
+            .await?;
+        let (ix, lookup_table) = self.ix.create_lookup_table(recent_slot);
+        let tx = self.create_transaction(&[ix]).await?;
+
+        Ok((tx, lookup_table))
+    }
+
+    /// Transaction to append accounts to a lookup table account
+    pub async fn append_to_lookup_table(
+        &self,
+        lookup_table: Pubkey,
+        addresses: &[Pubkey],
+    ) -> Result<Transaction> {
+        self.create_transaction(&[self.ix.append_to_lookup_table(lookup_table, addresses)])
+            .await
     }
 
     /// Transaction to close the user's margin position accounts for a token mint.

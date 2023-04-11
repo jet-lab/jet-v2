@@ -18,6 +18,7 @@ ORCAv1_PID=DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1
 ORCAv2_PID=9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP
 SBR_PID=SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ
 OPNBK_PID=EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj
+LKPRG_PID=LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru
 
 CTRL_SO=target/deploy/jet_control.so
 MRGN_SO=target/deploy/jet_margin.so
@@ -32,6 +33,7 @@ ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
 SBRSWAP_SO=deps/saber_stable_swap.so
 OPNBK_SO=deps/openbook.so
+LKPRG_SO=deps/lookup_table_registry.so
 
 PROGRAM_FEATURES='testing'
 TEST_FEATURES="${BATCH:-batch_all},localnet"
@@ -89,6 +91,7 @@ start-validator() {
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
         --bpf-program $SBR_PID $SBRSWAP_SO \
         --bpf-program $OPNBK_PID $OPNBK_SO \
+        --bpf-program $LKPRG_PID $LKPRG_SO \
         --quiet \
         $@ &
     VALIDATOR_PID=$!
