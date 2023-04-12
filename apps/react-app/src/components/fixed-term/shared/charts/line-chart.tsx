@@ -19,7 +19,6 @@ import {
 } from '@state/fixed-term/fixed-term-market-sync';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useCurrencyFormatting } from '@utils/currency';
-import {  } from 'recoil';
 import { MarketAndConfig } from '@jet-lab/margin';
 
 const tooltipStyles = {
@@ -345,6 +344,7 @@ const getChartXAxisLabel = (currentTab: CurrentOrderTab, market: MarketAndConfig
       return `Cumulative ${market.config.symbol} offers`;
     case 'request-loan':
       return `Cumulative ${market.config.symbol} requests`
+    default:
+      return ``;
   }
-  return '';
 };
