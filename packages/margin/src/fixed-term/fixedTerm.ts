@@ -768,7 +768,7 @@ export class FixedTermProductModel {
     },
 
     apply(account: MarginAccount, delta: ValuationDelta, mode: "setup" | "maintenance"): ValuationEstimate {
-      let assets: number = NaN // FIXME Compute total assets in the margin account
+      let assets = account.valuation.assets.toNumber()
       let liabilities = account.valuation.liabilities.toNumber()
 
       let weightedCollateral = account.valuation.weightedCollateral.toNumber()
@@ -788,7 +788,12 @@ export class FixedTermProductModel {
       const equity = assets - liabilities
       const availableCollateral = weightedCollateral - (liabilities + requiredCollateral)
 
-      const riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
+      let riskIndicator = NaN;
+      if ((requiredCollateral >= 0) && (weightedCollateral >= 0) && (liabilities >= 0)) {
+        riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
+      } else {
+        console.error('Unexpected state in forecast accounting')
+      }
 
       return {
         assets,
