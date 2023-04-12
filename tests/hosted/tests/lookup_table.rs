@@ -58,7 +58,8 @@ async fn margin_lookup_table_registry() -> anyhow::Result<()> {
         use jet_simulation::{Keygen, RandomKeygen};
 
         let keygen = RandomKeygen;
-
+        // Sleep for some time to meet recent_slot constraints
+        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         // Create a lookup table in a registry
         let lookup_table = user.create_lookup_table().await?;
 
