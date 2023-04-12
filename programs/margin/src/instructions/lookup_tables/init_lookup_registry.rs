@@ -27,15 +27,13 @@ use crate::{MarginAccount, SignerSeeds};
 #[derive(Accounts)]
 pub struct InitLookupRegistry<'info> {
     /// The authority that can register a lookup table for a margin account
-    #[account(mut)]
-    pub margin_authority: Signer<'info>,
+    pub authority: Signer<'info>,
 
     /// The payer of the transaction
     #[account(mut)]
     pub payer: Signer<'info>,
 
     /// The margin account to create this lookup account for
-    #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The registry account
@@ -48,8 +46,8 @@ pub struct InitLookupRegistry<'info> {
 }
 
 pub fn init_lookup_registry_handler(ctx: Context<InitLookupRegistry>) -> Result<()> {
-    let account = ctx.accounts.margin_account.load_mut()?;
-    account.verify_authority(ctx.accounts.margin_authority.key())?;
+    let account = ctx.accounts.margin_account.load()?;
+    account.verify_authority(ctx.accounts.authority.key())?;
 
     let signer = account.signer_seeds_owned();
     drop(account);
