@@ -1118,20 +1118,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2801af0d36612ae591caa9568261fddce32ce6e08a7275ea334a06a4ad021a2c"
-dependencies = [
- "cfg-if",
- "crossbeam-channel",
- "crossbeam-deque",
- "crossbeam-epoch",
- "crossbeam-queue",
- "crossbeam-utils",
-]
-
-[[package]]
 name = "crossbeam-channel"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1163,16 +1149,6 @@ dependencies = [
  "crossbeam-utils",
  "memoffset 0.7.1",
  "scopeguard",
-]
-
-[[package]]
-name = "crossbeam-queue"
-version = "0.3.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1cfb3ea8a53f37c40dea2c7bedcbd88bdfae54f5e2175d6ecaff1c988353add"
-dependencies = [
- "cfg-if",
- "crossbeam-utils",
 ]
 
 [[package]]
@@ -1577,19 +1553,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9852635589dc9f9ea1b6fe9f05b50ef208c85c834a562f0c6abb1c475736ec2b"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "endorphin"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2dc87c62efee2c20e9287b6421800c02b56551b3cc5ee9af1ac9336e8173ebd"
-dependencies = [
- "crossbeam",
- "hashbrown 0.11.2",
- "once_cell",
- "parking_lot 0.11.2",
- "slotmap",
 ]
 
 [[package]]
@@ -2585,7 +2548,7 @@ dependencies = [
  "jet-program-common",
  "jet-test-service",
  "log",
- "lookup-table-registry-client",
+ "solana-address-lookup-table-program",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token 3.5.0",
@@ -2971,21 +2934,6 @@ dependencies = [
  "anchor-lang",
  "solana-address-lookup-table-program",
  "solana-program",
-]
-
-[[package]]
-name = "lookup-table-registry-client"
-version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#eab3bde8f0b9eda36569f64e2428895d7a6880e1"
-dependencies = [
- "anchor-lang",
- "endorphin",
- "lookup-table-registry",
- "solana-address-lookup-table-program",
- "solana-client",
- "solana-sdk",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -4633,15 +4581,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "slotmap"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e08e261d0e8f5c43123b7adf3e4ca1690d655377ac93a03b2c9d3e98de1342"
-dependencies = [
- "version_check",
 ]
 
 [[package]]
