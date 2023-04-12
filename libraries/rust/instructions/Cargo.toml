@@ -13,6 +13,7 @@ anchor-spl = "0.26"
 
 spl-token = "3"
 spl-associated-token-account = "1"
+solana-address-lookup-table-program = "1.14"
 
 jet-program-common = { path = "../program-common" }
 
@@ -26,5 +27,3 @@ jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
-
-lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }

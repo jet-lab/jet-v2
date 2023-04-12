@@ -26,14 +26,11 @@ use solana_sdk::sysvar::{rent::Rent, SysvarId};
 use anchor_lang::prelude::{AccountMeta, Id, System, ToAccountMetas};
 use anchor_lang::{system_program, InstructionData};
 
-use lookup_table_registry_client::{
-    derive_lookup_table_address, LOOKUP_TABLE_ID, LOOKUP_TABLE_REGISTRY_ID,
-};
-
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
 use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
 use jet_margin::{accounts as ix_account, MarginAccount};
+use jet_program_common::ADDRESS_LOOKUP_REGISTRY_ID;
 
 pub use jet_margin::ID as MARGIN_PROGRAM;
 pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
@@ -157,11 +154,11 @@ impl MarginIxBuilder {
     pub fn init_lookup_registry(&self) -> Instruction {
         let registry_account = self.registry_address();
         let accounts = ix_account::InitLookupRegistry {
-            margin_authority: self.owner,
+            authority: self.authority(),
             payer: self.payer(),
             margin_account: self.address,
             registry_account,
-            registry_program: LOOKUP_TABLE_REGISTRY_ID,
+            registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
             system_program: SYSTEM_PROGAM_ID,
         }
         .to_account_metas(None);
@@ -175,16 +172,20 @@ impl MarginIxBuilder {
 
     /// Get instruction to create a new lookup table in a lookup registry account
     pub fn create_lookup_table(&self, slot: u64) -> (Instruction, Pubkey) {
-        let lookup_table = derive_lookup_table_address(&self.address, slot);
+        let (lookup_table, _) =
+            solana_address_lookup_table_program::instruction::derive_lookup_table_address(
+                &self.address,
+                slot,
+            );
         let accounts = ix_account::CreateLookupTable {
-            margin_authority: self.owner,
+            authority: self.authority(),
             payer: self.payer(),
             margin_account: self.address,
             registry_account: self.registry_address(),
-            registry_program: LOOKUP_TABLE_REGISTRY_ID,
+            registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
             system_program: SYSTEM_PROGAM_ID,
             lookup_table,
-            address_lookup_table_program: LOOKUP_TABLE_ID,
+            address_lookup_table_program: solana_address_lookup_table_program::id(),
         }
         .to_account_metas(None);
 
@@ -212,14 +213,14 @@ impl MarginIxBuilder {
         // We have to determine how we'd interact with the registry Rust client,
         // as it already does this. Perhaps move the logic into a shared utility.
         let accounts = ix_account::AppendToLookup {
-            margin_authority: self.owner,
+            authority: self.authority(),
             payer: self.payer(),
             margin_account: self.address,
             registry_account: self.registry_address(),
-            registry_program: LOOKUP_TABLE_REGISTRY_ID,
+            registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
             system_program: SYSTEM_PROGAM_ID,
             lookup_table,
-            address_lookup_table_program: LOOKUP_TABLE_ID,
+            address_lookup_table_program: solana_address_lookup_table_program::id(),
         }
         .to_account_metas(None);
 
@@ -565,7 +566,7 @@ impl MarginIxBuilder {
     }
 
     fn registry_address(&self) -> Pubkey {
-        Pubkey::find_program_address(&[self.address.as_ref()], &LOOKUP_TABLE_REGISTRY_ID).0
+        Pubkey::find_program_address(&[self.address.as_ref()], &ADDRESS_LOOKUP_REGISTRY_ID).0
     }
 }
 
