@@ -1,4 +1,4 @@
-import { Button, InputNumber, Switch, Tooltip } from 'antd';
+import { Button, InputNumber, Switch } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import {
   bigIntToBn,
@@ -25,6 +25,8 @@ import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
 import { LoadingOutlined } from '@ant-design/icons';
+import { AutoRollChecks } from '../shared/autoroll-checks';
+import { AutoRollModal } from '../shared/autoroll-modal';
 
 interface RequestLoanProps {
   decimals: number;
@@ -62,6 +64,8 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
+  const [showAutorollModal, setShowAutorollModal] = useState(false);
+  const [autorollEnabled, setAutorollEnabled] = useState(false);
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
@@ -71,11 +75,11 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     if (amount) {
       handleForecast(amount);
     } else {
-      setForecast(undefined)
+      setForecast(undefined);
     }
   }, [amount, marginAccount?.address, marketAndConfig]);
 
-  const enoughLiquidity = forecast && forecast.unfilledQty <= 0
+  const enoughLiquidity = forecast && forecast.unfilledQty <= 0;
 
   const disabled =
     !marginAccount ||
@@ -88,8 +92,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !forecast.fulfilled ||
     !enoughLiquidity ||
     !forecast?.hasEnoughCollateral;
-
-
 
   const handleForecast = (amount: BN) => {
     if (bnToBigInt(amount) === BigInt(0)) {
@@ -157,7 +159,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         refreshOrderBooks();
         notify(
           'Borrow Successful',
-          `Your borrow order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} was filled successfully`,
+          `Your borrow order for ${amount
+            .div(new BN(10 ** decimals))
+            .toNumber()
+            .toFixed(token.precision)} ${token.name} was filled successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -166,7 +171,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
     } catch (e: any) {
       notify(
         'Borrow Order Failed',
-        `Your borrow order for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} failed`,
+        `Your borrow order for ${amount
+          .div(new BN(10 ** decimals))
+          .toNumber()
+          .toFixed(token.precision)} ${token.name} failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
@@ -174,9 +182,13 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       console.error(e);
     } finally {
       setAmount(undefined);
-      setForecast(undefined)
+      setForecast(undefined);
     }
   };
+
+  useEffect(() => {
+    setAutorollEnabled(false);
+  }, [marketAndConfig]);
 
   return (
     <div className="fixed-term order-entry-body">
@@ -188,7 +200,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
               if (!e) {
-                setAmount(undefined)
+                setAmount(undefined);
               } else {
                 setAmount(new BN(e * 10 ** decimals));
               }
@@ -202,12 +214,31 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </label>
       </div>
 
-      <div className="auto-roll-controls">
-        <Tooltip title="Coming soon...">
-          <Switch disabled={true} />
-        </Tooltip>
-        Auto-roll Off
-      </div>
+      <AutoRollChecks market={marketAndConfig.market} marginAccount={marginAccount}>
+        {({ hasConfig }) => (
+          <div className="auto-roll-controls">
+            <AutoRollModal
+              onClose={() => {
+                setShowAutorollModal(false);
+              }}
+              open={showAutorollModal}
+              marketAndConfig={marketAndConfig}
+              marginAccount={marginAccount}
+            />
+            <Switch
+              checked={autorollEnabled}
+              onClick={() => {
+                if (hasConfig) {
+                  setAutorollEnabled(!autorollEnabled);
+                } else {
+                  setShowAutorollModal(true);
+                }
+              }}
+            />
+            Auto-roll Off
+          </div>
+        )}
+      </AutoRollChecks>
 
       <div className="stats">
         <div className="stat-line">
@@ -231,7 +262,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          {forecast && enoughLiquidity ? <span>{`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}</span> : null}
+          {forecast && enoughLiquidity ? (
+            <span>{`~${forecast.interest.toFixed(token.precision)} ${token.symbol}`}</span>
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
