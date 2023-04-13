@@ -26,26 +26,16 @@ export interface MarketInfo {
     ticketMint: PublicKey
     claimsMint: PublicKey
     ticketCollateralMint: PublicKey
-    tokenCollateralMint: PublicKey
+    underlyingCollateralMint: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
     feeVault: PublicKey
     feeDestination: PublicKey
-    seed: number[]
-    bump: number[]
+    seed: PublicKey
     orderbookPaused: boolean
     ticketsPaused: boolean
-    reserved: number[]
     borrowTenor: bigint
     lendTenor: bigint
-    nonce: bigint
+    originationFee: bigint
 }
-
-/**
- * Deserializes the solana account buffer
- * @param {Buffer} data
- * @returns {MarketInfo}
- */
-export function deserializeMarketFromBuffer(data: Buffer): MarketInfo;
-
 "#;
