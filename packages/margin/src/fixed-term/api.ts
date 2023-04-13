@@ -12,7 +12,6 @@ interface IWithCreateFixedTermMarketAccount {
   provider: AnchorProvider
   marginAccount: MarginAccount
   walletAddress: PublicKey
-  markets: FixedTermMarket[]
 }
 export const withCreateFixedTermMarketAccounts = async ({
   market,
@@ -77,7 +76,6 @@ export const offerLoan = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets
   })
   instructions.push(marketIXS)
 
@@ -153,7 +151,6 @@ export const requestLoan = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets
   })
   instructions.push(marketIXS)
 
@@ -269,7 +266,6 @@ export const borrowNow = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets
   })
   instructions.push(marketIXS)
 
@@ -357,7 +353,6 @@ export const lendNow = async ({
     provider,
     marginAccount,
     walletAddress,
-    markets
   })
   instructions.push(marketIXS)
 
@@ -596,4 +591,43 @@ export const redeem = async ({
 
   instructions.push(redeemIxs)
   return sendAll(provider, [instructions])
+}
+
+interface IConfigureAutoRoll {
+  account: MarginAccount
+  market: FixedTermMarket,
+  provider: AnchorProvider
+  walletAddress: PublicKey
+  payload: {
+    lendPrice: bigint,
+    borrowPrice: bigint,
+  }
+}
+export const configAutoroll = async ({
+  account,
+  market,
+  provider,
+  payload,
+  walletAddress
+}: IConfigureAutoRoll) => {
+  const { marketIXS } = await withCreateFixedTermMarketAccounts({
+    market,
+    provider,
+    marginAccount: account,
+    walletAddress,
+  })
+
+  const borrowSetupIX = await market.configAutoroll(account, 'borrow', payload.borrowPrice);
+  await account.withAdapterInvoke({
+    instructions: marketIXS,
+    adapterInstruction: borrowSetupIX
+  })
+  
+  const lendSetupIX = await market.configAutoroll(account, 'lend', payload.lendPrice);
+  await account.withAdapterInvoke({
+    instructions: marketIXS,
+    adapterInstruction: lendSetupIX
+  })
+
+  return sendAll(provider, [[marketIXS]])
 }

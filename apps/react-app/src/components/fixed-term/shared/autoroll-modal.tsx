@@ -1,36 +1,94 @@
-import { MarketAndConfig } from '@jet-lab/margin';
+import { LoadingOutlined } from '@ant-design/icons';
+import { MarginAccount, MarketAndConfig, configAutoroll, rate_to_price } from '@jet-lab/margin';
+import { useJetStore } from '@jet-lab/store';
 import { Modal } from '@jet-lab/ui';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
+import { useProvider } from '@utils/jet/provider';
+import { notify } from '@utils/notify';
+import { getExplorerUrl } from '@utils/ui';
 import { Button, InputNumber } from 'antd';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 interface AutorollModalProps {
   marketAndConfig: MarketAndConfig;
+  marginAccount?: MarginAccount;
   open: boolean;
   onClose: () => void;
 }
-export const AutoRollModal = ({ marketAndConfig, open, onClose }: AutorollModalProps) => {
-  const [minLendRate, setMinLendRate] = useState();
-  const [maxBorrowRate, setMaxBorrowRate] = useState();
+export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose }: AutorollModalProps) => {
+  const [minLendRate, setMinLendRate] = useState<number>(0);
+  const [maxBorrowRate, setMaxBorrowRate] = useState<number>(0);
+  const [pending, setPending] = useState(false);
+  const { publicKey } = useWallet();
+  const { provider } = useProvider();
+
+  const { cluster, explorer } = useJetStore(state => state.settings);
+
+  const marketName = useMemo(
+    () => friendlyMarketName(marketAndConfig.config.symbol, marketAndConfig.config.borrowTenor).toUpperCase(),
+    [marketAndConfig]
+  );
+
+  const preprocessInput = useCallback((e: number) => Math.round(e * 100) / 100, []);
+
+  const processPayload = useCallback(() => {
+    if (minLendRate === 0 || maxBorrowRate === 0) return;
+
+    const lendBps = Math.round(minLendRate * 100);
+    const borrowBps = Math.round(maxBorrowRate * 100);
+
+    const lendPrice = rate_to_price(BigInt(lendBps), BigInt(marketAndConfig.config.borrowTenor));
+    const borrowPrice = rate_to_price(BigInt(borrowBps), BigInt(marketAndConfig.config.borrowTenor));
+    return { lendPrice, borrowPrice };
+  }, [minLendRate, maxBorrowRate]);
+
+  const submitConfig = async () => {
+    setPending(true);
+    let signature: string;
+    const payload = processPayload();
+    if (!marginAccount || !publicKey || !payload) return;
+    try {
+      signature = await configAutoroll({
+        account: marginAccount,
+        market: marketAndConfig.market,
+        walletAddress: publicKey,
+        provider,
+        payload
+      });
+      notify(
+        'Autoroll Configure',
+        `You successfully configure autoroll for the ${marketName} market`,
+        'success',
+        getExplorerUrl(signature, cluster, explorer)
+      );
+      setPending(false);
+    } catch (e: any) {
+      notify(
+        'Market Configuration Failed',
+        `Please contact support`,
+        'error',
+        getExplorerUrl(e.signature, cluster, explorer)
+      );
+      setPending(false);
+      console.error(e);
+    } finally {
+      onClose();
+    }
+  };
+
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={`Configure ${friendlyMarketName(
-        marketAndConfig.config.symbol,
-        marketAndConfig.config.borrowTenor
-      ).toUpperCase()} market`}>
+    <Modal open={open} onClose={onClose} title={`Configure ${marketName} market`}>
       <div className="flex flex-col autoroll-modal">
         <div className="flex mx-2 my-4">
           <label>
             Minimum lend rate
             <InputNumber
               className="input-rate"
-              value={minLendRate}
-              placeholder={'6.50'}
-              type="number"
-              step={0.01}
-              min={0}
+              value={minLendRate > 0 ? minLendRate : undefined}
+              onChange={e => setMinLendRate(preprocessInput(e || 0))}
+              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              placeholder={'3.50'}
               controls={false}
               addonAfter="%"
             />
@@ -39,17 +97,25 @@ export const AutoRollModal = ({ marketAndConfig, open, onClose }: AutorollModalP
             Maximum borrow rate
             <InputNumber
               className="input-rate"
-              value={maxBorrowRate}
+              value={maxBorrowRate > 0 ? maxBorrowRate : undefined}
+              onChange={e => setMaxBorrowRate(preprocessInput(e || 0))}
+              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               placeholder={'6.50'}
-              type="number"
-              step={0.01}
-              min={0}
               controls={false}
               addonAfter="%"
             />
           </label>
         </div>
-        <Button>Save</Button>
+        <Button disabled={minLendRate === 0 || maxBorrowRate === 0} onClick={submitConfig}>
+          {pending ? (
+            <>
+              <LoadingOutlined />
+              Sending transaction
+            </>
+          ) : (
+            'Save'
+          )}
+        </Button>
       </div>
     </Modal>
   );

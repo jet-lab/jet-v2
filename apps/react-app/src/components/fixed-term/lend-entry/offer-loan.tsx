@@ -237,6 +237,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
               }}
               open={showAutorollModal}
               marketAndConfig={marketAndConfig}
+              marginAccount={marginAccount}
             />
             <Switch
               checked={autorollEnabled}
