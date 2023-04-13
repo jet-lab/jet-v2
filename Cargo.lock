@@ -2223,6 +2223,7 @@ name = "index"
 version = "0.1.0"
 dependencies = [
  "agnostic-orderbook",
+ "anchor-lang",
  "anyhow",
  "bonfida-utils 0.3.0",
  "bytemuck",
