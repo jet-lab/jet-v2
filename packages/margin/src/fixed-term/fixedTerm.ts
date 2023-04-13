@@ -4,7 +4,15 @@ import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } 
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
 import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount } from "./utils"
-import { MakerSimulation, OrderbookModel, OrderbookSnapshot, TakerSimulation, rate_to_price } from "../wasm"
+import {
+  MakerSimulation,
+  OrderbookModel,
+  OrderbookSnapshot,
+  TakerSimulation,
+  rate_to_price,
+  MarketInfo,
+  deserializeMarketFromBuffer
+} from "../wasm"
 import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
@@ -19,35 +27,35 @@ export interface OrderParams {
   autoRoll: boolean
 }
 
-/**
- * The raw struct as found on chain
- */
-export interface MarketInfo {
-  versionTag: BN
-  airspace: PublicKey
-  orderbookMarketState: PublicKey
-  eventQueue: PublicKey
-  asks: PublicKey
-  bids: PublicKey
-  underlyingTokenMint: PublicKey
-  underlyingTokenVault: PublicKey
-  ticketMint: PublicKey
-  claimsMint: PublicKey
-  ticketCollateralMint: PublicKey
-  tokenCollateralMint: PublicKey
-  underlyingOracle: PublicKey
-  ticketOracle: PublicKey
-  feeVault: PublicKey
-  feeDestination: PublicKey
-  seed: number[]
-  bump: number[]
-  orderbookPaused: boolean
-  ticketsPaused: boolean
-  reserved: number[]
-  borrowTenor: BN
-  lendTenor: BN
-  nonce: BN
-}
+// /**
+//  * The raw struct as found on chain
+//  */
+// export interface MarketInfo {
+//   versionTag: BN
+//   airspace: PublicKey
+//   orderbookMarketState: PublicKey
+//   eventQueue: PublicKey
+//   asks: PublicKey
+//   bids: PublicKey
+//   underlyingTokenMint: PublicKey
+//   underlyingTokenVault: PublicKey
+//   ticketMint: PublicKey
+//   claimsMint: PublicKey
+//   ticketCollateralMint: PublicKey
+//   tokenCollateralMint: PublicKey
+//   underlyingOracle: PublicKey
+//   ticketOracle: PublicKey
+//   feeVault: PublicKey
+//   feeDestination: PublicKey
+//   seed: number[]
+//   bump: number[]
+//   orderbookPaused: boolean
+//   ticketsPaused: boolean
+//   reserved: number[]
+//   borrowTenor: BN
+//   lendTenor: BN
+//   nonce: BN
+// }
 
 /** MarginUser account as found on-chain */
 export interface MarginUserInfo {
@@ -162,7 +170,8 @@ export class FixedTermMarket {
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
-    let info: MarketInfo = program.coder.accounts.decode("market", data)
+    let info: MarketInfo = deserializeMarketFromBuffer(data)
+    // program.coder.accounts.decode("market", data)
     const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
