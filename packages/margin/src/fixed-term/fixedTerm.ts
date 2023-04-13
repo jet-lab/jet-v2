@@ -528,10 +528,22 @@ export class FixedTermMarket {
     return data ? await this.program.coder.accounts.decode("marginUser", data) : null
   }
 
-  async configAutoroll(marginAccount: MarginAccount, side: 'borrow' | 'lend', price: bigint) {
+  async configAutorollBorrow(marginAccount: MarginAccount, price: bigint, tenor: BN) {
     const marginUser = await this.deriveMarginUserAddress(marginAccount)
-    return await this.program.methods.configureAutoRoll(side === 'borrow' ? 0 : 1, { limitPrice: bigIntToBn(price)}).accounts({
+    return await this.program.methods.configureAutoRollBorrow({ limitPrice: bigIntToBn(price), rollTenor: tenor}).accounts({
+      marginUser,
+      marginAccount: marginAccount.address,
+      market: this.address
+    }).instruction()
+  }
+
+  
+  async configAutorollLend(marginAccount: MarginAccount, price: bigint) {
+    const marginUser = await this.deriveMarginUserAddress(marginAccount)
+    return await this.program.methods.configureAutoRollLend({ limitPrice: bigIntToBn(price)}).accounts({
       marginUser, 
+      marginAccount: marginAccount.address,
+      market: this.address
     }).instruction()
   }
 

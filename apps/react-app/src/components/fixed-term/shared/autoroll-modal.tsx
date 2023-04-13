@@ -45,20 +45,20 @@ export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose }:
 
   const submitConfig = async () => {
     setPending(true);
-    let signature: string;
     const payload = processPayload();
     if (!marginAccount || !publicKey || !payload) return;
     try {
-      signature = await configAutoroll({
+      let signature = await configAutoroll({
         account: marginAccount,
-        market: marketAndConfig.market,
+        marketAndConfig,
         walletAddress: publicKey,
         provider,
         payload
       });
+      console.log('Processed ', signature);
       notify(
-        'Autoroll Configure',
-        `You successfully configure autoroll for the ${marketName} market`,
+        'Autoroll Configured',
+        `You successfully configured autoroll for the ${marketName} market`,
         'success',
         getExplorerUrl(signature, cluster, explorer)
       );

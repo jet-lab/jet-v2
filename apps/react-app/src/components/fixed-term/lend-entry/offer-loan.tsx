@@ -185,6 +185,10 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
 
+  useEffect(() => {
+    setAutorollEnabled(false);
+  }, [marketAndConfig]);
+
   return (
     <div className="fixed-term order-entry-body">
       <div className="offer-loan fixed-order-entry-fields">

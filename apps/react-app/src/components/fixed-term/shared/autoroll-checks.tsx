@@ -11,6 +11,7 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
   const [hasConfig, setHasConfig] = useState(false);
 
   useEffect(() => {
+    setHasConfig(false);
     if (market && marginAccount) {
       console.log('Autoroll Config: checking market config');
       market.fetchMarginUser(marginAccount).then(response => {
@@ -33,5 +34,5 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
     }
   }, [market, marginAccount]);
 
-  return <>{children({ hasConfig })}</>
+  return <>{children({ hasConfig })}</>;
 };

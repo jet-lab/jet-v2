@@ -595,7 +595,7 @@ export const redeem = async ({
 
 interface IConfigureAutoRoll {
   account: MarginAccount
-  market: FixedTermMarket,
+  marketAndConfig: MarketAndConfig,
   provider: AnchorProvider
   walletAddress: PublicKey
   payload: {
@@ -605,29 +605,32 @@ interface IConfigureAutoRoll {
 }
 export const configAutoroll = async ({
   account,
-  market,
+  marketAndConfig,
   provider,
   payload,
   walletAddress
 }: IConfigureAutoRoll) => {
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
-    market,
+    market: marketAndConfig.market,
     provider,
     marginAccount: account,
     walletAddress,
   })
 
-  const borrowSetupIX = await market.configAutoroll(account, 'borrow', payload.borrowPrice);
-  await account.withAdapterInvoke({
-    instructions: marketIXS,
-    adapterInstruction: borrowSetupIX
-  })
-  
-  const lendSetupIX = await market.configAutoroll(account, 'lend', payload.lendPrice);
+  const lendSetupIX = await marketAndConfig.market.configAutorollLend(account, payload.lendPrice);
   await account.withAdapterInvoke({
     instructions: marketIXS,
     adapterInstruction: lendSetupIX
   })
 
-  return sendAll(provider, [[marketIXS]])
+
+  const borrowSetupIX = await marketAndConfig.market.configAutorollBorrow(account, payload.borrowPrice, new BN(marketAndConfig.config.borrowTenor > 120 ? marketAndConfig.config.borrowTenor  - 30 * 60 : 100)); // market tenor - 30 minutes of lead time
+  await account.withAdapterInvoke({
+    instructions: marketIXS,
+    adapterInstruction: borrowSetupIX
+  })
+
+  throw "test exception"
+  
+  return sendAll(provider, [marketIXS])
 }
