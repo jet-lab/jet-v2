@@ -123,8 +123,8 @@ export class FixedTermMarket {
     claimsMetadata: PublicKey
     ticketCollateralMint: PublicKey
     ticketCollateralMetadata: PublicKey
-    tokenCollateralMint: PublicKey
-    tokenCollateralMetadata: PublicKey
+    underlyingCollateralMint: PublicKey
+    underlyingCollateralMetadata: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
     marginAdapterMetadata: PublicKey
@@ -136,7 +136,7 @@ export class FixedTermMarket {
     market: PublicKey,
     claimsMetadata: PublicKey,
     ticketCollateralMetadata: PublicKey,
-    tokenCollateralMetadata: PublicKey,
+    underlyingCollateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
     program: Program<JetFixedTerm>,
     info: MarketInfo
@@ -145,7 +145,7 @@ export class FixedTermMarket {
       ...info,
       claimsMetadata,
       ticketCollateralMetadata,
-      tokenCollateralMetadata,
+      underlyingCollateralMetadata,
       marginAdapterMetadata,
       market
     }
@@ -176,7 +176,6 @@ export class FixedTermMarket {
   ): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
     let info: MarketInfo = deserializeMarketFromBuffer(data)
-    // program.coder.accounts.decode("market", data)
     const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
@@ -185,8 +184,8 @@ export class FixedTermMarket {
       ["token-config", info.airspace, info.ticketCollateralMint],
       new PublicKey(jetMarginProgramId)
     )
-    const tokenCollateralMetadata = await findFixedTermDerivedAccount(
-      ["token-config", info.airspace, info.tokenCollateralMint],
+    const underlyingCollateralMetadata = await findFixedTermDerivedAccount(
+      ["token-config", info.airspace, info.underlyingCollateralMint],
       new PublicKey(jetMarginProgramId)
     )
     const marginAdapterMetadata = await findFixedTermDerivedAccount(
@@ -198,7 +197,7 @@ export class FixedTermMarket {
       new PublicKey(market),
       new PublicKey(claimsMetadata),
       new PublicKey(ticketCollateralMetadata),
-      new PublicKey(tokenCollateralMetadata),
+      new PublicKey(underlyingCollateralMetadata),
       new PublicKey(marginAdapterMetadata),
       program,
       info
