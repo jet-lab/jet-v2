@@ -107,7 +107,7 @@ export class MarginClient {
   static getBlackboxTx(pools: Record<string, Pool>, flightLog: FlightLog) {
     const token1Pool = Object.values(pools).find(pool => pool.tokenMint.toBase58() == flightLog.token1);
     const token2Pool = Object.values(pools).find(pool => pool.tokenMint.toBase58() == flightLog.token2);
-    
+
     flightLog.token1_name = token1Pool?.name || "";
     flightLog.token2_name = token2Pool?.name || "";
     flightLog.token1_symbol = token1Pool?.symbol || "";
@@ -123,10 +123,10 @@ export class MarginClient {
       cluster === "mainnet-beta"
         ? process.env.REACT_APP_DATA_API
         : cluster === "devnet"
-        ? process.env.REACT_APP_DEV_DATA_API
-        : cluster === "localnet"
-        ? process.env.REACT_APP_LOCAL_DATA_API
-        : ""
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === "localnet"
+            ? process.env.REACT_APP_LOCAL_DATA_API
+            : ""
     const flightLogURL = `${url}/margin/accounts/activity/${pubKey}`
 
     const response = await axios.get(flightLogURL)

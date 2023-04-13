@@ -450,11 +450,25 @@ pub struct TestRuntimeRpcClient {
     payer: Keypair,
 }
 
+impl TestRuntimeRpcClient {
+    pub fn clone_with_payer(&self, payer: Keypair) -> Self {
+        Self {
+            bank: self.bank.clone(),
+            payer,
+        }
+    }
+}
+
 #[async_trait]
 impl SolanaRpcClient for TestRuntimeRpcClient {
     fn as_any(&self) -> &dyn std::any::Any {
         self as &dyn std::any::Any
     }
+
+    fn clone_with_payer(&self, payer: Keypair) -> Box<dyn SolanaRpcClient> {
+        Box::new(Self::clone_with_payer(self, payer))
+    }
+
     async fn get_account(&self, address: &Pubkey) -> anyhow::Result<Option<Account>> {
         Ok(self.bank.get_account(address).map(|a| a.into()))
     }

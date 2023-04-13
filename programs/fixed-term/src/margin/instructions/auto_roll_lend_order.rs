@@ -119,31 +119,36 @@ impl<'info> AutoRollLendOrder<'info> {
         accounts.margin_lend_order(params, adapter, false)
     }
 
-    fn order_params(&self) -> OrderParams {
-        OrderParams {
+    fn order_params(&self) -> Result<OrderParams> {
+        let config = match &self.margin_user.lend_roll_config {
+            Some(config) => config,
+            None => return err!(FixedTermErrorCode::InvalidAutoRollConfig),
+        };
+
+        Ok(OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: self.deposit.amount,
-            limit_price: self.margin_user.lend_roll_config.limit_price,
+            limit_price: config.limit_price,
             match_limit: u64::MAX,
             post_only: false,
             post_allowed: true,
             auto_stake: true,
             auto_roll: true,
-        }
+        })
     }
 
-    fn assert_deposit_is_auto_roll(&self) -> Result<()> {
+    fn assert_deposit_can_auto_roll(&self) -> Result<()> {
         if !self.deposit.flags.contains(TermDepositFlags::AUTO_ROLL) {
-            return err!(FixedTermErrorCode::TermDepositIsNotAutoRoll);
+            return err!(FixedTermErrorCode::AutoRollDisabled);
         }
         Ok(())
     }
 }
 
 pub fn handler(ctx: Context<AutoRollLendOrder>) -> Result<()> {
-    ctx.accounts.assert_deposit_is_auto_roll()?;
+    ctx.accounts.assert_deposit_can_auto_roll()?;
     ctx.accounts.margin_redeem()?;
-    let params = ctx.accounts.order_params();
+    let params = ctx.accounts.order_params()?;
     let adapter = ctx
         .remaining_accounts
         .iter()

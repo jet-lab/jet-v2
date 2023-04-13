@@ -280,3 +280,40 @@ impl<T: ToTransaction> ToTransaction for &T {
         (*self).to_transaction(payer, recent_blockhash)
     }
 }
+
+#[macro_export]
+macro_rules! transactions {
+    ($($item:expr),*$(,)?) => {{
+        use jet_solana_client::transaction::TransactionBuilder;
+        use jet_solana_client::transaction::ToTransactionBuilderVec;
+        let x: Vec<TransactionBuilder> = cat![$(
+            $item.to_tx_builder_vec(),
+        )*];
+        x
+    }};
+}
+
+pub trait ToTransactionBuilderVec {
+    fn to_tx_builder_vec(self) -> Vec<TransactionBuilder>;
+}
+
+impl ToTransactionBuilderVec for Instruction {
+    fn to_tx_builder_vec(self) -> Vec<TransactionBuilder> {
+        vec![self.into()]
+    }
+}
+impl ToTransactionBuilderVec for Vec<Instruction> {
+    fn to_tx_builder_vec(self) -> Vec<TransactionBuilder> {
+        self.into_iter().map(|ix| ix.into()).collect()
+    }
+}
+impl ToTransactionBuilderVec for TransactionBuilder {
+    fn to_tx_builder_vec(self) -> Vec<TransactionBuilder> {
+        vec![self]
+    }
+}
+impl ToTransactionBuilderVec for Vec<TransactionBuilder> {
+    fn to_tx_builder_vec(self) -> Vec<TransactionBuilder> {
+        self
+    }
+}

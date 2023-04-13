@@ -42,6 +42,7 @@ pub trait SendTransactionBuilder {
 
     /// Send, minimizing number of transactions - see `condense` doc
     /// sends transactions all at once
+    /// TODO: rename this to indicate that it's not ordered
     async fn send_and_confirm_condensed(
         &self,
         transactions: Vec<TransactionBuilder>,
@@ -131,6 +132,7 @@ impl TransactionBuilderExt for TransactionBuilder {
 #[async_trait]
 pub trait InverseSendTransactionBuilder {
     /// SendTransactionBuilder::send_and_confirm_condensed
+    /// TODO: rename this to indicate that it's not ordered
     async fn send_and_confirm_condensed<C: SendTransactionBuilder + Sync>(
         self,
         client: &C,

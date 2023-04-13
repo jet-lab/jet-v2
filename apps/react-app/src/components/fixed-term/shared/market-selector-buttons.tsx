@@ -20,13 +20,13 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.REACT_APP_DEV_DATA_API
-        : cluster === 'localnet'
-        ? process.env.REACT_APP_LOCAL_DATA_API
-        : '',
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === 'localnet'
+            ? process.env.REACT_APP_LOCAL_DATA_API
+            : '',
     [cluster]
   );
-  const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market, marginAccount);
+  const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market.address.toBase58(), marginAccount?.address.toBase58());
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
 

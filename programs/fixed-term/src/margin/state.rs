@@ -1,3 +1,5 @@
+pub use super::repay::*;
+
 use std::ops::Range;
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
@@ -10,8 +12,12 @@ use jet_program_common::{
 };
 
 use crate::{
-    events::{AssetsUpdated, DebtUpdated},
-    orderbook::state::OrderTag,
+    events::{AssetsUpdated, DebtUpdated, TermLoanCreated},
+    orderbook::state::{
+        MarginBorrowOrderAccounts, MarginCallbackInfo, OrderTag, RoundingAction,
+        SensibleOrderSummary,
+    },
+    serialization::{self, AnchorAccount, Mut},
     FixedTermErrorCode,
 };
 
@@ -34,41 +40,267 @@ pub struct MarginUser {
     /// which are internal to fixed-term market, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin
     pub ticket_collateral: Pubkey,
+    /// Token account used by the margin program to track the value of positions
+    /// related to a collateralized value of a token as it rests in the control of the Fixed-Term orderbook
+    /// for now this specifically tracks the tokens locked in an open borrow order
+    pub underlying_collateral: Pubkey,
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not tickets
-    pub debt: Debt,
+    debt: Debt,
     /// Accounting used to track assets in custody of the fixed term market
-    pub assets: Assets,
+    assets: Assets,
     /// Settings for borrow order "auto rolling"
-    pub borrow_roll_config: AutoRollConfig,
+    pub borrow_roll_config: Option<BorrowAutoRollConfig>,
     /// Settings for lend order "auto rolling"
-    pub lend_roll_config: AutoRollConfig,
+    pub lend_roll_config: Option<LendAutoRollConfig>,
 }
 
 impl MarginUser {
+    /// Initialize a new [MarginUser]
+    pub fn new(
+        version: u8,
+        margin_account: Pubkey,
+        market: Pubkey,
+        claims: Pubkey,
+        ticket_collateral: Pubkey,
+        underlying_collateral: Pubkey,
+    ) -> Self {
+        Self {
+            version,
+            margin_account,
+            market,
+            claims,
+            ticket_collateral,
+            underlying_collateral,
+            borrow_roll_config: Default::default(),
+            lend_roll_config: Default::default(),
+            debt: Default::default(),
+            assets: Default::default(),
+        }
+    }
+
+    /// Account for a borrow order posted to the orderbook
+    pub fn post_borrow_order(
+        &mut self,
+        token_value_posted: u64,
+        ticket_value_posted: u64,
+    ) -> Result<()> {
+        self.assets
+            .tokens_posted
+            .try_add_assign(token_value_posted)?;
+        self.debt.post_borrow_order(ticket_value_posted)
+    }
+
+    /// Account for the filled portion of a borrow order as a taker
+    /// Returns the sequence number for the [TermLoan] to be created
+    pub fn taker_fill_borrow_order(
+        &mut self,
+        ticket_value_filled: u64,
+        maturation_timestamp: UnixTimestamp,
+    ) -> Result<SequenceNumber> {
+        self.debt
+            .new_term_loan_without_posting(ticket_value_filled, maturation_timestamp)
+    }
+
+    /// Account for the filled portion of a borrow order as a taker
+    /// Returns the sequence number for the [TermLoan] to be created    
+    /// If there is no new [TermLoan] to be created, the `ticket_value_filled` and
+    /// `maturation_timestamp` are not needed
+    /// `tokens_disbursed` represents the token value after market fees have been collected,
+    /// while `token_value_filled` represents the value from before fees are collected. Both values
+    /// are required in order to properly account for collateral and entitled tokens
+    pub fn maker_fill_borrow_order(
+        &mut self,
+        new_debt: bool,
+        tokens_disbursed: u64,
+        token_value_filled: u64,
+        ticket_value_filled: u64,
+        maturation_timestamp: UnixTimestamp,
+    ) -> Result<SequenceNumber> {
+        self.assets
+            .borrow_order_fill(token_value_filled, tokens_disbursed)?;
+        if new_debt {
+            self.debt
+                .new_term_loan_from_fill(ticket_value_filled, maturation_timestamp)
+        } else {
+            Ok(0)
+        }
+    }
+
+    /// Account for a posted borrow order leaving the book
+    pub fn cancel_borrow_order(
+        &mut self,
+        token_value: u64,
+        ticket_value: u64,
+        is_debt: bool,
+    ) -> Result<()> {
+        self.assets.tokens_posted.try_sub_assign(token_value)?;
+        if is_debt {
+            self.debt.process_out(ticket_value)?;
+            self.emit_debt_balances();
+        } else {
+            self.assets.entitled_tickets.try_add_assign(ticket_value)?;
+            self.emit_asset_balances()?;
+        }
+        Ok(())
+    }
+
+    /// Account for a lend order successfully posted to the orderbook and possibly filled
+    pub fn lend_order(&mut self, tickets_staked: u64, tickets_posted: u64) -> Result<()> {
+        if tickets_staked > 0 {
+            self.assets.new_deposit(tickets_staked)?;
+        }
+        self.assets.tickets_posted.try_add_assign(tickets_posted)
+    }
+
+    /// Account for a lend order being filled as a maker
+    pub fn maker_fill_lend_order(
+        &mut self,
+        auto_stake: bool,
+        tickets: u64,
+    ) -> Result<SequenceNumber> {
+        self.assets.tickets_posted.try_sub_assign(tickets)?;
+
+        if auto_stake {
+            self.assets.new_deposit(tickets)
+        } else {
+            self.assets.entitled_tickets.try_add_assign(tickets)?;
+            Ok(0)
+        }
+    }
+
+    /// Account for a posted lend order leaving the book
+    pub fn cancel_lend_order(&mut self, token_value: u64) -> Result<()> {
+        self.assets.entitled_tokens.try_add_assign(token_value)?;
+        self.emit_asset_balances()?;
+        Ok(())
+    }
+
+    /// Account for the exchange of market tickets on the orderbook
+    pub fn sell_tickets(&mut self, value_posted: u64) -> Result<()> {
+        self.assets.tickets_posted.try_add_assign(value_posted)
+    }
+
+    /// Account for the redemption of underlying tokens from a matured [TermDeposit]
+    pub fn redeem_deposit(
+        &mut self,
+        deposit_seqno: SequenceNumber,
+        tickets_redeemed: u64,
+    ) -> Result<()> {
+        self.assets.redeem_deposit(deposit_seqno, tickets_redeemed)
+    }
+
+    /// Get the [SequenceNumber] of the next [TermLoan] in sequence
+    pub fn next_term_loan(&self) -> SequenceNumber {
+        self.debt.next_new_loan_seqno()
+    }
+
+    /// Get the [SequenceNumber] of the next [TermDeposit]
+    pub fn next_term_deposit(&self) -> SequenceNumber {
+        self.assets.next_new_deposit_seqno()
+    }
+
+    /// Get the [SequenceNumber] of the next [TermLoan] in need of repayment
+    pub fn next_term_loan_to_repay(&self) -> Option<SequenceNumber> {
+        self.debt.next_term_loan_to_repay()
+    }
+
+    /// Total number of unpaid [TermLoan]s
+    pub fn outstanding_term_loans(&self) -> u64 {
+        self.debt.outstanding_term_loans()
+    }
+
+    /// Range of active [TermLoan] sequence numbers
+    pub fn active_loans(&self) -> Range<SequenceNumber> {
+        self.debt.active_loans()
+    }
+
+    /// Range of active [TermDeposit] sequence numbers
+    pub fn active_deposits(&self) -> Range<SequenceNumber> {
+        self.assets.active_deposits()
+    }
+
+    pub fn ticket_collateral(&self) -> Result<u64> {
+        self.assets.ticket_collateral()
+    }
+
+    pub fn underlying_collateral(&self) -> u64 {
+        self.assets.underlying_collateral()
+    }
+
+    pub fn entitled_tickets(&self) -> u64 {
+        self.assets.entitled_tickets
+    }
+
+    pub fn entitled_tokens(&self) -> u64 {
+        self.assets.entitled_tokens
+    }
+
+    /// Total value of debt owed by the [MarginUser]
+    pub fn total_debt(&self) -> u64 {
+        self.debt.total()
+    }
+
+    /// Value of debt owed by the [MarginUser] by anticipated order fills
+    pub fn pending_debt(&self) -> u64 {
+        self.debt.pending
+    }
+
+    /// Value of debt owed by the [MarginUser] already filled
+    pub fn committed_debt(&self) -> u64 {
+        self.debt.committed
+    }
+
+    /// Have any of the unpaid [TermLoan]s reached maturity
+    pub fn is_past_due(&self, current_time: UnixTimestamp) -> bool {
+        self.debt.is_past_due(current_time)
+    }
+
+    /// Account for a partial loan repayment
+    pub fn partially_repay_loan(&mut self, loan: &TermLoan, amount: u64) -> Result<()> {
+        self.debt
+            .partially_repay_term_loan(loan.sequence_number, amount)
+    }
+
+    /// Full repay a [TermLoan]
+    pub fn fully_repay_term_loan(
+        &mut self,
+        loan: &TermLoan,
+        amount: u64,
+        next_loan: Result<Account<TermLoan>>,
+    ) -> Result<()> {
+        self.debt
+            .fully_repay_term_loan(loan.sequence_number, amount, next_loan)
+    }
+
+    /// Updates the internal state to account for a successful call to the `Settle` instruction
+    pub fn settlement_complete(&mut self) {
+        self.assets.entitled_tickets = 0;
+        self.assets.entitled_tokens = 0;
+    }
+
     /// Emits an Anchor event with the latest balances for [Assets] and [Debt].
     /// Callers should take care to invoke this function after mutating both assets
     /// and debts. When only mutating either, they can emit the individual balances.
-    pub fn emit_all_balances(&self) {
-        let margin_user = self.derive_address();
-        emit!(AssetsUpdated::new(margin_user, &self.assets));
-        emit!(DebtUpdated::new(margin_user, &self.debt));
+    pub fn emit_all_balances(&self) -> Result<()> {
+        emit!(AssetsUpdated::new(self)?);
+        emit!(DebtUpdated::new(self));
+        Ok(())
     }
 
     /// Emits an Anchor event with the latest balances for [Assets].
-    pub fn emit_asset_balances(&self) {
-        let margin_user = self.derive_address();
-        emit!(AssetsUpdated::new(margin_user, &self.assets));
+    pub fn emit_asset_balances(&self) -> Result<()> {
+        emit!(AssetsUpdated::new(self)?);
+        Ok(())
     }
 
     /// Emits an Anchor event with the latest balances for [Debt].
     pub fn emit_debt_balances(&self) {
-        let margin_user = self.derive_address();
-        emit!(DebtUpdated::new(margin_user, &self.debt));
+        emit!(DebtUpdated::new(self));
     }
 
     #[inline]
-    fn derive_address(&self) -> Pubkey {
+    pub fn derive_address(&self) -> Pubkey {
         Pubkey::find_program_address(
             &[
                 crate::seeds::MARGIN_USER,
@@ -81,7 +313,7 @@ impl MarginUser {
     }
 }
 
-#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Zeroable, Debug, Default, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next term loan to be created
     next_new_term_loan_seqno: u64,
@@ -129,10 +361,12 @@ impl Debt {
         self.next_new_term_loan_seqno - self.next_unpaid_term_loan_seqno
     }
 
-    pub fn post_borrow_order(&mut self, posted_amount: u64) -> Result<()> {
-        self.pending.try_add_assign(posted_amount)
+    /// Accounting for a borrow order posted on the orderbook
+    fn post_borrow_order(&mut self, ticket_value_posted: u64) -> Result<()> {
+        self.pending.try_add_assign(ticket_value_posted)
     }
 
+    /// A new term loan has been created from a taker fill
     pub fn new_term_loan_without_posting(
         &mut self,
         amount_filled_as_taker: u64,
@@ -167,14 +401,14 @@ impl Debt {
         amount_repaid: u64,
     ) -> Result<()> {
         if sequence_number != self.next_unpaid_term_loan_seqno {
-            todo!()
+            return err!(FixedTermErrorCode::TermLoanHasWrongSequenceNumber);
         }
         self.committed.try_sub_assign(amount_repaid)?;
 
         Ok(())
     }
 
-    // The term loan is fully repaid by this repayment, and the term loan account is being closed
+    /// The term loan is fully repaid by this repayment, and the term loan account is being closed
     pub fn fully_repay_term_loan(
         &mut self,
         sequence_number: SequenceNumber,
@@ -182,7 +416,7 @@ impl Debt {
         next_term_loan: Result<Account<TermLoan>>,
     ) -> Result<()> {
         if sequence_number != self.next_unpaid_term_loan_seqno {
-            todo!()
+            return err!(FixedTermErrorCode::TermLoanHasWrongSequenceNumber);
         }
         self.committed.try_sub_assign(amount_repaid)?;
         self.next_unpaid_term_loan_seqno.try_add_assign(1)?;
@@ -200,9 +434,8 @@ impl Debt {
         Ok(())
     }
 
-    pub fn is_past_due(&self) -> bool {
-        self.outstanding_term_loans() > 0
-            && self.next_term_loan_maturity <= Clock::get().unwrap().unix_timestamp
+    pub fn is_past_due(&self, unix_timestamp: UnixTimestamp) -> bool {
+        self.outstanding_term_loans() > 0 && self.next_term_loan_maturity <= unix_timestamp
     }
 
     pub fn pending(&self) -> u64 {
@@ -230,11 +463,13 @@ pub struct Assets {
     /// The number of tickets locked up in ClaimTicket or SplitTicket
     tickets_staked: u64,
 
-    /// The amount of quote included in all orders posted by the user for both
-    /// bids and asks. Since the orderbook tracks base, not quote, this is only
-    /// an approximation. This value must always be less than or equal to the
-    /// actual posted quote.
-    posted_quote: u64,
+    /// The number of tickets that would be owned by the account should all
+    /// open lend orders be filled.
+    tickets_posted: u64,
+
+    /// The number of tokens that would be owned by the account should all
+    /// open borrow orders be filled.
+    tokens_posted: u64,
 
     /// reserved data that may be used to determine the size of a user's collateral
     /// pessimistically prepared to persist aggregated values for:
@@ -244,31 +479,6 @@ pub struct Assets {
 }
 
 impl Assets {
-    /// either a bid or ask was placed
-    /// quote: the amount of quote that was posted
-    /// IMPORTANT: always input the quote (underlying), not the base
-    /// always shorts by one lamport to be defensive
-    /// todo maybe this is too defensive
-    pub fn post_order(&mut self, quote: u64) -> Result<()> {
-        if quote > 1 {
-            return self.posted_quote.try_add_assign(quote - 1);
-        }
-        Ok(())
-    }
-
-    /// An order was filled or cancelled
-    /// quote: the amount of quote that was removed from the order
-    /// IMPORTANT: always input the quote (underlying), not the base
-    /// always subtracts an extra lamport to be defensive
-    /// todo maybe this is too defensive
-    pub fn reduce_order(&mut self, quote: u64) {
-        if quote + 1 >= self.posted_quote {
-            self.posted_quote = 0;
-        } else {
-            self.posted_quote -= quote + 1;
-        }
-    }
-
     /// make sure the order has already been accounted for before calling this method
     pub fn new_deposit(&mut self, tickets: u64) -> Result<SequenceNumber> {
         let seqno = self.next_deposit_seqno;
@@ -281,13 +491,9 @@ impl Assets {
         Ok(seqno)
     }
 
+    /// A [TermDeposit] has been redeemed
     pub fn redeem_deposit(&mut self, seqno: SequenceNumber, tickets: u64) -> Result<()> {
         if seqno != self.next_unredeemed_deposit_seqno {
-            msg!(
-                "Given sequence number: [{}] Expected sequence number: [{}]",
-                seqno,
-                self.next_unredeemed_deposit_seqno
-            );
             return Err(FixedTermErrorCode::TermDepositHasWrongSequenceNumber.into());
         }
 
@@ -297,11 +503,24 @@ impl Assets {
         Ok(())
     }
 
+    /// A posted borrow order has been successfully filled
+    pub fn borrow_order_fill(&mut self, token_value_filled: u64, disbursement: u64) -> Result<()> {
+        self.tokens_posted.try_sub_assign(token_value_filled)?;
+        self.entitled_tokens.try_add_assign(disbursement)
+    }
+
     /// represents the amount of collateral in staked tickets and open orders.
     /// does not reflect the entitled tickets/tokens because they are expected
     /// to be disbursed whenever this value is used.
-    pub fn collateral(&self) -> Result<u64> {
-        self.tickets_staked.safe_add(self.posted_quote)
+    pub fn ticket_collateral(&self) -> Result<u64> {
+        self.tickets_staked.safe_add(self.tickets_posted)
+    }
+
+    /// Represents the amount of token collateral in open borrow orders
+    /// does not reflect the entitled tickets/tokens because they are expected
+    /// to be disbursed whenever this value is used.
+    pub fn underlying_collateral(&self) -> u64 {
+        self.tokens_posted
     }
 
     pub fn next_new_deposit_seqno(&self) -> SequenceNumber {
@@ -313,8 +532,40 @@ impl Assets {
     }
 }
 
+impl Default for Assets {
+    fn default() -> Self {
+        Assets {
+            entitled_tokens: 0,
+            entitled_tickets: 0,
+            next_deposit_seqno: 0,
+            next_unredeemed_deposit_seqno: 0,
+            tickets_staked: 0,
+            tickets_posted: 0,
+            tokens_posted: 0,
+            _reserved0: [0u8; 64],
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AutoRollConfig {
+    Borrow(BorrowAutoRollConfig),
+    Lend(LendAutoRollConfig),
+}
+
 #[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
-pub struct AutoRollConfig {
+pub struct BorrowAutoRollConfig {
+    /// the limit price at which orders may be placed by an authority
+    pub limit_price: u64,
+
+    /// The 'auto-roll' function for borrowers is determined by a user-controlled tenor. The auto-roll
+    /// service will attempt to auto-roll any orders with a matured `roll_tenor`, regardless of the
+    /// maturity of the `TermLoan`
+    pub roll_tenor: u64,
+}
+
+#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub struct LendAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,
 }
@@ -356,13 +607,19 @@ pub struct TermLoan {
 }
 
 impl TermLoan {
+    pub fn seeds<'a>(market: &'a [u8], margin_user: &'a [u8], seq_no: &'a [u8]) -> [&'a [u8]; 4] {
+        [crate::seeds::TERM_LOAN, market, margin_user, seq_no]
+    }
+}
+
+impl TermLoan {
     /// The annualized interest rate for this loan
     pub fn rate(&self) -> Result<u64> {
         let tenor = self.tenor()?;
         let price = self
             .price()?
             .downcast_u64()
-            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointDivision))?;
+            .ok_or_else(|| error!(FixedTermErrorCode::FixedPointMath))?;
         Ok(PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor))
     }
 
@@ -381,11 +638,114 @@ impl TermLoan {
     }
 }
 
+/// Struct for initializing and writing [TermLoan] accounts
+pub struct TermLoanBuilder {
+    pub market: Pubkey,
+    pub margin_account: Pubkey,
+    pub margin_user: Pubkey,
+    pub payer: Pubkey,
+    pub order_tag: OrderTag,
+    pub sequence_number: u64,
+    pub strike_timestamp: i64,
+    pub maturation_timestamp: i64,
+    pub base_filled: u64,
+    pub quote_filled: u64,
+    pub fees: u64,
+    pub flags: TermLoanFlags,
+}
+
+impl TermLoanBuilder {
+    /// Initialize a new builder from the information given by a borrow order
+    pub fn new_from_order(
+        accs: &MarginBorrowOrderAccounts,
+        summary: &SensibleOrderSummary,
+        info: &MarginCallbackInfo,
+        strike_timestamp: UnixTimestamp,
+        maturation_timestamp: UnixTimestamp,
+        fees: u64,
+        seq_no: u64,
+    ) -> Result<Self> {
+        Ok(Self {
+            market: accs.orderbook_mut.market.key(),
+            margin_account: accs.margin_account.key(),
+            margin_user: accs.margin_user.key(),
+            payer: accs.payer.key(),
+            order_tag: info.order_tag,
+            sequence_number: seq_no,
+            strike_timestamp,
+            maturation_timestamp,
+            base_filled: summary.base_filled(),
+            quote_filled: summary.quote_filled(RoundingAction::FillBorrow.direction())?,
+            flags: TermLoanFlags::default(),
+            fees,
+        })
+    }
+
+    pub fn init_and_write<'info>(
+        self,
+        loan: impl ToAccountInfo<'info>,
+        payer: impl ToAccountInfo<'info>,
+        system_program: impl ToAccountInfo<'info>,
+    ) -> Result<()> {
+        let mut term_loan = self.init(loan, payer, system_program)?;
+
+        *term_loan = TermLoan {
+            sequence_number: self.sequence_number,
+            margin_user: self.margin_user,
+            market: self.market,
+            payer: self.payer,
+            order_tag: self.order_tag,
+            strike_timestamp: self.strike_timestamp,
+            maturation_timestamp: self.maturation_timestamp,
+            balance: self.base_filled,
+            principal: self.quote_filled,
+            interest: self.base_filled.safe_sub(self.quote_filled)?,
+            flags: self.flags,
+        };
+
+        emit!(TermLoanCreated {
+            term_loan: term_loan.key(),
+            authority: self.margin_account,
+            payer: self.payer,
+            order_tag: self.order_tag.as_u128(),
+            sequence_number: self.sequence_number,
+            market: term_loan.market,
+            maturation_timestamp: self.maturation_timestamp,
+            quote_filled: self.quote_filled,
+            base_filled: self.base_filled,
+            flags: term_loan.flags,
+            fees: self.fees,
+        });
+        Ok(())
+    }
+
+    fn init<'info>(
+        &self,
+        loan: impl ToAccountInfo<'info>,
+        payer: impl ToAccountInfo<'info>,
+        system_program: impl ToAccountInfo<'info>,
+    ) -> Result<AnchorAccount<'info, TermLoan, Mut>> {
+        serialization::init(
+            loan.to_account_info(),
+            payer.to_account_info(),
+            system_program.to_account_info(),
+            &TermLoan::seeds(
+                &self.market.to_bytes(),
+                &self.margin_user.to_bytes(),
+                &self.sequence_number.to_le_bytes(),
+            ),
+        )
+    }
+}
+
 bitflags! {
     #[derive(Default, AnchorSerialize, AnchorDeserialize)]
     pub struct TermLoanFlags: u8 {
         /// This term loan has already been marked as due.
-        const MARKED_DUE = 0b00000001;
+        const MARKED_DUE = 1 << 0;
+
+        /// The loan can be auto rolled
+        const AUTO_ROLL = 1 << 1;
     }
 }
 

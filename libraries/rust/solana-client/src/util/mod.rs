@@ -1,3 +1,6 @@
+use anchor_lang::prelude::Pubkey;
+use solana_sdk::{signature::Keypair, signer::Signer};
+
 pub mod data;
 pub mod keypair;
 pub mod pubkey;
@@ -41,4 +44,23 @@ macro_rules! seal {
             use [<mod_for_ $Sealed:snake>]::$Sealed;
         }
     };
+}
+
+/// A signer or pubkey for a solana account. Use when you generically want
+/// anything that has an address, but you don't care if it can sign.
+pub trait Key {
+    /// The public key of the account.
+    fn address(&self) -> Pubkey;
+}
+
+impl Key for Pubkey {
+    fn address(&self) -> Pubkey {
+        *self
+    }
+}
+
+impl Key for Keypair {
+    fn address(&self) -> Pubkey {
+        self.pubkey()
+    }
 }

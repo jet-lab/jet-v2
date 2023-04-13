@@ -20,6 +20,7 @@ use std::collections::BTreeMap;
 use anchor_lang::solana_program::program_pack::Pack;
 use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use jet_static_program_registry::orca_swap_v2;
 
 use crate::instructions::TokenRequest;
 use crate::seeds::{SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS};
@@ -68,7 +69,7 @@ pub struct SplSwapPoolCreate<'info> {
                 mint_b.key().as_ref()
               ],
               bump,
-              space = 1 + spl_token_swap::state::SwapV1::LEN,
+              space = 1 + orca_swap_v2::state::SwapV1::LEN,
               owner = swap_program.key(),
               payer = payer
     )]
@@ -189,7 +190,7 @@ pub fn spl_swap_pool_create_handler(
 
     let bump = *ctx.bumps.get("pool_state").unwrap();
 
-    let ix = spl_token_swap::instruction::initialize(
+    let ix = orca_swap_v2::instruction::initialize(
         ctx.accounts.swap_program.key,
         ctx.accounts.token_program.key,
         ctx.accounts.pool_state.key,
@@ -200,7 +201,7 @@ pub fn spl_swap_pool_create_handler(
         &ctx.accounts.pool_fees.key(),
         &ctx.accounts.pool_fees.key(),
         params.nonce,
-        spl_token_swap::curve::fees::Fees {
+        orca_swap_v2::curve::fees::Fees {
             // The fee parameters are taken from one of spl-token-swap tests
             trade_fee_numerator: 1,
             trade_fee_denominator: 400,
@@ -211,9 +212,9 @@ pub fn spl_swap_pool_create_handler(
             host_fee_numerator: 1,
             host_fee_denominator: 100,
         },
-        spl_token_swap::curve::base::SwapCurve {
-            curve_type: spl_token_swap::curve::base::CurveType::ConstantProduct,
-            calculator: Box::new(spl_token_swap::curve::constant_product::ConstantProductCurve),
+        orca_swap_v2::curve::base::SwapCurve {
+            curve_type: orca_swap_v2::curve::base::CurveType::ConstantProduct,
+            calculator: Box::new(orca_swap_v2::curve::constant_product::ConstantProductCurve),
         },
     )?;
 

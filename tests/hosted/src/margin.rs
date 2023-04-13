@@ -35,14 +35,15 @@ use jet_margin_sdk::ix_builder::{
     MarginPoolConfiguration, MarginPoolIxBuilder,
 };
 use jet_margin_sdk::lookup_tables::LookupTable;
-use jet_margin_sdk::margin_integrator::PositionRefresher;
-use jet_margin_sdk::solana::keypair::clone;
+use jet_margin_sdk::refresh::position_refresher::PositionRefresher;
+use jet_margin_sdk::solana::keypair::{clone, KeypairExt};
 use jet_margin_sdk::solana::transaction::{
     InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder,
     TransactionBuilderExt, WithSigner,
 };
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
+use jet_solana_client::signature::Authorization;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::system_program;
@@ -51,8 +52,8 @@ use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 use jet_control::TokenMetadataParams;
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::{
-    global_initialize_instructions, AirspaceAdmin, MarginActionAuthority, MarginTxBuilder,
-    TokenDepositsConfig,
+    global_initialize_instructions, AirspaceAdmin, MarginActionAuthority, MarginInvokeContext,
+    MarginTxBuilder, TokenDepositsConfig,
 };
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -378,6 +379,22 @@ impl MarginUser {
         self.tx.owner()
     }
 
+    pub fn auth(&self) -> Authorization {
+        Authorization {
+            address: *self.address(),
+            authority: self.signer.clone(),
+        }
+    }
+
+    pub fn ctx(&self) -> MarginInvokeContext<Keypair> {
+        MarginInvokeContext {
+            margin_account: *self.address(),
+            authority: self.signer.clone(),
+            airspace: self.tx.airspace(),
+            is_liquidator: self.tx.is_liquidator(),
+        }
+    }
+
     pub fn signer(&self) -> Pubkey {
         self.tx.signer()
     }
@@ -427,7 +444,7 @@ impl MarginUser {
 
     pub async fn refresh_positions(&self) -> Result<Vec<Signature>, Error> {
         self.tx
-            .refresh_positions()
+            .refresh_positions(&())
             .await?
             .send_and_confirm_condensed(&self.rpc)
             .await

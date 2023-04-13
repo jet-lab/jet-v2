@@ -12,12 +12,11 @@ anchor-lang = "0.26"
 anchor-spl = "0.26"
 
 spl-token = "3"
-spl-token-swap = "2"
 spl-associated-token-account = "1"
 
 jet-program-common = { path = "../program-common" }
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint"] }

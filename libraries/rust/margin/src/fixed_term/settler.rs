@@ -7,7 +7,7 @@ use solana_sdk::pubkey::Pubkey;
 
 use super::FixedTermIxBuilder;
 use crate::{
-    solana::transaction::{TransactionBuilderExt, WithSigner},
+    solana::transaction::{InverseSendTransactionBuilder, WithSigner},
     util::no_dupe_queue::AsyncNoDupeQueue,
 };
 
@@ -71,15 +71,15 @@ async fn settle_with_recovery(
     match margin_accounts
         .iter()
         .map(|margin_account| {
-            accounting_invoke(
+            vec![accounting_invoke(
                 builder.airspace(),
                 *margin_account,
                 builder.settle(*margin_account),
-            )
+            )]
+            .with_signers(&[])
         })
         .collect::<Vec<_>>()
-        .with_signers(&[])
-        .send_and_confirm(&rpc)
+        .send_and_confirm_condensed(&rpc)
         .await
     {
         Ok(_) => tracing::debug!("settled margin accounts {margin_accounts:?}"),

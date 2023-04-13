@@ -15,7 +15,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
-import { ActionIcon } from '@components/misc/ActionIcon';
+import { ActionIcon, FixedTermAction } from '@components/misc/ActionIcon';
 import debounce from 'lodash.debounce';
 import { useJetStore } from '@jet-lab/store';
 
@@ -60,8 +60,8 @@ export function FullAccountHistory(): JSX.Element {
     let render = <Skeleton className="align-center" paragraph={false} active={loadingAccounts} />;
     if (accounts && transaction?.timestamp) {
       // TODO: no longer just a pool action, should include fixed term
-      let action: PoolAction = "deposit";
-      switch(transaction.activity_type) {
+      let action: PoolAction | FixedTermAction = "deposit";
+      switch (transaction.activity_type) {
         case "Deposit":
           action = "deposit";
           break;
@@ -83,7 +83,18 @@ export function FullAccountHistory(): JSX.Element {
         case "Repay":
           action = "repay";
           break;
-        // TODO: fixed term events
+        case "BorrowNow":
+          action = "borrow-now"
+          break;
+        case "LendNow":
+          action = "lend-now"
+          break;
+        case "OfferLoan":
+          action = "offer-loan"
+          break;
+        case "RequestLoand":
+          action = "request-loan"
+          break;
       }
       render = (
         <div className={`account-table-action-${action} flex-centered`}>
