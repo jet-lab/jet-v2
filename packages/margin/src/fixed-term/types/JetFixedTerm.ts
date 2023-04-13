@@ -2316,14 +2316,14 @@ export type JetFixedTerm = {
             name: "borrowRollConfig"
             docs: ['Settings for borrow order "auto rolling"']
             type: {
-              defined: "AutoRollConfig"
+              defined: "BorrowAutoRollConfig"
             }
           },
           {
             name: "lendRollConfig"
             docs: ['Settings for lend order "auto rolling"']
             type: {
-              defined: "AutoRollConfig"
+              defined: "LendAutoRollConfig"
             }
           }
         ]
@@ -2609,7 +2609,25 @@ export type JetFixedTerm = {
       }
     },
     {
-      name: "AutoRollConfig"
+      name: "BorrowAutoRollConfig"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "limitPrice"
+            docs: ["the limit price at which orders may be placed by an authority"]
+            type: "u64"
+          },
+          {
+            name: "rollTenor"
+            docs: ["The borrow roll tenor"]
+            type: "u64"
+          }
+        ]
+      }
+    },
+    {
+      name: "LendAutoRollConfig"
       type: {
         kind: "struct"
         fields: [
@@ -6121,14 +6139,14 @@ export const IDL: JetFixedTerm = {
             name: "borrowRollConfig",
             docs: ['Settings for borrow order "auto rolling"'],
             type: {
-              defined: "AutoRollConfig"
+              defined: "BorrowAutoRollConfig"
             }
           },
           {
             name: "lendRollConfig",
             docs: ['Settings for lend order "auto rolling"'],
             type: {
-              defined: "AutoRollConfig"
+              defined: "LendAutoRollConfig"
             }
           }
         ]
@@ -6414,7 +6432,25 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      name: "AutoRollConfig",
+      name: "BorrowAutoRollConfig",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "limitPrice",
+            docs: ["the limit price at which orders may be placed by an authority"],
+            type: "u64"
+          },
+          {
+            name: "rollTenor",
+            docs: ["The borrow roll tenor"],
+            type: "u64"
+          }
+        ]
+      }
+    },
+    {
+      name: "LendAutoRollConfig",
       type: {
         kind: "struct",
         fields: [
