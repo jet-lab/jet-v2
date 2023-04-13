@@ -121,7 +121,7 @@ pub use errors::FixedTermErrorCode;
 
 mod market_token_manager;
 /// Utilities for safely serializing and deserializing solana accounts
-pub(crate) mod serialization;
+pub mod serialization;
 /// local utilities for the crate
 pub(crate) mod utils;
 
