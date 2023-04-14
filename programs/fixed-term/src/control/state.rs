@@ -105,21 +105,36 @@ impl Serialize for Market {
     {
         let mut s = serializer.serialize_struct("Market", 14)?;
         s.serialize_field("versionTag", &self.version_tag)?;
-        s.serialize_field("airspace", &self.airspace)?;
-        s.serialize_field("orderbookMarketState", &self.orderbook_market_state)?;
-        s.serialize_field("eventQueue", &self.event_queue)?;
-        s.serialize_field("asks", &self.asks)?;
-        s.serialize_field("bids", &self.bids)?;
-        s.serialize_field("underlyingTokenMint", &self.underlying_token_mint)?;
-        s.serialize_field("underlyingTokenVault", &self.underlying_token_vault)?;
-        s.serialize_field("ticketMint", &self.ticket_mint)?;
-        s.serialize_field("claimsMint", &self.claims_mint)?;
-        s.serialize_field("ticketCollateralMint", &self.ticket_collateral_mint)?;
-        s.serialize_field("underlyingCollateralMint", &self.underlying_collateral_mint)?;
-        s.serialize_field("underlyingOracle", &self.underlying_oracle)?;
-        s.serialize_field("ticketOracle", &self.ticket_oracle)?;
-        s.serialize_field("feeVault", &self.fee_vault)?;
-        s.serialize_field("feeDestination", &self.fee_destination)?;
+        s.serialize_field("airspace", &self.airspace.to_string())?;
+        s.serialize_field(
+            "orderbookMarketState",
+            &self.orderbook_market_state.to_string(),
+        )?;
+        s.serialize_field("eventQueue", &self.event_queue.to_string())?;
+        s.serialize_field("asks", &self.asks.to_string())?;
+        s.serialize_field("bids", &self.bids.to_string())?;
+        s.serialize_field(
+            "underlyingTokenMint",
+            &self.underlying_token_mint.to_string(),
+        )?;
+        s.serialize_field(
+            "underlyingTokenVault",
+            &self.underlying_token_vault.to_string(),
+        )?;
+        s.serialize_field("ticketMint", &self.ticket_mint.to_string())?;
+        s.serialize_field("claimsMint", &self.claims_mint.to_string())?;
+        s.serialize_field(
+            "ticketCollateralMint",
+            &self.ticket_collateral_mint.to_string(),
+        )?;
+        s.serialize_field(
+            "underlyingCollateralMint",
+            &self.underlying_collateral_mint.to_string(),
+        )?;
+        s.serialize_field("underlyingOracle", &self.underlying_oracle.to_string())?;
+        s.serialize_field("ticketOracle", &self.ticket_oracle.to_string())?;
+        s.serialize_field("feeVault", &self.fee_vault.to_string())?;
+        s.serialize_field("feeDestination", &self.fee_destination.to_string())?;
         s.serialize_field("seed", &Pubkey::new_from_array(self.seed).to_string())?;
         s.serialize_field("orderbookPaused", &self.orderbook_paused)?;
         s.serialize_field("ticketsPaused", &self.tickets_paused)?;

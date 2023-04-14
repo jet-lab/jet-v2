@@ -107,7 +107,19 @@ export class FixedTermMarket {
     info: MarketInfo
   ) {
     this.addresses = {
-      ...info,
+      orderbookMarketState: new PublicKey(info.orderbookMarketState),
+      eventQueue: new PublicKey(info.eventQueue),
+      asks: new PublicKey(info.asks),
+      bids: new PublicKey(info.bids),
+      underlyingTokenMint: new PublicKey(info.underlyingTokenMint),
+      underlyingTokenVault: new PublicKey(info.underlyingTokenVault),
+      feeVault: new PublicKey(info.feeVault),
+      ticketMint: new PublicKey(info.ticketMint),
+      claimsMint: new PublicKey(info.claimsMint),
+      ticketCollateralMint: new PublicKey(info.ticketCollateralMint),
+      underlyingCollateralMint: new PublicKey(info.underlyingCollateralMint),
+      underlyingOracle: new PublicKey(info.underlyingOracle),
+      ticketOracle: new PublicKey(info.ticketOracle),
       claimsMetadata,
       ticketCollateralMetadata,
       underlyingCollateralMetadata,
@@ -142,15 +154,15 @@ export class FixedTermMarket {
     let data = await fetchData(program.provider.connection, market)
     let info: MarketInfo = deserializeMarketFromBuffer(data)
     const claimsMetadata = await findFixedTermDerivedAccount(
-      ["token-config", info.airspace, info.claimsMint],
+      ["token-config", new PublicKey(info.airspace), new PublicKey(info.claimsMint)],
       new PublicKey(jetMarginProgramId)
     )
     const ticketCollateralMetadata = await findFixedTermDerivedAccount(
-      ["token-config", info.airspace, info.ticketCollateralMint],
+      ["token-config", new PublicKey(info.airspace), new PublicKey(info.ticketCollateralMint)],
       new PublicKey(jetMarginProgramId)
     )
     const underlyingCollateralMetadata = await findFixedTermDerivedAccount(
-      ["token-config", info.airspace, info.underlyingCollateralMint],
+      ["token-config", new PublicKey(info.airspace), new PublicKey(info.underlyingCollateralMint)],
       new PublicKey(jetMarginProgramId)
     )
     const marginAdapterMetadata = await findFixedTermDerivedAccount(
@@ -493,7 +505,7 @@ export class FixedTermMarket {
   }
 
   getOrderbookModel(tenor: bigint, snapshot: OrderbookSnapshot): OrderbookModel {
-    const originationFee = bnToBigInt(this.info.originationFee)
+    const originationFee = this.info.originationFee
     const model = new OrderbookModel(BigInt(tenor), originationFee)
     model.refreshFromSnapshot(snapshot)
     this.orderbookModel = model
