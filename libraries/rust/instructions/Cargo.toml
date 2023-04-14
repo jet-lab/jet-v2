@@ -30,5 +30,5 @@ jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entr
 [dependencies.solana-address-lookup-table-program]
 package = "solana-address-lookup-table-program-gateway"
 git = "https://github.com/jet-lab/lookup-table-registry"
-branch = "stub"
+branch = "main"
 features = ["stub-id", "stub-instruction"]
