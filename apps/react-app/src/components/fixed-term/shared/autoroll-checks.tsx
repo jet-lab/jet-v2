@@ -15,10 +15,15 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
       setHasConfig(false);
       console.log('Autoroll Config: checking market config');
       market.fetchMarginUser(marginAccount).then(async response => {
+        console.log(response);
         if (!response) {
           console.warn('Autoroll Config: No user found in this market');
           return;
         }
+
+        console.log(response.borrowRollConfig.limitPrice.toNumber());
+        console.log(response.borrowRollConfig.rollTenor.toNumber());
+        console.log(response.lendRollConfig.limitPrice.toNumber());
 
         if (response.borrowRollConfig.limitPrice.isZero()) {
           console.warn('Autoroll config: No borrow config found in this market');
