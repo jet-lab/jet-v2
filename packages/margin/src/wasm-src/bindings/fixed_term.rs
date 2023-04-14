@@ -16,22 +16,22 @@ const MARKET_INFO: &'static str = r#"
  */
 export interface MarketInfo {
     versionTag: bigint
-    airspace: PublicKey
-    orderbookMarketState: PublicKey
-    eventQueue: PublicKey
-    asks: PublicKey
-    bids: PublicKey
-    underlyingTokenMint: PublicKey
-    underlyingTokenVault: PublicKey
-    ticketMint: PublicKey
-    claimsMint: PublicKey
-    ticketCollateralMint: PublicKey
-    underlyingCollateralMint: PublicKey
-    underlyingOracle: PublicKey
-    ticketOracle: PublicKey
-    feeVault: PublicKey
-    feeDestination: PublicKey
-    seed: PublicKey
+    airspace: Address
+    orderbookMarketState: Address
+    eventQueue: Address
+    asks: Address
+    bids: Address
+    underlyingTokenMint: Address
+    underlyingTokenVault: Address
+    ticketMint: Address
+    claimsMint: Address
+    ticketCollateralMint: Address
+    underlyingCollateralMint: Address
+    underlyingOracle: Address
+    ticketOracle: Address
+    feeVault: Address
+    feeDestination: Address
+    seed: Address
     orderbookPaused: boolean
     ticketsPaused: boolean
     borrowTenor: bigint
