@@ -2229,6 +2229,7 @@ dependencies = [
  "bytemuck",
  "console_error_panic_hook",
  "jet-fixed-term",
+ "jet-instructions",
  "jet-program-common",
  "js-sys",
  "rand_chacha 0.3.1",

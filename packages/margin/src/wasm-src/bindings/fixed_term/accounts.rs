@@ -2,10 +2,10 @@ use wasm_bindgen::prelude::*;
 
 use jet_fixed_term::control::state::Market;
 
-use super::serialization::JsAnchorDeserialize;
+use crate::{bindings::serialization::JsAnchorDeserialize, JsResult};
 
 #[wasm_bindgen(js_name = "deserializeMarketFromBuffer")]
-pub fn deserialize_market(buf: &[u8]) -> Result<JsValue, JsError> {
+pub fn deserialize_market(buf: &[u8]) -> JsResult {
     Market::deserialize_from_buffer(buf)
 }
 
