@@ -3,6 +3,7 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { MarginAccount } from "margin"
 import { FixedTermMarket } from "./fixedTerm"
+import { WasmTransactionInstruction } from "wasm"
 
 export class DerivedAccount {
   public address: PublicKey
@@ -89,4 +90,24 @@ export const refreshAllMarkets = async (
       }
     })
   )
+}
+
+export function translateWasmInstruction(ix: WasmTransactionInstruction): TransactionInstruction {
+  const mapAccountMeta = a => {
+    return {
+      pubkey: new PublicKey(a.pubkey),
+      isSigner: a.is_signer,
+      isWritable: a.is_writable
+    }
+  }
+  let accs: any[] = []
+  ix.accounts.forEach(a => {
+    accs.push(mapAccountMeta(a))
+  })
+
+  return new TransactionInstruction({
+    keys: accs,
+    programId: new PublicKey(ix.program_id),
+    data: Buffer.from(ix.data)
+  })
 }

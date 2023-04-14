@@ -27,3 +27,21 @@ pub trait JsAnchorDeserialize: JsSerializable + AccountDeserialize {
     }
 }
 impl<T> JsAnchorDeserialize for T where T: JsSerializable + AccountDeserialize {}
+
+#[wasm_bindgen(typescript_custom_section)]
+const INSTRUCTION_TYPE: &'static str = r#"
+/**
+ * Intermediate type for translation from wasm serializtion
+ */
+export type WasmTransactionInstruction = {
+    accounts: Array<WasmAccountMeta>,
+    program_id: PublicKey,
+    data: Buffer,
+}
+
+export type WasmAccountMeta = {
+    pubkey: PublicKey,
+    is_signer: boolean,
+    is_writable: boolean,
+}
+"#;

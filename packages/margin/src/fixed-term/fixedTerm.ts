@@ -3,7 +3,7 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
 import { JetFixedTerm } from "./types"
-import { fetchData, findFixedTermDerivedAccount } from "./utils"
+import { fetchData, findFixedTermDerivedAccount, translateWasmInstruction } from "./utils"
 import {
   MakerSimulation,
   OrderbookModel,
@@ -12,7 +12,8 @@ import {
   rate_to_price,
   MarketInfo,
   deserializeMarketFromBuffer,
-  initializeMarginUserIx
+  initializeMarginUserIx,
+  WasmTransactionInstruction
 } from "../wasm"
 import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
@@ -452,13 +453,14 @@ export class FixedTermMarket {
     }
   }
 
-  registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
-    return initializeMarginUserIx(
+  async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
+    const ix: WasmTransactionInstruction = initializeMarginUserIx(
       user.address.toBase58(),
       this.addresses.market.toBase58(),
-      this.info.airspace.toBase58(),
+      this.info.airspace,
       payer.toString()
     )
+    return translateWasmInstruction(ix)
 
     // const marginUser = await this.deriveMarginUserAddress(user)
     // const claims = await this.deriveMarginUserClaims(marginUser)
