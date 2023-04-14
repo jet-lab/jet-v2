@@ -1,6 +1,6 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
+import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
 import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount } from "./utils"
@@ -11,7 +11,8 @@ import {
   TakerSimulation,
   rate_to_price,
   MarketInfo,
-  deserializeMarketFromBuffer
+  deserializeMarketFromBuffer,
+  initializeMarginUserIx
 } from "../wasm"
 import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
@@ -186,9 +187,8 @@ export class FixedTermMarket {
     market: Address,
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
-    let data = await fetchData(program.provider.connection, market)
-    let info: MarketInfo = deserializeMarketFromBuffer(data)
-
+    const data = await fetchData(program.provider.connection, market)
+    const info: MarketInfo = deserializeMarketFromBuffer(data)
     const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", new PublicKey(info.airspace), new PublicKey(info.claimsMint)],
       new PublicKey(jetMarginProgramId)
@@ -452,26 +452,34 @@ export class FixedTermMarket {
     }
   }
 
-  async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
-    const marginUser = await this.deriveMarginUserAddress(user)
-    const claims = await this.deriveMarginUserClaims(marginUser)
-    const ticketCollateral = await this.deriveTicketCollateral(marginUser)
-    const tokenCollateral = await this.deriveTokenCollateral(marginUser)
-    return await this.program.methods
-      .initializeMarginUser()
-      .accounts({
-        ...this.addresses,
-        marginUser,
-        marginAccount: user.address,
-        claims,
-        ticketCollateral,
-        tokenCollateral,
-        payer,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .instruction()
+  registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
+    return initializeMarginUserIx(
+      user.address.toBase58(),
+      this.addresses.market.toBase58(),
+      this.info.airspace.toBase58(),
+      payer.toString()
+    )
+
+    // const marginUser = await this.deriveMarginUserAddress(user)
+    // const claims = await this.deriveMarginUserClaims(marginUser)
+    // const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    // const tokenCollateral = await this.deriveTokenCollateral(marginUser)
+
+    // return await this.program.methods
+    //   .initializeMarginUser()
+    //   .accounts({
+    //     ...this.addresses,
+    //     marginUser,
+    //     marginAccount: user.address,
+    //     claims,
+    //     ticketCollateral,
+    //     tokenCollateral,
+    //     payer,
+    //     rent: SYSVAR_RENT_PUBKEY,
+    //     systemProgram: SystemProgram.programId,
+    //     tokenProgram: TOKEN_PROGRAM_ID
+    //   })
+    //   .instruction()
   }
 
   /**
