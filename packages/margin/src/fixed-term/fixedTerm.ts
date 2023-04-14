@@ -59,8 +59,8 @@ export interface MarginUserInfo {
   tokenCollateral: PublicKey
   debt: DebtInfo
   assets: AssetInfo
-  borrowRollConfig: AutoRollConfig
-  lendRollConfig: AutoRollConfig
+  borrowRollConfig: BorrowAutoRollConfig
+  lendRollConfig: LendAutoRollConfig
 }
 
 export interface DebtInfo {
@@ -81,8 +81,13 @@ export interface AssetInfo {
   _reserved0: number[]
 }
 
-export interface AutoRollConfig {
-  limit_price: BN
+export interface LendAutoRollConfig {
+  limitPrice: BN
+}
+
+export interface BorrowAutoRollConfig {
+  limitPrice: BN
+  rollTenor: BN
 }
 
 export interface ClaimTicket {
@@ -530,21 +535,26 @@ export class FixedTermMarket {
 
   async configAutorollBorrow(marginAccount: MarginAccount, price: bigint, tenor: BN) {
     const marginUser = await this.deriveMarginUserAddress(marginAccount)
-    return await this.program.methods.configureAutoRollBorrow({ limitPrice: bigIntToBn(price), rollTenor: tenor}).accounts({
-      marginUser,
-      marginAccount: marginAccount.address,
-      market: this.address
-    }).instruction()
+    return await this.program.methods
+      .configureAutoRollBorrow({ limitPrice: bigIntToBn(price), rollTenor: tenor })
+      .accounts({
+        marginUser,
+        marginAccount: marginAccount.address,
+        market: this.address
+      })
+      .instruction()
   }
 
-  
   async configAutorollLend(marginAccount: MarginAccount, price: bigint) {
     const marginUser = await this.deriveMarginUserAddress(marginAccount)
-    return await this.program.methods.configureAutoRollLend({ limitPrice: bigIntToBn(price)}).accounts({
-      marginUser, 
-      marginAccount: marginAccount.address,
-      market: this.address
-    }).instruction()
+    return await this.program.methods
+      .configureAutoRollLend({ limitPrice: bigIntToBn(price) })
+      .accounts({
+        marginUser,
+        marginAccount: marginAccount.address,
+        market: this.address
+      })
+      .instruction()
   }
 
   async redeemDeposit(

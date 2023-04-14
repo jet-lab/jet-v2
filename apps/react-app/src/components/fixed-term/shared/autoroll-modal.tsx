@@ -15,8 +15,9 @@ interface AutorollModalProps {
   marginAccount?: MarginAccount;
   open: boolean;
   onClose: () => void;
+  refresh: () => void;
 }
-export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose }: AutorollModalProps) => {
+export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose, refresh }: AutorollModalProps) => {
   const [minLendRate, setMinLendRate] = useState<number>(0);
   const [maxBorrowRate, setMaxBorrowRate] = useState<number>(0);
   const [pending, setPending] = useState(false);
@@ -73,6 +74,7 @@ export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose }:
       setPending(false);
       console.error(e);
     } finally {
+      refresh();
       onClose();
     }
   };

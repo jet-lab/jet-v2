@@ -215,7 +215,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       </div>
 
       <AutoRollChecks market={marketAndConfig.market} marginAccount={marginAccount}>
-        {({ hasConfig }) => (
+        {({ hasConfig, refresh }) => (
           <div className="auto-roll-controls">
             <AutoRollModal
               onClose={() => {
@@ -224,6 +224,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
               open={showAutorollModal}
               marketAndConfig={marketAndConfig}
               marginAccount={marginAccount}
+              refresh={refresh}
             />
             <Switch
               checked={autorollEnabled}

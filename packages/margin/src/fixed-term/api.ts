@@ -615,10 +615,10 @@ export const configAutoroll = async ({
     payload.borrowPrice,
     new BN(marketAndConfig.config.borrowTenor > 120 ? marketAndConfig.config.borrowTenor - 30 * 60 : 100)
   ) // market tenor - 30 minutes of lead time
+
   await account.withAdapterInvoke({
     instructions: marketIXS,
     adapterInstruction: borrowSetupIX
   })
-
   return sendAll(provider, [marketIXS])
 }
