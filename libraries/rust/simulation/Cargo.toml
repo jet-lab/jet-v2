@@ -34,5 +34,5 @@ solana_rbpf = "0.2.31"
 [dependencies.solana-address-lookup-table-program]
 package = "solana-address-lookup-table-program-gateway"
 git = "https://github.com/jet-lab/lookup-table-registry"
-branch = "stub"
+branch = "main"
 features = []

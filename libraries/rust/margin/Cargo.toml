@@ -62,5 +62,5 @@ saber-client = { package = "stable-swap-client", git = "https://github.com/jet-l
 [dependencies.solana-address-lookup-table-program]
 package = "solana-address-lookup-table-program-gateway"
 git = "https://github.com/jet-lab/lookup-table-registry"
-branch = "stub"
+branch = "main"
 features = ["stub-id", "stub-instruction", "stub-state"]

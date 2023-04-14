@@ -75,5 +75,5 @@ features = ["test-runtime"]
 
 [dependencies.lookup-table-registry]
 git = "https://github.com/jet-lab/lookup-table-registry"
-branch = "stub"
+branch = "main"
 features = ["program"]
