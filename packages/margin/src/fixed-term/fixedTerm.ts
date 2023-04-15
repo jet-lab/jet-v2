@@ -13,7 +13,9 @@ import {
   MarketInfo,
   deserializeMarketFromBuffer,
   initializeMarginUserIx,
-  WasmTransactionInstruction
+  WasmTransactionInstruction,
+  configureAutoRollLendIx,
+  configureAutoRollBorrowIx
 } from "../wasm"
 import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
@@ -565,27 +567,20 @@ export class FixedTermMarket {
   }
 
   async configAutorollBorrow(marginAccount: MarginAccount, price: bigint, tenor: BN) {
-    const marginUser = await this.deriveMarginUserAddress(marginAccount)
-    return await this.program.methods
-      .configureAutoRollBorrow({ limitPrice: bigIntToBn(price), rollTenor: tenor })
-      .accounts({
-        marginUser,
-        marginAccount: marginAccount.address,
-        market: this.address
-      })
-      .instruction()
+    return translateWasmInstruction(
+      configureAutoRollBorrowIx(
+        this.addresses.market.toBase58(),
+        marginAccount.address.toBase58(),
+        bnToBigInt(tenor),
+        price
+      )
+    )
   }
 
   async configAutorollLend(marginAccount: MarginAccount, price: bigint) {
-    const marginUser = await this.deriveMarginUserAddress(marginAccount)
-    return await this.program.methods
-      .configureAutoRollLend({ limitPrice: bigIntToBn(price) })
-      .accounts({
-        marginUser,
-        marginAccount: marginAccount.address,
-        market: this.address
-      })
-      .instruction()
+    return translateWasmInstruction(
+      configureAutoRollLendIx(this.addresses.market.toBase58(), marginAccount.address.toBase58(), price)
+    )
   }
 
   async redeemDeposit(

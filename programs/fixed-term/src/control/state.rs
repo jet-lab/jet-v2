@@ -103,7 +103,7 @@ impl Serialize for Market {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_struct("Market", 14)?;
+        let mut s = serializer.serialize_struct("Market", 22)?;
         s.serialize_field("versionTag", &self.version_tag)?;
         s.serialize_field("airspace", &self.airspace.to_string())?;
         s.serialize_field(

@@ -178,9 +178,9 @@ pub fn margin_repay(
 pub fn configure_auto_roll(
     market: Pubkey,
     margin_account: Pubkey,
-    margin_user: Pubkey,
     config: AutoRollConfig,
 ) -> Instruction {
+    let margin_user = margin_user(&market, &margin_account);
     let accounts = jet_fixed_term::accounts::ConfigureAutoRoll {
         margin_user,
         margin_account,

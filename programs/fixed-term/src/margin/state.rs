@@ -10,6 +10,8 @@ use jet_program_common::{
     traits::{SafeAdd, SafeSub, TryAddAssign, TrySubAssign},
     Fp32,
 };
+#[cfg(any(feature = "cli", test))]
+use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
 use crate::{
     events::{AssetsUpdated, DebtUpdated, TermLoanCreated},
@@ -313,6 +315,18 @@ impl MarginUser {
     }
 }
 
+#[cfg(any(feature = "cli", test))]
+impl Serialize for MarginUser {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = serializer.serialize_struct("MarginUser", 22)?;
+        s.end()
+    }
+}
+
+#[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
 #[derive(Zeroable, Debug, Default, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next term loan to be created
@@ -547,12 +561,24 @@ impl Default for Assets {
     }
 }
 
+#[cfg(any(feature = "cli", test))]
+impl Serialize for Assets {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = serializer.serialize_struct("Assets", 22)?;
+        s.end()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AutoRollConfig {
     Borrow(BorrowAutoRollConfig),
     Lend(LendAutoRollConfig),
 }
 
+#[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
 #[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub struct BorrowAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
@@ -564,6 +590,7 @@ pub struct BorrowAutoRollConfig {
     pub roll_tenor: u64,
 }
 
+#[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
 #[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub struct LendAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
