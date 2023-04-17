@@ -42,6 +42,36 @@ pub fn deserialize_market(buf: &[u8]) -> JsResult {
 
 #[wasm_bindgen(typescript_custom_section)]
 const MARGIN_USER_INFO: &'static str = r#"
+export interface MarginUserInfo {
+    versionTag: number,
+    marginAccount: string,
+    market: string,
+    claims: string,
+    ticketCollateral: string,
+    underlyingCollateral: string,
+    debt: Debt,
+    assets: Assets,
+    borrowRollConfig?: BorrowAutoRollConfig,
+    lendRollConfig?: LendAutoRollConfig,
+}
+
+export interface Debt {
+    nextNewTermLoanSeqno: bigint,
+    nextUnpaidTermLoanSeqno: bigint,
+    nextTermLoanMaturity: bigint,
+    pending: bigint,
+    committed: bigint,
+}
+
+export interface Assets {
+    entitledTokens: bigint,
+    entitledTickets: bigint,
+    nextDepositSeqno: bigint,
+    nextUnredeemedDepositSeqno: bigint,
+    ticketsStaked: bigint,
+    ticketsPosted: bigint,
+    tokensPosted: bigint,
+}
 "#;
 
 #[wasm_bindgen(js_name = "deserializeMarginUserFromBuffer")]

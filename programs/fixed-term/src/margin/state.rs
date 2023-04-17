@@ -321,12 +321,25 @@ impl Serialize for MarginUser {
     where
         S: Serializer,
     {
-        let s = serializer.serialize_struct("MarginUser", 22)?;
+        let mut s = serializer.serialize_struct("MarginUser", 10)?;
+        s.serialize_field("versionTag", &self.version)?;
+        s.serialize_field("marginAccount", &self.margin_account.to_string())?;
+        s.serialize_field("market", &self.market.to_string())?;
+        s.serialize_field("claims", &self.claims.to_string())?;
+        s.serialize_field("ticketCollateral", &self.ticket_collateral.to_string())?;
+        s.serialize_field(
+            "underlyingCollateral",
+            &self.underlying_collateral.to_string(),
+        )?;
+        s.serialize_field("debt", &self.debt)?;
+        s.serialize_field("assets", &self.assets)?;
+        s.serialize_field("borrowRollConfig", &self.borrow_roll_config)?;
+        s.serialize_field("lendRollConfig", &self.lend_roll_config)?;
         s.end()
     }
 }
 
-#[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
+#[cfg_attr(any(feature = "cli", test), derive(Deserialize))]
 #[derive(Zeroable, Debug, Default, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next term loan to be created
@@ -461,6 +474,22 @@ impl Debt {
     }
 }
 
+#[cfg(any(feature = "cli", test))]
+impl Serialize for Debt {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("Debt", 5)?;
+        s.serialize_field("nextNewTermLoanSeqno", &self.next_new_term_loan_seqno)?;
+        s.serialize_field("nextUnpaidTermLoanSeqno", &self.next_unpaid_term_loan_seqno)?;
+        s.serialize_field("nextTermLoanMaturity", &self.next_term_loan_maturity)?;
+        s.serialize_field("pending", &self.pending)?;
+        s.serialize_field("committed", &self.committed)?;
+        s.end()
+    }
+}
+
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, Eq)]
 pub struct Assets {
     /// tokens to transfer into settlement account
@@ -567,7 +596,17 @@ impl Serialize for Assets {
     where
         S: Serializer,
     {
-        let s = serializer.serialize_struct("Assets", 22)?;
+        let mut s = serializer.serialize_struct("Assets", 7)?;
+        s.serialize_field("entitledTokens", &self.entitled_tokens)?;
+        s.serialize_field("entitledTickets", &self.entitled_tickets)?;
+        s.serialize_field("nextDepositSeqno", &self.next_deposit_seqno)?;
+        s.serialize_field(
+            "nextUnredeemedDepositSeqno",
+            &self.next_unredeemed_deposit_seqno,
+        )?;
+        s.serialize_field("ticketsStaked", &self.tickets_staked)?;
+        s.serialize_field("ticketsPosted", &self.tickets_posted)?;
+        s.serialize_field("tokensPosted", &self.tokens_posted)?;
         s.end()
     }
 }

@@ -11,7 +11,9 @@ import {
   TakerSimulation,
   rate_to_price,
   MarketInfo,
+  MarginUserInfo,
   deserializeMarketFromBuffer,
+  deserializeMarginUserFromBuffer,
   initializeMarginUserIx,
   WasmTransactionInstruction,
   configureAutoRollLendIx,
@@ -62,18 +64,18 @@ export interface OrderParams {
 // }
 
 /** MarginUser account as found on-chain */
-export interface MarginUserInfo {
-  version: BN
-  marginAccount: PublicKey
-  market: PublicKey
-  claims: PublicKey
-  ticketCollateral: PublicKey
-  tokenCollateral: PublicKey
-  debt: DebtInfo
-  assets: AssetInfo
-  borrowRollConfig: BorrowAutoRollConfig
-  lendRollConfig: LendAutoRollConfig
-}
+// export interface MarginUserInfo {
+//   version: BN
+//   marginAccount: PublicKey
+//   market: PublicKey
+//   claims: PublicKey
+//   ticketCollateral: PublicKey
+//   tokenCollateral: PublicKey
+//   debt: DebtInfo
+//   assets: AssetInfo
+//   borrowRollConfig: BorrowAutoRollConfig
+//   lendRollConfig: LendAutoRollConfig
+// }
 
 export interface DebtInfo {
   nextNewTermLoanSeqno: BN
@@ -512,7 +514,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
+    return bigIntToBn(userInfo.debt.nextNewTermLoanSeqno).toArrayLike(Buffer, "le", 8)
   }
 
   async fetchDepositSeed(user: MarginAccount): Promise<Uint8Array> {
@@ -522,7 +524,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
+    return bigIntToBn(userInfo.assets.nextDepositSeqno).toArrayLike(Buffer, "le", 8)
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
@@ -562,8 +564,10 @@ export class FixedTermMarket {
 
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
-
-    return data ? await this.program.coder.accounts.decode("marginUser", data) : null
+    const acc = data ? deserializeMarginUserFromBuffer(data) : null
+    console.log(acc)
+    return acc
+    // return data ? await this.program.coder.accounts.decode("marginUser", data) : null
   }
 
   async configAutorollBorrow(marginAccount: MarginAccount, price: bigint, tenor: BN) {
@@ -604,8 +608,8 @@ export class FixedTermMarket {
 
     const marginUserData = await market.fetchMarginUser(marginAccount)
     console.table({
-      nextUnredeemedDepositSeqno: marginUserData?.assets.nextUnredeemedDepositSeqno.toNumber(),
-      nextDepositSeqno: marginUserData?.assets.nextDepositSeqno.toNumber(),
+      nextUnredeemedDepositSeqno: bigIntToBn(marginUserData?.assets.nextUnredeemedDepositSeqno).toNumber(),
+      nextDepositSeqno: bigIntToBn(marginUserData?.assets.nextDepositSeqno).toNumber(),
       deposit_seq_no: deposit.sequence_number
     })
 
