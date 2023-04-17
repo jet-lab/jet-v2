@@ -8,18 +8,28 @@ import { useProvider } from '@utils/jet/provider';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import { Button, InputNumber } from 'antd';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface AutorollModalProps {
   marketAndConfig: MarketAndConfig;
   marginAccount?: MarginAccount;
+  borrowRate?: number;
+  lendRate?: number;
   open: boolean;
   onClose: () => void;
   refresh: () => void;
 }
-export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose, refresh }: AutorollModalProps) => {
-  const [minLendRate, setMinLendRate] = useState<number>(0);
-  const [maxBorrowRate, setMaxBorrowRate] = useState<number>(0);
+export const AutoRollModal = ({
+  marketAndConfig,
+  marginAccount,
+  open,
+  borrowRate,
+  lendRate,
+  onClose,
+  refresh
+}: AutorollModalProps) => {
+  const [minLendRate, setMinLendRate] = useState<number>();
+  const [maxBorrowRate, setMaxBorrowRate] = useState<number>();
   const [pending, setPending] = useState(false);
   const { publicKey } = useWallet();
   const { provider } = useProvider();
@@ -34,7 +44,7 @@ export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose, r
   const preprocessInput = useCallback((e: number) => Math.round(e * 100) / 100, []);
 
   const processPayload = useCallback(() => {
-    if (minLendRate === 0 || maxBorrowRate === 0) return;
+    if (!minLendRate || minLendRate === 0 || !maxBorrowRate || maxBorrowRate === 0) return;
 
     const lendBps = Math.round(minLendRate * 100);
     const borrowBps = Math.round(maxBorrowRate * 100);
@@ -79,6 +89,22 @@ export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose, r
     }
   };
 
+  useEffect(() => {
+    if (lendRate) {
+      setMinLendRate(lendRate / 100);
+    } else {
+      setMinLendRate(undefined);
+    }
+  }, [lendRate]);
+
+  useEffect(() => {
+    if (borrowRate) {
+      setMaxBorrowRate(borrowRate / 100);
+    } else {
+      setMaxBorrowRate(undefined);
+    }
+  }, [borrowRate]);
+
   return (
     <Modal open={open} onClose={onClose} title={`Configure ${marketName} market`}>
       <div className="flex flex-col autoroll-modal">
@@ -87,7 +113,7 @@ export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose, r
             Minimum lend rate
             <InputNumber
               className="input-rate"
-              value={minLendRate > 0 ? minLendRate : undefined}
+              value={minLendRate && minLendRate > 0 ? minLendRate : undefined}
               onChange={e => setMinLendRate(preprocessInput(e || 0))}
               formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               placeholder={'3.50'}
@@ -99,7 +125,7 @@ export const AutoRollModal = ({ marketAndConfig, marginAccount, open, onClose, r
             Maximum borrow rate
             <InputNumber
               className="input-rate"
-              value={maxBorrowRate > 0 ? maxBorrowRate : undefined}
+              value={maxBorrowRate && maxBorrowRate > 0 ? maxBorrowRate : undefined}
               onChange={e => setMaxBorrowRate(preprocessInput(e || 0))}
               formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               placeholder={'6.50'}

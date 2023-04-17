@@ -24,7 +24,7 @@ import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@sta
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
-import { LoadingOutlined } from '@ant-design/icons';
+import { EditOutlined, LoadingOutlined } from '@ant-design/icons';
 import { AutoRollChecks } from '../shared/autoroll-checks';
 import { AutoRollModal } from '../shared/autoroll-modal';
 
@@ -213,7 +213,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       </div>
 
       <AutoRollChecks market={marketAndConfig.market} marginAccount={marginAccount}>
-        {({ hasConfig, refresh }) => (
+        {({ hasConfig, refresh, borrowRate, lendRate }) => (
           <div className="auto-roll-controls">
             <AutoRollModal
               onClose={() => {
@@ -223,6 +223,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
               marketAndConfig={marketAndConfig}
               marginAccount={marginAccount}
               refresh={refresh}
+              borrowRate={borrowRate}
+              lendRate={lendRate}
             />
             <Switch
               checked={autorollEnabled}
@@ -234,7 +236,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
                 }
               }}
             />
-            Auto-roll Off
+            Auto-roll
+            <EditOutlined onClick={() => setShowAutorollModal(true)} />
           </div>
         )}
       </AutoRollChecks>

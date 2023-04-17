@@ -565,9 +565,7 @@ export class FixedTermMarket {
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
     const acc = data ? deserializeMarginUserFromBuffer(data) : null
-    console.log(acc)
     return acc
-    // return data ? await this.program.coder.accounts.decode("marginUser", data) : null
   }
 
   async configAutorollBorrow(marginAccount: MarginAccount, price: bigint, tenor: BN) {
