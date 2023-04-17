@@ -291,7 +291,8 @@ export class FixedTermMarket {
         payer,
         underlyingSettlement: underlyingSettlement,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID
+        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenCollateralMint: this.addresses.underlyingCollateralMint
       })
       .instruction()
   }

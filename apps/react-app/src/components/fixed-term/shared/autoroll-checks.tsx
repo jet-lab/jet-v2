@@ -29,7 +29,7 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
           return;
         }
 
-        if (response.borrowRollConfig.limit_price === BigInt(0)) {
+        if (!response.borrowRollConfig || response.borrowRollConfig.limit_price === BigInt(0)) {
           console.warn('Autoroll config: No borrow config found in this market');
           return;
         } else {
@@ -38,7 +38,7 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
           );
         }
 
-        if (response.lendRollConfig.limit_price === BigInt(0)) {
+        if (!response.lendRollConfig || response.lendRollConfig.limit_price === BigInt(0)) {
           console.warn('Autoroll config: No lend config found in this market.');
           return;
         } else {
