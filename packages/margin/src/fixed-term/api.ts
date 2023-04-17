@@ -47,6 +47,7 @@ interface ICreateLendOrder {
   marketAccount?: string
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 export const offerLoan = async ({
   market,
@@ -57,7 +58,8 @@ export const offerLoan = async ({
   basisPoints,
   pools,
   marketConfig,
-  markets
+  markets,
+  autorollEnabled
 }: ICreateLendOrder) => {
   const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
@@ -102,7 +104,8 @@ export const offerLoan = async ({
     amount,
     basisPoints,
     walletAddress,
-    marketConfig.borrowTenor
+    marketConfig.borrowTenor,
+    autorollEnabled
   )
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,
@@ -122,6 +125,7 @@ interface ICreateBorrowOrder {
   basisPoints: BN
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 
 export const requestLoan = async ({
@@ -133,7 +137,8 @@ export const requestLoan = async ({
   amount,
   basisPoints,
   marketConfig,
-  markets
+  markets,
+  autorollEnabled
 }: ICreateBorrowOrder): Promise<string> => {
   const instructions: TransactionInstruction[][] = []
 
@@ -177,7 +182,8 @@ export const requestLoan = async ({
     walletAddress,
     amount,
     basisPoints,
-    marketConfig.borrowTenor
+    marketConfig.borrowTenor,
+    autorollEnabled
   )
 
   await marginAccount.withAdapterInvoke({
@@ -243,6 +249,7 @@ interface IBorrowNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 
 export const borrowNow = async ({
@@ -252,7 +259,8 @@ export const borrowNow = async ({
   walletAddress,
   pools,
   amount,
-  markets
+  markets,
+  autorollEnabled
 }: IBorrowNow): Promise<string> => {
   const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
@@ -291,7 +299,7 @@ export const borrowNow = async ({
 
   // Create borrow instruction
   const orderIXS: TransactionInstruction[] = []
-  const borrowNow = await market.market.borrowNowIx(marginAccount, walletAddress, amount)
+  const borrowNow = await market.market.borrowNowIx(marginAccount, walletAddress, amount, autorollEnabled)
 
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,
@@ -330,6 +338,7 @@ interface ILendNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 
 export const lendNow = async ({
@@ -339,7 +348,8 @@ export const lendNow = async ({
   walletAddress,
   pools,
   amount,
-  markets
+  markets,
+  autorollEnabled
 }: ILendNow): Promise<string> => {
   const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
@@ -378,7 +388,7 @@ export const lendNow = async ({
   })
 
   // Create borrow instruction
-  const lendNow = await market.market.lendNowIx(marginAccount, amount, walletAddress)
+  const lendNow = await market.market.lendNowIx(marginAccount, amount, walletAddress, autorollEnabled)
 
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,

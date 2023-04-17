@@ -143,7 +143,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
         amount,
-        markets: markets.map(m => m.market)
+        markets: markets.map(m => m.market),
+        autorollEnabled
       });
       setTimeout(() => {
         refreshOrderBooks();

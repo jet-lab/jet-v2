@@ -100,7 +100,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         amount: amount,
         basisPoints: basisPoints,
         marketConfig: marketAndConfig.config,
-        markets: markets.map(m => m.market)
+        markets: markets.map(m => m.market),
+        autorollEnabled
       });
       setTimeout(() => {
         refreshOrderBooks();
