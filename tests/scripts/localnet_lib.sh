@@ -109,7 +109,7 @@ start-oracle() {
 }
 
 start-crank-service() {
-    sleep 10s
+    sleep 10
     mkdir -p .localnet
 
     log_filter="jet_margin_sdk=debug"

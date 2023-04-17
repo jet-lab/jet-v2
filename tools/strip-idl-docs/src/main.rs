@@ -16,6 +16,9 @@ fn strip() -> Option<()> {
         let val = idl.as_object_mut()?;
         val.remove("docs");
 
+        // Remove events
+        val.remove("events");
+
         // Remove in instructions
         let instructions = val.get_mut("instructions")?.as_array_mut()?;
         for ix in instructions {
@@ -27,6 +30,13 @@ fn strip() -> Option<()> {
             for account in accounts {
                 let val = account.as_object_mut()?;
                 val.remove("docs");
+                if let Some(accounts) = val.get_mut("accounts") {
+                    let accounts = accounts.as_array_mut()?;
+                    // Remove docs here too
+                    for account in accounts {
+                        account.as_object_mut()?.remove("docs");
+                    }
+                }
             }
         }
 
