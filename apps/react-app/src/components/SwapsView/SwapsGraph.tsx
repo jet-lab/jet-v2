@@ -17,6 +17,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { useJetStore } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
 import axios from 'axios';
+import { SwapLiquidity } from '@utils/actions/swap';
 
 // Graph for displaying pricing and slippage data for current swap pair
 export function SwapsGraph(): JSX.Element {
@@ -37,8 +38,8 @@ export function SwapsGraph(): JSX.Element {
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
   const [currentChart, setCurrentChart] = useState<ApexCharts | undefined>(undefined);
   const swapFees = useRecoilValue(SwapFees);
-  const [chartData, setChartData] = useState([]);
-  const swapPoolLoading = !chartData.length;
+  const [chartData, setChartData] = useState<SwapLiquidity | undefined>(undefined);
+  const swapPoolLoading = !chartData;
   const swapMaxTradeAmount =
     currentAccount?.poolPositions[currentPool?.symbol ?? '']?.maxTradeAmounts.swap.lamports.toNumber();
   const [oraclePrice, setOraclePrice] = useState(0);
@@ -72,13 +73,10 @@ export function SwapsGraph(): JSX.Element {
     const maxLeverage = (swapMaxTradeAmount ?? 0) * 2.0;
 
     currentChart?.destroy();
-    if (chartData.length === 0) {
+    if (!chartData) {
       setCurrentChart(undefined);
       return;
     }
-
-    const worstOutput = chartData[chartData.length - 1][1];
-    const range = Math.abs(poolPrice - worstOutput);
 
     // Quote token of the pool, uses Token B for consistency
     const poolQuoteToken = !true ? ` ${outputToken?.symbol}` : ` ${currentPool?.symbol}`;
@@ -235,8 +233,8 @@ export function SwapsGraph(): JSX.Element {
         },
         show: true,
         // Bound price to 2% in either direction
-        min: Math.round((poolPrice - range) * 99) / 100,
-        max: Math.round((poolPrice + range) * 101) / 100,
+        // min: Math.round((poolPrice - range) * 99) / 100,
+        // max: Math.round((poolPrice + range) * 101) / 100,
         tickAmount: 5
       },
       grid: {
@@ -322,7 +320,7 @@ export function SwapsGraph(): JSX.Element {
 
   // Fetch chart data
   useEffect(() => {
-    setChartData([]);
+    setChartData(undefined);
     if (!currentPool || !outputToken) {
       return;
     }
@@ -335,19 +333,12 @@ export function SwapsGraph(): JSX.Element {
     if (!maxAmount) {
       return;
     }
+    console.log('max swap amount: ', maxAmount / fromExpo);
     axios
-      .get(`${swapEndpoint}/swap/plotdata/${from}/${to}/${maxAmount * 2}`)
+      .get<SwapLiquidity>(`${swapEndpoint}/swap/liquidity/${from}/${to}/${maxAmount / fromExpo}`)
       .then(resp => {
-        // TODO: normalise to floats
-        const out = resp.data.map((r: any) => {
-          const inputDecimal = r.input / fromExpo;
-          const outputDecimal = r.output / toExpo;
-          // TODO: check prices
-          const swapPrice = true ? inputDecimal / outputDecimal : outputDecimal / inputDecimal;
-          return [inputDecimal, swapPrice];
-        });
-        console.log('fetch chart data', out);
-        setChartData(out);
+        console.log('liquidity chart: ', resp.data);
+        setChartData(resp.data);
       })
       .catch(err => err);
   }, [currentPool?.symbol, outputToken?.symbol, swapMaxTradeAmount]);

@@ -1,11 +1,10 @@
 import { useEffect, useMemo } from 'react';
-import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { atom, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL, CurrentSwapOutput, TokenInputAmount } from '../actions/actions';
 import { useProvider } from '@utils/jet/provider';
 import { Pools } from '../pools/pools';
 
-import { MainConfig } from '@state/config/marginConfig';
 import { useJetStore } from '@jet-lab/store';
 
 import { getSwapRoutes, SwapQuote } from '@utils/actions/swap';
@@ -39,7 +38,6 @@ export const SelectedSwapQuote = atom({
 export function useSplSwapSyncer() {
   const cluster = useJetStore(state => state.settings.cluster);
   const { provider } = useProvider();
-  const config = useRecoilValue(MainConfig);
   const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(

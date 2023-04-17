@@ -320,16 +320,6 @@ export function SwapEntry(): JSX.Element {
     setSendingTransaction(false);
   }
 
-  // Get the swap route
-  useEffect(() => {
-    //
-    if (!currentPool || !outputToken || !tokenInputAmount || tokenInputAmount.isZero()) {
-      return;
-    }
-    getSwapRoutes(swapEndpoint || "", currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount)
-      .then(routes => {})
-      .catch(e => console.error(e));
-  }, [tokenInputAmount, currentPool?.symbol, outputToken?.symbol]); // TODO: input and output pools
 
   // Disable repayLoanWithOutput if user has no loan to repay
   useEffect(() => {
@@ -386,7 +376,9 @@ export function SwapEntry(): JSX.Element {
           <Radio.Group
             className="flex-centered quick-fill-btns"
             value={tokenInputString}
-            onChange={e => setTokenInputString(e.target.value)}
+            onChange={debounce(e => {
+              setTokenInputString(e.target.value)
+            }, 300)}
             style={{ marginTop: '-5px' }}>
             <Radio.Button
               className="small-btn"

@@ -1297,6 +1297,12 @@ export class Pool {
       outputToken.tokenMint
     )
 
+    // Destination pool account if it doesn't exist
+    await marginAccount.withGetOrRegisterPosition({
+      instructions: transitInstructions,
+      positionTokenMint: outputToken.addresses.depositNoteMint
+    });
+
     // Default change kind to a shiftBy
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
     let changeKind = PoolTokenChange.shiftBy(swapAmount)
@@ -1342,8 +1348,6 @@ export class Pool {
     await this.withRouteSwap({
       instructions,
       marginAccount,
-      // sourceAccount,
-      // destinationAccount,
       swapAccounts,
       swapData
     })
