@@ -117,7 +117,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           getExplorerUrl(signature, cluster, explorer)
         );
         setPending(false);
-      }, 2000); // TODO: Ugly / unneded update when websocket is fully integrated
+      }, 3000); // TODO: Ugly / unneded update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
