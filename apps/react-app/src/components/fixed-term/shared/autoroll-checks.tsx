@@ -22,7 +22,6 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
       setHasConfig(false);
       setBorrowRate(undefined);
       setLendRate(undefined);
-      console.log('Autoroll Config: checking market config');
       market.fetchMarginUser(marginAccount).then(async response => {
         if (!response) {
           console.warn('Autoroll Config: No user found in this market');
