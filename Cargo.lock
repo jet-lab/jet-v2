@@ -2929,7 +2929,7 @@ dependencies = [
 [[package]]
 name = "lookup-table-registry"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#4c158ae512c0c395a976c7e2a3e7bd580ee143c5"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#b714f3129081600867aa4693a536b3550ce48742"
 dependencies = [
  "anchor-lang",
  "solana-address-lookup-table-program-gateway",
@@ -4648,7 +4648,7 @@ dependencies = [
 [[package]]
 name = "solana-address-lookup-table-program-gateway"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#4c158ae512c0c395a976c7e2a3e7bd580ee143c5"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#b714f3129081600867aa4693a536b3550ce48742"
 dependencies = [
  "bincode",
  "bytemuck",
