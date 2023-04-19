@@ -209,9 +209,6 @@ impl MarginIxBuilder {
         lookup_table: Pubkey,
         addresses: &[Pubkey],
     ) -> Instruction {
-        // TODO: Deduplicate accounts before appending.
-        // We have to determine how we'd interact with the registry Rust client,
-        // as it already does this. Perhaps move the logic into a shared utility.
         let accounts = ix_account::AppendToLookup {
             authority: self.authority(),
             payer: self.payer(),
