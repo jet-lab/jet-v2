@@ -2,6 +2,7 @@
 
 mod fp32;
 mod functions;
+pub mod log;
 mod number;
 mod number_128;
 

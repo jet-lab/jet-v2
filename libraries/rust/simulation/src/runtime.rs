@@ -36,7 +36,7 @@ use solana_sdk::{
 };
 use solana_transaction_status::{TransactionConfirmationStatus, TransactionStatus};
 
-use crate::solana_rpc_api::SolanaRpcClient;
+use crate::{log::declare_logging, solana_rpc_api::SolanaRpcClient};
 
 #[doc(hidden)]
 pub use solana_sdk::entrypoint::ProcessInstruction;
@@ -56,6 +56,23 @@ lazy_static! {
 thread_local! {
     static LOCAL_CONTEXTS: RefCell<Vec<LocalContext>> = RefCell::new(Vec::new());
 }
+
+declare_logging! {
+    logging = "sim" {
+        program         = "program";
+        account_loader  = "acctldr";
+        account_realloc = "realloc";
+        program_data    = "pgmdata";
+        program_return  = "pgmrtrn";
+        instruction     = "ixhndlr";
+        transaction     = "txhndlr";
+        custom          = "_custom"; // for logs that are specific to the 
+                                     // simulated runtime, that you wouldn't
+                                     // normally expect from a real validator.
+    }
+}
+// intentionally shadows the crate to force proper logging
+use logging as log;
 
 #[derive(Clone, Copy)]
 struct LocalContext {
@@ -210,7 +227,7 @@ fn global_instruction_handler(
         .get(program_id)
         .ok_or(InstructionError::IncorrectProgramId)?;
 
-    log::debug!(
+    log::instruction::debug!(
         "Program {} invoke [{}]",
         program_id,
         get_local_context_height()
@@ -223,7 +240,7 @@ fn global_instruction_handler(
         let signer_text = account.is_signer.then_some("SIGNER").unwrap_or_default();
         let mut_text = account.is_writable.then_some("MUTABLE").unwrap_or_default();
 
-        log::debug!(
+        log::account_loader::debug!(
             "Loaded Account {}: {} lamports, {} bytes, {} {}",
             account.key,
             account.lamports(),
@@ -236,13 +253,13 @@ fn global_instruction_handler(
     let result = program_entrypoint(program_id, &accounts, instruction_data);
     match result {
         Ok(()) => {
-            log::debug!("Program {} success", program_id);
+            log::instruction::debug!("Program {} success", program_id);
             stable_log::program_success(&context.get_log_collector(), program_id)
         }
         Err(err) => {
             let new_err = u64::from(err).into();
 
-            log::debug!("Program {} failed: {}", program_id, &new_err);
+            log::instruction::debug!("Program {} failed: {}", program_id, &new_err);
             stable_log::program_failure(&context.get_log_collector(), program_id, &new_err);
             return Err(new_err);
         }
@@ -267,7 +284,7 @@ struct LocalRuntimeSyscallStub;
 
 impl SyscallStubs for LocalRuntimeSyscallStub {
     fn sol_log(&self, message: &str) {
-        log::debug!("Program log: {}", message);
+        log::program::debug!("Program log: {}", message);
         ic_logger_msg!(
             get_local_context().invoke_context().get_log_collector(),
             "Program log: {}",
@@ -278,7 +295,7 @@ impl SyscallStubs for LocalRuntimeSyscallStub {
     fn sol_log_data(&self, fields: &[&[u8]]) {
         for field in fields {
             let data = base64::encode(field);
-            log::debug!("Program data: {}", data);
+            log::program_data::debug!("Program data: {}", data);
             ic_logger_msg!(
                 get_local_context().invoke_context().get_log_collector(),
                 "Program data: {}",
@@ -357,7 +374,7 @@ impl SyscallStubs for LocalRuntimeSyscallStub {
             if account_info.data_len() != acc_data.len()
                 && tx_account.can_data_be_resized(acc_data.len()).is_ok()
             {
-                log::debug!(
+                log::account_realloc::debug!(
                     "acc realloc {}: {} -> {}",
                     account_info.key,
                     account_info.data_len(),
@@ -409,7 +426,7 @@ impl SyscallStubs for LocalRuntimeSyscallStub {
 
         if data.is_empty() {
             let encoded = base64::encode(data);
-            log::debug!("Program return: {}", encoded);
+            log::program_return::debug!("Program return: {}", encoded);
 
             ic_logger_msg!(
                 get_local_context().invoke_context().get_log_collector(),
@@ -504,7 +521,7 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
         let signature = transaction.signatures[0];
         let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
 
-        log::info!("processing transaction {}", transaction.signatures[0]);
+        log::transaction::info!("processing transaction {}", transaction.signatures[0]);
         transaction.verify()?;
 
         let sim_result = self.bank.simulate_transaction_unchecked(tx);
@@ -516,8 +533,8 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
                 .unwrap(),
 
             Err(e) => {
-                log::error!("tx error {signature}: {e:?}");
-                log::error!("{:#?}", sim_result.logs);
+                log::transaction::error!("tx error {signature}: {e:?}");
+                log::transaction::error!("{:#?}", sim_result.logs);
 
                 if let TransactionError::InstructionError(_, error) = &e {
                     if let Ok(error) = ProgramError::try_from(error.clone()) {
@@ -579,7 +596,7 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
 
         let clock = bincode::deserialize(sysvar.data())?;
 
-        log::debug!("time is {:?}", &clock);
+        log::custom::debug!("time is {:?}", &clock);
 
         Ok(clock)
     }
