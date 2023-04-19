@@ -2066,6 +2066,7 @@ dependencies = [
  "jet-static-program-registry",
  "jet-test-service",
  "lazy_static",
+ "lookup-table-registry",
  "mock-adapter",
  "parking_lot 0.12.1",
  "pyth-sdk-solana 0.7.0",
@@ -2492,7 +2493,7 @@ dependencies = [
  "borsh 0.9.3",
  "bs58 0.4.0",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-airspace",
  "jet-margin",
  "jet-program-common",
@@ -2547,6 +2548,7 @@ dependencies = [
  "jet-program-common",
  "jet-test-service",
  "log",
+ "solana-address-lookup-table-program-gateway",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token 3.5.0",
@@ -2561,11 +2563,12 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-airspace",
  "jet-metadata",
  "jet-program-common",
  "jet-program-proc-macros",
+ "lookup-table-registry",
  "pyth-sdk-solana 0.7.0",
  "serde",
  "serde_test",
@@ -2624,7 +2627,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_json",
- "solana-address-lookup-table-program",
+ "solana-address-lookup-table-program-gateway",
  "solana-client",
  "solana-sdk",
  "solana-transaction-status",
@@ -2719,7 +2722,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "rand 0.7.3",
  "solana-account-decoder",
- "solana-address-lookup-table-program",
+ "solana-address-lookup-table-program-gateway",
  "solana-bpf-loader-program",
  "solana-client",
  "solana-program-runtime",
@@ -2921,6 +2924,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "lookup-table-registry"
+version = "0.1.0"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#b714f3129081600867aa4693a536b3550ce48742"
+dependencies = [
+ "anchor-lang",
+ "solana-address-lookup-table-program-gateway",
+ "solana-program",
 ]
 
 [[package]]
@@ -4630,6 +4643,19 @@ dependencies = [
  "solana-program-runtime",
  "solana-sdk",
  "thiserror",
+]
+
+[[package]]
+name = "solana-address-lookup-table-program-gateway"
+version = "0.1.0"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#b714f3129081600867aa4693a536b3550ce48742"
+dependencies = [
+ "bincode",
+ "bytemuck",
+ "serde",
+ "solana-address-lookup-table-program",
+ "solana-frozen-abi-macro",
+ "solana-program",
 ]
 
 [[package]]

@@ -51,3 +51,8 @@ pub const GOVERNOR_DEVNET_PAYER: Pubkey = pubkey!("7etg4hgAdUjGnYAuj9E22MWNGLtHJ
 pub const CONTROL_AUTHORITY: Pubkey = pubkey!("4W1XXCnJs16UYNwJaGbwWbjPZyuLWeEJ4FfSHeMpdiXY");
 
 pub const DEFAULT_AIRSPACE: Pubkey = pubkey!("BwQhHumhyyyRBtCsiSrdnFCinJDCaaMBbbyRhqJ5p81d");
+
+/// The lookup table registry program ID is added here as a convenience to avoid
+/// importing the crate just to get the ID.
+pub const ADDRESS_LOOKUP_REGISTRY_ID: Pubkey =
+    pubkey!("LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru");
