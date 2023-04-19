@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, transfer, Burn, Transfer};
-use jet_program_common::traits::TrySubAssign;
+use jet_program_common::{debug_msg, traits::TrySubAssign};
 
 use crate::{
     control::state::Market,
@@ -30,6 +30,12 @@ impl<'a, 'info> RepayAccounts<'a, 'info> {
     /// Use caution to prevent leaking funds
     pub fn repay(&mut self, amount: u64, skip_token_transfer: bool) -> Result<()> {
         let amount = std::cmp::min(amount, self.term_loan.balance);
+        debug_msg!(
+            "Repaying {} out of {} towards term loan {}",
+            amount,
+            self.term_loan.balance,
+            self.term_loan.key()
+        );
 
         // return payment to market vault
         if !skip_token_transfer {
