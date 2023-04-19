@@ -66,7 +66,7 @@ declare_logging! {
         program_return  = "pgmrtrn";
         instruction     = "ixhndlr";
         transaction     = "txhndlr";
-        custom          = "_custom"; // for logs that are specific to the 
+        custom          = "_custom"; // for logs that are specific to the
                                      // simulated runtime, that you wouldn't
                                      // normally expect from a real validator.
     }

@@ -29,4 +29,4 @@ macro_rules! declare_logging {
         pub(crate) use $internal_name as $log_macro;
     };
 }
-pub(crate)use declare_logging;
+pub(crate) use declare_logging;
