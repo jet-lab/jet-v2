@@ -104,8 +104,8 @@ export interface SwapQuote {
 export interface SwapLiquidity {
   base: string;
   quote: string;
-  bids: number[];
-  asks: number[];
+  bids: number[][];
+  asks: number[][];
   liquidity_range: number[];
   price_range: number[];
 }
@@ -256,4 +256,3 @@ export function generateSwapPrices(
 
   return swappedAmounts;
 }
-
