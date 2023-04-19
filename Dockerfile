@@ -1,4 +1,4 @@
-FROM ubuntu:latest as programs
+FROM ubuntu:22.10 as programs
 
 ARG SOLANA_VERSION="1.10.8"
 
@@ -12,7 +12,7 @@ RUN if [ ! -d "./target/deploy" ]; then echo "Deployment programs not found"; ex
 
 # -------------------------------------------
 
-FROM ubuntu:latest
+FROM ubuntu:22.10
 
 RUN apt-get update && \
     apt-get install -y bzip2 && \
