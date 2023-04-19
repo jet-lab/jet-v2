@@ -303,28 +303,7 @@ impl MarginIxBuilder {
     ///
     /// `liquidator` - The address of the liquidator
     pub fn liquidate_begin(&self) -> Instruction {
-        let liquidator = self.authority();
-        let permit = derive_margin_permit(&self.airspace, &liquidator);
-
-        let (liquidation, _) = Pubkey::find_program_address(
-            &[b"liquidation", self.address.as_ref(), liquidator.as_ref()],
-            &jet_margin::id(),
-        );
-
-        let accounts = ix_account::LiquidateBegin {
-            margin_account: self.address,
-            payer: self.payer(),
-            liquidator,
-            permit,
-            liquidation,
-            system_program: SYSTEM_PROGAM_ID,
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            accounts: accounts.to_account_metas(None),
-            data: ix_data::LiquidateBegin {}.data(),
-        }
+        liquidate_begin(self.airspace, self.address, self.authority(), self.payer())
     }
 
     /// Invoke action as liquidator
@@ -340,23 +319,11 @@ impl MarginIxBuilder {
     /// `original_liquidator` - The liquidator that started the liquidation process
     pub fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Instruction {
         let authority = self.authority();
-        let original = original_liquidator.unwrap_or(authority);
-        let (liquidation, _) = Pubkey::find_program_address(
-            &[b"liquidation", self.address.as_ref(), original.as_ref()],
-            &JetMargin::id(),
-        );
-
-        let accounts = ix_account::LiquidateEnd {
-            margin_account: self.address,
+        liquidate_end(
+            self.address,
+            original_liquidator.unwrap_or(authority),
             authority,
-            liquidation,
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            accounts: accounts.to_account_metas(None),
-            data: ix_data::LiquidateEnd.data(),
-        }
+        )
     }
 
     /// Create a new token account registered as a position
@@ -470,6 +437,47 @@ impl MarginIxBuilder {
     #[inline]
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> Pubkey {
         derive_position_token_account(&self.address, position_token_mint)
+    }
+}
+
+pub fn liquidate_begin(
+    airspace: Pubkey,
+    margin_account: Pubkey,
+    liquidator: Pubkey,
+    payer: Pubkey,
+) -> Instruction {
+    let permit = derive_margin_permit(&airspace, &liquidator);
+    let liquidation = derive_liquidation(margin_account, liquidator);
+    let accounts = jet_margin::accounts::LiquidateBegin {
+        margin_account,
+        payer,
+        liquidator,
+        permit,
+        liquidation,
+        system_program: system_program::ID,
+    };
+    Instruction {
+        program_id: JetMargin::id(),
+        accounts: accounts.to_account_metas(None),
+        data: jet_margin::instruction::LiquidateBegin {}.data(),
+    }
+}
+
+pub fn liquidate_end(
+    margin_account: Pubkey,
+    original_liquidator: Pubkey,
+    authority: Pubkey,
+) -> Instruction {
+    let liquidation = derive_liquidation(margin_account, original_liquidator);
+    let accounts = ix_account::LiquidateEnd {
+        margin_account,
+        authority,
+        liquidation,
+    };
+    Instruction {
+        program_id: JetMargin::id(),
+        accounts: accounts.to_account_metas(None),
+        data: ix_data::LiquidateEnd.data(),
     }
 }
 
@@ -747,6 +755,14 @@ pub fn derive_margin_permit(airspace: &Pubkey, owner: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[PERMIT_SEED, airspace.as_ref(), owner.as_ref()],
         &jet_margin::ID,
+    )
+    .0
+}
+
+pub fn derive_liquidation(margin_account: Pubkey, liquidator: Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[b"liquidation", margin_account.as_ref(), liquidator.as_ref()],
+        &jet_margin::id(),
     )
     .0
 }
