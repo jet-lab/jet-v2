@@ -35,7 +35,6 @@ solana-sdk = "1.14"
 solana-client = "1.14"
 # Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
 solana-transaction-status = "1.14"
-solana-address-lookup-table-program = "1.14"
 
 anchor-lang = "0.26"
 anchor-spl = "0.26"
@@ -59,3 +58,9 @@ jet-static-program-registry = { path = "../static-program-registry" }
 spl-token = "3"
 spl-associated-token-account = "1"
 saber-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
+
+[dependencies.solana-address-lookup-table-program]
+package = "solana-address-lookup-table-program-gateway"
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+features = ["stub-id", "stub-instruction", "stub-state"]

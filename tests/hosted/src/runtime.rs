@@ -126,6 +126,7 @@ fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
             saber_program::processor::Processor::process
         ),
         (anchor_spl::dex::id(), openbook_processor),
+        lookup_table_registry,
     ];
 
     Arc::new(runtime.rpc(payer))

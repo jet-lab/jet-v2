@@ -426,6 +426,36 @@ impl MarginUser {
         self.send_confirm_tx(self.tx.close_account().await?).await
     }
 
+    /// Create an address lookup registry account
+    pub async fn init_lookup_registry(&self) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.init_lookup_registry().await?)
+            .await
+    }
+
+    /// Create a lookup table in a lookup registry account
+    ///
+    /// TODO: might be useful to return the address created to the caller
+    pub async fn create_lookup_table(&self) -> Result<Pubkey, Error> {
+        let (tx, lookup_table) = self.tx.create_lookup_table().await?;
+        self.send_confirm_tx(tx).await?;
+
+        Ok(lookup_table)
+    }
+
+    /// Append accounts into a lookup table
+    pub async fn append_to_lookup_table(
+        &self,
+        lookup_table: Pubkey,
+        addresses: &[Pubkey],
+    ) -> Result<(), Error> {
+        self.send_confirm_tx(
+            self.tx
+                .append_to_lookup_table(lookup_table, addresses)
+                .await?,
+        )
+        .await
+    }
+
     pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<(), Error> {
         self.tx
             .refresh_pool_position(token_mint)
