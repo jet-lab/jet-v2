@@ -826,3 +826,57 @@ pub fn return_to_margin(user: &AccountInfo, adapter_result: &AdapterResult) -> R
 pub fn return_to_margin(_user: &AccountInfo, _adapter_result: &AdapterResult) -> Result<()> {
     Ok(())
 }
+
+// TODO: A better way to do this is to assert that the wasm module structs are properly configured
+// to match against the structs in this crate
+#[cfg(any(feature = "cli", test))]
+mod serialization_tests {
+
+    #[test]
+    fn margin_user() {
+        use anchor_lang::prelude::Pubkey;
+
+        let user = super::MarginUser::new(
+            0,
+            Pubkey::default(),
+            Pubkey::default(),
+            Pubkey::default(),
+            Pubkey::default(),
+            Pubkey::default(),
+        );
+        let buff = &mut vec![];
+        let mut s = serde_json::Serializer::new(buff);
+        serde::Serialize::serialize(&user, &mut s).unwrap();
+    }
+
+    #[test]
+    fn assets() {
+        let assets = super::Assets {
+            entitled_tokens: 0,
+            entitled_tickets: 0,
+            next_deposit_seqno: 0,
+            next_unredeemed_deposit_seqno: 0,
+            tickets_staked: 0,
+            tickets_posted: 0,
+            tokens_posted: 0,
+            _reserved0: [0; 64],
+        };
+        let buff = &mut vec![];
+        let mut s = serde_json::Serializer::new(buff);
+        serde::Serialize::serialize(&assets, &mut s).unwrap();
+    }
+
+    #[test]
+    fn debt() {
+        let debt = super::Debt {
+            next_new_term_loan_seqno: 0,
+            next_unpaid_term_loan_seqno: 0,
+            next_term_loan_maturity: 0,
+            pending: 0,
+            committed: 0,
+        };
+        let buff = &mut vec![];
+        let mut s = serde_json::Serializer::new(buff);
+        serde::Serialize::serialize(&debt, &mut s).unwrap();
+    }
+}

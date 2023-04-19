@@ -152,3 +152,14 @@ pub struct CrankAuthorization {
     pub airspace: Pubkey,
     pub market: Pubkey,
 }
+
+// TODO: A better way to do this is to assert that the wasm module structs are properly configured
+// to match against the structs in this crate
+#[cfg(any(feature = "cli", test))]
+#[test]
+fn market_serialization() {
+    let market = <Market as bytemuck::Zeroable>::zeroed();
+    let buff = &mut vec![];
+    let mut s = serde_json::Serializer::new(buff);
+    market.serialize(&mut s).unwrap();
+}
