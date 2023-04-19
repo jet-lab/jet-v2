@@ -26,8 +26,8 @@ services:
       - MONGODB_CLIENT=mongodb://admin:password123@localhost:27017
       - SOLANA_ENDPOINT=http://localhost:8899
       - RUST_LOG=sqlx::query=warn,sqlx=trace,hyper=warn,tokio=error,black_box=trace
-    ports:
-      - 3002:3002
+    # ports:
+    #   - 3002:3002
     restart: always
     network_mode: "host"
   poller:
@@ -60,8 +60,8 @@ services:
       - DGRAPH_ENDPOINT=http://localhost:9080
       - SOLANA_ENDPOINT=http://localhost:8899
       - SERVER_PORT=3005
-    ports:
-      - 3005:3005
+    # ports:
+    #   - 3005:3005
     restart: always
     network_mode: "host"
   dgraphswap:
