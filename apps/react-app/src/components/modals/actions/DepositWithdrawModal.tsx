@@ -3,7 +3,7 @@ import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
 import { WalletTokens } from '@state/user/walletTokens';
-import { CurrentAccount } from '@state/user/accounts';
+import { CurrentAccount, AccountsLoading } from '@state/user/accounts';
 import { Pools } from '@state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { useTokenInputDisabledMessage } from '@utils/actions/tokenInput';
@@ -19,6 +19,7 @@ import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 import { Button, Modal, Tabs, Typography } from 'antd';
 import { useEffect, useMemo } from 'react';
 import { useJetStore } from '@jet-lab/store';
+import { LoadingOutlined } from '@ant-design/icons';
 
 // Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
@@ -44,6 +45,7 @@ export function DepositWithdrawModal(): JSX.Element {
   const resetTokenInputString = useResetRecoilState(TokenInputString);
   const resetTokenInputAmount = useResetRecoilState(TokenInputAmount);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
+  const accountsLoading = useRecoilValue(AccountsLoading);
   const riskStyle = useRiskStyle();
   const projectedRiskIndicator = useProjectedRisk();
   const projectedRiskStyle = useRiskStyle(projectedRiskIndicator);
@@ -197,7 +199,11 @@ export function DepositWithdrawModal(): JSX.Element {
     let render = <></>;
     if (currentAccount && currentPool) {
       const accountBalance = currentAccount.poolPositions[currentPool.symbol].depositBalance.uiTokens;
-      render = (
+      render = accountsLoading ? (
+        <Paragraph>
+          <LoadingOutlined />
+        </Paragraph>
+      ) : (
         <Paragraph
           onClick={() => (!disabled ? setTokenInputString(accountBalance) : null)}
           className={!disabled ? 'token-balance' : 'secondary-text'}>

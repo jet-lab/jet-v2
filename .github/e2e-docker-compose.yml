@@ -7,6 +7,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
     restart: always
+    network_mode: "host"
     # ports:
     #   - 27017:27017
   postgres:
@@ -15,48 +16,55 @@ services:
       - POSTGRES_PASSWORD=password123
       - POSTGRES_DB=flightlogs
     restart: always
+    network_mode: "host"
     # ports:
     #   - 5432:5432
   api:
     image: gcr.io/kubernetes-608504/jet-data-v2-black-box:development
     environment:
-      - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
-      - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
-      - SOLANA_ENDPOINT=http://172.17.0.1:8899
+      - DATABASE_URL=postgres://postgres:password123@localhost:5432/flightlogs
+      - MONGODB_CLIENT=mongodb://admin:password123@localhost:27017
+      - SOLANA_ENDPOINT=http://localhost:8899
       - RUST_LOG=sqlx::query=warn,sqlx=trace,hyper=warn,tokio=error,black_box=trace
-    ports:
-      - 3002:3002
+    # ports:
+    #   - 3002:3002
     restart: always
+    network_mode: "host"
   poller:
     image: gcr.io/kubernetes-608504/jet-data-v2-eventpoller:development
     environment:
       - POLLER_PROGRAMS=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8,JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ,JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG,JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN,JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp,JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi,JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc
-      - SOLANA_ENDPOINT=http://172.17.0.1:8899
-      - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
+      - SOLANA_ENDPOINT=http://localhost:8899
+      - MONGODB_CLIENT=mongodb://admin:password123@localhost:27017
     restart: always
+    network_mode: "host"
   parser:
     image: gcr.io/kubernetes-608504/jet-data-v2-eventparser:development
     environment:
-      - SOLANA_ENDPOINT=http://172.17.0.1:8899
-      - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
-      - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
+      - SOLANA_ENDPOINT=http://localhost:8899
+      - DATABASE_URL=postgres://postgres:password123@localhost:5432/flightlogs
+      - MONGODB_CLIENT=mongodb://admin:password123@localhost:27017
     restart: always
+    network_mode: "host"
   pricefeeds:
     image: gcr.io/kubernetes-608504/jet-data-v2-pricefeeds:development
     environment:
-      - SOLANA_ENDPOINT=http://172.17.0.1:8899
-      - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
-      - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
+      - SOLANA_ENDPOINT=http://localhost:8899
+      - DATABASE_URL=postgres://postgres:password123@localhost:5432/flightlogs
+      - MONGODB_CLIENT=mongodb://admin:password123@localhost:27017
     restart: always
+    network_mode: "host"
   swap:
     image: gcr.io/kubernetes-608504/jet-swap-api:latest
     environment:
-      - DGRAPH_ENDPOINT=http://dgraphswap:9080
-      - SOLANA_ENDPOINT=http://172.17.0.1:8899
-    ports:
-      - 3005:3005
+      - DGRAPH_ENDPOINT=http://localhost:9080
+      - SOLANA_ENDPOINT=http://localhost:8899
+      - SERVER_PORT=3005
+    # ports:
+    #   - 3005:3005
     restart: always
+    network_mode: "host"
   dgraphswap:
     image: dgraph/standalone:v21.12.0
     restart: always
-  
+    network_mode: "host"
