@@ -1,4 +1,4 @@
-#!this_is_supposed_to_be_sourced,_not_executed_directly
+#!/bin/bash
 
 set -euxo pipefail
 
@@ -157,3 +157,10 @@ kill_validator() {
     return 0
 }
 trap kill_validator EXIT SIGHUP SIGINT SIGTERM
+
+
+if (return 0 2>/dev/null); then
+    echo sourced on_localnet.sh
+else
+    $@
+fi
