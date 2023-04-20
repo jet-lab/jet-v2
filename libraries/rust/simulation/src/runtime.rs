@@ -58,7 +58,7 @@ thread_local! {
 }
 
 declare_logging! {
-    logging = "sim" {
+    logging = "jet_simulation" {
         program         = "program";
         account_loader  = "acctldr";
         account_realloc = "realloc";
