@@ -10,6 +10,7 @@ repository = "https://github.com/jet-lab/jet-v2"
 
 [features]
 devnet = []
+debug-msg = []
 
 [dependencies]
 uint = "0.9"
