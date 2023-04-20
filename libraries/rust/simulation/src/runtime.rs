@@ -98,6 +98,7 @@ impl TestRuntime {
         GLOBAL_PROGRAM_MAP.insert(features, HashMap::from_iter(programs.into_iter()));
 
         bank.add_builtin("compute_budget", &compute_budget::ID, noop_handler);
+        #[cfg(feature = "test-runtime")]
         bank.add_builtin(
             "address_lookup_table",
             &solana_address_lookup_table_program::ID,

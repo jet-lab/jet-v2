@@ -496,6 +496,34 @@ pub mod jet_margin {
     pub fn admin_transfer_position(ctx: Context<AdminTransferPosition>, amount: u64) -> Result<()> {
         admin_transfer_position_handler(ctx, amount)
     }
+
+    /// Create a lookup table registry account owned by a margin account.
+    ///
+    /// The registry account can store addresses for accounts owned by the margin account,
+    /// such as PDAs, pool accounts and other accounts from adapters that the margin account
+    /// interacts with.
+    /// This should ideally not hold random other accounts including program.
+    pub fn init_lookup_registry(ctx: Context<InitLookupRegistry>) -> Result<()> {
+        init_lookup_registry_handler(ctx)
+    }
+
+    /// Create a lookup table in a registry account owned by a margin account.
+    pub fn create_lookup_table(
+        ctx: Context<CreateLookupTable>,
+        recent_slot: u64,
+        discriminator: u64,
+    ) -> Result<()> {
+        create_lookup_table_handler(ctx, recent_slot, discriminator)
+    }
+
+    /// Append addresses to a lookup table in a registry account owned by a margin account.
+    pub fn append_to_lookup(
+        ctx: Context<AppendToLookup>,
+        discriminator: u64,
+        addresses: Vec<Pubkey>,
+    ) -> Result<()> {
+        append_to_lookup_handler(ctx, discriminator, addresses)
+    }
 }
 
 #[error_code]
