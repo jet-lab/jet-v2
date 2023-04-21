@@ -38,3 +38,4 @@ bonfida-utils = { git = "https://github.com/Bonfida/bonfida-utils.git", branch =
 
 [dev-dependencies]
 rand_chacha = "0.3.1"
+wasm-bindgen-test = "0.3.34"
