@@ -43,8 +43,6 @@ pub struct ClientConfig {
     no_confirm: bool,
 
     /// The solana RPC client
-    ///
-    /// TODO: This is a bit awkward, clients are cheap to create, do that instead?
     rpc_client: Arc<RpcClient>,
 
     /// The URL the RPC client is connecting to

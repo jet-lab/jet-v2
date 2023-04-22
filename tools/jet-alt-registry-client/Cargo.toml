@@ -20,7 +20,6 @@ solana-client = "1.14"
 solana-clap-utils = "1.14"
 solana-cli-config = "1.14"
 
-# lookup-table-registry-client = { path = "../../../lookup-table-registry/libraries/rust" }
 lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-simulation = { path = "../../libraries/rust/simulation" }
