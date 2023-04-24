@@ -5,6 +5,8 @@ pub mod orderbook; // TODO remove
 
 use wasm_bindgen::prelude::*;
 
+pub type JsResult = Result<JsValue, JsError>;
+
 /// Initialise the wasm module. Idempotent.
 /// NOTE FIXME despite the start attribute this does not appear to
 /// be called on module import.

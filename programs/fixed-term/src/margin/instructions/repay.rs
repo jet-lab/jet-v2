@@ -19,7 +19,7 @@ pub struct Repay<'info> {
         has_one = margin_user @ FixedTermErrorCode::UserNotInMarket,
         has_one = payer,
         constraint = term_loan.sequence_number
-            == margin_user.next_term_loan_to_repay().unwrap()
+            == margin_user.debt().next_term_loan_to_repay().unwrap()
             @ FixedTermErrorCode::TermLoanHasWrongSequenceNumber
     )]
     pub term_loan: Account<'info, TermLoan>,

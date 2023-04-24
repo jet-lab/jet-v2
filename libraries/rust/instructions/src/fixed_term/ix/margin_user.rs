@@ -14,7 +14,7 @@ use crate::margin::derive_token_config;
 use super::lend_order_accounts;
 
 pub fn initialize_margin_user(
-    owner: Pubkey,
+    margin_account: Pubkey,
     market: Pubkey,
     airspace: Pubkey,
     payer: Pubkey,
@@ -22,12 +22,12 @@ pub fn initialize_margin_user(
     let ticket_collateral_mint = ticket_collateral_mint(&market);
     let underlying_collateral_mint = underlying_collateral_mint(&market);
     let claims_mint = claims_mint(&market);
-    let margin_user = margin_user(&market, &owner);
+    let margin_user = margin_user(&market, &margin_account);
     let accounts = jet_fixed_term::accounts::InitializeMarginUser {
         market,
         payer,
         margin_user,
-        margin_account: owner,
+        margin_account,
         claims: user_claims(&margin_user),
         ticket_collateral: user_ticket_collateral(&margin_user),
         underlying_collateral: user_underlying_collateral(&margin_user),
@@ -178,9 +178,9 @@ pub fn margin_repay(
 pub fn configure_auto_roll(
     market: Pubkey,
     margin_account: Pubkey,
-    margin_user: Pubkey,
     config: AutoRollConfig,
 ) -> Instruction {
+    let margin_user = margin_user(&market, &margin_account);
     let accounts = jet_fixed_term::accounts::ConfigureAutoRoll {
         margin_user,
         margin_account,

@@ -256,11 +256,16 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
                 payer: self.inner.payer.key(),
                 order_tag: info.order_tag.as_u128(),
                 tenor: self.inner.orderbook_mut.market.load()?.lend_tenor,
-                sequence_number: self.margin_user.next_term_deposit(),
+                sequence_number: self.margin_user.assets().next_new_deposit_seqno(),
                 amount: summary.base_filled(),
                 principal: summary.quote_filled(RoundingAction::FillLend.direction())?,
                 flags: info.flags.into(),
-                seed: self.margin_user.next_term_deposit().to_le_bytes().to_vec(),
+                seed: self
+                    .margin_user
+                    .assets()
+                    .next_new_deposit_seqno()
+                    .to_le_bytes()
+                    .to_vec(),
             }));
         }
         Ok(None)
