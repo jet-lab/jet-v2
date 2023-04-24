@@ -82,6 +82,8 @@ export interface Assets {
 }
 "#;
 
+/// Wrapping type to allow us to implement custom serialization logic for decoding
+/// a given `MarginUser` account buffer into js code
 pub(crate) struct MarginUserDeserializer(MarginUser);
 
 impl Serialize for MarginUserDeserializer {
@@ -113,6 +115,7 @@ impl AccountDeserialize for MarginUserDeserializer {
     }
 }
 
+/// A wrapping type to allow us to implement custom serialization logic for MarginUser `Assets`
 struct AssetsSerializer<'a>(&'a Assets);
 
 impl<'a> Serialize for AssetsSerializer<'a> {
@@ -135,6 +138,7 @@ impl<'a> Serialize for AssetsSerializer<'a> {
     }
 }
 
+/// A wrapping type to allow us to implement custom serialization logic for MarginUser `Debt`
 struct DebtSerializer<'a>(&'a Debt);
 
 impl<'a> Serialize for DebtSerializer<'a> {

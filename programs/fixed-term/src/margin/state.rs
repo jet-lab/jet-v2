@@ -264,7 +264,6 @@ impl MarginUser {
     }
 }
 
-#[cfg(any(feature = "cli", test))]
 #[cfg_attr(any(feature = "cli", test), derive(Deserialize))]
 #[derive(Zeroable, Debug, Default, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
