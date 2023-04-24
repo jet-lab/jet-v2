@@ -153,13 +153,35 @@ pub struct CrankAuthorization {
     pub market: Pubkey,
 }
 
-// TODO: A better way to do this is to assert that the wasm module structs are properly configured
-// to match against the structs in this crate
-#[cfg(any(feature = "cli", test))]
 #[test]
-fn market_serialization() {
-    let market = <Market as bytemuck::Zeroable>::zeroed();
-    let buff = &mut vec![];
-    let mut s = serde_json::Serializer::new(buff);
-    market.serialize(&mut s).unwrap();
+fn serialize_market() {
+    let json = serde_json::to_string_pretty(&<Market as bytemuck::Zeroable>::zeroed()).unwrap();
+    let expected = r#"{
+      "versionTag": 0,
+      "airspace": "11111111111111111111111111111111",
+      "orderbookMarketState": "11111111111111111111111111111111",
+      "eventQueue": "11111111111111111111111111111111",
+      "asks": "11111111111111111111111111111111",
+      "bids": "11111111111111111111111111111111",
+      "underlyingTokenMint": "11111111111111111111111111111111",
+      "underlyingTokenVault": "11111111111111111111111111111111",
+      "ticketMint": "11111111111111111111111111111111",
+      "claimsMint": "11111111111111111111111111111111",
+      "ticketCollateralMint": "11111111111111111111111111111111",
+      "underlyingCollateralMint": "11111111111111111111111111111111",
+      "underlyingOracle": "11111111111111111111111111111111",
+      "ticketOracle": "11111111111111111111111111111111",
+      "feeVault": "11111111111111111111111111111111",
+      "feeDestination": "11111111111111111111111111111111",
+      "seed": "11111111111111111111111111111111",
+      "orderbookPaused": false,
+      "ticketsPaused": false,
+      "borrowTenor": 0,
+      "lendTenor": 0,
+      "originationFee": 0
+    }"#;
+    assert_eq!(
+        itertools::Itertools::join(&mut expected.split_whitespace(), " "),
+        itertools::Itertools::join(&mut json.split_whitespace(), " ")
+    )
 }

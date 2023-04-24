@@ -11,7 +11,7 @@ use jet_program_common::{
     Fp32,
 };
 #[cfg(any(feature = "cli", test))]
-use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     events::{AssetsUpdated, DebtUpdated, TermLoanCreated},
@@ -192,72 +192,6 @@ impl MarginUser {
         self.assets.redeem_deposit(deposit_seqno, tickets_redeemed)
     }
 
-    /// Get the [SequenceNumber] of the next [TermLoan] in sequence
-    pub fn next_term_loan(&self) -> SequenceNumber {
-        self.debt.next_new_loan_seqno()
-    }
-
-    /// Get the [SequenceNumber] of the next [TermDeposit]
-    pub fn next_term_deposit(&self) -> SequenceNumber {
-        self.assets.next_new_deposit_seqno()
-    }
-
-    /// Get the [SequenceNumber] of the next [TermLoan] in need of repayment
-    pub fn next_term_loan_to_repay(&self) -> Option<SequenceNumber> {
-        self.debt.next_term_loan_to_repay()
-    }
-
-    /// Total number of unpaid [TermLoan]s
-    pub fn outstanding_term_loans(&self) -> u64 {
-        self.debt.outstanding_term_loans()
-    }
-
-    /// Range of active [TermLoan] sequence numbers
-    pub fn active_loans(&self) -> Range<SequenceNumber> {
-        self.debt.active_loans()
-    }
-
-    /// Range of active [TermDeposit] sequence numbers
-    pub fn active_deposits(&self) -> Range<SequenceNumber> {
-        self.assets.active_deposits()
-    }
-
-    pub fn ticket_collateral(&self) -> Result<u64> {
-        self.assets.ticket_collateral()
-    }
-
-    pub fn underlying_collateral(&self) -> u64 {
-        self.assets.underlying_collateral()
-    }
-
-    pub fn entitled_tickets(&self) -> u64 {
-        self.assets.entitled_tickets
-    }
-
-    pub fn entitled_tokens(&self) -> u64 {
-        self.assets.entitled_tokens
-    }
-
-    /// Total value of debt owed by the [MarginUser]
-    pub fn total_debt(&self) -> u64 {
-        self.debt.total()
-    }
-
-    /// Value of debt owed by the [MarginUser] by anticipated order fills
-    pub fn pending_debt(&self) -> u64 {
-        self.debt.pending
-    }
-
-    /// Value of debt owed by the [MarginUser] already filled
-    pub fn committed_debt(&self) -> u64 {
-        self.debt.committed
-    }
-
-    /// Have any of the unpaid [TermLoan]s reached maturity
-    pub fn is_past_due(&self, current_time: UnixTimestamp) -> bool {
-        self.debt.is_past_due(current_time)
-    }
-
     /// Account for a partial loan repayment
     pub fn partially_repay_loan(&mut self, loan: &TermLoan, amount: u64) -> Result<()> {
         self.debt
@@ -279,6 +213,21 @@ impl MarginUser {
     pub fn settlement_complete(&mut self) {
         self.assets.entitled_tickets = 0;
         self.assets.entitled_tokens = 0;
+    }
+
+    /// View account `Debt` attributes
+    pub fn debt(&self) -> &Debt {
+        &self.debt
+    }
+
+    /// View account `Assets` attributes
+    pub fn assets(&self) -> &Assets {
+        &self.assets
+    }
+
+    /// Have any of the unpaid [TermLoan]s reached maturity
+    pub fn is_past_due(&self, current_time: UnixTimestamp) -> bool {
+        self.debt.is_past_due(current_time)
     }
 
     /// Emits an Anchor event with the latest balances for [Assets] and [Debt].
@@ -316,29 +265,6 @@ impl MarginUser {
 }
 
 #[cfg(any(feature = "cli", test))]
-impl Serialize for MarginUser {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("MarginUser", 10)?;
-        s.serialize_field("versionTag", &self.version)?;
-        s.serialize_field("marginAccount", &self.margin_account.to_string())?;
-        s.serialize_field("market", &self.market.to_string())?;
-        s.serialize_field("claims", &self.claims.to_string())?;
-        s.serialize_field("ticketCollateral", &self.ticket_collateral.to_string())?;
-        s.serialize_field(
-            "underlyingCollateral",
-            &self.underlying_collateral.to_string(),
-        )?;
-        s.serialize_field("debt", &self.debt)?;
-        s.serialize_field("assets", &self.assets)?;
-        s.serialize_field("borrowRollConfig", &self.borrow_roll_config)?;
-        s.serialize_field("lendRollConfig", &self.lend_roll_config)?;
-        s.end()
-    }
-}
-
 #[cfg_attr(any(feature = "cli", test), derive(Deserialize))]
 #[derive(Zeroable, Debug, Default, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
@@ -364,18 +290,12 @@ pub struct Debt {
 pub type SequenceNumber = u64;
 
 impl Debt {
-    pub fn total(&self) -> u64 {
-        self.pending.checked_add(self.committed).unwrap()
-    }
-
-    pub fn active_loans(&self) -> Range<SequenceNumber> {
-        self.next_unpaid_term_loan_seqno..self.next_new_term_loan_seqno
-    }
-
+    /// The sequence number for the next term loan to be created
     pub fn next_new_loan_seqno(&self) -> SequenceNumber {
         self.next_new_term_loan_seqno
     }
 
+    /// The sequence number of the next term loan to be paid
     pub fn next_term_loan_to_repay(&self) -> Option<SequenceNumber> {
         if self.next_new_term_loan_seqno > self.next_unpaid_term_loan_seqno {
             Some(self.next_unpaid_term_loan_seqno)
@@ -384,8 +304,39 @@ impl Debt {
         }
     }
 
+    /// The maturation timestamp of the next term loan that is unpaid
+    pub fn next_term_loan_maturity(&self) -> UnixTimestamp {
+        self.next_term_loan_maturity
+    }
+
+    /// Amount that must be collateralized because there is an open order for it.
+    /// Does not accrue interest because the loan has not been received yet.
+    pub fn pending(&self) -> u64 {
+        self.pending
+    }
+
+    /// Debt that has already been borrowed because the order was matched.
+    /// This debt will be due when the loan term ends.
+    /// This includes all debt, including past due debt
+    pub fn committed(&self) -> u64 {
+        self.committed
+    }
+
+    /// Total debt
+    pub fn total(&self) -> u64 {
+        self.pending.checked_add(self.committed).unwrap()
+    }
+
     pub fn outstanding_term_loans(&self) -> u64 {
         self.next_new_term_loan_seqno - self.next_unpaid_term_loan_seqno
+    }
+
+    pub fn active_loans(&self) -> Range<SequenceNumber> {
+        self.next_unpaid_term_loan_seqno..self.next_new_term_loan_seqno
+    }
+
+    pub fn is_past_due(&self, unix_timestamp: UnixTimestamp) -> bool {
+        self.outstanding_term_loans() > 0 && self.next_term_loan_maturity <= unix_timestamp
     }
 
     /// Accounting for a borrow order posted on the orderbook
@@ -460,42 +411,15 @@ impl Debt {
 
         Ok(())
     }
-
-    pub fn is_past_due(&self, unix_timestamp: UnixTimestamp) -> bool {
-        self.outstanding_term_loans() > 0 && self.next_term_loan_maturity <= unix_timestamp
-    }
-
-    pub fn pending(&self) -> u64 {
-        self.pending
-    }
-
-    pub fn committed(&self) -> u64 {
-        self.committed
-    }
-}
-
-#[cfg(any(feature = "cli", test))]
-impl Serialize for Debt {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("Debt", 5)?;
-        s.serialize_field("nextNewTermLoanSeqno", &self.next_new_term_loan_seqno)?;
-        s.serialize_field("nextUnpaidTermLoanSeqno", &self.next_unpaid_term_loan_seqno)?;
-        s.serialize_field("nextTermLoanMaturity", &self.next_term_loan_maturity)?;
-        s.serialize_field("pending", &self.pending)?;
-        s.serialize_field("committed", &self.committed)?;
-        s.end()
-    }
 }
 
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, Eq)]
 pub struct Assets {
     /// tokens to transfer into settlement account
-    pub entitled_tokens: u64,
+    entitled_tokens: u64,
+
     /// tickets to transfer into settlement account
-    pub entitled_tickets: u64,
+    entitled_tickets: u64,
 
     /// The sequence number for the next deposit
     next_deposit_seqno: u64,
@@ -522,6 +446,46 @@ pub struct Assets {
 }
 
 impl Assets {
+    /// tokens to transfer into settlement account
+    pub fn entitled_tokens(&self) -> u64 {
+        self.entitled_tokens
+    }
+
+    /// tickets to transfer into settlement account
+    pub fn entitled_tickets(&self) -> u64 {
+        self.entitled_tickets
+    }
+
+    /// The sequence number for the next deposit
+    pub fn next_new_deposit_seqno(&self) -> SequenceNumber {
+        self.next_deposit_seqno
+    }
+
+    /// The sequence number for the oldest deposit that has yet to be redeemed
+    pub fn next_unredeemed_deposit_seqno(&self) -> Option<SequenceNumber> {
+        if self.next_unredeemed_deposit_seqno == self.next_deposit_seqno {
+            return None;
+        }
+        Some(self.next_unredeemed_deposit_seqno)
+    }
+
+    /// The number of tickets locked up in ClaimTicket or SplitTicket
+    pub fn tickets_staked(&self) -> u64 {
+        self.tickets_staked
+    }
+
+    /// The number of tickets that would be owned by the account should all
+    /// open lend orders be filled.
+    pub fn tickets_posted(&self) -> u64 {
+        self.tickets_posted
+    }
+
+    /// The number of tokens that would be owned by the account should all
+    /// open borrow orders be filled.
+    pub fn tokens_posted(&self) -> u64 {
+        self.tokens_posted
+    }
+
     /// make sure the order has already been accounted for before calling this method
     pub fn new_deposit(&mut self, tickets: u64) -> Result<SequenceNumber> {
         let seqno = self.next_deposit_seqno;
@@ -566,10 +530,6 @@ impl Assets {
         self.tokens_posted
     }
 
-    pub fn next_new_deposit_seqno(&self) -> SequenceNumber {
-        self.next_deposit_seqno
-    }
-
     pub fn active_deposits(&self) -> Range<SequenceNumber> {
         self.next_unredeemed_deposit_seqno..self.next_deposit_seqno
     }
@@ -587,27 +547,6 @@ impl Default for Assets {
             tokens_posted: 0,
             _reserved0: [0u8; 64],
         }
-    }
-}
-
-#[cfg(any(feature = "cli", test))]
-impl Serialize for Assets {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("Assets", 7)?;
-        s.serialize_field("entitledTokens", &self.entitled_tokens)?;
-        s.serialize_field("entitledTickets", &self.entitled_tickets)?;
-        s.serialize_field("nextDepositSeqno", &self.next_deposit_seqno)?;
-        s.serialize_field(
-            "nextUnredeemedDepositSeqno",
-            &self.next_unredeemed_deposit_seqno,
-        )?;
-        s.serialize_field("ticketsStaked", &self.tickets_staked)?;
-        s.serialize_field("ticketsPosted", &self.tickets_posted)?;
-        s.serialize_field("tokensPosted", &self.tokens_posted)?;
-        s.end()
     }
 }
 
@@ -825,58 +764,4 @@ pub fn return_to_margin(user: &AccountInfo, adapter_result: &AdapterResult) -> R
 #[cfg(feature = "mock-margin")]
 pub fn return_to_margin(_user: &AccountInfo, _adapter_result: &AdapterResult) -> Result<()> {
     Ok(())
-}
-
-// TODO: A better way to do this is to assert that the wasm module structs are properly configured
-// to match against the structs in this crate
-#[cfg(any(feature = "cli", test))]
-mod serialization_tests {
-
-    #[test]
-    fn margin_user() {
-        use anchor_lang::prelude::Pubkey;
-
-        let user = super::MarginUser::new(
-            0,
-            Pubkey::default(),
-            Pubkey::default(),
-            Pubkey::default(),
-            Pubkey::default(),
-            Pubkey::default(),
-        );
-        let buff = &mut vec![];
-        let mut s = serde_json::Serializer::new(buff);
-        serde::Serialize::serialize(&user, &mut s).unwrap();
-    }
-
-    #[test]
-    fn assets() {
-        let assets = super::Assets {
-            entitled_tokens: 0,
-            entitled_tickets: 0,
-            next_deposit_seqno: 0,
-            next_unredeemed_deposit_seqno: 0,
-            tickets_staked: 0,
-            tickets_posted: 0,
-            tokens_posted: 0,
-            _reserved0: [0; 64],
-        };
-        let buff = &mut vec![];
-        let mut s = serde_json::Serializer::new(buff);
-        serde::Serialize::serialize(&assets, &mut s).unwrap();
-    }
-
-    #[test]
-    fn debt() {
-        let debt = super::Debt {
-            next_new_term_loan_seqno: 0,
-            next_unpaid_term_loan_seqno: 0,
-            next_term_loan_maturity: 0,
-            pending: 0,
-            committed: 0,
-        };
-        let buff = &mut vec![];
-        let mut s = serde_json::Serializer::new(buff);
-        serde::Serialize::serialize(&debt, &mut s).unwrap();
-    }
 }

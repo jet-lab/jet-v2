@@ -2,6 +2,8 @@ use jet_fixed_term::margin::state::MarginUser;
 use jet_instructions::fixed_term::Market;
 use wasm_bindgen_test::*;
 
+use crate::bindings::fixed_term::accounts::MarginUserDeserializer;
+
 use super::serialization::JsAnchorDeserialize;
 
 #[wasm_bindgen_test]
@@ -20,7 +22,7 @@ fn can_deserialize() {
     Market::deserialize_from_buffer(market)
         .map_err(|_| ())
         .unwrap();
-    MarginUser::deserialize_from_buffer(user)
+    MarginUserDeserializer::deserialize_from_buffer(user)
         .map_err(|_| ())
         .unwrap();
 }
