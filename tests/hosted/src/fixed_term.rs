@@ -375,7 +375,7 @@ impl TestManager {
             .load_outstanding_loans(*margin_account)
             .await?
             .into_iter()
-            .filter(|(_, l)| l.strike_timestamp + roll_tenor as i64 >= current_time)
+            .filter(|(_, l)| l.strike_timestamp + roll_tenor as i64 <= current_time)
             .collect::<Vec<_>>();
 
         loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
