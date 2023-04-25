@@ -128,7 +128,7 @@ export function DebtTable() {
             {
               label: (
                 <TabLink
-                  name="Open Deposits"
+                  name="Open Lends"
                   amount={positionsData.total_lent}
                   decimals={markets[selectedMarket].token.decimals}
                 />
