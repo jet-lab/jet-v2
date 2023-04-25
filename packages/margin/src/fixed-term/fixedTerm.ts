@@ -1,9 +1,9 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
+import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
 import { JetFixedTerm } from "./types"
-import { fetchData, findFixedTermDerivedAccount } from "./utils"
+import { fetchData, findFixedTermDerivedAccount, translateWasmInstruction } from "./utils"
 import {
   MakerSimulation,
   OrderbookModel,
@@ -11,7 +11,13 @@ import {
   TakerSimulation,
   rate_to_price,
   MarketInfo,
-  deserializeMarketFromBuffer
+  MarginUserInfo,
+  deserializeMarketFromBuffer,
+  deserializeMarginUserFromBuffer,
+  initializeMarginUserIx,
+  WasmTransactionInstruction,
+  configureAutoRollLendIx,
+  configureAutoRollBorrowIx
 } from "../wasm"
 import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
@@ -27,19 +33,49 @@ export interface OrderParams {
   autoRoll: boolean
 }
 
+// /**
+//  * The raw struct as found on chain
+//  */
+// export interface MarketInfo {
+//   versionTag: BN
+//   airspace: PublicKey
+//   orderbookMarketState: PublicKey
+//   eventQueue: PublicKey
+//   asks: PublicKey
+//   bids: PublicKey
+//   underlyingTokenMint: PublicKey
+//   underlyingTokenVault: PublicKey
+//   ticketMint: PublicKey
+//   claimsMint: PublicKey
+//   ticketCollateralMint: PublicKey
+//   tokenCollateralMint: PublicKey
+//   underlyingOracle: PublicKey
+//   ticketOracle: PublicKey
+//   feeVault: PublicKey
+//   feeDestination: PublicKey
+//   seed: number[]
+//   bump: number[]
+//   orderbookPaused: boolean
+//   ticketsPaused: boolean
+//   reserved: number[]
+//   borrowTenor: BN
+//   lendTenor: BN
+//   nonce: BN
+// }
+
 /** MarginUser account as found on-chain */
-export interface MarginUserInfo {
-  version: BN
-  marginAccount: PublicKey
-  market: PublicKey
-  claims: PublicKey
-  ticketCollateral: PublicKey
-  tokenCollateral: PublicKey
-  debt: DebtInfo
-  assets: AssetInfo
-  borrowRollConfig: AutoRollConfig
-  lendRollConfig: AutoRollConfig
-}
+// export interface MarginUserInfo {
+//   version: BN
+//   marginAccount: PublicKey
+//   market: PublicKey
+//   claims: PublicKey
+//   ticketCollateral: PublicKey
+//   tokenCollateral: PublicKey
+//   debt: DebtInfo
+//   assets: AssetInfo
+//   borrowRollConfig: BorrowAutoRollConfig
+//   lendRollConfig: LendAutoRollConfig
+// }
 
 export interface DebtInfo {
   nextNewTermLoanSeqno: BN
@@ -59,8 +95,13 @@ export interface AssetInfo {
   _reserved0: number[]
 }
 
-export interface AutoRollConfig {
-  limit_price: BN
+export interface LendAutoRollConfig {
+  limitPrice: BN
+}
+
+export interface BorrowAutoRollConfig {
+  limitPrice: BN
+  rollTenor: BN
 }
 
 export interface ClaimTicket {
@@ -151,8 +192,8 @@ export class FixedTermMarket {
     market: Address,
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
-    let data = await fetchData(program.provider.connection, market)
-    let info: MarketInfo = deserializeMarketFromBuffer(data)
+    const data = await fetchData(program.provider.connection, market)
+    const info: MarketInfo = deserializeMarketFromBuffer(data)
     const claimsMetadata = await findFixedTermDerivedAccount(
       ["token-config", new PublicKey(info.airspace), new PublicKey(info.claimsMint)],
       new PublicKey(jetMarginProgramId)
@@ -250,7 +291,8 @@ export class FixedTermMarket {
         payer,
         underlyingSettlement: underlyingSettlement,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID
+        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenCollateralMint: this.addresses.underlyingCollateralMint
       })
       .instruction()
   }
@@ -417,25 +459,34 @@ export class FixedTermMarket {
   }
 
   async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
-    const marginUser = await this.deriveMarginUserAddress(user)
-    const claims = await this.deriveMarginUserClaims(marginUser)
-    const ticketCollateral = await this.deriveTicketCollateral(marginUser)
-    const tokenCollateral = await this.deriveTokenCollateral(marginUser)
-    return await this.program.methods
-      .initializeMarginUser()
-      .accounts({
-        ...this.addresses,
-        marginUser,
-        marginAccount: user.address,
-        claims,
-        ticketCollateral,
-        tokenCollateral,
-        payer,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .instruction()
+    const ix: WasmTransactionInstruction = initializeMarginUserIx(
+      user.address.toBase58(),
+      this.addresses.market.toBase58(),
+      this.info.airspace,
+      payer.toString()
+    )
+    return translateWasmInstruction(ix)
+
+    // const marginUser = await this.deriveMarginUserAddress(user)
+    // const claims = await this.deriveMarginUserClaims(marginUser)
+    // const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    // const tokenCollateral = await this.deriveTokenCollateral(marginUser)
+
+    // return await this.program.methods
+    //   .initializeMarginUser()
+    //   .accounts({
+    //     ...this.addresses,
+    //     marginUser,
+    //     marginAccount: user.address,
+    //     claims,
+    //     ticketCollateral,
+    //     tokenCollateral,
+    //     payer,
+    //     rent: SYSVAR_RENT_PUBKEY,
+    //     systemProgram: SystemProgram.programId,
+    //     tokenProgram: TOKEN_PROGRAM_ID
+    //   })
+    //   .instruction()
   }
 
   /**
@@ -464,7 +515,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
+    return bigIntToBn(userInfo.debt.nextNewTermLoanSeqno).toArrayLike(Buffer, "le", 8)
   }
 
   async fetchDepositSeed(user: MarginAccount): Promise<Uint8Array> {
@@ -474,7 +525,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
+    return bigIntToBn(userInfo.assets.nextDepositSeqno).toArrayLike(Buffer, "le", 8)
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
@@ -515,8 +566,25 @@ export class FixedTermMarket {
 
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
+    const acc = data ? deserializeMarginUserFromBuffer(data) : null
+    return acc
+  }
 
-    return data ? await this.program.coder.accounts.decode("marginUser", data) : null
+  async configAutorollBorrow(marginAccount: MarginAccount, price: bigint, tenor: BN) {
+    return translateWasmInstruction(
+      configureAutoRollBorrowIx(
+        this.addresses.market.toBase58(),
+        marginAccount.address.toBase58(),
+        bnToBigInt(tenor),
+        price
+      )
+    )
+  }
+
+  async configAutorollLend(marginAccount: MarginAccount, price: bigint) {
+    return translateWasmInstruction(
+      configureAutoRollLendIx(this.addresses.market.toBase58(), marginAccount.address.toBase58(), price)
+    )
   }
 
   async redeemDeposit(
@@ -540,8 +608,8 @@ export class FixedTermMarket {
 
     const marginUserData = await market.fetchMarginUser(marginAccount)
     console.table({
-      nextUnredeemedDepositSeqno: marginUserData?.assets.nextUnredeemedDepositSeqno.toNumber(),
-      nextDepositSeqno: marginUserData?.assets.nextDepositSeqno.toNumber(),
+      nextUnredeemedDepositSeqno: bigIntToBn(marginUserData?.assets.nextUnredeemedDepositSeqno).toNumber(),
+      nextDepositSeqno: bigIntToBn(marginUserData?.assets.nextDepositSeqno).toNumber(),
       deposit_seq_no: deposit.sequence_number
     })
 

@@ -29,6 +29,7 @@ mod verify_healthy;
 
 mod admin;
 mod configure;
+mod lookup_tables;
 mod positions;
 
 pub use accounting_invoke::*;
@@ -45,4 +46,5 @@ pub use verify_healthy::*;
 
 pub use admin::*;
 pub use configure::*;
+pub use lookup_tables::*;
 pub use positions::*;

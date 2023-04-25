@@ -94,9 +94,9 @@ impl DebtUpdated {
     pub fn new(user: &MarginUser) -> Self {
         Self {
             margin_user: user.derive_address(),
-            total_debt: user.total_debt(),
-            next_obligation_to_repay: user.next_term_loan_to_repay(),
-            outstanding_obligations: user.outstanding_term_loans(),
+            total_debt: user.debt().total(),
+            next_obligation_to_repay: user.debt().next_term_loan_to_repay(),
+            outstanding_obligations: user.debt().outstanding_term_loans(),
             is_past_due: user.is_past_due(Clock::get().unwrap().unix_timestamp),
         }
     }
@@ -115,10 +115,10 @@ impl AssetsUpdated {
     pub fn new(user: &MarginUser) -> Result<Self> {
         Ok(Self {
             margin_user: user.derive_address(),
-            entitled_tokens: user.entitled_tokens(),
-            entitled_tickets: user.entitled_tickets(),
-            ticket_collateral: user.ticket_collateral()?,
-            underlying_collateral: user.underlying_collateral(),
+            entitled_tokens: user.assets().entitled_tokens(),
+            entitled_tickets: user.assets().entitled_tickets(),
+            ticket_collateral: user.assets().ticket_collateral()?,
+            underlying_collateral: user.assets().underlying_collateral(),
         })
     }
 }

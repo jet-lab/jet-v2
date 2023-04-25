@@ -103,7 +103,7 @@ impl Serialize for Market {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_struct("Market", 14)?;
+        let mut s = serializer.serialize_struct("Market", 22)?;
         s.serialize_field("versionTag", &self.version_tag)?;
         s.serialize_field("airspace", &self.airspace.to_string())?;
         s.serialize_field(
@@ -151,4 +151,37 @@ pub struct CrankAuthorization {
     pub crank: Pubkey,
     pub airspace: Pubkey,
     pub market: Pubkey,
+}
+
+#[test]
+fn serialize_market() {
+    let json = serde_json::to_string_pretty(&<Market as bytemuck::Zeroable>::zeroed()).unwrap();
+    let expected = r#"{
+      "versionTag": 0,
+      "airspace": "11111111111111111111111111111111",
+      "orderbookMarketState": "11111111111111111111111111111111",
+      "eventQueue": "11111111111111111111111111111111",
+      "asks": "11111111111111111111111111111111",
+      "bids": "11111111111111111111111111111111",
+      "underlyingTokenMint": "11111111111111111111111111111111",
+      "underlyingTokenVault": "11111111111111111111111111111111",
+      "ticketMint": "11111111111111111111111111111111",
+      "claimsMint": "11111111111111111111111111111111",
+      "ticketCollateralMint": "11111111111111111111111111111111",
+      "underlyingCollateralMint": "11111111111111111111111111111111",
+      "underlyingOracle": "11111111111111111111111111111111",
+      "ticketOracle": "11111111111111111111111111111111",
+      "feeVault": "11111111111111111111111111111111",
+      "feeDestination": "11111111111111111111111111111111",
+      "seed": "11111111111111111111111111111111",
+      "orderbookPaused": false,
+      "ticketsPaused": false,
+      "borrowTenor": 0,
+      "lendTenor": 0,
+      "originationFee": 0
+    }"#;
+    assert_eq!(
+        itertools::Itertools::join(&mut expected.split_whitespace(), " "),
+        itertools::Itertools::join(&mut json.split_whitespace(), " ")
+    )
 }

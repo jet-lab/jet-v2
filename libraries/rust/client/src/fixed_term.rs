@@ -548,13 +548,15 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
 
     fn get_next_loan_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
-        user_account.map(|u| u.next_term_loan()).unwrap_or_default()
+        user_account
+            .map(|u| u.debt().next_new_loan_seqno())
+            .unwrap_or_default()
     }
 
     fn get_next_deposit_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
         user_account
-            .map(|u| u.next_term_deposit())
+            .map(|u| u.assets().next_new_deposit_seqno())
             .unwrap_or_default()
     }
 

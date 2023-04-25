@@ -26,3 +26,9 @@ jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+
+[dependencies.solana-address-lookup-table-program]
+package = "solana-address-lookup-table-program-gateway"
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+features = ["stub-id", "stub-instruction"]
