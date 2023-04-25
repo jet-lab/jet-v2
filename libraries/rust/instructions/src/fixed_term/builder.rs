@@ -495,8 +495,7 @@ impl FixedTermIxBuilder {
         margin_account: Pubkey,
         config: AutoRollConfig,
     ) -> Instruction {
-        let margin_user = derive::margin_user(&self.market, &margin_account);
-        ix::configure_auto_roll(self.market, margin_account, margin_user, config)
+        ix::configure_auto_roll(self.market, margin_account, config)
     }
 
     pub fn stop_auto_roll_deposit(&self, margin_account: Pubkey, deposit: Pubkey) -> Instruction {
