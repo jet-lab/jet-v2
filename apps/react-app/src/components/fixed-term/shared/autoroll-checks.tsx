@@ -33,7 +33,7 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
           return;
         } else {
           setBorrowRate(
-            Number(price_to_rate(response.borrowRollConfig.limit_price, response.borrowRollConfig.roll_tenor))
+            Number(price_to_rate(response.borrowRollConfig.limit_price, market.info.borrowTenor))
           );
         }
 
@@ -41,7 +41,7 @@ export const AutoRollChecks = ({ children, market, marginAccount }: AutoRollChec
           console.warn('Autoroll config: No lend config found in this market.');
           return;
         } else {
-          setLendRate(Number(price_to_rate(response.lendRollConfig.limit_price, response.borrowRollConfig.roll_tenor)));
+          setLendRate(Number(price_to_rate(response.lendRollConfig.limit_price, market.info.borrowTenor)));
         }
         setHasConfig(true);
       });
