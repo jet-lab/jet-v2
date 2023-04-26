@@ -273,15 +273,15 @@
         "title": "Disclaimer",
         "lendAndBorrow": "Lend and Borrow the most popular assets.",
         "tradeWithSize": "Trade with size using our powerful Margin Account system.",
-        "swapFavoriteCoins": "Swap your favorite coins with leverage, quickly and effortlessly.",
+        "swapFavoriteCoins": "Swap coins with leverage, quickly and effortlessly.",
         "manageAllAssets": "Manage all your assets in one easy to use, simple interface.",
         "disclaimerDetail": "You are now entering Jet Protocol Mainnet. Do not proceed if you do not understand and accept the {{TERMS_LINK}}, {{PRIVACY_LINK}}, and the potential for financial loss.",
         "acceptRisks": "I understand and accept the risks.",
-        "enterMainnet": "Enter Mainnet"
+        "agreeToEnter": "I agree"
       },
       "geobanned": {
         "title": "Geobanned",
-        "regionNotAvailable": "We're sorry, Jet Protocol is not currently available in your region.",
+        "regionNotAvailable": "Jet Protocol is not currently available in your region.",
         "debark": "Debark"
       },
       "rentFee": {

@@ -62,7 +62,7 @@ export function DisclaimerModal(): JSX.Element {
             size="small"
             disabled={!dislaimerChecked}
             onClick={() => setDisclaimersAccepted({ ...disclaimersAccepted, [publicKey.toBase58()]: true })}>
-            {dictionary.modals.alerts.disclaimer.enterMainnet}
+            {dictionary.modals.alerts.disclaimer.agreeToEnter}
           </Button>
         </div>
       </Modal>

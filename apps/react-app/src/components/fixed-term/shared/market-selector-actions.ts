@@ -41,7 +41,7 @@ export const submitRepay = async (
     });
     notify(
       'Repay Successful',
-      `Your debt has been successfully repaid`,
+      `Your debt has been successfully repaid.`,
       'success',
       getExplorerUrl(tx, cluster, explorer)
     );
@@ -100,7 +100,7 @@ export const settleNow = async (
     });
     notify(
       'Settle Successful',
-      `Your assets have been sent to your margin account`,
+      `Your assets have been sent to your margin account.`,
       'success',
       getExplorerUrl(tx, cluster, explorer)
     );
@@ -134,11 +134,11 @@ export const redeemDeposits = async (
       markets,
       deposits
     });
-    notify('Deposit Redeemed', 'Your deposit was successfully redeem', 'success');
+    notify('Deposit Redeemed', 'Your deposit was successfully redeemed.', 'success');
   } catch (e: any) {
     notify(
-      'Deposit redemption failed',
-      'There was an error redeeming your deposit',
+      'Deposit Redemption Failed',
+      'There was an error redeeming your deposit.',
       'error',
       getExplorerUrl(e.signature, cluster, explorer)
     );
