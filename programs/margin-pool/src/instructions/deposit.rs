@@ -87,7 +87,8 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         kind: change_kind,
         tokens: amount,
     };
-    debug_msg!("Attempting to deposit {:?} to pool {} for notes {}",
+    debug_msg!(
+        "Attempting to deposit {:?} to pool {} for notes {}",
         change,
         ctx.accounts.margin_pool.key(),
         ctx.accounts.deposit_note_mint.key(),
