@@ -8,6 +8,16 @@ use crate::{
     FixedTermErrorCode,
 };
 
+#[event]
+pub struct BorrowRollConfigUpdated {
+    pub config: BorrowAutoRollConfig,
+}
+
+#[event]
+pub struct LendRollConfigUpdated {
+    pub config: LendAutoRollConfig,
+}
+
 #[derive(Accounts)]
 pub struct ConfigureAutoRoll<'info> {
     /// The `MarginUser` account.
@@ -65,10 +75,12 @@ pub fn handler(ctx: Context<ConfigureAutoRoll>, config: AutoRollConfig) -> Resul
         AutoRollConfig::Borrow(config) => {
             check_borrow_config(&config, ctx.accounts.market.load()?.borrow_tenor)?;
             user.borrow_roll_config = Some(config);
+            emit!(BorrowRollConfigUpdated { config })
         }
         AutoRollConfig::Lend(config) => {
             check_lend_config(&config)?;
             user.lend_roll_config = Some(config);
+            emit!(LendRollConfigUpdated { config })
         }
     }
 
