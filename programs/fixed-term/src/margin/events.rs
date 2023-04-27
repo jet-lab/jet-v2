@@ -23,6 +23,7 @@ pub struct OrderPlaced {
     pub auto_stake: bool,
     pub post_only: bool,
     pub post_allowed: bool,
+    pub auto_roll: bool,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]

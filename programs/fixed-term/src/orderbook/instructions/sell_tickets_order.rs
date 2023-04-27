@@ -79,6 +79,7 @@ impl<'info> SellTicketsOrder<'info> {
             auto_stake: params.auto_stake,
             post_only: params.post_only,
             post_allowed: params.post_allowed,
+            auto_roll: params.auto_roll
         });
 
         Ok(())
