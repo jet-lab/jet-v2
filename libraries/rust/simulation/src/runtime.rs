@@ -8,7 +8,7 @@ use solana_bpf_loader_program::serialization::{
     deserialize_parameters, deserialize_parameters_aligned, serialize_parameters,
 };
 use solana_program_runtime::{
-    compute_budget::ComputeBudget, ic_logger_msg, invoke_context::InvokeContext, stable_log,
+    compute_budget::ComputeBudget, invoke_context::InvokeContext, stable_log,
     sysvar_cache::SysvarCache, timings::ExecuteTimings,
 };
 use solana_runtime::{
@@ -286,22 +286,12 @@ struct LocalRuntimeSyscallStub;
 impl SyscallStubs for LocalRuntimeSyscallStub {
     fn sol_log(&self, message: &str) {
         log::program::debug!("Program log: {}", message);
-        ic_logger_msg!(
-            get_local_context().invoke_context().get_log_collector(),
-            "Program log: {}",
-            message
-        );
     }
 
     fn sol_log_data(&self, fields: &[&[u8]]) {
         for field in fields {
             let data = base64::encode(field);
             log::program_data::debug!("Program data: {}", data);
-            ic_logger_msg!(
-                get_local_context().invoke_context().get_log_collector(),
-                "Program data: {}",
-                data
-            );
         }
     }
 
@@ -428,12 +418,6 @@ impl SyscallStubs for LocalRuntimeSyscallStub {
         if data.is_empty() {
             let encoded = base64::encode(data);
             log::program_return::debug!("Program return: {}", encoded);
-
-            ic_logger_msg!(
-                get_local_context().invoke_context().get_log_collector(),
-                "Program return: {}",
-                encoded
-            );
         }
 
         tx_context.set_return_data(*caller, data.to_vec()).unwrap();
