@@ -15,38 +15,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod accounting_invoke;
-mod adapter_invoke;
-mod close_account;
-mod close_position;
-mod create_account;
-mod liquidate_begin;
-mod liquidate_end;
-mod liquidator_invoke;
-mod register_position;
-mod update_position_balance;
-mod verify_healthy;
-mod verify_unhealthy;
+use anchor_lang::prelude::*;
 
-mod admin;
-mod configure;
-mod lookup_tables;
-mod positions;
+use crate::{
+    events,
+    syscall::{sys, Sys},
+    MarginAccount,
+};
 
-pub use accounting_invoke::*;
-pub use adapter_invoke::*;
-pub use close_account::*;
-pub use close_position::*;
-pub use create_account::*;
-pub use liquidate_begin::*;
-pub use liquidate_end::*;
-pub use liquidator_invoke::*;
-pub use register_position::*;
-pub use update_position_balance::*;
-pub use verify_healthy::*;
-pub use verify_unhealthy::*;
+#[derive(Accounts)]
+pub struct VerifyUnhealthy<'info> {
+    /// The account verify the health of
+    pub margin_account: AccountLoader<'info, MarginAccount>,
+}
 
-pub use admin::*;
-pub use configure::*;
-pub use lookup_tables::*;
-pub use positions::*;
+pub fn verify_unhealthy_handler(ctx: Context<VerifyUnhealthy>) -> Result<()> {
+    let account = ctx.accounts.margin_account.load()?;
+
+    account.verify_unhealthy_positions(sys().unix_timestamp())?;
+
+    emit!(events::VerifiedUnealthy {
+        margin_account: ctx.accounts.margin_account.key(),
+    });
+
+    Ok(())
+}
