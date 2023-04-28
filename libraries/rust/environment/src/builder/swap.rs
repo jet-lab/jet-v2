@@ -8,6 +8,7 @@ use jet_instructions::test_service::{
 use jet_solana_client::{network::NetworkKind, NetworkUserInterface};
 
 use crate::{
+    builder::SetupPhase,
     config::EnvironmentConfig,
     programs::{ORCA_V2, ORCA_V2_DEVNET, SABER},
 };
@@ -54,14 +55,17 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
                     continue;
                 }
 
-                builder.setup([spl_swap_pool_create(
-                    &swap_program,
-                    &builder.payer(),
-                    &token_a,
-                    &token_b,
-                    8,
-                    500,
-                )])
+                builder.setup(
+                    SetupPhase::Swaps,
+                    [spl_swap_pool_create(
+                        &swap_program,
+                        &builder.payer(),
+                        &token_a,
+                        &token_b,
+                        8,
+                        500,
+                    )],
+                )
             }
             p if p == "saber-swap" => {
                 log::info!("create Saber swap pool for {}/{}", pool.base, pool.quote);
@@ -72,14 +76,17 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
                     continue;
                 }
 
-                builder.setup([saber_swap_pool_create(
-                    &swap_program,
-                    &builder.payer(),
-                    &token_a,
-                    &token_b,
-                    8,
-                    500,
-                )])
+                builder.setup(
+                    SetupPhase::Swaps,
+                    [saber_swap_pool_create(
+                        &swap_program,
+                        &builder.payer(),
+                        &token_a,
+                        &token_b,
+                        8,
+                        500,
+                    )],
+                )
             }
             p => {
                 log::warn!("ignoring unknown swap program {} {p}", pool.program);

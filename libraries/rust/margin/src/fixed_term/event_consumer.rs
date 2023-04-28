@@ -10,7 +10,7 @@ use agnostic_orderbook::state::{
 };
 use anchor_lang::AccountDeserialize;
 use futures::{future::join_all, lock::Mutex as AsyncMutex};
-use solana_client::rpc_filter::RpcFilterType;
+use jet_solana_client::rpc::AccountFilter;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, packet::PACKET_DATA_SIZE, pubkey::Pubkey,
     signer::Signer, transaction::Transaction,
@@ -143,8 +143,8 @@ impl EventConsumer {
             .rpc
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                vec![RpcFilterType::DataSize(
-                    8 + std::mem::size_of::<MarginUser>() as u64,
+                vec![AccountFilter::DataSize(
+                    8 + std::mem::size_of::<MarginUser>(),
                 )],
             )
             .await?;
