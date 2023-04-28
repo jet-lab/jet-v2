@@ -1,5 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
+use jet_program_common::interest_pricing::f64_to_fp32;
 use serde::{Deserialize, Serialize};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
@@ -23,9 +24,6 @@ use crate::{
     NetworkUserInterface,
 };
 
-use self::interest_pricing::f64_to_fp32;
-
-mod interest_pricing;
 pub mod util;
 
 /// Details about a fixed term market

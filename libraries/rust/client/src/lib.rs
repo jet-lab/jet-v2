@@ -17,11 +17,9 @@ pub mod config;
 pub mod fixed_term;
 pub mod margin;
 pub mod margin_pool;
-mod solana;
 pub mod state;
 pub mod swaps;
 pub mod test_service;
-pub mod util;
 
 pub use client::{ClientError, ClientResult};
 pub use jet_solana_client::network::NetworkKind;
