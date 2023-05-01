@@ -203,8 +203,8 @@ pub fn configure_auto_roll(
     }
 }
 
-pub fn stop_auto_roll_deposit(margin_account: Pubkey, deposit: Pubkey) -> Instruction {
-    let accounts = jet_fixed_term::accounts::StopAutoRollDeposit {
+pub fn toggle_auto_roll_deposit(margin_account: Pubkey, deposit: Pubkey) -> Instruction {
+    let accounts = jet_fixed_term::accounts::ToggleAutoRollDeposit {
         margin_account,
         deposit,
     }
@@ -212,17 +212,17 @@ pub fn stop_auto_roll_deposit(margin_account: Pubkey, deposit: Pubkey) -> Instru
 
     Instruction::new_with_bytes(
         jet_fixed_term::ID,
-        &jet_fixed_term::instruction::StopAutoRollDeposit {}.data(),
+        &jet_fixed_term::instruction::ToggleAutoRollDeposit {}.data(),
         accounts,
     )
 }
 
-pub fn stop_auto_roll_loan(
+pub fn toggle_auto_roll_loan(
     margin_account: Pubkey,
     margin_user: Pubkey,
     loan: Pubkey,
 ) -> Instruction {
-    let accounts = jet_fixed_term::accounts::StopAutoRollLoan {
+    let accounts = jet_fixed_term::accounts::ToggleAutoRollLoan {
         margin_account,
         margin_user,
         loan,
@@ -231,7 +231,7 @@ pub fn stop_auto_roll_loan(
 
     Instruction::new_with_bytes(
         jet_fixed_term::ID,
-        &jet_fixed_term::instruction::StopAutoRollLoan {}.data(),
+        &jet_fixed_term::instruction::ToggleAutoRollLoan {}.data(),
         accounts,
     )
 }

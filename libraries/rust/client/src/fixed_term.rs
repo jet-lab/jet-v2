@@ -475,36 +475,37 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
         self.account.send_with_refresh(&ixns).await
     }
 
-    /// Stop a deposit from auto-rolling
+    /// Toggle a deposit's auto-roll setting
     ///
     /// # Parameters
     ///
     /// * `deposit` - The address of the deposit that has been configured to auto-roll
-    pub async fn stop_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<I, ()> {
+    pub async fn toggle_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<I, ()> {
         let mut ixns = vec![];
 
         ixns.push(
             self.account.builder.adapter_invoke(
                 self.builder
-                    .stop_auto_roll_deposit(self.account.address, deposit),
+                    .toggle_auto_roll_deposit(self.account.address, deposit),
             ),
         );
 
         self.account.send_with_refresh(&ixns).await
     }
 
-    /// Stop a loan from auto-rolling
+    /// Toggle a loan's auto-roll setting
     ///
     /// # Parameters
     ///
     /// * `loan` - The address of the loan that has been configured to auto-roll
-    pub async fn stop_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<I, ()> {
+    pub async fn toggle_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<I, ()> {
         let mut ixns = vec![];
 
         ixns.push(
-            self.account
-                .builder
-                .adapter_invoke(self.builder.stop_auto_roll_loan(self.account.address, loan)),
+            self.account.builder.adapter_invoke(
+                self.builder
+                    .toggle_auto_roll_loan(self.account.address, loan),
+            ),
         );
 
         self.account.send_with_refresh(&ixns).await

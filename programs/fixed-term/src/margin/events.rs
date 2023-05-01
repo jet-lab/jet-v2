@@ -138,3 +138,18 @@ pub struct BorrowRollConfigUpdated {
 pub struct LendRollConfigUpdated {
     pub config: LendAutoRollConfig,
 }
+
+#[event]
+pub struct TermDepositFlagsToggled {
+    pub margin_account: Pubkey,
+    pub term_deposit: Pubkey,
+    pub flags: TermDepositFlags,
+}
+
+#[event]
+pub struct TermLoanFlagsToggled {
+    pub margin_account: Pubkey,
+    pub margin_user: Pubkey,
+    pub term_loan: Pubkey,
+    pub flags: TermLoanFlags,
+}

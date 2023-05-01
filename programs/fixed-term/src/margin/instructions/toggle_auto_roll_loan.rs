@@ -1,10 +1,13 @@
 use anchor_lang::prelude::*;
 use jet_margin::MarginAccount;
 
-use crate::margin::state::{MarginUser, TermLoan, TermLoanFlags};
+use crate::{
+    events::TermLoanFlagsToggled,
+    margin::state::{MarginUser, TermLoan, TermLoanFlags},
+};
 
 #[derive(Accounts)]
-pub struct StopAutoRollLoan<'info> {
+pub struct ToggleAutoRollLoan<'info> {
     /// The signing authority for this user account
     #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
@@ -24,8 +27,15 @@ pub struct StopAutoRollLoan<'info> {
     pub loan: Account<'info, TermLoan>,
 }
 
-pub fn handler(ctx: Context<StopAutoRollLoan>) -> Result<()> {
-    ctx.accounts.loan.flags.remove(TermLoanFlags::AUTO_ROLL);
+pub fn handler(ctx: Context<ToggleAutoRollLoan>) -> Result<()> {
+    ctx.accounts.loan.flags.toggle(TermLoanFlags::AUTO_ROLL);
+
+    emit!(TermLoanFlagsToggled {
+        margin_account: ctx.accounts.margin_account.key(),
+        margin_user: ctx.accounts.margin_user.key(),
+        term_loan: ctx.accounts.loan.key(),
+        flags: ctx.accounts.loan.flags,
+    });
 
     Ok(())
 }
