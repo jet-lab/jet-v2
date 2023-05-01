@@ -3,7 +3,9 @@ use anchor_lang::{event, prelude::*};
 
 use crate::tickets::state::TermDepositFlags;
 
-use super::state::{MarginUser, SequenceNumber, TermLoanFlags};
+use super::state::{
+    BorrowAutoRollConfig, LendAutoRollConfig, MarginUser, SequenceNumber, TermLoanFlags,
+};
 
 #[event]
 pub struct MarginUserInitialized {
@@ -125,4 +127,14 @@ impl AssetsUpdated {
             underlying_collateral: user.assets().underlying_collateral(),
         })
     }
+}
+
+#[event]
+pub struct BorrowRollConfigUpdated {
+    pub config: BorrowAutoRollConfig,
+}
+
+#[event]
+pub struct LendRollConfigUpdated {
+    pub config: LendAutoRollConfig,
 }

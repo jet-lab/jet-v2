@@ -4,19 +4,10 @@ use jet_program_common::Fp32;
 
 use crate::{
     control::state::Market,
+    events::{BorrowRollConfigUpdated, LendRollConfigUpdated},
     margin::state::{AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig, MarginUser},
     FixedTermErrorCode,
 };
-
-#[event]
-pub struct BorrowRollConfigUpdated {
-    pub config: BorrowAutoRollConfig,
-}
-
-#[event]
-pub struct LendRollConfigUpdated {
-    pub config: LendAutoRollConfig,
-}
 
 #[derive(Accounts)]
 pub struct ConfigureAutoRoll<'info> {
