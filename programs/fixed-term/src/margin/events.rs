@@ -60,6 +60,8 @@ pub struct TermLoanRepay {
     pub term_loan: Pubkey,
     pub repayment_amount: u64,
     pub final_balance: u64,
+    /// Whether the loan is being repaid as part of an auto-roll
+    pub is_auto_roll: bool,
 }
 
 #[event]
@@ -69,6 +71,8 @@ pub struct TermLoanFulfilled {
     pub borrower: Pubkey,
     pub repayment_amount: u64,
     pub timestamp: i64,
+    /// Whether the loan is being fulfilled as part of an auto-roll
+    pub is_auto_roll: bool,
 }
 
 #[event]

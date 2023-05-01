@@ -162,8 +162,9 @@ pub struct RedeemDepositAccounts<'a, 'info> {
 impl<'a, 'info> RedeemDepositAccounts<'a, 'info> {
     /// Account for the redemption of the `TermDeposit`
     ///
-    /// in the case that this function is downstream from an auto rolled lend order, there is
-    /// no need to withdraw funds from the vault, and `is_withdrawing` should be false
+    /// In the case that this function is downstream from an auto rolled lend order, there is
+    /// no need to withdraw funds from the vault, and `is_withdrawing` should be false.
+    /// `is_withdrawing` is thus also used to indicate if the redemption is an auto-roll.
     pub fn redeem(&self, is_withdrawing: bool) -> Result<u64> {
         let current_time = Clock::get()?.unix_timestamp;
         if current_time < self.deposit.matures_at {
@@ -196,6 +197,7 @@ impl<'a, 'info> RedeemDepositAccounts<'a, 'info> {
             deposit_holder: self.owner.key(),
             redeemed_value: self.deposit.amount,
             redeemed_timestamp: current_time,
+            is_auto_roll: !is_withdrawing,
         });
 
         Ok(self.deposit.amount)
