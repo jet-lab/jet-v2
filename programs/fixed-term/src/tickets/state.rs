@@ -106,6 +106,7 @@ impl TermDepositWriter {
             maturation_timestamp,
             principal: deposit.principal,
             amount: deposit.amount,
+            flags: deposit.flags,
         });
         Ok(())
     }

@@ -1,6 +1,8 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
+use crate::tickets::state::TermDepositFlags;
+
 use super::state::{MarginUser, SequenceNumber, TermLoanFlags};
 
 #[event]
@@ -80,6 +82,7 @@ pub struct TermDepositCreated {
     pub principal: u64,
     // Base
     pub amount: u64,
+    pub flags: TermDepositFlags,
 }
 
 #[event]
