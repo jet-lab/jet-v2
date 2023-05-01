@@ -85,6 +85,7 @@ impl<'a, 'info> LendOrderAccounts<'a, 'info> {
             auto_stake: params.auto_stake,
             post_only: params.post_only,
             post_allowed: params.post_allowed,
+            auto_roll: params.auto_roll
         });
 
         Ok(())
@@ -310,6 +311,7 @@ impl<'a, 'info> MarginLendAccounts<'a, 'info> {
             post_allowed: params.post_allowed,
             limit_price: params.limit_price,
             order_type: crate::events::OrderType::MarginLend,
+            auto_roll: params.auto_roll
         });
         self.margin_user.emit_asset_balances()
     }

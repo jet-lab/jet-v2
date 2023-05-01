@@ -1,7 +1,11 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
-use super::state::{MarginUser, SequenceNumber, TermLoanFlags};
+use crate::tickets::state::TermDepositFlags;
+
+use super::state::{
+    BorrowAutoRollConfig, LendAutoRollConfig, MarginUser, SequenceNumber, TermLoanFlags,
+};
 
 #[event]
 pub struct MarginUserInitialized {
@@ -23,6 +27,7 @@ pub struct OrderPlaced {
     pub auto_stake: bool,
     pub post_only: bool,
     pub post_allowed: bool,
+    pub auto_roll: bool,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
@@ -55,6 +60,8 @@ pub struct TermLoanRepay {
     pub term_loan: Pubkey,
     pub repayment_amount: u64,
     pub final_balance: u64,
+    /// Whether the loan is being repaid as part of an auto-roll
+    pub is_auto_roll: bool,
 }
 
 #[event]
@@ -64,6 +71,8 @@ pub struct TermLoanFulfilled {
     pub borrower: Pubkey,
     pub repayment_amount: u64,
     pub timestamp: i64,
+    /// Whether the loan is being fulfilled as part of an auto-roll
+    pub is_auto_roll: bool,
 }
 
 #[event]
@@ -79,6 +88,7 @@ pub struct TermDepositCreated {
     pub principal: u64,
     // Base
     pub amount: u64,
+    pub flags: TermDepositFlags,
 }
 
 #[event]
@@ -121,4 +131,29 @@ impl AssetsUpdated {
             underlying_collateral: user.assets().underlying_collateral(),
         })
     }
+}
+
+#[event]
+pub struct BorrowRollConfigUpdated {
+    pub config: BorrowAutoRollConfig,
+}
+
+#[event]
+pub struct LendRollConfigUpdated {
+    pub config: LendAutoRollConfig,
+}
+
+#[event]
+pub struct TermDepositFlagsToggled {
+    pub margin_account: Pubkey,
+    pub term_deposit: Pubkey,
+    pub flags: TermDepositFlags,
+}
+
+#[event]
+pub struct TermLoanFlagsToggled {
+    pub margin_account: Pubkey,
+    pub margin_user: Pubkey,
+    pub term_loan: Pubkey,
+    pub flags: TermLoanFlags,
 }
