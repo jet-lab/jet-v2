@@ -7,6 +7,7 @@ use clap::{AppSettings, Parser, Subcommand};
 use client::{Client, ClientConfig, Plan};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
+use solana_sdk::{signature::read_keypair_file, signer::Signer};
 
 pub mod actions;
 pub mod app_config;
@@ -284,6 +285,13 @@ pub enum Command {
         /// The path to write the generated file to
         #[clap(long, short = 'o')]
         output: PathBuf,
+
+        /// The address to use as a default lookup registry, obtained from a keypair
+        #[clap(long)]
+        default_lookup_keypair: Option<PathBuf>,
+        /// The address to use as a default lookup registry, supplied directly
+        #[clap(long)]
+        default_lookup_address: Option<Pubkey>,
     },
 
     /// Proposal management
@@ -355,8 +363,31 @@ pub async fn run(opts: CliOpts) -> Result<()> {
             )
             .await?
         }
-        Command::GenerateAppConfig { config_dir, output } => {
-            actions::global::process_generate_app_config(&client, &config_dir, &output).await?
+        Command::GenerateAppConfig {
+            config_dir,
+            output,
+            default_lookup_address,
+            default_lookup_keypair,
+        } => {
+            // Get the default lookup authority if set
+            let default_lookup_authority = match (default_lookup_address, default_lookup_keypair) {
+                (Some(address), None) => Some(address),
+                (None, Some(keypair_path)) => {
+                    let keypair = read_keypair_file(&keypair_path).unwrap();
+                    Some(keypair.pubkey())
+                }
+                (None, None) => None,
+                (Some(_), Some(_)) => bail!(
+                    "cannot specify both --default-lookup-address and --default-lookup-keypair"
+                ),
+            };
+            actions::global::process_generate_app_config(
+                &client,
+                &config_dir,
+                &output,
+                default_lookup_authority,
+            )
+            .await?
         }
         Command::Proposals { subcmd } => run_proposals_command(&client, subcmd).await?,
         Command::CreateAuthority => actions::global::process_create_authority(&client).await?,
