@@ -673,6 +673,11 @@ impl MarginUser {
         self.send_confirm_tx(self.tx.verify_healthy().await?).await
     }
 
+    pub async fn verify_unhealthy(&self) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.verify_unhealthy().await?)
+            .await
+    }
+
     /// Close a user's empty positions.
     pub async fn close_empty_positions(
         &self,

@@ -192,6 +192,10 @@ impl TestUser {
         self.user.verify_healthy().await
     }
 
+    pub async fn verify_unhealthy(&self) -> Result<()> {
+        self.user.verify_unhealthy().await
+    }
+
     pub async fn liquidate_end(&self, liquidator: Option<Pubkey>) -> Result<()> {
         self.user.liquidate_end(liquidator).await
     }
