@@ -485,6 +485,20 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Verify that an account is unhealthy
+    ///
+    pub fn verify_unhealthy(&self) -> Instruction {
+        let accounts = ix_account::VerifyUnhealthy {
+            margin_account: self.address,
+        };
+
+        Instruction {
+            program_id: JetMargin::id(),
+            accounts: accounts.to_account_metas(None),
+            data: ix_data::VerifyUnhealthy.data(),
+        }
+    }
+
     /// Peform an administrative transfer for a position
     pub fn admin_transfer_position_to(
         &self,
