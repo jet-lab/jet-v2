@@ -711,6 +711,12 @@ impl MarginTxBuilder {
             .await
     }
 
+    /// Verify that the margin account is unhealthy
+    pub async fn verify_unhealthy(&self) -> Result<Transaction> {
+        self.create_unsigned_transaction(&[self.ix.verify_unhealthy()])
+            .await
+    }
+
     /// Refresh a user's position in a margin pool
     pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<Instruction> {
         let ix_builder = MarginPoolIxBuilder::new(*token_mint);

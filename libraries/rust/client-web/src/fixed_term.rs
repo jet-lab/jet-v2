@@ -1,6 +1,7 @@
+use jet_program_common::interest_pricing::f64_to_bps;
 use wasm_bindgen::prelude::*;
 
-use jet_client::{fixed_term::MarginAccountMarketClient, util::math::f64_to_bps};
+use jet_client::fixed_term::MarginAccountMarketClient;
 
 use crate::{ClientError, JsNetworkAdapter};
 
