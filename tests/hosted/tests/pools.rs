@@ -13,10 +13,6 @@ async fn simple_pool_lend_borrow_workflow() -> anyhow::Result<()> {
     let user_a = ctx.create_user().await?;
     let user_b = ctx.create_user().await?;
 
-    // Create margin accounts for each user
-    user_a.margin().create_account().await?;
-    user_b.margin().create_account().await?;
-
     // Get some tokens for each user to deposit
     airdrop(&user_a, &usdc, usdc.amount(1_000_000.0)).await;
     airdrop(&user_a, &tsol, tsol.amount(1.0)).await;
@@ -110,10 +106,6 @@ async fn max_pool_util_ratio_after_borrow() -> anyhow::Result<()> {
     // Create two user wallets to get started
     let user_a = ctx.create_user().await?;
     let user_b = ctx.create_user().await?;
-
-    // Create margin accounts for each user
-    user_a.margin().create_account().await?;
-    user_b.margin().create_account().await?;
 
     // Get some tokens for each user to deposit
     airdrop(&user_a, &usdc, usdc.amount(1_000_000.0)).await;

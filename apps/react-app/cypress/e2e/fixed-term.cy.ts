@@ -54,6 +54,7 @@ describe('Fixed Term Market', () => {
     it('selects the offer loan tab', () => {
       const lendLink = cy.contains('.nav-link', 'Lend');
       lendLink.click();
+      cy.get('.close-modal-button').click()
       cy.contains('lend now'); // ensure we loaded the page fully
     });
 
@@ -93,6 +94,7 @@ describe('Fixed Term Market', () => {
     it('selects the request loan tab', () => {
       const borrowLink = cy.contains('.nav-link', 'Borrow');
       borrowLink.click();
+      cy.get('.close-modal-button').click()
       cy.contains('borrow now'); // ensure we loaded the page fully
     });
 
@@ -134,6 +136,7 @@ describe('Fixed Term Market', () => {
     it('selects the lend now tab', () => {
       const lendLink = cy.contains('.nav-link', 'Lend');
       lendLink.click();
+      cy.get('.close-modal-button').click()
       const lendNow = cy.contains('lend now');
       lendNow.click();
       cy.contains('Lend 1 day USDC');
@@ -154,7 +157,7 @@ describe('Fixed Term Market', () => {
     });
 
     it('received the correct notification', () => {
-      cy.contains(/(Your lend order for\s+).*?(\s+was filled successfully)/);
+      cy.contains(/(Your loan order for\s+).*?(\s+was filled successfully)/);
     });
   });
 
@@ -167,6 +170,7 @@ describe('Fixed Term Market', () => {
     it('selects the borrow now tab', () => {
       const borrowLink = cy.contains('.nav-link', 'Borrow');
       borrowLink.click();
+      cy.get('.close-modal-button').click()
       const borrowNowTab = cy.contains('borrow now');
       borrowNowTab.click();
       cy.contains('Borrow 1 day USDC');

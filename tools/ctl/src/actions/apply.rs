@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::{bail, Result};
-use jet_environment::builder::{configure_environment, Builder, ProposalContext};
+use jet_environment::builder::{
+    configure_environment, Builder, ProposalContext, ProposalExecution,
+};
 use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
 use solana_sdk::signer::Signer;
 
@@ -25,12 +27,8 @@ pub async fn process_apply(
         NetworkKind::Localnet => client.signer()?,
     };
 
-    let mut builder = Builder::new(client.network_interface(), authority)
-        .await
-        .unwrap();
-
-    match (client.network_kind, proposal) {
-        (NetworkKind::Localnet, None) => (),
+    let proposal_execution = match (client.network_kind, proposal) {
+        (NetworkKind::Localnet, None) => ProposalExecution::Direct { authority },
         (_, None) => bail!("must target a proposal for effecting changes on public networks"),
         (_, Some(proposal_id)) => {
             let proposal = get_proposal_state(client, &proposal_id).await?;
@@ -44,16 +42,20 @@ pub async fn process_apply(
                 );
             }
 
-            builder.set_proposal_context(ProposalContext {
+            ProposalExecution::Governance(ProposalContext {
                 program: JET_GOVERNANCE_PROGRAM,
                 proposal: proposal_id,
                 governance: proposal.governance,
                 option: proposal_option,
                 proposal_owner_record: proposal.token_owner_record,
                 tx_next_index,
-            });
+            })
         }
-    }
+    };
+
+    let mut builder = Builder::new(client.network_interface(), proposal_execution)
+        .await
+        .unwrap();
 
     configure_environment(&mut builder, &config).await.unwrap();
 

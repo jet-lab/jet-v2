@@ -215,14 +215,14 @@ async fn sync_user_debt_assets<I: NetworkUserInterface>(
 ) -> ClientResult<I, ()> {
     let loans: Vec<Arc<TermLoan>> = load_user_positions(
         states,
-        |state| state.debt.active_loans(),
+        |state| state.debt().active_loans(),
         |user, state, seqno| derive::term_loan(&state.market, user, seqno),
     )
     .await?;
 
     let deposits: Vec<Arc<TermDeposit>> = load_user_positions(
         states,
-        |state| state.assets.active_deposits(),
+        |state| state.assets().active_deposits(),
         |_, state, seqno| derive::term_deposit(&state.market, &state.margin_account, seqno),
     )
     .await?;

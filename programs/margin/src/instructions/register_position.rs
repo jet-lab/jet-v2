@@ -40,6 +40,7 @@ pub struct RegisterPosition<'info> {
     pub position_token_mint: Account<'info, Mint>,
 
     /// The margin config for the token
+    #[account(constraint = config.mint == position_token_mint.key())]
     pub config: Account<'info, TokenConfig>,
 
     /// The token account to store hold the position assets in the custody of the

@@ -29,6 +29,7 @@ use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::TransactionError,
 };
 
+mod log;
 #[doc(hidden)]
 pub mod runtime;
 
@@ -160,7 +161,7 @@ impl rand::RngCore for MockRng {
     }
 }
 
-fn hash<T: std::hash::Hash + ?Sized>(item: &T) -> u64 {
+pub fn hash<T: std::hash::Hash + ?Sized>(item: &T) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     item.hash(&mut hasher);
     std::hash::Hasher::finish(&hasher)

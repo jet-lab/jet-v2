@@ -21,7 +21,9 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 
-use crate::{events, util::Require, Approver, MarginAccount, PositionConfigUpdate, TokenConfig};
+use crate::{
+    events, util::Require, Approver, ErrorCode, MarginAccount, PositionConfigUpdate, TokenConfig,
+};
 
 #[derive(Accounts)]
 pub struct CreateDepositPosition<'info> {
@@ -40,7 +42,10 @@ pub struct CreateDepositPosition<'info> {
     pub mint: Account<'info, Mint>,
 
     /// The margin config for the token
-    #[account(has_one = mint)]
+    #[account(
+        has_one = mint,
+        constraint = config.airspace == margin_account.load()?.airspace @ ErrorCode::WrongAirspace
+    )]
     pub config: Account<'info, TokenConfig>,
 
     /// The token account to store deposits

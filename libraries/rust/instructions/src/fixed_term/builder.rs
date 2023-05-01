@@ -1,14 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
-use jet_fixed_term::{
-    margin::{instructions::MarketSide, state::AutoRollConfig},
-    seeds,
-};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
 use jet_fixed_term::{
     control::{instructions::InitializeMarketParams, state::Market},
+    margin::state::AutoRollConfig,
     orderbook::state::OrderParams,
 };
 
@@ -58,12 +55,7 @@ impl FixedTermIxBuilder {
         FixedTermIxBuilder {
             airspace: market.airspace,
             authority: Pubkey::default(), //todo
-            market: derive::fixed_term_address(&[
-                seeds::MARKET,
-                market.airspace.as_ref(),
-                market.underlying_token_mint.as_ref(),
-                &market.seed,
-            ]),
+            market: derive::market(&market.airspace, &market.underlying_token_mint, market.seed),
             underlying_mint: market.underlying_token_mint,
             underlying_oracle: market.underlying_oracle,
             ticket_oracle: market.ticket_oracle,
@@ -423,9 +415,25 @@ impl FixedTermIxBuilder {
     ) -> Instruction {
         ix::auto_roll_lend_order(
             deposit_seqno,
-            &self.market,
             margin_account,
             deposit,
+            rent_receiver,
+            self.orderbook_mut(),
+            self.payer,
+        )
+    }
+
+    pub fn auto_roll_borrow_order(
+        &self,
+        margin_account: Pubkey,
+        loan: Pubkey,
+        rent_receiver: Pubkey,
+        next_debt_seqno: u64,
+    ) -> Instruction {
+        ix::auto_roll_borrow_order(
+            next_debt_seqno,
+            margin_account,
+            loan,
             rent_receiver,
             self.orderbook_mut(),
             self.payer,
@@ -485,11 +493,18 @@ impl FixedTermIxBuilder {
     pub fn configure_auto_roll(
         &self,
         margin_account: Pubkey,
-        side: MarketSide,
         config: AutoRollConfig,
     ) -> Instruction {
+        ix::configure_auto_roll(self.market, margin_account, config)
+    }
+
+    pub fn stop_auto_roll_deposit(&self, margin_account: Pubkey, deposit: Pubkey) -> Instruction {
+        ix::stop_auto_roll_deposit(margin_account, deposit)
+    }
+
+    pub fn stop_auto_roll_loan(&self, margin_account: Pubkey, loan: Pubkey) -> Instruction {
         let margin_user = derive::margin_user(&self.market, &margin_account);
-        ix::configure_auto_roll(side, config, margin_user, margin_account)
+        ix::stop_auto_roll_loan(margin_account, margin_user, loan)
     }
 }
 
@@ -500,6 +515,7 @@ impl FixedTermIxBuilder {
         MarginUser {
             address,
             ticket_collateral: derive::user_ticket_collateral(&address),
+            underlying_collateral: derive::user_underlying_collateral(&address),
             claims: derive::user_claims(&address),
         }
     }

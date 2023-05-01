@@ -55,7 +55,7 @@ pub struct SolanaTestContext {
 impl SolanaTestContext {
     pub async fn new(test_name: &str) -> SolanaTestContext {
         let keygen = Arc::new(DeterministicKeygen::new(test_name));
-        let rpc = init_runtime(keygen.generate_key()).await;
+        let rpc = init_runtime(keygen.generate_key());
 
         rpc.airdrop(&rpc.payer().pubkey(), 10_000 * LAMPORTS_PER_SOL)
             .await
@@ -78,22 +78,22 @@ impl SolanaTestContext {
     }
 }
 
-async fn init_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
+fn init_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
     if cfg!(feature = "localnet") {
-        localnet_runtime(payer).await
+        localnet_runtime(payer)
     } else {
-        simulation_runtime(payer).await
+        simulation_runtime(payer)
     }
 }
 
-async fn localnet_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
+fn localnet_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
     Arc::new(RpcConnection::new_optimistic(
         payer,
         "http://127.0.0.1:8899",
     ))
 }
 
-async fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
+fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
     let _ = env_logger::builder().is_test(false).try_init();
     let runtime = jet_simulation::create_test_runtime![
         jet_test_service,
@@ -126,6 +126,7 @@ async fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
             saber_program::processor::Processor::process
         ),
         (anchor_spl::dex::id(), openbook_processor),
+        lookup_table_registry,
     ];
 
     Arc::new(runtime.rpc(payer))

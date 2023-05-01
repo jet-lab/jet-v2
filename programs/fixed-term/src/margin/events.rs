@@ -1,7 +1,7 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
-use super::state::{Assets, Debt, SequenceNumber, TermLoanFlags};
+use super::state::{MarginUser, SequenceNumber, TermLoanFlags};
 
 #[event]
 pub struct MarginUserInitialized {
@@ -91,13 +91,13 @@ pub struct DebtUpdated {
 }
 
 impl DebtUpdated {
-    pub fn new(margin_user: Pubkey, debt: &Debt) -> Self {
+    pub fn new(user: &MarginUser) -> Self {
         Self {
-            margin_user,
-            total_debt: debt.total(),
-            next_obligation_to_repay: debt.next_term_loan_to_repay(),
-            outstanding_obligations: debt.outstanding_term_loans(),
-            is_past_due: debt.is_past_due(),
+            margin_user: user.derive_address(),
+            total_debt: user.debt().total(),
+            next_obligation_to_repay: user.debt().next_term_loan_to_repay(),
+            outstanding_obligations: user.debt().outstanding_term_loans(),
+            is_past_due: user.is_past_due(Clock::get().unwrap().unix_timestamp),
         }
     }
 }
@@ -107,16 +107,18 @@ pub struct AssetsUpdated {
     pub margin_user: Pubkey,
     pub entitled_tokens: u64,
     pub entitled_tickets: u64,
-    pub collateral: u64,
+    pub ticket_collateral: u64,
+    pub underlying_collateral: u64,
 }
 
 impl AssetsUpdated {
-    pub fn new(margin_user: Pubkey, assets: &Assets) -> Self {
-        Self {
-            margin_user,
-            entitled_tokens: assets.entitled_tokens,
-            entitled_tickets: assets.entitled_tickets,
-            collateral: assets.collateral().unwrap_or_default(),
-        }
+    pub fn new(user: &MarginUser) -> Result<Self> {
+        Ok(Self {
+            margin_user: user.derive_address(),
+            entitled_tokens: user.assets().entitled_tokens(),
+            entitled_tickets: user.assets().entitled_tickets(),
+            ticket_collateral: user.assets().ticket_collateral()?,
+            underlying_collateral: user.assets().underlying_collateral(),
+        })
     }
 }

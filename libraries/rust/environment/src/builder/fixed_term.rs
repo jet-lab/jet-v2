@@ -28,12 +28,12 @@ use super::{margin::configure_margin_token, Builder, BuilderError, NetworkKind, 
 const EVENT_QUEUE_CAPACITY: usize = 8192;
 const ORDERBOOK_CAPACITY: usize = 16384;
 
-pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
+pub async fn configure_market_for_token<I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     cranks: &[Pubkey],
     token: &TokenContext,
     config: &FixedTermMarketConfig,
-) -> Result<(), BuilderError> {
+) -> Result<FixedTermIxBuilder, BuilderError> {
     let payer = builder.payer();
 
     let market_address = market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
@@ -62,9 +62,9 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
             token.airspace,
             token.mint,
             market_address,
-            builder.authority,
+            builder.proposal_authority(),
             token.pyth_price,
-            token.pyth_price,
+            token.pyth_price, // TODO: reconsider for mainnet
             Some(fee_destination),
             OrderbookAddresses {
                 bids: market.bids,
@@ -92,7 +92,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
                     &payer,
                     ticket_mint,
                     &TokenCreateParams {
-                        authority: builder.authority,
+                        authority: builder.proposal_authority(),
                         oracle_authority: token.oracle_authority,
                         decimals: token.desc.decimals.unwrap(),
                         max_amount: u64::MAX,
@@ -114,7 +114,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
     // set permissions for cranks
     configure_cranks_for_market(builder, &ix_builder, cranks).await?;
 
-    Ok(())
+    Ok(ix_builder)
 }
 
 async fn configure_cranks_for_market<I: NetworkUserInterface>(
@@ -138,12 +138,12 @@ async fn configure_cranks_for_market<I: NetworkUserInterface>(
     }
 
     if builder.network == NetworkKind::Localnet && cranks.is_empty() {
-        let authorization = ix_builder.crank_authorization(&builder.authority);
+        let authorization = ix_builder.crank_authorization(&builder.proposal_authority());
 
         if !builder.account_exists(&authorization).await? {
             builder.propose([test_service::if_not_initialized(
                 authorization,
-                ix_builder.authorize_crank(builder.authority),
+                ix_builder.authorize_crank(builder.proposal_authority()),
             )]);
         }
     }
@@ -159,7 +159,8 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
 ) -> Result<(), BuilderError> {
     let claims_mint = derive::claims_mint(market_address);
     let ticket_collateral_mint = derive::ticket_collateral_mint(market_address);
-    let ticket_mint = derive::ticket_mint(market_address);
+    let underlying_collateral_mint = derive::underlying_collateral_mint(market_address);
+    let ticket_mint = test_service::derive_ticket_mint(market_address);
 
     let ticket_oracle = match builder.network {
         NetworkKind::Localnet | NetworkKind::Devnet => Some(TokenOracle::Pyth {
@@ -188,6 +189,7 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     )
     .await?;
 
+    // ticket collateral
     configure_margin_token(
         builder,
         &token.airspace,
@@ -197,6 +199,21 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
             admin: TokenAdmin::Adapter(FIXED_TERM_PROGRAM),
             token_kind: TokenKind::AdapterCollateral,
             value_modifier: config.ticket_collateral_weight,
+            max_staleness: 0,
+        }),
+    )
+    .await?;
+
+    // token collateral
+    configure_margin_token(
+        builder,
+        &token.airspace,
+        &underlying_collateral_mint,
+        Some(TokenConfigUpdate {
+            underlying_mint: token.mint,
+            admin: TokenAdmin::Adapter(FIXED_TERM_PROGRAM),
+            token_kind: TokenKind::AdapterCollateral,
+            value_modifier: token.desc.collateral_weight,
             max_staleness: 0,
         }),
     )
@@ -247,7 +264,7 @@ async fn create_market_for_token<I: NetworkUserInterface>(
         &token.airspace,
         &token.mint,
         seed,
-        builder.authority,
+        builder.proposal_authority(),
         token.pyth_price,
         token.pyth_price,
         Some(fee_destination),

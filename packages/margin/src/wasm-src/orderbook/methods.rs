@@ -1,3 +1,5 @@
+// TODO: deduplicate with libraries/rust/client/src/fixed_term/utils.rs
+
 use std::ops::Div;
 
 #[cfg(test)]

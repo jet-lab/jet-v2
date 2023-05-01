@@ -15,19 +15,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::collections::HashSet;
+
 use anchor_spl::associated_token::get_associated_token_address;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
-use anchor_lang::prelude::{Id, System, ToAccountMetas};
+use anchor_lang::prelude::{AccountMeta, Id, System, ToAccountMetas};
 use anchor_lang::{system_program, InstructionData};
 
-use jet_margin::accounts as ix_account;
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
 use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
+use jet_margin::{accounts as ix_account, MarginAccount};
+use jet_program_common::ADDRESS_LOOKUP_REGISTRY_ID;
 
 pub use jet_margin::ID as MARGIN_PROGRAM;
 pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
@@ -147,6 +150,93 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Get instruction to create address lookup registry account
+    pub fn init_lookup_registry(&self) -> Instruction {
+        let registry_account = self.registry_address();
+        let accounts = ix_account::InitLookupRegistry {
+            authority: self.authority(),
+            payer: self.payer(),
+            margin_account: self.address,
+            registry_account,
+            registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
+            system_program: SYSTEM_PROGAM_ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: JetMargin::id(),
+            data: ix_data::InitLookupRegistry.data(),
+            accounts,
+        }
+    }
+
+    /// Get instruction to create a new lookup table in a lookup registry account
+    pub fn create_lookup_table(&self, slot: u64) -> (Instruction, Pubkey) {
+        let (lookup_table, _) =
+            solana_address_lookup_table_program::instruction::derive_lookup_table_address(
+                &self.address,
+                slot,
+            );
+        let accounts = ix_account::CreateLookupTable {
+            authority: self.authority(),
+            payer: self.payer(),
+            margin_account: self.address,
+            registry_account: self.registry_address(),
+            registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
+            system_program: SYSTEM_PROGAM_ID,
+            lookup_table,
+            address_lookup_table_program: solana_address_lookup_table_program::id(),
+        }
+        .to_account_metas(None);
+
+        (
+            Instruction {
+                program_id: JetMargin::id(),
+                data: ix_data::CreateLookupTable {
+                    recent_slot: slot,
+                    discriminator: 10, // TODO: determine a stable discriminator
+                }
+                .data(),
+                accounts,
+            },
+            lookup_table,
+        )
+    }
+
+    /// Get instruction to append accounts to a lookup table
+    pub fn append_to_lookup_table(
+        &self,
+        lookup_table: Pubkey,
+        addresses: &[Pubkey],
+    ) -> Instruction {
+        let accounts = ix_account::AppendToLookup {
+            authority: self.authority(),
+            payer: self.payer(),
+            margin_account: self.address,
+            registry_account: self.registry_address(),
+            registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
+            system_program: SYSTEM_PROGAM_ID,
+            lookup_table,
+            address_lookup_table_program: solana_address_lookup_table_program::id(),
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: JetMargin::id(),
+            data: ix_data::AppendToLookup {
+                discriminator: 10, // TODO: determine a stable discriminator
+                addresses: addresses
+                    .iter()
+                    .cloned()
+                    .collect::<HashSet<_>>()
+                    .into_iter()
+                    .collect(),
+            }
+            .data(),
+            accounts,
+        }
+    }
+
     /// Get instruction to update the accounting for assets in
     /// the custody of the margin account.
     ///
@@ -261,20 +351,17 @@ impl MarginIxBuilder {
     /// `price_oracle` - The price oracle for the token, stored in the token config
     pub fn refresh_deposit_position(
         &self,
-        token_config: &Pubkey,
+        mint: Pubkey,
         price_oracle: &Pubkey,
+        refresh_balance: bool,
     ) -> Instruction {
-        let accounts = ix_account::RefreshDepositPosition {
-            config: *token_config,
-            price_oracle: *price_oracle,
-            margin_account: self.address,
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            data: ix_data::RefreshDepositPosition.data(),
-            accounts: accounts.to_account_metas(None),
-        }
+        refresh_deposit_position(
+            &self.airspace,
+            self.address,
+            mint,
+            *price_oracle,
+            refresh_balance,
+        )
     }
 
     /// Get instruction to invoke through an adapter
@@ -306,47 +393,12 @@ impl MarginIxBuilder {
     ///
     /// `liquidator` - The address of the liquidator
     pub fn liquidate_begin(&self) -> Instruction {
-        let liquidator = self.authority();
-        let permit = derive_margin_permit(&self.airspace, &liquidator);
-
-        let (liquidation, _) = Pubkey::find_program_address(
-            &[b"liquidation", self.address.as_ref(), liquidator.as_ref()],
-            &jet_margin::id(),
-        );
-
-        let accounts = ix_account::LiquidateBegin {
-            margin_account: self.address,
-            payer: self.payer(),
-            liquidator,
-            permit,
-            liquidation,
-            system_program: SYSTEM_PROGAM_ID,
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            accounts: accounts.to_account_metas(None),
-            data: ix_data::LiquidateBegin {}.data(),
-        }
+        liquidate_begin(self.airspace, self.address, self.authority(), self.payer())
     }
 
     /// Invoke action as liquidator
     pub fn liquidator_invoke(&self, adapter_ix: Instruction) -> Instruction {
-        let liquidator = self.authority();
-        let (liquidation, _) = Pubkey::find_program_address(
-            &[b"liquidation", self.address.as_ref(), liquidator.as_ref()],
-            &jet_margin::id(),
-        );
-
-        invoke!(
-            self.airspace,
-            self.address,
-            adapter_ix,
-            LiquidatorInvoke {
-                liquidator,
-                liquidation,
-            }
-        )
+        liquidator_invoke(self.airspace, self.authority(), self.address, adapter_ix)
     }
 
     /// End liquidating a margin account
@@ -357,23 +409,11 @@ impl MarginIxBuilder {
     /// `original_liquidator` - The liquidator that started the liquidation process
     pub fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Instruction {
         let authority = self.authority();
-        let original = original_liquidator.unwrap_or(authority);
-        let (liquidation, _) = Pubkey::find_program_address(
-            &[b"liquidation", self.address.as_ref(), original.as_ref()],
-            &JetMargin::id(),
-        );
-
-        let accounts = ix_account::LiquidateEnd {
-            margin_account: self.address,
+        liquidate_end(
+            self.address,
+            original_liquidator.unwrap_or(authority),
             authority,
-            liquidation,
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            accounts: accounts.to_account_metas(None),
-            data: ix_data::LiquidateEnd.data(),
-        }
+        )
     }
 
     /// Create a new token account registered as a position
@@ -445,6 +485,20 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Verify that an account is unhealthy
+    ///
+    pub fn verify_unhealthy(&self) -> Instruction {
+        let accounts = ix_account::VerifyUnhealthy {
+            margin_account: self.address,
+        };
+
+        Instruction {
+            program_id: JetMargin::id(),
+            accounts: accounts.to_account_metas(None),
+            data: ix_data::VerifyUnhealthy.data(),
+        }
+    }
+
     /// Peform an administrative transfer for a position
     pub fn admin_transfer_position_to(
         &self,
@@ -488,6 +542,127 @@ impl MarginIxBuilder {
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> Pubkey {
         derive_position_token_account(&self.address, position_token_mint)
     }
+
+    fn registry_address(&self) -> Pubkey {
+        Pubkey::find_program_address(&[self.address.as_ref()], &ADDRESS_LOOKUP_REGISTRY_ID).0
+    }
+}
+
+pub fn liquidate_begin(
+    airspace: Pubkey,
+    margin_account: Pubkey,
+    liquidator: Pubkey,
+    payer: Pubkey,
+) -> Instruction {
+    let permit = derive_margin_permit(&airspace, &liquidator);
+    let liquidation = derive_liquidation(margin_account, liquidator);
+    let accounts = jet_margin::accounts::LiquidateBegin {
+        margin_account,
+        payer,
+        liquidator,
+        permit,
+        liquidation,
+        system_program: system_program::ID,
+    };
+    Instruction {
+        program_id: JetMargin::id(),
+        accounts: accounts.to_account_metas(None),
+        data: jet_margin::instruction::LiquidateBegin {}.data(),
+    }
+}
+
+pub fn liquidate_end(
+    margin_account: Pubkey,
+    original_liquidator: Pubkey,
+    authority: Pubkey,
+) -> Instruction {
+    let liquidation = derive_liquidation(margin_account, original_liquidator);
+    let accounts = ix_account::LiquidateEnd {
+        margin_account,
+        authority,
+        liquidation,
+    };
+    Instruction {
+        program_id: JetMargin::id(),
+        accounts: accounts.to_account_metas(None),
+        data: ix_data::LiquidateEnd.data(),
+    }
+}
+
+/// Get instruction to refresh the price and balance value for a deposit account
+///
+/// # Params
+///
+/// `token_config` - The token config for the position to be refreshed
+/// `price_oracle` - The price oracle for the token, stored in the token config
+pub fn refresh_deposit_position(
+    airspace: &Pubkey,
+    margin_account: Pubkey,
+    mint: Pubkey,
+    price_oracle: Pubkey,
+    refresh_balance: bool,
+) -> Instruction {
+    let mut accounts = ix_account::RefreshDepositPosition {
+        config: derive_token_config(airspace, &mint),
+        price_oracle,
+        margin_account,
+    }
+    .to_account_metas(None);
+    if refresh_balance {
+        accounts.push(AccountMeta {
+            pubkey: get_associated_token_address(&margin_account, &mint),
+            is_signer: false,
+            is_writable: false,
+        });
+    }
+
+    Instruction {
+        program_id: JetMargin::id(),
+        data: ix_data::RefreshDepositPosition.data(),
+        accounts,
+    }
+}
+
+/// Get instruction to invoke through an adapter
+///
+/// # Params
+///
+/// `adapter_ix` - The instruction to be invoked
+pub fn adapter_invoke(
+    airspace: Pubkey,
+    owner: Pubkey,
+    margin_account: Pubkey,
+    adapter_ix: Instruction,
+) -> Instruction {
+    invoke!(
+        airspace,
+        margin_account,
+        adapter_ix,
+        AdapterInvoke { owner }
+    )
+}
+
+/// Invoke action as liquidator
+pub fn liquidator_invoke(
+    airspace: Pubkey,
+    liquidator: Pubkey,
+    margin_account: Pubkey,
+    adapter_ix: Instruction,
+) -> Instruction {
+    let (liquidation, _) = Pubkey::find_program_address(
+        &[b"liquidation", margin_account.as_ref(), liquidator.as_ref()],
+        &jet_margin::id(),
+    );
+
+    invoke!(
+        airspace,
+        margin_account,
+        adapter_ix,
+        LiquidatorInvoke {
+            liquidator,
+            liquidation,
+        }
+    )
 }
 
 /// Get instruction to invoke through an adapter for permissionless accounting instructions
@@ -646,6 +821,15 @@ pub fn derive_margin_account(_airspace: &Pubkey, owner: &Pubkey, seed: u16) -> P
     .0
 }
 
+/// Derive the address for a user's margin account from the data in that account
+pub fn derive_margin_account_from_state(state: &MarginAccount) -> Pubkey {
+    derive_margin_account(
+        &state.airspace,
+        &state.owner,
+        u16::from_le_bytes(state.user_seed),
+    )
+}
+
 /// Derive address for the config account for a given token
 pub fn derive_token_config(airspace: &Pubkey, token_mint: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
@@ -679,6 +863,14 @@ pub fn derive_margin_permit(airspace: &Pubkey, owner: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[PERMIT_SEED, airspace.as_ref(), owner.as_ref()],
         &jet_margin::ID,
+    )
+    .0
+}
+
+pub fn derive_liquidation(margin_account: Pubkey, liquidator: Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[b"liquidation", margin_account.as_ref(), liquidator.as_ref()],
+        &jet_margin::id(),
     )
     .0
 }

@@ -26,9 +26,11 @@ mod liquidator_invoke;
 mod register_position;
 mod update_position_balance;
 mod verify_healthy;
+mod verify_unhealthy;
 
 mod admin;
 mod configure;
+mod lookup_tables;
 mod positions;
 
 pub use accounting_invoke::*;
@@ -42,7 +44,9 @@ pub use liquidator_invoke::*;
 pub use register_position::*;
 pub use update_position_balance::*;
 pub use verify_healthy::*;
+pub use verify_unhealthy::*;
 
 pub use admin::*;
 pub use configure::*;
+pub use lookup_tables::*;
 pub use positions::*;
