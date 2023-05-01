@@ -10,6 +10,8 @@ use jet_program_common::{
     traits::{SafeAdd, SafeSub, TryAddAssign, TrySubAssign},
     Fp32,
 };
+#[cfg(any(feature = "cli", test))]
+use serde::{Deserialize, Serialize};
 
 use crate::{
     events::{AssetsUpdated, DebtUpdated, TermLoanCreated},
@@ -190,72 +192,6 @@ impl MarginUser {
         self.assets.redeem_deposit(deposit_seqno, tickets_redeemed)
     }
 
-    /// Get the [SequenceNumber] of the next [TermLoan] in sequence
-    pub fn next_term_loan(&self) -> SequenceNumber {
-        self.debt.next_new_loan_seqno()
-    }
-
-    /// Get the [SequenceNumber] of the next [TermDeposit]
-    pub fn next_term_deposit(&self) -> SequenceNumber {
-        self.assets.next_new_deposit_seqno()
-    }
-
-    /// Get the [SequenceNumber] of the next [TermLoan] in need of repayment
-    pub fn next_term_loan_to_repay(&self) -> Option<SequenceNumber> {
-        self.debt.next_term_loan_to_repay()
-    }
-
-    /// Total number of unpaid [TermLoan]s
-    pub fn outstanding_term_loans(&self) -> u64 {
-        self.debt.outstanding_term_loans()
-    }
-
-    /// Range of active [TermLoan] sequence numbers
-    pub fn active_loans(&self) -> Range<SequenceNumber> {
-        self.debt.active_loans()
-    }
-
-    /// Range of active [TermDeposit] sequence numbers
-    pub fn active_deposits(&self) -> Range<SequenceNumber> {
-        self.assets.active_deposits()
-    }
-
-    pub fn ticket_collateral(&self) -> Result<u64> {
-        self.assets.ticket_collateral()
-    }
-
-    pub fn underlying_collateral(&self) -> u64 {
-        self.assets.underlying_collateral()
-    }
-
-    pub fn entitled_tickets(&self) -> u64 {
-        self.assets.entitled_tickets
-    }
-
-    pub fn entitled_tokens(&self) -> u64 {
-        self.assets.entitled_tokens
-    }
-
-    /// Total value of debt owed by the [MarginUser]
-    pub fn total_debt(&self) -> u64 {
-        self.debt.total()
-    }
-
-    /// Value of debt owed by the [MarginUser] by anticipated order fills
-    pub fn pending_debt(&self) -> u64 {
-        self.debt.pending
-    }
-
-    /// Value of debt owed by the [MarginUser] already filled
-    pub fn committed_debt(&self) -> u64 {
-        self.debt.committed
-    }
-
-    /// Have any of the unpaid [TermLoan]s reached maturity
-    pub fn is_past_due(&self, current_time: UnixTimestamp) -> bool {
-        self.debt.is_past_due(current_time)
-    }
-
     /// Account for a partial loan repayment
     pub fn partially_repay_loan(&mut self, loan: &TermLoan, amount: u64) -> Result<()> {
         self.debt
@@ -277,6 +213,21 @@ impl MarginUser {
     pub fn settlement_complete(&mut self) {
         self.assets.entitled_tickets = 0;
         self.assets.entitled_tokens = 0;
+    }
+
+    /// View account `Debt` attributes
+    pub fn debt(&self) -> &Debt {
+        &self.debt
+    }
+
+    /// View account `Assets` attributes
+    pub fn assets(&self) -> &Assets {
+        &self.assets
+    }
+
+    /// Have any of the unpaid [TermLoan]s reached maturity
+    pub fn is_past_due(&self, current_time: UnixTimestamp) -> bool {
+        self.debt.is_past_due(current_time)
     }
 
     /// Emits an Anchor event with the latest balances for [Assets] and [Debt].
@@ -313,6 +264,7 @@ impl MarginUser {
     }
 }
 
+#[cfg_attr(any(feature = "cli", test), derive(Deserialize))]
 #[derive(Zeroable, Debug, Default, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next term loan to be created
@@ -337,18 +289,12 @@ pub struct Debt {
 pub type SequenceNumber = u64;
 
 impl Debt {
-    pub fn total(&self) -> u64 {
-        self.pending.checked_add(self.committed).unwrap()
-    }
-
-    pub fn active_loans(&self) -> Range<SequenceNumber> {
-        self.next_unpaid_term_loan_seqno..self.next_new_term_loan_seqno
-    }
-
+    /// The sequence number for the next term loan to be created
     pub fn next_new_loan_seqno(&self) -> SequenceNumber {
         self.next_new_term_loan_seqno
     }
 
+    /// The sequence number of the next term loan to be paid
     pub fn next_term_loan_to_repay(&self) -> Option<SequenceNumber> {
         if self.next_new_term_loan_seqno > self.next_unpaid_term_loan_seqno {
             Some(self.next_unpaid_term_loan_seqno)
@@ -357,8 +303,39 @@ impl Debt {
         }
     }
 
+    /// The maturation timestamp of the next term loan that is unpaid
+    pub fn next_term_loan_maturity(&self) -> UnixTimestamp {
+        self.next_term_loan_maturity
+    }
+
+    /// Amount that must be collateralized because there is an open order for it.
+    /// Does not accrue interest because the loan has not been received yet.
+    pub fn pending(&self) -> u64 {
+        self.pending
+    }
+
+    /// Debt that has already been borrowed because the order was matched.
+    /// This debt will be due when the loan term ends.
+    /// This includes all debt, including past due debt
+    pub fn committed(&self) -> u64 {
+        self.committed
+    }
+
+    /// Total debt
+    pub fn total(&self) -> u64 {
+        self.pending.checked_add(self.committed).unwrap()
+    }
+
     pub fn outstanding_term_loans(&self) -> u64 {
         self.next_new_term_loan_seqno - self.next_unpaid_term_loan_seqno
+    }
+
+    pub fn active_loans(&self) -> Range<SequenceNumber> {
+        self.next_unpaid_term_loan_seqno..self.next_new_term_loan_seqno
+    }
+
+    pub fn is_past_due(&self, unix_timestamp: UnixTimestamp) -> bool {
+        self.outstanding_term_loans() > 0 && self.next_term_loan_maturity <= unix_timestamp
     }
 
     /// Accounting for a borrow order posted on the orderbook
@@ -433,26 +410,15 @@ impl Debt {
 
         Ok(())
     }
-
-    pub fn is_past_due(&self, unix_timestamp: UnixTimestamp) -> bool {
-        self.outstanding_term_loans() > 0 && self.next_term_loan_maturity <= unix_timestamp
-    }
-
-    pub fn pending(&self) -> u64 {
-        self.pending
-    }
-
-    pub fn committed(&self) -> u64 {
-        self.committed
-    }
 }
 
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, Eq)]
 pub struct Assets {
     /// tokens to transfer into settlement account
-    pub entitled_tokens: u64,
+    entitled_tokens: u64,
+
     /// tickets to transfer into settlement account
-    pub entitled_tickets: u64,
+    entitled_tickets: u64,
 
     /// The sequence number for the next deposit
     next_deposit_seqno: u64,
@@ -479,6 +445,46 @@ pub struct Assets {
 }
 
 impl Assets {
+    /// tokens to transfer into settlement account
+    pub fn entitled_tokens(&self) -> u64 {
+        self.entitled_tokens
+    }
+
+    /// tickets to transfer into settlement account
+    pub fn entitled_tickets(&self) -> u64 {
+        self.entitled_tickets
+    }
+
+    /// The sequence number for the next deposit
+    pub fn next_new_deposit_seqno(&self) -> SequenceNumber {
+        self.next_deposit_seqno
+    }
+
+    /// The sequence number for the oldest deposit that has yet to be redeemed
+    pub fn next_unredeemed_deposit_seqno(&self) -> Option<SequenceNumber> {
+        if self.next_unredeemed_deposit_seqno == self.next_deposit_seqno {
+            return None;
+        }
+        Some(self.next_unredeemed_deposit_seqno)
+    }
+
+    /// The number of tickets locked up in ClaimTicket or SplitTicket
+    pub fn tickets_staked(&self) -> u64 {
+        self.tickets_staked
+    }
+
+    /// The number of tickets that would be owned by the account should all
+    /// open lend orders be filled.
+    pub fn tickets_posted(&self) -> u64 {
+        self.tickets_posted
+    }
+
+    /// The number of tokens that would be owned by the account should all
+    /// open borrow orders be filled.
+    pub fn tokens_posted(&self) -> u64 {
+        self.tokens_posted
+    }
+
     /// make sure the order has already been accounted for before calling this method
     pub fn new_deposit(&mut self, tickets: u64) -> Result<SequenceNumber> {
         let seqno = self.next_deposit_seqno;
@@ -523,10 +529,6 @@ impl Assets {
         self.tokens_posted
     }
 
-    pub fn next_new_deposit_seqno(&self) -> SequenceNumber {
-        self.next_deposit_seqno
-    }
-
     pub fn active_deposits(&self) -> Range<SequenceNumber> {
         self.next_unredeemed_deposit_seqno..self.next_deposit_seqno
     }
@@ -553,7 +555,10 @@ pub enum AutoRollConfig {
     Lend(LendAutoRollConfig),
 }
 
-#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+#[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
+#[derive(
+    Zeroable, Default, Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize,
+)]
 pub struct BorrowAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,
@@ -564,7 +569,10 @@ pub struct BorrowAutoRollConfig {
     pub roll_tenor: u64,
 }
 
-#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+#[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
+#[derive(
+    Zeroable, Default, Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize,
+)]
 pub struct LendAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,

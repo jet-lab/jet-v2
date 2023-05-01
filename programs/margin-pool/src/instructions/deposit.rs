@@ -19,6 +19,7 @@ use std::ops::Deref;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
+use jet_program_common::debug_msg;
 
 use crate::{events, state::*, TokenChange};
 use crate::{ChangeKind, ErrorCode};
@@ -86,6 +87,12 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         kind: change_kind,
         tokens: amount,
     };
+    debug_msg!(
+        "Attempting to deposit {:?} to pool {} for notes {}",
+        change,
+        ctx.accounts.margin_pool.key(),
+        ctx.accounts.deposit_note_mint.key(),
+    );
 
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
@@ -101,6 +108,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         change,
         PoolAction::Deposit,
     )?;
+    debug_msg!("Executing deposit {:?}", deposit_amount);
     pool.deposit(&deposit_amount);
 
     let pool = &ctx.accounts.margin_pool;

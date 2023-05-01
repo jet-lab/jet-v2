@@ -13,6 +13,8 @@ pub struct DepositRedeemed {
     pub deposit_holder: Pubkey,
     pub redeemed_value: u64,
     pub redeemed_timestamp: i64,
+    /// Whether the deposit was redeemed as part of an auto-roll
+    pub is_auto_roll: bool,
 }
 
 #[event]

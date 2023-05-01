@@ -35,7 +35,8 @@ use jet_margin_sdk::ix_builder::{
     MarginPoolConfiguration, MarginPoolIxBuilder,
 };
 use jet_margin_sdk::lookup_tables::LookupTable;
-use jet_margin_sdk::refresh::position_refresher::PositionRefresher;
+use jet_margin_sdk::refresh::canonical_position_refresher;
+use jet_margin_sdk::refresh::position_refresher::{PositionRefresher, SmartRefresher};
 use jet_margin_sdk::solana::keypair::{clone, KeypairExt};
 use jet_margin_sdk::solana::transaction::{
     InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder,
@@ -103,9 +104,10 @@ impl MarginClient {
         );
 
         MarginUser {
-            tx,
             signer: clone(keypair),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone()).for_address(*tx.address()),
+            tx,
         }
     }
 
@@ -128,9 +130,10 @@ impl MarginClient {
         );
 
         Ok(MarginUser {
-            tx,
             signer: clone(keypair),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone()).for_address(*tx.address()),
+            tx,
         })
     }
 
@@ -323,6 +326,7 @@ impl MarginClient {
 pub struct MarginUser {
     pub tx: MarginTxBuilder,
     pub signer: Keypair,
+    pub refresher: SmartRefresher<Pubkey>,
     rpc: Arc<dyn SolanaRpcClient>,
 }
 
@@ -332,6 +336,8 @@ impl Clone for MarginUser {
             tx: self.tx.clone(),
             signer: clone(&self.signer),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone())
+                .for_address(*self.tx.address()),
         }
     }
 }
@@ -372,6 +378,8 @@ impl MarginUser {
             signer: clone(&liquidator),
             tx: self.tx.liquidator(liquidator),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone())
+                .for_address(*self.tx.address()),
         }
     }
 
@@ -473,7 +481,7 @@ impl MarginUser {
     }
 
     pub async fn refresh_positions(&self) -> Result<Vec<Signature>, Error> {
-        self.tx
+        self.refresher
             .refresh_positions(&())
             .await?
             .send_and_confirm_condensed(&self.rpc)
@@ -671,6 +679,11 @@ impl MarginUser {
 
     pub async fn verify_healthy(&self) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.verify_healthy().await?).await
+    }
+
+    pub async fn verify_unhealthy(&self) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.verify_unhealthy().await?)
+            .await
     }
 
     /// Close a user's empty positions.

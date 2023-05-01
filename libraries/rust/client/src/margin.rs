@@ -15,14 +15,16 @@ use jet_instructions::{
 use jet_margin::{AccountPosition, MarginAccount, TokenAdmin, TokenConfig, TokenKind, TokenOracle};
 use jet_margin_pool::{Amount, MarginPool, PoolAction};
 use jet_program_common::Number128;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::{
+    transaction::{condense, TransactionBuilder},
+    NetworkUserInterface, NetworkUserInterfaceExt,
+};
 
 use crate::{
     bail,
     client::{ClientError, ClientResult, ClientState},
     fixed_term::MarginAccountMarketClient,
     margin_pool::MarginAccountPoolClient,
-    solana::transaction::{condense, TransactionBuilder},
     state::{
         margin::load_margin_accounts,
         oracles::PriceOracleState,
@@ -208,7 +210,9 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
 
         txns.extend(instructions.iter().map(|ix| ix.clone().into()));
 
-        self.client.send_ordered(condense(&txns)?).await
+        self.client
+            .send_ordered(condense(&txns, &self.client.network.signer())?)
+            .await
     }
 
     /// Close this margin account.
