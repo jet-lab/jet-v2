@@ -7,7 +7,7 @@ use std::{
 use tokio::sync::RwLock;
 
 /// Atomic version of NoDupeQueue that uses async tokio mutexes.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct AsyncNoDupeQueue<T: Hash + Eq>(Arc<RwLock<NoDupeQueue<T>>>);
 
 impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
@@ -56,6 +56,12 @@ impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
             }
         }
         ret
+    }
+}
+
+impl<T: Hash + Eq> Default for AsyncNoDupeQueue<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

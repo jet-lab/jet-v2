@@ -69,12 +69,12 @@ impl Key for Keypair {
 #[macro_export]
 macro_rules! clone_to_async {
     (
-        $($to_move:ident $(= $orig_name:ident)?),*
+        ($($to_move:ident $(= $orig_name:expr)?),*)
         |$(mut $arg:ident),*|
-        $blk:block
+        $blk:expr
     ) => {{
         $(
-            $(let $to_move = $orig_name;)?
+            $(let $to_move = $orig_name.clone();)?
             let $to_move = $to_move.clone();
         )*
         move |$(mut $arg),*| {
@@ -83,12 +83,12 @@ macro_rules! clone_to_async {
         }
     }};
     (
-        $($to_move:ident $(= $orig_name:ident)?),*
+        ($($to_move:ident $(= $orig_name:expr)?),*)
         |$($arg:ident),*|
-        $blk:block
+        $blk:expr
     ) => {{
         $(
-            $(let $to_move = $orig_name;)?
+            $(let $to_move = $orig_name.clone();)?
             let $to_move = $to_move.clone();
         )*
         move |$($arg),*| {

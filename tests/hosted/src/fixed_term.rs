@@ -27,7 +27,7 @@ use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
-        settler::{SettleMarginUsersConfig, Settler},
+        settler::settler,
         FixedTermIxBuilder, OrderbookAddresses, OwnedEventQueue,
     },
     ix_builder::{get_control_authority_address, MarginIxBuilder},
@@ -41,7 +41,7 @@ use jet_margin_sdk::{
         },
     },
     tx_builder::global_initialize_instructions,
-    util::no_dupe_queue::AsyncNoDupeQueue,
+    util::{no_dupe_queue::AsyncNoDupeQueue, queue_processor::QueueProcessorConfig},
 };
 use jet_program_common::Fp32;
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -308,17 +308,18 @@ impl TestManager {
     }
 
     pub async fn settle<P: Proxy>(&self, users: &[&FixedTermUser<P>]) -> Result<()> {
-        Settler::new(
+        settler(
             self.client.clone(),
             self.ix_builder.clone(),
             self.margin_accounts_to_settle.clone(),
-            SettleMarginUsersConfig {
+            QueueProcessorConfig {
                 batch_size: std::cmp::max(1, users.len()),
                 batch_delay: Duration::from_secs(0),
                 wait_for_more_delay: Duration::from_secs(0),
+                ..Default::default()
             },
         )?
-        .settle_all()
+        .process_all()
         .await?;
         if self.margin_accounts_to_settle.is_empty().await {
             Ok(())

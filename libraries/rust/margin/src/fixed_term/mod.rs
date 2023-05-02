@@ -13,6 +13,7 @@ use jet_simulation::SolanaRpcClient;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+use crate::fixed_term::settler::settler;
 use crate::util::no_dupe_queue::AsyncNoDupeQueue;
 
 use self::{
@@ -57,7 +58,7 @@ impl Crank {
             let margin_accounts = AsyncNoDupeQueue::new();
             let ix = FixedTermIxBuilder::new_from_state(rpc.payer().pubkey(), &market);
             consumer.insert_market(market, Some(margin_accounts.clone()));
-            let settler = Settler::new(rpc.clone(), ix, margin_accounts, Default::default())?;
+            let settler = settler(rpc.clone(), ix, margin_accounts, Default::default())?;
             settlers.push(settler);
         }
 
@@ -75,7 +76,7 @@ impl Crank {
         self.consumer
             .sync_and_consume_all(&self.market_addrs)
             .await?;
-        try_join_all(self.settlers.iter().map(|s| s.settle_all())).await?;
+        try_join_all(self.settlers.iter().map(|s| s.process_all())).await?;
         Ok(())
     }
 
@@ -84,7 +85,7 @@ impl Crank {
     pub async fn run_forever(self) {
         let mut jobs = vec![];
         for settler in self.settlers {
-            jobs.push(tokio::spawn(async move { settler.run_forever().await }));
+            jobs.push(tokio::spawn(async move { settler.process_forever().await }));
         }
         self.consumer
             .sync_and_consume_forever(&self.market_addrs, self.consumer_delay)

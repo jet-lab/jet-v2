@@ -136,8 +136,8 @@ with-validator() {
     if [[ ${SOLANA_LOGS:-false} == true ]]; then
         solana -ul logs &
     fi
-    # enable use with the liquidator, using its test key at liquidator/testkey.json
-    solana airdrop 100 6xfNgz63mk5y8K5CSiNfiBN5DCNMj9s9BwNwJznnfHB7
+    # uncomment to enable use with the liquidator, using its test key at liquidator/testkey.json
+    # solana airdrop 100 6xfNgz63mk5y8K5CSiNfiBN5DCNMj9s9BwNwJznnfHB7
     $@
 }
 
