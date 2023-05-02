@@ -54,6 +54,7 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
     render: (is_auto_roll: boolean) => {
       return (
         <Switch
+          className="debt-table-switch"
           checked={is_auto_roll}
           onClick={() => {
             console.log(is_auto_roll);
