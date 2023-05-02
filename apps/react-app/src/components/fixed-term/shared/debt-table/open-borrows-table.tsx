@@ -23,11 +23,27 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
     sortDirections: ['descend']
   },
   {
-    title: 'Balance',
-    dataIndex: 'balance',
-    key: 'balance',
+    title: 'Principal',
+    dataIndex: 'principal',
+    key: 'principal',
     render: (value: number) => `${token.symbol} ${new TokenAmount(new BN(value), token.decimals).tokens.toFixed(2)}`,
-    sorter: (a, b) => a.balance - b.balance,
+    sorter: (a, b) => a.principal - b.principal,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Remaining Balance',
+    dataIndex: 'remaining_balance',
+    key: 'remaining_balance',
+    render: (value: number) => `${token.symbol} ${new TokenAmount(new BN(value), token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.remaining_balance - b.remaining_balance,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Interest',
+    dataIndex: 'interest',
+    key: 'interest',
+    render: (value: number) => `${token.symbol} ${new TokenAmount(new BN(value), token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.interest - b.interest,
     sortDirections: ['descend']
   },
   {
@@ -43,7 +59,7 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
 export const OpenBorrowsTable = ({ data, market }: { data: Loan[]; market: MarketAndConfig }) => {
   return (
     <Table
-      rowKey="id"
+      rowKey="address"
       className={'debt-table'}
       columns={getBorrowColumns(market.token)}
       dataSource={data}

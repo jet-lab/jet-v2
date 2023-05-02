@@ -24,12 +24,21 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
     sortDirections: ['descend']
   },
   {
-    title: 'Balance',
-    dataIndex: 'balance',
-    key: 'balance',
+    title: 'Principal',
+    dataIndex: 'principal',
+    key: 'principal',
     render: (value: number) =>
       `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
-    sorter: (a, b) => a.balance - b.balance,
+    sorter: (a, b) => a.principal - b.principal,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Interest',
+    dataIndex: 'interest',
+    key: 'interest',
+    render: (value: number) =>
+      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.interest - b.interest,
     sortDirections: ['descend']
   },
   {
@@ -62,7 +71,7 @@ export const OpenDepositsTable = ({
   const columns = useMemo(() => getDepositsColumns(market), [market, marginAccount, provider, cluster, explorer]);
   return (
     <Table
-      rowKey="address"
+      rowKey="id"
       className={'debt-table'}
       columns={columns}
       dataSource={data}

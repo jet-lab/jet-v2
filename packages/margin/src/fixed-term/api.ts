@@ -1,7 +1,7 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { FixedTermMarket, MarketAndConfig } from "./fixedTerm"
-import { Address, AnchorProvider, BN } from "@project-serum/anchor"
+import { AnchorProvider, BN } from "@project-serum/anchor"
 import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../margin"
 import { AssociatedToken } from "../token"
 import { sendAll } from "../utils"
@@ -457,11 +457,17 @@ interface IRepay {
   market: MarketAndConfig
   provider: AnchorProvider
   termLoans: Array<{
-    address: Address
-    balance: number
-    maturation_timestamp: number
+    id: number
+    address: string
     sequence_number: number
+    maturation_timestamp: number
+    principal: number
+    interest: number
+    remaining_balance: number
+    is_marked_due: boolean
+    created_timestamp: number
     payer: string
+    rate: number
   }>
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
@@ -502,7 +508,7 @@ export const repay = async ({ marginAccount, market, amount, provider, termLoans
   while (amountLeft.gt(new BN(0))) {
     const currentLoan = sortedTermLoans[0]
     const nextLoan = sortedTermLoans[1]
-    const balance = new BN(currentLoan.balance)
+    const balance = new BN(currentLoan.remaining_balance)
     if (balance.gte(amountLeft)) {
       const ix = await market.market.repay({
         user: marginAccount,
@@ -557,7 +563,8 @@ interface IRedeem {
     address: string
     sequence_number: number
     maturation_timestamp: number
-    balance: number
+    principal: number
+    interest: number
     rate: number
     payer: string
     created_timestamp: number

@@ -593,7 +593,8 @@ export class FixedTermMarket {
       address: string
       sequence_number: number
       maturation_timestamp: number
-      balance: number
+      principal: number
+      interest: number
       rate: number
       payer: string
       created_timestamp: number
