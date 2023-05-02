@@ -556,7 +556,9 @@ pub enum AutoRollConfig {
 }
 
 #[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
-#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+    Zeroable, Default, Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize,
+)]
 pub struct BorrowAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,
@@ -568,7 +570,9 @@ pub struct BorrowAutoRollConfig {
 }
 
 #[cfg_attr(any(feature = "cli", test), derive(Serialize, Deserialize))]
-#[derive(Zeroable, Default, Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+    Zeroable, Default, Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize,
+)]
 pub struct LendAutoRollConfig {
     /// the limit price at which orders may be placed by an authority
     pub limit_price: u64,

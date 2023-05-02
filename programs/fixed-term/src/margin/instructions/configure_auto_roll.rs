@@ -4,6 +4,7 @@ use jet_program_common::Fp32;
 
 use crate::{
     control::state::Market,
+    events::{BorrowRollConfigUpdated, LendRollConfigUpdated},
     margin::state::{AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig, MarginUser},
     FixedTermErrorCode,
 };
@@ -65,10 +66,12 @@ pub fn handler(ctx: Context<ConfigureAutoRoll>, config: AutoRollConfig) -> Resul
         AutoRollConfig::Borrow(config) => {
             check_borrow_config(&config, ctx.accounts.market.load()?.borrow_tenor)?;
             user.borrow_roll_config = Some(config);
+            emit!(BorrowRollConfigUpdated { config })
         }
         AutoRollConfig::Lend(config) => {
             check_lend_config(&config)?;
             user.lend_roll_config = Some(config);
+            emit!(LendRollConfigUpdated { config })
         }
     }
 

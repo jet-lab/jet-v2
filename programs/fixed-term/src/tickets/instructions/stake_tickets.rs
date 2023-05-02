@@ -118,6 +118,7 @@ pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result
         maturation_timestamp: matures_at,
         principal: params.amount,
         amount: params.amount,
+        flags: ctx.accounts.deposit.flags,
     });
 
     Ok(())

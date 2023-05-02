@@ -231,14 +231,14 @@ pub mod jet_fixed_term {
         instructions::configure_auto_roll::handler(ctx, AutoRollConfig::Lend(config))
     }
 
-    /// Prevent a deposit from auto rolling
-    pub fn stop_auto_roll_deposit(ctx: Context<StopAutoRollDeposit>) -> Result<()> {
-        instructions::stop_auto_roll_deposit::handler(ctx)
+    /// Toggle the status of a term deposit's auto-roll
+    pub fn toggle_auto_roll_deposit(ctx: Context<ToggleAutoRollDeposit>) -> Result<()> {
+        instructions::toggle_auto_roll_deposit::handler(ctx)
     }
 
-    /// Prevent a loan from auto rolling
-    pub fn stop_auto_roll_loan(ctx: Context<StopAutoRollLoan>) -> Result<()> {
-        instructions::stop_auto_roll_loan::handler(ctx)
+    /// Toggle the status of a term loan's auto-roll
+    pub fn toggle_auto_roll_loan(ctx: Context<ToggleAutoRollLoan>) -> Result<()> {
+        instructions::toggle_auto_roll_loan::handler(ctx)
     }
 
     /// Create a new borrower account
