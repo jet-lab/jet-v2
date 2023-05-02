@@ -1,6 +1,6 @@
 import { FixedTermMarket, MarginAccount, MarketAndConfig, Pool, TokenAmount } from '@jet-lab/margin';
 import { Deposit } from '@jet-lab/store';
-import { Table } from 'antd';
+import { Switch, Table } from 'antd';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useMemo } from 'react';
@@ -42,6 +42,24 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
     sortDirections: ['descend']
   },
   {
+    title: 'Autoroll',
+    dataIndex: 'is_auto_roll',
+    key: 'is_auto_roll',
+    align: 'center',
+    render: (is_auto_roll: boolean) => {
+      return (
+        <Switch
+          checked={is_auto_roll}
+          onClick={() => {
+            console.log(is_auto_roll);
+          }}
+        />
+      );
+    },
+    sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
+    sortDirections: ['descend']
+  },
+  {
     title: 'Rate',
     dataIndex: 'rate',
     key: 'rate',
@@ -71,7 +89,7 @@ export const OpenDepositsTable = ({
   const columns = useMemo(() => getDepositsColumns(market), [market, marginAccount, provider, cluster, explorer]);
   return (
     <Table
-      rowKey="id"
+      rowKey="address"
       className={'debt-table'}
       columns={columns}
       dataSource={data}

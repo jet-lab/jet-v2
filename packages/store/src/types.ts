@@ -37,6 +37,7 @@ export interface Loan {
   interest: number;
   remaining_balance: number;
   is_marked_due: boolean;
+  is_auto_roll: boolean;
   created_timestamp: number;
   payer: string;
   rate: number;
@@ -51,6 +52,7 @@ export interface Deposit {
   interest: number;
   rate: number;
   payer: string;
+  is_auto_roll: boolean;
   created_timestamp: number;
 }
 

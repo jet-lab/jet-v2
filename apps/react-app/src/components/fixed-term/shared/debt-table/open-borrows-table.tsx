@@ -1,6 +1,6 @@
 import { MarginTokenConfig, MarketAndConfig, TokenAmount } from '@jet-lab/margin';
 import { Loan } from '@jet-lab/store';
-import { Table } from 'antd';
+import { Switch, Table } from 'antd';
 import { ColumnsType } from 'antd/lib/table';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -44,6 +44,24 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
     key: 'interest',
     render: (value: number) => `${token.symbol} ${new TokenAmount(new BN(value), token.decimals).tokens.toFixed(2)}`,
     sorter: (a, b) => a.interest - b.interest,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Autoroll',
+    dataIndex: 'is_auto_roll',
+    key: 'is_auto_roll',
+    align: 'center',
+    render: (is_auto_roll: boolean) => {
+      return (
+        <Switch
+          checked={is_auto_roll}
+          onClick={() => {
+            console.log(is_auto_roll);
+          }}
+        />
+      );
+    },
+    sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
     sortDirections: ['descend']
   },
   {
