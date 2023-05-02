@@ -75,11 +75,16 @@ pub async fn process_generate_app_config(
     client: &Client,
     config_dir: &Path,
     output_path: &Path,
+    default_lookup_authority: Option<Pubkey>,
 ) -> Result<Plan> {
     let config = jet_environment::config::read_env_config_dir(config_dir)?;
-    let app_config = JetAppConfig::from_env_config(config.clone(), &client.network_interface())
-        .await
-        .unwrap();
+    let app_config = JetAppConfig::from_env_config(
+        config.clone(),
+        &client.network_interface(),
+        default_lookup_authority,
+    )
+    .await
+    .unwrap();
     let legacy_app_config = jet_environment::client_config::legacy::from_config(
         &client.network_interface(),
         &app_config,
