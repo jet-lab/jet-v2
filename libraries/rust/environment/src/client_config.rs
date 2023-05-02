@@ -55,7 +55,7 @@ impl JetAppConfig {
     pub async fn from_env_config<I: NetworkUserInterface>(
         env: EnvironmentConfig,
         network: &I,
-        default_lookup_authority: Option<Pubkey>,
+        override_lookup_authority: Option<Pubkey>,
     ) -> Result<Self, ConfigError<I>> {
         let mut seen = HashSet::new();
         let mut tokens = vec![];
@@ -72,8 +72,8 @@ impl JetAppConfig {
             }
             // Override the airspace config address if a default is provided
             let mut airspace = airspace.clone();
-            if let Some(default_lookup_authority) = default_lookup_authority {
-                airspace.lookup_registry_authority = Some(default_lookup_authority);
+            if let Some(override_lookup_authority) = override_lookup_authority {
+                airspace.lookup_registry_authority = Some(override_lookup_authority);
             }
 
             airspaces.push(airspace.clone().into());
