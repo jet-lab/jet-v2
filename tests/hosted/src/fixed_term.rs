@@ -27,7 +27,7 @@ use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
-        settler::{settle_margin_users_loop, SettleMarginUsersConfig},
+        settler::{SettleMarginUsersConfig, Settler},
         FixedTermIxBuilder, OrderbookAddresses, OwnedEventQueue,
     },
     ix_builder::{get_control_authority_address, MarginIxBuilder},
@@ -271,21 +271,11 @@ impl TestManager {
 impl TestManager {
     pub async fn consume_events(&self) -> Result<()> {
         let market = self.ix_builder.market();
+        let market_struct = download_markets(self.client.as_ref(), &[market]).await?[0];
+        self.event_consumer
+            .insert_market(market_struct, Some(self.margin_accounts_to_settle.clone()));
+        self.event_consumer.sync_and_consume_all(&[market]).await?;
 
-        loop {
-            let market_struct = download_markets(self.client.as_ref(), &[market]).await?[0];
-            self.event_consumer
-                .insert_market(market_struct, Some(self.margin_accounts_to_settle.clone()));
-            self.event_consumer.sync_queues().await?;
-            self.event_consumer.sync_users().await?;
-
-            let pending = self.event_consumer.pending_events(&market)?;
-            if pending == 0 {
-                break;
-            }
-            self.event_consumer.consume().await?;
-            self.event_consumer.sync_queues().await?;
-        }
         Ok(())
     }
 
@@ -318,7 +308,7 @@ impl TestManager {
     }
 
     pub async fn settle<P: Proxy>(&self, users: &[&FixedTermUser<P>]) -> Result<()> {
-        settle_margin_users_loop(
+        Settler::new(
             self.client.clone(),
             self.ix_builder.clone(),
             self.margin_accounts_to_settle.clone(),
@@ -326,10 +316,10 @@ impl TestManager {
                 batch_size: std::cmp::max(1, users.len()),
                 batch_delay: Duration::from_secs(0),
                 wait_for_more_delay: Duration::from_secs(0),
-                exit_when_done: true,
             },
-        )
-        .await;
+        )?
+        .settle_all()
+        .await?;
         if self.margin_accounts_to_settle.is_empty().await {
             Ok(())
         } else {

@@ -64,3 +64,36 @@ impl Key for Keypair {
         self.pubkey()
     }
 }
+
+/// Clone the item and move it into the async closure.
+#[macro_export]
+macro_rules! clone_to_async {
+    (
+        $($to_move:ident $(= $orig_name:ident)?),*
+        |$(mut $arg:ident),*|
+        $blk:block
+    ) => {{
+        $(
+            $(let $to_move = $orig_name;)?
+            let $to_move = $to_move.clone();
+        )*
+        move |$(mut $arg),*| {
+            $(let $to_move = $to_move.clone();)*
+            async move { $blk }
+        }
+    }};
+    (
+        $($to_move:ident $(= $orig_name:ident)?),*
+        |$($arg:ident),*|
+        $blk:block
+    ) => {{
+        $(
+            $(let $to_move = $orig_name;)?
+            let $to_move = $to_move.clone();
+        )*
+        move |$($arg),*| {
+            $(let $to_move = $to_move.clone();)*
+            async move { $blk }
+        }
+    }};
+}

@@ -4,36 +4,41 @@ use std::{
     sync::Arc,
 };
 
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 /// Atomic version of NoDupeQueue that uses async tokio mutexes.
 #[derive(Clone, Default)]
-pub struct AsyncNoDupeQueue<T: Hash + Eq>(Arc<Mutex<NoDupeQueue<T>>>);
+pub struct AsyncNoDupeQueue<T: Hash + Eq>(Arc<RwLock<NoDupeQueue<T>>>);
 
 impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
     /// returns a new empty queue
     pub fn new() -> Self {
-        Self(Arc::new(Mutex::new(NoDupeQueue::new())))
+        Self(Arc::new(RwLock::new(NoDupeQueue::new())))
     }
 
     /// Acquires and releases the lock for a single push
     pub async fn push(&self, item: T) {
-        self.0.lock().await.push(item)
+        self.0.write().await.push(item)
     }
 
     /// Acquires and releases the lock for a single pop
     pub async fn pop(&self) -> Option<T> {
-        self.0.lock().await.pop()
+        self.0.write().await.pop()
     }
 
     /// There are no items in the queue
     pub async fn is_empty(&self) -> bool {
-        self.0.lock().await.is_empty()
+        self.0.read().await.is_empty()
+    }
+
+    /// Number of items in the queue
+    pub async fn len(&self) -> usize {
+        self.0.read().await.len()
     }
 
     /// Adds many while acquiring the lock only once
     pub async fn push_many(&self, items: Vec<T>) {
-        let mut inner = self.0.lock().await;
+        let mut inner = self.0.write().await;
         for item in items {
             inner.push(item);
         }
@@ -41,7 +46,7 @@ impl<T: Hash + Eq> AsyncNoDupeQueue<T> {
 
     /// Pops many while acquiring the lock only once
     pub async fn pop_many(&self, max: usize) -> Vec<T> {
-        let mut inner = self.0.lock().await;
+        let mut inner = self.0.write().await;
         let mut ret = vec![];
         for _ in 0..max {
             if let Some(item) = inner.pop() {
@@ -89,6 +94,11 @@ impl<T: Hash + Eq> NoDupeQueue<T> {
             self.set.remove(&hash(&item));
             item
         })
+    }
+
+    /// Number of items in the queue
+    pub fn len(&self) -> usize {
+        self.list.len()
     }
 
     /// There are no items in the queue
