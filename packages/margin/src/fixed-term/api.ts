@@ -47,7 +47,8 @@ interface ICreateLendOrder {
   marketAccount?: string
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
-  autorollEnabled: boolean
+  autorollEnabled: boolean,
+  airspaceLookupTables: string[],
 }
 export const offerLoan = async ({
   market,
@@ -59,7 +60,8 @@ export const offerLoan = async ({
   pools,
   marketConfig,
   markets,
-  autorollEnabled
+  autorollEnabled,
+  airspaceLookupTables
 }: ICreateLendOrder) => {
   const pool = pools[market.config.symbol]
   let instructions: TransactionInstruction[] = []
@@ -112,7 +114,7 @@ export const offerLoan = async ({
     adapterInstruction: loanOffer
   })
   instructions = instructions.concat(orderIXS)
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 interface ICreateBorrowOrder {
@@ -125,7 +127,8 @@ interface ICreateBorrowOrder {
   basisPoints: BN
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
-  autorollEnabled: boolean
+  autorollEnabled: boolean,
+  airspaceLookupTables: string[],
 }
 
 export const requestLoan = async ({
@@ -138,7 +141,8 @@ export const requestLoan = async ({
   basisPoints,
   marketConfig,
   markets,
-  autorollEnabled
+  autorollEnabled,
+  airspaceLookupTables
 }: ICreateBorrowOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
 
@@ -191,7 +195,7 @@ export const requestLoan = async ({
     adapterInstruction: borrowOffer
   })
   instructions = instructions.concat(orderIXS)
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 interface ICancelOrder {
@@ -200,7 +204,8 @@ interface ICancelOrder {
   provider: AnchorProvider
   orderId: BN
   pools: Record<string, Pool>
-  markets: FixedTermMarket[]
+  markets: FixedTermMarket[],
+  airspaceLookupTables: string[],
 }
 export const cancelOrder = async ({
   market,
@@ -208,7 +213,8 @@ export const cancelOrder = async ({
   provider,
   orderId,
   pools,
-  markets
+  markets,
+  airspaceLookupTables
 }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -235,7 +241,7 @@ export const cancelOrder = async ({
     markets,
     marketAddress: market.market.address
   })
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 // MARKET TAKER ORDERS
@@ -248,7 +254,8 @@ interface IBorrowNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
-  autorollEnabled: boolean
+  autorollEnabled: boolean,
+  airspaceLookupTables: string[],
 }
 
 export const borrowNow = async ({
@@ -259,7 +266,8 @@ export const borrowNow = async ({
   pools,
   amount,
   markets,
-  autorollEnabled
+  autorollEnabled,
+  airspaceLookupTables
 }: IBorrowNow): Promise<string> => {
   const pool = pools[market.config.symbol]
   let instructions: TransactionInstruction[] = []
@@ -325,8 +333,8 @@ export const borrowNow = async ({
     instructions: orderIXS,
     adapterInstruction: depositIx
   })
-  instructions = instructions.concat(orderIXS)
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  instructions = instructions.concat(orderIXS);
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 interface ILendNow {
@@ -337,7 +345,8 @@ interface ILendNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
-  autorollEnabled: boolean
+  autorollEnabled: boolean,
+  airspaceLookupTables: string[],
 }
 
 export const lendNow = async ({
@@ -348,7 +357,8 @@ export const lendNow = async ({
   pools,
   amount,
   markets,
-  autorollEnabled
+  autorollEnabled,
+  airspaceLookupTables
 }: ILendNow): Promise<string> => {
   const pool = pools[market.config.symbol]
   let instructions: TransactionInstruction[] = []
@@ -399,7 +409,7 @@ export const lendNow = async ({
   await marginAccount.withUpdateAllPositionBalances({ instructions: updateIXS })
   instructions = instructions.concat(updateIXS)
 
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 interface ISettle {
@@ -408,10 +418,19 @@ interface ISettle {
   marginAccount: MarginAccount
   provider: AnchorProvider
   pools: Record<string, Pool>
-  amount: BN
+  amount: BN,
+  airspaceLookupTables: string[],
 }
 
-export const settle = async ({ markets, selectedMarket, marginAccount, provider, pools, amount }: ISettle) => {
+export const settle = async ({
+  markets,
+  selectedMarket,
+  marginAccount,
+  provider,
+  pools,
+  amount,
+  airspaceLookupTables
+}: ISettle) => {
   const { market, token } = selectedMarket
   let instructions: TransactionInstruction[] = []
   const pool = pools[token.symbol]
@@ -447,7 +466,7 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   })
   await marginAccount.withUpdatePositionBalance({ instructions: settleIXS, position })
   instructions = instructions.concat(settleIXS)
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 interface IRepay {
@@ -463,10 +482,20 @@ interface IRepay {
     payer: string
   }>
   pools: Record<string, Pool>
-  markets: FixedTermMarket[]
+  markets: FixedTermMarket[],
+  airspaceLookupTables: string[],
 }
 
-export const repay = async ({ marginAccount, market, amount, provider, termLoans, pools, markets }: IRepay) => {
+export const repay = async ({
+  marginAccount,
+  market,
+  amount,
+  provider,
+  termLoans,
+  pools,
+  markets,
+  airspaceLookupTables
+}: IRepay) => {
   let instructions: TransactionInstruction[] = []
 
   const poolIXS: TransactionInstruction[] = []
@@ -542,7 +571,7 @@ export const repay = async ({ marginAccount, market, amount, provider, termLoans
     marketAddress: market.market.address
   })
   instructions = instructions.concat(refreshIxs)
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 interface IRedeem {
@@ -560,9 +589,18 @@ interface IRedeem {
     rate: number
     payer: string
     created_timestamp: number
-  }>
+  }>,
+  airspaceLookupTables: string[],
 }
-export const redeem = async ({ marginAccount, pools, markets, market, provider, deposits }: IRedeem) => {
+export const redeem = async ({
+  marginAccount,
+  pools,
+  markets,
+  market,
+  provider,
+  deposits,
+  airspaceLookupTables
+}: IRedeem) => {
   let instructions: TransactionInstruction[] = []
   const refreshIxs: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -586,7 +624,7 @@ export const redeem = async ({ marginAccount, pools, markets, market, provider, 
   }
 
   instructions = instructions.concat(redeemIxs)
-  return sendAndConfirmV0(provider, instructions, [marginAccount.address.toBase58()], [])
+  return sendAndConfirmV0(provider, instructions, airspaceLookupTables, [])
 }
 
 interface IConfigureAutoRoll {

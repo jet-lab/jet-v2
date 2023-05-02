@@ -50,10 +50,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
-  const { cluster, explorer, selectedPoolKey } = useJetStore(state => ({
+  const { cluster, explorer, selectedPoolKey, airspaceLookupTableAddresses } = useJetStore(state => ({
     cluster: state.settings.cluster,
     explorer: state.settings.explorer,
-    selectedPoolKey: state.selectedPoolKey
+    selectedPoolKey: state.selectedPoolKey,
+    airspaceLookupTableAddresses: state.airspaceLookupTableAddresses
   }));
   const currentPool = useMemo(
     () =>
@@ -144,7 +145,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         pools: pools.tokenPools,
         amount,
         markets: markets.map(m => m.market),
-        autorollEnabled
+        autorollEnabled,
+        airspaceLookupTables: airspaceLookupTableAddresses
       });
       setTimeout(() => {
         refreshOrderBooks();

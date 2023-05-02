@@ -12,7 +12,6 @@ import {
   TransactionSignature,
   VersionedTransaction
 } from "@solana/web3.js"
-import axios from "axios"
 import bs58 from "bs58"
 
 /**
@@ -79,35 +78,35 @@ export async function sendAndConfirm(
 export async function sendAndConfirmV0(
   provider: AnchorProvider,
   instructions: TransactionInstruction[],
-  authorities: string[],
+  lookupAddresses: string[],
   signers?: Signer[],
   opts?: ConfirmOptions
 ): Promise<TransactionSignature> {
   if (opts === undefined) {
     opts = provider.opts
   }
-  let lookups: string[] = (await axios.post("http://localhost:3006/lookup/get_addresses", {
-    instructions: instructions.map(i => {
-      return {
-        program: i.programId.toJSON(),
-        accounts: i.keys.map(k => {
-          return k.pubkey.toJSON()
-        }),
-        data: []
-      }
-    }),
-    // TODO: hardcoded for now
-    authorities: ["Ecxa8ZnbGJcDSPqBRDQQ3ZTjtBSnkvqPcMdMkx7JAZCM", ...authorities]
-  })).data.addresses;
+  // let lookups: string[] = (await axios.post("http://localhost:3006/lookup/get_addresses", {
+  //   instructions: instructions.map(i => {
+  //     return {
+  //       program: i.programId.toJSON(),
+  //       accounts: i.keys.map(k => {
+  //         return k.pubkey.toJSON()
+  //       }),
+  //       data: []
+  //     }
+  //   }),
+  //   // TODO: hardcoded for now
+  //   authorities: ["Ecxa8ZnbGJcDSPqBRDQQ3ZTjtBSnkvqPcMdMkx7JAZCM", ...authorities]
+  // })).data.addresses;
 
-
+  // TODO: measure the impact of this call vs caching the result
   const tablesResponse = await Promise.all(
-    lookups.map(address => provider.connection.getAddressLookupTable(new PublicKey(address)).then(res => res.value))
+    lookupAddresses.map(address => provider.connection.getAddressLookupTable(new PublicKey(address)).then(res => res.value))
   )
-  const tables: AddressLookupTableAccount[] = []
+  const lookupTables: AddressLookupTableAccount[] = []
   for (const table of tablesResponse) {
     if (table) {
-      tables.push(table)
+      lookupTables.push(table)
     }
   }
 
@@ -116,7 +115,7 @@ export async function sendAndConfirmV0(
     payerKey: provider.wallet.publicKey,
     recentBlockhash: blockhash,
     instructions
-  }).compileToV0Message(tables)
+  }).compileToV0Message(lookupTables)
 
   const transaction = new VersionedTransaction(message)
 
