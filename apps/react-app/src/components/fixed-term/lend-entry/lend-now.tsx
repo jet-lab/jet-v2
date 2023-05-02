@@ -103,6 +103,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         return;
       }
 
+      console.log('=== LEND NOW ===')
+      console.log('originationFee: ', marketAndConfig.market.info.originationFee);
+      console.log(sim)
+      console.log('====================');
+
       const productModel = marginAccount
         ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
         : undefined;

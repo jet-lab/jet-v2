@@ -12,7 +12,7 @@ import {
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
-import { feesCalc, marketToString } from '@utils/jet/fixed-term-utils';
+import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
@@ -112,6 +112,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         console.log('ERROR `correspondingPool` must be defined.');
         return;
       }
+      console.log('=== BORROW NOW ===')
+      console.log('originationFee: ', marketAndConfig.market.info.originationFee);
+      console.log(sim)
+      console.log('====================');
 
       const productModel = marginAccount
         ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
@@ -120,9 +124,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       const valuationEstimate = productModel?.takerAccountForecast('borrow', sim);
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
-      const borrowedAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilledQuoteQty - sim.matches), token.decimals);
-      const totalInterest = repayAmount.sub(borrowedAmount);
+      // const borrowedAmount = new TokenAmount(bigIntToBn(sim.filledUserQty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilledQuoteQty), token.decimals);
+      const totalInterest = new TokenAmount(bigIntToBn(sim.filledBaseQty - sim.filledQuoteQty), token.decimals);
+      const fees = new TokenAmount(bigIntToBn(sim.filledFeeQty), token.decimals);
 
       setForecast({
         repayAmount: repayAmount.tokens,
@@ -133,7 +138,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         riskIndicator: valuationEstimate?.riskIndicator,
         unfilledQty: unfilledQty.tokens,
         hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
-        fees: feesCalc(sim.filledVwar, totalInterest.tokens)
+        fees: fees.tokens
       });
     } catch (e) {
       console.log(e);
