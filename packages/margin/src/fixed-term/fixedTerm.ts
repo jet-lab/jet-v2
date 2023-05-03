@@ -593,7 +593,8 @@ export class FixedTermMarket {
       address: string
       sequence_number: number
       maturation_timestamp: number
-      balance: number
+      principal: number
+      interest: number
       rate: number
       payer: string
       created_timestamp: number
@@ -642,6 +643,22 @@ export class FixedTermMarket {
         }
       })
       .instruction()
+  }
+
+  async toggleAutorollDeposit(marginAccount: MarginAccount, deposit: Address) {
+    return await this.program.methods.toggleAutoRollDeposit().accounts({
+      marginAccount: marginAccount.address,
+      deposit,
+    }).instruction()
+  }
+
+  async toggleAutorollLoan(marginAccount: MarginAccount, loan: Address) {
+    const marginUser = await this.deriveMarginUserAddress(marginAccount)
+    return await this.program.methods.toggleAutoRollLoan().accounts({
+      marginAccount: marginAccount.address,
+      marginUser: marginUser.toBase58(),
+      loan
+    }).instruction()
   }
 }
 

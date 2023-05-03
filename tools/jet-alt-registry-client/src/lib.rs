@@ -1,9 +1,13 @@
+use std::path::PathBuf;
+
 use anchor_lang::prelude::Pubkey;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{AppSettings, Parser, Subcommand};
 use client::{Client, ClientConfig};
+use jet_margin_sdk::ix_builder::derive_airspace;
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
+use solana_sdk::signer::Signer;
 
 mod actions;
 mod addresses;
@@ -14,14 +18,9 @@ mod client;
 #[clap(propagate_version = true)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 pub struct CliOpts {
-    /// The relevant airspace to use
-    #[clap(global = true, long)]
-    pub airspace: Pubkey,
-
-    /// The relevant authority to use
-    #[clap(global = true, long)]
-    pub authority: Pubkey,
-
+    // /// The relevant airspace to use
+    // #[clap(global = true, long)]
+    // pub airspace: Pubkey,
     /// Simulate transactions only
     #[clap(global = true, long)]
     pub dry_run: bool,
@@ -30,9 +29,9 @@ pub struct CliOpts {
     #[clap(global = true, long)]
     pub no_confirm: bool,
 
-    /// The path to the signer to use (i.e. keypair or ledger-wallet)
+    /// The path to the lookup registry authority keypair
     #[clap(global = true, long, short = 'a')]
-    pub authority_path: Option<String>,
+    pub authority_path: Option<PathBuf>,
 
     /// The path to the signer to use (i.e. keypair or ledger-wallet)
     #[clap(global = true, long, short = 'k')]
@@ -55,7 +54,10 @@ pub enum Command {
 
     /// Update registry by adding any program accounts that do not exist.
     /// Useful when new pools or markets are added to an airspace.
-    UpdateRegistry,
+    UpdateRegistry {
+        #[clap(long)]
+        airspace_name: String,
+    },
 
     /// Close the registry, it should not have any lookup tables
     CloseRegistry,
@@ -75,10 +77,18 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         .rpc_endpoint
         .map(solana_clap_utils::input_validators::normalize_to_url_if_moniker);
 
+    let authority_path = opts
+        .authority_path
+        .context("The authority keypair path must be set")?;
+
+    let authority = solana_sdk::signature::read_keypair_file(&authority_path)
+        .unwrap()
+        .pubkey();
+
     let client_config = ClientConfig::new(
         opts.dry_run,
         opts.no_confirm,
-        opts.authority,
+        authority,
         opts.signer_path,
         rpc_endpoint,
     )?;
@@ -87,8 +97,9 @@ pub async fn run(opts: CliOpts) -> Result<()> {
 
     let plan = match opts.command {
         Command::CreateRegistry => actions::create_registry(&client, &builder).await?,
-        Command::UpdateRegistry => {
-            actions::update_registry(&client, &builder, opts.airspace).await?
+        Command::UpdateRegistry { airspace_name } => {
+            let airspace = derive_airspace(&airspace_name);
+            actions::update_registry(&client, &builder, airspace).await?
         }
         Command::RemoveLookupTable { address } => {
             actions::remove_lookup_table(&client, &builder, address).await?

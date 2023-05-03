@@ -284,6 +284,10 @@ pub enum Command {
         /// The path to write the generated file to
         #[clap(long, short = 'o')]
         output: PathBuf,
+
+        /// The address to use as a default lookup registry, supplied directly
+        #[clap(long)]
+        override_lookup_authority: Option<Pubkey>,
     },
 
     /// Proposal management
@@ -355,8 +359,18 @@ pub async fn run(opts: CliOpts) -> Result<()> {
             )
             .await?
         }
-        Command::GenerateAppConfig { config_dir, output } => {
-            actions::global::process_generate_app_config(&client, &config_dir, &output).await?
+        Command::GenerateAppConfig {
+            config_dir,
+            output,
+            override_lookup_authority,
+        } => {
+            actions::global::process_generate_app_config(
+                &client,
+                &config_dir,
+                &output,
+                override_lookup_authority,
+            )
+            .await?
         }
         Command::Proposals { subcmd } => run_proposals_command(&client, subcmd).await?,
         Command::CreateAuthority => actions::global::process_create_authority(&client).await?,
