@@ -23,6 +23,7 @@ tsconfig.tsbuildinfo
 !package.json
 localnet.config.json
 localnet.config.legacy.json
+lookup-authority.json
 
 .env
 .localnet
