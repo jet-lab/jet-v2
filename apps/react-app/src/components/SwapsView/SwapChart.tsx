@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
-import { SwapsRowOrder } from '@state/views/views';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '@state/actions/actions';
-import { SwapFees } from '@state/swap/splSwap';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { Typography } from 'antd';
 import { useJetStore } from '@jet-lab/store';
@@ -13,40 +11,14 @@ import axios from 'axios';
 import { SwapLiquidity } from '@utils/actions/swap';
 
 import { Axis, LineSeries, Tooltip, XYChart } from '@visx/xychart';
-import { scaleOrdinal } from '@visx/scale';
+import { scaleLinear, scaleOrdinal } from '@visx/scale';
 import { LegendItem, LegendLabel, LegendOrdinal } from '@visx/legend';
 
-interface ISeries {
-  id: string;
-  data: Array<{ x: number; y: number }>;
-  type: string;
-}
-
-interface ILineChart {
-  width: number;
-  height: number;
-  paddingTop: number;
-  paddingLeft: number;
-  paddingRight: number;
-  paddingBottom: number;
-  series: ISeries[];
-}
-
 // Graph for displaying pricing and slippage data for current swap pair
-export function SwapChart(): // ({
-//   height,
-//   width,
-//   paddingTop,
-//   paddingLeft,
-//   paddingRight,
-//   paddingBottom,
-//   series
-// }: ILineChart):
-JSX.Element {
+export function SwapChart(): JSX.Element {
   const { cluster } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
   const currentAccount = useRecoilValue(CurrentAccount);
-  const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
   const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -57,7 +29,6 @@ JSX.Element {
   const outputToken = useRecoilValue(CurrentSwapOutput);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
-  const swapFees = useRecoilValue(SwapFees);
   const [bidData, setBidData] = useState<{ x: number; y: number }[]>([
     { x: 0, y: 0 },
     { x: -1, y: -1 }
@@ -66,11 +37,11 @@ JSX.Element {
     { x: 0, y: 0 },
     { x: -1, y: -1 }
   ]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+  const [liquidityRange, setLiquidityRange] = useState<[number, number]>([0, 0]);
   const swapMaxTradeAmount =
     currentAccount?.poolPositions[currentPool?.symbol ?? '']?.maxTradeAmounts.swap.lamports.toNumber();
-  const [oraclePrice, setOraclePrice] = useState(0);
-  const [poolPrice, setPoolPrice] = useState(0);
-  const { Title, Text } = Typography;
+  const { Title } = Typography;
   const swapEndpoint =
     cluster === 'mainnet-beta'
       ? ''
@@ -78,70 +49,77 @@ JSX.Element {
       ? process.env.REACT_APP_DEV_SWAP_API
       : process.env.REACT_APP_LOCAL_SWAP_API;
 
-  // todo: create a function to generate these two data sets
-  // y depends on the liquidity rage
-  const dataOracle = [
-    { x: oraclePrice, y: 0 },
-    { x: oraclePrice, y: 250 }
-  ];
-
-  // once the scales are done, then pass in to LineSeries and Axis
-
   // legend
   const ordinalColorScale = scaleOrdinal({
     domain: ['Asks', 'Bids', 'Oracle Price'],
     range: ['#e36868', '#84c1ca', '#a79adb']
   });
 
+  const xScale = useMemo(() => {
+    return scaleLinear<number>({
+      domain: [priceRange[0], priceRange[1]],
+      range: [priceRange[0], priceRange[1]],
+      clamp: true
+    });
+  }, [priceRange]);
+
+  const yScale = useMemo(() => {
+    return scaleLinear<number>({
+      domain: [0, liquidityRange[1]],
+      range: [0, liquidityRange[1]],
+      clamp: true
+    });
+  }, [liquidityRange]);
+
+  // Oracle price
+  const oraclePrice = useMemo(() => {
+    if (currentPool?.tokenPrice && outputToken?.tokenPrice) {
+      return !true
+        ? currentPool!.tokenPrice / outputToken!.tokenPrice
+        : outputToken!.tokenPrice / currentPool!.tokenPrice;
+    } else {
+      return 0;
+    }
+  }, [currentPool, outputToken]);
+
+  const dataOracle = [
+    { x: oraclePrice, y: liquidityRange[0] },
+    { x: oraclePrice, y: liquidityRange[1] }
+  ];
+
   // Fetch chart data
   useEffect(() => {
-    // setBidData([
-    //   { x: 0, y: 0 },
-    //   { x: 1, y: 1 }
-    // ]);
-    // setAskData([
-    //   { x: 0, y: 0 },
-    //   { x: -1, y: -1 }
-    // ]);
     if (!currentPool || !outputToken) {
-      console.log('11111');
-      console.log('currentPool: ', currentPool);
       return;
     }
-    // TODO: cache swapMaxTradeAmount and only rerun if significantly different
+
     const maxAmount = swapMaxTradeAmount;
     const from = currentPool.tokenMint.toString();
     const to = outputToken.tokenMint.toString();
     const fromExpo = Math.pow(10, currentPool.decimals);
     const toExpo = Math.pow(10, outputToken.decimals);
+
     if (!maxAmount) {
+      console.log('maxAmount is not computed');
       return;
     }
     console.log('max swap amount: ', maxAmount / fromExpo);
     axios
-      // .get<SwapLiquidity>(`${swapEndpoint}/swap/liquidity/${from}/${to}/${maxAmount / fromExpo}`)
-      .get<SwapLiquidity>(
-        `${swapEndpoint}/swap/liquidity/sBiatzH7agz9YScf12Jro16yrjrwB3UPLuSpfRo9kKY/GQUwhbmw9afvN7euH4Hofhobdz9EmjqrpaC3URRgX1KT/100`
-      )
-      // .get<SwapLiquidity>(
-      //   `${swapEndpoint}/swap/liquidity/GQUwhbmw9afvN7euH4Hofhobdz9EmjqrpaC3URRgX1KT/6UEL83nioATpUWYUaqYSaDV9f1mhvxd7oxBUkdbqm8ZD/${
-      //     maxAmount / fromExpo
-      //   }`
-      // )
+      .get<SwapLiquidity>(`${swapEndpoint}/swap/liquidity/${from}/${to}/${maxAmount / fromExpo}`)
       .then(resp => {
-        console.log('liquidity chart: ', resp.data);
-        // transform data
+        // set the xy boundaries
+        setPriceRange([resp.data.price_range[0], resp.data.price_range[1]]);
+        setLiquidityRange([resp.data.liquidity_range[0], resp.data.liquidity_range[1]]);
 
+        // transform data
         setBidData(
           resp.data.bids.map(bid => {
-            console.log('inside map bid data: ', bid);
             return {
               x: bid[0],
               y: bid[1]
             };
           })
         );
-        console.log('bid data: ', bidData);
         setAskData(
           resp.data.asks.map(ask => {
             return {
@@ -150,7 +128,6 @@ JSX.Element {
             };
           })
         );
-        console.log('ask data: ', askData);
       })
       .catch(err => err);
   }, [currentPool?.symbol, outputToken?.symbol, swapMaxTradeAmount]);
@@ -200,7 +177,7 @@ JSX.Element {
         xScale={{ type: 'linear' }}
         yScale={{ type: 'linear' }}>
         <LineSeries
-          dataKey="line2"
+          dataKey="bids"
           data={bidData}
           xAccessor={d => {
             if (d === undefined) {
@@ -219,7 +196,7 @@ JSX.Element {
           strokeDasharray="3,3"
         />
         <LineSeries
-          dataKey="line3"
+          dataKey="asks"
           data={askData}
           xAccessor={d => {
             if (d === undefined) {
@@ -238,29 +215,9 @@ JSX.Element {
           strokeDasharray="3,3"
         />
 
-        {/* todo - set interface for the dataset */}
-        {/* <LineSeries
-          dataKey="line4"
-          data={bids}
-          xAccessor={d => d.x}
-          yAccessor={d => d.y}
-          stroke="#e36868"
-          strokeWidth={2}
-          strokeDasharray="3,3"
-        />
-        <LineSeries
-          dataKey="line5"
-          data={asks}
-          xAccessor={d => d.x}
-          yAccessor={d => d.y}
-          stroke="#84c1ca"
-          strokeWidth={2}
-          strokeDasharray="3,3"
-        /> */}
-
         <Axis
-          key={`${dictionary.actions.swap.sellQuantity}`}
-          label={`${dictionary.actions.swap.sellQuantity} (${currentPool?.symbol ?? '—'})`}
+          key={dictionary.actions.swap.sellQuantity}
+          label={dictionary.actions.swap.sellQuantity}
           orientation="left"
           left={80}
           numTicks={5}
@@ -274,8 +231,23 @@ JSX.Element {
           })}
           // todo - fix: scale = {yScale} modify to use AxisLeft
         />
+        {/* <AxisLeft
+          key={dictionary.actions.swap.sellQuantity}
+          label={dictionary.actions.swap.sellQuantity}
+          scale={yScale}
+          left={80}
+          numTicks={5}
+          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, textAnchor: 'middle' }}
+          tickLabelProps={() => ({
+            fontSize: 10,
+            fill: '#fff',
+            opacity: 0.6,
+            textAnchor: 'middle',
+            dy: 8
+          })}
+        /> */}
         <Axis
-          key={`${currentPool?.symbol ?? '—'} / ${outputToken?.symbol ?? '—'} ${dictionary.common.price}`}
+          key={`baseQuote[0] / ${outputToken?.symbol ?? '—'} ${dictionary.common.price}`}
           label={`${currentPool?.symbol ?? '—'} / ${outputToken?.symbol ?? '—'} ${dictionary.common.price}`}
           orientation="bottom"
           top={450}
@@ -303,18 +275,26 @@ JSX.Element {
           renderTooltip={({ tooltipData }) => {
             return (
               <>
-                {tooltipData &&
-                  Object.entries(tooltipData.datumByKey).map(lineDataArray => {
-                    const [key, value] = lineDataArray;
+                {tooltipData && (
+                  <div className="swaps-graph-tooltip">
+                    <div className="align-center flex justify-between">
+                      <p>{dictionary.common.sell}</p>
+                      <p>{`# ${currentPool?.symbol ?? dictionary.actions.swap.inputToken}`}</p>
+                    </div>
 
-                    return (
-                      <div className="row" key={key}>
-                        <div className="dataType">{'price type:'}</div>
-                        <div className="value">{'value'}</div>
-                        {/* <div className="value">{yAccessor(value.datum)}</div> */}
-                      </div>
-                    );
-                  })}
+                    <div className="align-center flex justify-between">
+                      <p>{dictionary.actions.swap.receive}</p>
+                      <p>{`# ${outputToken?.symbol ?? dictionary.actions.swap.outputToken}`}</p>
+                    </div>
+                    <div className="align-center flex justify-between">
+                      <p>{dictionary.common.price}</p>
+                      <p>{`$$$ ${outputToken?.symbol ?? dictionary.actions.swap.outputToken}`}</p>
+                    </div>
+                    <div className="flex-centered">
+                      <button className="small-btn">{dictionary.actions.swap.swapThis.toUpperCase()}</button>
+                    </div>
+                  </div>
+                )}
               </>
             );
           }}
@@ -340,7 +320,12 @@ JSX.Element {
           // yAccessor={d => yScale(d.y) || 0}
         />
       </XYChart>
-      {/* <ReorderArrows component="swapsGraph" order={swapsRowOrder} setOrder={setSwapsRowOrder} /> */}
     </div>
   );
 }
+
+// todo - fix x y scale - currently undefined
+// todo - set bottow axis quote priority: usdc > usdt > sol
+// todo - fix tooltip info
+// todo - fix output token state for swap entry
+// todo - fix entry state error, not match update, one state behind
