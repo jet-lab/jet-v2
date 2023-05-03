@@ -130,7 +130,8 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
             pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
             user.refresh_and_margin_borrow_order(underlying(1_000, 2_000)).await?,
         }
-        .send_and_confirm_condensed_in_order(&client).await
+        .send_and_confirm_condensed_in_order(&client)
+        .await
     }))
     .await?;
 
