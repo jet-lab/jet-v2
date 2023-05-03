@@ -644,6 +644,22 @@ export class FixedTermMarket {
       })
       .instruction()
   }
+
+  async toggleAutorollDeposit(marginAccount: MarginAccount, deposit: Address) {
+    return await this.program.methods.toggleAutoRollDeposit().accounts({
+      marginAccount: marginAccount.address,
+      deposit,
+    }).instruction()
+  }
+
+  async toggleAutorollLoan(marginAccount: MarginAccount, loan: Address) {
+    const marginUser = await this.deriveMarginUserAddress(marginAccount)
+    return await this.program.methods.toggleAutoRollLoan().accounts({
+      marginAccount: marginAccount.address,
+      marginUser: marginUser.toBase58(),
+      loan
+    }).instruction()
+  }
 }
 
 export interface MarketAndConfig {

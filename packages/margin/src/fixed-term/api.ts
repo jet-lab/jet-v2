@@ -6,6 +6,34 @@ import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../
 import { AssociatedToken } from "../token"
 import { sendAll } from "../utils"
 
+// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
+interface Deposit {
+  id: number
+  address: string
+  sequence_number: number
+  maturation_timestamp: number
+  principal: number
+  interest: number
+  rate: number
+  payer: string
+  created_timestamp: number
+}
+
+// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
+interface Loan {
+  id: number
+  address: string
+  sequence_number: number
+  maturation_timestamp: number
+  principal: number
+  interest: number
+  remaining_balance: number
+  is_marked_due: boolean
+  created_timestamp: number
+  payer: string
+  rate: number
+}
+
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {
   market: FixedTermMarket
@@ -456,19 +484,7 @@ interface IRepay {
   marginAccount: MarginAccount
   market: MarketAndConfig
   provider: AnchorProvider
-  termLoans: Array<{
-    id: number
-    address: string
-    sequence_number: number
-    maturation_timestamp: number
-    principal: number
-    interest: number
-    remaining_balance: number
-    is_marked_due: boolean
-    created_timestamp: number
-    payer: string
-    rate: number
-  }>
+  termLoans: Array<Loan>
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
 }
@@ -558,17 +574,7 @@ interface IRedeem {
   markets: FixedTermMarket[]
   market: MarketAndConfig
   provider: AnchorProvider
-  deposits: Array<{
-    id: number
-    address: string
-    sequence_number: number
-    maturation_timestamp: number
-    principal: number
-    interest: number
-    rate: number
-    payer: string
-    created_timestamp: number
-  }>
+  deposits: Array<Deposit>
 }
 export const redeem = async ({ marginAccount, pools, markets, market, provider, deposits }: IRedeem) => {
   const instructions: TransactionInstruction[][] = []
@@ -638,4 +644,44 @@ export const configAutoroll = async ({
     adapterInstruction: borrowSetupIX
   })
   return sendAll(provider, [marketIXS])
+}
+
+interface IToggleAutorollPosition {
+  position: Loan | Deposit // deposit
+  provider: AnchorProvider
+  marginAccount: MarginAccount
+  market: FixedTermMarket
+  pools: Record<string, Pool>
+  markets: FixedTermMarket[]
+}
+
+export const toggleAutorollPosition = async ({
+  position,
+  marginAccount,
+  market,
+  provider,
+  pools,
+  markets
+}: IToggleAutorollPosition) => {
+  let ix: TransactionInstruction
+  let tx: TransactionInstruction[] = []
+
+  await marginAccount.withPrioritisedPositionRefresh({
+    instructions: tx,
+    pools,
+    markets,
+    marketAddress: market.address
+  })
+
+  if ("remaining_balance" in position) {
+    ix = await market.toggleAutorollLoan(marginAccount, position.address)
+  } else {
+    ix = await market.toggleAutorollDeposit(marginAccount, position.address)
+  }
+
+  marginAccount.withAdapterInvoke({
+    instructions: tx,
+    adapterInstruction: ix
+  })
+  return sendAll(provider, [tx])
 }

@@ -1,12 +1,33 @@
-import { FixedTermMarket, MarginAccount, MarketAndConfig, Pool, TokenAmount } from '@jet-lab/margin';
+import {
+  FixedTermMarket,
+  MarginAccount,
+  MarketAndConfig,
+  Pool,
+  TokenAmount,
+  toggleAutorollPosition
+} from '@jet-lab/margin';
 import { Deposit } from '@jet-lab/store';
 import { Switch, Table } from 'antd';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { useMemo } from 'react';
+import { Dispatch, SetStateAction, useMemo, useState } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
 import { ColumnsType } from 'antd/lib/table';
-const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
+import { notify } from '@utils/notify';
+import { getExplorerUrl } from '@utils/ui';
+import { LoadingOutlined } from '@ant-design/icons';
+
+const getDepositsColumns = (
+  market: MarketAndConfig,
+  marginAccount: MarginAccount,
+  provider: AnchorProvider,
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[],
+  setPendingPositions: Dispatch<SetStateAction<string[]>>,
+  pendingPositions: string[]
+): ColumnsType<Deposit> => [
   {
     title: 'Created',
     dataIndex: 'created_timestamp',
@@ -43,16 +64,28 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
   },
   {
     title: 'Autoroll',
-    dataIndex: 'is_auto_roll',
     key: 'is_auto_roll',
     align: 'center',
-    render: (is_auto_roll: boolean) => {
-      return (
+    render: (position: Deposit) => {
+      return pendingPositions.includes(position.address) ? (
+        <LoadingOutlined />
+      ) : (
         <Switch
           className="debt-table-switch"
-          checked={is_auto_roll}
+          checked={position.is_auto_roll}
           onClick={() => {
-            console.log(is_auto_roll);
+            togglePosition(
+              marginAccount,
+              market,
+              provider,
+              position,
+              pools,
+              markets,
+              cluster,
+              explorer,
+              pendingPositions,
+              setPendingPositions
+            );
           }}
         />
       );
@@ -70,13 +103,51 @@ const getDepositsColumns = (market: MarketAndConfig): ColumnsType<Deposit> => [
   }
 ];
 
+const togglePosition = async (
+  marginAccount: MarginAccount,
+  market: MarketAndConfig,
+  provider: AnchorProvider,
+  position: Deposit,
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[],
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
+  pendingPositions: string[],
+  setPendingPositions: Dispatch<SetStateAction<string[]>>
+) => {
+  try {
+    setPendingPositions([...pendingPositions, position.address]);
+    await toggleAutorollPosition({
+      marginAccount,
+      market: market.market,
+      provider,
+      position,
+      pools,
+      markets
+    });
+    notify('Autoroll toggled', 'Your term deposit autoroll settings have been succsesfully toggled', 'success');
+  } catch (e: any) {
+    notify(
+      'Failed to toggle autoroll',
+      'We were unable to toggle your term deposit autoroll settings, please try again.',
+      'error',
+      getExplorerUrl(e.signature, cluster, explorer)
+    );
+    console.error(e);
+  } finally {
+    setPendingPositions(pendingPositions.filter(p => p !== position.address));
+  }
+};
+
 export const OpenDepositsTable = ({
   data,
   market,
   marginAccount,
   provider,
   cluster,
-  explorer
+  explorer,
+  pools,
+  markets
 }: {
   data: Deposit[];
   market: MarketAndConfig;
@@ -87,7 +158,24 @@ export const OpenDepositsTable = ({
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }) => {
-  const columns = useMemo(() => getDepositsColumns(market), [market, marginAccount, provider, cluster, explorer]);
+  const [pendingPositions, setPendingPositions] = useState<string[]>([]);
+
+  const columns = useMemo(
+    () =>
+      getDepositsColumns(
+        market,
+        marginAccount,
+        provider,
+        cluster,
+        explorer,
+        pools,
+        markets,
+        setPendingPositions,
+        pendingPositions
+      ),
+    [market, marginAccount, provider, cluster, explorer, pendingPositions, setPendingPositions]
+  );
+
   return (
     <Table
       rowKey="address"
