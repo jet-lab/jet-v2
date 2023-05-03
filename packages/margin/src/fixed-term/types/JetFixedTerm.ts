@@ -726,8 +726,8 @@ export type JetFixedTerm = {
       ]
     },
     {
-      name: "stopAutoRollDeposit"
-      docs: ["Prevent a deposit from auto rolling"]
+      name: "toggleAutoRollDeposit"
+      docs: ["Toggle the status of a term deposit's auto-roll"]
       accounts: [
         {
           name: "marginAccount"
@@ -745,8 +745,8 @@ export type JetFixedTerm = {
       args: []
     },
     {
-      name: "stopAutoRollLoan"
-      docs: ["Prevent a loan from auto rolling"]
+      name: "toggleAutoRollLoan"
+      docs: ["Toggle the status of a term loan's auto-roll"]
       accounts: [
         {
           name: "marginAccount"
@@ -3069,6 +3069,11 @@ export type JetFixedTerm = {
           name: "postAllowed"
           type: "bool"
           index: false
+        },
+        {
+          name: "autoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -3149,6 +3154,11 @@ export type JetFixedTerm = {
           name: "finalBalance"
           type: "u64"
           index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -3178,6 +3188,11 @@ export type JetFixedTerm = {
         {
           name: "timestamp"
           type: "i64"
+          index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
           index: false
         }
       ]
@@ -3230,6 +3245,11 @@ export type JetFixedTerm = {
         {
           name: "amount"
           type: "u64"
+          index: false
+        },
+        {
+          name: "flags"
+          type: "u8" // should be "u8"
           index: false
         }
       ]
@@ -4548,8 +4568,8 @@ export const IDL: JetFixedTerm = {
       ]
     },
     {
-      name: "stopAutoRollDeposit",
-      docs: ["Prevent a deposit from auto rolling"],
+      name: "toggleAutoRollDeposit",
+      docs: ["Toggle the status of a term deposit's auto-roll"],
       accounts: [
         {
           name: "marginAccount",
@@ -4567,8 +4587,8 @@ export const IDL: JetFixedTerm = {
       args: []
     },
     {
-      name: "stopAutoRollLoan",
-      docs: ["Prevent a loan from auto rolling"],
+      name: "toggleAutoRollLoan",
+      docs: ["Toggle the status of a term loan's auto-roll"],
       accounts: [
         {
           name: "marginAccount",
@@ -6892,6 +6912,11 @@ export const IDL: JetFixedTerm = {
           name: "postAllowed",
           type: "bool",
           index: false
+        },
+        {
+          name: "autoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -6972,6 +6997,11 @@ export const IDL: JetFixedTerm = {
           name: "finalBalance",
           type: "u64",
           index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -7001,6 +7031,11 @@ export const IDL: JetFixedTerm = {
         {
           name: "timestamp",
           type: "i64",
+          index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
           index: false
         }
       ]
@@ -7053,6 +7088,11 @@ export const IDL: JetFixedTerm = {
         {
           name: "amount",
           type: "u64",
+          index: false
+        },
+        {
+          name: "flags",
+          type: "u8", // should be "u8"
           index: false
         }
       ]

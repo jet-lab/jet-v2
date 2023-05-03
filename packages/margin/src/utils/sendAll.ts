@@ -189,17 +189,13 @@ export async function sendAll(
       const transactions = signedUnflattened[i]
       const txnArray: string[] = []
       for (const tx of transactions) {
-        try {
-          const rawTx = tx.serialize()
-          const sent = await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch(err => {
-            let customErr = new ConfirmError(err.message)
-            customErr.signature = bs58.encode(tx.signature!)
-            throw customErr
-          })
-          txnArray.push(sent)
-        } catch (e) {
-          console.error(e)
-        }
+        const rawTx = tx.serialize()
+        const sent = await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch(err => {
+          let customErr = new ConfirmError(err.message)
+          customErr.signature = bs58.encode(tx.signature!)
+          throw customErr
+        })
+        txnArray.push(sent)
       }
       // Return the txid of the final transaction in the array
       // TODO: We should return an array instead of only the final txn

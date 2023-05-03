@@ -344,7 +344,8 @@ impl TestManager {
         let mut seq_no = self
             .load_margin_user(margin_account)
             .await?
-            .next_term_deposit();
+            .assets()
+            .next_new_deposit_seqno();
         let mut builder = Vec::<TransactionBuilder>::new();
         for (key, deposit) in mature_deposits {
             let ix =
@@ -374,7 +375,7 @@ impl TestManager {
             .load_outstanding_loans(*margin_account)
             .await?
             .into_iter()
-            .filter(|(_, l)| l.strike_timestamp + roll_tenor as i64 >= current_time)
+            .filter(|(_, l)| l.strike_timestamp + roll_tenor as i64 <= current_time)
             .collect::<Vec<_>>();
 
         loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
@@ -386,7 +387,8 @@ impl TestManager {
                 loan.payer,
                 self.load_margin_user(margin_account)
                     .await?
-                    .next_term_loan(),
+                    .debt()
+                    .next_new_loan_seqno(),
             );
             let accounting_ix = margin_ix.accounting_invoke(roll_ix);
             builder.push(accounting_ix.into())
@@ -1027,7 +1029,7 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn margin_borrow_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
-        let debt_seqno = self.load_margin_user().await?.next_term_loan();
+        let debt_seqno = self.load_margin_user().await?.debt().next_new_loan_seqno();
         let borrow =
             self.manager
                 .ix_builder
@@ -1049,7 +1051,11 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn margin_lend_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
-        let deposit_seqno = self.load_margin_user().await?.next_term_deposit();
+        let deposit_seqno = self
+            .load_margin_user()
+            .await?
+            .assets()
+            .next_new_deposit_seqno();
         let ix = self.manager.ix_builder.margin_lend_order(
             self.proxy.pubkey(),
             None,
@@ -1137,7 +1143,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let mut loans = vec![];
 
         let user = self.load_margin_user().await?;
-        for seqno in user.active_loans() {
+        for seqno in user.debt().active_loans() {
             loans.push(self.load_term_loan(seqno).await?);
         }
 

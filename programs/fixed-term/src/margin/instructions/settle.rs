@@ -90,7 +90,7 @@ pub struct Settle<'info> {
 pub fn handler(ctx: Context<Settle>) -> Result<()> {
     // Notify margin of the current debt owed to fixed-term market
     let claim_balance = ctx.accounts.claims.amount;
-    let debt = ctx.accounts.margin_user.total_debt();
+    let debt = ctx.accounts.margin_user.debt().total();
 
     if claim_balance > debt {
         ctx.burn_notes(
@@ -110,7 +110,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     // Notify margin of the amount of collateral that will in the custody of
     // tickets after this settlement
     let ctickets_held = ctx.accounts.ticket_collateral.amount;
-    let ctickets_deserved = ctx.accounts.margin_user.ticket_collateral()?;
+    let ctickets_deserved = ctx.accounts.margin_user.assets().ticket_collateral()?;
 
     if ctickets_held > ctickets_deserved {
         ctx.burn_notes(
@@ -130,7 +130,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     // Notify margin of the amount of collateral that will in the custody of
     // tokens after this settlement
     let ctokens_held = ctx.accounts.underlying_collateral.amount;
-    let ctokens_deserved = ctx.accounts.margin_user.underlying_collateral();
+    let ctokens_deserved = ctx.accounts.margin_user.assets().underlying_collateral();
 
     if ctokens_held > ctokens_deserved {
         ctx.burn_notes(
@@ -148,7 +148,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     }
 
     // Disburse entitled funds due to fills
-    let entitled_tickets = ctx.accounts.margin_user.entitled_tickets();
+    let entitled_tickets = ctx.accounts.margin_user.assets().entitled_tickets();
     if entitled_tickets > 0 {
         verify_settlement_account_registration(
             &*ctx.accounts.margin_account.load()?,
@@ -163,7 +163,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
         )?;
     }
 
-    let entitled_tokens = ctx.accounts.margin_user.entitled_tokens();
+    let entitled_tokens = ctx.accounts.margin_user.assets().entitled_tokens();
     if entitled_tokens > 0 {
         verify_settlement_account_registration(
             &*ctx.accounts.margin_account.load()?,

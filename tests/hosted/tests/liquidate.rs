@@ -173,7 +173,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1!().unwrap().1;
 
     let liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
-    liq.verify_healthy().await.err().unwrap();
+    liq.verify_unhealthy().await.unwrap();
 
     // Execute a repayment on behalf of the user
     liq.margin_repay(&scen.usdc, 1_000_000 * ONE_USDC)
@@ -195,7 +195,7 @@ async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     let scen = scenario1!().unwrap().1;
 
     let liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
-    liq.verify_healthy().await.err().unwrap();
+    liq.verify_unhealthy().await.unwrap();
     liq.liquidate_end(None).await.unwrap();
 
     Ok(())

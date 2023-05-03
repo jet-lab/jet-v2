@@ -1,5 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
+use jet_program_common::interest_pricing::f64_to_fp32;
 use serde::{Deserialize, Serialize};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
@@ -23,9 +24,6 @@ use crate::{
     NetworkUserInterface,
 };
 
-use self::interest_pricing::f64_to_fp32;
-
-mod interest_pricing;
 pub mod util;
 
 /// Details about a fixed term market
@@ -475,36 +473,37 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
         self.account.send_with_refresh(&ixns).await
     }
 
-    /// Stop a deposit from auto-rolling
+    /// Toggle a deposit's auto-roll setting
     ///
     /// # Parameters
     ///
     /// * `deposit` - The address of the deposit that has been configured to auto-roll
-    pub async fn stop_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<I, ()> {
+    pub async fn toggle_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<I, ()> {
         let mut ixns = vec![];
 
         ixns.push(
             self.account.builder.adapter_invoke(
                 self.builder
-                    .stop_auto_roll_deposit(self.account.address, deposit),
+                    .toggle_auto_roll_deposit(self.account.address, deposit),
             ),
         );
 
         self.account.send_with_refresh(&ixns).await
     }
 
-    /// Stop a loan from auto-rolling
+    /// Toggle a loan's auto-roll setting
     ///
     /// # Parameters
     ///
     /// * `loan` - The address of the loan that has been configured to auto-roll
-    pub async fn stop_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<I, ()> {
+    pub async fn toggle_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<I, ()> {
         let mut ixns = vec![];
 
         ixns.push(
-            self.account
-                .builder
-                .adapter_invoke(self.builder.stop_auto_roll_loan(self.account.address, loan)),
+            self.account.builder.adapter_invoke(
+                self.builder
+                    .toggle_auto_roll_loan(self.account.address, loan),
+            ),
         );
 
         self.account.send_with_refresh(&ixns).await
@@ -548,13 +547,15 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
 
     fn get_next_loan_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
-        user_account.map(|u| u.next_term_loan()).unwrap_or_default()
+        user_account
+            .map(|u| u.debt().next_new_loan_seqno())
+            .unwrap_or_default()
     }
 
     fn get_next_deposit_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
         user_account
-            .map(|u| u.next_term_deposit())
+            .map(|u| u.assets().next_new_deposit_seqno())
             .unwrap_or_default()
     }
 

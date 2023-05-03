@@ -6,9 +6,9 @@ use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
 
-use jet_solana_client::{ExtError, NetworkUserInterface};
+use jet_solana_client::{transaction::ToTransaction, ExtError, NetworkUserInterface};
 
-use crate::{config::JetAppConfig, solana::transaction::ToTransaction, state::AccountStates};
+use crate::{config::JetAppConfig, state::AccountStates};
 
 pub type ClientResult<I, T> = std::result::Result<T, ClientError<I>>;
 

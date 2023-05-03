@@ -1,10 +1,38 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { FixedTermMarket, MarketAndConfig } from "./fixedTerm"
-import { Address, AnchorProvider, BN } from "@project-serum/anchor"
+import { AnchorProvider, BN } from "@project-serum/anchor"
 import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../margin"
 import { AssociatedToken } from "../token"
 import { sendAll } from "../utils"
+
+// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
+interface Deposit {
+  id: number
+  address: string
+  sequence_number: number
+  maturation_timestamp: number
+  principal: number
+  interest: number
+  rate: number
+  payer: string
+  created_timestamp: number
+}
+
+// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
+interface Loan {
+  id: number
+  address: string
+  sequence_number: number
+  maturation_timestamp: number
+  principal: number
+  interest: number
+  remaining_balance: number
+  is_marked_due: boolean
+  created_timestamp: number
+  payer: string
+  rate: number
+}
 
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {
@@ -12,13 +40,12 @@ interface IWithCreateFixedTermMarketAccount {
   provider: AnchorProvider
   marginAccount: MarginAccount
   walletAddress: PublicKey
-  markets: FixedTermMarket[]
 }
 export const withCreateFixedTermMarketAccounts = async ({
   market,
   provider,
   marginAccount,
-  walletAddress,
+  walletAddress
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.ticketMint
@@ -48,6 +75,7 @@ interface ICreateLendOrder {
   marketAccount?: string
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 export const offerLoan = async ({
   market,
@@ -58,7 +86,8 @@ export const offerLoan = async ({
   basisPoints,
   pools,
   marketConfig,
-  markets
+  markets,
+  autorollEnabled
 }: ICreateLendOrder) => {
   const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
@@ -67,7 +96,7 @@ export const offerLoan = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address),
+    markets: markets.filter(m => m.address != market.market.address)
   })
   instructions.push(prefreshIXS)
 
@@ -76,8 +105,7 @@ export const offerLoan = async ({
     market: market.market,
     provider,
     marginAccount,
-    walletAddress,
-    markets
+    walletAddress
   })
   instructions.push(marketIXS)
 
@@ -86,7 +114,7 @@ export const offerLoan = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
 
@@ -104,7 +132,8 @@ export const offerLoan = async ({
     amount,
     basisPoints,
     walletAddress,
-    marketConfig.borrowTenor
+    marketConfig.borrowTenor,
+    autorollEnabled
   )
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,
@@ -124,6 +153,7 @@ interface ICreateBorrowOrder {
   basisPoints: BN
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 
 export const requestLoan = async ({
@@ -135,7 +165,8 @@ export const requestLoan = async ({
   amount,
   basisPoints,
   marketConfig,
-  markets
+  markets,
+  autorollEnabled
 }: ICreateBorrowOrder): Promise<string> => {
   const instructions: TransactionInstruction[][] = []
 
@@ -143,7 +174,7 @@ export const requestLoan = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address),
+    markets: markets.filter(m => m.address != market.market.address)
   })
   instructions.push(prefreshIXS)
 
@@ -152,8 +183,7 @@ export const requestLoan = async ({
     market: market.market,
     provider,
     marginAccount,
-    walletAddress,
-    markets
+    walletAddress
   })
   instructions.push(marketIXS)
 
@@ -162,7 +192,7 @@ export const requestLoan = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
 
@@ -180,7 +210,8 @@ export const requestLoan = async ({
     walletAddress,
     amount,
     basisPoints,
-    marketConfig.borrowTenor
+    marketConfig.borrowTenor,
+    autorollEnabled
   )
 
   await marginAccount.withAdapterInvoke({
@@ -195,11 +226,18 @@ interface ICancelOrder {
   market: MarketAndConfig
   marginAccount: MarginAccount
   provider: AnchorProvider
-  orderId: BN,
+  orderId: BN
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
 }
-export const cancelOrder = async ({ market, marginAccount, provider, orderId, pools, markets }: ICancelOrder): Promise<string> => {
+export const cancelOrder = async ({
+  market,
+  marginAccount,
+  provider,
+  orderId,
+  pools,
+  markets
+}: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions,
@@ -208,13 +246,11 @@ export const cancelOrder = async ({ market, marginAccount, provider, orderId, po
     marketAddress: market.market.address
   })
 
-
   await marginAccount.withRefreshDepositPosition({
     instructions,
     config: marginAccount.findTokenConfigAddress(market.token.mint),
     priceOracle: new PublicKey(market.config.underlyingOracle.valueOf())
   })
-
 
   const cancelLoan = await market.market.cancelOrderIx(marginAccount, orderId)
   await marginAccount.withAdapterInvoke({
@@ -241,6 +277,7 @@ interface IBorrowNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 
 export const borrowNow = async ({
@@ -250,7 +287,8 @@ export const borrowNow = async ({
   walletAddress,
   pools,
   amount,
-  markets
+  markets,
+  autorollEnabled
 }: IBorrowNow): Promise<string> => {
   const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
@@ -259,7 +297,7 @@ export const borrowNow = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address),
+    markets: markets.filter(m => m.address != market.market.address)
   })
   instructions.push(prefreshIXS)
 
@@ -268,8 +306,7 @@ export const borrowNow = async ({
     market: market.market,
     provider,
     marginAccount,
-    walletAddress,
-    markets
+    walletAddress
   })
   instructions.push(marketIXS)
 
@@ -278,7 +315,7 @@ export const borrowNow = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
 
@@ -290,7 +327,7 @@ export const borrowNow = async ({
 
   // Create borrow instruction
   const orderIXS: TransactionInstruction[] = []
-  const borrowNow = await market.market.borrowNowIx(marginAccount, walletAddress, amount)
+  const borrowNow = await market.market.borrowNowIx(marginAccount, walletAddress, amount, autorollEnabled)
 
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,
@@ -329,6 +366,7 @@ interface ILendNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
+  autorollEnabled: boolean
 }
 
 export const lendNow = async ({
@@ -338,7 +376,8 @@ export const lendNow = async ({
   walletAddress,
   pools,
   amount,
-  markets
+  markets,
+  autorollEnabled
 }: ILendNow): Promise<string> => {
   const pool = pools[market.config.symbol]
   const instructions: TransactionInstruction[][] = []
@@ -347,7 +386,7 @@ export const lendNow = async ({
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: prefreshIXS,
     pools,
-    markets: markets.filter(m => m.address != market.market.address),
+    markets: markets.filter(m => m.address != market.market.address)
   })
   instructions.push(prefreshIXS)
 
@@ -356,8 +395,7 @@ export const lendNow = async ({
     market: market.market,
     provider,
     marginAccount,
-    walletAddress,
-    markets
+    walletAddress
   })
   instructions.push(marketIXS)
 
@@ -366,7 +404,7 @@ export const lendNow = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address,  // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address // TODO Why this in addition to `markets`?
   })
   instructions.push(postfreshIXS)
 
@@ -378,7 +416,7 @@ export const lendNow = async ({
   })
 
   // Create borrow instruction
-  const lendNow = await market.market.lendNowIx(marginAccount, amount, walletAddress)
+  const lendNow = await market.market.lendNowIx(marginAccount, amount, walletAddress, autorollEnabled)
 
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,
@@ -411,7 +449,7 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: refreshIXS,
     pools,
-    markets: markets.map(m => m.market),
+    markets: markets.map(m => m.market)
   })
 
   instructions.push(refreshIXS)
@@ -442,30 +480,16 @@ export const settle = async ({ markets, selectedMarket, marginAccount, provider,
 }
 
 interface IRepay {
-  amount: BN,
-  marginAccount: MarginAccount,
-  market: MarketAndConfig,
-  provider: AnchorProvider,
-  termLoans: Array<{
-    address: Address,
-    balance: number,
-    maturation_timestamp: number
-    sequence_number: number,
-    payer: string
-  }>
-  pools: Record<string, Pool>,
-  markets: FixedTermMarket[],
+  amount: BN
+  marginAccount: MarginAccount
+  market: MarketAndConfig
+  provider: AnchorProvider
+  termLoans: Array<Loan>
+  pools: Record<string, Pool>
+  markets: FixedTermMarket[]
 }
 
-export const repay = async ({
-  marginAccount,
-  market,
-  amount,
-  provider,
-  termLoans,
-  pools,
-  markets,
-}: IRepay) => {
+export const repay = async ({ marginAccount, market, amount, provider, termLoans, pools, markets }: IRepay) => {
   const instructions: TransactionInstruction[][] = []
 
   const poolIXS: TransactionInstruction[] = []
@@ -494,19 +518,21 @@ export const repay = async ({
 
   let amountLeft = new BN(amount)
 
-  let sortedTermLoans = termLoans.sort((a, b) => a.maturation_timestamp - b.maturation_timestamp || a.sequence_number - b.sequence_number)
+  let sortedTermLoans = termLoans.sort(
+    (a, b) => a.maturation_timestamp - b.maturation_timestamp || a.sequence_number - b.sequence_number
+  )
   while (amountLeft.gt(new BN(0))) {
     const currentLoan = sortedTermLoans[0]
     const nextLoan = sortedTermLoans[1]
-    const balance = new BN(currentLoan.balance)
+    const balance = new BN(currentLoan.remaining_balance)
     if (balance.gte(amountLeft)) {
       const ix = await market.market.repay({
         user: marginAccount,
         termLoan: currentLoan.address,
-        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
+        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey("11111111111111111111111111111111").toBase58(),
         payer: currentLoan.payer,
         amount: amountLeft,
-        source,
+        source
       })
       await marginAccount.withAdapterInvoke({
         instructions: orderIXS,
@@ -517,10 +543,10 @@ export const repay = async ({
       const ix = await market.market.repay({
         user: marginAccount,
         termLoan: currentLoan.address,
-        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey('11111111111111111111111111111111').toBase58(),
+        nextTermLoan: nextLoan ? nextLoan.address : new PublicKey("11111111111111111111111111111111").toBase58(),
         payer: currentLoan.payer,
         amount: balance,
-        source,
+        source
       })
       await marginAccount.withAdapterInvoke({
         instructions: orderIXS,
@@ -542,32 +568,15 @@ export const repay = async ({
   return sendAll(provider, [instructions])
 }
 
-
 interface IRedeem {
   marginAccount: MarginAccount
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
   market: MarketAndConfig
   provider: AnchorProvider
-  deposits: Array<{
-    id: number
-    address: string,
-    sequence_number: number,
-    maturation_timestamp: number,
-    balance: number,
-    rate: number,
-    payer: string,
-    created_timestamp: number
-  }>
+  deposits: Array<Deposit>
 }
-export const redeem = async ({
-  marginAccount,
-  pools,
-  markets,
-  market,
-  provider,
-  deposits
-}: IRedeem) => {
+export const redeem = async ({ marginAccount, pools, markets, market, provider, deposits }: IRedeem) => {
   const instructions: TransactionInstruction[][] = []
   const refreshIxs: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -583,11 +592,7 @@ export const redeem = async ({
 
   for (let i = 0; i < sortedDeposits.length; i++) {
     const deposit = sortedDeposits[i]
-    const redeem = await market.market.redeemDeposit(
-      marginAccount,
-      deposit,
-      market.market
-    )
+    const redeem = await market.market.redeemDeposit(marginAccount, deposit, market.market)
     await marginAccount.withAdapterInvoke({
       instructions: redeemIxs,
       adapterInstruction: redeem
@@ -596,4 +601,87 @@ export const redeem = async ({
 
   instructions.push(redeemIxs)
   return sendAll(provider, [instructions])
+}
+
+interface IConfigureAutoRoll {
+  account: MarginAccount
+  marketAndConfig: MarketAndConfig
+  provider: AnchorProvider
+  walletAddress: PublicKey
+  payload: {
+    lendPrice: bigint
+    borrowPrice: bigint
+  }
+}
+export const configAutoroll = async ({
+  account,
+  marketAndConfig,
+  provider,
+  payload,
+  walletAddress
+}: IConfigureAutoRoll) => {
+  const { marketIXS } = await withCreateFixedTermMarketAccounts({
+    market: marketAndConfig.market,
+    provider,
+    marginAccount: account,
+    walletAddress
+  })
+
+  const lendSetupIX = await marketAndConfig.market.configAutorollLend(account, payload.lendPrice)
+  await account.withAdapterInvoke({
+    instructions: marketIXS,
+    adapterInstruction: lendSetupIX
+  })
+
+  const borrowSetupIX = await marketAndConfig.market.configAutorollBorrow(
+    account,
+    payload.borrowPrice,
+    new BN(marketAndConfig.config.borrowTenor > 120 ? marketAndConfig.config.borrowTenor - 30 * 60 : 100)
+  ) // market tenor - 30 minutes of lead time
+
+  await account.withAdapterInvoke({
+    instructions: marketIXS,
+    adapterInstruction: borrowSetupIX
+  })
+  return sendAll(provider, [marketIXS])
+}
+
+interface IToggleAutorollPosition {
+  position: Loan | Deposit // deposit
+  provider: AnchorProvider
+  marginAccount: MarginAccount
+  market: FixedTermMarket
+  pools: Record<string, Pool>
+  markets: FixedTermMarket[]
+}
+
+export const toggleAutorollPosition = async ({
+  position,
+  marginAccount,
+  market,
+  provider,
+  pools,
+  markets
+}: IToggleAutorollPosition) => {
+  let ix: TransactionInstruction
+  let tx: TransactionInstruction[] = []
+
+  await marginAccount.withPrioritisedPositionRefresh({
+    instructions: tx,
+    pools,
+    markets,
+    marketAddress: market.address
+  })
+
+  if ("remaining_balance" in position) {
+    ix = await market.toggleAutorollLoan(marginAccount, position.address)
+  } else {
+    ix = await market.toggleAutorollDeposit(marginAccount, position.address)
+  }
+
+  marginAccount.withAdapterInvoke({
+    instructions: tx,
+    adapterInstruction: ix
+  })
+  return sendAll(provider, [tx])
 }

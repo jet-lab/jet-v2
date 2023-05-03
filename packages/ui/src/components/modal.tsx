@@ -6,7 +6,7 @@ import { Title } from './typography';
 
 interface BaseModalProps {
   children: React.ReactNode;
-  open?: boolean;
+  open: boolean;
   title?: string;
   overlay?: boolean;
   className?: string;
@@ -16,21 +16,20 @@ interface BaseModalProps {
 /**
  * Base modal component
  */
-export const Modal = ({ children, title, overlay = true, className, onClose }: BaseModalProps) => {
+export const Modal = ({ children, title, className, onClose, open, overlay = true }: BaseModalProps) => {
   return (
     <>
       <Portal.Root>
-        <Dialog.Root defaultOpen={true}>
-          {overlay && (
-            <Dialog.Overlay className="absolute top-0 bottom-0 left-0 right-0 z-10 bg-slate-900 opacity-40" />
-          )}
-          <Dialog.Content className="absolute top-0 right-0 left-0 bottom-0 h-screen w-screen">
+        <Dialog.Root open={open}>
+          {overlay && <Dialog.Overlay className="fixed top-0 bottom-0 left-0 right-0 z-10 bg-slate-900 opacity-40" />}
+          <Dialog.Content className="fixed top-0 right-0 left-0 bottom-0 z-20 h-screen w-screen">
             <div
-              className={`absolute top-1/2 left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 transform flex-col rounded bg-gradient-to-r from-[#292929] to-[#0E0E0E] p-6 shadow ${className ? className : ''
-                }`}>
+              className={`absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 transform flex-col rounded bg-gradient-to-r from-[#292929] to-[#0E0E0E] p-6 shadow ${
+                className ? className : ''
+              }`}>
               <Dialog.Close
                 asChild
-                className="absolute right-3 top-3 flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-neutral-700 close-modal-button"
+                className="close-modal-button absolute right-3 top-3 flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-neutral-700"
                 aria-label="Close"
                 onClick={onClose}>
                 <Cross2Icon />
@@ -61,7 +60,7 @@ interface DismissModalProps extends Omit<BaseModalProps, 'children'> {
  * ```
  */
 export const DismissModal = ({ children, storageKey, title, className }: DismissModalProps) => {
-  const [open, setOpen] = useState<boolean | undefined>(false);
+  const [open, setOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const dismissedDate = localStorage.getItem(storageKey);
@@ -73,11 +72,11 @@ export const DismissModal = ({ children, storageKey, title, className }: Dismiss
     setOpen(false);
   }, [storageKey]);
 
-  return open ? (
-    <Modal title={title} className={className} onClose={() => setOpen(false)}>
+  return (
+    <Modal open={open} title={title} className={className} onClose={() => setOpen(false)}>
       {children({
         dismiss
       })}
     </Modal>
-  ) : null;
+  );
 };

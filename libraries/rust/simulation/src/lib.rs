@@ -29,6 +29,7 @@ use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::TransactionError,
 };
 
+mod log;
 #[doc(hidden)]
 pub mod runtime;
 

@@ -378,7 +378,8 @@ impl MarketState {
                 .users
                 .get_mut(&info.margin_user)
                 .ok_or(EventConsumerError::InvalidUserKey(info.margin_user))?
-                .next_term_deposit()
+                .assets()
+                .next_new_deposit_seqno()
                 .to_le_bytes()
                 .to_vec();
 
@@ -397,7 +398,11 @@ impl MarketState {
                 // In this case, the maker is using a margin account, so we
                 // derive the new `TermLoan` account based on the debt sequence
                 // number in the account state
-                *seed = maker_user.next_term_loan().to_le_bytes().to_vec();
+                *seed = maker_user
+                    .debt()
+                    .next_new_loan_seqno()
+                    .to_le_bytes()
+                    .to_vec();
 
                 let loan_account = Some(self.builder.term_loan_key(&info.margin_account, seed));
 

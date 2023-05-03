@@ -382,9 +382,9 @@ async fn margin_repay() -> Result<()> {
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.pending_debt(), posted_order.base_quantity,);
+    assert_eq!(margin_user.debt().pending(), posted_order.base_quantity,);
     assert_eq!(
-        margin_user.total_debt(),
+        margin_user.debt().total(),
         posted_order.base_quantity + term_loan.balance
     );
 
@@ -405,14 +405,14 @@ async fn margin_repay() -> Result<()> {
         post_repayment_term_loan.balance
     );
     assert_eq!(
-        pre_repayment_user.committed_debt() - repayment,
-        post_repayment_user.committed_debt()
+        pre_repayment_user.debt().committed() - repayment,
+        post_repayment_user.debt().committed()
     );
 
     user.repay(0, post_repayment_term_loan.balance).await?;
 
     let margin_user = user.load_margin_user().await?;
-    assert_eq!(margin_user.total_debt(), margin_user.pending_debt());
+    assert_eq!(margin_user.debt().total(), margin_user.debt().pending());
 
     Ok(())
 }
@@ -556,7 +556,7 @@ async fn margin_borrow() -> Result<()> {
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.total_debt(), posted_order.base_quantity,);
+    assert_eq!(margin_user.debt().total(), posted_order.base_quantity,);
 
     Ok(())
 }
@@ -599,7 +599,7 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
         let asks = manager.load_orderbook().await?.asks()?;
         assert_eq!(0, asks.len());
         let margin_user = user.load_margin_user().await.unwrap();
-        assert_eq!(0, margin_user.total_debt());
+        assert_eq!(0, margin_user.debt().total());
     }
 
     Ok(())
