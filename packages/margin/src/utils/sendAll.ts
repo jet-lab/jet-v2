@@ -85,19 +85,6 @@ export async function sendAndConfirmV0(
   if (opts === undefined) {
     opts = provider.opts
   }
-  // let lookups: string[] = (await axios.post("http://localhost:3006/lookup/get_addresses", {
-  //   instructions: instructions.map(i => {
-  //     return {
-  //       program: i.programId.toJSON(),
-  //       accounts: i.keys.map(k => {
-  //         return k.pubkey.toJSON()
-  //       }),
-  //       data: []
-  //     }
-  //   }),
-  //   // TODO: hardcoded for now
-  //   authorities: ["Ecxa8ZnbGJcDSPqBRDQQ3ZTjtBSnkvqPcMdMkx7JAZCM", ...authorities]
-  // })).data.addresses;
 
   // TODO: measure the impact of this call vs caching the result
   const tablesResponse = await Promise.all(

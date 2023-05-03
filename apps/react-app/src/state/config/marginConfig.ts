@@ -3,6 +3,7 @@ import axios from 'axios';
 import { atom, useSetRecoilState } from 'recoil';
 import { MarginClient, MarginConfig } from '@jet-lab/margin';
 import { useJetStore } from '@jet-lab/store';
+import { getAuthorityLookupTables } from '@utils/lookupTables';
 
 // Pool config instantiation at app init
 export const MainConfig = atom<MarginConfig | undefined>({
@@ -23,18 +24,14 @@ export function useMainConfigSyncer() {
     return await response.data;
   }
 
-  async function getAuthorityLookupTables(authority: string): Promise<string[]> {
-    return (await axios.get<{
-      authority: string,
-      addresses: string[]
-    }>(`http://localhost:3006/lookup/authority_addresses/${authority}`)).data.addresses
-  }
-
   useEffect(() => {
     if (cluster == 'localnet') {
-      getLocalnetConfig().then(config => {
+      getLocalnetConfig().then(async config => {
         setMainConfig(config);
-        return getAuthorityLookupTables(config.airspaces[0].lookupRegistryAuthority)
+        // This is temporary until we use the new config format
+        let airspaces = (await axios.get('/localnet.config.json')).data.airspaces;
+        console.log(airspaces[0]);
+        return getAuthorityLookupTables(airspaces[0].lookupRegistryAuthority)
       }).then(addresses => {
         updateLookupTableAddresses(addresses);
       });

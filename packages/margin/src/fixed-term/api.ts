@@ -720,5 +720,5 @@ export const toggleAutorollPosition = async ({
     instructions: tx,
     adapterInstruction: ix
   })
-  return sendAll(provider, [tx])
+  return sendAndConfirmV0(provider, tx, [], [])
 }
