@@ -1,10 +1,38 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { FixedTermMarket, MarketAndConfig } from "./fixedTerm"
-import { Address, AnchorProvider, BN } from "@project-serum/anchor"
+import { AnchorProvider, BN } from "@project-serum/anchor"
 import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../margin"
 import { AssociatedToken } from "../token"
 import { sendAndConfirmV0 } from "../utils"
+
+// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
+interface Deposit {
+  id: number
+  address: string
+  sequence_number: number
+  maturation_timestamp: number
+  principal: number
+  interest: number
+  rate: number
+  payer: string
+  created_timestamp: number
+}
+
+// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
+interface Loan {
+  id: number
+  address: string
+  sequence_number: number
+  maturation_timestamp: number
+  principal: number
+  interest: number
+  remaining_balance: number
+  is_marked_due: boolean
+  created_timestamp: number
+  payer: string
+  rate: number
+}
 
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {
@@ -474,13 +502,7 @@ interface IRepay {
   marginAccount: MarginAccount
   market: MarketAndConfig
   provider: AnchorProvider
-  termLoans: Array<{
-    address: Address
-    balance: number
-    maturation_timestamp: number
-    sequence_number: number
-    payer: string
-  }>
+  termLoans: Array<Loan>
   pools: Record<string, Pool>
   markets: FixedTermMarket[],
   airspaceLookupTables: string[],
@@ -530,7 +552,7 @@ export const repay = async ({
   while (amountLeft.gt(new BN(0))) {
     const currentLoan = sortedTermLoans[0]
     const nextLoan = sortedTermLoans[1]
-    const balance = new BN(currentLoan.balance)
+    const balance = new BN(currentLoan.remaining_balance)
     if (balance.gte(amountLeft)) {
       const ix = await market.market.repay({
         user: marginAccount,
@@ -580,17 +602,8 @@ interface IRedeem {
   markets: FixedTermMarket[]
   market: MarketAndConfig
   provider: AnchorProvider
-  deposits: Array<{
-    id: number
-    address: string
-    sequence_number: number
-    maturation_timestamp: number
-    balance: number
-    rate: number
-    payer: string
-    created_timestamp: number
-  }>,
-  airspaceLookupTables: string[],
+  deposits: Array<Deposit>
+  airspaceLookupTables: string[]
 }
 export const redeem = async ({
   marginAccount,
@@ -668,4 +681,44 @@ export const configAutoroll = async ({
     adapterInstruction: borrowSetupIX
   })
   return sendAndConfirmV0(provider, marketIXS, [], [])
+}
+
+interface IToggleAutorollPosition {
+  position: Loan | Deposit // deposit
+  provider: AnchorProvider
+  marginAccount: MarginAccount
+  market: FixedTermMarket
+  pools: Record<string, Pool>
+  markets: FixedTermMarket[]
+}
+
+export const toggleAutorollPosition = async ({
+  position,
+  marginAccount,
+  market,
+  provider,
+  pools,
+  markets
+}: IToggleAutorollPosition) => {
+  let ix: TransactionInstruction
+  let tx: TransactionInstruction[] = []
+
+  await marginAccount.withPrioritisedPositionRefresh({
+    instructions: tx,
+    pools,
+    markets,
+    marketAddress: market.address
+  })
+
+  if ("remaining_balance" in position) {
+    ix = await market.toggleAutorollLoan(marginAccount, position.address)
+  } else {
+    ix = await market.toggleAutorollDeposit(marginAccount, position.address)
+  }
+
+  marginAccount.withAdapterInvoke({
+    instructions: tx,
+    adapterInstruction: ix
+  })
+  return sendAll(provider, [tx])
 }
