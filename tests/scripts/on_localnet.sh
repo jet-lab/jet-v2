@@ -122,8 +122,12 @@ resume-validator() {
 
 start-new-validator() {
     start-validator -r
+    solana-keygen new --no-bip39-passphrase -o apps/react-app/public/lookup-authority.json --force
+    solana airdrop -k apps/react-app/public/lookup-authority.json -ul 5
     cargo run --bin jetctl -- apply -ul --no-confirm config/localnet/
-    cargo run --bin jetctl -- generate-app-config -ul --no-confirm config/localnet/ -o apps/react-app/public/localnet.config.json
+    cargo run --bin jetctl -- generate-app-config -ul --no-confirm config/localnet/ -o apps/react-app/public/localnet.config.json --override-lookup-authority $(solana-keygen pubkey apps/react-app/public/lookup-authority.json)
+    cargo run --bin jet-alt-registry-client -- create-registry -ul --no-confirm -a apps/react-app/public/lookup-authority.json -k apps/react-app/public/lookup-authority.json
+    cargo run --bin jet-alt-registry-client -- update-registry -ul --no-confirm -a apps/react-app/public/lookup-authority.json -k apps/react-app/public/lookup-authority.json --airspace-name default
     start-crank-service
     start-oracle
     init-idl &

@@ -52,6 +52,10 @@ program = "./deps/saber_stable_swap.so"
 address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
 program = "./deps/spl-token-swap/crates.io-spl_token_swap==2.0.0.so"
 
+[[test.genesis]]
+address = "LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru"
+program = "./deps/lookup_table_registry.so"
+
 [test]
 startup_wait = 10000
 
