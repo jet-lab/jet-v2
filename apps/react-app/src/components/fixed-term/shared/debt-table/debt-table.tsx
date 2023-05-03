@@ -54,10 +54,10 @@ export function DebtTable() {
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-          ? process.env.REACT_APP_DEV_DATA_API
-          : cluster === 'localnet'
-            ? process.env.REACT_APP_LOCAL_DATA_API
-            : '',
+        ? process.env.REACT_APP_DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.REACT_APP_LOCAL_DATA_API
+        : '',
     [cluster]
   );
 
@@ -184,11 +184,21 @@ export function DebtTable() {
                 />
               ),
               key: 'open-borrows',
-              children: positionsLoading ? (
-                <LoadingOutlined />
-              ) : (
-                <OpenBorrowsTable data={positionsData.loans} market={markets[selectedMarket]} />
-              )
+              children:
+                positionsLoading || !account ? (
+                  <LoadingOutlined />
+                ) : (
+                  <OpenBorrowsTable
+                    data={positionsData.loans}
+                    market={markets[selectedMarket]}
+                    marginAccount={account}
+                    provider={provider}
+                    cluster={cluster}
+                    explorer={explorer}
+                    pools={pools.tokenPools}
+                    markets={markets.map(m => m.market)}
+                  />
+                )
             }
           ]}
           size="large"

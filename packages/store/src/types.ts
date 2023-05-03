@@ -14,6 +14,7 @@ export interface OpenOrder {
   total_quote_qty: number;
   filled_quote_qty: number;
   is_auto_stake: boolean;
+  is_auto_roll: boolean;
   created_timestamp: number;
   rate: number;
 }
@@ -32,32 +33,37 @@ export interface Loan {
   address: string;
   sequence_number: number;
   maturation_timestamp: number;
-  balance: number;
+  principal: number;
+  interest: number;
+  remaining_balance: number;
   is_marked_due: boolean;
+  is_auto_roll: boolean;
   created_timestamp: number;
-  payer: string
+  payer: string;
   rate: number;
 }
 
 export interface Deposit {
-  id: number
-  address: string,
-  sequence_number: number,
-  maturation_timestamp: number,
-  balance: number,
-  rate: number,
-  payer: string,
-  created_timestamp: number
+  id: number;
+  address: string;
+  sequence_number: number;
+  maturation_timestamp: number;
+  principal: number;
+  interest: number;
+  rate: number;
+  payer: string;
+  is_auto_roll: boolean;
+  created_timestamp: number;
 }
 
 export type Order = {
-  owner: any,
-  order_tag: any,
-  base_size: bigint,
-  price: bigint,
-}
+  owner: any;
+  order_tag: any;
+  base_size: bigint;
+  price: bigint;
+};
 
 export type OrderbookSnapshot = {
-  bids: Array<Order>,
-  asks: Array<Order>,
+  bids: Array<Order>;
+  asks: Array<Order>;
 };
