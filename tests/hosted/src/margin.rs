@@ -35,14 +35,16 @@ use jet_margin_sdk::ix_builder::{
     MarginPoolConfiguration, MarginPoolIxBuilder,
 };
 use jet_margin_sdk::lookup_tables::LookupTable;
-use jet_margin_sdk::margin_integrator::PositionRefresher;
-use jet_margin_sdk::solana::keypair::clone;
+use jet_margin_sdk::refresh::canonical_position_refresher;
+use jet_margin_sdk::refresh::position_refresher::{PositionRefresher, SmartRefresher};
+use jet_margin_sdk::solana::keypair::{clone, KeypairExt};
 use jet_margin_sdk::solana::transaction::{
     InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilder,
     TransactionBuilderExt, WithSigner,
 };
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
+use jet_solana_client::signature::Authorization;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::system_program;
@@ -51,8 +53,8 @@ use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 use jet_control::TokenMetadataParams;
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::{
-    global_initialize_instructions, AirspaceAdmin, MarginActionAuthority, MarginTxBuilder,
-    TokenDepositsConfig,
+    global_initialize_instructions, AirspaceAdmin, MarginActionAuthority, MarginInvokeContext,
+    MarginTxBuilder, TokenDepositsConfig,
 };
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -102,9 +104,10 @@ impl MarginClient {
         );
 
         MarginUser {
-            tx,
             signer: clone(keypair),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone()).for_address(*tx.address()),
+            tx,
         }
     }
 
@@ -127,9 +130,10 @@ impl MarginClient {
         );
 
         Ok(MarginUser {
-            tx,
             signer: clone(keypair),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone()).for_address(*tx.address()),
+            tx,
         })
     }
 
@@ -322,6 +326,7 @@ impl MarginClient {
 pub struct MarginUser {
     pub tx: MarginTxBuilder,
     pub signer: Keypair,
+    pub refresher: SmartRefresher<Pubkey>,
     rpc: Arc<dyn SolanaRpcClient>,
 }
 
@@ -331,6 +336,8 @@ impl Clone for MarginUser {
             tx: self.tx.clone(),
             signer: clone(&self.signer),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone())
+                .for_address(*self.tx.address()),
         }
     }
 }
@@ -371,11 +378,29 @@ impl MarginUser {
             signer: clone(&liquidator),
             tx: self.tx.liquidator(liquidator),
             rpc: self.rpc.clone(),
+            refresher: canonical_position_refresher(self.rpc.clone())
+                .for_address(*self.tx.address()),
         }
     }
 
     pub fn owner(&self) -> &Pubkey {
         self.tx.owner()
+    }
+
+    pub fn auth(&self) -> Authorization {
+        Authorization {
+            address: *self.address(),
+            authority: self.signer.clone(),
+        }
+    }
+
+    pub fn ctx(&self) -> MarginInvokeContext<Keypair> {
+        MarginInvokeContext {
+            margin_account: *self.address(),
+            authority: self.signer.clone(),
+            airspace: self.tx.airspace(),
+            is_liquidator: self.tx.is_liquidator(),
+        }
     }
 
     pub fn signer(&self) -> Pubkey {
@@ -409,6 +434,36 @@ impl MarginUser {
         self.send_confirm_tx(self.tx.close_account().await?).await
     }
 
+    /// Create an address lookup registry account
+    pub async fn init_lookup_registry(&self) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.init_lookup_registry().await?)
+            .await
+    }
+
+    /// Create a lookup table in a lookup registry account
+    ///
+    /// TODO: might be useful to return the address created to the caller
+    pub async fn create_lookup_table(&self) -> Result<Pubkey, Error> {
+        let (tx, lookup_table) = self.tx.create_lookup_table().await?;
+        self.send_confirm_tx(tx).await?;
+
+        Ok(lookup_table)
+    }
+
+    /// Append accounts into a lookup table
+    pub async fn append_to_lookup_table(
+        &self,
+        lookup_table: Pubkey,
+        addresses: &[Pubkey],
+    ) -> Result<(), Error> {
+        self.send_confirm_tx(
+            self.tx
+                .append_to_lookup_table(lookup_table, addresses)
+                .await?,
+        )
+        .await
+    }
+
     pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<(), Error> {
         self.tx
             .refresh_pool_position(token_mint)
@@ -426,8 +481,8 @@ impl MarginUser {
     }
 
     pub async fn refresh_positions(&self) -> Result<Vec<Signature>, Error> {
-        self.tx
-            .refresh_positions()
+        self.refresher
+            .refresh_positions(&())
             .await?
             .send_and_confirm_condensed(&self.rpc)
             .await
@@ -624,6 +679,11 @@ impl MarginUser {
 
     pub async fn verify_healthy(&self) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.verify_healthy().await?).await
+    }
+
+    pub async fn verify_unhealthy(&self) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.verify_unhealthy().await?)
+            .await
     }
 
     /// Close a user's empty positions.

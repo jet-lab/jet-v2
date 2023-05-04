@@ -1,8 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
 
 interface ICarouselProps {
+  pagesToRender: number
   pages: (args: {
-    page: number;
+    pageNumber: number;
+    pageIndex: number
     isEndPage: boolean;
     isFirstPage: boolean;
     nextPage: () => void;
@@ -18,11 +20,11 @@ interface ICarouselProps {
  * ```
  */
 
-export const Carousel = ({ pages }: ICarouselProps) => {
+export const Carousel = ({ pages, pagesToRender }: ICarouselProps) => {
   const [page, setPage] = useState(0);
 
   const nextPage = useCallback(() => {
-    if (page <= pages.length) {
+    if (page < pagesToRender) {
       setPage(page + 1);
     } else {
       console.log('reached last page');
@@ -36,10 +38,11 @@ export const Carousel = ({ pages }: ICarouselProps) => {
   }, [page]);
 
   const isFirstPage = useMemo(() => page === 0, [page]);
-  const isEndPage = useMemo(() => page === 10, [page]);
+  const isEndPage = useMemo(() => page === pagesToRender - 1, [page]);
 
   const enhancedPages = pages({
-    page,
+    pageNumber: page + 1,
+    pageIndex: page,
     isEndPage,
     isFirstPage,
     nextPage,

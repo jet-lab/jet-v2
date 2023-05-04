@@ -534,6 +534,10 @@ html {
 
       .rent-fee-info {
         padding: @spacing-base @spacing-xs 0 @spacing-xs;
+
+        .underlined {
+          text-decoration: underline;
+        }
       }
     }
   }
@@ -1046,7 +1050,7 @@ html {
       padding: @spacing-lg @spacing-xl @spacing-xl @spacing-xl;
 
       &-item {
-        width: 33%;
+        width: 25%;
 
         h1 {
           margin: @spacing-sm 0 @spacing-xs 0;
@@ -1166,6 +1170,14 @@ html {
         .ant-typography {
           font-size: @lg-font-size;
           margin: @spacing-xs;
+        }
+
+        .copiable-field {
+          margin-top: 12px;
+
+          .ant-typography {
+            margin: 0;
+          }
         }
 
         &-top {
@@ -2659,7 +2671,6 @@ html {
   .fixed-order-entry-fields {
     display: flex;
     align-items: center;
-    padding-top: 24px;
 
     label {
       text-transform: uppercase;
@@ -2733,6 +2744,15 @@ html {
     display: flex;
     align-items: center;
     padding: 16px 0;
+
+    svg {
+      margin: @spacing-sm;
+      cursor: pointer;
+
+      &:hover {
+        fill: @jet-green;
+      }
+    }
   }
 
   .stats {
@@ -2741,7 +2761,7 @@ html {
     border: 1px solid @jet-green;
     display: flex;
     flex-direction: column;
-    margin: 0 5px 36px;
+    margin: 0 6px 8px;
 
     .stat-line {
       padding: 4px;
@@ -2843,6 +2863,10 @@ html {
   width: calc(100% - (@spacing-sm * 2));
   margin: @spacing-sm;
 
+  .ant-switch.debt-table-switch {
+    margin: auto;
+  }
+
   .ant-typography {
     margin: unset;
   }
@@ -2876,7 +2900,7 @@ html {
   }
 }
 
-.pool-details-address {
+.copiable-field {
   display: flex;
   transition: all 0.3s;
   padding: 2px 4px;
@@ -2884,6 +2908,7 @@ html {
 
   cursor: pointer;
   align-items: center;
+  justify-content: center;
 
   & svg {
     margin-right: 8px;
@@ -2934,4 +2959,72 @@ html {
   bottom: 16px;
   left: 50%;
   transform: translate(-50%, 0);
+}
+
+.fixed-order-entry-fields label,
+.autoroll-modal label {
+  text-transform: uppercase;
+  font-size: 10px;
+  color: rgb(var(--secondary-5));
+
+  &:first-child {
+    margin-right: 22px;
+  }
+
+  .ant-input-number-wrapper.ant-input-number-group {
+    position: relative;
+  }
+
+  .ant-input-number-group-addon {
+    font-size: 14px;
+    position: absolute;
+    right: 0;
+    bottom: 16px;
+  }
+
+  input {
+    background: transparent;
+    box-shadow: none;
+    padding: 8px 0;
+    border-bottom: 1px solid rgb(var(--primary-3));
+    font-size: 20px;
+    color: white;
+    border-radius: 0;
+    transition: border-color 0.3s;
+
+    &:hover,
+    &:focus {
+      box-shadow: none;
+    }
+
+    &:hover {
+      border-bottom: 1px solid @jet-green-3;
+    }
+
+    &:focus {
+      border-bottom: 1px solid @jet-green;
+    }
+
+    &::-webkit-input-placeholder {
+      /* WebKit, Blink, Edge */
+      color: #666;
+    }
+
+    &:-moz-placeholder {
+      /* Mozilla Firefox 4 to 18 */
+      color: #666;
+      opacity: 1;
+    }
+
+    &::-moz-placeholder {
+      /* Mozilla Firefox 19+ */
+      color: #666;
+      opacity: 1;
+    }
+
+    &:-ms-input-placeholder {
+      /* Internet Explorer 10-11 */
+      color: #666;
+    }
+  }
 }

@@ -46,7 +46,7 @@ impl TestUser {
             Entry::Occupied(entry) => *entry.get(),
             Entry::Vacant(entry) => *entry.insert(
                 self.ctx
-                    .tokens
+                    .tokens()
                     .create_account(mint, self.user.owner())
                     .await?,
             ),
@@ -57,14 +57,14 @@ impl TestUser {
 
     pub async fn ephemeral_token_account(&self, mint: &Pubkey, amount: u64) -> Result<Pubkey> {
         self.ctx
-            .tokens
+            .tokens()
             .create_account_funded(mint, self.user.owner(), amount)
             .await
     }
 
     pub async fn mint(&mut self, mint: &Pubkey, amount: u64) -> Result<()> {
         let token_account = self.token_account(mint).await?;
-        self.ctx.tokens.mint(mint, &token_account, amount).await
+        self.ctx.tokens().mint(mint, &token_account, amount).await
     }
 
     pub async fn deposit(&self, mint: &Pubkey, amount: u64) -> Result<()> {
@@ -72,7 +72,7 @@ impl TestUser {
         self.user
             .deposit(mint, &token_account, TokenChange::shift(amount))
             .await?;
-        self.ctx.tokens.refresh_to_same_price(mint).await
+        self.ctx.tokens().refresh_to_same_price(mint).await
     }
 
     pub async fn deposit_from_wallet(&mut self, mint: &Pubkey, amount: u64) -> Result<()> {
@@ -83,7 +83,7 @@ impl TestUser {
     }
 
     pub async fn borrow(&self, mint: &Pubkey, amount: u64) -> Result<Vec<Signature>> {
-        let mut txs = vec![self.ctx.tokens.refresh_to_same_price_tx(mint).await?];
+        let mut txs = vec![self.ctx.tokens().refresh_to_same_price_tx(mint).await?];
         txs.extend(self.user.tx.refresh_all_pool_positions().await?);
         txs.push(
             self.user
@@ -92,7 +92,7 @@ impl TestUser {
                 .await?,
         );
 
-        self.ctx.rpc.send_and_confirm_condensed(txs).await
+        self.ctx.rpc().send_and_confirm_condensed(txs).await
     }
 
     pub async fn borrow_to_wallet(&self, mint: &Pubkey, amount: u64) -> Result<()> {
@@ -183,13 +183,17 @@ impl TestUser {
             vec![]
         };
         txs.push(self.user.liquidate_begin_tx(refresh_positions).await?);
-        self.ctx.rpc.send_and_confirm_condensed(txs).await?;
+        self.ctx.rpc().send_and_confirm_condensed(txs).await?;
 
         Ok(())
     }
 
     pub async fn verify_healthy(&self) -> Result<()> {
         self.user.verify_healthy().await
+    }
+
+    pub async fn verify_unhealthy(&self) -> Result<()> {
+        self.user.verify_unhealthy().await
     }
 
     pub async fn liquidate_end(&self, liquidator: Option<Pubkey>) -> Result<()> {
@@ -224,7 +228,7 @@ impl TestUser {
     async fn create_deposit_position(&self, mint: &Pubkey) -> Result<()> {
         let address = get_associated_token_address(self.user.address(), mint);
 
-        if self.ctx.rpc.get_account(&address).await?.is_none() {
+        if self.ctx.rpc().get_account(&address).await?.is_none() {
             self.user.create_deposit_position(mint).await?;
         }
 
@@ -232,10 +236,17 @@ impl TestUser {
     }
 }
 
-#[derive(Debug)]
 pub struct TestLiquidator {
     pub ctx: Arc<MarginTestContext>,
     pub wallet: Keypair,
+}
+
+impl std::fmt::Debug for TestLiquidator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TestLiquidator")
+            .field("wallet", &self.wallet)
+            .finish()
+    }
 }
 
 impl TestLiquidator {
@@ -247,10 +258,10 @@ impl TestLiquidator {
     }
 
     pub fn for_user(&self, user: &MarginUser) -> Result<TestUser> {
-        let liquidation = self
-            .ctx
-            .margin
-            .liquidator(&self.wallet, user.owner(), user.seed())?;
+        let liquidation =
+            self.ctx
+                .margin_client()
+                .liquidator(&self.wallet, user.owner(), user.seed())?;
 
         Ok(TestUser {
             ctx: self.ctx.clone(),
@@ -283,7 +294,13 @@ impl TestLiquidator {
         let liquidator = self.wallet.pubkey();
         let fee_destination = get_associated_token_address(&get_control_authority_address(), loan);
 
-        if self.ctx.rpc.get_account(&fee_destination).await?.is_none() {
+        if self
+            .ctx
+            .rpc()
+            .get_account(&fee_destination)
+            .await?
+            .is_none()
+        {
             let create_ata_ix = create_associated_token_account(
                 &liquidator,
                 &get_control_authority_address(),
@@ -291,7 +308,7 @@ impl TestLiquidator {
                 &spl_token::id(),
             );
             self.ctx
-                .rpc
+                .rpc()
                 .send_and_confirm_1tx(&[create_ata_ix], &[&self.wallet])
                 .await?;
         }

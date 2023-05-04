@@ -20,6 +20,7 @@ use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use jet_program_common::Number128;
+use jet_static_program_registry::orca_swap_v2;
 
 use crate::seeds::{SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_TOKENS, TOKEN_INFO};
 use crate::state::{SplSwapInfo, TokenInfo};
@@ -180,7 +181,7 @@ fn apply_change<'info>(
             return Ok(());
         }
 
-        let ix = spl_token_swap::instruction::withdraw_single_token_type_exact_amount_out(
+        let ix = orca_swap_v2::instruction::withdraw_single_token_type_exact_amount_out(
             ctx.accounts.swap_program.key,
             ctx.accounts.token_program.key,
             ctx.accounts.pool_state.key,
@@ -192,7 +193,7 @@ fn apply_change<'info>(
             &ctx.accounts.pool_token_a.key(),
             &ctx.accounts.pool_token_b.key(),
             &scratch.key(),
-            spl_token_swap::instruction::WithdrawSingleTokenTypeExactAmountOut {
+            orca_swap_v2::instruction::WithdrawSingleTokenTypeExactAmountOut {
                 destination_token_amount: tokens,
                 maximum_pool_token_amount: u64::MAX,
             },
@@ -248,7 +249,7 @@ fn apply_change<'info>(
             tokens,
         )?;
 
-        let ix = spl_token_swap::instruction::deposit_single_token_type_exact_amount_in(
+        let ix = orca_swap_v2::instruction::deposit_single_token_type_exact_amount_in(
             ctx.accounts.swap_program.key,
             ctx.accounts.token_program.key,
             ctx.accounts.pool_state.key,
@@ -259,7 +260,7 @@ fn apply_change<'info>(
             &ctx.accounts.pool_token_b.key(),
             &ctx.accounts.pool_mint.key(),
             &ctx.accounts.pool_fees.key(),
-            spl_token_swap::instruction::DepositSingleTokenTypeExactAmountIn {
+            orca_swap_v2::instruction::DepositSingleTokenTypeExactAmountIn {
                 source_token_amount: tokens,
                 minimum_pool_token_amount: 0,
             },

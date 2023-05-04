@@ -8,8 +8,8 @@ const cypressConfig = {
     env: {
       hideXHR: true
     },
-    baseUrl: 'http://localhost:3000',
-    defaultCommandTimeout: 60_000,
+    baseUrl: 'http://localhost:3000/?cluster=localnet',
+    defaultCommandTimeout: 20_000,
     testIsolation: false
   }
 };

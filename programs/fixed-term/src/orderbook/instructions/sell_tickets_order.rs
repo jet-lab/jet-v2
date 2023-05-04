@@ -55,7 +55,7 @@ impl<'info> SellTicketsOrder<'info> {
         self.withdraw(
             &self.underlying_token_vault,
             &self.user_token_vault,
-            order_summary.quote_filled()?,
+            order_summary.quote_filled(RoundingAction::FillBorrow.direction())?,
         )?;
         anchor_spl::token::burn(
             CpiContext::new(
@@ -79,6 +79,7 @@ impl<'info> SellTicketsOrder<'info> {
             auto_stake: params.auto_stake,
             post_only: params.post_only,
             post_allowed: params.post_allowed,
+            auto_roll: params.auto_roll
         });
 
         Ok(())

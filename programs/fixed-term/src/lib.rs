@@ -127,18 +127,20 @@ pub(crate) mod utils;
 
 pub(crate) mod instructions;
 use instructions::*;
-use margin::state::AutoRollConfig;
 
 #[macro_use]
 extern crate bitflags;
 
 use anchor_lang::prelude::*;
+use margin::state::{AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig};
 use orderbook::state::OrderParams;
 
 declare_id!("JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc");
 
 #[program]
 pub mod jet_fixed_term {
+    use crate::margin::state::BorrowAutoRollConfig;
+
     use super::*;
 
     //
@@ -203,18 +205,40 @@ pub mod jet_fixed_term {
     // =============================================
     //
 
+    /// Instruction for authorized servicer to auto roll a `TermLoan` into another order
+    pub fn auto_roll_borrow_order(ctx: Context<AutoRollBorrowOrder>) -> Result<()> {
+        instructions::auto_roll_borrow_order::handler(ctx)
+    }
+
     /// Instruction for authorized servicer to auto roll a matured `TermDeposit` into another order
     pub fn auto_roll_lend_order(ctx: Context<AutoRollLendOrder>) -> Result<()> {
         instructions::auto_roll_lend_order::handler(ctx)
     }
 
     /// Configure settings for rolling orders
-    pub fn configure_auto_roll(
+    pub fn configure_auto_roll_borrow(
         ctx: Context<ConfigureAutoRoll>,
-        side: u8,
-        config: AutoRollConfig,
+        config: BorrowAutoRollConfig,
     ) -> Result<()> {
-        instructions::configure_auto_roll::handler(ctx, side, config)
+        instructions::configure_auto_roll::handler(ctx, AutoRollConfig::Borrow(config))
+    }
+
+    /// Configure settings for rolling orders
+    pub fn configure_auto_roll_lend(
+        ctx: Context<ConfigureAutoRoll>,
+        config: LendAutoRollConfig,
+    ) -> Result<()> {
+        instructions::configure_auto_roll::handler(ctx, AutoRollConfig::Lend(config))
+    }
+
+    /// Toggle the status of a term deposit's auto-roll
+    pub fn toggle_auto_roll_deposit(ctx: Context<ToggleAutoRollDeposit>) -> Result<()> {
+        instructions::toggle_auto_roll_deposit::handler(ctx)
+    }
+
+    /// Toggle the status of a term loan's auto-roll
+    pub fn toggle_auto_roll_loan(ctx: Context<ToggleAutoRollLoan>) -> Result<()> {
+        instructions::toggle_auto_roll_loan::handler(ctx)
     }
 
     /// Create a new borrower account
@@ -372,6 +396,9 @@ pub mod seeds {
 
     #[constant]
     pub const TICKET_COLLATERAL_NOTES: &[u8] = b"ticket_collateral_notes";
+
+    #[constant]
+    pub const UNDERLYING_COLLATERAL_NOTES: &[u8] = b"underlying_collateral_notes";
 
     #[constant]
     pub const EVENT_ADAPTER: &[u8] = b"event_adapter";

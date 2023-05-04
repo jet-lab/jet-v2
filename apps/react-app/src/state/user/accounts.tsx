@@ -3,7 +3,7 @@ import { atom, selector, useRecoilState, useRecoilValue, useResetRecoilState, us
 // import axios from 'axios';
 import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { MarginAccount, MarginClient, AccountTransaction, TokenAmount } from '@jet-lab/margin';
+import { MarginAccount, MarginClient, TokenAmount, FlightLog } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
 import { Dictionary } from '../settings/localization/localization';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
@@ -15,7 +15,7 @@ import { useJetStore } from '@jet-lab/store';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {
-  transactions: AccountTransaction[];
+  transactions: FlightLog[];
 }
 // Interface for a particular token's balances associated with an account
 export interface AccountBalance {
@@ -191,7 +191,7 @@ export function useAccountsSyncer() {
       }
 
       // Account trasactions
-      const transactions = await MarginClient.getBlackBoxHistory(currentAccount.address, cluster);
+      const transactions: FlightLog[] = await MarginClient.getBlackBoxHistory(currentAccount.address, cluster, pools.tokenPools);
 
       setAccountHistoryLoaded(true);
       return {

@@ -77,7 +77,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             UserCallbackInfo::Margin(info) => FillAccounts::Margin({
                 let margin_user = self.accounts.next_margin_user(&info.margin_user)?;
                 let term_account = if info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                    let seed = margin_user.assets.next_new_deposit_seqno().to_le_bytes();
+                    let seed = margin_user.assets().next_new_deposit_seqno().to_le_bytes();
                     Some(TermAccount::Deposit(
                         self.accounts.init_next::<TermDeposit>(
                             self.payer.to_account_info(),
@@ -90,7 +90,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                         )?,
                     ))
                 } else if info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    let seed = margin_user.debt.next_new_loan_seqno().to_le_bytes();
+                    let seed = margin_user.debt().next_new_loan_seqno().to_le_bytes();
                     Some(TermAccount::Loan(self.accounts.init_next::<TermLoan>(
                         self.payer.to_account_info(),
                         self.system_program.to_account_info(),

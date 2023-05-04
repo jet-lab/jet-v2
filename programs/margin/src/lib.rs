@@ -248,6 +248,31 @@ pub mod jet_margin {
         verify_healthy_handler(ctx)
     }
 
+    /// Verify that the account is unhealthy, by validating the collateralization
+    /// ratio is below the minimum.
+    ///
+    /// There's no real reason to call this instruction, outside of wanting to simulate
+    /// the health check for a margin account.
+    ///
+    ///
+    /// # [Accounts](jet_margin::accounts::VerifyUnhealthy)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `read_only` | The account to verify the health of. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::VerifiedUnhealthy`] | Marks the verification of the position. |
+    ///
+    pub fn verify_unhealthy(ctx: Context<VerifyUnhealthy>) -> Result<()> {
+        verify_unhealthy_handler(ctx)
+    }
+
     /// Perform an action by invoking other programs, allowing them to alter
     /// the balances of the token accounts belonging to this margin account.
     ///
@@ -495,6 +520,34 @@ pub mod jet_margin {
     /// protocol due to bad user assets.
     pub fn admin_transfer_position(ctx: Context<AdminTransferPosition>, amount: u64) -> Result<()> {
         admin_transfer_position_handler(ctx, amount)
+    }
+
+    /// Create a lookup table registry account owned by a margin account.
+    ///
+    /// The registry account can store addresses for accounts owned by the margin account,
+    /// such as PDAs, pool accounts and other accounts from adapters that the margin account
+    /// interacts with.
+    /// This should ideally not hold random other accounts including program.
+    pub fn init_lookup_registry(ctx: Context<InitLookupRegistry>) -> Result<()> {
+        init_lookup_registry_handler(ctx)
+    }
+
+    /// Create a lookup table in a registry account owned by a margin account.
+    pub fn create_lookup_table(
+        ctx: Context<CreateLookupTable>,
+        recent_slot: u64,
+        discriminator: u64,
+    ) -> Result<()> {
+        create_lookup_table_handler(ctx, recent_slot, discriminator)
+    }
+
+    /// Append addresses to a lookup table in a registry account owned by a margin account.
+    pub fn append_to_lookup(
+        ctx: Context<AppendToLookup>,
+        discriminator: u64,
+        addresses: Vec<Pubkey>,
+    ) -> Result<()> {
+        append_to_lookup_handler(ctx, discriminator, addresses)
     }
 }
 

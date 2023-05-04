@@ -1,16 +1,38 @@
-import { MarginTokenConfig, MarketAndConfig, TokenAmount } from '@jet-lab/margin';
+import {
+  FixedTermMarket,
+  MarginAccount,
+  MarketAndConfig,
+  Pool,
+  TokenAmount,
+  toggleAutorollPosition
+} from '@jet-lab/margin';
 import { Loan } from '@jet-lab/store';
-import { Table } from 'antd';
+import { Switch, Table } from 'antd';
 import { ColumnsType } from 'antd/lib/table';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';
+import { AnchorProvider } from '@project-serum/anchor';
+import { Dispatch, SetStateAction, useMemo, useState } from 'react';
+import { notify } from '@utils/notify';
+import { getExplorerUrl } from '@utils/ui';
+import { LoadingOutlined } from '@ant-design/icons';
 
-const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
+const getBorrowColumns = (
+  market: MarketAndConfig,
+  marginAccount: MarginAccount,
+  provider: AnchorProvider,
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[],
+  setPendingPositions: Dispatch<SetStateAction<string[]>>,
+  pendingPositions: string[]
+): ColumnsType<Loan> => [
   {
     title: 'Created',
     dataIndex: 'created_timestamp',
     key: 'created_timestamp',
-    render: (date: string) => `${formatDistanceToNowStrict(new Date(date), { addSuffix: true })}`,
+    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
     sorter: (a, b) => a.created_timestamp - b.created_timestamp,
     sortDirections: ['descend']
   },
@@ -18,16 +40,66 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
     title: 'Maturity',
     dataIndex: 'maturation_timestamp',
     key: 'maturation_timestamp',
-    render: (date: string) => `${formatDistanceToNowStrict(new Date(date), { addSuffix: true })}`,
+    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
     sorter: (a, b) => a.maturation_timestamp - b.maturation_timestamp,
     sortDirections: ['descend']
   },
   {
-    title: 'Balance',
-    dataIndex: 'balance',
-    key: 'balance',
-    render: (value: number) => `${token.symbol} ${new TokenAmount(new BN(value), token.decimals).tokens.toFixed(2)}`,
-    sorter: (a, b) => a.balance - b.balance,
+    title: 'Principal',
+    dataIndex: 'principal',
+    key: 'principal',
+    render: (value: number) =>
+      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.principal - b.principal,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Remaining Balance',
+    dataIndex: 'remaining_balance',
+    key: 'remaining_balance',
+    render: (value: number) =>
+      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.remaining_balance - b.remaining_balance,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Interest',
+    dataIndex: 'interest',
+    key: 'interest',
+    render: (value: number) =>
+      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.interest - b.interest,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Autoroll',
+    key: 'is_auto_roll',
+    align: 'center',
+    render: (position: Loan) => {
+      return pendingPositions.includes(position.address) ? (
+        <LoadingOutlined />
+      ) : (
+        <Switch
+          className="debt-table-switch"
+          checked={position.is_auto_roll}
+          onClick={() => {
+            togglePosition(
+              marginAccount,
+              market,
+              provider,
+              position,
+              pools,
+              markets,
+              cluster,
+              explorer,
+              pendingPositions,
+              setPendingPositions
+            );
+          }}
+        />
+      );
+    },
+    sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
     sortDirections: ['descend']
   },
   {
@@ -40,12 +112,85 @@ const getBorrowColumns = (token: MarginTokenConfig): ColumnsType<Loan> => [
   }
 ];
 
-export const OpenBorrowsTable = ({ data, market }: { data: Loan[]; market: MarketAndConfig }) => {
+const togglePosition = async (
+  marginAccount: MarginAccount,
+  market: MarketAndConfig,
+  provider: AnchorProvider,
+  position: Loan,
+  pools: Record<string, Pool>,
+  markets: FixedTermMarket[],
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet',
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
+  pendingPositions: string[],
+  setPendingPositions: Dispatch<SetStateAction<string[]>>
+) => {
+  try {
+    setPendingPositions([...pendingPositions, position.address]);
+    await toggleAutorollPosition({
+      marginAccount,
+      market: market.market,
+      provider,
+      position,
+      pools,
+      markets
+    });
+    notify('Autoroll toggled', 'Your term loan autoroll settings have been succsesfully toggled', 'success');
+  } catch (e: any) {
+    notify(
+      'Failed to toggle autoroll',
+      'We were unable to toggle your term loan autoroll settings, please try again.',
+      'error',
+      getExplorerUrl(e.signature, cluster, explorer)
+    );
+    console.error(e);
+  } finally {
+    setPendingPositions(pendingPositions.filter(p => p !== position.address));
+  }
+};
+
+interface IOpenBorrowsTable {
+  data: Loan[];
+  market: MarketAndConfig;
+  marginAccount: MarginAccount;
+  provider: AnchorProvider;
+  pools: Record<string, Pool>;
+  markets: FixedTermMarket[];
+  cluster: 'mainnet-beta' | 'localnet' | 'devnet';
+  explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+}
+
+export const OpenBorrowsTable = ({
+  data,
+  market,
+  provider,
+  marginAccount,
+  cluster,
+  explorer,
+  pools,
+  markets
+}: IOpenBorrowsTable) => {
+  const [pendingPositions, setPendingPositions] = useState<string[]>([]);
+  const columns = useMemo(
+    () =>
+      getBorrowColumns(
+        market,
+        marginAccount,
+        provider,
+        cluster,
+        explorer,
+        pools,
+        markets,
+        setPendingPositions,
+        pendingPositions
+      ),
+    [market, marginAccount, provider, cluster, explorer, pendingPositions, setPendingPositions]
+  );
+
   return (
     <Table
-      rowKey="id"
+      rowKey="address"
       className={'debt-table'}
-      columns={getBorrowColumns(market.token)}
+      columns={columns}
       dataSource={data}
       pagination={{
         hideOnSinglePage: true

@@ -3,6 +3,10 @@ name = "jet-simulation"
 version = "0.2.0"
 edition = "2021"
 
+[features]
+test-runtime = ["solana-address-lookup-table-program/full"]
+default = []
+
 [dependencies]
 anyhow = "1"
 async-trait = "0.1"
@@ -24,6 +28,11 @@ solana-runtime = "1.14.1"
 solana-program-runtime = "1.14.1"
 solana-bpf-loader-program = "1.14.1"
 solana-program-test = "1.14.1"
-solana-address-lookup-table-program = "1.14.1"
 
 solana_rbpf = "0.2.31"
+
+[dependencies.solana-address-lookup-table-program]
+package = "solana-address-lookup-table-program-gateway"
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+features = []

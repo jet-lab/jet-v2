@@ -25,8 +25,8 @@ use std::{
 use anchor_lang::ToAccountMetas;
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_static_program_registry::orca_swap_v2::state::SwapV1;
 use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
-use spl_token_swap::state::SwapV1;
 
 use crate::ix_builder::SwapAccounts;
 

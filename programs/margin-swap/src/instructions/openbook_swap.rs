@@ -88,7 +88,10 @@ impl<'info> OpenbookSwapInfo<'info> {
             let market =
                 anchor_openbook::serum_dex::state::Market::load(&self.market, self.dex_program.key)
                     .unwrap();
-            let base_mint = Pubkey::new(bytemuck::cast_slice(&{ market.coin_mint }));
+            let address_bytes: [u8; 32] = bytemuck::cast_slice(&{ market.coin_mint })
+                .try_into()
+                .unwrap();
+            let base_mint = Pubkey::from(address_bytes);
             (market.coin_lot_size, base_mint)
         };
 

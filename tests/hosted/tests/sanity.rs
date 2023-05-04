@@ -44,10 +44,10 @@ struct TestEnv {
 }
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
-    let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
-    let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
+    let usdc = ctx.tokens().create_token(6, None, None).await?;
+    let usdc_oracle = ctx.tokens().create_oracle(&usdc).await?;
+    let tsol = ctx.tokens().create_token(9, None, None).await?;
+    let tsol_oracle = ctx.tokens().create_oracle(&tsol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
@@ -69,7 +69,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     ];
 
     for pool_info in pools {
-        ctx.margin
+        ctx.margin_client()
             .configure_token_deposits(
                 &pool_info.token,
                 Some(&TokenDepositsConfig {
@@ -81,7 +81,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
                 }),
             )
             .await?;
-        ctx.margin.create_pool(&pool_info).await?;
+        ctx.margin_client().create_pool(&pool_info).await?;
     }
 
     Ok(TestEnv { usdc, tsol })
@@ -101,10 +101,10 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // create position metadata refresher
     let refresher = ctx.generate_key();
-    ctx.margin_config
+    ctx.margin_config_ix()
         .configure_position_config_refresher(refresher.pubkey(), true)
         .with_signers(&[clone(&ctx.airspace_authority)])
-        .send_and_confirm(&ctx.rpc)
+        .send_and_confirm(&ctx.rpc())
         .await?;
 
     let env = setup_environment(&ctx).await?;
@@ -119,21 +119,21 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0).created().await?;
-    let user_b = ctx.margin.user(&wallet_b, 0).created().await?;
+    let user_a = ctx.margin_client().user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin_client().user(&wallet_b, 0).created().await?;
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.usdc, &wallet_a.pubkey(), 1_000_000 * ONE_USDC)
         .await?;
     let user_b_tsol_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 1_000 * ONE_TSOL)
         .await?;
 
     // Set the prices for each token
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 1 USD +- 0.01
             &env.usdc,
@@ -145,7 +145,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
             },
         )
         .await?;
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 100 USD +- 1
             &env.tsol,
@@ -178,8 +178,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .await?;
 
     // Verify user tokens have been deposited
-    assert_eq!(0, ctx.tokens.get_balance(&user_a_usdc_account).await?);
-    assert_eq!(0, ctx.tokens.get_balance(&user_b_tsol_account).await?);
+    assert_eq!(0, ctx.tokens().get_balance(&user_a_usdc_account).await?);
+    assert_eq!(0, ctx.tokens().get_balance(&user_b_tsol_account).await?);
 
     user_a.refresh_all_pool_positions().await?;
     user_b.refresh_all_pool_positions().await?;
@@ -215,11 +215,11 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Clear any remainig dust
     let user_a_tsol_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.tsol, &wallet_a.pubkey(), ONE_TSOL / 1_000)
         .await?;
     let user_b_usdc_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.usdc, &wallet_b.pubkey(), ONE_USDC / 1000)
         .await?;
 
@@ -231,8 +231,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .await?;
 
     // Verify accounting updated
-    let usdc_pool = ctx.margin.get_pool(&env.usdc).await?;
-    let tsol_pool = ctx.margin.get_pool(&env.tsol).await?;
+    let usdc_pool = ctx.margin_client().get_pool(&env.usdc).await?;
+    let tsol_pool = ctx.margin_client().get_pool(&env.tsol).await?;
 
     assert!(usdc_pool.loan_notes == 0);
     assert!(tsol_pool.loan_notes == 0);
@@ -246,8 +246,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .await?;
 
     // Now verify that the users got all their tokens back
-    assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_account).await?);
-    assert!(tsol_deposit_amount <= ctx.tokens.get_balance(&user_b_tsol_account).await?);
+    assert!(usdc_deposit_amount <= ctx.tokens().get_balance(&user_a_usdc_account).await?);
+    assert!(tsol_deposit_amount <= ctx.tokens().get_balance(&user_b_tsol_account).await?);
 
     // Check users can create deposit positions and deposit/withdraw
     let user_a_usdc_deposit_account = get_associated_token_address(user_a.address(), &env.usdc);
@@ -271,8 +271,20 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         )
         .await?;
 
-    assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_deposit_account).await?);
-    assert!(tsol_deposit_amount <= ctx.tokens.get_balance(&user_b_tsol_deposit_account).await?);
+    assert!(
+        usdc_deposit_amount
+            <= ctx
+                .tokens()
+                .get_balance(&user_a_usdc_deposit_account)
+                .await?
+    );
+    assert!(
+        tsol_deposit_amount
+            <= ctx
+                .tokens()
+                .get_balance(&user_b_tsol_deposit_account)
+                .await?
+    );
 
     // Withdraw deposits
     user_a
@@ -295,11 +307,11 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .await?;
 
     // Now verify that the users got all their tokens back
-    assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_account).await?);
-    assert!(tsol_deposit_amount <= ctx.tokens.get_balance(&user_b_tsol_account).await?);
+    assert!(usdc_deposit_amount <= ctx.tokens().get_balance(&user_a_usdc_account).await?);
+    assert!(tsol_deposit_amount <= ctx.tokens().get_balance(&user_b_tsol_account).await?);
 
     // Check if we can update the metadata
-    ctx.margin
+    ctx.margin_client()
         .configure_margin_pool(
             &env.usdc,
             &MarginPoolConfiguration {
@@ -316,8 +328,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     user_a.refresh_all_position_metadata(&refresher).await?;
     user_b.refresh_all_position_metadata(&refresher).await?;
 
-    let mut user_a_state = ctx.margin.get_account(user_a.address()).await?;
-    let mut user_b_state = ctx.margin.get_account(user_b.address()).await?;
+    let mut user_a_state = ctx.margin_client().get_account(user_a.address()).await?;
+    let mut user_b_state = ctx.margin_client().get_account(user_b.address()).await?;
 
     assert_eq!(
         0xBEEF,

@@ -27,10 +27,14 @@ pub(crate) mod margin;
 pub(crate) mod margin_pool;
 pub(crate) mod swap;
 
-pub use global::configure_environment;
+pub use fixed_term::configure_market_for_token;
+pub use global::{configure_environment, configure_tokens, create_test_tokens, token_context};
 pub use swap::resolve_swap_program;
 
 /// Descriptions for errors while building the configuration instructions
+/// - TODO: It would be great to find a way to make this Sync + Send, but it's
+///   not straightforward due to the wasm error not being Sync or Send, which
+///   needs to go into InterfaceError.
 #[derive(Error, Debug)]
 pub enum BuilderError {
     #[error("error using network interface: {0:?}")]
@@ -73,6 +77,21 @@ pub trait AccountsRetriever {
     fn exists(&self, address: &Pubkey) -> bool;
 }
 
+/// How will the proposed instructions be executed?
+pub enum ProposalExecution {
+    /// by creating a governance proposal. The actual instructions will be
+    /// executed later.
+    Governance(ProposalContext),
+
+    /// by directly submitting a transaction that contains the instructions.
+    Direct {
+        /// The account that invoked programs may expect to sign the proposed
+        /// instructions. You are expected to own this keypair, so you can
+        /// directly sign the transactions with it.
+        authority: Pubkey,
+    },
+}
+
 #[derive(Debug)]
 pub struct ProposalContext {
     pub program: Pubkey,
@@ -84,13 +103,13 @@ pub struct ProposalContext {
 }
 
 #[derive(Debug)]
-pub(crate) struct TokenContext {
+pub struct TokenContext {
     airspace: Pubkey,
     mint: Pubkey,
     pyth_price: Pubkey,
     pyth_product: Pubkey,
     oracle_authority: Pubkey,
-    desc: TokenDescription,
+    desc: TokenDescription, // TODO: is this whole thing really needed?
 }
 
 pub struct PlanInstructions {
@@ -99,26 +118,45 @@ pub struct PlanInstructions {
 }
 
 pub struct Builder<I> {
-    pub(crate) authority: Pubkey,
     pub(crate) network: NetworkKind,
     pub(crate) interface: I,
-    pub(crate) proposal_context: Option<ProposalContext>,
+    pub(crate) proposal_execution: ProposalExecution,
     setup_tx: Vec<TransactionBuilder>,
     propose_tx: Vec<TransactionBuilder>,
 }
 
 impl<I: NetworkUserInterface> Builder<I> {
-    pub async fn new(network_interface: I, authority: Pubkey) -> Result<Self, BuilderError> {
+    pub async fn new(
+        network_interface: I,
+        proposal_execution: ProposalExecution,
+    ) -> Result<Self, BuilderError> {
         Ok(Self {
-            authority,
             network: NetworkKind::from_interface(&network_interface)
                 .await
                 .map_err(|e| BuilderError::InterfaceError(Box::new(e)))?,
             interface: network_interface,
-            proposal_context: None,
+            proposal_execution,
             setup_tx: vec![],
             propose_tx: vec![],
         })
+    }
+
+    /// Variant of the normal constructor, with three differences:  
+    /// ✓ never need to be awaited  
+    /// ✓ never returns an error  
+    /// 🗴 NetworkKind must be known in advance  
+    pub fn new_infallible(
+        network_interface: I,
+        proposal_execution: ProposalExecution,
+        network: NetworkKind,
+    ) -> Self {
+        Self {
+            network,
+            interface: network_interface,
+            proposal_execution,
+            setup_tx: vec![],
+            propose_tx: vec![],
+        }
     }
 
     pub fn build(self) -> PlanInstructions {
@@ -128,25 +166,24 @@ impl<I: NetworkUserInterface> Builder<I> {
         }
     }
 
-    pub fn set_proposal_context(&mut self, context: ProposalContext) {
-        self.proposal_context = Some(context);
-    }
-
     pub fn payer(&self) -> Pubkey {
         self.interface.signer()
     }
 
     pub fn proposal_payer(&self) -> Pubkey {
-        match &self.proposal_context {
-            None => self.payer(),
-            Some(ctx) => get_native_treasury_address(&ctx.program, &ctx.governance),
+        match &self.proposal_execution {
+            ProposalExecution::Direct { .. } => self.payer(),
+            ProposalExecution::Governance(ctx) => {
+                get_native_treasury_address(&ctx.program, &ctx.governance)
+            }
         }
     }
 
+    /// Account that invoked programs may expect to sign the proposed instructions.
     pub fn proposal_authority(&self) -> Pubkey {
-        match &self.proposal_context {
-            None => self.payer(),
-            Some(ctx) => ctx.governance,
+        match &self.proposal_execution {
+            ProposalExecution::Direct { authority } => *authority,
+            ProposalExecution::Governance(ctx) => ctx.governance,
         }
     }
 
@@ -177,12 +214,12 @@ impl<I: NetworkUserInterface> Builder<I> {
     pub fn propose(&mut self, instructions: impl IntoIterator<Item = Instruction>) {
         let payer = self.payer();
 
-        let instructions = match &mut self.proposal_context {
-            None => instructions
+        let instructions = match &mut self.proposal_execution {
+            ProposalExecution::Direct { .. } => instructions
                 .into_iter()
                 .map(TransactionBuilder::from)
                 .collect::<Vec<_>>(),
-            Some(ctx) => instructions
+            ProposalExecution::Governance(ctx) => instructions
                 .into_iter()
                 .map(|ix| {
                     let accounts = ix

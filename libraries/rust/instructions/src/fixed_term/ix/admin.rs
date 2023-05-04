@@ -32,7 +32,8 @@ pub fn initialize_market(
         underlying_token_vault: underlying_token_vault(&market),
         ticket_mint: ticket_mint(&market),
         claims: claims_mint(&market),
-        collateral: ticket_collateral_mint(&market),
+        ticket_collateral: ticket_collateral_mint(&market),
+        underlying_collateral: underlying_collateral_mint(&market),
         market,
         underlying_token_mint,
         airspace,
@@ -160,11 +161,11 @@ pub fn resume_order_matching(
 }
 
 pub fn pause_ticket_redemption(market_admin: MarketAdmin) -> Instruction {
-    modify_market([true as u8].into(), 8 + 32 * 15 + 2, market_admin)
+    modify_market([true as u8].into(), 8 + 32 * 16 + 2, market_admin)
 }
 
 pub fn resume_ticket_redemption(market_admin: MarketAdmin) -> Instruction {
-    modify_market([false as u8].into(), 8 + 32 * 15 + 2, market_admin)
+    modify_market([false as u8].into(), 8 + 32 * 16 + 2, market_admin)
 }
 
 pub fn modify_market(data: Vec<u8>, offset: u32, market_admin: MarketAdmin) -> Instruction {

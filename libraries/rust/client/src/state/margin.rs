@@ -37,6 +37,7 @@ pub async fn sync_configs<I: NetworkUserInterface>(
     states.for_each(|_, market_state: &MarketState| {
         tokens.push(market_state.market.claims_mint);
         tokens.push(market_state.market.ticket_collateral_mint);
+        tokens.push(market_state.market.underlying_collateral_mint);
         tokens.push(market_state.market.ticket_mint);
     });
 

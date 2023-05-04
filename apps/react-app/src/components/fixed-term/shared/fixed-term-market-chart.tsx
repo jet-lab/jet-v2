@@ -27,11 +27,12 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
     case 'lend-now':
       return `${friendlyMarketName(market.config.symbol, market.config.borrowTenor)} borrow requests`;
     case 'offer-loan':
-      return `${market.config.symbol} loan offers`;
+      return `${friendlyMarketName(market.config.symbol, market.config.borrowTenor)} loan offers`;
     case 'request-loan':
-      return `${market.config.symbol} borrow requests`;
+      return `${friendlyMarketName(market.config.symbol, market.config.borrowTenor)} borrow requests`;
+    default:
+      return '';
   }
-  return '';
 };
 
 const asksKeys = ['lend-now', 'request-loan'];

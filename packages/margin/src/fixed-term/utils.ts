@@ -1,8 +1,9 @@
 import { Address } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js"
+import { AccountMeta, Connection, PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { MarginAccount } from "margin"
 import { FixedTermMarket } from "./fixedTerm"
+import { WasmAccountMeta, WasmTransactionInstruction } from "wasm"
 
 export class DerivedAccount {
   public address: PublicKey
@@ -89,4 +90,23 @@ export const refreshAllMarkets = async (
       }
     })
   )
+}
+
+/**
+ * Translates the deserialized instruction to the native `TransactionInstruction` type
+ * @param ix the deserialized instruction to translate
+ * @returns
+ */
+export function translateWasmInstruction(ix: WasmTransactionInstruction): TransactionInstruction {
+  return new TransactionInstruction({
+    keys: ix.accounts.map((a: WasmAccountMeta): AccountMeta => {
+      return {
+        pubkey: new PublicKey(a.pubkey),
+        isSigner: a.is_signer,
+        isWritable: a.is_writable
+      }
+    }),
+    programId: new PublicKey(ix.program_id),
+    data: Buffer.from(ix.data)
+  })
 }
