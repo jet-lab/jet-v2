@@ -48,7 +48,7 @@ spl-token = "3"
 # not used directly, but indirectly to enable ledger support via `solana-clap-utils`
 solana-remote-wallet = "1.14"
 
-serum_dex = "0.5"
+openbook = { package = "serum_dex", git = "https://github.com/openbook-dex/program", branch = "master", features = ["no-entrypoint"] }
 jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-environment = { path = "../../libraries/rust/environment" }

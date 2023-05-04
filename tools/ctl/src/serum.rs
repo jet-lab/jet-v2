@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
+use openbook::state::Market;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
-use serum_dex::state::Market;
 use solana_sdk::{account_info::IntoAccountInfo, pubkey::Pubkey};
 
 use crate::client::Client;
