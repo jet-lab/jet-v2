@@ -55,8 +55,8 @@ export function DisclaimerModal(): JSX.Element {
           </div>
           <Text>{disclaimer}</Text>
           <Text>
-            WARNING if you have liabilities on your health account, the health can change as prices change. There is NO
-            warning system, so the only place you can these fluctuations in your account health is in the app itself.{' '}
+            WARNING if you have liabilities on your margin account, the health can change as prices change. There is NO
+            warning system, so the only place you can see these fluctuations in your account health is in the app itself.{' '}
           </Text>
           <Checkbox onChange={e => setDisclaimerChecked(e.target.checked)}>
             {dictionary.modals.alerts.disclaimer.acceptRisks}
