@@ -7,6 +7,7 @@ use jet_margin_sdk::{
     jet_margin::{TokenAdmin, TokenConfig},
 };
 use jet_simulation::SolanaRpcClient;
+use solana_client::rpc_filter::RpcFilterType;
 use solana_sdk::account::ReadableAccount;
 
 use crate::Result;
@@ -81,7 +82,10 @@ async fn find_anchor_accounts<T: AccountDeserialize>(
     program: &Pubkey,
 ) -> Result<Vec<(Pubkey, T)>> {
     let result = rpc
-        .get_program_accounts(program, Some(std::mem::size_of::<T>() + 8))
+        .get_program_accounts(
+            program,
+            vec![RpcFilterType::DataSize(std::mem::size_of::<T>() as u64 + 8)],
+        )
         .await?;
     Ok(result
         .into_iter()

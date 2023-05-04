@@ -45,6 +45,7 @@ use jet_margin_sdk::{
 };
 use jet_program_common::Fp32;
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use solana_client::rpc_filter::RpcFilterType;
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -751,7 +752,9 @@ impl TestManager {
             .client
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                Some(std::mem::size_of::<TermDeposit>() + 8),
+                vec![RpcFilterType::DataSize(
+                    std::mem::size_of::<TermDeposit>() as u64 + 8,
+                )],
             )
             .await?
             .into_iter()
@@ -776,7 +779,9 @@ impl TestManager {
             .client
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                Some(std::mem::size_of::<TermLoan>() + 8),
+                vec![RpcFilterType::DataSize(
+                    std::mem::size_of::<TermLoan>() as u64 + 8,
+                )],
             )
             .await?
             .into_iter()
