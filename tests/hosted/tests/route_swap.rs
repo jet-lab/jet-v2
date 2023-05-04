@@ -416,10 +416,6 @@ async fn single_leg_swap_margin(
     setup_swap_accounts(&pool, &user_a).await?;
     setup_swap_accounts(&pool, &user_b).await?;
 
-    // Perform any setup required based on pool type (e.g. create open_orders)
-    setup_swap_accounts(ctx, &pool, &user_a).await?;
-    setup_swap_accounts(ctx, &pool, &user_b).await?;
-
     let user_a_msol_account = ctx
         .tokens()
         .create_account_funded(&env.msol, &wallet_a.pubkey(), 100 * ONE_MSOL)
