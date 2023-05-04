@@ -286,7 +286,7 @@ macro_rules! transactions {
     ($($item:expr),*$(,)?) => {{
         use jet_solana_client::transaction::TransactionBuilder;
         use jet_solana_client::transaction::ToTransactionBuilderVec;
-        let x: Vec<TransactionBuilder> = cat![$(
+        let x: Vec<TransactionBuilder> = $crate::cat![$(
             $item.to_tx_builder_vec(),
         )*];
         x

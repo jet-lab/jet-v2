@@ -1,5 +1,5 @@
-anchor_version = "0.24.2"
-solana_version = "1.10.29"
+anchor_version = "0.26.0"
+solana_version = "1.14.17"
 
 [registry]
 url = "https://anchor.projectserum.com"

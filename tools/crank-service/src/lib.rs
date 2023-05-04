@@ -1,7 +1,6 @@
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
 };
 
 use anyhow::Result;
@@ -10,16 +9,9 @@ use clap::Parser;
 use jet_environment::client_config::JetAppConfig;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file, signer::Signer};
+use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file};
 
-use jet_margin_sdk::{
-    fixed_term::{
-        event_consumer::{download_markets, EventConsumer},
-        settler::settle_margin_users_loop,
-        FixedTermIxBuilder,
-    },
-    util::no_dupe_queue::AsyncNoDupeQueue,
-};
+use jet_margin_sdk::fixed_term::Crank;
 use jet_simulation::solana_rpc_api::RpcConnection;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{prelude::*, EnvFilter};
@@ -83,40 +75,15 @@ pub async fn run(opts: CliOpts) -> Result<()> {
             .unwrap_or(&solana_config.keypair_path),
     )
     .unwrap();
-    let payer = keypair.pubkey();
     let rpc = Arc::new(RpcConnection::new(
         keypair,
         RpcClient::new(opts.url.unwrap_or_else(|| LOCALNET_URL.to_string())),
     ));
     let targets = read_config(&opts.config_path)?;
 
-    let markets = download_markets(rpc.as_ref(), &targets).await?;
-    let consumer = EventConsumer::new(rpc.clone());
-    for market in markets {
-        let margin_accounts = AsyncNoDupeQueue::new();
-        let ix = FixedTermIxBuilder::new_from_state(payer, &market);
-        consumer.insert_market(market, Some(margin_accounts.clone()));
-        tokio::spawn(settle_margin_users_loop(
-            rpc.clone(),
-            ix,
-            margin_accounts,
-            Default::default(),
-        ));
-    }
+    Crank::new(rpc, &targets).await?.run_forever().await;
 
-    loop {
-        consumer.sync_users().await?;
-        consumer.sync_queues().await?;
-
-        while targets
-            .iter()
-            .any(|market| consumer.pending_events(market).unwrap() > 0)
-        {
-            consumer.consume().await?;
-        }
-
-        tokio::time::sleep(Duration::from_secs(2)).await;
-    }
+    unreachable!("unexpected exit")
 }
 
 fn read_config(path: impl AsRef<Path>) -> Result<Vec<Pubkey>> {
