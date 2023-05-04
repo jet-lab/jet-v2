@@ -7,7 +7,10 @@ use jet_margin_sdk::{
     util::asynchronous::MapAsync,
 };
 use jet_solana_client::transactions;
-use std::{sync::Arc, time::Duration};
+use serde_json::from_str;
+use shellexpand::tilde;
+use solana_sdk::{signature::Keypair, signer::Signer};
+use std::{fs::read_to_string, sync::Arc, time::Duration};
 
 use crate::{
     fixed_term::{self, create_and_fund_fixed_term_market_margin_user, OrderAmount},
@@ -23,7 +26,7 @@ pub struct UnhealthyAccountsLoadTestScenario {
     pub repricing_delay: usize,
     pub repricing_scale: f64,
     pub keep_looping: bool,
-    pub liquidator: Pubkey,
+    pub liquidator: Option<Pubkey>,
 }
 
 impl Default for UnhealthyAccountsLoadTestScenario {
@@ -34,9 +37,15 @@ impl Default for UnhealthyAccountsLoadTestScenario {
             repricing_delay: 1,
             repricing_scale: 0.999,
             keep_looping: true,
-            liquidator: Pubkey::default(),
+            liquidator: None,
         }
     }
+}
+
+pub fn load_default_keypair() -> anyhow::Result<Keypair> {
+    let keypair_data = read_to_string(tilde("~/.config/solana/id.json").to_string())?;
+    let keypair_bytes = from_str::<Vec<u8>>(&keypair_data)?;
+    Keypair::from_bytes(&keypair_bytes).map_err(Into::into)
 }
 
 pub async fn unhealthy_accounts_load_test(
@@ -51,6 +60,8 @@ pub async fn unhealthy_accounts_load_test(
         keep_looping,
         liquidator,
     } = scenario;
+    let liquidator = liquidator.unwrap_or_else(|| load_default_keypair().unwrap().pubkey());
+    println!("authorizing liquidator: {liquidator}");
     ctx.margin_client()
         .set_liquidator_metadata(liquidator, true)
         .await?;
@@ -95,12 +106,6 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
     scenario: UnhealthyAccountsLoadTestScenario,
 ) -> Result<(), anyhow::Error> {
     let ctx = margin_test_context!();
-    println!("creating fixed term market");
-    let manager = Arc::new(fixed_term::TestManager::full(&ctx).await.unwrap());
-    let client = manager.client.clone();
-    println!("creating collateral token");
-    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
-
     let UnhealthyAccountsLoadTestScenario {
         user_count,
         mint_count: _, //todo
@@ -109,9 +114,17 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
         keep_looping,
         liquidator,
     } = scenario;
+    let liquidator = liquidator.unwrap_or_else(|| load_default_keypair().unwrap().pubkey());
+    println!("authorizing liquidator: {liquidator}");
     ctx.margin_client()
         .set_liquidator_metadata(liquidator, true)
         .await?;
+
+    println!("creating fixed term market");
+    let manager = Arc::new(fixed_term::TestManager::full(&ctx).await.unwrap());
+    let client = manager.client.clone();
+    println!("creating collateral token");
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     println!("creating users with collateral");
     let users = join_all((0..user_count).into_iter().map(|_| {
