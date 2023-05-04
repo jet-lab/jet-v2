@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use solana_bpf_loader_program::serialization::{
     deserialize_parameters, deserialize_parameters_aligned, serialize_parameters,
 };
+use solana_client::rpc_filter::RpcFilterType;
 use solana_program_runtime::{
     compute_budget::ComputeBudget, ic_logger_msg, invoke_context::InvokeContext, stable_log,
     sysvar_cache::SysvarCache, timings::ExecuteTimings,
@@ -571,16 +572,14 @@ impl SolanaRpcClient for TestRuntimeRpcClient {
     async fn get_program_accounts(
         &self,
         program_id: &Pubkey,
-        size: Option<usize>,
+        filters: Vec<RpcFilterType>,
     ) -> anyhow::Result<Vec<(Pubkey, Account)>> {
         Ok(self
             .bank
             .get_program_accounts(program_id, &ScanConfig::default())?
             .into_iter()
-            .filter_map(|(address, account)| match (size, account.data().len()) {
-                (Some(target), length) if target != length => None,
-                _ => Some((address, account.into())),
-            })
+            .filter(|(_, account)| filters.iter().all(|filter| filter.allows(account)))
+            .map(|(k, v)| (k, v.into()))
             .collect())
     }
 
