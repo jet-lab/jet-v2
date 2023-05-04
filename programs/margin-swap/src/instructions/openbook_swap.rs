@@ -129,8 +129,7 @@ impl<'info> OpenbookSwapInfo<'info> {
                 token_program: token_program.to_account_info(),
                 rent: self.rent.to_account_info(),
             },
-        )
-        .with_remaining_accounts(vec![self.referrer_account.to_account_info()]);
+        );
 
         anchor_openbook::new_order_v3(
             swap_context,
@@ -157,7 +156,8 @@ impl<'info> OpenbookSwapInfo<'info> {
                 pc_wallet: quote_wallet.to_account_info(),
                 vault_signer: self.vault_signer.to_account_info(),
             },
-        );
+        )
+        .with_remaining_accounts(vec![self.referrer_account.to_account_info()]);
         anchor_openbook::settle_funds(settle_ctx)?;
 
         let referrer_closing = token::accessor::amount(&self.referrer_account.to_account_info())?;

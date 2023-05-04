@@ -66,6 +66,16 @@ pub trait OpenBookMarketConfig: Sized {
         open_orders: Keypair,
         authority: &Keypair,
     ) -> Result<Pubkey, Error>;
+
+    async fn settle(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        open_orders_owner: &Keypair,
+        open_orders: &Pubkey,
+        base_fee_receivable: Pubkey,
+        quote_fee_receivable: Pubkey,
+        referrer: Option<&Pubkey>,
+    ) -> Result<(), Error>;
 }
 
 #[async_trait]
@@ -321,6 +331,34 @@ impl OpenBookMarketConfig for OpenBookMarket {
         )?;
 
         send_and_confirm(rpc, &[instruction], &[]).await?;
+
+        Ok(())
+    }
+
+    async fn settle(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        open_orders_owner: &Keypair,
+        open_orders: &Pubkey,
+        base_fee_receivable: Pubkey,
+        quote_fee_receivable: Pubkey,
+        referrer: Option<&Pubkey>,
+    ) -> Result<(), Error> {
+        let instruction = serum_dex::instruction::settle_funds(
+            &Dex::id(),
+            &self.market,
+            &spl_token::ID,
+            open_orders,
+            &open_orders_owner.pubkey(),
+            &self.base_vault,
+            &base_fee_receivable,
+            &self.quote_vault,
+            &quote_fee_receivable,
+            referrer,
+            &self.vault_signer,
+        )?;
+
+        send_and_confirm(rpc, &[instruction], &[open_orders_owner]).await?;
 
         Ok(())
     }
