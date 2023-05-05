@@ -49,7 +49,7 @@
 //! }
 //! ```
 
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
 /// retrieve on-chain state
 pub mod get_state;

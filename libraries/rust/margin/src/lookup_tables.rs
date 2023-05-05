@@ -23,7 +23,7 @@ use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use anchor_client::solana_client::rpc_config::RpcSendTransactionConfig;
 use anyhow::{bail, Context, Result};
-use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_address_lookup_table_program::state::{AddressLookupTable, LookupTableMeta};
 use solana_sdk::{
     account::ReadableAccount,
@@ -161,36 +161,5 @@ impl LookupTable {
         )?;
 
         Ok(tx)
-    }
-
-    /// Send a versioned transaction and wait for its confirmation
-    ///
-    /// We are using this until we can update to solana 1.14 which supports this with `SerializedTransaction`
-    pub async fn send_versioned_transaction(
-        rpc: &Arc<dyn SolanaRpcClient>,
-        transaction: &VersionedTransaction,
-    ) -> Result<Signature> {
-        let serialized = bincode::serialize(transaction)?;
-        let encoded = base64::encode(serialized);
-
-        let connection = rpc
-            .as_any()
-            .downcast_ref::<RpcConnection>()
-            .context("rpc is not an RpcConnection")?;
-        let config = connection
-            .tx_config()
-            .cloned()
-            .unwrap_or_else(|| RpcSendTransactionConfig {
-                skip_preflight: true,
-                preflight_commitment: None,
-                encoding: Some(UiTransactionEncoding::Base64),
-                ..Default::default()
-            });
-        let signature = connection
-            .client()
-            .send_transaction_with_config(transaction, config)
-            .await?;
-
-        Ok(signature)
     }
 }

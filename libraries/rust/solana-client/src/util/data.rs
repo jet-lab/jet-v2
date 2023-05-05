@@ -52,7 +52,7 @@ macro_rules! cat {
     };
     ($concattable:expr, $($therest:expr),+$(,)?) => {{
         use $crate::util::data::Concat;
-        $concattable.cat(cat![$($therest),+])
+        $concattable.cat($crate::cat![$($therest),+])
     }};
 }
 

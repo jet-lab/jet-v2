@@ -1,11 +1,12 @@
 use anchor_lang::prelude::{AccountInfo, Pubkey};
+use jet_solana_client::rpc::native::RpcConnection;
 use solana_sdk::entrypoint::ProgramResult;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use std::sync::Arc;
 
-use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 
 pub use jet_simulation::{DeterministicKeygen, Keygen, RandomKeygen};
@@ -87,9 +88,9 @@ fn init_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
 }
 
 fn localnet_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
-    Arc::new(RpcConnection::new_optimistic(
+    Arc::new((
+        RpcConnection::new_optimistic("http://127.0.0.1:8899"),
         payer,
-        "http://127.0.0.1:8899",
     ))
 }
 
@@ -129,7 +130,7 @@ fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
         lookup_table_registry,
     ];
 
-    Arc::new(runtime.rpc(payer))
+    Arc::new((runtime.rpc(), payer))
 }
 
 // Register OpenBook, converting a DexError to ProgramError

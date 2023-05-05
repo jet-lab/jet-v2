@@ -11,6 +11,7 @@ use solana_sdk::{
 use transaction::{condense, condense_fast, ToTransaction, TransactionBuilder};
 
 pub mod network;
+pub mod rpc;
 pub mod signature;
 pub mod transaction;
 pub mod util;

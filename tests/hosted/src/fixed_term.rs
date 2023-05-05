@@ -27,7 +27,7 @@ use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::{
     fixed_term::{
         event_consumer::{download_markets, EventConsumer},
-        settler::{settle_margin_users_loop, SettleMarginUsersConfig},
+        settler::settler,
         FixedTermIxBuilder, OrderbookAddresses, OwnedEventQueue,
     },
     ix_builder::{get_control_authority_address, MarginIxBuilder},
@@ -41,10 +41,11 @@ use jet_margin_sdk::{
         },
     },
     tx_builder::global_initialize_instructions,
-    util::no_dupe_queue::AsyncNoDupeQueue,
+    util::{no_dupe_queue::AsyncNoDupeQueue, queue_processor::QueueProcessorConfig},
 };
 use jet_program_common::Fp32;
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use jet_solana_client::rpc::AccountFilter;
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -271,21 +272,11 @@ impl TestManager {
 impl TestManager {
     pub async fn consume_events(&self) -> Result<()> {
         let market = self.ix_builder.market();
+        let market_struct = download_markets(self.client.as_ref(), &[market]).await?[0];
+        self.event_consumer
+            .insert_market(market_struct, Some(self.margin_accounts_to_settle.clone()));
+        self.event_consumer.sync_and_consume_all(&[market]).await?;
 
-        loop {
-            let market_struct = download_markets(self.client.as_ref(), &[market]).await?[0];
-            self.event_consumer
-                .insert_market(market_struct, Some(self.margin_accounts_to_settle.clone()));
-            self.event_consumer.sync_queues().await?;
-            self.event_consumer.sync_users().await?;
-
-            let pending = self.event_consumer.pending_events(&market)?;
-            if pending == 0 {
-                break;
-            }
-            self.event_consumer.consume().await?;
-            self.event_consumer.sync_queues().await?;
-        }
         Ok(())
     }
 
@@ -318,18 +309,19 @@ impl TestManager {
     }
 
     pub async fn settle<P: Proxy>(&self, users: &[&FixedTermUser<P>]) -> Result<()> {
-        settle_margin_users_loop(
+        settler(
             self.client.clone(),
             self.ix_builder.clone(),
             self.margin_accounts_to_settle.clone(),
-            SettleMarginUsersConfig {
+            QueueProcessorConfig {
                 batch_size: std::cmp::max(1, users.len()),
                 batch_delay: Duration::from_secs(0),
                 wait_for_more_delay: Duration::from_secs(0),
-                exit_when_done: true,
+                ..Default::default()
             },
-        )
-        .await;
+        )?
+        .process_all()
+        .await?;
         if self.margin_accounts_to_settle.is_empty().await {
             Ok(())
         } else {
@@ -734,7 +726,7 @@ impl TestManager {
             .client
             .get_account(key)
             .await?
-            .ok_or_else(|| anyhow::Error::msg("failed to fetch key: {key}"))?
+            .ok_or_else(|| anyhow::Error::msg(format!("failed to fetch key: {key}")))?
             .data)
     }
 
@@ -760,7 +752,9 @@ impl TestManager {
             .client
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                Some(std::mem::size_of::<TermDeposit>() + 8),
+                vec![AccountFilter::DataSize(
+                    std::mem::size_of::<TermDeposit>() + 8,
+                )],
             )
             .await?
             .into_iter()
@@ -785,7 +779,7 @@ impl TestManager {
             .client
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                Some(std::mem::size_of::<TermLoan>() + 8),
+                vec![AccountFilter::DataSize(std::mem::size_of::<TermLoan>() + 8)],
             )
             .await?
             .into_iter()
