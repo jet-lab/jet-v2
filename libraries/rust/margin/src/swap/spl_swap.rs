@@ -25,8 +25,8 @@ use std::{
 use anchor_lang::ToAccountMetas;
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_solana_client::rpc::AccountFilter;
 use jet_static_program_registry::orca_swap_v2::state::SwapV1;
-use solana_client::rpc_filter::RpcFilterType;
 use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
 
 use crate::ix_builder::SwapAccounts;
@@ -71,7 +71,7 @@ impl SplSwapPool {
     ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
         let size = SwapV1::LEN + 1;
         let accounts = rpc
-            .get_program_accounts(&swap_program, vec![RpcFilterType::DataSize(size as u64)])
+            .get_program_accounts(&swap_program, vec![AccountFilter::DataSize(size)])
             .await
             .unwrap();
 

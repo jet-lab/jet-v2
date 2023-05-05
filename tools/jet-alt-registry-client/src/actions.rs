@@ -1,13 +1,12 @@
-use std::sync::Arc;
 use std::{collections::HashSet, time::Duration};
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::{bail, Context, Result};
 use jet_margin_sdk::jet_fixed_term::ID as FIXED_TERM_ID;
 use jet_margin_sdk::jet_margin_pool::ID as MARGIN_POOL_ID;
-use jet_simulation::SolanaRpcClient;
+use jet_solana_client::rpc::native::RpcConnection;
 use lookup_table_registry_client::{instructions::InstructionBuilder, Entry, Registry};
-use solana_sdk::{signature::Keypair, transaction::Transaction};
+use solana_sdk::transaction::Transaction;
 
 use crate::{
     addresses::ProgramAddresses,
@@ -64,14 +63,9 @@ pub async fn update_registry(
     }
 
     // Get the accounts to add
-    let solana_client: Arc<dyn SolanaRpcClient> =
-        Arc::new(jet_simulation::RpcConnection::new_with_config(
-            // We don't sign anything, can use a random keypair
-            Keypair::new(),
-            client.config.rpc_client(),
-            None,
-        ));
-    let mut program_addresses = ProgramAddresses::fetch(&solana_client, airspace).await?;
+
+    let rpc = RpcConnection::from(client.config.rpc_client());
+    let mut program_addresses = ProgramAddresses::fetch(&rpc, airspace).await?;
 
     let mut registry = Registry::fetch(&client.rpc(), &builder.authority).await?;
 

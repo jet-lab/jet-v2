@@ -66,7 +66,7 @@ impl JsOrderbookModel {
         limitPrice: Option<u64>,
         user: Option<Box<[u8]>>,
     ) -> Result<JsValue, JsError> {
-        let user = user.map(|b| Pubkey::new(&b));
+        let user = user.map(|b| Pubkey::try_from(&*b).unwrap());
         let sim = self
             .inner
             .simulate_taker(action.into(), quoteQty, limitPrice, user); // TODO try_into
@@ -83,7 +83,7 @@ impl JsOrderbookModel {
         limitPrice: u64,
         user: Option<Box<[u8]>>,
     ) -> Result<JsValue, JsError> {
-        let user = user.map(|b| Pubkey::new(&b));
+        let user = user.map(|b| Pubkey::try_from(&*b).unwrap());
         let sim = self
             .inner
             .simulate_maker(action.into(), quoteQty, limitPrice, user);

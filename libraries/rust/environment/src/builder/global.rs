@@ -13,7 +13,7 @@ use jet_solana_client::NetworkUserInterface;
 
 use super::{
     filter_initializers, fixed_term, margin::configure_margin_token, margin_pool, Builder,
-    BuilderError, NetworkKind, TokenContext,
+    BuilderError, NetworkKind, SetupPhase, TokenContext,
 };
 use crate::config::{AirspaceConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS};
 
@@ -34,6 +34,7 @@ pub async fn configure_environment<I: NetworkUserInterface>(
 
     // global authority accounts
     builder.setup(
+        SetupPhase::TokenMints,
         filter_initializers(
             builder,
             [
@@ -261,7 +262,7 @@ pub async fn create_test_tokens<'a, I: NetworkUserInterface>(
     )
     .await?;
 
-    builder.setup(ixns);
+    builder.setup(SetupPhase::TokenMints, ixns);
 
     Ok(())
 }
