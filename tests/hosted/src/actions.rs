@@ -315,14 +315,11 @@ pub async fn redeem_term_deposits(
 
 pub async fn consume_events(ctx: &TestContext, market: &MarketInfo) {
     let consumer = EventConsumer::new(ctx.rpc().clone_with_payer(ctx.inner.crank.clone()).into());
-
     consumer.load_markets(&[market.address]).await.unwrap();
-    consumer.sync_users().await.unwrap();
-    consumer.sync_queues().await.unwrap();
-
-    while consumer.pending_events(&market.address).unwrap() > 0 {
-        consumer.consume().await.unwrap();
-    }
+    consumer
+        .sync_and_consume_all(&[market.address])
+        .await
+        .unwrap();
 }
 
 pub fn position_balance(account: &MarginAccountClient, token: &Token) -> u64 {

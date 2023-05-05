@@ -534,6 +534,10 @@ html {
 
       .rent-fee-info {
         padding: @spacing-base @spacing-xs 0 @spacing-xs;
+
+        .underlined {
+          text-decoration: underline;
+        }
       }
     }
   }
@@ -1399,7 +1403,6 @@ html {
 
     .fixed-term-graph {
       flex: 1;
-      height: 660px;
 
       &-head {
         position: absolute;
@@ -1437,7 +1440,6 @@ html {
 
   .swaps-graph {
     flex: 1;
-    height: 600px;
 
     &-head {
       position: absolute;
@@ -2644,6 +2646,7 @@ html {
 
 .fixed-lend-entry,
 .fixed-borrow-entry {
+  height: 720px !important;
   .ant-tabs {
     width: 100%;
     text-transform: uppercase;
@@ -2662,11 +2665,17 @@ html {
   .order-entry-body {
     display: flex;
     flex-direction: column;
+    height: 100% !important;
+  }
+
+  .submit-button {
+    margin-top: auto;
   }
 
   .fixed-order-entry-fields {
     display: flex;
     align-items: center;
+    margin-bottom: 16px;
 
     label {
       text-transform: uppercase;

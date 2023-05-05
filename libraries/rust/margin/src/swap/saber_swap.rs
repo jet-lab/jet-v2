@@ -26,6 +26,7 @@ use anchor_lang::ToAccountMetas;
 use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use saber_client::state::SwapInfo;
+use solana_client::rpc_filter::RpcFilterType;
 use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
 
 use crate::ix_builder::SwapAccounts;
@@ -66,7 +67,7 @@ impl SaberSwapPool {
         let swap_program = saber_client::id();
         let size = SwapInfo::LEN;
         let accounts = rpc
-            .get_program_accounts(&swap_program, Some(size)) // Some(size)
+            .get_program_accounts(&swap_program, vec![RpcFilterType::DataSize(size as u64)])
             .await
             .unwrap();
 

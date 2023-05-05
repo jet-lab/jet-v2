@@ -57,7 +57,7 @@ pub trait SolanaRpcClient: Send + Sync {
     async fn get_program_accounts(
         &self,
         program_id: &Pubkey,
-        size: Option<usize>,
+        filters: Vec<RpcFilterType>,
     ) -> Result<Vec<(Pubkey, Account)>>;
 
     async fn airdrop(&self, account: &Pubkey, amount: u64) -> Result<()>;
@@ -223,16 +223,14 @@ impl SolanaRpcClient for RpcConnection {
     async fn get_program_accounts(
         &self,
         program_id: &Pubkey,
-        size: Option<usize>,
+        filters: Vec<RpcFilterType>,
     ) -> Result<Vec<(Pubkey, Account)>> {
-        let filters = size.map(|s| vec![RpcFilterType::DataSize(s as u64)]);
-
         Ok(self
             .rpc
             .get_program_accounts_with_config(
                 program_id,
                 RpcProgramAccountsConfig {
-                    filters,
+                    filters: Some(filters),
                     account_config: RpcAccountInfoConfig {
                         encoding: Some(UiAccountEncoding::Base64Zstd),
                         ..Default::default()

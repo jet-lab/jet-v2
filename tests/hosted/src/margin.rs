@@ -45,6 +45,7 @@ use jet_margin_sdk::solana::transaction::{
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use jet_solana_client::signature::Authorization;
+use solana_client::rpc_filter::RpcFilterType;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::system_program;
@@ -142,7 +143,9 @@ impl MarginClient {
         self.rpc
             .get_program_accounts(
                 &jet_margin_pool::ID,
-                Some(std::mem::size_of::<MarginPool>()),
+                vec![RpcFilterType::DataSize(
+                    std::mem::size_of::<MarginPool>() as u64
+                )],
             )
             .await?
             .into_iter()
