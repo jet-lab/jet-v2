@@ -1,14 +1,12 @@
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
 
-use anchor_lang::{prelude::Pubkey, AccountDeserialize};
+use anchor_lang::prelude::Pubkey;
 use jet_margin_sdk::{
     fixed_term::Market,
     ix_builder::MarginPoolIxBuilder,
     jet_margin::{TokenAdmin, TokenConfig},
 };
-use jet_simulation::SolanaRpcClient;
-use solana_client::rpc_filter::RpcFilterType;
-use solana_sdk::account::ReadableAccount;
+use jet_solana_client::rpc::{SolanaRpc, SolanaRpcExtra};
 
 use crate::Result;
 
@@ -20,20 +18,24 @@ pub struct ProgramAddresses {
 }
 
 impl ProgramAddresses {
-    pub async fn fetch(solana_client: &Arc<dyn SolanaRpcClient>, airspace: Pubkey) -> Result<Self> {
+    pub async fn fetch<Rpc>(rpc: &Rpc, airspace: Pubkey) -> Result<Self>
+    where
+        Rpc: SolanaRpc + Send + Sync + 'static,
+    {
         let mut addresses = ProgramAddresses {
             airspace,
             ..Default::default()
         };
-        // Get token configs
-        let token_configs =
-            find_anchor_accounts::<TokenConfig>(solana_client, &jet_margin_sdk::jet_margin::id())
-                .await?
-                .into_iter()
-                .filter(|(_, config)| config.airspace == airspace)
-                .collect::<Vec<_>>();
 
-        find_anchor_accounts::<Market>(solana_client, &jet_margin_sdk::jet_fixed_term::id())
+        // Get token configs
+        let token_configs = rpc
+            .find_anchor_accounts::<TokenConfig>()
+            .await?
+            .into_iter()
+            .filter(|(_, config)| config.airspace == airspace)
+            .collect::<Vec<_>>();
+
+        rpc.find_anchor_accounts::<Market>()
             .await?
             .into_iter()
             .for_each(|(address, market)| {
@@ -72,27 +74,4 @@ impl ProgramAddresses {
 
         Ok(addresses)
     }
-}
-
-/// Find Anchor accounts for a specific type `T`
-///
-/// TODO: requiring a solanarpcclient seems inconvenient here
-async fn find_anchor_accounts<T: AccountDeserialize>(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    program: &Pubkey,
-) -> Result<Vec<(Pubkey, T)>> {
-    let result = rpc
-        .get_program_accounts(
-            program,
-            vec![RpcFilterType::DataSize(std::mem::size_of::<T>() as u64 + 8)],
-        )
-        .await?;
-    Ok(result
-        .into_iter()
-        .filter_map(|(address, account)| {
-            T::try_deserialize(&mut account.data())
-                .map(|t| (address, t))
-                .ok()
-        })
-        .collect())
 }
