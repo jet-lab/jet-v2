@@ -19,9 +19,8 @@ use std::collections::BTreeMap;
 
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program_pack::Pack;
-use anchor_spl::dex::ID as OPENBOOK_ID;
+use anchor_spl::dex;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use saber_stable_swap::InitToken;
 
 use crate::instructions::TokenRequest;
 use crate::seeds::{
@@ -32,8 +31,9 @@ use crate::state::{OpenBookMarketInfo, TokenInfo};
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone, Eq, PartialEq)]
 pub struct OpenBookMarketCreateParams {
     pub nonce: u8,
-    pub liquidity_level: u8,
-    pub price_threshold: u16,
+    pub base_lot_size: u64,
+    pub quote_lot_size: u64,
+    pub quote_dust_threshold: u64,
 }
 
 #[derive(Accounts)]
@@ -42,22 +42,22 @@ pub struct OpenBookMarketCreate<'info> {
     payer: Signer<'info>,
 
     #[account(mut)]
-    mint_a: Box<Account<'info, Mint>>,
+    mint_base: Box<Account<'info, Mint>>,
 
     #[account(mut)]
-    mint_b: Box<Account<'info, Mint>>,
+    mint_quote: Box<Account<'info, Mint>>,
 
-    #[account(constraint = info_a.mint == mint_a.key())]
-    info_a: Box<Account<'info, TokenInfo>>,
+    #[account(constraint = info_mint.mint == mint_base.key())]
+    info_base: Box<Account<'info, TokenInfo>>,
 
-    #[account(constraint = info_b.mint == mint_b.key())]
-    info_b: Box<Account<'info, TokenInfo>>,
+    #[account(constraint = info_quote.mint == mint_quote.key())]
+    info_quote: Box<Account<'info, TokenInfo>>,
 
     #[account(init,
               seeds = [
                 SWAP_POOL_INFO,
-                mint_a.key().as_ref(),
-                mint_b.key().as_ref(),
+                mint_base.key().as_ref(),
+                mint_quote.key().as_ref(),
               ],
               bump,
               space = 8 + std::mem::size_of::<OpenBookMarketInfo>(),
@@ -67,20 +67,30 @@ pub struct OpenBookMarketCreate<'info> {
 
     #[account(init,
               seeds = [
-                SWAP_POOL_STATE,
-                mint_a.key().as_ref(),
-                mint_b.key().as_ref(),
+                b"openbook-market", // TODO: consts
+                mint_base.key().as_ref(),
+                mint_quote.key().as_ref(),
               ],
               bump,
-              space = saber_stable_client::state::SwapInfo::LEN,
-              owner = OPENBOOK_ID,
+              space = 12 + std::mem::size_of::<dex::state::MarketState>(),
+              owner = dex::ID,
               payer = payer
     )]
     market_state: AccountInfo<'info>,
 
+    // TODO:
+    #[account(mut)]
+    bids: AccountInfo<'info>,
+    #[account(mut)]
+    asks: AccountInfo<'info>,
+    #[account(mut)]
+    request_queue: AccountInfo<'info>,
+    #[account(mut)]
+    event_queue: AccountInfo<'info>,
+
     #[account(seeds = [market_state.key().as_ref()],
               bump,
-              seeds::program = OPENBOOK_ID
+              seeds::program = dex::ID
     )]
     pool_authority: AccountInfo<'info>,
 
@@ -90,7 +100,7 @@ pub struct OpenBookMarketCreate<'info> {
                 market_state.key().as_ref()
               ],
               bump,
-              mint::decimals = mint_a.decimals,
+              mint::decimals = mint_base.decimals,
               mint::authority = pool_authority,
               payer = payer
     )]
@@ -100,10 +110,10 @@ pub struct OpenBookMarketCreate<'info> {
               seeds = [
                 SWAP_POOL_TOKENS,
                 market_state.key().as_ref(),
-                mint_a.key().as_ref()
+                mint_base.key().as_ref()
               ],
               bump,
-              token::mint = mint_a,
+              token::mint = mint_base,
               token::authority = pool_authority,
               payer = payer,
     )]
@@ -113,10 +123,10 @@ pub struct OpenBookMarketCreate<'info> {
               seeds = [
                 SWAP_POOL_TOKENS,
                 market_state.key().as_ref(),
-                mint_b.key().as_ref()
+                mint_quote.key().as_ref()
               ],
               bump,
-              token::mint = mint_b,
+              token::mint = mint_quote,
               token::authority = pool_authority,
               payer = payer,
     )]
@@ -126,10 +136,10 @@ pub struct OpenBookMarketCreate<'info> {
               seeds = [
                 SWAP_POOL_FEES,
                 market_state.key().as_ref(),
-                mint_a.key().as_ref()
+                mint_base.key().as_ref()
               ],
               bump,
-              token::mint = mint_a,
+              token::mint = mint_base,
               token::authority = pool_authority,
               payer = payer,
     )]
@@ -139,32 +149,16 @@ pub struct OpenBookMarketCreate<'info> {
         seeds = [
           SWAP_POOL_FEES,
           market_state.key().as_ref(),
-          mint_b.key().as_ref()
+          mint_quote.key().as_ref()
         ],
         bump,
-        token::mint = mint_b,
+        token::mint = mint_quote,
         token::authority = pool_authority,
         payer = payer,
     )]
     pool_fee_b: Box<Account<'info, TokenAccount>>,
 
-    #[account(init,
-        seeds = [
-          SWAP_POOL_FEES,
-          market_state.key().as_ref(),
-          pool_mint.key().as_ref()
-        ],
-        bump,
-        token::mint = pool_mint,
-        // The LP token authority must be the same as the scratch accounts
-        // else withdrawals from the pool do not work as only 1 authority is provided
-        token::authority = payer,
-        payer = payer,
-    )]
-    lp_token: Box<Account<'info, TokenAccount>>,
-
     swap_program: AccountInfo<'info>,
-    token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
 }
@@ -176,8 +170,8 @@ impl<'info> OpenBookMarketCreate<'info> {
                 &crate::ID,
                 &mut TokenRequest {
                     requester: self.payer.clone(),
-                    mint: (*self.mint_a).clone(),
-                    info: (*self.info_a).clone(),
+                    mint: (*self.mint_base).clone(),
+                    info: (*self.info_base).clone(),
                     destination: (*self.pool_token_a).clone(),
                     token_program: self.token_program.clone(),
                 },
@@ -194,8 +188,8 @@ impl<'info> OpenBookMarketCreate<'info> {
                 &crate::ID,
                 &mut TokenRequest {
                     requester: self.payer.clone(),
-                    mint: (*self.mint_b).clone(),
-                    info: (*self.info_b).clone(),
+                    mint: (*self.mint_quote).clone(),
+                    info: (*self.info_quote).clone(),
                     destination: (*self.pool_token_b).clone(),
                     token_program: self.token_program.clone(),
                 },
@@ -221,8 +215,8 @@ pub fn openbook_market_create_handler(
 
     let bump = *ctx.bumps.get("pool_state").unwrap();
 
-    let mint_a_key = ctx.accounts.mint_a.key();
-    let mint_b_key = ctx.accounts.mint_b.key();
+    let mint_a_key = ctx.accounts.mint_base.key();
+    let mint_b_key = ctx.accounts.mint_quote.key();
 
     let pool_signer_seeds = [
         SWAP_POOL_STATE,
@@ -234,41 +228,35 @@ pub fn openbook_market_create_handler(
 
     let swap_context = CpiContext::new_with_signer(
         ctx.accounts.swap_program.to_account_info(),
-        saber_stable_swap::Initialize {
-            swap: ctx.accounts.market_state.to_account_info(),
-            swap_authority: ctx.accounts.pool_authority.to_account_info(),
-            admin: ctx.accounts.payer.to_account_info(),
-            token_a: InitToken {
+        dex::InitializeMarket {
+            market: ctx.accounts.market_state.to_account_info(),
+            coin_mint: ctx.accounts.mint_base.to_account_info(),
+            pc_mint: ctx.accounts.mint_quote.to_account_info(),
+            coin_vault: InitToken {
                 reserve: ctx.accounts.pool_token_a.to_account_info(),
                 fees: ctx.accounts.pool_fee_a.to_account_info(),
-                mint: ctx.accounts.mint_a.to_account_info(),
+                mint: ctx.accounts.mint_base.to_account_info(),
             },
-            token_b: InitToken {
+            pc_vault: InitToken {
                 reserve: ctx.accounts.pool_token_b.to_account_info(),
                 fees: ctx.accounts.pool_fee_b.to_account_info(),
-                mint: ctx.accounts.mint_b.to_account_info(),
+                mint: ctx.accounts.mint_quote.to_account_info(),
             },
-            pool_mint: ctx.accounts.pool_mint.to_account_info(),
-            output_lp: ctx.accounts.lp_token.to_account_info(),
-            token_program: ctx.accounts.token_program.to_account_info(),
+            bids: ctx.accounts.bids.to_account_info(),
+            asks: ctx.accounts.asks.to_account_info(),
+            req_q: ctx.accounts.request_queue.to_account_info(),
+            event_q: ctx.accounts.event_queue.to_account_info(),
+            rent: ctx.accounts.rent.to_account_info(),
         },
         &seeds,
     );
 
-    saber_stable_swap::initialize(
+    dex::initialize_market(
         swap_context,
-        bump,
-        100,
-        saber_stable_client::fees::Fees {
-            admin_trade_fee_numerator: 1,
-            admin_trade_fee_denominator: 400,
-            admin_withdraw_fee_numerator: 1,
-            admin_withdraw_fee_denominator: 200,
-            trade_fee_numerator: 1,
-            trade_fee_denominator: 100,
-            withdraw_fee_numerator: 1,
-            withdraw_fee_denominator: 100,
-        },
+        params.base_lot_size,
+        params.quote_lot_size,
+        0, // TODO nonce
+        params.quote_dust_threshold,
     )?;
 
     Ok(())
