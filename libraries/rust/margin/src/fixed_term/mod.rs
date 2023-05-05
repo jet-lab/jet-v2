@@ -10,6 +10,7 @@ pub use ix_builder::*;
 
 use anchor_lang::AccountDeserialize;
 use jet_simulation::SolanaRpcClient;
+use solana_client::rpc_filter::RpcFilterType;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
@@ -27,7 +28,12 @@ pub async fn find_markets(
     rpc: &Arc<dyn SolanaRpcClient>,
 ) -> anyhow::Result<HashMap<Pubkey, Market>> {
     Ok(rpc
-        .get_program_accounts(&jet_fixed_term::ID, Some(std::mem::size_of::<Market>() + 8))
+        .get_program_accounts(
+            &jet_fixed_term::ID,
+            vec![RpcFilterType::DataSize(
+                std::mem::size_of::<Market>() as u64 + 8,
+            )],
+        )
         .await?
         .into_iter()
         .flat_map(|(k, account)| {

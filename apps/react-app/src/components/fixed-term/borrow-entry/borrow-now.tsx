@@ -193,6 +193,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
 
   return (
     <div className="fixed-term order-entry-body">
+      <p>
+        You are borrowing as a taker. Your order will be filled at the prevailing market rates. Any unfilled quantity
+        will not be posted to the order book.
+      </p>
       <div className="borrow-now fixed-order-entry-fields">
         <label>
           Loan amount
