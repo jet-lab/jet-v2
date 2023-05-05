@@ -61,3 +61,12 @@ export type OrderbookSnapshot = {
   bids: Array<Order>,
   asks: Array<Order>,
 };
+
+export interface SwapLiquidity {
+  base: string;
+  quote: string;
+  bids: number[][];
+  asks: number[][];
+  liquidity_range: number[];
+  price_range: number[];
+}

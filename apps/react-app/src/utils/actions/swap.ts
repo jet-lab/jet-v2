@@ -101,15 +101,6 @@ export interface SwapQuote {
   swaps: SwapStepOutput[][];
 }
 
-export interface SwapLiquidity {
-  base: string;
-  quote: string;
-  bids: number[][];
-  asks: number[][];
-  liquidity_range: number[];
-  price_range: number[];
-}
-
 type SwapStepOutput = SwapStep | SwapOutput;
 
 export interface SwapStep {

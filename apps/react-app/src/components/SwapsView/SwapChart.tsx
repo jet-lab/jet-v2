@@ -5,10 +5,8 @@ import { CurrentAccount } from '@state/user/accounts';
 import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { Typography } from 'antd';
-import { useJetStore } from '@jet-lab/store';
+import { useJetStore, getSwapLiquidity } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
-import axios from 'axios';
-import { SwapLiquidity } from '@utils/actions/swap';
 
 import { Axis, LineSeries, Tooltip, XYChart } from '@visx/xychart';
 import { scaleLinear, scaleOrdinal } from '@visx/scale';
@@ -42,13 +40,27 @@ export function SwapChart(): JSX.Element {
   const swapMaxTradeAmount =
     currentAccount?.poolPositions[currentPool?.symbol ?? '']?.maxTradeAmounts.swap.lamports.toNumber();
   const { Title } = Typography;
-  const swapEndpoint =
+  const swapEndpoint: string =
     cluster === 'mainnet-beta'
       ? ''
       : cluster === 'devnet'
-      ? process.env.REACT_APP_DEV_SWAP_API
-      : process.env.REACT_APP_LOCAL_SWAP_API;
+      ? String(process.env.REACT_APP_DEV_SWAP_API)
+      : String(process.env.REACT_APP_LOCAL_SWAP_API);
 
+  const amount = useMemo(() => {
+    if (swapMaxTradeAmount && currentPool && outputToken) {
+      const fromExpo = Math.pow(10, currentPool.decimals);
+      return swapMaxTradeAmount / fromExpo;
+    }
+    return 0;
+  }, [swapMaxTradeAmount, currentPool, outputToken]);
+
+  const { data, isLoading, error } = getSwapLiquidity(
+    swapEndpoint,
+    currentPool?.tokenMint.toString(),
+    outputToken?.tokenMint.toString(),
+    amount
+  );
   // legend
   const ordinalColorScale = scaleOrdinal({
     domain: ['Asks', 'Bids', 'Oracle Price'],
@@ -89,48 +101,32 @@ export function SwapChart(): JSX.Element {
 
   // Fetch chart data
   useEffect(() => {
-    if (!currentPool || !outputToken) {
+    if (!data) {
       return;
     }
 
-    const maxAmount = swapMaxTradeAmount;
-    const from = currentPool.tokenMint.toString();
-    const to = outputToken.tokenMint.toString();
-    const fromExpo = Math.pow(10, currentPool.decimals);
-    const toExpo = Math.pow(10, outputToken.decimals);
+    // set the xy boundaries
+    setPriceRange([data.price_range[0], data.price_range[1]]);
+    setLiquidityRange([data.liquidity_range[0], data.liquidity_range[1]]);
 
-    if (!maxAmount) {
-      console.log('maxAmount is not computed');
-      return;
-    }
-    console.log('max swap amount: ', maxAmount / fromExpo);
-    axios
-      .get<SwapLiquidity>(`${swapEndpoint}/swap/liquidity/${from}/${to}/${maxAmount / fromExpo}`)
-      .then(resp => {
-        // set the xy boundaries
-        setPriceRange([resp.data.price_range[0], resp.data.price_range[1]]);
-        setLiquidityRange([resp.data.liquidity_range[0], resp.data.liquidity_range[1]]);
-
-        // transform data
-        setBidData(
-          resp.data.bids.map(bid => {
-            return {
-              x: bid[0],
-              y: bid[1]
-            };
-          })
-        );
-        setAskData(
-          resp.data.asks.map(ask => {
-            return {
-              x: ask[0],
-              y: ask[1]
-            };
-          })
-        );
+    // transform data
+    setBidData(
+      data.bids.map(bid => {
+        return {
+          x: bid[0],
+          y: bid[1]
+        };
       })
-      .catch(err => err);
-  }, [currentPool?.symbol, outputToken?.symbol, swapMaxTradeAmount]);
+    );
+    setAskData(
+      data.asks.map(ask => {
+        return {
+          x: ask[0],
+          y: ask[1]
+        };
+      })
+    );
+  }, [data]);
 
   return (
     <div className="swaps-graph view-element align-center column flex justify-end">
