@@ -3,6 +3,7 @@ use bonfida_utils::fp_math::{fp32_div, fp32_mul_ceil, fp32_mul_floor};
 use jet_fixed_term::orderbook::state::{CallbackInfo, OrderTag};
 use jet_program_common::interest_pricing::{f64_to_fp32, fp32_to_f64};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use solana_program::pubkey::Pubkey;
 
 use crate::orderbook::methods::price_to_rate;
@@ -129,6 +130,21 @@ pub struct LiquidityObservation {
     pub cumulative_rate: f64,
 }
 
+#[serde_as]
+#[derive(Deserialize, Serialize)]
+pub struct LiquiditySampleV2 {
+    #[serde_as(as = "DisplayFromStr")]
+    pub base: Pubkey,
+    #[serde_as(as = "DisplayFromStr")]
+    pub quote: Pubkey,
+    /// (f64, u64) => (rate, cumulative_quote)
+    pub bids: Vec<(f64, u64)>,
+    /// (f64, u64) => (rate, cumulative_quote)
+    pub asks: Vec<(f64, u64)>,
+    pub price_range: [f64; 2],
+    pub liquidity_range: [u64; 2],
+}
+
 #[derive(Deserialize)]
 pub struct OrderbookSnapshot {
     pub bids: Vec<Order>,
@@ -179,7 +195,15 @@ impl OrderbookModel {
     }
 
     // TODO Interpolate on a set of points instead
-    pub fn sample_liquidity(&self, side: Side) -> LiquiditySample {
+    pub fn sample_liquidity(
+        &self,
+        side: Side,
+        max_quote_qty: Option<u64>,
+        append_zero_point: Option<bool>,
+    ) -> LiquiditySample {
+        let max_quote_qty = max_quote_qty.unwrap_or(u64::MAX);
+        let append_zero_point = append_zero_point.unwrap_or(true);
+
         let mut total_base_qty = 0;
         let mut total_quote_qty = 0;
         let mut sample_quote_qty = 0;
@@ -191,6 +215,10 @@ impl OrderbookModel {
             ..
         } in self.orders_on(side)
         {
+            if total_quote_qty >= max_quote_qty {
+                break;
+            }
+
             let quote_size = side.base_to_quote(base_size, limit_price).unwrap();
             total_base_qty += base_size;
             total_quote_qty += quote_size;
@@ -207,7 +235,7 @@ impl OrderbookModel {
             sample_quote_qty += quote_size;
         }
 
-        if !points.is_empty() {
+        if append_zero_point && !points.is_empty() {
             let cumulative_base = 0;
             let cumulative_quote = 0;
             let cumulative_price = points[0].cumulative_price;
@@ -229,6 +257,44 @@ impl OrderbookModel {
             total_quote_qty,
             sample_quote_qty,
             points,
+        }
+    }
+
+    pub fn sample_liquidity_v2(&self, max_quote_qty: u64) -> LiquiditySampleV2 {
+        let bid_liquidity =
+            self.sample_liquidity(Side::LoanOffer, Some(max_quote_qty), Some(false));
+        let ask_liquidity =
+            self.sample_liquidity(Side::LoanRequest, Some(max_quote_qty), Some(false));
+
+        let bids = bid_liquidity
+            .points
+            .iter()
+            .map(|p| (p.cumulative_rate, p.cumulative_quote))
+            .collect::<Vec<_>>();
+        let asks = ask_liquidity
+            .points
+            .iter()
+            .map(|p| (p.cumulative_rate, p.cumulative_quote))
+            .rev()
+            .collect::<Vec<_>>();
+
+        LiquiditySampleV2 {
+            base: Pubkey::default(),
+            quote: Pubkey::default(),
+            liquidity_range: [
+                bids.first()
+                    .map_or(0, |(_, qty)| *qty)
+                    .max(asks.first().map_or(0, |(_, qty)| *qty)),
+                bids.last()
+                    .map_or(0, |(_, qty)| *qty)
+                    .max(asks.last().map_or(0, |(_, qty)| *qty)),
+            ],
+            price_range: [
+                asks.first().map_or(f64::NAN, |(rate, _)| *rate),
+                bids.last().map_or(f64::NAN, |(rate, _)| *rate),
+            ],
+            bids,
+            asks,
         }
     }
 
@@ -553,7 +619,7 @@ mod test {
             asks: vec![],
         };
 
-        let sample = om.sample_liquidity(Side::LoanOffer);
+        let sample = om.sample_liquidity(Side::LoanOffer, None, None);
 
         assert_eq!(sample.side, Side::LoanOffer);
         assert_eq!(sample.total_quote_qty, 90);
@@ -574,7 +640,7 @@ mod test {
             asks: vec![],
         };
 
-        let sample = om.sample_liquidity(Side::LoanOffer);
+        let sample = om.sample_liquidity(Side::LoanOffer, None, None);
 
         assert_eq!(sample.total_quote_qty, 10000100000);
         assert_eq!(sample.points[0].cumulative_rate, 0.05);
