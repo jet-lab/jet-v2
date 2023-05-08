@@ -1,5 +1,5 @@
-anchor_version = "0.24.2"
-solana_version = "1.10.29"
+anchor_version = "0.26.0"
+solana_version = "1.14.17"
 
 [registry]
 url = "https://anchor.projectserum.com"
@@ -51,6 +51,10 @@ program = "./deps/saber_stable_swap.so"
 [[test.genesis]]
 address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
 program = "./deps/spl-token-swap/crates.io-spl_token_swap==2.0.0.so"
+
+[[test.genesis]]
+address = "LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru"
+program = "./deps/lookup_table_registry.so"
 
 [test]
 startup_wait = 10000

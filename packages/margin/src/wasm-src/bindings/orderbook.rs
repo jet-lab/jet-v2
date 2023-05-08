@@ -44,9 +44,16 @@ impl JsOrderbookModel {
         self.inner.refresh_from_snapshot(snapshot);
     }
 
-    #[wasm_bindgen(js_name = "sampleLiquidity")]
+    #[wasm_bindgen(js_name = "sampleLiquidityDeprecated")]
     pub fn sample_liquidity(&self, side: &str) -> Result<JsValue, JsError> {
-        let sample = self.inner.sample_liquidity(side.into()); // TODO try_into
+        let sample = self.inner.sample_liquidity(side.into(), None, None); // TODO try_into
+
+        self.to_js(&sample)
+    }
+
+    #[wasm_bindgen(js_name = "sampleLiquidity")]
+    pub fn sample_liquidity_v2(&self, max_quote_qty: u64) -> Result<JsValue, JsError> {
+        let sample = self.inner.sample_liquidity_v2(max_quote_qty);
 
         self.to_js(&sample)
     }
@@ -66,7 +73,7 @@ impl JsOrderbookModel {
         limitPrice: Option<u64>,
         user: Option<Box<[u8]>>,
     ) -> Result<JsValue, JsError> {
-        let user = user.map(|b| Pubkey::new(&b));
+        let user = user.map(|b| Pubkey::try_from(&*b).unwrap());
         let sim = self
             .inner
             .simulate_taker(action.into(), userQuoteQty, limitPrice, user); // TODO try_into
@@ -83,7 +90,7 @@ impl JsOrderbookModel {
         limitPrice: u64,
         user: Option<Box<[u8]>>,
     ) -> Result<JsValue, JsError> {
-        let user = user.map(|b| Pubkey::new(&b));
+        let user = user.map(|b| Pubkey::try_from(&*b).unwrap());
         let sim = self
             .inner
             .simulate_maker(action.into(), userQuoteQty, limitPrice, user);
@@ -123,11 +130,20 @@ export type LiquidityObservation = {
     cumulative_rate: number,
 };
 
-export type LiquiditySample = {
+export type LiquiditySampleDeprecated = {
     side: any,
     total_quote_qty: bigint,
     sample_quote_qty: bigint,
     points: Array<LiquidityObservation>,
+}
+
+export type LiquiditySample = {
+    base: any,
+    quote: any,
+    bids: Array<[number, bigint]>,
+    asks: Array<[number, bigint]>,
+    price_range: [number, number],
+    liquidity_range: [bigint, bigint],
 }
 
 export type TakerSimulation = {
@@ -217,9 +233,14 @@ export class OrderbookModel {
     refreshFromSnapshot(snapshot: OrderbookSnapshot): void;
     /**
     * @param {string} side
+    * @returns {LiquiditySampleDeprecated}
+    */
+    sampleLiquidityDeprecated(side: string): LiquiditySampleDeprecated;
+    /**
+    * @param {bigint} maxQuoteQty
     * @returns {LiquiditySample}
     */
-    sampleLiquidity(side: string): LiquiditySample;
+    sampleLiquidity(maxQuoteQty: u64): LiquiditySample;
     /**
     * @param {string} action
     * @param {bigint} limitPrice

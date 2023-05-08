@@ -1,8 +1,8 @@
 use anchor_lang::prelude::ProgramError;
-use solana_client::client_error::ClientError;
 use solana_sdk::{instruction::InstructionError, transaction::TransactionError};
 
 use jet_client_native::JetSimulationClientError;
+use jet_solana_client::rpc::ClientError;
 
 /// Asserts that an error is a custom solana error with the expected code number
 pub fn assert_program_error<
@@ -22,11 +22,19 @@ pub fn assert_program_error<
     {
         if let Some(client_err) = if_error.downcast_ref::<ClientError>() {
             eprintln!("{:?}", client_err);
-            if let Some(TransactionError::InstructionError(_, InstructionError::Custom(n))) =
-                client_err.get_transaction_error()
+            if let ClientError::TransactionError(TransactionError::InstructionError(
+                _,
+                InstructionError::Custom(n),
+            )) = client_err
             {
-                actual_err_code = Some(n);
+                actual_err_code = Some(*n);
             }
+        }
+
+        if let Some(TransactionError::InstructionError(_, InstructionError::Custom(n))) =
+            if_error.downcast_ref::<TransactionError>()
+        {
+            actual_err_code = Some(*n);
         }
 
         if let Some(ProgramError::Custom(n)) = if_error.downcast_ref::<ProgramError>() {
