@@ -76,7 +76,10 @@ interface ICreateLendOrder {
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
   autorollEnabled: boolean,
-  airspaceLookupTables: string[],
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[],
 }
 export const offerLoan = async ({
   market,
@@ -156,7 +159,10 @@ interface ICreateBorrowOrder {
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
   autorollEnabled: boolean,
-  airspaceLookupTables: string[],
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[],
 }
 
 export const requestLoan = async ({
@@ -233,7 +239,10 @@ interface ICancelOrder {
   orderId: BN
   pools: Record<string, Pool>
   markets: FixedTermMarket[],
-  airspaceLookupTables: string[],
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[],
 }
 export const cancelOrder = async ({
   market,
@@ -283,7 +292,10 @@ interface IBorrowNow {
   amount: BN
   markets: FixedTermMarket[]
   autorollEnabled: boolean,
-  airspaceLookupTables: string[],
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[],
 }
 
 export const borrowNow = async ({
@@ -374,7 +386,10 @@ interface ILendNow {
   amount: BN
   markets: FixedTermMarket[]
   autorollEnabled: boolean,
-  airspaceLookupTables: string[],
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[],
 }
 
 export const lendNow = async ({
@@ -447,7 +462,10 @@ interface ISettle {
   provider: AnchorProvider
   pools: Record<string, Pool>
   amount: BN,
-  airspaceLookupTables: string[],
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[],
 }
 
 export const settle = async ({
@@ -505,7 +523,10 @@ interface IRepay {
   termLoans: Array<Loan>
   pools: Record<string, Pool>
   markets: FixedTermMarket[],
-  airspaceLookupTables: string[],
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[],
 }
 
 export const repay = async ({
@@ -603,7 +624,10 @@ interface IRedeem {
   market: MarketAndConfig
   provider: AnchorProvider
   deposits: Array<Deposit>
-  airspaceLookupTables: string[]
+  airspaceLookupTables: {
+    address: string;
+    data: Uint8Array;
+  }[]
 }
 export const redeem = async ({
   marginAccount,

@@ -78,7 +78,7 @@ export async function sendAndConfirm(
 export async function sendAndConfirmV0(
   provider: AnchorProvider,
   instructions: TransactionInstruction[],
-  lookupAddresses: string[],
+  lookupTables: { address: string; data: Uint8Array }[],
   signers?: Signer[],
   opts?: ConfirmOptions
 ): Promise<TransactionSignature> {
@@ -86,15 +86,13 @@ export async function sendAndConfirmV0(
     opts = provider.opts
   }
 
-  // TODO: measure the impact of this call vs caching the result
-  const tablesResponse = await Promise.all(
-    lookupAddresses.map(address => provider.connection.getAddressLookupTable(new PublicKey(address)).then(res => res.value))
-  )
-  const lookupTables: AddressLookupTableAccount[] = []
-  for (const table of tablesResponse) {
-    if (table) {
-      lookupTables.push(table)
-    }
+  const tables: AddressLookupTableAccount[] = []
+  for (const table of lookupTables) {
+    const lookupTable = new AddressLookupTableAccount({
+      key: new PublicKey(table.address),
+      state: AddressLookupTableAccount.deserialize(table.data)
+    })
+    tables.push(lookupTable)
   }
 
   const { blockhash } = await provider.connection.getLatestBlockhash(opts.preflightCommitment)
@@ -102,7 +100,7 @@ export async function sendAndConfirmV0(
     payerKey: provider.wallet.publicKey,
     recentBlockhash: blockhash,
     instructions
-  }).compileToV0Message(lookupTables)
+  }).compileToV0Message(tables)
 
   const transaction = new VersionedTransaction(message)
 

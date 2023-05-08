@@ -1725,22 +1725,22 @@ export class MarginAccount {
       this.address.toBytes()
     ], LOOKUP_REGISTRY_PROGRAM)
     const ix = await this.programs.margin.methods
-    .initLookupRegistry()
-    .accounts({
-      marginAuthority: this.owner,
-      payer: this.provider.wallet.publicKey,
-      marginAccount: this.address,
-      registryAccount,
-      registryProgram: LOOKUP_REGISTRY_PROGRAM,
-      systemProgram: SystemProgram.programId,
-    })
-    .instruction()
+      .initLookupRegistry()
+      .accounts({
+        marginAuthority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        registryAccount,
+        registryProgram: LOOKUP_REGISTRY_PROGRAM,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction()
     instructions.push(ix)
   }
 
   async createLookupTable(slot: number, discriminator: number): Promise<PublicKey> {
     const ix: TransactionInstruction[] = []
-    const lookupTable = await this.withCreateLookupTable({instructions: ix, slot, discriminator})
+    const lookupTable = await this.withCreateLookupTable({ instructions: ix, slot, discriminator })
     await this.sendAndConfirm(ix)
     return lookupTable
   }
@@ -1763,21 +1763,21 @@ export class MarginAccount {
       recentSlot: slot
     });
     const ix = await this.programs.margin.methods
-    .createLookupTable(
-       new BN(slot),
-      new BN(discriminator),
-    )
-    .accounts({
-      marginAuthority: this.owner,
-      payer: this.provider.wallet.publicKey,
-      marginAccount: this.address,
-      registryAccount,
-      registryProgram: LOOKUP_REGISTRY_PROGRAM,
-      systemProgram: SystemProgram.programId,
-      lookupTable,
-      addressLookupTableProgram: AddressLookupTableProgram.programId
-    })
-    .instruction()
+      .createLookupTable(
+        new BN(slot),
+        new BN(discriminator),
+      )
+      .accounts({
+        marginAuthority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        registryAccount,
+        registryProgram: LOOKUP_REGISTRY_PROGRAM,
+        systemProgram: SystemProgram.programId,
+        lookupTable,
+        addressLookupTableProgram: AddressLookupTableProgram.programId
+      })
+      .instruction()
     instructions.push(ix)
     return lookupTable
   }
@@ -1788,7 +1788,7 @@ export class MarginAccount {
     addresses: PublicKey[]
   }) {
     const ix: TransactionInstruction[] = []
-    await this.withAppendToLookupTable({instructions: ix, ...args})
+    await this.withAppendToLookupTable({ instructions: ix, ...args })
     await this.sendAndConfirm(ix)
   }
 
@@ -1807,20 +1807,20 @@ export class MarginAccount {
       this.address.toBytes()
     ], LOOKUP_REGISTRY_PROGRAM);
     const ix = await this.programs.margin.methods
-    .appendToLookup(
-      new BN(discriminator), addresses
-    )
-    .accounts({
-      marginAuthority: this.owner,
-      payer: this.provider.wallet.publicKey,
-      marginAccount: this.address,
-      registryAccount,
-      registryProgram: LOOKUP_REGISTRY_PROGRAM,
-      systemProgram: SystemProgram.programId,
-      lookupTable,
-      addressLookupTableProgram: AddressLookupTableProgram.programId
-    })
-    .instruction()
+      .appendToLookup(
+        new BN(discriminator), addresses
+      )
+      .accounts({
+        marginAuthority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        registryAccount,
+        registryProgram: LOOKUP_REGISTRY_PROGRAM,
+        systemProgram: SystemProgram.programId,
+        lookupTable,
+        addressLookupTableProgram: AddressLookupTableProgram.programId
+      })
+      .instruction()
     instructions.push(ix)
   }
 
@@ -1838,14 +1838,10 @@ export class MarginAccount {
 
   async sendAndConfirmV0(
     instructions: TransactionInstruction[],
+    lookupTables: { address: string; data: Uint8Array }[],
     signers?: Signer[]
   ): Promise<string> {
-    // Authorities are:
-    // - margin account
-    // - jet authority
-    // - other adapters?
-    const authorities = [this.address.toBase58()];
-    return await sendAndConfirmV0(this.provider, instructions, authorities, signers)
+    return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
   }
 
   /**

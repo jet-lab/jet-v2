@@ -13,8 +13,6 @@ interface MarginAccountData {
   owner: string;
   liquidator: string;
   positions: MarginPosition[];
-  // Seems reasonable to store this here as it's tied to the margin account
-  lookupTables: string[];
 }
 
 interface MarginPosition {
@@ -40,7 +38,14 @@ interface Wallet {
   pubkey: string;
   accounts: Record<string, MarginAccountData>;
   selectedMarginAccount: string | null;
+  lookupTables: Record<string, string[]>
   // tokens: Record<string, WalletToken>;
+}
+
+export interface LookupTable {
+  address: string;
+  // Avoid storing a class, and having to import the lookup table types
+  data: Uint8Array;
 }
 
 export interface AccountsSlice {
@@ -49,8 +54,8 @@ export interface AccountsSlice {
   connectWallet: (wallet: string) => void;
   disconnectWallet: () => void;
   // The lookup addresses of the airspace. Only storing here as we don't yet have an airspace slice
-  airspaceLookupTableAddresses: string[];
-  updateLookupTableAddresses: (addresses: string[]) => void;
+  airspaceLookupTables: LookupTable[];
+  updateLookupTables: (tables: LookupTable[]) => void;
   updateMarginAccount: (update: MarginAccountData) => void;
   initAllMarginAccounts: (update: Record<string, MarginAccountData>) => void;
   selectMarginAccount: (address: string) => void;
@@ -59,7 +64,7 @@ export interface AccountsSlice {
 export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], AccountsSlice> = (set, get) => ({
   wallets: {},
   selectedWallet: null,
-  airspaceLookupTableAddresses: [],
+  airspaceLookupTables: [],
   connectWallet: async wallet => {
     set(() => {
       const cluster = get().settings.cluster
@@ -70,7 +75,7 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
   disconnectWallet: () => set(() => ({
     selectedWallet: null,
   }), false, 'DISCONNECT_WALLET'),
-  updateLookupTableAddresses: addresses => set(() => ({ airspaceLookupTableAddresses: addresses }), false, 'UPDATE_LOOKUP_TABLE_ADDRESSES'),
+  updateLookupTables: tables => set(() => ({ airspaceLookupTables: tables }), false, 'UPDATE_LOOKUP_TABLE_ADDRESSES'),
   updateMarginAccount: (update: MarginAccountData) => {
     return set(
       state => {

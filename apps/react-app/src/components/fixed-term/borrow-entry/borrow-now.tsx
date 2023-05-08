@@ -50,9 +50,9 @@ interface Forecast {
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, airspaceLookupTableAddresses } = useJetStore(state => ({
+  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => ({
     selectedPoolKey: state.selectedPoolKey,
-    airspaceLookupTableAddresses: state.airspaceLookupTableAddresses
+    airspaceLookupTables: state.airspaceLookupTables
   }));
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -156,7 +156,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         amount,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTableAddresses
+        airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
         refreshOrderBooks();

@@ -70,13 +70,3 @@ services:
   dgraphswap:
     image: dgraph/standalone:v21.12.0
     restart: always
-  lookup:
-    image: ghcr.io/jet-lab/lookup-table-registry:main
-    environment:
-      - SOLANA_ENDPOINT=http://host.docker.internal:8899
-      - SERVER_PORT=3006
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - 3006:3006
-    restart: always

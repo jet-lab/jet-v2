@@ -13,9 +13,9 @@ export const MainConfig = atom<MarginConfig | undefined>({
 
 // A syncer to be called so that we can have dependent atom state
 export function useMainConfigSyncer() {
-  const { cluster, updateLookupTableAddresses } = useJetStore(state => ({
+  const { cluster, updateLookupTables } = useJetStore(state => ({
     cluster: state.settings.cluster,
-    updateLookupTableAddresses: state.updateLookupTableAddresses
+    updateLookupTables: state.updateLookupTables
   }));
   const setMainConfig = useSetRecoilState(MainConfig);
 
@@ -33,7 +33,7 @@ export function useMainConfigSyncer() {
         console.log(airspaces[0]);
         return getAuthorityLookupTables(airspaces[0].lookupRegistryAuthority)
       }).then(addresses => {
-        updateLookupTableAddresses(addresses);
+        updateLookupTables(addresses);
       });
     } else {
       MarginClient.getConfig(cluster).then(config => setMainConfig(config));
