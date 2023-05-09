@@ -290,10 +290,10 @@ impl OrderbookModel {
             liquidity_range: [
                 bids.first()
                     .map_or(0, |(_, qty)| *qty)
-                    .max(asks.first().map_or(0, |(_, qty)| *qty)),
+                    .max(asks.last().map_or(0, |(_, qty)| *qty)),
                 bids.last()
                     .map_or(0, |(_, qty)| *qty)
-                    .max(asks.last().map_or(0, |(_, qty)| *qty)),
+                    .max(asks.first().map_or(0, |(_, qty)| *qty)),
             ],
             price_range: [
                 asks.first().map_or(f64::NAN, |(rate, _)| *rate),
