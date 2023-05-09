@@ -8,9 +8,10 @@ import { Typography } from 'antd';
 import { useJetStore, getSwapLiquidity } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
 
-import { Axis, LineSeries, Tooltip, XYChart } from '@visx/xychart';
+import { LineSeries, Tooltip, XYChart } from '@visx/xychart';
 import { scaleLinear, scaleOrdinal } from '@visx/scale';
 import { LegendItem, LegendLabel, LegendOrdinal } from '@visx/legend';
+import { AxisBottom, AxisLeft } from '@visx/axis';
 
 // Graph for displaying pricing and slippage data for current swap pair
 export function SwapChart(): JSX.Element {
@@ -71,15 +72,15 @@ export function SwapChart(): JSX.Element {
   const xScale = useMemo(() => {
     return scaleLinear<number>({
       domain: [priceRange[0], priceRange[1]],
-      range: [priceRange[0], priceRange[1]],
+      range: [0, 900], // depends on width of the component to scale
       clamp: true
     });
   }, [priceRange]);
 
   const yScale = useMemo(() => {
     return scaleLinear<number>({
-      domain: [0, liquidityRange[1]],
-      range: [0, liquidityRange[1]],
+      domain: [liquidityRange[1], liquidityRange[0]],
+      range: [0, 600], // depends on the height of the component to scale
       clamp: true
     });
   }, [liquidityRange]);
@@ -183,13 +184,13 @@ export function SwapChart(): JSX.Element {
             if (d === undefined) {
               return 0;
             }
-            return d.x;
+            return xScale(d.x);
           }}
           yAccessor={d => {
             if (d === undefined) {
               return 0;
             }
-            return d.y;
+            return yScale(d.y);
           }}
           stroke="#84c1ca"
           strokeWidth={2}
@@ -202,42 +203,26 @@ export function SwapChart(): JSX.Element {
             if (d === undefined) {
               return 0;
             }
-            return d.x;
+            return xScale(d.x);
           }}
           yAccessor={d => {
             if (d === undefined) {
               return 0;
             }
-            return d.y;
+            return yScale(d.y);
           }}
           stroke="#e36868"
           strokeWidth={2}
           strokeDasharray="3,3"
         />
 
-        <Axis
-          key={dictionary.actions.swap.sellQuantity}
-          label={dictionary.actions.swap.sellQuantity}
-          orientation="left"
-          left={80}
-          numTicks={5}
-          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, textAnchor: 'middle' }}
-          tickLabelProps={() => ({
-            fontSize: 10,
-            fill: '#fff',
-            opacity: 0.6,
-            textAnchor: 'middle',
-            dy: 8
-          })}
-          // todo - fix: scale = {yScale} modify to use AxisLeft
-        />
-        {/* <AxisLeft
+        <AxisLeft
           key={dictionary.actions.swap.sellQuantity}
           label={dictionary.actions.swap.sellQuantity}
           scale={yScale}
           left={80}
-          numTicks={5}
-          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, textAnchor: 'middle' }}
+          numTicks={10}
+          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 14, dx: 10, dy: -50, textAnchor: 'middle' }}
           tickLabelProps={() => ({
             fontSize: 10,
             fill: '#fff',
@@ -245,14 +230,19 @@ export function SwapChart(): JSX.Element {
             textAnchor: 'middle',
             dy: 8
           })}
-        /> */}
-        <Axis
+        />
+        <AxisBottom
           key={`baseQuote[0] / ${outputToken?.symbol ?? '—'} ${dictionary.common.price}`}
-          label={`${currentPool?.symbol ?? '—'} / ${outputToken?.symbol ?? '—'} ${dictionary.common.price}`}
-          orientation="bottom"
-          top={450}
-          numTicks={5}
-          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, dx: -25, textAnchor: 'middle' }}
+          label={`${
+            currentPool?.tokenMint.toString() === quoteToken
+              ? `${outputToken?.symbol} / ${currentPool?.symbol}`
+              : `${currentPool?.symbol} / ${outputToken?.symbol}`
+          } ${dictionary.common.price}`}
+          scale={xScale}
+          top={430}
+          left={80}
+          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, dx: -25, dy: 15, textAnchor: 'middle' }}
+          numTicks={10}
           tickLabelProps={() => ({
             fontSize: 10,
             fill: '#fff',
@@ -261,7 +251,6 @@ export function SwapChart(): JSX.Element {
             dy: 4,
             dx: -8
           })}
-          // todo - fix: scale = {xScale} modify to use AxisBottom
         />
 
         <Tooltip
@@ -305,24 +294,19 @@ export function SwapChart(): JSX.Element {
             if (d === undefined) {
               return 0;
             }
-            return d.x;
+            return xScale(d.x);
           }}
           yAccessor={d => {
             if (d === undefined) {
               return 0;
             }
-            return d.y;
+            return yScale(d.y);
           }}
-          // xAccessor={d => xScale(d.x) || 0}
-          // yAccessor={d => yScale(d.y) || 0}
         />
       </XYChart>
     </div>
   );
 }
-
-// todo - fix x y scale - currently undefined
-// todo - set bottow axis quote priority: usdc > usdt > sol
 // todo - fix tooltip info
 // todo - fix output token state for swap entry
 // todo - fix entry state error, not match update, one state behind
