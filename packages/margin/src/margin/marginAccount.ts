@@ -381,8 +381,17 @@ export class MarginAccount {
         bytes: owner.toString()
       }
     }
+
+    const airspaceFilter: MemcmpFilter = {
+      memcmp: {
+        offset: 48,
+        bytes: Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name).toString()
+      }
+    }
+
     filters ??= []
     filters.push(ownerFilter)
+    filters.push(airspaceFilter)
     const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
     const marginAccounts: MarginAccount[] = []
     for (let i = 0; i < infos.length; i++) {
@@ -467,9 +476,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-            .div(collateralWeight.mul(warningRiskLevel))
-            .div(lamportPrice)
+              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+              .div(collateralWeight.mul(warningRiskLevel))
+              .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
@@ -593,7 +602,6 @@ export class MarginAccount {
   }
 
   private getSummary(): AccountSummary {
-
     let leverage = 1.0
     const assets = this.valuation.assets
     const liabilities = this.valuation.liabilities
@@ -614,7 +622,7 @@ export class MarginAccount {
       borrowedValue: liabilities.toNumber(),
       accountBalance: equity.toNumber(),
       availableCollateral,
-      leverage,
+      leverage
     }
   }
 
@@ -714,7 +722,6 @@ export class MarginAccount {
     const constants = this.programs.margin.idl.constants
     const MAX_PRICE_QUOTE_AGE = new BN(constants.find(constant => constant.name === "MAX_PRICE_QUOTE_AGE")?.value ?? 0)
     const POS_PRICE_VALID = 1
-
 
     for (const position of this.positions) {
       const kind = position.kind
@@ -1910,24 +1917,28 @@ export class MarginAccount {
   }
 
   /**
-* Refresh any deposit position
-*
-* @param {({
-  *     instructions: TransactionInstruction[] 
-  *     config: Address
-  *     priceOracle: PublicKey
-  *   })} {
-  *     instructions,
-  *     pools,
-  *     marginAccount
-  *   }
-  * @return {Promise<void>}
-  */
+   * Refresh any deposit position
+   *
+   * @param {({
+   *     instructions: TransactionInstruction[]
+   *     config: Address
+   *     priceOracle: PublicKey
+   *   })} {
+   *     instructions,
+   *     pools,
+   *     marginAccount
+   *   }
+   * @return {Promise<void>}
+   */
   async withRefreshDepositPosition({
     instructions,
     config,
     priceOracle
-  }: { instructions: TransactionInstruction[], config: Address, priceOracle: Address }): Promise<void> {
+  }: {
+    instructions: TransactionInstruction[]
+    config: Address
+    priceOracle: Address
+  }): Promise<void> {
     const ix = await this.programs.margin.methods
       .refreshDepositPosition()
       .accounts({
