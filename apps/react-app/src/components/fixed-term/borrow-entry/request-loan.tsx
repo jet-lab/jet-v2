@@ -147,10 +147,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       console.log('ERROR `correspondingPool` must be defined.');
       return;
     }
-    console.log('=== REQUEST LOAN ===')
-    console.log('originationFee: ', marketAndConfig.market.info.originationFee);
-    console.log(sim)
-    console.log('====================');
 
     const productModel = marginAccount
       ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
@@ -159,12 +155,10 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const valuationEstimate = productModel?.makerAccountForecast('borrow', sim);
 
     const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
-    // const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filledUserQty), token.decimals);
     const matchRate = sim.filledVwar;
     const matchedInterest = new TokenAmount(bigIntToBn(sim.filledBaseQty - sim.filledQuoteQty), token.decimals);
     const matchedFees = new TokenAmount(bigIntToBn(sim.filledFeeQty), token.decimals);
     const postedRepayAmount = new TokenAmount(bigIntToBn(sim.postedBaseQty), token.decimals);
-    // const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.postedUserQty), token.decimals);
     const postedRate = sim.postedVwar;
     const postedInterest = new TokenAmount(bigIntToBn(sim.postedBaseQty - sim.postedQuoteQty), token.decimals);
     const postedFees = new TokenAmount(bigIntToBn(sim.postedFeeQty), token.decimals);

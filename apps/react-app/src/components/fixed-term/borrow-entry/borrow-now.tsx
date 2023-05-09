@@ -112,10 +112,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         console.log('ERROR `correspondingPool` must be defined.');
         return;
       }
-      console.log('=== BORROW NOW ===')
-      console.log('originationFee: ', marketAndConfig.market.info.originationFee);
-      console.log(sim)
-      console.log('====================');
 
       const productModel = marginAccount
         ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
@@ -124,7 +120,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       const valuationEstimate = productModel?.takerAccountForecast('borrow', sim);
 
       const repayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
-      // const borrowedAmount = new TokenAmount(bigIntToBn(sim.filledUserQty), token.decimals);
       const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilledQuoteQty), token.decimals);
       const totalInterest = new TokenAmount(bigIntToBn(sim.filledBaseQty - sim.filledQuoteQty), token.decimals);
       const fees = new TokenAmount(bigIntToBn(sim.filledFeeQty), token.decimals);

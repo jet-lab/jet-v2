@@ -147,10 +147,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       console.log('ERROR `correspondingPool` must be defined.');
       return;
     }
-    console.log('=== OFFER LOAN ===')
-    console.log('originationFee: ', marketAndConfig.market.info.originationFee);
-    console.log(sim)
-    console.log('====================');
 
     const productModel = marginAccount
       ? FixedTermProductModel.fromMarginAccountPool(marginAccount, correspondingPool)
