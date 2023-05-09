@@ -328,7 +328,9 @@ impl OrderbookModel {
 
         let fee_quote_qty = match action {
             Action::Lend => 0,
-            Action::Borrow => borrow_order_qty(user_quote_qty, self.origination_fee) - user_quote_qty,
+            Action::Borrow => {
+                borrow_order_qty(user_quote_qty, self.origination_fee) - user_quote_qty
+            }
         };
         let total_quote_qty = user_quote_qty + fee_quote_qty;
 
