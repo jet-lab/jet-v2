@@ -27,6 +27,7 @@ export function SwapChart(): JSX.Element {
   const outputToken = useRecoilValue(CurrentSwapOutput);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
+  const [quoteToken, setQuoteToken] = useState<string>('-');
   const [bidData, setBidData] = useState<{ x: number; y: number }[]>([
     { x: 0, y: 0 },
     { x: -1, y: -1 }
@@ -83,27 +84,14 @@ export function SwapChart(): JSX.Element {
     });
   }, [liquidityRange]);
 
-  // Oracle price
-  const oraclePrice = useMemo(() => {
-    if (currentPool?.tokenPrice && outputToken?.tokenPrice) {
-      return !true
-        ? currentPool!.tokenPrice / outputToken!.tokenPrice
-        : outputToken!.tokenPrice / currentPool!.tokenPrice;
-    } else {
-      return 0;
-    }
-  }, [currentPool, outputToken]);
-
-  const dataOracle = [
-    { x: oraclePrice, y: liquidityRange[0] },
-    { x: oraclePrice, y: liquidityRange[1] }
-  ];
-
   // Fetch chart data
   useEffect(() => {
     if (!data) {
       return;
     }
+
+    // set quote token
+    setQuoteToken(data.quote);
 
     // set the xy boundaries
     setPriceRange([data.price_range[0], data.price_range[1]]);
@@ -127,6 +115,22 @@ export function SwapChart(): JSX.Element {
       })
     );
   }, [data]);
+
+  // Oracle price
+  const oraclePrice = useMemo(() => {
+    if (currentPool?.tokenPrice && outputToken?.tokenPrice) {
+      return currentPool?.tokenMint.toString() === quoteToken
+        ? outputToken!.tokenPrice / currentPool!.tokenPrice
+        : currentPool!.tokenPrice / outputToken!.tokenPrice;
+    } else {
+      return 0;
+    }
+  }, [currentPool, outputToken, quoteToken]);
+
+  const dataOracle = [
+    { x: oraclePrice, y: liquidityRange[0] },
+    { x: oraclePrice, y: liquidityRange[1] }
+  ];
 
   return (
     <div className="swaps-graph view-element align-center column flex justify-end">
@@ -285,9 +289,6 @@ export function SwapChart(): JSX.Element {
                     <div className="align-center flex justify-between">
                       <p>{dictionary.common.price}</p>
                       <p>{`$$$ ${outputToken?.symbol ?? dictionary.actions.swap.outputToken}`}</p>
-                    </div>
-                    <div className="flex-centered">
-                      <button className="small-btn">{dictionary.actions.swap.swapThis.toUpperCase()}</button>
                     </div>
                   </div>
                 )}
