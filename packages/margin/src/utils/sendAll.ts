@@ -77,7 +77,7 @@ export async function sendAndConfirm(
  */
 export async function sendAndConfirmV0(
   provider: AnchorProvider,
-  instructions: TransactionInstruction[],
+  instructions: TransactionInstruction[][],
   lookupTables: { address: string; data: Uint8Array }[],
   signers?: Signer[],
   opts?: ConfirmOptions
@@ -96,39 +96,41 @@ export async function sendAndConfirmV0(
   }
 
   const { blockhash } = await provider.connection.getLatestBlockhash(opts.preflightCommitment)
-  const message = new TransactionMessage({
-    payerKey: provider.wallet.publicKey,
-    recentBlockhash: blockhash,
-    instructions
-  }).compileToV0Message(tables)
+  const transactions = instructions.map(ix => {
+    const message = new TransactionMessage({
+      payerKey: provider.wallet.publicKey,
+      recentBlockhash: blockhash,
+      instructions: ix
+    }).compileToV0Message(tables);
+    const transaction = new VersionedTransaction(message)
+    console.log(transaction)
+    if (signers?.length) {
+      transaction.sign(signers)
+    }
+    return transaction
+  })
 
-  const transaction = new VersionedTransaction(message)
 
-  if (signers?.length) {
-    transaction.sign(signers)
-  }
   // This works, but ideally we shouldn't have to cast the v0tx
-  const signedTransaction = await provider.wallet.signTransaction(transaction as any)
-  const rawTx = signedTransaction.serialize()
+  const signedTransaction = await provider.wallet.signAllTransactions(transactions as any)
 
+  let lastTxn = ""
   try {
-    return await sendAndConfirmRawTransaction(provider.connection, rawTx, opts)
-  } catch (err: any) {
-    // thrown if the underlying 'confirmTransaction' encounters a failed tx
-    // the 'confirmTransaction' error does not return logs so we make another rpc call to get them
-    // choose the shortest available commitment for 'getTransaction'
-    // (the json RPC does not support any shorter than "confirmed" for 'getTransaction')
-    // because that will see the tx sent with `sendAndConfirmRawTransaction` no matter which
-    // commitment `sendAndConfirmRawTransaction` used
-    // await provider.connection.confirmTransaction(bs58.encode(transaction.signatures[0]), "confirmed")
-    const failedTx = await provider.connection.getTransaction(bs58.encode(transaction.signatures[0]), {
-      commitment: "confirmed",
-      maxSupportedTransactionVersion: 0
-    })
-    const logs = failedTx?.meta?.logMessages
-    const message = `${err.message}\n${JSON.stringify(logs, undefined, 2)}`
-    throw !logs ? err : new SendTransactionError(message)
+    for (let i = 0; i < signedTransaction.length; i++) {
+      const transaction = signedTransaction[i];
+      const rawTx = transaction.serialize()
+      const sent = await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch(err => {
+        let customErr = new ConfirmError(err.message)
+        console.log(customErr, transaction);
+        customErr.signature = bs58.encode(transaction.signature!)
+        throw customErr
+      })
+      lastTxn = sent
+    }
+  } catch (e: any) {
+    throw e
   }
+  return lastTxn
 }
 
 /**

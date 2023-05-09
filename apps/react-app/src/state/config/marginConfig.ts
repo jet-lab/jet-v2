@@ -30,7 +30,6 @@ export function useMainConfigSyncer() {
         setMainConfig(config);
         // This is temporary until we use the new config format
         let airspaces = (await axios.get('/localnet.config.json')).data.airspaces;
-        console.log(airspaces[0]);
         return getAuthorityLookupTables(airspaces[0].lookupRegistryAuthority)
       }).then(addresses => {
         updateLookupTables(addresses);

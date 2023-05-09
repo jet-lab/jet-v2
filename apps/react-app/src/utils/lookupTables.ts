@@ -14,12 +14,12 @@ export async function getAuthorityLookupTables(authority: string): Promise<Looku
           : undefined;
   const data = (await axios.get<{
     authority: string,
-    addresses: {
+    tables: {
       address: string,
       data: number[]
     }[]
   }>(`${apiEndpoint || 'http://localhost:3002'}/lookup/authority_addresses/${authority}`)).data;
-  return data.addresses.map(address => {
+  return data.tables.map(address => {
     return {
       address: address.address,
       data: Uint8Array.from(address.data)

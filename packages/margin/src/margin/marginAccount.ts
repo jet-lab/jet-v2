@@ -1841,7 +1841,7 @@ export class MarginAccount {
     lookupTables: { address: string; data: Uint8Array }[],
     signers?: Signer[]
   ): Promise<string> {
-    return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
+    return await sendAndConfirmV0(this.provider, [instructions], lookupTables, signers)
   }
 
   /**
