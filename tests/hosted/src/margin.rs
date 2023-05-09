@@ -44,8 +44,8 @@ use jet_margin_sdk::solana::transaction::{
 };
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
+use jet_solana_client::rpc::AccountFilter;
 use jet_solana_client::signature::Authorization;
-use solana_client::rpc_filter::RpcFilterType;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::system_program;
@@ -143,9 +143,7 @@ impl MarginClient {
         self.rpc
             .get_program_accounts(
                 &jet_margin_pool::ID,
-                vec![RpcFilterType::DataSize(
-                    std::mem::size_of::<MarginPool>() as u64
-                )],
+                vec![AccountFilter::DataSize(std::mem::size_of::<MarginPool>())],
             )
             .await?
             .into_iter()
@@ -626,7 +624,7 @@ impl MarginUser {
                 .tx
                 .route_swap_with_lookup(builder, account_lookup_tables, &self.signer)
                 .await?;
-            LookupTable::send_versioned_transaction(&self.rpc, &versioned_tx).await?;
+            self.rpc.send_versioned_transaction(&versioned_tx).await?;
         }
         Ok(())
     }

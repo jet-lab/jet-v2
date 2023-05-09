@@ -282,6 +282,7 @@ impl MarginSwapRouteIxBuilder {
         {
             return Err(JetIxError::SwapIxError(format!("Invalid swap split, must be >= {ROUTE_SWAP_MIN_SPLIT} and <= {ROUTE_SWAP_MAX_SPLIT}")));
         }
+
         let (src_token, dst_token) = self.src_dst_tokens(pool)?;
         // Run common checks
         self.verify_addition(&src_token, &dst_token, swap_split)?;
@@ -325,6 +326,9 @@ impl MarginSwapRouteIxBuilder {
         }
         // Update the current tokens in the swap
         self.current_route_tokens = Some((src_token, dst_token));
+
+        self.spl_token_accounts.insert(src_token);
+        self.spl_token_accounts.insert(dst_token);
 
         Ok(())
     }

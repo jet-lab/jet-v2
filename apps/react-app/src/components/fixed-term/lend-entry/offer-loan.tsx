@@ -52,7 +52,12 @@ interface Forecast {
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
+    return {
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables
+    }
+  });
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -102,7 +107,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         basisPoints: basisPoints,
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
-        autorollEnabled
+        autorollEnabled,
+        airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
         refreshOrderBooks();
@@ -112,8 +118,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
             .div(new BN(10 ** decimals))
             .toNumber()
             .toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(
-            2
-          )}% was created successfully`,
+              2
+            )}% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -154,12 +160,12 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     const setupCheckEstimate = productModel?.makerAccountForecast('lend', sim, 'setup');
     const valuationEstimate = productModel?.makerAccountForecast('lend', sim);
 
-    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-    const matchRate = sim.filled_vwar;
-    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
-    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
-    const postedRate = sim.posted_vwar;
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
+    const matchRate = sim.filledVwar;
+    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.postedBaseQty), token.decimals);
+    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.postedQuoteQty), token.decimals);
+    const postedRate = sim.postedVwar;
 
     setForecast({
       matchedAmount: matchRepayAmount.tokens,
@@ -168,7 +174,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       postedRepayAmount: postedRepayAmount.tokens,
       postedInterest: postedRepayAmount.sub(postedBorrowAmount).tokens,
       postedRate,
-      selfMatch: sim.self_match,
+      selfMatch: sim.selfMatch,
       riskIndicator: valuationEstimate?.riskIndicator,
       hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
     });

@@ -62,13 +62,15 @@ pub async fn process_apply(
     let blueprint = builder.build();
     let mut plan = client.plan()?;
 
-    for setup_tx in blueprint.setup {
-        let signers = setup_tx
-            .signers
-            .into_iter()
-            .map(|k| Box::new(k) as Box<dyn Signer>);
+    for setup in blueprint.setup {
+        for setup_tx in setup {
+            let signers = setup_tx
+                .signers
+                .into_iter()
+                .map(|k| Box::new(k) as Box<dyn Signer>);
 
-        plan = plan.instructions(signers, [""], setup_tx.instructions);
+            plan = plan.instructions(signers, [""], setup_tx.instructions);
+        }
     }
 
     for propose_tx in blueprint.propose {

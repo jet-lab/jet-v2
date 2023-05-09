@@ -37,7 +37,8 @@ export const submitRepay = async (
       termLoans,
       pools,
       markets,
-      market
+      market,
+      airspaceLookupTables: []
     });
     notify(
       'Repay Successful',
@@ -96,7 +97,8 @@ export const settleNow = async (
       marginAccount,
       provider,
       pools: pools.tokenPools,
-      amount: amount.lamports
+      amount: amount.lamports,
+      airspaceLookupTables: []
     });
     notify(
       'Settle Successful',
@@ -132,7 +134,8 @@ export const redeemDeposits = async (
       provider,
       pools,
       markets,
-      deposits
+      deposits,
+      airspaceLookupTables: []
     });
     notify('Deposit Redeemed', 'Your deposit was successfully redeemed.', 'success');
   } catch (e: any) {

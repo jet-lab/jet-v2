@@ -1403,6 +1403,7 @@ html {
 
     .fixed-term-graph {
       flex: 1;
+      min-height: 300px;
 
       &-head {
         position: absolute;
@@ -1440,6 +1441,7 @@ html {
 
   .swaps-graph {
     flex: 1;
+    min-height: 300px;
 
     &-head {
       position: absolute;
@@ -2105,6 +2107,7 @@ html {
 
   // Any account Table
   .account-table {
+    min-height: 160px;
     &-search {
       position: absolute;
       top: @spacing-xs;
@@ -2666,6 +2669,11 @@ html {
     display: flex;
     flex-direction: column;
     height: 100% !important;
+
+    p {
+      margin-bottom: 16px;
+      color: rgb(var(--secondary-4));
+    }
   }
 
   .submit-button {

@@ -9,7 +9,7 @@ use anyhow::{bail, Result};
 use clap::Parser;
 
 use jet_environment::{builder::resolve_swap_program, programs::SABER};
-use jet_solana_client::network::NetworkKind;
+use jet_solana_client::{network::NetworkKind, rpc::native::RpcConnection};
 use solana_clap_utils::input_validators::normalize_to_url_if_moniker;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::{
@@ -26,7 +26,7 @@ use solana_sdk::{
 
 use pyth_sdk_solana::state::ProductAccount;
 
-use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 const PYTH_DEVNET_PROGRAM: Pubkey = pubkey!("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s");
 const PYTH_MAINNET_PROGRAM: Pubkey = pubkey!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH");
@@ -82,9 +82,12 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         RpcClient::new_with_commitment(source_endpoint, CommitmentConfig::processed());
     let target_client =
         RpcClient::new_with_commitment(target_endpoint.clone(), CommitmentConfig::processed());
-    let target_sdk_client = Arc::new(RpcConnection::new(
+    let target_sdk_client = Arc::new((
+        RpcConnection::from(RpcClient::new_with_commitment(
+            target_endpoint,
+            CommitmentConfig::processed(),
+        )),
         Keypair::from_bytes(&signer_data)?,
-        RpcClient::new_with_commitment(target_endpoint, CommitmentConfig::processed()),
     )) as Arc<dyn SolanaRpcClient>;
 
     let spl_swap_program = get_spl_program(&target_client).await?;

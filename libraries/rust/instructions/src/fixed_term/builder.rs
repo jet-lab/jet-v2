@@ -121,6 +121,9 @@ impl FixedTermIxBuilder {
     pub fn collateral(&self) -> Pubkey {
         derive::ticket_collateral_mint(&self.market)
     }
+    pub fn underlying_collateral(&self) -> Pubkey {
+        derive::underlying_collateral_mint(&self.market)
+    }
     pub fn event_queue(&self) -> Pubkey {
         self.orderbook.event_queue
     }
