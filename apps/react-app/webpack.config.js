@@ -31,7 +31,8 @@ module.exports = (_env, arg) => {
           REACT_APP_RPC_DEV_TOKEN: process.env.REACT_APP_RPC_DEV_TOKEN,
           REACT_APP_RPC_TOKEN: process.env.REACT_APP_RPC_TOKEN,
           REACT_APP_IP_REGISTRY: process.env.REACT_APP_IP_REGISTRY,
-          REACT_APP_LOGROCKET_PROJECT: process.env.REACT_APP_LOGROCKET_PROJECT
+          REACT_APP_LOGROCKET_PROJECT: process.env.REACT_APP_LOGROCKET_PROJECT,
+          REACT_APP_ALLOWED_WALLETS: process.env.REACT_APP_ALLOWED_WALLETS
         }
       )
     })

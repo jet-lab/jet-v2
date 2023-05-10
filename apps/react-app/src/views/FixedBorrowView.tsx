@@ -3,13 +3,14 @@ import { useRecoilValue } from 'recoil';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
 import { FixedPriceChartContainer } from '@components/fixed-term/shared/fixed-term-market-chart';
 import { FullAccountBalance } from '@components/tables/FullAccountBalance';
-import { Dictionary } from '@state/settings/localization/localization';
+import { Dictionary, Geobanned } from '@state/settings/localization/localization';
 import { FixedBorrowOrderEntry } from '@components/fixed-term/borrow-entry';
 import { FixedBorrowRowOrder, FixedBorrowViewOrder } from '@state/views/fixed-term';
 import { FixedTermMarketSelector } from '@components/fixed-term/shared/market-selector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 import { DebtTable } from '@components/fixed-term/shared/debt-table/debt-table';
+import { GeobannedComponent } from '@components/misc/GeoBanned';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedBorrowEntry: FixedBorrowOrderEntry,
@@ -67,11 +68,18 @@ export function FixedBorrowView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
 
   const networkState = useRecoilValue(NetworkStateAtom);
+  const geoBanned = useRecoilValue(Geobanned);
+
   useEffect(() => {
     document.title = `${dictionary.fixedView.borrow.title} | Jet Protocol`;
   }, [dictionary.fixedView.borrow.title]);
 
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
+  if (networkState !== 'connected' || geoBanned === undefined)
+    return <WaitingForNetworkView networkState={networkState} />;
+
+  if (geoBanned) {
+    return <GeobannedComponent />;
+  }
   return <MainView />;
 }
 

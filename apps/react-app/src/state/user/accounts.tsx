@@ -30,6 +30,11 @@ export interface AccountBalance {
   borrowRate: number;
 }
 
+export const WalletPublicKey = atom<string | null>({
+  key: 'wallet-key',
+  default: null
+});
+
 // State of all margin accounts associated with the connected wallet
 export const Accounts = atom({
   key: 'accounts',
@@ -103,9 +108,14 @@ export function useAccountsSyncer() {
   const setAccountsLoading = useSetRecoilState(AccountsLoading);
   const setAccountHistoryLoaded = useSetRecoilState(AccountHistoryLoaded);
   const actionRefresh = useRecoilValue(ActionRefresh);
+  const setWallet = useSetRecoilState(WalletPublicKey);
 
   // When we change address
   useEffect(() => setAccountHistoryLoaded(false), [currentAccountAddress, setAccountHistoryLoaded]);
+
+  useEffect(() => {
+    setWallet(publicKey?.toBase58() || null);
+  }, [publicKey]);
 
   // Fetch all margin accounts on wallet init
   useEffect(() => {
@@ -139,8 +149,9 @@ export function useAccountsSyncer() {
       const sortedAccountNames: Record<string, string> = {};
       for (const account of accounts) {
         const accountKey = account.address.toString();
-        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${account.seed + 1
-          }`;
+        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${
+          account.seed + 1
+        }`;
 
         // If account is currently being liquidated, switch to that account
         if (account.isBeingLiquidated) {
@@ -151,15 +162,15 @@ export function useAccountsSyncer() {
       // If no currentAccount select first
       if (accounts.length > 0) {
         if (currentAccountAddress) {
-          const match = accounts.find(acc => acc.address.toBase58() === currentAccountAddress)
+          const match = accounts.find(acc => acc.address.toBase58() === currentAccountAddress);
           if (!match) {
-            setCurrentAccountAddress(accounts[0].address.toBase58())
+            setCurrentAccountAddress(accounts[0].address.toBase58());
           }
         } else {
           setCurrentAccountAddress(accounts[0].address.toBase58());
         }
       } else {
-        setCurrentAccountAddress('')
+        setCurrentAccountAddress('');
       }
 
       setAccounts(accounts);
@@ -191,7 +202,11 @@ export function useAccountsSyncer() {
       }
 
       // Account trasactions
-      const transactions: FlightLog[] = await MarginClient.getBlackBoxHistory(currentAccount.address, cluster, pools.tokenPools);
+      const transactions: FlightLog[] = await MarginClient.getBlackBoxHistory(
+        currentAccount.address,
+        cluster,
+        pools.tokenPools
+      );
 
       setAccountHistoryLoaded(true);
       return {
