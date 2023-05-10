@@ -4,6 +4,7 @@ import Jet_UI_EN from './languages/Jet_UI_EN.json';
 import Jet_Definitions_EN from './languages/Jet_Definitions_EN.json';
 import { localStorageEffect } from '../../effects/localStorageEffect';
 import { WalletPublicKey } from '@state/user/accounts';
+import { isDebug } from 'App';
 
 // UI Localization Dictionary
 export const Dictionary = atom({
@@ -72,35 +73,37 @@ interface GeoLocation {
 export const Geobanned = selector<boolean>({
   key: 'geobanned',
   get: async ({ get }) => {
-    const data = await axios
-      .get(`https://api.ipregistry.co/?key=${process.env.REACT_APP_IP_REGISTRY}`)
-      .then(({ data }: { data: GeoLocation }) => data);
-    {
-      const countryCode = data.location.country.code;
-      const tz = data.time_zone.id;
-      const wallet = get(WalletPublicKey);
-      if (wallet && process.env.REACT_APP_ALLOWED_WALLETS?.includes(wallet)) {
-        // is whitelisted
-        return false;
-      }
-
-      if (geoBannedCountries.map(country => country.code).includes(countryCode)) {
-        // Is in a geobanned country
-        return true;
-      }
-
-      if (Object.values(data.security).some(v => v)) {
-        // is masking traffic
-        return true;
-      }
-
-      if (tz !== Intl.DateTimeFormat().resolvedOptions().timeZone) {
-        // Timezone is different from that of the IP resolved one
-        return true;
-      }
-
+    if (isDebug) {
       return false;
     }
+    const data = await axios
+      .get<GeoLocation>(`https://api.ipregistry.co/?key=${process.env.REACT_APP_IP_REGISTRY}`)
+      .then(({ data }) => data);
+
+    const countryCode = data.location.country.code;
+    const tz = data.time_zone.id;
+    const wallet = get(WalletPublicKey);
+    if (wallet && process.env.REACT_APP_ALLOWED_WALLETS?.includes(wallet)) {
+      // is whitelisted
+      return false;
+    }
+
+    if (geoBannedCountries.map(country => country.code).includes(countryCode)) {
+      // Is in a geobanned country
+      return true;
+    }
+
+    if (Object.values(data.security).some(v => v)) {
+      // is masking traffic
+      return true;
+    }
+
+    if (tz !== Intl.DateTimeFormat().resolvedOptions().timeZone) {
+      // Timezone is different from that of the IP resolved one
+      return true;
+    }
+
+    return false;
   }
 });
 
