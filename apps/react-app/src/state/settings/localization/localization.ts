@@ -4,7 +4,7 @@ import Jet_UI_EN from './languages/Jet_UI_EN.json';
 import Jet_Definitions_EN from './languages/Jet_Definitions_EN.json';
 import { localStorageEffect } from '../../effects/localStorageEffect';
 import { WalletPublicKey } from '@state/user/accounts';
-import { isDebug } from 'App';
+import { isDebug } from '../../../App';
 
 // UI Localization Dictionary
 export const Dictionary = atom({
