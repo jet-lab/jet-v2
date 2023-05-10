@@ -22,10 +22,10 @@ export const createPricesSlice: StateCreator<JetStore, [['zustand/devtools', nev
           (acc, [token_mint, data]: [string, TOKEN_PRICE_UPDATE]) => {
             if (data.price) {
               acc[token_mint] = {
-                price: parseInt(data.price.price) * 10 ** data.price.expo,
-                ema: parseInt(data.ema_price.price) * 10 ** data.price.expo,
-                confidence: parseInt(data.price.conf) * 10 ** data.price.expo,
-                timestamp: new Date(data.price.publish_time * 1000)
+                price: parseInt(data.price.price.price) * 10 ** data.price.price.expo,
+                ema: parseInt(data.price.ema_price.price) * 10 ** data.price.ema_price.expo,
+                confidence: parseInt(data.price.price.conf) * 10 ** data.price.price.expo,
+                timestamp: new Date(data.price.price.publish_time * 1000)
               };
             }
             return acc;
