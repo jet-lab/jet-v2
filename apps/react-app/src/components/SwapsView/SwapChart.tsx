@@ -30,15 +30,15 @@ export function SwapChart(): JSX.Element {
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
   const [quoteToken, setQuoteToken] = useState<string>('-');
   const [bidData, setBidData] = useState<{ x: number; y: number }[]>([
-    { x: 0, y: 0 },
-    { x: -1, y: -1 }
+    { x: 0, y: 10 },
+    { x: 1, y: 1 }
   ]);
   const [askData, setAskData] = useState<{ x: number; y: number }[]>([
-    { x: 0, y: 0 },
-    { x: -1, y: -1 }
+    { x: 1, y: 1 },
+    { x: 3, y: 10 }
   ]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
-  const [liquidityRange, setLiquidityRange] = useState<[number, number]>([0, 0]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 3]);
+  const [liquidityRange, setLiquidityRange] = useState<[number, number]>([0, 10]);
   const swapMaxTradeAmount =
     currentAccount?.poolPositions[currentPool?.symbol ?? '']?.maxTradeAmounts.swap.lamports.toNumber();
   const { Title } = Typography;
@@ -72,15 +72,15 @@ export function SwapChart(): JSX.Element {
   const xScale = useMemo(() => {
     return scaleLinear<number>({
       domain: [priceRange[0], priceRange[1]],
-      range: [0, 900], // depends on width of the component to scale
+      range: [80, 900], // depends on width of the component to scale
       clamp: true
     });
   }, [priceRange]);
 
   const yScale = useMemo(() => {
     return scaleLinear<number>({
-      domain: [liquidityRange[1], liquidityRange[0]],
-      range: [0, 600], // depends on the height of the component to scale
+      domain: [liquidityRange[0], liquidityRange[1]],
+      range: [500-50-50-5-15, 0], // depends on the height of the component to scale
       clamp: true
     });
   }, [liquidityRange]);
@@ -124,7 +124,7 @@ export function SwapChart(): JSX.Element {
         ? outputToken!.tokenPrice / currentPool!.tokenPrice
         : currentPool!.tokenPrice / outputToken!.tokenPrice;
     } else {
-      return 0;
+      return 1;
     }
   }, [currentPool, outputToken, quoteToken]);
 
@@ -215,14 +215,32 @@ export function SwapChart(): JSX.Element {
           strokeWidth={2}
           strokeDasharray="3,3"
         />
-
+        {/* todo: fix - oracle line should be center of the graph */}
+        <LineSeries
+          stroke="#a79adb"
+          dataKey="oracle-price"
+          data={dataOracle}
+          xAccessor={d => {
+            if (d === undefined) {
+              return 0;
+            }
+            return xScale(d.x);
+          }}
+          yAccessor={d => {
+            if (d === undefined) {
+              return 0;
+            }
+            return yScale(d.y);
+          }}
+        />
         <AxisLeft
           key={dictionary.actions.swap.sellQuantity}
           label={dictionary.actions.swap.sellQuantity}
           scale={yScale}
-          left={80}
+          top={50}
+          left={80} // use same padding as other components
           numTicks={10}
-          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 14, dx: 10, dy: -50, textAnchor: 'middle' }}
+          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 14, dx: 10, textAnchor: 'end' }}
           tickLabelProps={() => ({
             fontSize: 10,
             fill: '#fff',
@@ -241,7 +259,7 @@ export function SwapChart(): JSX.Element {
           scale={xScale}
           top={430}
           left={80}
-          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, dx: -25, dy: 15, textAnchor: 'middle' }}
+          labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, dy: 15, textAnchor: 'middle' }}
           numTicks={10}
           tickLabelProps={() => ({
             fontSize: 10,
@@ -255,20 +273,25 @@ export function SwapChart(): JSX.Element {
 
         <Tooltip
           snapTooltipToDatumX
-          snapTooltipToDatumY
           showSeriesGlyphs
           glyphStyle={{
             fill: '#008561',
             strokeWidth: 0
           }}
           renderTooltip={({ tooltipData }) => {
+            // console.log('-------tooltipData-------', tooltipData);
+            // console.log('-------tooltipData nearest-------', tooltipData?.nearestDatum?.datum);
             return (
               <>
                 {tooltipData && (
                   <div className="swaps-graph-tooltip">
                     <div className="align-center flex justify-between">
                       <p>{dictionary.common.sell}</p>
-                      <p>{`# ${currentPool?.symbol ?? dictionary.actions.swap.inputToken}`}</p>
+                      <p>
+                        {tooltipData?.nearestDatum?.key}
+
+                        {`# ${currentPool?.symbol ?? dictionary.actions.swap.inputToken}`}
+                      </p>
                     </div>
 
                     <div className="align-center flex justify-between">
@@ -277,30 +300,12 @@ export function SwapChart(): JSX.Element {
                     </div>
                     <div className="align-center flex justify-between">
                       <p>{dictionary.common.price}</p>
-                      <p>{`$$$ ${outputToken?.symbol ?? dictionary.actions.swap.outputToken}`}</p>
+                      <p>{` $$$ ${outputToken?.symbol ?? dictionary.actions.swap.outputToken}`}</p>
                     </div>
                   </div>
                 )}
               </>
             );
-          }}
-        />
-        {/* todo: fix - oracle line should be center of the graph */}
-        <LineSeries
-          stroke="#a79adb"
-          dataKey="oracle-price"
-          data={dataOracle}
-          xAccessor={d => {
-            if (d === undefined) {
-              return 0;
-            }
-            return xScale(d.x);
-          }}
-          yAccessor={d => {
-            if (d === undefined) {
-              return 0;
-            }
-            return yScale(d.y);
           }}
         />
       </XYChart>
