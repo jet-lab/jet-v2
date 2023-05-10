@@ -135,7 +135,8 @@ const cancel = async (
       provider,
       orderId: new BN(order.order_id),
       pools,
-      markets
+      markets,
+      airspaceLookupTables: []
     });
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
     setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);

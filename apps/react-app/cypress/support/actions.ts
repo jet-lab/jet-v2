@@ -2,7 +2,7 @@ import { formatWithCommas } from './utils';
 
 export const connectWallet = () => {
   cy.contains('CONNECT').click();
-  cy.contains('E2E').click();
+  cy.contains('Burner Wallet').click();
   cy.contains('Connected');
 };
 

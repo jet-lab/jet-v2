@@ -52,7 +52,12 @@ interface Forecast {
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
+    return {
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables
+    }
+  });
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -102,7 +107,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         basisPoints: basisPoints,
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
-        autorollEnabled
+        autorollEnabled,
+        airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
         refreshOrderBooks();
@@ -112,8 +118,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
             .div(new BN(10 ** decimals))
             .toNumber()
             .toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(
-            2
-          )}% was created successfully`,
+              2
+            )}% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
