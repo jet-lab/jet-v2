@@ -15,6 +15,7 @@ use jet_margin_sdk::{
         derive_token_config, get_metadata_address, MarginConfigIxBuilder, MarginIxBuilder,
         MarginPoolIxBuilder,
     },
+    jet_airspace::state::Airspace,
     jet_margin::{self, MarginAccount, PriceInfo, Valuation},
     jet_margin_pool::{self, MarginPool},
     jet_metadata::{self, PositionTokenMetadata},
@@ -189,7 +190,11 @@ pub async fn process_set_liquidator(
     is_liquidator: bool,
 ) -> Result<Plan> {
     let liquidator_md_address = get_metadata_address(&liquidator);
-    let ix = MarginConfigIxBuilder::new(airspace, resolve_payer(client)?, None);
+    let airspace_authority = client
+        .read_anchor_account::<Airspace>(&airspace)
+        .await?
+        .authority;
+    let ix = MarginConfigIxBuilder::new(airspace, resolve_payer(client)?, Some(airspace_authority));
 
     let is_currently_liquidator = client.account_exists(&liquidator_md_address).await?;
     if is_currently_liquidator == is_liquidator {
