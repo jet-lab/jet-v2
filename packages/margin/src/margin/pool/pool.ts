@@ -12,7 +12,7 @@ import { MarginTokenConfig } from "../config"
 import { PoolTokenChange } from "./poolTokenChange"
 import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
-import { chunks, createLookupTable, Number128, Number192 } from "../../utils"
+import { chunks, Number128, Number192 } from "../../utils"
 import { FixedTermMarket } from "fixed-term"
 import { base64 } from "@project-serum/anchor/dist/cjs/utils/bytes"
 import { TokenConfig, TokenConfigInfo } from "../tokenConfig"
@@ -435,7 +435,7 @@ export class Pool {
         tokenMetadata: (await TokenConfig.load(
           this.programs,
           Airspace.deriveAddress(this.programs.airspace.programId, this.programs.config.airspaces[0].name),
-           this.addresses.tokenMint
+          this.addresses.tokenMint
         )).info as TokenConfigInfo
       }
     }
@@ -1219,7 +1219,8 @@ export class Pool {
     minAmountOut,
     repayWithOutput,
     swapPaths,
-    markets
+    markets,
+    lookupTables,
   }: {
     endpoint: string
     marginAccount: MarginAccount
@@ -1230,6 +1231,7 @@ export class Pool {
     repayWithOutput: boolean
     swapPaths: SwapPath[]
     markets: FixedTermMarket[]
+    lookupTables: { address: string; data: Uint8Array }[]
   }) {
     assert(marginAccount)
     assert(swapAmount)
@@ -1243,11 +1245,8 @@ export class Pool {
       data: string
     }
 
-    const refreshInstructions: TransactionInstruction[] = []
-    const registerInstructions: TransactionInstruction[] = []
-    const transitInstructions: TransactionInstruction[] = []
-    const instructions: TransactionInstruction[] = []
-    const repayInstructions: TransactionInstruction[] = []
+    const setupInstructions: TransactionInstruction[] = []
+    const swapInstructions: TransactionInstruction[] = []
 
     // Setup check for swap
     const projectedRiskLevel = this.projectAfterMarginSwap(
@@ -1264,7 +1263,7 @@ export class Pool {
 
     // Refresh prices
     await marginAccount.withPrioritisedPositionRefresh({
-      instructions: refreshInstructions,
+      instructions: setupInstructions,
       pools,
       markets
     })
@@ -1283,7 +1282,7 @@ export class Pool {
 
     // Transit source account fetch / creation
     await AssociatedToken.withCreate(
-      transitInstructions,
+      setupInstructions,
       marginAccount.provider,
       marginAccount.address,
       this.addresses.tokenMint
@@ -1291,7 +1290,7 @@ export class Pool {
 
     // Transit destination account fetch / creation
     await AssociatedToken.withCreate(
-      transitInstructions,
+      setupInstructions,
       marginAccount.provider,
       marginAccount.address,
       outputToken.tokenMint
@@ -1299,7 +1298,7 @@ export class Pool {
 
     // Destination pool account if it doesn't exist
     await marginAccount.withGetOrRegisterPosition({
-      instructions: transitInstructions,
+      instructions: setupInstructions,
       positionTokenMint: outputToken.addresses.depositNoteMint
     });
 
@@ -1315,11 +1314,11 @@ export class Pool {
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
-        instructions: transitInstructions,
+        instructions: setupInstructions,
         marginAccount
       })
       await this.withMarginBorrow({
-        instructions: transitInstructions,
+        instructions: setupInstructions,
         marginAccount,
         change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
       })
@@ -1344,9 +1343,8 @@ export class Pool {
     })
     const swapData = base64.decode(swapInstruction.data.data)
 
-    // Swap ix
     await this.withRouteSwap({
-      instructions,
+      instructions: swapInstructions,
       marginAccount,
       swapAccounts,
       swapData
@@ -1359,27 +1357,16 @@ export class Pool {
         ? PoolTokenChange.setTo(0)
         : PoolTokenChange.shiftBy(minAmountOut)
       await outputToken.withMarginRepay({
-        instructions: repayInstructions,
+        instructions: swapInstructions,
         marginAccount,
         change
       })
     }
 
-    // TODO: This is a temporary measure
-    const lookupAccounts = swapAccounts.map(meta => meta.pubkey)
-    // TODO: should we add more accounts to the above?
-
-    const lookupTables: PublicKey[] = []
-    lookupTables.push(await createLookupTable(marginAccount.provider, lookupAccounts))
-
-    // TODO: better to convert everything to v0 transactions and sign them all
-    await marginAccount.sendAndConfirmV0(registerInstructions.concat(transitInstructions), lookupTables)
     return await marginAccount.sendAndConfirmV0(
-      refreshInstructions.concat(instructions).concat(repayInstructions),
+      [setupInstructions, swapInstructions],
       lookupTables
     )
-
-    // return await marginAccount.sendAndConfirmV0(instructions.concat(repayInstructions), lookupTables)
   }
 
   async withRouteSwap({
@@ -1905,9 +1892,9 @@ export class Pool {
         (totalLiabilities +
           requiredCollateral -
           ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
-            (outputTokenLiabilityValue - Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) +
+          (outputTokenLiabilityValue - Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) +
           ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
-            Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
         (weightedCollateral +
           outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0) -
           inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))
@@ -1916,7 +1903,7 @@ export class Pool {
         (totalLiabilities +
           requiredCollateral +
           ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
-            Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
         (weightedCollateral +
           outputTokenWeight * minAmountOutValue -
           inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))

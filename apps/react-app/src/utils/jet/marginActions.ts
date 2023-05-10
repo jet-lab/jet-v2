@@ -15,6 +15,7 @@ import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-syn
 import { useJetStore } from '@jet-lab/store';
 import { useMemo } from 'react';
 import { SwapStep } from '@utils/actions/swap';
+import { LookupTable } from '@jet-lab/store/dist/slices/accounts';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -323,7 +324,8 @@ export function useMarginActions() {
     swapPaths: SwapStep[],
     swapAmount: TokenAmount,
     minAmountOut: TokenAmount,
-    repayWithOutput: boolean
+    repayWithOutput: boolean,
+    lookupTables: LookupTable[]
   ): Promise<[string | undefined, ActionResponse | undefined]> {
     if (!pools || !inputToken || !outputToken || !currentAccount) {
       console.error('Input/output tokens or current account undefined');
@@ -340,7 +342,8 @@ export function useMarginActions() {
         swapAmount,
         minAmountOut,
         repayWithOutput,
-        swapPaths
+        swapPaths,
+        lookupTables
       });
       await actionRefresh();
       if (txId === 'Setup check failed') {
@@ -412,7 +415,7 @@ export function useMarginActions() {
         change: toChange
       });
       const allIx = refreshInstructions.concat(instructions);
-      const txId = await currentAccount.sendAndConfirmV0(allIx, []);
+      const txId = await currentAccount.sendAndConfirmV0([allIx], []);
       await actionRefresh();
       return [txId, ActionResponse.Success];
     } catch (err: any) {
