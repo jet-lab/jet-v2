@@ -1295,13 +1295,6 @@
   dependencies:
     "@hapi/hoek" "^9.0.0"
 
-"@jet-lab/e2e-react-adapter@^0.1.3":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@jet-lab/e2e-react-adapter/-/e2e-react-adapter-0.1.3.tgz#4eb8e3573c0d5aa63d220e5e9cb0548e7cc0d47a"
-  integrity sha512-4HChW7uPlzmq/ofv1VfLZg3w79XQ8dIfO9DxAkvxoPfuPSr86TipmEN5sAhAmcM9fUX/gYlKMfT+ElSilXtrRQ==
-  dependencies:
-    e2e-react-adapter "^0.1.1"
-
 "@jnwng/walletconnect-solana@^0.1.3":
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/@jnwng/walletconnect-solana/-/walletconnect-solana-0.1.4.tgz#88ecd894ad505f1e7ada379a743378ea4790469b"
@@ -5592,11 +5585,6 @@ duplexer@^0.1.2, duplexer@~0.1.1:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/duplexer/-/duplexer-0.1.2.tgz#3abe43aef3835f8ae077d136ddce0f276b0400e6"
   integrity sha512-jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==
-
-e2e-react-adapter@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/e2e-react-adapter/-/e2e-react-adapter-0.1.1.tgz#05f5361df3d497b5c60505cae79233c54f2530cc"
-  integrity sha512-SShCMRLQ4l1t3O3ltMyOqODYzsIwtsHx12w8IEzaF7/B07rS8s45BLeNZsMRuCiLqIPC8oaffPLTMgambsMe0g==
 
 eastasianwidth@^0.2.0:
   version "0.2.0"

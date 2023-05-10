@@ -19,6 +19,7 @@ testing = []
 anyhow = "1"
 bytemuck = {version = "1.7.2", features = ["derive"] } 
 serde = { version = "1.0", features = ["derive"] }
+serde_with = "2"
 js-sys = "0.3.59"
 
 wasm-bindgen = "0.2.83"

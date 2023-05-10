@@ -45,6 +45,7 @@ use jet_margin_sdk::{
 };
 use jet_program_common::Fp32;
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use jet_solana_client::rpc::AccountFilter;
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -725,7 +726,7 @@ impl TestManager {
             .client
             .get_account(key)
             .await?
-            .ok_or_else(|| anyhow::Error::msg("failed to fetch key: {key}"))?
+            .ok_or_else(|| anyhow::Error::msg(format!("failed to fetch key: {key}")))?
             .data)
     }
 
@@ -751,7 +752,9 @@ impl TestManager {
             .client
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                Some(std::mem::size_of::<TermDeposit>() + 8),
+                vec![AccountFilter::DataSize(
+                    std::mem::size_of::<TermDeposit>() + 8,
+                )],
             )
             .await?
             .into_iter()
@@ -776,7 +779,7 @@ impl TestManager {
             .client
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                Some(std::mem::size_of::<TermLoan>() + 8),
+                vec![AccountFilter::DataSize(std::mem::size_of::<TermLoan>() + 8)],
             )
             .await?
             .into_iter()

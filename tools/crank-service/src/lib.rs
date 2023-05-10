@@ -6,15 +6,16 @@ use std::{
 use anyhow::Result;
 use clap::Parser;
 
-use jet_environment::client_config::JetAppConfig;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
-use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::read_keypair_file};
 
 use jet_margin_sdk::fixed_term::Crank;
-use jet_simulation::solana_rpc_api::RpcConnection;
+
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{prelude::*, EnvFilter};
+
+use jet_environment::client_config::JetAppConfig;
+use jet_solana_client::rpc::native::RpcConnection;
 
 static LOCALNET_URL: &str = "http://127.0.0.1:8899";
 
@@ -75,9 +76,9 @@ pub async fn run(opts: CliOpts) -> Result<()> {
             .unwrap_or(&solana_config.keypair_path),
     )
     .unwrap();
-    let rpc = Arc::new(RpcConnection::new(
+    let rpc = Arc::new((
+        RpcConnection::new(opts.url.as_deref().unwrap_or(LOCALNET_URL)),
         keypair,
-        RpcClient::new(opts.url.unwrap_or_else(|| LOCALNET_URL.to_string())),
     ));
     let targets = read_config(&opts.config_path)?;
 

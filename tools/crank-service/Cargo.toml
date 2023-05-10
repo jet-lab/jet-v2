@@ -29,3 +29,4 @@ jet-ctl-cli = { path = "../ctl" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-environment = { path = "../../libraries/rust/environment" }
 jet-simulation = { path = "../../libraries/rust/simulation" }
+jet-solana-client = { path = "../../libraries/rust/solana-client" }
