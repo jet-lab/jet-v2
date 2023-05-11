@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
 use crate::{
-    events,
+    // events,
     syscall::{sys, Sys},
     MarginAccount,
 };
@@ -38,14 +38,14 @@ pub fn update_position_balance_handler(ctx: Context<UpdatePositionBalance>) -> R
     let mut margin_account = ctx.accounts.margin_account.load_mut()?;
     let token_account = &ctx.accounts.token_account;
 
-    let position = margin_account.set_position_balance(
+    let _position = margin_account.set_position_balance(
         &token_account.mint,
         &token_account.key(),
         token_account.amount,
         sys().unix_timestamp(),
     )?;
 
-    emit!(events::PositionBalanceUpdated { position });
+    // emit!(events::PositionBalanceUpdated { position });
 
     Ok(())
 }
