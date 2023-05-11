@@ -35,38 +35,38 @@ export interface Loan {
   balance: number;
   is_marked_due: boolean;
   created_timestamp: number;
-  payer: string
+  payer: string;
   rate: number;
 }
 
 export interface Deposit {
-  id: number
-  address: string,
-  sequence_number: number,
-  maturation_timestamp: number,
-  balance: number,
-  rate: number,
-  payer: string,
-  created_timestamp: number
+  id: number;
+  address: string;
+  sequence_number: number;
+  maturation_timestamp: number;
+  balance: number;
+  rate: number;
+  payer: string;
+  created_timestamp: number;
 }
 
 export type Order = {
-  owner: any,
-  order_tag: any,
-  base_size: bigint,
-  price: bigint,
-}
+  owner: any;
+  order_tag: any;
+  base_size: bigint;
+  price: bigint;
+};
 
 export type OrderbookSnapshot = {
-  bids: Array<Order>,
-  asks: Array<Order>,
+  bids: Array<Order>;
+  asks: Array<Order>;
 };
 
 export interface SwapLiquidity {
   base: string;
   quote: string;
-  bids: number[][];
-  asks: number[][];
+  bids: [price: number, amt: number][];
+  asks: [price: number, amt: number][];
   liquidity_range: number[];
   price_range: number[];
 }

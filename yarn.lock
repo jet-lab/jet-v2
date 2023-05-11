@@ -3690,7 +3690,7 @@
     d3-voronoi "^1.1.2"
     prop-types "^15.6.1"
 
-"@visx/xychart@^3.1.0":
+"@visx/xychart@^3.1.2":
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/@visx/xychart/-/xychart-3.1.2.tgz#149336ca7d169e8075b251b298be15716f4e0450"
   integrity sha512-ra8BAPzchVgvVDEJSBKYd5Hi2xXZ+m8gnQxJlrDBUg/LnCMRXebQWIjjhDBfumOjXT255IELB/vPrUfeMZD9jA==

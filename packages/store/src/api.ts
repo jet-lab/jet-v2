@@ -43,20 +43,10 @@ export const getOrderbookSnapshot = async (apiEndpoint: string, market: string):
 
 export const getSwapLiquidity = (
   apiEndpoint: string,
-  from?: string,
-  to?: string,
-  amount: number = 0,
+  from: string,
+  to: string,
+  amount: number
 ): SWRResponse<SwapLiquidity | null> => {
   const path = `${apiEndpoint}/swap/liquidity/${from}/${to}/${amount}`;
-  return useSWR<SwapLiquidity | null>(
-    path,
-    async () => {
-      if (from && to ) {
-        return fetch(path).then(r => r.json());
-      } else {
-        return null;
-      }
-    },
-    { refreshInterval: 30_000 }
-  );
+  return useSWR<SwapLiquidity | null>(path, async () => fetch(path).then(r => r.json()), { refreshInterval: 30_000 });
 };

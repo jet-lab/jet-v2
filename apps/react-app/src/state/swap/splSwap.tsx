@@ -9,7 +9,6 @@ import { useJetStore } from '@jet-lab/store';
 
 import { getSwapRoutes, SwapQuote } from '@utils/actions/swap';
 
-
 export const SwapPair = atom({
   key: 'swapPair',
   default: undefined as string | undefined
@@ -51,7 +50,12 @@ export function useSplSwapSyncer() {
   const setSwapFees = useSetRecoilState(SwapFees);
   const actionRefresh = useRecoilValue(ActionRefresh);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
-  const swapEndpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API;
+  const swapEndpoint =
+    cluster === 'mainnet-beta'
+      ? ''
+      : cluster === 'devnet'
+      ? process.env.REACT_APP_DEV_SWAP_API
+      : process.env.REACT_APP_LOCAL_SWAP_API;
 
   // Set the swap pool when input or output tokens change
   useEffect(() => {
@@ -80,7 +84,12 @@ export function useSplSwapSyncer() {
         return;
       }
       try {
-        const routes = await getSwapRoutes(swapEndpoint || "", currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount);
+        const routes = await getSwapRoutes(
+          swapEndpoint || '',
+          currentPool.tokenMint,
+          outputToken.tokenMint,
+          tokenInputAmount
+        );
         if (!routes) {
           return;
         }

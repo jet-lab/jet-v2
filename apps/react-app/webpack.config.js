@@ -28,6 +28,10 @@ module.exports = (_env, arg) => {
           REACT_APP_DEV_WS_API: process.env.REACT_APP_DEV_WS_API,
           REACT_APP_WS_API: process.env.REACT_APP_WS_API,
 
+          REACT_APP_DEV_SWAP_API: process.env.REACT_APP_SWAP_API,
+          REACT_APP_DEV_SWAP_API: process.env.REACT_APP_DEV_SWAP_API,
+          REACT_APP_LOCAL_SWAP_API: process.env.REACT_APP_LOCAL_SWAP_API,
+
           REACT_APP_RPC_DEV_TOKEN: process.env.REACT_APP_RPC_DEV_TOKEN,
           REACT_APP_RPC_TOKEN: process.env.REACT_APP_RPC_TOKEN,
           REACT_APP_IP_REGISTRY: process.env.REACT_APP_IP_REGISTRY,

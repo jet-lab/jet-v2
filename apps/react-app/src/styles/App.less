@@ -12,7 +12,6 @@ html {
 
 // App
 .jet-app {
-
   // Views
   .view {
     &-element {
@@ -215,7 +214,6 @@ html {
 
   // Token Input
   .token-input {
-
     // If there's a specified external value
     &.external-value {
       input {
@@ -811,7 +809,6 @@ html {
     }
 
     .slippage-btns {
-
       .ant-radio-button-wrapper,
       .swap-slippage-input {
         padding-left: 0;
@@ -1150,7 +1147,6 @@ html {
   // Swap And Fixed View
   .swaps-view,
   .fixed-term-view {
-
     // Order Entry, Orderbook and Trades Table
     .order-entry,
     .orderbook,
@@ -1247,7 +1243,7 @@ html {
               color: @jet-green;
             }
 
-            +.ant-tabs-tab {
+            + .ant-tabs-tab {
               &:hover {
                 color: @danger;
               }
@@ -1375,7 +1371,7 @@ html {
           }
         }
 
-        .ant-checkbox-wrapper+.ant-typography {
+        .ant-checkbox-wrapper + .ant-typography {
           text-align: left !important;
         }
 
@@ -1441,7 +1437,12 @@ html {
 
   .swaps-graph {
     flex: 1;
-    height: 600px;
+
+    .swaps-chart-root {
+      margin-top: 50px;
+      height: 100%;
+      width: 100%;
+    }
 
     &-head {
       position: absolute;
@@ -1535,7 +1536,6 @@ html {
       }
 
       .apexcharts {
-
         &-xcrosshairs,
         &-ycrosshairs {
           stroke: @jet-blue;
@@ -1558,7 +1558,7 @@ html {
               rx: 0;
             }
 
-            +text {
+            + text {
               fill: @primary-2;
             }
           }
@@ -1598,7 +1598,6 @@ html {
             }
 
             &:hover {
-
               svg,
               path:last-of-type {
                 fill: @secondary-3;
@@ -1631,7 +1630,6 @@ html {
         }
 
         &-selected {
-
           svg,
           path:last-of-type {
             fill: @secondary-3 !important;
@@ -1712,7 +1710,7 @@ html {
       }
     }
 
-    .apexcharts-xaxis-title+line {
+    .apexcharts-xaxis-title + line {
       display: none;
     }
 
@@ -1752,7 +1750,7 @@ html {
       ry: 10;
       rx: 10;
 
-      +text {
+      + text {
         stroke: @primary-3;
         stroke-width: 0px;
         fill: @primary-3;
@@ -1848,11 +1846,6 @@ html {
       }
     }
   }
-
-  .swaps-graph line {
-    stroke: rgba(var(--primary-2), @half-opacity);
-  }
-
   // Pools View
   .pools-view {
     position: relative;
@@ -2460,7 +2453,6 @@ html {
 // Tablet styling
 @media screen and (max-width: 1000px) {
   .jet-app {
-
     .table-token,
     .price {
       min-width: unset;
@@ -2483,7 +2475,6 @@ html {
 // Mobile styling
 @media screen and (max-width: 800px) {
   .jet-app {
-
     // Reorder Arrows && TPS Banner
     .reorder-arrows,
     .tps-banner {
@@ -2592,7 +2583,6 @@ html {
 
     // Any Account Table
     .account-table {
-
       &-search,
       .download-btns,
       .full-accounts-text {
