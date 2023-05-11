@@ -534,6 +534,10 @@ html {
 
       .rent-fee-info {
         padding: @spacing-base @spacing-xs 0 @spacing-xs;
+
+        .underlined {
+          text-decoration: underline;
+        }
       }
     }
   }
@@ -1399,7 +1403,7 @@ html {
 
     .fixed-term-graph {
       flex: 1;
-      height: 660px;
+      min-height: 300px;
 
       &-head {
         position: absolute;
@@ -2111,6 +2115,7 @@ html {
 
   // Any account Table
   .account-table {
+    min-height: 160px;
     &-search {
       position: absolute;
       top: @spacing-xs;
@@ -2652,6 +2657,7 @@ html {
 
 .fixed-lend-entry,
 .fixed-borrow-entry {
+  height: 720px !important;
   .ant-tabs {
     width: 100%;
     text-transform: uppercase;
@@ -2670,11 +2676,22 @@ html {
   .order-entry-body {
     display: flex;
     flex-direction: column;
+    height: 100% !important;
+
+    p {
+      margin-bottom: 16px;
+      color: rgb(var(--secondary-4));
+    }
+  }
+
+  .submit-button {
+    margin-top: auto;
   }
 
   .fixed-order-entry-fields {
     display: flex;
     align-items: center;
+    margin-bottom: 16px;
 
     label {
       text-transform: uppercase;
@@ -2748,6 +2765,15 @@ html {
     display: flex;
     align-items: center;
     padding: 16px 0;
+
+    svg {
+      margin: @spacing-sm;
+      cursor: pointer;
+
+      &:hover {
+        fill: @jet-green;
+      }
+    }
   }
 
   .stats {
@@ -2858,6 +2884,10 @@ html {
   width: calc(100% - (@spacing-sm * 2));
   margin: @spacing-sm;
 
+  .ant-switch.debt-table-switch {
+    margin: auto;
+  }
+
   .ant-typography {
     margin: unset;
   }
@@ -2950,4 +2980,71 @@ html {
   bottom: 16px;
   left: 50%;
   transform: translate(-50%, 0);
+}
+.fixed-order-entry-fields label,
+.autoroll-modal label {
+  text-transform: uppercase;
+  font-size: 10px;
+  color: rgb(var(--secondary-5));
+
+  &:first-child {
+    margin-right: 22px;
+  }
+
+  .ant-input-number-wrapper.ant-input-number-group {
+    position: relative;
+  }
+
+  .ant-input-number-group-addon {
+    font-size: 14px;
+    position: absolute;
+    right: 0;
+    bottom: 16px;
+  }
+
+  input {
+    background: transparent;
+    box-shadow: none;
+    padding: 8px 0;
+    border-bottom: 1px solid rgb(var(--primary-3));
+    font-size: 20px;
+    color: white;
+    border-radius: 0;
+    transition: border-color 0.3s;
+
+    &:hover,
+    &:focus {
+      box-shadow: none;
+    }
+
+    &:hover {
+      border-bottom: 1px solid @jet-green-3;
+    }
+
+    &:focus {
+      border-bottom: 1px solid @jet-green;
+    }
+
+    &::-webkit-input-placeholder {
+      /* WebKit, Blink, Edge */
+      color: #666;
+    }
+
+    &:-moz-placeholder {
+      /* Mozilla Firefox 4 to 18 */
+      color: #666;
+      opacity: 1;
+    }
+
+    &::-moz-placeholder {
+      /* Mozilla Firefox 19+ */
+      color: #666;
+      opacity: 1;
+    }
+
+    &:-ms-input-placeholder {
+      /* Internet Explorer 10-11 */
+      color: #666;
+    }
+  }
 }

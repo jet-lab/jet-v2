@@ -20,7 +20,6 @@ use jet_fixed_term::{
     },
 };
 use jet_margin_sdk::{
-    cat,
     fixed_term::settler::SETTLES_PER_TX,
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -32,7 +31,6 @@ use jet_margin_sdk::{
         },
     },
     tx_builder::MarginInvoke,
-    util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, refresh::canonical_position_refresher};
 use jet_program_common::{
@@ -382,9 +380,9 @@ async fn margin_repay() -> Result<()> {
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.pending_debt(), posted_order.base_quantity,);
+    assert_eq!(margin_user.debt().pending(), posted_order.base_quantity,);
     assert_eq!(
-        margin_user.total_debt(),
+        margin_user.debt().total(),
         posted_order.base_quantity + term_loan.balance
     );
 
@@ -405,14 +403,14 @@ async fn margin_repay() -> Result<()> {
         post_repayment_term_loan.balance
     );
     assert_eq!(
-        pre_repayment_user.committed_debt() - repayment,
-        post_repayment_user.committed_debt()
+        pre_repayment_user.debt().committed() - repayment,
+        post_repayment_user.debt().committed()
     );
 
     user.repay(0, post_repayment_term_loan.balance).await?;
 
     let margin_user = user.load_margin_user().await?;
-    assert_eq!(margin_user.total_debt(), margin_user.pending_debt());
+    assert_eq!(margin_user.debt().total(), margin_user.debt().pending());
 
     Ok(())
 }
@@ -482,20 +480,12 @@ async fn settle_many_margin_accounts() -> Result<()> {
                     vec![(collateral, 0, u64::MAX / 1_000)],
                 )
             );
-            cat![
+            transactions! {
                 lender.proxy.refresh().await.unwrap(),
                 borrower.proxy.refresh().await.unwrap(),
-                vec![
-                    lender
-                        .margin_lend_order(underlying(1_001, 2_000))
-                        .await
-                        .unwrap(),
-                    borrower
-                        .margin_borrow_order(underlying(1_000, 2_000))
-                        .await
-                        .unwrap()
-                ],
-            ]
+                lender.margin_lend_order(underlying(1_001, 2_000)).await.unwrap(),
+                borrower.margin_borrow_order(underlying(1_000, 2_000)).await.unwrap()
+            }
             .send_and_confirm_condensed_in_order(&client)
             .await
             .unwrap();
@@ -532,20 +522,12 @@ async fn margin_borrow() -> Result<()> {
     )
     .await;
 
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000))
-            .await?,
-    )
+    transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000)).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -556,7 +538,7 @@ async fn margin_borrow() -> Result<()> {
 
     let margin_user = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(margin_user.total_debt(), posted_order.base_quantity,);
+    assert_eq!(margin_user.debt().total(), posted_order.base_quantity,);
 
     Ok(())
 }
@@ -571,20 +553,12 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
 
     let user = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
-    let result = vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000))
-            .await?,
-    )
+    let result = transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000)).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await;
 
@@ -599,7 +573,7 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
         let asks = manager.load_orderbook().await?.asks()?;
         assert_eq!(0, asks.len());
         let margin_user = user.load_margin_user().await.unwrap();
-        assert_eq!(0, margin_user.total_debt());
+        assert_eq!(0, margin_user.debt().total());
     }
 
     Ok(())
@@ -615,24 +589,14 @@ async fn margin_lend() -> Result<()> {
 
     let user = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
-    let result = vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        user.refresh_and_margin_lend_order(underlying(1_000, 2_000))
-            .await?,
-    )
+    transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        user.refresh_and_margin_lend_order(underlying(1_000, 2_000)).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
-    .await;
-
-    assert!(result.is_ok());
+    .await?;
 
     assert_eq!(STARTING_TOKENS - 1_000, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
@@ -660,21 +624,12 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        borrower
-            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
-            .await?,
-    )
+    transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        borrower.refresh_and_margin_borrow_order(underlying(1_000, 2_000)).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -697,7 +652,6 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
-    let _ = manager.expect_and_execute_settlement(&[&borrower]).await;
     borrower
         .proxy
         .proxy
@@ -740,17 +694,12 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     let lender = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     let lend_params = underlying(1_001, 2_000);
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
+    transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        lender.refresh_and_margin_lend_order(lend_params).await?
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -763,21 +712,12 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     let simulated_order = manager
         .simulate_new_order_with_fees(borrow_params, agnostic_orderbook::state::Side::Ask)
         .await?;
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        borrower
-            .refresh_and_margin_borrow_order(borrow_params)
-            .await?,
-    )
+    transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        borrower.refresh_and_margin_borrow_order(borrow_params).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -836,19 +776,11 @@ async fn margin_sell_tickets() -> Result<()> {
     let user = create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
 
-    vec![
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        user.margin_sell_tickets_order(tickets(1_200, 2_000))
-            .await?,
-    )
+    transactions! {
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        user.margin_sell_tickets_order(tickets(1_200, 2_000)).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -943,16 +875,12 @@ async fn auto_roll_flags() -> Result<()> {
 
     let mut params = underlying(1_000, 2_000);
     params.auto_roll = true;
-    let borrow_order = vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await?,
-    ]
-    .cat(user.refresh_and_margin_borrow_order(params).await?);
+    let borrow_order = transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        user.refresh_and_margin_borrow_order(params).await?
+    };
 
     // TODO: assert proper failure
     // This fails due to an unconfigured auto_roll setting in the margin_user account
@@ -976,16 +904,12 @@ async fn auto_roll_flags() -> Result<()> {
     assert!(posted_info.flags().contains(CallbackFlags::AUTO_ROLL));
 
     params.auto_roll = false;
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await?,
-    ]
-    .cat(user.refresh_and_margin_borrow_order(params).await?)
+    transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        user.refresh_and_margin_borrow_order(params).await?
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -1018,35 +942,13 @@ async fn auto_roll_lend_order_is_correct() -> Result<()> {
     let mut lend_params = underlying(1_001, 2_000);
     lend_params.auto_roll = true;
 
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
-    .send_and_confirm_condensed_in_order(&client)
-    .await?;
-
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        borrower
-            .refresh_and_margin_borrow_order(underlying(1_000, 2_000))
-            .await?,
-    )
+    transactions! {
+        pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        lender.refresh_and_margin_lend_order(lend_params).await?,
+        borrower.refresh_and_margin_borrow_order(underlying(1_000, 2_000)).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -1169,35 +1071,13 @@ async fn auto_roll_borrow_order_is_correct() -> Result<()> {
         })
         .await?;
 
-    vec![
+    transactions! {
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(lender.refresh_and_margin_lend_order(lend_params).await?)
-    .send_and_confirm_condensed_in_order(&client)
-    .await?;
-
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        borrower
-            .refresh_and_margin_borrow_order(borrow_params)
-            .await?,
-    )
+        pricer.set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0).await.unwrap(),
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+        lender.refresh_and_margin_lend_order(lend_params).await?,
+        borrower.refresh_and_margin_borrow_order(borrow_params).await?,
+    }
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 

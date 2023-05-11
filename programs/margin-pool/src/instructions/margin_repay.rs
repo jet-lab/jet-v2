@@ -21,6 +21,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
+use jet_program_common::debug_msg;
 
 use crate::{events, state::*, ChangeKind, TokenChange};
 use crate::{Amount, ErrorCode};
@@ -91,6 +92,12 @@ pub fn margin_repay_handler(
         kind: change_kind,
         tokens: amount,
     };
+    debug_msg!(
+        "Repaying {:?} towards loan of {} notes: {}",
+        change,
+        ctx.accounts.loan_account.amount,
+        ctx.accounts.loan_account.key()
+    );
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 

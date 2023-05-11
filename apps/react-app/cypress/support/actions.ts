@@ -2,7 +2,7 @@ import { formatWithCommas } from './utils';
 
 export const connectWallet = () => {
   cy.contains('CONNECT').click();
-  cy.contains('E2E').click();
+  cy.contains('Burner Wallet').click();
   cy.contains('Connected');
 };
 
@@ -11,9 +11,9 @@ export const loadPageAndFundSol = (path?: string) => {
   const url = path ? path : Cypress.config().baseUrl;
 
   cy.visit(url);
-  cy.get('.nav-section .settings-btn').click();
-  cy.contains('Localnet').click();
-  cy.contains('Save Preferences').click();
+  // cy.get('.nav-section .settings-btn').click();
+  // cy.contains('Localnet').click();
+  // cy.contains('Save Preferences').click();
   connectWallet();
   airdrop('SOL', 'SOL');
 };

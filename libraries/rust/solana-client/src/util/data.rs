@@ -1,5 +1,3 @@
-#![allow(missing_docs)] // redundant to require here
-
 /// Combine an item of some type with another item of the
 /// same type to output a combined item of the same type
 pub trait Concat {
@@ -54,7 +52,7 @@ macro_rules! cat {
     };
     ($concattable:expr, $($therest:expr),+$(,)?) => {{
         use $crate::util::data::Concat;
-        $concattable.cat(cat![$($therest),+])
+        $concattable.cat($crate::cat![$($therest),+])
     }};
 }
 

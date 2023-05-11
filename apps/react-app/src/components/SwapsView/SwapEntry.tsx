@@ -17,7 +17,7 @@ import { formatPriceImpact, formatRiskIndicator } from '@utils/format';
 import { notify } from '@utils/notify';
 import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
 import { DEFAULT_DECIMALS, useCurrencyFormatting } from '@utils/currency';
-import { getSwapRoutes, SwapStep, useSwapReviewMessage } from '@utils/actions/swap';
+import { SwapStep, useSwapReviewMessage } from '@utils/actions/swap';
 import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
 import { Info } from '@components/misc/Info';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
@@ -46,10 +46,11 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const { prices, selectedPoolKey, selectPool } = useJetStore(state => ({
+  const { prices, selectedPoolKey, selectPool, airspaceLookupTables } = useJetStore(state => ({
     prices: state.prices,
     selectedPoolKey: state.selectedPoolKey,
-    selectPool: state.selectPool
+    selectPool: state.selectPool,
+    airspaceLookupTables: state.airspaceLookupTables
   }));
   const currentPool = useMemo(
     () =>
@@ -81,12 +82,6 @@ export function SwapEntry(): JSX.Element {
   const [slippageInput, setSlippageInput] = useState('');
   const [swapOutputTokens, setSwapOutputTokens] = useState(TokenAmount.zero(0));
   const [minOutAmount, setMinOutAmount] = useState(TokenAmount.zero(0));
-  // Exponents
-  const expoSource = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.source.decimals) : 0;
-  const expoDestination = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.destination.decimals) : 0;
-  // Get the swap pool account balances
-  const balanceSourceToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.source.lamports.toNumber() : 0;
-  const balanceDestinationToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.destination.lamports.toNumber() : 0;
   const priceImpact = !selectedSwapQuote
     ? 0.0
     : selectedSwapQuote.price_impact;
@@ -117,10 +112,9 @@ export function SwapEntry(): JSX.Element {
   const errorMessage = useTokenInputErrorMessage(undefined, projectedRiskIndicator);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const [switchingAssets, setSwitchingAssets] = useState(false);
-  const disabled = 
+  const disabled =
     sendingTransaction || !currentPool || !outputToken || projectedRiskIndicator >= 1 || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
-  const swapEndpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API;
 
   // Parse slippage input
   function getSlippageInput() {
@@ -283,7 +277,8 @@ export function SwapEntry(): JSX.Element {
       swapQuotes[0].swaps.map(step => step[0] as SwapStep), // TODO: must not be empty
       tokenInputAmount,
       minOutAmount,
-      hasOutputLoan && repayLoanWithOutput
+      hasOutputLoan && repayLoanWithOutput,
+      airspaceLookupTables
     );
     if (resp === ActionResponse.Success) {
       notify(
@@ -458,9 +453,8 @@ export function SwapEntry(): JSX.Element {
               </Radio.Button>
             ))}
             <div
-              className={`swap-slippage-input flex-centered ${
-                (slippage * 100).toString() === slippageInput ? 'active' : ''
-              }`}
+              className={`swap-slippage-input flex-centered ${(slippage * 100).toString() === slippageInput ? 'active' : ''
+                }`}
               onClick={getSlippageInput}>
               <Input
                 type="string"

@@ -19,6 +19,7 @@ testing = []
 anyhow = "1"
 bytemuck = {version = "1.7.2", features = ["derive"] } 
 serde = { version = "1.0", features = ["derive"] }
+serde_with = "2"
 js-sys = "0.3.59"
 
 wasm-bindgen = "0.2.83"
@@ -27,11 +28,15 @@ console_error_panic_hook = "0.1.7"
 
 solana-program = "1.14"
 
+anchor-lang = "0.26"
+
 jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["cli"] }
+jet-instructions = { path = "../../libraries/rust/instructions" }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["utils"]}
 bonfida-utils = { git = "https://github.com/Bonfida/bonfida-utils.git", branch = "add-rounding-direction" }
 
 [dev-dependencies]
 rand_chacha = "0.3.1"
+wasm-bindgen-test = "0.3.34"

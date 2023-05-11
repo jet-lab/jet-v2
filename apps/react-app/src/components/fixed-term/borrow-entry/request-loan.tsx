@@ -1,4 +1,4 @@
-import { Button, InputNumber, Switch, Tooltip } from 'antd';
+import { Button, InputNumber, Switch } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import {
   MarketAndConfig,
@@ -13,7 +13,7 @@ import {
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
-import { feesCalc, marketToString } from '@utils/jet/fixed-term-utils';
+import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
@@ -26,7 +26,9 @@ import { formatWithCommas } from '@utils/format';
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
-import { LoadingOutlined } from '@ant-design/icons';
+import { EditOutlined, LoadingOutlined } from '@ant-design/icons';
+import { AutoRollModal } from '../shared/autoroll-modal';
+import { AutoRollChecks } from '../shared/autoroll-checks';
 
 interface RequestLoanProps {
   decimals: number;
@@ -51,9 +53,12 @@ interface Forecast {
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey } = useJetStore(state => ({
-    selectedPoolKey: state.selectedPoolKey
-  }));
+  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
+    return {
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables
+    }
+  });
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -66,6 +71,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
+  const [showAutorollModal, setShowAutorollModal] = useState(false);
+  const [autorollEnabled, setAutorollEnabled] = useState(false);
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
@@ -96,24 +103,32 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         amount: amount,
         basisPoints: basisPoints,
         marketConfig: marketAndConfig.config,
-        markets: markets.map(m => m.market)
+        markets: markets.map(m => m.market),
+        autorollEnabled,
+        airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
         refreshOrderBooks();
         notify(
           'Borrow Offer Created',
-          `Your borrow offer for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(2)
-          }% was created successfully`,
+          `Your borrow offer for ${amount
+            .div(new BN(10 ** decimals))
+            .toNumber()
+            .toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(
+              2
+            )}% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
         setPending(false);
-      }, 2000); // TODO: Ugly / unneded update when websocket is fully integrated
+      }, 3000); // TODO: Ugly / unneded update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Borrow Offer Failed',
-        `Your borrow offer for ${amount.div(new BN(10 ** decimals)).toNumber().toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(2)
-        }% failed`,
+        `Your borrow offer for ${amount
+          .div(new BN(10 ** decimals))
+          .toNumber()
+          .toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(2)}% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
@@ -122,7 +137,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     } finally {
       setAmount(undefined);
       setBasisPoints(undefined);
-      setForecast(undefined)
+      setForecast(undefined);
     }
   };
 
@@ -130,6 +145,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     const sim = model.simulateMaker('borrow', amount, limitPrice, marginAccount?.address.toBytes());
+
     let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
     if (correspondingPool == undefined) {
       console.log('ERROR `correspondingPool` must be defined.');
@@ -142,14 +158,14 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const setupCheckEstimate = productModel?.makerAccountForecast('borrow', sim, 'setup');
     const valuationEstimate = productModel?.makerAccountForecast('borrow', sim);
 
-    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-    const matchRate = sim.filled_vwar;
-    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
-    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
-    const postedRate = sim.posted_vwar;
-    const matchedInterest = matchRepayAmount.sub(matchBorrowAmount);
-    const postedInterest = postedRepayAmount.sub(postedBorrowAmount);
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+    const matchRate = sim.filledVwar;
+    const matchedInterest = new TokenAmount(bigIntToBn(sim.filledBaseQty - sim.filledQuoteQty), token.decimals);
+    const matchedFees = new TokenAmount(bigIntToBn(sim.filledFeeQty), token.decimals);
+    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.postedBaseQty), token.decimals);
+    const postedRate = sim.postedVwar;
+    const postedInterest = new TokenAmount(bigIntToBn(sim.postedBaseQty - sim.postedQuoteQty), token.decimals);
+    const postedFees = new TokenAmount(bigIntToBn(sim.postedFeeQty), token.decimals);
 
     setForecast({
       matchedAmount: matchRepayAmount.tokens,
@@ -158,20 +174,18 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       postedRepayAmount: postedRepayAmount.tokens,
       postedInterest: postedInterest.tokens,
       postedRate,
-      selfMatch: sim.self_match,
+      selfMatch: sim.selfMatch,
       riskIndicator: valuationEstimate?.riskIndicator,
       hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
-      fees: matchedInterest.tokens
-        ? feesCalc(sim.filled_vwar, matchedInterest.tokens)
-        : feesCalc(sim.posted_vwar, postedInterest.tokens)
+      fees: matchedFees.add(postedFees).tokens
     });
   }
 
   useEffect(() => {
     if (!amount || !basisPoints || amount.eqn(0) || basisPoints.eqn(0)) {
-      setForecast(undefined)
-      return
-    };
+      setForecast(undefined);
+      return;
+    }
     orderbookModelLogic(
       bnToBigInt(amount),
       rate_to_price(bnToBigInt(basisPoints), BigInt(marketAndConfig.config.borrowTenor))
@@ -179,8 +193,16 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
 
+  useEffect(() => {
+    setAutorollEnabled(false);
+  }, [marketAndConfig]);
+
   return (
     <div className="fixed-term order-entry-body">
+      <p>
+        You are borrowing as a maker. Your loan offers wil be filled at the input interest rate or better. Any part of
+        your borrow request that is not filled immediately will be posted to the orderbook.
+      </p>
       <div className="request-loan fixed-order-entry-fields">
         <label>
           Loan amount
@@ -189,7 +211,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
               if (!e) {
-                setAmount(undefined)
+                setAmount(undefined);
               } else {
                 setAmount(new BN(e * 10 ** decimals));
               }
@@ -208,7 +230,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
             value={basisPoints && !basisPoints.isZero() ? basisPoints.toNumber() / 100 : ''}
             onChange={debounce(e => {
               if (!e) {
-                setBasisPoints(undefined)
+                setBasisPoints(undefined);
               } else {
                 setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
               }
@@ -223,12 +245,35 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         </label>
       </div>
 
-      <div className="auto-roll-controls">
-        <Tooltip title="Coming soon...">
-          <Switch disabled={true} />
-        </Tooltip>
-        Auto-roll Off
-      </div>
+      <AutoRollChecks market={marketAndConfig.market} marginAccount={marginAccount}>
+        {({ hasConfig, refresh, borrowRate, lendRate }) => (
+          <div className="auto-roll-controls">
+            <AutoRollModal
+              onClose={() => {
+                setShowAutorollModal(false);
+              }}
+              open={showAutorollModal}
+              marketAndConfig={marketAndConfig}
+              marginAccount={marginAccount}
+              refresh={refresh}
+              borrowRate={borrowRate}
+              lendRate={lendRate}
+            />
+            <Switch
+              checked={autorollEnabled}
+              onClick={() => {
+                if (hasConfig) {
+                  setAutorollEnabled(!autorollEnabled);
+                } else {
+                  setShowAutorollModal(true);
+                }
+              }}
+            />
+            Auto-roll
+            <EditOutlined onClick={() => setShowAutorollModal(true)} />
+          </div>
+        )}
+      </AutoRollChecks>
 
       <div className="stats">
         <div className="stat-line">

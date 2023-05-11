@@ -137,20 +137,21 @@ impl TokenPricer {
             let (mint_a, target_price_a) = pair[0];
             let (mint_b, target_price_b) = pair[1];
             if refresh_unchanged || mints.contains(mint_a) || mints.contains(mint_b) {
-                let pool = self.swap_registry.get(mint_a).unwrap().get(mint_b).unwrap();
-                let &(balance_a, balance_b) =
-                    swap_snapshot.get(mint_a).unwrap().get(mint_b).unwrap();
-                let desired_relative_price = target_price_a / target_price_b;
-                let (a_to_swap, b_to_swap) =
-                    set_constant_product_price(balance_a, balance_b, desired_relative_price);
-                let vault_a = self.vaults.get(mint_a).unwrap();
-                let vault_b = self.vaults.get(mint_b).unwrap();
-                txs.push(cat![
-                    pool.swap_tx(&self.rpc, vault_a, vault_b, a_to_swap, &self.payer)
-                        .await?,
-                    pool.swap_tx(&self.rpc, vault_b, vault_a, b_to_swap, &self.payer)
-                        .await?,
-                ]);
+                if let Some(pool) = self.swap_registry.get(mint_a).and_then(|am| am.get(mint_b)) {
+                    let &(balance_a, balance_b) =
+                        swap_snapshot.get(mint_a).unwrap().get(mint_b).unwrap();
+                    let desired_relative_price = target_price_a / target_price_b;
+                    let (a_to_swap, b_to_swap) =
+                        set_constant_product_price(balance_a, balance_b, desired_relative_price);
+                    let vault_a = self.vaults.get(mint_a).unwrap();
+                    let vault_b = self.vaults.get(mint_b).unwrap();
+                    txs.push(cat![
+                        pool.swap_tx(&self.rpc, vault_a, vault_b, a_to_swap, &self.payer)
+                            .await?,
+                        pool.swap_tx(&self.rpc, vault_b, vault_a, b_to_swap, &self.payer)
+                            .await?,
+                    ]);
+                }
             }
         }
         for (mint, price) in if refresh_unchanged {

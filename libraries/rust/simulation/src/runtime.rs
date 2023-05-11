@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, sync::Arc, sync::Mutex};
 
-use anyhow::{anyhow, bail};
 use async_trait::async_trait;
+use jet_solana_client::rpc::{AccountFilter, ClientError, ClientResult, SolanaRpc};
 use lazy_static::lazy_static;
 
 use solana_bpf_loader_program::serialization::{
@@ -16,9 +16,8 @@ use solana_runtime::{
     bank::{Bank, TransactionLogCollectorFilter},
 };
 use solana_sdk::{
-    account::{Account, ReadableAccount},
+    account::Account,
     clock::Clock,
-    commitment_config::CommitmentConfig,
     compute_budget,
     entrypoint::SUCCESS,
     feature_set::FeatureSet,
@@ -28,15 +27,16 @@ use solana_sdk::{
     program_error::{ProgramError, UNSUPPORTED_SYSVAR},
     program_stubs::SyscallStubs,
     pubkey::Pubkey,
-    rent::Rent,
-    signature::{Keypair, Signature},
-    slot_history::Slot,
+    signature::Signature,
+    slot_hashes::SlotHashes,
     sysvar::Sysvar,
-    transaction::{SanitizedTransaction, Transaction, TransactionError},
+    transaction::{
+        MessageHash, SanitizedTransaction, Transaction, TransactionError, VersionedTransaction,
+    },
 };
 use solana_transaction_status::{TransactionConfirmationStatus, TransactionStatus};
 
-use crate::solana_rpc_api::SolanaRpcClient;
+use crate::log::declare_logging;
 
 #[doc(hidden)]
 pub use solana_sdk::entrypoint::ProcessInstruction;
@@ -56,6 +56,24 @@ lazy_static! {
 thread_local! {
     static LOCAL_CONTEXTS: RefCell<Vec<LocalContext>> = RefCell::new(Vec::new());
 }
+
+declare_logging! {
+    logging = "jet_simulation" {
+        program         = "program";
+        account_loader  = "acctldr";
+        account_realloc = "realloc";
+        program_data    = "pgmdata";
+        program_return  = "pgmrtrn";
+        instruction     = "ixhndlr";
+        transaction     = "txhndlr";
+        rpc             = "rpc";
+        custom          = "_custom"; // for logs that are specific to the
+                                     // simulated runtime, that you wouldn't
+                                     // normally expect from a real validator.
+    }
+}
+// intentionally shadows the crate to force proper logging
+use logging as log;
 
 #[derive(Clone, Copy)]
 struct LocalContext {
@@ -89,7 +107,7 @@ impl TestRuntime {
         native_programs: impl IntoIterator<Item = (Pubkey, ProcessInstruction)>,
         _sbf_programs: impl IntoIterator<Item = (Pubkey, Vec<u8>)>,
     ) -> Self {
-        let mut bank = Bank::new_no_wallclock_throttle_for_tests(&GenesisConfig::new(&[], &[]));
+        let mut bank = Bank::new_for_tests(&GenesisConfig::new(&[], &[]));
         let features = Arc::make_mut(&mut bank.feature_set);
 
         let programs = native_programs.into_iter().collect::<Vec<_>>();
@@ -98,14 +116,27 @@ impl TestRuntime {
         GLOBAL_PROGRAM_MAP.insert(features, HashMap::from_iter(programs.into_iter()));
 
         bank.add_builtin("compute_budget", &compute_budget::ID, noop_handler);
+        #[cfg(feature = "test-runtime")]
         bank.add_builtin(
             "address_lookup_table",
             &solana_address_lookup_table_program::ID,
             solana_address_lookup_table_program::processor::process_instruction,
         );
 
+        bank.set_sysvar_for_tests(&SlotHashes::new(&[
+            (0, Hash::new_unique()),
+            (1, Hash::new_unique()),
+        ]));
+
         bank.set_compute_budget(Some(ComputeBudget::default()));
         bank.set_capitalization();
+
+        let mut features = FeatureSet::clone(&bank.feature_set);
+        features.activate(
+            &solana_sdk::feature_set::versioned_tx_message_enabled::id(),
+            0,
+        );
+        bank.feature_set = Arc::new(features);
 
         for program_id in program_ids {
             let ix_processor_name = format!("test-runtime:{program_id}");
@@ -120,7 +151,11 @@ impl TestRuntime {
         solana_sdk::program_stubs::set_syscall_stubs(Box::new(LocalRuntimeSyscallStub));
 
         Self {
-            bank: Arc::new(bank),
+            bank: Arc::new(Bank::new_from_parent(
+                &Arc::new(bank),
+                &Pubkey::new_unique(),
+                1,
+            )),
         }
     }
 
@@ -129,10 +164,9 @@ impl TestRuntime {
         self.bank.store_account(address, account)
     }
 
-    pub fn rpc(&self, payer: Keypair) -> TestRuntimeRpcClient {
+    pub fn rpc(&self) -> TestRuntimeRpcClient {
         TestRuntimeRpcClient {
-            bank: self.bank.clone(),
-            payer,
+            manager: Arc::new(BankManager::new(self.bank.clone())),
         }
     }
 }
@@ -210,7 +244,7 @@ fn global_instruction_handler(
         .get(program_id)
         .ok_or(InstructionError::IncorrectProgramId)?;
 
-    log::debug!(
+    log::instruction::debug!(
         "Program {} invoke [{}]",
         program_id,
         get_local_context_height()
@@ -223,7 +257,7 @@ fn global_instruction_handler(
         let signer_text = account.is_signer.then_some("SIGNER").unwrap_or_default();
         let mut_text = account.is_writable.then_some("MUTABLE").unwrap_or_default();
 
-        log::debug!(
+        log::account_loader::debug!(
             "Loaded Account {}: {} lamports, {} bytes, {} {}",
             account.key,
             account.lamports(),
@@ -236,13 +270,13 @@ fn global_instruction_handler(
     let result = program_entrypoint(program_id, &accounts, instruction_data);
     match result {
         Ok(()) => {
-            log::debug!("Program {} success", program_id);
+            log::instruction::debug!("Program {} success", program_id);
             stable_log::program_success(&context.get_log_collector(), program_id)
         }
         Err(err) => {
             let new_err = u64::from(err).into();
 
-            log::debug!("Program {} failed: {}", program_id, &new_err);
+            log::instruction::debug!("Program {} failed: {}", program_id, &new_err);
             stable_log::program_failure(&context.get_log_collector(), program_id, &new_err);
             return Err(new_err);
         }
@@ -267,7 +301,7 @@ struct LocalRuntimeSyscallStub;
 
 impl SyscallStubs for LocalRuntimeSyscallStub {
     fn sol_log(&self, message: &str) {
-        log::debug!("Program log: {}", message);
+        log::program::debug!("Program log: {}", message);
         ic_logger_msg!(
             get_local_context().invoke_context().get_log_collector(),
             "Program log: {}",
@@ -278,7 +312,7 @@ impl SyscallStubs for LocalRuntimeSyscallStub {
     fn sol_log_data(&self, fields: &[&[u8]]) {
         for field in fields {
             let data = base64::encode(field);
-            log::debug!("Program data: {}", data);
+            log::program_data::debug!("Program data: {}", data);
             ic_logger_msg!(
                 get_local_context().invoke_context().get_log_collector(),
                 "Program data: {}",
@@ -357,7 +391,7 @@ impl SyscallStubs for LocalRuntimeSyscallStub {
             if account_info.data_len() != acc_data.len()
                 && tx_account.can_data_be_resized(acc_data.len()).is_ok()
             {
-                log::debug!(
+                log::account_realloc::debug!(
                     "acc realloc {}: {} -> {}",
                     account_info.key,
                     account_info.data_len(),
@@ -409,7 +443,7 @@ impl SyscallStubs for LocalRuntimeSyscallStub {
 
         if data.is_empty() {
             let encoded = base64::encode(data);
-            log::debug!("Program return: {}", encoded);
+            log::program_return::debug!("Program return: {}", encoded);
 
             ic_logger_msg!(
                 get_local_context().invoke_context().get_log_collector(),
@@ -445,157 +479,236 @@ where
     }
 }
 
+fn send_legacy_transaction(
+    bank: &Arc<Bank>,
+    transaction: &Transaction,
+) -> Result<Signature, TransactionError> {
+    let signature = transaction.signatures[0];
+    let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
+
+    log::transaction::info!("processing transaction {}", transaction.signatures[0]);
+    transaction.verify()?;
+
+    let sim_result = bank.simulate_transaction_unchecked(tx);
+
+    match sim_result.result {
+        Ok(()) => {
+            bank.process_transaction_with_logs(transaction).unwrap();
+            bank.register_recent_blockhash(&Hash::new_unique());
+
+            Ok(signature)
+        }
+
+        Err(e) => {
+            log::transaction::error!("tx error {signature}: {e:?}");
+            log::transaction::error!("{:#?}", sim_result.logs);
+
+            Err(e)
+        }
+    }
+}
+
+fn send_transaction(
+    bank: &Arc<Bank>,
+    transaction: &VersionedTransaction,
+) -> Result<Signature, TransactionError> {
+    let signature = transaction.signatures[0];
+    let tx = SanitizedTransaction::try_create(
+        transaction.clone(),
+        MessageHash::Compute,
+        None,
+        &**bank,
+        true,
+    )?;
+
+    log::transaction::info!("processing transaction {}", transaction.signatures[0]);
+    transaction.verify_and_hash_message()?;
+
+    let sim_result = bank.simulate_transaction_unchecked(tx);
+
+    match sim_result.result {
+        Ok(()) => {
+            bank.process_entry_transactions(vec![transaction.clone()])
+                .pop()
+                .unwrap()?;
+            bank.register_recent_blockhash(&Hash::new_unique());
+
+            Ok(signature)
+        }
+
+        Err(e) => {
+            log::transaction::error!("tx error {signature}: {e:?}");
+            log::transaction::error!("{:#?}", sim_result.logs);
+
+            Err(e)
+        }
+    }
+}
+
+struct BankManager {
+    bank: Mutex<Arc<Bank>>,
+}
+
+impl BankManager {
+    fn new(bank: Arc<Bank>) -> Self {
+        Self {
+            bank: Mutex::new(bank),
+        }
+    }
+
+    fn complete_block(&self) {
+        let mut bank = self.bank.lock().unwrap();
+
+        bank.register_tick(&Hash::new_unique());
+
+        *bank = Arc::new(Bank::new_from_parent(
+            &bank,
+            &Pubkey::new_unique(),
+            bank.slot() + 1,
+        ));
+    }
+}
+
+#[derive(Clone)]
 pub struct TestRuntimeRpcClient {
-    bank: Arc<Bank>,
-    payer: Keypair,
+    manager: Arc<BankManager>,
 }
 
 impl TestRuntimeRpcClient {
-    pub fn clone_with_payer(&self, payer: Keypair) -> Self {
-        Self {
-            bank: self.bank.clone(),
-            payer,
-        }
+    fn bank(&self) -> Arc<Bank> {
+        self.manager.bank.lock().unwrap().clone()
+    }
+
+    pub fn set_clock(&self, new_clock: &Clock) {
+        self.bank().set_sysvar_for_tests(new_clock);
+    }
+
+    pub fn next_block(&self) {
+        self.manager.complete_block();
     }
 }
 
 #[async_trait]
-impl SolanaRpcClient for TestRuntimeRpcClient {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self as &dyn std::any::Any
+impl SolanaRpc for TestRuntimeRpcClient {
+    async fn get_genesis_hash(&self) -> ClientResult<Hash> {
+        Ok(self.bank().parent_hash())
     }
 
-    fn clone_with_payer(&self, payer: Keypair) -> Box<dyn SolanaRpcClient> {
-        Box::new(Self::clone_with_payer(self, payer))
+    async fn get_latest_blockhash(&self) -> ClientResult<Hash> {
+        Ok(self.bank().last_blockhash())
     }
 
-    async fn get_account(&self, address: &Pubkey) -> anyhow::Result<Option<Account>> {
-        Ok(self.bank.get_account(address).map(|a| a.into()))
+    async fn get_slot(&self) -> ClientResult<u64> {
+        Ok(self.bank().slot())
+    }
+
+    async fn get_block_time(&self, slot: u64) -> ClientResult<i64> {
+        let timestamp = match slot {
+            n if n == self.bank().slot() => {
+                self.bank()
+                    .get_sysvar_cache_for_tests()
+                    .get_clock()
+                    .unwrap()
+                    .unix_timestamp
+            }
+            // FIXME: use correct bank timestamp
+            _ => self.bank().unix_timestamp_from_genesis(),
+        };
+
+        log::rpc::trace!("get_block_time({}) = {}", slot, timestamp);
+
+        Ok(timestamp)
     }
 
     async fn get_multiple_accounts(
         &self,
-        addresses: &[Pubkey],
-    ) -> anyhow::Result<Vec<Option<Account>>> {
-        Ok(addresses
+        pubkeys: &[Pubkey],
+    ) -> ClientResult<Vec<Option<Account>>> {
+        Ok(pubkeys
             .iter()
-            .map(|addr| self.bank.get_account(addr).map(|a| a.into()))
-            .collect())
-    }
+            .map(|pubkey| {
+                let account_data = self.bank().get_account(pubkey).map(Account::from);
 
-    async fn get_genesis_hash(&self) -> anyhow::Result<Hash> {
-        Ok(self.bank.last_blockhash())
-    }
-
-    async fn get_latest_blockhash(&self) -> anyhow::Result<Hash> {
-        self.bank.register_recent_blockhash(&Hash::new_unique());
-
-        Ok(self.bank.last_blockhash())
-    }
-
-    async fn get_minimum_balance_for_rent_exemption(&self, length: usize) -> anyhow::Result<u64> {
-        Ok(Rent::default().minimum_balance(length))
-    }
-
-    async fn send_transaction(
-        &self,
-        transaction: &Transaction,
-    ) -> anyhow::Result<solana_sdk::signature::Signature> {
-        let signature = transaction.signatures[0];
-        let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
-
-        log::info!("processing transaction {}", transaction.signatures[0]);
-        transaction.verify()?;
-
-        let sim_result = self.bank.simulate_transaction_unchecked(tx);
-
-        match sim_result.result {
-            Ok(()) => self
-                .bank
-                .process_transaction_with_logs(transaction)
-                .unwrap(),
-
-            Err(e) => {
-                log::error!("tx error {signature}: {e:?}");
-                log::error!("{:#?}", sim_result.logs);
-
-                if let TransactionError::InstructionError(_, error) = &e {
-                    if let Ok(error) = ProgramError::try_from(error.clone()) {
-                        return Err(anyhow!("program error: {error}").context(error));
-                    }
+                match &account_data {
+                    None => log::rpc::trace!("get_account({pubkey}) = None"),
+                    Some(account) => log::rpc::trace!(
+                        "get_account({pubkey}) = {{ lamports: {}, data: [{} bytes] }}",
+                        account.lamports,
+                        account.data.len()
+                    ),
                 }
 
-                bail!("failed: {e}");
-            }
-        }
-
-        Ok(signature)
+                account_data
+            })
+            .collect())
     }
 
     async fn get_signature_statuses(
         &self,
         signatures: &[Signature],
-    ) -> anyhow::Result<Vec<Option<TransactionStatus>>> {
+    ) -> ClientResult<Vec<Option<TransactionStatus>>> {
         Ok(signatures
             .iter()
-            .map(|_| {
-                Some(TransactionStatus {
-                    slot: self.bank.slot(),
-                    err: None,
-                    confirmations: Some(1),
-                    confirmation_status: Some(TransactionConfirmationStatus::Processed),
-                    status: Ok(()),
-                })
+            .map(|sig| {
+                self.bank()
+                    .get_signature_status(sig)
+                    .map(|status| TransactionStatus {
+                        slot: self.bank().slot(),
+                        confirmations: Some(1),
+                        err: status.clone().err(),
+                        status,
+                        confirmation_status: Some(TransactionConfirmationStatus::Processed),
+                    })
             })
             .collect())
+    }
+
+    async fn airdrop(&self, account: &Pubkey, lamports: u64) -> ClientResult<()> {
+        match self.bank().deposit(account, lamports) {
+            Err(e) => return Err(ClientError::Other(format!("airdrop failed: {:?}", e))),
+            Ok(_) => Ok(()),
+        }
+    }
+
+    async fn send_transaction_legacy(&self, transaction: &Transaction) -> ClientResult<Signature> {
+        Ok(send_legacy_transaction(&self.bank(), transaction)?)
+    }
+
+    async fn send_transaction(
+        &self,
+        transaction: &VersionedTransaction,
+    ) -> ClientResult<Signature> {
+        Ok(send_transaction(&self.bank(), transaction)?)
     }
 
     async fn get_program_accounts(
         &self,
-        program_id: &Pubkey,
-        size: Option<usize>,
-    ) -> anyhow::Result<Vec<(Pubkey, Account)>> {
-        Ok(self
-            .bank
-            .get_program_accounts(program_id, &ScanConfig::default())?
+        program: &Pubkey,
+        filters: &[AccountFilter],
+    ) -> ClientResult<Vec<(Pubkey, Account)>> {
+        let accounts = self
+            .bank()
+            .get_program_accounts(program, &ScanConfig::default())
+            .unwrap()
             .into_iter()
-            .filter_map(|(address, account)| match (size, account.data().len()) {
-                (Some(target), length) if target != length => None,
-                _ => Some((address, account.into())),
+            .filter_map(|(address, account)| {
+                let account = account.into();
+
+                if filters.iter().all(|filter| filter.matches(&account)) {
+                    Some((address, account))
+                } else {
+                    None
+                }
             })
-            .collect())
-    }
+            .collect();
 
-    async fn airdrop(&self, account: &Pubkey, amount: u64) -> anyhow::Result<()> {
-        self.bank.deposit(account, amount)?;
-        Ok(())
-    }
-
-    async fn get_clock(&self) -> anyhow::Result<Clock> {
-        let sysvar = self
-            .bank
-            .get_account(&solana_sdk::sysvar::clock::ID)
-            .unwrap();
-
-        let clock = bincode::deserialize(sysvar.data())?;
-
-        log::debug!("time is {:?}", &clock);
-
-        Ok(clock)
-    }
-
-    async fn set_clock(&self, new_clock: Clock) -> anyhow::Result<()> {
-        self.bank.set_sysvar_for_tests(&new_clock);
-        Ok(())
-    }
-
-    async fn get_slot(&self, _commitment_config: Option<CommitmentConfig>) -> anyhow::Result<Slot> {
-        // just return the slot from the latest updated clock
-        Ok(self.get_clock().await?.slot)
-    }
-
-    fn payer(&self) -> &Keypair {
-        &self.payer
+        log::rpc::trace!(
+            "get_program_accounts({}, {:?}) = {:?}",
+            program,
+            filters,
+            accounts
+        );
+        Ok(accounts)
     }
 }
 
@@ -634,17 +747,16 @@ mod test {
     #[tokio::test]
     async fn can_simulate_simple_transfer() {
         let rt = TestRuntime::new([], []);
-        let payer = Keypair::new();
-        let rpc = rt.rpc(payer);
+        let rpc = rt.rpc();
 
         let source_wallet = Keypair::new();
         let dest_wallet = Keypair::new();
 
-        rpc.airdrop(&source_wallet.pubkey(), 421 * LAMPORTS_PER_SOL)
+        SolanaRpc::airdrop(&rpc, &source_wallet.pubkey(), 421 * LAMPORTS_PER_SOL)
             .await
             .unwrap();
 
-        let recent_blockhash = rpc.get_latest_blockhash().await.unwrap();
+        let recent_blockhash = SolanaRpc::get_latest_blockhash(&rpc).await.unwrap();
         let transfer_tx = system_transaction::transfer(
             &source_wallet,
             &dest_wallet.pubkey(),
@@ -652,10 +764,11 @@ mod test {
             recent_blockhash,
         );
 
-        rpc.send_transaction(&transfer_tx).await.unwrap();
+        SolanaRpc::send_transaction_legacy(&rpc, &transfer_tx)
+            .await
+            .unwrap();
 
-        let dest_balance = rpc
-            .get_account(&dest_wallet.pubkey())
+        let dest_balance = SolanaRpc::get_account(&rpc, &dest_wallet.pubkey())
             .await
             .unwrap()
             .unwrap()

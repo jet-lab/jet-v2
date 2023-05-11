@@ -22,7 +22,7 @@ async fn can_migrate() {
     let account_addr = Pubkey::new_unique();
     let payer = Keypair::new();
     let (payer, rpc): (Pubkey, Arc<dyn SolanaRpcClient>) =
-        (payer.pubkey(), Arc::new(runtime.rpc(payer)));
+        (payer.pubkey(), Arc::new((runtime.rpc(), payer)));
 
     runtime.set_account(
         &account_addr,

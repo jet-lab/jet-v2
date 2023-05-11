@@ -17,7 +17,6 @@
 
 export * from "./array"
 export * from "./layout"
-export * from "./lookupTables"
 export * from "./number128"
 export * from "./number192"
 export * from "./pda"

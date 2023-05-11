@@ -1,14 +1,7 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import {
-  chunks,
-  MarginAccount,
-  Pool,
-  PoolTokenChange,
-  TokenAmount,
-  TokenFaucet
-} from '@jet-lab/margin';
+import { MarginAccount, Pool, PoolTokenChange, TokenAmount, TokenFaucet } from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
 import { Pools } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
@@ -22,6 +15,7 @@ import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-syn
 import { useJetStore } from '@jet-lab/store';
 import { useMemo } from 'react';
 import { SwapStep } from '@utils/actions/swap';
+import { LookupTable } from '@jet-lab/store/dist/slices/accounts';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -115,7 +109,60 @@ export function useMarginActions() {
         walletTokens
       );
 
-      await newMarginAccount.createAccount();
+      const instructions: TransactionInstruction[] = []
+      await newMarginAccount.withCreateAccount(instructions);
+      // Add a lookup registry account
+      await newMarginAccount.withInitLookupRegistry(instructions);
+      // const slot = await provider.connection.getSlot()
+      // const marginLookup = await newMarginAccount.withCreateLookupTable({
+      //   instructions,
+      //   slot,
+      //   discriminator: 10, // TODO
+      // });
+
+      // console.log("Lookup address is ", marginLookup.toBase58());
+
+      // TODO: submit all transactions together
+      // const accounts: PublicKey[] = [];
+      // for (let pool of Object.values(pools.tokenPools)) {
+      //   // Token ATA
+      //   const [ata] = await PublicKey.findProgramAddress([
+      //     newMarginAccount.address.toBuffer(),
+      //     TOKEN_PROGRAM_ID.toBuffer(),
+      //     pool.tokenMint.toBuffer(),
+      //   ], ASSOCIATED_TOKEN_PROGRAM_ID)
+      //   accounts.push(ata);
+      //   // Pool deposit and loan
+      //   accounts.push(pool.findDepositPositionAddress(newMarginAccount))
+      //   accounts.push(pool.findLoanPositionAddress(newMarginAccount))
+      // }
+
+      // for (let market of markets) {
+      //   // margin user
+      //   const marginUser = await market.market.deriveMarginUserAddress(newMarginAccount);
+      //   accounts.push(marginUser)
+      //   accounts.push(await market.market.deriveMarginUserClaims(marginUser))
+      //   let seed = await market.market.fetchDepositSeed(newMarginAccount)
+      //   accounts.push(await market.market.deriveTermDepositAddress(newMarginAccount.address, seed))
+      //   seed = await market.market.fetchDebtSeed(newMarginAccount)
+      //   accounts.push(await market.market.deriveTermLoanAddress(newMarginAccount.address, seed))
+      //   accounts.push(await market.market.deriveTicketCollateral(newMarginAccount.address))
+      // }
+
+      const splitInstructions = [instructions]
+
+      // chunks(20, accounts).forEach(addresses => {
+      //   const ix: TransactionInstruction[] = []
+      //   newMarginAccount.withAppendToLookupTable({
+      //     instructions: ix,
+      //     lookupTable: marginLookup,
+      //     discriminator: 10,
+      //     addresses
+      //   })
+      //   splitInstructions.push(ix)
+      // })
+
+      await newMarginAccount.sendAll(splitInstructions);
 
       // TODO add account names back
       // if (accountName) {
@@ -277,7 +324,8 @@ export function useMarginActions() {
     swapPaths: SwapStep[],
     swapAmount: TokenAmount,
     minAmountOut: TokenAmount,
-    repayWithOutput: boolean
+    repayWithOutput: boolean,
+    lookupTables: LookupTable[]
   ): Promise<[string | undefined, ActionResponse | undefined]> {
     if (!pools || !inputToken || !outputToken || !currentAccount) {
       console.error('Input/output tokens or current account undefined');
@@ -294,7 +342,8 @@ export function useMarginActions() {
         swapAmount,
         minAmountOut,
         repayWithOutput,
-        swapPaths
+        swapPaths,
+        lookupTables
       });
       await actionRefresh();
       if (txId === 'Setup check failed') {
@@ -365,7 +414,8 @@ export function useMarginActions() {
         source: fromAccount.walletTokens.map[currentPool.symbol].address,
         change: toChange
       });
-      const txId = await currentAccount.sendAll([chunks(11, refreshInstructions), instructions]);
+      const allIx = refreshInstructions.concat(instructions);
+      const txId = await currentAccount.sendAndConfirmV0([allIx], []);
       await actionRefresh();
       return [txId, ActionResponse.Success];
     } catch (err: any) {

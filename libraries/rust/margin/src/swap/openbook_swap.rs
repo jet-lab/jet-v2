@@ -26,6 +26,7 @@ use anchor_lang::ToAccountMetas;
 use anchor_spl::dex::serum_dex::state::{gen_vault_signer_key, MarketState};
 use jet_margin_swap::{accounts as ix_accounts, seeds::OPENBOOK_OPEN_ORDERS, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_solana_client::rpc::AccountFilter;
 use solana_sdk::{instruction::AccountMeta, pubkey::Pubkey, rent::Rent, sysvar::SysvarId};
 
 use crate::ix_builder::SwapAccounts;
@@ -74,7 +75,7 @@ impl OpenBookMarket {
         let program = anchor_spl::dex::id();
         let size = std::mem::size_of::<MarketState>();
         let accounts = rpc
-            .get_program_accounts(&program, Some(size + 12)) // Some(size)
+            .get_program_accounts(&program, vec![AccountFilter::DataSize(size + 12)]) // Some(size)
             .await
             .unwrap();
 
@@ -159,7 +160,8 @@ impl OpenBookMarket {
 
 #[inline]
 fn pubkey_from_slice(slice: [u64; 4]) -> Pubkey {
-    Pubkey::new(bytemuck::cast_slice(&slice))
+    let address_bytes: [u8; 32] = bytemuck::cast_slice(&slice).try_into().unwrap();
+    Pubkey::from(address_bytes)
 }
 
 impl SwapAccounts for OpenBookMarket {

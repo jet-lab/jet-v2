@@ -14,6 +14,7 @@ export interface OpenOrder {
   total_quote_qty: number;
   filled_quote_qty: number;
   is_auto_stake: boolean;
+  is_auto_roll: boolean;
   created_timestamp: number;
   rate: number;
 }
@@ -32,8 +33,11 @@ export interface Loan {
   address: string;
   sequence_number: number;
   maturation_timestamp: number;
-  balance: number;
+  principal: number;
+  interest: number;
+  remaining_balance: number;
   is_marked_due: boolean;
+  is_auto_roll: boolean;
   created_timestamp: number;
   payer: string;
   rate: number;
@@ -44,9 +48,11 @@ export interface Deposit {
   address: string;
   sequence_number: number;
   maturation_timestamp: number;
-  balance: number;
+  principal: number;
+  interest: number;
   rate: number;
   payer: string;
+  is_auto_roll: boolean;
   created_timestamp: number;
 }
 

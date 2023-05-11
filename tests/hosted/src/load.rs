@@ -1,11 +1,16 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
+use futures::future::{join_all, try_join_all};
 use jet_margin_sdk::{
-    fixed_term::OrderParams,
+    fixed_term::{Crank, OrderParams},
     solana::transaction::InverseSendTransactionBuilder,
-    util::{asynchronous::MapAsync, data::Concat},
+    util::asynchronous::MapAsync,
 };
-use std::{sync::Arc, time::Duration};
+use jet_solana_client::transactions;
+use serde_json::from_str;
+use shellexpand::tilde;
+use solana_sdk::{signature::Keypair, signer::Signer};
+use std::{fs::read_to_string, sync::Arc, time::Duration};
 
 use crate::{
     fixed_term::{self, create_and_fund_fixed_term_market_margin_user, OrderAmount},
@@ -21,7 +26,7 @@ pub struct UnhealthyAccountsLoadTestScenario {
     pub repricing_delay: usize,
     pub repricing_scale: f64,
     pub keep_looping: bool,
-    pub liquidator: Pubkey,
+    pub liquidator: Option<Pubkey>,
 }
 
 impl Default for UnhealthyAccountsLoadTestScenario {
@@ -29,12 +34,18 @@ impl Default for UnhealthyAccountsLoadTestScenario {
         Self {
             user_count: 2,
             mint_count: 2,
-            repricing_delay: 0,
+            repricing_delay: 1,
             repricing_scale: 0.999,
             keep_looping: true,
-            liquidator: Pubkey::default(),
+            liquidator: None,
         }
     }
+}
+
+pub fn load_default_keypair() -> anyhow::Result<Keypair> {
+    let keypair_data = read_to_string(tilde("~/.config/solana/id.json").to_string())?;
+    let keypair_bytes = from_str::<Vec<u8>>(&keypair_data)?;
+    Keypair::from_bytes(&keypair_bytes).map_err(Into::into)
 }
 
 pub async fn unhealthy_accounts_load_test(
@@ -49,6 +60,8 @@ pub async fn unhealthy_accounts_load_test(
         keep_looping,
         liquidator,
     } = scenario;
+    let liquidator = liquidator.unwrap_or_else(|| load_default_keypair().unwrap().pubkey());
+    println!("authorizing liquidator: {liquidator}");
     ctx.margin_client()
         .set_liquidator_metadata(liquidator, true)
         .await?;
@@ -78,8 +91,10 @@ pub async fn unhealthy_accounts_load_test(
     println!("incrementally lowering prices of half of the assets");
     let assets_to_devalue = mints[0..mints.len() / 2].to_vec();
     devalue_assets(
+        1.0,
         pricer,
         assets_to_devalue,
+        vec![], //todo!()
         keep_looping,
         repricing_scale,
         repricing_delay,
@@ -91,63 +106,60 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
     scenario: UnhealthyAccountsLoadTestScenario,
 ) -> Result<(), anyhow::Error> {
     let ctx = margin_test_context!();
-    println!("creating fixed term market");
-    let manager = Arc::new(fixed_term::TestManager::full(&ctx).await.unwrap());
-    let client = manager.client.clone();
-    println!("creating collateral token");
-    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
-    println!("creating users with collateral");
-    let user = create_and_fund_fixed_term_market_margin_user(
-        &ctx,
-        manager.clone(),
-        vec![(collateral, 0, 350_000)],
-    )
-    .await;
-
     let UnhealthyAccountsLoadTestScenario {
-        user_count: _, //todo
+        user_count,
         mint_count: _, //todo
         repricing_delay,
         repricing_scale,
         keep_looping,
         liquidator,
     } = scenario;
+    let liquidator = liquidator.unwrap_or_else(|| load_default_keypair().unwrap().pubkey());
+    println!("authorizing liquidator: {liquidator}");
     ctx.margin_client()
         .set_liquidator_metadata(liquidator, true)
         .await?;
 
-    // println!("creating users with collateral");
-    // let users = create_users(&ctx, user_count + 1).await?;
-    // let users = (0..(user_count+1)).map_async(|_| create_fixed_term_market_margin_user(ctx, vec![])).await;
-    // let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 1_000)],).await;
-    // println!("creating deposits");
-    // user.deposit(&collateral, 100 * ONE);
-    // users
-    //     .iter()
-    //     .map_async_chunked(16, |user| user.deposit(&collateral, 100 * ONE))
-    //     .await?;
+    println!("creating fixed term market");
+    let manager = Arc::new(fixed_term::TestManager::full(&ctx).await.unwrap());
+    let client = manager.client.clone();
+    println!("creating collateral token");
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    println!("creating users with collateral");
+    let users = join_all((0..user_count).into_iter().map(|_| {
+        create_and_fund_fixed_term_market_margin_user(
+            &ctx,
+            manager.clone(),
+            vec![(collateral, 0, 350_000)],
+        )
+    }))
+    .await;
+
     println!("creating borrow orders");
-    vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
-            .await
-            .unwrap(),
-        pricer
-            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await?,
-    ]
-    .cat(
-        user.refresh_and_margin_borrow_order(underlying(1_000, 2_000))
-            .await?,
-    )
-    .send_and_confirm_condensed_in_order(&client)
+    try_join_all(users.iter().map(|user| async {
+        transactions! {
+            pricer.set_oracle_price_tx(&collateral, 1.0).await?,
+            pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0).await?,
+            user.refresh_and_margin_borrow_order(underlying(1_000, 2_000)).await?,
+        }
+        .send_and_confirm_condensed_in_order(&client)
+        .await
+    }))
     .await?;
+
+    let crank = Crank::new(ctx.rpc(), &[manager.ix_builder.market()]).await?;
+    tokio::spawn(crank.run_forever());
 
     println!("incrementally lowering prices of the collateral");
     devalue_assets(
+        0.9,
         pricer,
         vec![collateral],
+        vec![
+            manager.ix_builder.token_mint(),
+            manager.ix_builder.ticket_mint(),
+        ],
         keep_looping,
         repricing_scale,
         repricing_delay,
@@ -156,26 +168,31 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
 }
 
 async fn devalue_assets(
+    starting_price: f64,
     pricer: TokenPricer,
     assets_to_devalue: Vec<Pubkey>,
+    assets_to_refresh: Vec<Pubkey>,
     keep_looping: bool,
     repricing_scale: f64,
     repricing_delay: usize,
 ) -> anyhow::Result<()> {
     println!("for assets {assets_to_devalue:?}...");
-    let mut price = 1.0;
+    let mut price = starting_price;
     loop {
         price *= repricing_scale;
-        let new_prices = assets_to_devalue
-            .iter()
-            .map(|mint| (*mint, price))
-            .collect();
         println!("setting price to {price}");
-        pricer.set_prices(new_prices, true).await?;
         for _ in 0..repricing_delay {
-            std::thread::sleep(Duration::from_secs(1));
-            // pricer.refresh_all_oracles().await?;
-            pricer.set_prices(Vec::new(), true).await?;
+            pricer
+                .set_prices(
+                    assets_to_devalue
+                        .iter()
+                        .map(|&a| (a, price))
+                        .chain(assets_to_refresh.iter().map(|&a| (a, 1.0)))
+                        .collect(),
+                    true,
+                )
+                .await?;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
         if !keep_looping {
             return Ok(());

@@ -31,7 +31,6 @@ export const FixedBorrowOrderEntry = () => {
     return token.decimals;
   }, [token]);
 
-
   if (!decimals || noAccount || !marketAndConfig || !token || !marginConfig) return null;
 
   return (

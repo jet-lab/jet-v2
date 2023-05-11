@@ -45,9 +45,9 @@ impl MarginTestContext {
     }
 
     pub(super) async fn execute_plan(&self, plan: PlanInstructions) -> Result<()> {
-        plan.setup
-            .send_and_confirm_condensed(&self.solana.rpc)
-            .await?;
+        for setup in plan.setup {
+            setup.send_and_confirm_condensed(&self.solana.rpc).await?;
+        }
         plan.propose
             .into_iter()
             .map(|tx| tx.with_signer(self.airspace_authority.clone()))

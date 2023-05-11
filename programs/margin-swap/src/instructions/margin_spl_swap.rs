@@ -17,6 +17,7 @@
 
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
+use jet_program_common::debug_msg;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
@@ -229,6 +230,15 @@ pub fn margin_spl_swap_handler(
     withdrawal_amount: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {
+    debug_msg!(
+        "Attempting to swap {} from {} notes for at least {} (note accounts: {} for {})",
+        withdrawal_amount,
+        token::accessor::amount(&ctx.accounts.source_account).unwrap(),
+        minimum_amount_out,
+        ctx.accounts.source_margin_pool.deposit_note_mint.key(),
+        ctx.accounts.destination_margin_pool.deposit_note_mint.key(),
+    );
+
     // Get the balance before the withdrawal. The balance should almost always
     // be zero, however it could already have a value.
     let source_opening_balance =

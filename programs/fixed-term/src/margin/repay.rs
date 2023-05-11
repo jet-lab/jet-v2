@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, transfer, Burn, Transfer};
-use jet_program_common::traits::TrySubAssign;
+use jet_program_common::{debug_msg, traits::TrySubAssign};
 
 use crate::{
     control::state::Market,
@@ -28,8 +28,16 @@ impl<'a, 'info> RepayAccounts<'a, 'info> {
     /// The `skip_token_transfer` flag determines whether funds must be deposited in the vault
     /// If set to `true` then a transfer from the caller to the market vault is unnecessary
     /// Use caution to prevent leaking funds
+    /// The flag is also used as a proxy to determine whether the repayment is a result of an
+    /// auto-roll.
     pub fn repay(&mut self, amount: u64, skip_token_transfer: bool) -> Result<()> {
         let amount = std::cmp::min(amount, self.term_loan.balance);
+        debug_msg!(
+            "Repaying {} out of {} towards term loan {}",
+            amount,
+            self.term_loan.balance,
+            self.term_loan.key()
+        );
 
         // return payment to market vault
         if !skip_token_transfer {
@@ -50,6 +58,7 @@ impl<'a, 'info> RepayAccounts<'a, 'info> {
                 term_loan: self.term_loan.key(),
                 repayment_amount: amount,
                 final_balance: self.term_loan.balance,
+                is_auto_roll: skip_token_transfer,
             });
         } else {
             let next_term_loan =
@@ -72,6 +81,7 @@ impl<'a, 'info> RepayAccounts<'a, 'info> {
                 borrower: self.term_loan.margin_user,
                 repayment_amount: amount,
                 timestamp: Clock::get()?.unix_timestamp,
+                is_auto_roll: skip_token_transfer,
             });
         }
 

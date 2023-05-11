@@ -1,8 +1,11 @@
+// TODO: deduplicate with packages/margin/src/wasm-src/orderbook/methods.rs
+
 use std::ops::Div;
 
-use jet_program_common::Fp32;
-
-use super::interest_pricing::{f64_to_fp32, fp32_to_f64, InterestPricer, PricerImpl};
+use jet_program_common::{
+    interest_pricing::{f64_to_fp32, fp32_to_f64, InterestPricer, PricerImpl},
+    Fp32,
+};
 
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 pub fn base_to_quote(base: u64, price: u64) -> u64 {

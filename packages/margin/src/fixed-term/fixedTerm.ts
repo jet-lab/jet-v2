@@ -1,10 +1,24 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
+import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
 import { JetFixedTerm } from "./types"
-import { fetchData, findFixedTermDerivedAccount } from "./utils"
-import { MakerSimulation, OrderbookModel, OrderbookSnapshot, TakerSimulation, rate_to_price } from "../wasm"
+import { fetchData, findFixedTermDerivedAccount, translateWasmInstruction } from "./utils"
+import {
+  MakerSimulation,
+  OrderbookModel,
+  OrderbookSnapshot,
+  TakerSimulation,
+  rate_to_price,
+  MarketInfo,
+  MarginUserInfo,
+  deserializeMarketFromBuffer,
+  deserializeMarginUserFromBuffer,
+  initializeMarginUserIx,
+  WasmTransactionInstruction,
+  configureAutoRollLendIx,
+  configureAutoRollBorrowIx
+} from "../wasm"
 import { AssociatedToken, bigIntToBn, bnToBigInt } from "../token"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
@@ -19,49 +33,49 @@ export interface OrderParams {
   autoRoll: boolean
 }
 
-/**
- * The raw struct as found on chain
- */
-export interface MarketInfo {
-  versionTag: BN
-  airspace: PublicKey
-  orderbookMarketState: PublicKey
-  eventQueue: PublicKey
-  asks: PublicKey
-  bids: PublicKey
-  underlyingTokenMint: PublicKey
-  underlyingTokenVault: PublicKey
-  ticketMint: PublicKey
-  claimsMint: PublicKey
-  ticketCollateralMint: PublicKey
-  tokenCollateralMint: PublicKey
-  underlyingOracle: PublicKey
-  ticketOracle: PublicKey
-  feeVault: PublicKey
-  feeDestination: PublicKey
-  seed: number[]
-  bump: number[]
-  orderbookPaused: boolean
-  ticketsPaused: boolean
-  reserved: number[]
-  borrowTenor: BN
-  lendTenor: BN
-  nonce: BN
-}
+// /**
+//  * The raw struct as found on chain
+//  */
+// export interface MarketInfo {
+//   versionTag: BN
+//   airspace: PublicKey
+//   orderbookMarketState: PublicKey
+//   eventQueue: PublicKey
+//   asks: PublicKey
+//   bids: PublicKey
+//   underlyingTokenMint: PublicKey
+//   underlyingTokenVault: PublicKey
+//   ticketMint: PublicKey
+//   claimsMint: PublicKey
+//   ticketCollateralMint: PublicKey
+//   tokenCollateralMint: PublicKey
+//   underlyingOracle: PublicKey
+//   ticketOracle: PublicKey
+//   feeVault: PublicKey
+//   feeDestination: PublicKey
+//   seed: number[]
+//   bump: number[]
+//   orderbookPaused: boolean
+//   ticketsPaused: boolean
+//   reserved: number[]
+//   borrowTenor: BN
+//   lendTenor: BN
+//   nonce: BN
+// }
 
 /** MarginUser account as found on-chain */
-export interface MarginUserInfo {
-  version: BN
-  marginAccount: PublicKey
-  market: PublicKey
-  claims: PublicKey
-  ticketCollateral: PublicKey
-  tokenCollateral: PublicKey
-  debt: DebtInfo
-  assets: AssetInfo
-  borrowRollConfig: AutoRollConfig
-  lendRollConfig: AutoRollConfig
-}
+// export interface MarginUserInfo {
+//   version: BN
+//   marginAccount: PublicKey
+//   market: PublicKey
+//   claims: PublicKey
+//   ticketCollateral: PublicKey
+//   tokenCollateral: PublicKey
+//   debt: DebtInfo
+//   assets: AssetInfo
+//   borrowRollConfig: BorrowAutoRollConfig
+//   lendRollConfig: LendAutoRollConfig
+// }
 
 export interface DebtInfo {
   nextNewTermLoanSeqno: BN
@@ -81,8 +95,13 @@ export interface AssetInfo {
   _reserved0: number[]
 }
 
-export interface AutoRollConfig {
-  limit_price: BN
+export interface LendAutoRollConfig {
+  limitPrice: BN
+}
+
+export interface BorrowAutoRollConfig {
+  limitPrice: BN
+  rollTenor: BN
 }
 
 export interface ClaimTicket {
@@ -110,8 +129,8 @@ export class FixedTermMarket {
     claimsMetadata: PublicKey
     ticketCollateralMint: PublicKey
     ticketCollateralMetadata: PublicKey
-    tokenCollateralMint: PublicKey
-    tokenCollateralMetadata: PublicKey
+    underlyingCollateralMint: PublicKey
+    underlyingCollateralMetadata: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
     marginAdapterMetadata: PublicKey
@@ -123,16 +142,28 @@ export class FixedTermMarket {
     market: PublicKey,
     claimsMetadata: PublicKey,
     ticketCollateralMetadata: PublicKey,
-    tokenCollateralMetadata: PublicKey,
+    underlyingCollateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
     program: Program<JetFixedTerm>,
     info: MarketInfo
   ) {
     this.addresses = {
-      ...info,
+      orderbookMarketState: new PublicKey(info.orderbookMarketState),
+      eventQueue: new PublicKey(info.eventQueue),
+      asks: new PublicKey(info.asks),
+      bids: new PublicKey(info.bids),
+      underlyingTokenMint: new PublicKey(info.underlyingTokenMint),
+      underlyingTokenVault: new PublicKey(info.underlyingTokenVault),
+      feeVault: new PublicKey(info.feeVault),
+      ticketMint: new PublicKey(info.ticketMint),
+      claimsMint: new PublicKey(info.claimsMint),
+      ticketCollateralMint: new PublicKey(info.ticketCollateralMint),
+      underlyingCollateralMint: new PublicKey(info.underlyingCollateralMint),
+      underlyingOracle: new PublicKey(info.underlyingOracle),
+      ticketOracle: new PublicKey(info.ticketOracle),
       claimsMetadata,
       ticketCollateralMetadata,
-      tokenCollateralMetadata,
+      underlyingCollateralMetadata,
       marginAdapterMetadata,
       market
     }
@@ -161,18 +192,18 @@ export class FixedTermMarket {
     market: Address,
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
-    let data = await fetchData(program.provider.connection, market)
-    let info: MarketInfo = program.coder.accounts.decode("market", data)
+    const data = await fetchData(program.provider.connection, market)
+    const info: MarketInfo = deserializeMarketFromBuffer(data)
     const claimsMetadata = await findFixedTermDerivedAccount(
-      ["token-config", info.airspace, info.claimsMint],
+      ["token-config", new PublicKey(info.airspace), new PublicKey(info.claimsMint)],
       new PublicKey(jetMarginProgramId)
     )
     const ticketCollateralMetadata = await findFixedTermDerivedAccount(
-      ["token-config", info.airspace, info.ticketCollateralMint],
+      ["token-config", new PublicKey(info.airspace), new PublicKey(info.ticketCollateralMint)],
       new PublicKey(jetMarginProgramId)
     )
-    const tokenCollateralMetadata = await findFixedTermDerivedAccount(
-      ["token-config", info.airspace, info.tokenCollateralMint],
+    const underlyingCollateralMetadata = await findFixedTermDerivedAccount(
+      ["token-config", new PublicKey(info.airspace), new PublicKey(info.underlyingCollateralMint)],
       new PublicKey(jetMarginProgramId)
     )
     const marginAdapterMetadata = await findFixedTermDerivedAccount(
@@ -184,7 +215,7 @@ export class FixedTermMarket {
       new PublicKey(market),
       new PublicKey(claimsMetadata),
       new PublicKey(ticketCollateralMetadata),
-      new PublicKey(tokenCollateralMetadata),
+      new PublicKey(underlyingCollateralMetadata),
       new PublicKey(marginAdapterMetadata),
       program,
       info
@@ -260,7 +291,8 @@ export class FixedTermMarket {
         payer,
         underlyingSettlement: underlyingSettlement,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID
+        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenCollateralMint: this.addresses.underlyingCollateralMint
       })
       .instruction()
   }
@@ -427,25 +459,34 @@ export class FixedTermMarket {
   }
 
   async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
-    const marginUser = await this.deriveMarginUserAddress(user)
-    const claims = await this.deriveMarginUserClaims(marginUser)
-    const ticketCollateral = await this.deriveTicketCollateral(marginUser)
-    const tokenCollateral = await this.deriveTokenCollateral(marginUser)
-    return await this.program.methods
-      .initializeMarginUser()
-      .accounts({
-        ...this.addresses,
-        marginUser,
-        marginAccount: user.address,
-        claims,
-        ticketCollateral,
-        tokenCollateral,
-        payer,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .instruction()
+    const ix: WasmTransactionInstruction = initializeMarginUserIx(
+      user.address.toBase58(),
+      this.addresses.market.toBase58(),
+      this.info.airspace,
+      payer.toString()
+    )
+    return translateWasmInstruction(ix)
+
+    // const marginUser = await this.deriveMarginUserAddress(user)
+    // const claims = await this.deriveMarginUserClaims(marginUser)
+    // const ticketCollateral = await this.deriveTicketCollateral(marginUser)
+    // const tokenCollateral = await this.deriveTokenCollateral(marginUser)
+
+    // return await this.program.methods
+    //   .initializeMarginUser()
+    //   .accounts({
+    //     ...this.addresses,
+    //     marginUser,
+    //     marginAccount: user.address,
+    //     claims,
+    //     ticketCollateral,
+    //     tokenCollateral,
+    //     payer,
+    //     rent: SYSVAR_RENT_PUBKEY,
+    //     systemProgram: SystemProgram.programId,
+    //     tokenProgram: TOKEN_PROGRAM_ID
+    //   })
+    //   .instruction()
   }
 
   /**
@@ -474,7 +515,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.debt.nextNewTermLoanSeqno.toArrayLike(Buffer, "le", 8)
+    return bigIntToBn(userInfo.debt.nextNewTermLoanSeqno).toArrayLike(Buffer, "le", 8)
   }
 
   async fetchDepositSeed(user: MarginAccount): Promise<Uint8Array> {
@@ -484,7 +525,7 @@ export class FixedTermMarket {
       return new BN(0).toArrayLike(Buffer, "le", 8)
     }
 
-    return userInfo.assets.nextDepositSeqno.toArrayLike(Buffer, "le", 8)
+    return bigIntToBn(userInfo.assets.nextDepositSeqno).toArrayLike(Buffer, "le", 8)
   }
 
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
@@ -515,7 +556,8 @@ export class FixedTermMarket {
   }
 
   getOrderbookModel(tenor: bigint, snapshot: OrderbookSnapshot): OrderbookModel {
-    const model = new OrderbookModel(BigInt(tenor))
+    const originationFee = this.info.originationFee
+    const model = new OrderbookModel(BigInt(tenor), originationFee)
     model.refreshFromSnapshot(snapshot)
     this.orderbookModel = model
 
@@ -524,8 +566,25 @@ export class FixedTermMarket {
 
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo | null> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))?.data
+    const acc = data ? deserializeMarginUserFromBuffer(data) : null
+    return acc
+  }
 
-    return data ? await this.program.coder.accounts.decode("marginUser", data) : null
+  async configAutorollBorrow(marginAccount: MarginAccount, price: bigint, tenor: BN) {
+    return translateWasmInstruction(
+      configureAutoRollBorrowIx(
+        this.addresses.market.toBase58(),
+        marginAccount.address.toBase58(),
+        bnToBigInt(tenor),
+        price
+      )
+    )
+  }
+
+  async configAutorollLend(marginAccount: MarginAccount, price: bigint) {
+    return translateWasmInstruction(
+      configureAutoRollLendIx(this.addresses.market.toBase58(), marginAccount.address.toBase58(), price)
+    )
   }
 
   async redeemDeposit(
@@ -535,7 +594,8 @@ export class FixedTermMarket {
       address: string
       sequence_number: number
       maturation_timestamp: number
-      balance: number
+      principal: number
+      interest: number
       rate: number
       payer: string
       created_timestamp: number
@@ -549,8 +609,8 @@ export class FixedTermMarket {
 
     const marginUserData = await market.fetchMarginUser(marginAccount)
     console.table({
-      nextUnredeemedDepositSeqno: marginUserData?.assets.nextUnredeemedDepositSeqno.toNumber(),
-      nextDepositSeqno: marginUserData?.assets.nextDepositSeqno.toNumber(),
+      nextUnredeemedDepositSeqno: bigIntToBn(marginUserData?.assets.nextUnredeemedDepositSeqno).toNumber(),
+      nextDepositSeqno: bigIntToBn(marginUserData?.assets.nextDepositSeqno).toNumber(),
       deposit_seq_no: deposit.sequence_number
     })
 
@@ -584,6 +644,22 @@ export class FixedTermMarket {
         }
       })
       .instruction()
+  }
+
+  async toggleAutorollDeposit(marginAccount: MarginAccount, deposit: Address) {
+    return await this.program.methods.toggleAutoRollDeposit().accounts({
+      marginAccount: marginAccount.address,
+      deposit,
+    }).instruction()
+  }
+
+  async toggleAutorollLoan(marginAccount: MarginAccount, loan: Address) {
+    const marginUser = await this.deriveMarginUserAddress(marginAccount)
+    return await this.program.methods.toggleAutoRollLoan().accounts({
+      marginAccount: marginAccount.address,
+      marginUser: marginUser.toBase58(),
+      loan
+    }).instruction()
   }
 }
 
@@ -643,16 +719,16 @@ export class FixedTermProductModel {
     let delta: ValuationDelta
 
     if (action == "lend") {
-      const principalAmount = this.valueOf(sim.filled_quote_qty)
-      const repaymentAmount = this.valueOf(sim.filled_base_qty)
+      const principalAmount = this.valueOf(sim.filledQuoteQty)
+      const repaymentAmount = this.valueOf(sim.filledBaseQty)
       const principalWeight = this.collateralWeight
       const repaymentWeight = this.collateralWeight
 
       delta = this.accounting.termDeposit(principalAmount, repaymentAmount, principalWeight, repaymentWeight)
     } else if (action == "borrow") {
       // TODO Fees
-      const receivedAmount = this.valueOf(sim.filled_quote_qty)
-      const repaymentAmount = this.valueOf(sim.filled_base_qty)
+      const receivedAmount = this.valueOf(sim.filledQuoteQty)
+      const repaymentAmount = this.valueOf(sim.filledBaseQty)
       const receivedWeight = this.collateralWeight
       let repaymentFactor = this.requiredCollateralFactor
       if (mode == "setup") {
@@ -676,10 +752,10 @@ export class FixedTermProductModel {
     let delta: ValuationDelta
 
     if (action == "lend") {
-      const fillPrincipalAmount = this.valueOf(sim.filled_quote_qty)
-      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty)
-      const postPrincipalAmount = this.valueOf(sim.posted_quote_qty)
-      const postRepaymentAmount = this.valueOf(sim.posted_base_qty)
+      const fillPrincipalAmount = this.valueOf(sim.filledQuoteQty)
+      const fillRepaymentAmount = this.valueOf(sim.filledBaseQty)
+      const postPrincipalAmount = this.valueOf(sim.postedQuoteQty)
+      const postRepaymentAmount = this.valueOf(sim.postedBaseQty)
 
       const principalWeight = this.collateralWeight
       const repaymentWeight = this.requiredCollateralFactor
@@ -690,10 +766,10 @@ export class FixedTermProductModel {
       )
     } else if (action == "borrow") {
       // TODO Fees
-      const fillReceivedAmount = this.valueOf(sim.filled_quote_qty)
-      const fillRepaymentAmount = this.valueOf(sim.filled_base_qty)
-      const postReceivedAmount = this.valueOf(sim.posted_quote_qty)
-      const postRepaymentAmount = this.valueOf(sim.posted_base_qty)
+      const fillReceivedAmount = this.valueOf(sim.filledQuoteQty)
+      const fillRepaymentAmount = this.valueOf(sim.filledBaseQty)
+      const postReceivedAmount = this.valueOf(sim.postedQuoteQty)
+      const postRepaymentAmount = this.valueOf(sim.postedBaseQty)
 
       const receivedWeight = this.collateralWeight
       let repaymentFactor = this.requiredCollateralFactor
@@ -723,6 +799,10 @@ export class FixedTermProductModel {
       principalWeight: number,
       repaymentWeight: number
     ): ValuationDelta {
+      // Term deposits are not current credited as collateral, pending a good solution to the ALM
+      // problem posed by their liquidation. Until then, use a weight of zero in the forecast.
+      repaymentWeight = 0;
+
       return {
         liabilities: 0,
         requiredCollateral: 0,
@@ -762,7 +842,7 @@ export class FixedTermProductModel {
     },
 
     apply(account: MarginAccount, delta: ValuationDelta, mode: "setup" | "maintenance"): ValuationEstimate {
-      let assets: number = NaN // FIXME Compute total assets in the margin account
+      let assets = account.valuation.assets.toNumber()
       let liabilities = account.valuation.liabilities.toNumber()
 
       let weightedCollateral = account.valuation.weightedCollateral.toNumber()
@@ -782,7 +862,12 @@ export class FixedTermProductModel {
       const equity = assets - liabilities
       const availableCollateral = weightedCollateral - (liabilities + requiredCollateral)
 
-      const riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
+      let riskIndicator = NaN;
+      if ((requiredCollateral >= 0) && (weightedCollateral >= 0) && (liabilities >= 0)) {
+        riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
+      } else {
+        console.error('Unexpected state in forecast accounting')
+      }
 
       return {
         assets,

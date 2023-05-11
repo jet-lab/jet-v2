@@ -111,6 +111,7 @@ impl<'a, 'info> MarginBorrowOrderAccounts<'a, 'info> {
             post_only: params.post_only,
             post_allowed: params.post_allowed,
             order_type: OrderType::MarginBorrow,
+            auto_roll: params.auto_roll
         });
         self.margin_user.emit_debt_balances();
 
