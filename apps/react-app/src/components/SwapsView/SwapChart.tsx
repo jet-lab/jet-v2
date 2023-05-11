@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
-import { CurrentAccount } from '@state/user/accounts';
 import { CurrentSwapOutput } from '@state/actions/actions';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { Typography } from 'antd';
@@ -11,11 +10,17 @@ import { SwapChartComponent } from './SwapChartComponent';
 import { ParentSizeModern } from '@visx/responsive';
 import { Pool } from '@jet-lab/margin';
 import { LoadingOutlined } from '@ant-design/icons';
+import { LegendItem, LegendLabel, LegendOrdinal } from '@visx/legend';
+import { scaleOrdinal } from '@visx/scale';
+
+const ordinalColorScale = scaleOrdinal({
+  domain: ['Asks', 'Bids', 'Oracle Price'],
+  range: ['#e36868', '#84c1ca', '#a79adb']
+});
 
 // Graph for displaying pricing and slippage data for current swap pair
 export function SwapChart(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const currentAccount = useRecoilValue(CurrentAccount);
   const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -76,20 +81,40 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
     return base / quote;
   }, [data, prices]);
 
-  console.log(data, prices, oraclePrice);
-
   return (
-    <ParentSizeModern>
-      {({ height, width }) => (
-        <SwapChartComponent
-          oraclePrice={oraclePrice}
-          bids={data?.bids}
-          asks={data?.asks}
-          height={height}
-          width={width}
-        />
-      )}
-    </ParentSizeModern>
+    <>
+      <div className="swaps-chart-legend">
+        <LegendOrdinal scale={ordinalColorScale} labelFormat={label => `${label.toUpperCase()}`}>
+          {labels => (
+            <div style={{ display: 'flex', flexDirection: 'row' }}>
+              {labels.map((label, i) => (
+                <LegendItem key={`legend-quantile-${i}`} margin="0 5px">
+                  <svg width={15} height={15}>
+                    <rect fill={label.value} width={15} height={15} />
+                  </svg>
+                  <LegendLabel align="left" margin="0 0 0 4px">
+                    {label.text}
+                  </LegendLabel>
+                </LegendItem>
+              ))}
+            </div>
+          )}
+        </LegendOrdinal>
+      </div>
+      <ParentSizeModern>
+        {({ height, width }) => (
+          <SwapChartComponent
+            oraclePrice={oraclePrice}
+            bids={data?.bids}
+            asks={data?.asks}
+            height={height}
+            width={width}
+            priceRange={data?.price_range}
+            liquidityRange={data?.liquidity_range}
+          />
+        )}
+      </ParentSizeModern>
+    </>
   );
 };
 // todo - fix tooltip info

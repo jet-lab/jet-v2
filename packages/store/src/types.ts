@@ -67,6 +67,6 @@ export interface SwapLiquidity {
   quote: string;
   bids: [price: number, amt: number][];
   asks: [price: number, amt: number][];
-  liquidity_range: number[];
-  price_range: number[];
+  liquidity_range: [min: number, max: number];
+  price_range: [min: number, max: number];
 }
