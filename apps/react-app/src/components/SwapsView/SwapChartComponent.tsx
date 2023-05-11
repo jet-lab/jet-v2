@@ -95,7 +95,7 @@ export const SwapChartComponent = ({
         path = asks;
         type = 'ask';
       }
-      if (path) {
+      if (path && path.getTotalLength() > 0) {
         const y = pointAtCoordinateX(path, x, 5);
         if (y) {
           showTooltip({
