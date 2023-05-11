@@ -34,32 +34,32 @@ pub struct VerifiedUnealthy {
     pub margin_account: Pubkey,
 }
 
-#[event]
+// #[event]
 pub struct PositionRegistered {
     pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub position: AccountPosition,
 }
 
-#[event]
+// #[event]
 pub struct PositionClosed {
     pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub token: Pubkey,
 }
 
-#[event]
+// #[event]
 pub struct PositionMetadataRefreshed {
     pub margin_account: Pubkey,
     pub position: AccountPosition,
 }
 
-#[event]
+// #[event]
 pub struct PositionBalanceUpdated {
     pub position: AccountPosition,
 }
 
-#[event]
+// #[event]
 pub struct PositionTouched {
     pub position: AccountPosition,
 }
@@ -177,13 +177,13 @@ macro_rules! event_groups {
             $($Variant($Variant),)+
         }
 
-        impl $Name {
-            pub fn emit(self) {
-                match self {
-                    $(Self::$Variant(item) => emit!(item),)+
-                }
-            }
-        }
+        // impl $Name {
+        //     pub fn emit(self) {
+        //         match self {
+        //             $(Self::$Variant(item) => emit!(item),)+
+        //         }
+        //     }
+        // }
 
         $(impl From<$Variant> for $Name {
             fn from(item: $Variant) -> Self {

@@ -63,7 +63,7 @@ pub fn liquidator_invoke_handler<'info>(
         liquidator: ctx.accounts.liquidator.key(),
     });
 
-    let events = adapter::invoke(
+    let _events = adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -73,9 +73,9 @@ pub fn liquidator_invoke_handler<'info>(
         data,
     )?;
 
-    for event in events {
-        event.emit();
-    }
+    // for event in events {
+    //     event.emit();
+    // }
 
     let liquidation = &mut ctx.accounts.liquidation.load_mut()?.state;
     let end_value = update_and_verify_liquidation(

@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{events, ErrorCode, MarginAccount, Permissions, Permit, TokenConfig};
+use crate::{ErrorCode, MarginAccount, Permissions, Permit, TokenConfig};
 
 #[derive(Accounts)]
 pub struct RefreshPositionConfig<'info> {
@@ -47,17 +47,17 @@ pub fn refresh_position_config_handler(ctx: Context<RefreshPositionConfig>) -> R
     let config = &ctx.accounts.config;
     let mut account = ctx.accounts.margin_account.load_mut()?;
 
-    let position = account.refresh_position_metadata(
+    let _position = account.refresh_position_metadata(
         &config.mint,
         config.token_kind,
         config.value_modifier,
         config.max_staleness,
     )?;
 
-    emit!(events::PositionMetadataRefreshed {
-        margin_account: ctx.accounts.margin_account.key(),
-        position,
-    });
+    // emit!(events::PositionMetadataRefreshed {
+    //     margin_account: ctx.accounts.margin_account.key(),
+    //     position,
+    // });
 
     Ok(())
 }
