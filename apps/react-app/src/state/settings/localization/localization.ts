@@ -180,9 +180,5 @@ export const geoBannedCountries = [
   {
     country: 'Venezuela',
     code: 'VE'
-  },
-  {
-    country: 'United Kingdom',
-    code: 'GB'
   }
 ];
