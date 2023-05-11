@@ -36,7 +36,6 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
 };
 
 const asksKeys = ['lend-now', 'request-loan'];
-const requestKeys = ['lend-now', 'borrow-now'];
 
 const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; currentTab: string }) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
@@ -88,9 +87,7 @@ const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; cu
     }, [] as ISeries[]);
   }, [openOrders, currentTab, selectedMarketIndex]);
 
-  return (
-    <ResponsiveLineChart symbol={market.token.symbol} isRequest={requestKeys.includes(currentTab)} series={series} />
-  );
+  return <ResponsiveLineChart symbol={market.token.symbol} series={series} />;
 };
 
 export const FixedPriceChartContainer = ({ type }: FixedChart) => {
@@ -100,9 +97,9 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const market = useRecoilValue(FixedTermMarketAtom);
 
   return (
-    <div className="fixed-term-graph view-element view-element-hidden flex align-center justify-end column">
-      <div className="fixed-term-graph-head view-element-item view-element-item-hidden flex justify-center column">
-        <div className="fixed-term-graph-head-info flex align-end">
+    <div className="fixed-term-graph view-element view-element-hidden align-center column flex justify-end">
+      <div className="fixed-term-graph-head view-element-item view-element-item-hidden column flex justify-center">
+        <div className="fixed-term-graph-head-info align-end flex">
           <div className="flex-centered">
             <Title level={2}>{getChartTitle(currentTab, market)}</Title>
           </div>
