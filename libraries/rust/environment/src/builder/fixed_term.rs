@@ -23,7 +23,9 @@ use jet_solana_client::{
 
 use crate::config::FixedTermMarketConfig;
 
-use super::{margin::configure_margin_token, Builder, BuilderError, NetworkKind, TokenContext};
+use super::{
+    margin::configure_margin_token, Builder, BuilderError, NetworkKind, SetupPhase, TokenContext,
+};
 
 const EVENT_QUEUE_CAPACITY: usize = 8192;
 const ORDERBOOK_CAPACITY: usize = 16384;
@@ -42,12 +44,15 @@ pub async fn configure_market_for_token<I: NetworkUserInterface>(
     let fee_destination = get_associated_token_address(&control_authority, &token.mint);
 
     if !builder.account_exists(&fee_destination).await? {
-        builder.setup([create_associated_token_account_idempotent(
-            &payer,
-            &control_authority,
-            &token.mint,
-            &spl_token::ID,
-        )]);
+        builder.setup(
+            SetupPhase::TokenAccounts,
+            [create_associated_token_account_idempotent(
+                &payer,
+                &control_authority,
+                &token.mint,
+                &spl_token::ID,
+            )],
+        );
     }
 
     let market = builder
@@ -86,23 +91,30 @@ pub async fn configure_market_for_token<I: NetworkUserInterface>(
         );
 
         if !builder.account_exists(&ticket_info).await? {
-            builder.setup([test_service::if_not_initialized(
-                ticket_info,
-                test_service::token_register(
-                    &payer,
-                    ticket_mint,
-                    &TokenCreateParams {
-                        authority: builder.proposal_authority(),
-                        oracle_authority: token.oracle_authority,
-                        decimals: token.desc.decimals.unwrap(),
-                        max_amount: u64::MAX,
-                        source_symbol: token.desc.symbol.clone(),
-                        price_ratio: config.ticket_price.unwrap_or(1.0),
-                        symbol: format!("{}_{}", token.desc.symbol.clone(), config.borrow_tenor),
-                        name: format!("{}_{}", token.desc.name.clone(), config.borrow_tenor),
-                    },
-                ),
-            )]);
+            builder.setup(
+                SetupPhase::TokenMints,
+                [test_service::if_not_initialized(
+                    ticket_info,
+                    test_service::token_register(
+                        &payer,
+                        ticket_mint,
+                        &TokenCreateParams {
+                            authority: builder.proposal_authority(),
+                            oracle_authority: token.oracle_authority,
+                            decimals: token.desc.decimals.unwrap(),
+                            max_amount: u64::MAX,
+                            source_symbol: token.desc.symbol.clone(),
+                            price_ratio: config.ticket_price.unwrap_or(1.0),
+                            symbol: format!(
+                                "{}_{}",
+                                token.desc.symbol.clone(),
+                                config.borrow_tenor
+                            ),
+                            name: format!("{}_{}", token.desc.name.clone(), config.borrow_tenor),
+                        },
+                    ),
+                )],
+            );
         }
     }
 
@@ -282,38 +294,41 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     let rent = Rent::default();
 
     // Intialize event/orderbook data accounts
-    builder.setup([
-        TransactionBuilder {
-            instructions: vec![system_instruction::create_account(
-                &payer,
-                &key_eq.pubkey(),
-                rent.minimum_balance(len_eq),
-                len_eq as u64,
-                &jet_fixed_term::ID,
-            )],
-            signers: vec![key_eq],
-        },
-        TransactionBuilder {
-            instructions: vec![system_instruction::create_account(
-                &payer,
-                &key_bids.pubkey(),
-                rent.minimum_balance(len_orders),
-                len_orders as u64,
-                &jet_fixed_term::ID,
-            )],
-            signers: vec![key_bids],
-        },
-        TransactionBuilder {
-            instructions: vec![system_instruction::create_account(
-                &payer,
-                &key_asks.pubkey(),
-                rent.minimum_balance(len_orders),
-                len_orders as u64,
-                &jet_fixed_term::ID,
-            )],
-            signers: vec![key_asks],
-        },
-    ]);
+    builder.setup(
+        SetupPhase::TokenMints,
+        [
+            TransactionBuilder {
+                instructions: vec![system_instruction::create_account(
+                    &payer,
+                    &key_eq.pubkey(),
+                    rent.minimum_balance(len_eq),
+                    len_eq as u64,
+                    &jet_fixed_term::ID,
+                )],
+                signers: vec![key_eq],
+            },
+            TransactionBuilder {
+                instructions: vec![system_instruction::create_account(
+                    &payer,
+                    &key_bids.pubkey(),
+                    rent.minimum_balance(len_orders),
+                    len_orders as u64,
+                    &jet_fixed_term::ID,
+                )],
+                signers: vec![key_bids],
+            },
+            TransactionBuilder {
+                instructions: vec![system_instruction::create_account(
+                    &payer,
+                    &key_asks.pubkey(),
+                    rent.minimum_balance(len_orders),
+                    len_orders as u64,
+                    &jet_fixed_term::ID,
+                )],
+                signers: vec![key_asks],
+            },
+        ],
+    );
 
     builder.propose([
         ix_builder.initialize_market(

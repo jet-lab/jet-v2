@@ -50,10 +50,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
-  const { cluster, explorer, selectedPoolKey } = useJetStore(state => ({
+  const { cluster, explorer, selectedPoolKey, airspaceLookupTables } = useJetStore(state => ({
     cluster: state.settings.cluster,
     explorer: state.settings.explorer,
-    selectedPoolKey: state.selectedPoolKey
+    selectedPoolKey: state.selectedPoolKey,
+    airspaceLookupTables: state.airspaceLookupTables
   }));
   const currentPool = useMemo(
     () =>
@@ -109,16 +110,16 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       const setupCheckEstimate = productModel?.takerAccountForecast('lend', sim, 'setup');
       const valuationEstimate = productModel?.takerAccountForecast('lend', sim);
 
-      const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-      const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals);
+      const repayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+      const lendAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilledQuoteQty - sim.matches), token.decimals);
 
       setForecast({
         repayAmount: repayAmount.tokens,
         interest: repayAmount.sub(lendAmount).tokens,
-        effectiveRate: sim.filled_vwar,
-        selfMatch: sim.self_match,
-        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches,
+        effectiveRate: sim.filledVwar,
+        selfMatch: sim.selfMatch,
+        fulfilled: sim.filledQuoteQty >= sim.totalQuoteQty - BigInt(1) * sim.matches,
         riskIndicator: valuationEstimate?.riskIndicator,
         unfilledQty: unfilledQty.tokens,
         hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
@@ -144,7 +145,8 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         pools: pools.tokenPools,
         amount,
         markets: markets.map(m => m.market),
-        autorollEnabled
+        autorollEnabled,
+        airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
         refreshOrderBooks();
@@ -191,6 +193,10 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
 
   return (
     <div className="fixed-term order-entry-body">
+      <p>
+        You are lending as a taker. Your order will be filled at the prevailing market rates. Any unfilled quantity will
+        not be posted to the order book.
+      </p>
       <div className="lend-now fixed-order-entry-fields">
         <label>
           Loan amount

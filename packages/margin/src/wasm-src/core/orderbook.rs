@@ -1,14 +1,19 @@
 use agnostic_orderbook::state::critbit::Slab;
 use bonfida_utils::fp_math::{fp32_div, fp32_mul_ceil, fp32_mul_floor};
-use jet_fixed_term::orderbook::state::{CallbackInfo, OrderTag};
+use jet_fixed_term::{
+    margin::origination_fee::{borrow_order_qty, loan_to_disburse},
+    orderbook::state::{CallbackInfo, OrderTag},
+};
 use jet_program_common::interest_pricing::{f64_to_fp32, fp32_to_f64};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use solana_program::pubkey::Pubkey;
 
 use crate::orderbook::methods::price_to_rate;
 
 pub struct OrderbookModel {
     tenor: u64,
+    origination_fee: u64,
     bids: Vec<Order>,
     asks: Vec<Order>,
 }
@@ -129,18 +134,35 @@ pub struct LiquidityObservation {
     pub cumulative_rate: f64,
 }
 
+#[serde_as]
+#[derive(Deserialize, Serialize)]
+pub struct LiquiditySampleV2 {
+    #[serde_as(as = "DisplayFromStr")]
+    pub base: Pubkey,
+    #[serde_as(as = "DisplayFromStr")]
+    pub quote: Pubkey,
+    /// (f64, u64) => (rate, cumulative_quote)
+    pub bids: Vec<(f64, u64)>,
+    /// (f64, u64) => (rate, cumulative_quote)
+    pub asks: Vec<(f64, u64)>,
+    pub price_range: [f64; 2],
+    pub liquidity_range: [u64; 2],
+}
+
 #[derive(Deserialize)]
 pub struct OrderbookSnapshot {
     pub bids: Vec<Order>,
     pub asks: Vec<Order>,
 }
 
-// TODO Include more info and checks, eg price bounds and minimum posted order sizes.
 const MIN_BASE_SIZE_POSTED: u64 = 10;
+
 impl OrderbookModel {
-    pub fn new(tenor: u64) -> Self {
+    // TODO Add min base size posted as parameter
+    pub fn new(tenor: u64, origination_fee: u64) -> Self {
         Self {
             tenor,
+            origination_fee,
             bids: vec![],
             asks: vec![],
         }
@@ -179,7 +201,15 @@ impl OrderbookModel {
     }
 
     // TODO Interpolate on a set of points instead
-    pub fn sample_liquidity(&self, side: Side) -> LiquiditySample {
+    pub fn sample_liquidity(
+        &self,
+        side: Side,
+        max_quote_qty: Option<u64>,
+        append_zero_point: Option<bool>,
+    ) -> LiquiditySample {
+        let max_quote_qty = max_quote_qty.unwrap_or(u64::MAX);
+        let append_zero_point = append_zero_point.unwrap_or(true);
+
         let mut total_base_qty = 0;
         let mut total_quote_qty = 0;
         let mut sample_quote_qty = 0;
@@ -191,6 +221,10 @@ impl OrderbookModel {
             ..
         } in self.orders_on(side)
         {
+            if total_quote_qty >= max_quote_qty {
+                break;
+            }
+
             let quote_size = side.base_to_quote(base_size, limit_price).unwrap();
             total_base_qty += base_size;
             total_quote_qty += quote_size;
@@ -207,7 +241,7 @@ impl OrderbookModel {
             sample_quote_qty += quote_size;
         }
 
-        if !points.is_empty() {
+        if append_zero_point && !points.is_empty() {
             let cumulative_base = 0;
             let cumulative_quote = 0;
             let cumulative_price = points[0].cumulative_price;
@@ -232,6 +266,44 @@ impl OrderbookModel {
         }
     }
 
+    pub fn sample_liquidity_v2(&self, max_quote_qty: u64) -> LiquiditySampleV2 {
+        let bid_liquidity =
+            self.sample_liquidity(Side::LoanOffer, Some(max_quote_qty), Some(false));
+        let ask_liquidity =
+            self.sample_liquidity(Side::LoanRequest, Some(max_quote_qty), Some(false));
+
+        let bids = bid_liquidity
+            .points
+            .iter()
+            .map(|p| (p.cumulative_rate, p.cumulative_quote))
+            .collect::<Vec<_>>();
+        let asks = ask_liquidity
+            .points
+            .iter()
+            .map(|p| (p.cumulative_rate, p.cumulative_quote))
+            .rev()
+            .collect::<Vec<_>>();
+
+        LiquiditySampleV2 {
+            base: Pubkey::default(),
+            quote: Pubkey::default(),
+            liquidity_range: [
+                bids.first()
+                    .map_or(0, |(_, qty)| *qty)
+                    .max(asks.last().map_or(0, |(_, qty)| *qty)),
+                bids.last()
+                    .map_or(0, |(_, qty)| *qty)
+                    .max(asks.first().map_or(0, |(_, qty)| *qty)),
+            ],
+            price_range: [
+                asks.first().map_or(f64::NAN, |(rate, _)| *rate),
+                bids.last().map_or(f64::NAN, |(rate, _)| *rate),
+            ],
+            bids,
+            asks,
+        }
+    }
+
     pub fn would_match(&self, action: Action, limit_price: u64) -> bool {
         let orders = self.orders_on(Side::matching(action));
 
@@ -242,12 +314,11 @@ impl OrderbookModel {
         }
     }
 
-    // TODO Alert self match
     // TODO Don't panic
     pub fn simulate_taker(
         &self,
         action: Action,
-        quote_qty: u64,
+        user_quote_qty: u64,
         limit_price: Option<u64>,
         user: Option<Pubkey>,
     ) -> TakerSimulation {
@@ -255,10 +326,20 @@ impl OrderbookModel {
         let limit_price = limit_price.unwrap_or_else(|| action.worst_price());
         let side = Side::matching(action);
 
+        let fee_quote_qty = match action {
+            Action::Lend => 0,
+            Action::Borrow => {
+                borrow_order_qty(user_quote_qty, self.origination_fee) - user_quote_qty
+            }
+        };
+        let total_quote_qty = user_quote_qty + fee_quote_qty;
+
         let mut self_match = false;
         let mut filled_quote_qty = 0;
+        let mut filled_user_qty = 0;
+        let mut filled_fee_qty = 0;
         let mut filled_base_qty = 0;
-        let mut unfilled_quote_qty = quote_qty;
+        let mut unfilled_quote_qty = total_quote_qty;
         let mut fills = vec![];
         for order in self.orders_on(side) {
             if unfilled_quote_qty > 0 && order.matches(action, limit_price) {
@@ -273,15 +354,22 @@ impl OrderbookModel {
                 let fill_base_qty = maker_base_qty.min(unfilled_base_qty);
                 let fill_quote_qty = side.base_to_quote(fill_base_qty, order.price).unwrap();
 
+                let fill_user_qty = loan_to_disburse(fill_quote_qty, self.origination_fee);
+                let fill_fee_qty = fill_quote_qty - fill_user_qty;
+
                 let fill = Fill {
                     base_qty: fill_base_qty,
                     quote_qty: fill_quote_qty,
+                    user_qty: fill_user_qty,
+                    fee_qty: fill_fee_qty,
                     price: fp32_to_f64(order.price),
                 };
 
                 fills.push(fill);
 
                 filled_quote_qty += fill_quote_qty;
+                filled_user_qty += fill_user_qty;
+                filled_fee_qty += fill_fee_qty;
                 filled_base_qty += fill_base_qty;
                 unfilled_quote_qty -= fill_quote_qty;
             } else {
@@ -307,12 +395,16 @@ impl OrderbookModel {
         };
 
         TakerSimulation {
-            order_quote_qty: quote_qty,
+            total_quote_qty,
+            user_quote_qty,
+            fee_quote_qty,
             limit_price,
             would_match: !fills.is_empty(),
             self_match,
             matches: fills.len(),
             filled_quote_qty,
+            filled_user_qty,
+            filled_fee_qty,
             filled_base_qty,
             filled_vwap,
             filled_vwar,
@@ -324,13 +416,17 @@ impl OrderbookModel {
     pub fn simulate_maker(
         &self,
         action: Action,
-        quote_qty: u64,
+        user_quote_qty: u64,
         limit_price: u64,
         user: Option<Pubkey>,
     ) -> MakerSimulation {
+        let fill_sim = self.simulate_taker(action, user_quote_qty, Some(limit_price), user);
+
         let mut maker_sim = MakerSimulation {
-            order_quote_qty: 0,
-            limit_price: f64::NAN,
+            total_quote_qty: fill_sim.total_quote_qty,
+            user_quote_qty: fill_sim.user_quote_qty,
+            fee_quote_qty: fill_sim.fee_quote_qty,
+            limit_price: fp32_to_f64(limit_price),
             full_quote_qty: 0,
             full_base_qty: 0,
             full_vwap: f64::NAN,
@@ -338,6 +434,8 @@ impl OrderbookModel {
             would_post: false,
             depth: 0,
             posted_quote_qty: 0,
+            posted_user_qty: 0,
+            posted_fee_qty: 0,
             posted_base_qty: 0,
             posted_vwap: f64::NAN,
             posted_vwar: f64::NAN,
@@ -349,21 +447,21 @@ impl OrderbookModel {
             self_match: false,
             matches: 0,
             filled_quote_qty: 0,
+            filled_user_qty: 0,
+            filled_fee_qty: 0,
             filled_base_qty: 0,
             filled_vwap: f64::NAN,
             filled_vwar: f64::NAN,
             fills: vec![],
         };
-        maker_sim.order_quote_qty = quote_qty;
-        maker_sim.limit_price = fp32_to_f64(limit_price);
-
-        let fill_sim = self.simulate_taker(action, quote_qty, Some(limit_price), user);
 
         if fill_sim.would_match {
             maker_sim.would_match = true;
             maker_sim.self_match = fill_sim.self_match;
             maker_sim.matches = fill_sim.matches;
             maker_sim.filled_quote_qty = fill_sim.filled_quote_qty;
+            maker_sim.filled_user_qty = fill_sim.filled_user_qty;
+            maker_sim.filled_fee_qty = fill_sim.filled_fee_qty;
             maker_sim.filled_base_qty = fill_sim.filled_base_qty;
             maker_sim.filled_vwap = fill_sim.filled_vwap;
             maker_sim.filled_vwar = fill_sim.filled_vwar;
@@ -376,7 +474,7 @@ impl OrderbookModel {
         let remaining_base_qty = if fill_sim.would_match {
             fp32_div(fill_sim.unfilled_quote_qty, limit_price).unwrap()
         } else {
-            fp32_div(quote_qty, limit_price).unwrap()
+            fp32_div(maker_sim.total_quote_qty, limit_price).unwrap()
         };
 
         if remaining_base_qty < MIN_BASE_SIZE_POSTED {
@@ -427,8 +525,13 @@ impl OrderbookModel {
                 f64::NAN
             };
 
+            let posted_user_qty = loan_to_disburse(posted_quote_qty, self.origination_fee);
+            let posted_fee_qty = posted_quote_qty - posted_user_qty;
+
             maker_sim.depth = depth;
             maker_sim.posted_quote_qty = posted_quote_qty;
+            maker_sim.posted_user_qty = posted_user_qty;
+            maker_sim.posted_fee_qty = posted_fee_qty;
             maker_sim.posted_base_qty = posted_base_qty;
             maker_sim.posted_vwap = posted_vwap;
             maker_sim.posted_vwar = posted_vwar;
@@ -482,14 +585,19 @@ impl OrderbookModel {
 }
 
 #[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TakerSimulation {
-    pub order_quote_qty: u64,
+    pub total_quote_qty: u64,
+    pub user_quote_qty: u64,
+    pub fee_quote_qty: u64,
     pub limit_price: f64,
 
     pub would_match: bool,
     pub self_match: bool,
     pub matches: usize,
     pub filled_quote_qty: u64,
+    pub filled_user_qty: u64,
+    pub filled_fee_qty: u64,
     pub filled_base_qty: u64,
     pub filled_vwap: f64,
     pub filled_vwar: f64,
@@ -502,12 +610,17 @@ pub struct TakerSimulation {
 pub struct Fill {
     pub base_qty: u64,
     pub quote_qty: u64,
+    pub user_qty: u64,
+    pub fee_qty: u64,
     pub price: f64,
 }
 
 #[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MakerSimulation {
-    pub order_quote_qty: u64,
+    pub total_quote_qty: u64,
+    pub user_quote_qty: u64,
+    pub fee_quote_qty: u64,
     pub limit_price: f64,
 
     pub full_quote_qty: u64,
@@ -518,6 +631,8 @@ pub struct MakerSimulation {
     pub would_post: bool,
     pub depth: usize,
     pub posted_quote_qty: u64,
+    pub posted_user_qty: u64,
+    pub posted_fee_qty: u64,
     pub posted_base_qty: u64,
     pub posted_vwap: f64,
     pub posted_vwar: f64,
@@ -530,6 +645,8 @@ pub struct MakerSimulation {
     pub self_match: bool,
     pub matches: usize,
     pub filled_quote_qty: u64,
+    pub filled_user_qty: u64,
+    pub filled_fee_qty: u64,
     pub filled_base_qty: u64,
     pub filled_vwap: f64,
     pub filled_vwar: f64,
@@ -544,6 +661,7 @@ mod test {
     fn test_sample_liquidity() {
         let om = OrderbookModel {
             tenor: 24 * 60 * 60 * 180,
+            origination_fee: 0,
             bids: vec![Order {
                 owner: Default::default(),
                 order_tag: Default::default(),
@@ -553,7 +671,7 @@ mod test {
             asks: vec![],
         };
 
-        let sample = om.sample_liquidity(Side::LoanOffer);
+        let sample = om.sample_liquidity(Side::LoanOffer, None, None);
 
         assert_eq!(sample.side, Side::LoanOffer);
         assert_eq!(sample.total_quote_qty, 90);
@@ -565,6 +683,7 @@ mod test {
     fn test_sample_liquidity_2() {
         let om = OrderbookModel {
             tenor: 24 * 60 * 60,
+            origination_fee: 0,
             bids: vec![Order {
                 owner: Default::default(),
                 order_tag: Default::default(),
@@ -574,7 +693,7 @@ mod test {
             asks: vec![],
         };
 
-        let sample = om.sample_liquidity(Side::LoanOffer);
+        let sample = om.sample_liquidity(Side::LoanOffer, None, None);
 
         assert_eq!(sample.total_quote_qty, 10000100000);
         assert_eq!(sample.points[0].cumulative_rate, 0.05);
@@ -590,6 +709,7 @@ mod test {
     fn populate_orderbook_model() -> OrderbookModel {
         OrderbookModel {
             tenor: 60 * 60 * 24 * 90,
+            origination_fee: 0,
             bids: vec![
                 Order {
                     owner: Pubkey::default(),
@@ -724,6 +844,7 @@ mod test {
 
         let mut om = OrderbookModel {
             tenor: 11,
+            origination_fee: 0,
             bids: vec![],
             asks: vec![],
         };

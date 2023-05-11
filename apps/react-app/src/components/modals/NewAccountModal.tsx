@@ -196,10 +196,14 @@ export function NewAccountModal(): JSX.Element {
         <div className="rent-fee-info flex-centered column">
           {renderDisabledMessage()}
           <Paragraph type="secondary">
-            {dictionary.actions.newAccount.rentFeeInfo.replaceAll(
-              '{{RENT_FEE}}',
-              newAccountRentFee ? newAccountRentFee.toString() : dictionary.common.notAvailable
-            )}
+            The Solana Blockchain requires a one-time{' '}
+            <Tooltip
+              overlayStyle={{ minWidth: '400px' }}
+              title="When you open your account on Jet, rent is charged by the Solana blockchain for the storage of that data. The rent fee can be fully refunded in the future when you close all your account obligations on Jet. This is true for all protocols which allocate space per user on-chain.">
+              <span className="underlined">rent fee</span>
+            </Tooltip>{' '}
+            of {newAccountRentFee ? newAccountRentFee.toString() : dictionary.common.notAvailable} SOL for each new
+            margin account.
           </Paragraph>
         </div>
       </Modal>
