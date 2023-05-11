@@ -1,12 +1,28 @@
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import { scaleLinear } from '@visx/scale';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { ScaleSVG } from '@visx/responsive';
-import { Line, AreaClosed } from '@visx/shape';
-import { Tooltip, useTooltip } from '@visx/tooltip';
+import { Line, Bar, LinePath } from '@visx/shape';
+import { TooltipWithBounds, defaultStyles, useTooltip } from '@visx/tooltip';
+import { Threshold } from '@visx/threshold';
+import { PriceLevel } from '@jet-lab/store';
+import { localPoint } from '@visx/event';
+import { pointAtCoordinateX } from '@components/fixed-term/shared/charts/utils';
 
+const tooltipStyles = {
+  ...defaultStyles,
+  display: 'flex',
+  flexDirection: 'column' as 'column',
+  color: '#444',
+  fontSize: 16
+};
+interface ITooltipData {
+  qty: number;
+  price: number;
+  type: 'ask' | 'bid';
+}
 interface SwapChartComponentProps {
   height: number;
   width: number;
@@ -27,8 +43,8 @@ export const SwapChartComponent = ({
   height,
   width,
   padding = { top: 20, left: 80, right: 32, bottom: 60 },
-  bids,
-  asks,
+  bids = [],
+  asks = [],
   oraclePrice,
   priceRange = [0, 0],
   liquidityRange = [0, 0]
@@ -56,16 +72,98 @@ export const SwapChartComponent = ({
     });
   }, [yMax, height, padding]);
 
-  const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip();
+  const asksRef = useRef<SVGPathElement>(null);
+  const bidsRef = useRef<SVGPathElement>(null);
 
-  console.log(tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip);
+  const { hideTooltip, showTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<ITooltipData>();
+
+  const handleTooltip = useCallback(
+    (event: React.TouchEvent<SVGGElement> | React.MouseEvent<SVGGElement>) => {
+      const { x } = localPoint(event) || { x: 0, y: 0 };
+      const asks = asksRef.current;
+      const bids = bidsRef.current;
+      const oraclePriceX = xScale(oraclePrice);
+      let path: SVGPathElement | null;
+      let type: 'bid' | 'ask';
+
+      if (x <= oraclePriceX) {
+        // bids
+        path = bids;
+        type = 'bid';
+      } else {
+        // asks
+        path = asks;
+        type = 'ask';
+      }
+      if (path) {
+        const y = pointAtCoordinateX(path, x, 5);
+        if (y) {
+          showTooltip({
+            tooltipData: {
+              qty: yScale.invert(y),
+              price: xScale.invert(x),
+              type
+            },
+            tooltipLeft: x,
+            tooltipTop: y
+          });
+        } else {
+          hideTooltip();
+        }
+      } else {
+        hideTooltip();
+      }
+    },
+    [height, width, bids, asks, oraclePrice, asksRef, bidsRef]
+  );
 
   return (
     <>
-      <Tooltip />
       <ScaleSVG height={height} width={width}>
-        <AreaClosed fill="#84c1ca" yScale={yScale} data={bids} x={d => xScale(d[0])} y={d => yScale(d[1])} />
-        <AreaClosed fill="#e36868" yScale={yScale} data={asks} x={d => xScale(d[0])} y={d => yScale(d[1])} />
+        <Threshold
+          id="bids"
+          data={bids}
+          x={(d: PriceLevel) => xScale(d[0])}
+          y0={(d: PriceLevel) => yScale(d[1])}
+          y1={() => yScale(0)}
+          clipAboveTo={0}
+          clipBelowTo={0}
+          aboveAreaProps={{
+            fill: '#84c1ca',
+            fillOpacity: 0.7
+          }}
+        />
+        <LinePath
+          stroke="#84c1ca"
+          innerRef={bidsRef}
+          strokeWidth={2}
+          data={bids}
+          x={d => xScale(d[0])}
+          y={d => yScale(d[1])}
+        />
+
+        <Threshold
+          id="asks"
+          data={asks}
+          x={(d: PriceLevel) => xScale(d[0])}
+          y0={(d: PriceLevel) => yScale(d[1])}
+          y1={() => yScale(0)}
+          clipAboveTo={0}
+          clipBelowTo={0}
+          aboveAreaProps={{
+            fill: '#e36868',
+            fillOpacity: 0.7
+          }}
+        />
+        <LinePath
+          stroke="#e36868"
+          innerRef={asksRef}
+          strokeWidth={2}
+          data={asks}
+          x={d => xScale(d[0])}
+          y={d => yScale(d[1])}
+        />
+
         <Line
           stroke="#a79adb"
           strokeWidth={2}
@@ -102,7 +200,26 @@ export const SwapChartComponent = ({
             textAnchor: 'end'
           })}
         />
+        {height && height > 0 && width && width > 0 && (
+          <Bar
+            width={width - padding.left - padding.right}
+            height={height - padding.top - padding.bottom}
+            y={padding.top}
+            x={padding.left}
+            fill="transparent"
+            onTouchStart={handleTooltip}
+            onTouchMove={handleTooltip}
+            onMouseMove={handleTooltip}
+            onMouseLeave={() => hideTooltip()}
+          />
+        )}
       </ScaleSVG>
+      {tooltipData && (
+        <TooltipWithBounds top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
+          <span>Quantity: {tooltipData.qty}</span>
+          <span>Price: {tooltipData.price}</span>
+        </TooltipWithBounds>
+      )}
     </>
   );
 };

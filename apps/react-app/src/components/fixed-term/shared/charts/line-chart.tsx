@@ -326,9 +326,7 @@ export const ResponsiveLineChart = ({ series, symbol }: ResponsiveLineChartProps
           )
         }
       </ParentSizeModern>
-      <div className="responsive-line-chart-x-label">
-        {getChartXAxisLabel(currentTab, market)}
-      </div>
+      <div className="responsive-line-chart-x-label">{getChartXAxisLabel(currentTab, market)}</div>
     </div>
   );
 };
@@ -343,7 +341,7 @@ const getChartXAxisLabel = (currentTab: CurrentOrderTab, market: MarketAndConfig
     case 'offer-loan':
       return `Cumulative ${market.config.symbol} offers`;
     case 'request-loan':
-      return `Cumulative ${market.config.symbol} requests`
+      return `Cumulative ${market.config.symbol} requests`;
     default:
       return ``;
   }
