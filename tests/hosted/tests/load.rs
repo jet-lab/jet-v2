@@ -1,8 +1,11 @@
 use anchor_lang::prelude::Pubkey;
-use hosted_tests::{load::{
-    under_collateralized_fixed_term_borrow_orders, unhealthy_accounts_load_test,
-    UnhealthyAccountsLoadTestScenario,
-}, fn_name_and_try_num};
+use hosted_tests::{
+    fn_name_and_try_num,
+    load::{
+        under_collateralized_fixed_term_borrow_orders, unhealthy_accounts_load_test,
+        UnhealthyAccountsLoadTestScenario,
+    },
+};
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]

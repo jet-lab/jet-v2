@@ -21,7 +21,7 @@ use crate::{
 };
 
 pub struct UnhealthyAccountsLoadTestScenario {
--b     pub airspace: String,
+    pub airspace: String,
     pub user_count: usize,
     pub mint_count: usize,
     pub repricing_delay: usize,
