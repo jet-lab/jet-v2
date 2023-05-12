@@ -1,5 +1,6 @@
 #![allow(missing_docs)]
 
+pub mod auto_roll_servicer;
 pub mod error;
 pub mod event_consumer;
 mod ix_builder;
@@ -18,6 +19,7 @@ use crate::fixed_term::settler::settler;
 use crate::util::no_dupe_queue::AsyncNoDupeQueue;
 
 use self::{
+    auto_roll_servicer::AutoRollServicer,
     event_consumer::{download_markets, EventConsumer},
     settler::Settler,
 };
@@ -46,6 +48,7 @@ pub async fn find_markets(
 pub struct Crank {
     pub consumer: EventConsumer,
     pub settlers: Vec<Settler>,
+    pub servicers: Vec<AutoRollServicer>,
     pub market_addrs: Vec<Pubkey>,
     pub consumer_delay: Duration,
 }
@@ -58,17 +61,20 @@ impl Crank {
         let markets = download_markets(rpc.as_ref(), market_addrs).await?;
         let consumer = EventConsumer::new(rpc.clone());
         let mut settlers = vec![];
+        let mut servicers = vec![];
         for market in markets {
             let margin_accounts = AsyncNoDupeQueue::new();
             let ix = FixedTermIxBuilder::new_from_state(rpc.payer().pubkey(), &market);
             consumer.insert_market(market, Some(margin_accounts.clone()));
-            let settler = settler(rpc.clone(), ix, margin_accounts, Default::default())?;
+            let settler = settler(rpc.clone(), ix.clone(), margin_accounts, Default::default())?;
             settlers.push(settler);
+            servicers.push(AutoRollServicer::new(rpc.clone(), ix))
         }
 
         Ok(Self {
             consumer,
             settlers,
+            servicers,
             market_addrs: market_addrs.to_vec(),
             consumer_delay: Duration::from_secs(2),
         })
@@ -81,6 +87,7 @@ impl Crank {
             .sync_and_consume_all(&self.market_addrs)
             .await?;
         try_join_all(self.settlers.iter().map(|s| s.process_all())).await?;
+        try_join_all(self.servicers.iter().map(|s| s.service_all())).await?;
         Ok(())
     }
 
@@ -90,6 +97,11 @@ impl Crank {
         let mut jobs = vec![];
         for settler in self.settlers {
             jobs.push(tokio::spawn(async move { settler.process_forever().await }));
+        }
+        for servicer in self.servicers {
+            jobs.push(tokio::spawn(
+                async move { servicer.service_forever().await },
+            ));
         }
         self.consumer
             .sync_and_consume_forever(&self.market_addrs, self.consumer_delay)
