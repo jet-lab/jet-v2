@@ -5,6 +5,7 @@ mod rounding;
 
 pub use borrow::*;
 pub use event_queue::*;
+use jet_program_common::FP32_ONE;
 pub use lend::*;
 pub use rounding::*;
 
@@ -114,6 +115,10 @@ impl<'info> OrderbookMut<'info> {
     ) -> Result<SensibleOrderSummary> {
         let order_params = params.as_new_order_params(side, info.into());
         let limit_price = order_params.limit_price;
+        require!(
+            limit_price <= FP32_ONE as u64,
+            FixedTermErrorCode::PriceOutOfBounds,
+        );
         let order_summary = new_order::process(
             &crate::id(),
             orderbook_accounts!(self, new_order),
