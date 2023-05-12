@@ -463,12 +463,11 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
 
         self.with_user_registration(&mut ixns).await?;
 
-        ixns.push(
-            self.account.builder.adapter_invoke(
-                self.builder
-                    .configure_auto_roll(self.account.address, config),
-            ),
-        );
+        ixns.push(self.builder.configure_auto_roll(
+            self.account.address,
+            self.account.state().owner,
+            config,
+        ));
 
         self.account.send_with_refresh(&ixns).await
     }

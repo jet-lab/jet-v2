@@ -33,50 +33,6 @@ export interface OrderParams {
   autoRoll: boolean
 }
 
-// /**
-//  * The raw struct as found on chain
-//  */
-// export interface MarketInfo {
-//   versionTag: BN
-//   airspace: PublicKey
-//   orderbookMarketState: PublicKey
-//   eventQueue: PublicKey
-//   asks: PublicKey
-//   bids: PublicKey
-//   underlyingTokenMint: PublicKey
-//   underlyingTokenVault: PublicKey
-//   ticketMint: PublicKey
-//   claimsMint: PublicKey
-//   ticketCollateralMint: PublicKey
-//   tokenCollateralMint: PublicKey
-//   underlyingOracle: PublicKey
-//   ticketOracle: PublicKey
-//   feeVault: PublicKey
-//   feeDestination: PublicKey
-//   seed: number[]
-//   bump: number[]
-//   orderbookPaused: boolean
-//   ticketsPaused: boolean
-//   reserved: number[]
-//   borrowTenor: BN
-//   lendTenor: BN
-//   nonce: BN
-// }
-
-/** MarginUser account as found on-chain */
-// export interface MarginUserInfo {
-//   version: BN
-//   marginAccount: PublicKey
-//   market: PublicKey
-//   claims: PublicKey
-//   ticketCollateral: PublicKey
-//   tokenCollateral: PublicKey
-//   debt: DebtInfo
-//   assets: AssetInfo
-//   borrowRollConfig: BorrowAutoRollConfig
-//   lendRollConfig: LendAutoRollConfig
-// }
-
 export interface DebtInfo {
   nextNewTermLoanSeqno: BN
   nextUnpaidTermLoanSeqno: BN
@@ -575,6 +531,7 @@ export class FixedTermMarket {
       configureAutoRollBorrowIx(
         this.addresses.market.toBase58(),
         marginAccount.address.toBase58(),
+        marginAccount.owner.toBase58(),
         bnToBigInt(tenor),
         price
       )
@@ -583,7 +540,13 @@ export class FixedTermMarket {
 
   async configAutorollLend(marginAccount: MarginAccount, price: bigint) {
     return translateWasmInstruction(
-      configureAutoRollLendIx(this.addresses.market.toBase58(), marginAccount.address.toBase58(), price)
+      configureAutoRollLendIx(
+        this.addresses.market.toBase58(),
+        marginAccount.address.toBase58(),
+        marginAccount.owner.toBase58(),
+
+        price
+      )
     )
   }
 
@@ -647,19 +610,25 @@ export class FixedTermMarket {
   }
 
   async toggleAutorollDeposit(marginAccount: MarginAccount, deposit: Address) {
-    return await this.program.methods.toggleAutoRollDeposit().accounts({
-      marginAccount: marginAccount.address,
-      deposit,
-    }).instruction()
+    return await this.program.methods
+      .toggleAutoRollDeposit()
+      .accounts({
+        marginAccount: marginAccount.address,
+        deposit
+      })
+      .instruction()
   }
 
   async toggleAutorollLoan(marginAccount: MarginAccount, loan: Address) {
     const marginUser = await this.deriveMarginUserAddress(marginAccount)
-    return await this.program.methods.toggleAutoRollLoan().accounts({
-      marginAccount: marginAccount.address,
-      marginUser: marginUser.toBase58(),
-      loan
-    }).instruction()
+    return await this.program.methods
+      .toggleAutoRollLoan()
+      .accounts({
+        marginAccount: marginAccount.address,
+        marginUser: marginUser.toBase58(),
+        loan
+      })
+      .instruction()
   }
 }
 
@@ -801,7 +770,7 @@ export class FixedTermProductModel {
     ): ValuationDelta {
       // Term deposits are not current credited as collateral, pending a good solution to the ALM
       // problem posed by their liquidation. Until then, use a weight of zero in the forecast.
-      repaymentWeight = 0;
+      repaymentWeight = 0
 
       return {
         liabilities: 0,
@@ -862,11 +831,11 @@ export class FixedTermProductModel {
       const equity = assets - liabilities
       const availableCollateral = weightedCollateral - (liabilities + requiredCollateral)
 
-      let riskIndicator = NaN;
-      if ((requiredCollateral >= 0) && (weightedCollateral >= 0) && (liabilities >= 0)) {
+      let riskIndicator = NaN
+      if (requiredCollateral >= 0 && weightedCollateral >= 0 && liabilities >= 0) {
         riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
       } else {
-        console.error('Unexpected state in forecast accounting')
+        console.error("Unexpected state in forecast accounting")
       }
 
       return {

@@ -496,9 +496,10 @@ impl FixedTermIxBuilder {
     pub fn configure_auto_roll(
         &self,
         margin_account: Pubkey,
+        owner: Pubkey,
         config: AutoRollConfig,
     ) -> Instruction {
-        ix::configure_auto_roll(self.market, margin_account, config)
+        ix::configure_auto_roll(self.market, margin_account, owner, config)
     }
 
     pub fn toggle_auto_roll_deposit(&self, margin_account: Pubkey, deposit: Pubkey) -> Instruction {

@@ -1089,20 +1089,22 @@ impl<P: Proxy> FixedTermUser<P> {
     }
 
     pub async fn set_lend_roll_config(&self, config: LendAutoRollConfig) -> Result<Signature> {
-        let set_config = self
-            .manager
-            .ix_builder
-            .configure_auto_roll(self.proxy.pubkey(), AutoRollConfig::Lend(config));
+        let set_config = self.manager.ix_builder.configure_auto_roll(
+            self.proxy.pubkey(),
+            self.owner.pubkey(),
+            AutoRollConfig::Lend(config),
+        );
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
             .await
     }
 
     pub async fn set_borrow_roll_config(&self, config: BorrowAutoRollConfig) -> Result<Signature> {
-        let set_config = self
-            .manager
-            .ix_builder
-            .configure_auto_roll(self.proxy.pubkey(), AutoRollConfig::Borrow(config));
+        let set_config = self.manager.ix_builder.configure_auto_roll(
+            self.proxy.pubkey(),
+            self.owner.pubkey(),
+            AutoRollConfig::Borrow(config),
+        );
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
             .await
