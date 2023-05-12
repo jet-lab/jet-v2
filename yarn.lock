@@ -1413,13 +1413,6 @@
   dependencies:
     "@hapi/hoek" "^9.0.0"
 
-"@jet-lab/e2e-react-adapter@^0.1.3":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@jet-lab/e2e-react-adapter/-/e2e-react-adapter-0.1.3.tgz#4eb8e3573c0d5aa63d220e5e9cb0548e7cc0d47a"
-  integrity sha512-4HChW7uPlzmq/ofv1VfLZg3w79XQ8dIfO9DxAkvxoPfuPSr86TipmEN5sAhAmcM9fUX/gYlKMfT+ElSilXtrRQ==
-  dependencies:
-    e2e-react-adapter "^0.1.1"
-
 "@jnwng/walletconnect-solana@^0.1.5":
   version "0.1.5"
   resolved "https://registry.yarnpkg.com/@jnwng/walletconnect-solana/-/walletconnect-solana-0.1.5.tgz#54d71c0667fe317376490c337c36d0d19da95e5a"
@@ -1915,92 +1908,6 @@
   integrity sha512-70aFW8fVCKl+oA1AKPFDpE6s4t9pulj2QeLX+MabEmzfT3urd/3cckv45WJvtocdoIH/oXA3Y+YcCRJCcNa8mA==
   dependencies:
     merge-options "^3.0.4"
-
-"@react-spring/animated@~9.7.2":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/animated/-/animated-9.7.2.tgz#0119db8075e91d693ec45c42575541e01b104a70"
-  integrity sha512-ipvleJ99ipqlnHkz5qhSsgf/ny5aW0ZG8Q+/2Oj9cI7LCc7COdnrSO6V/v8MAX3JOoQNzfz6dye2s5Pt5jGaIA==
-  dependencies:
-    "@react-spring/shared" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
-
-"@react-spring/core@~9.7.1", "@react-spring/core@~9.7.2":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/core/-/core-9.7.2.tgz#804ebadee45a6adff00886454d6f1c5d97ee219d"
-  integrity sha512-fF512edZT/gKVCA90ZRxfw1DmELeVwiL4OC2J6bMUlNr707C0h4QRoec6DjzG27uLX2MvS1CEatf9KRjwZR9/w==
-  dependencies:
-    "@react-spring/animated" "~9.7.2"
-    "@react-spring/rafz" "~9.7.2"
-    "@react-spring/shared" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
-
-"@react-spring/konva@~9.7.1":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/konva/-/konva-9.7.2.tgz#58ebae0d24b8887a24d2d6ed0e9dd08842632aa7"
-  integrity sha512-xMA0XkIyv02euso8BGlLA4iXVJ76p6WCjABMTjdvcp//KvIub596vLwoLzmqHYjqRhH7BP4UQKxzhHvM7AylQA==
-  dependencies:
-    "@react-spring/animated" "~9.7.2"
-    "@react-spring/core" "~9.7.2"
-    "@react-spring/shared" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
-
-"@react-spring/native@~9.7.1":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/native/-/native-9.7.2.tgz#dcf5cae844ec8693fa893f7fc3a15420523c2129"
-  integrity sha512-Ltq/F+4jY7aqHW1/f1xUb+e3XGbVxnllXfDYU+3nXi4sa7O+du755hpNbCHJ5ZgtkQYFKtQ7I+InTY+CDXPYfw==
-  dependencies:
-    "@react-spring/animated" "~9.7.2"
-    "@react-spring/core" "~9.7.2"
-    "@react-spring/shared" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
-
-"@react-spring/rafz@~9.7.2":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/rafz/-/rafz-9.7.2.tgz#77e7088c215e05cf893851cd87ceb40d89f2a7d7"
-  integrity sha512-kDWMYDQto3+flkrX3vy6DU/l9pxQ4TVW91DglQEc11iDc7shF4+WVDRJvOVLX+xoMP7zyag1dMvlIgvQ+dvA/A==
-
-"@react-spring/shared@~9.7.2":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/shared/-/shared-9.7.2.tgz#b8485617bdcc9f6348b245922051fb534e07c566"
-  integrity sha512-6U9qkno+9DxlH5nSltnPs+kU6tYKf0bPLURX2te13aGel8YqgcpFYp5Av8DcN2x3sukinAsmzHUS/FRsdZMMBA==
-  dependencies:
-    "@react-spring/rafz" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
-
-"@react-spring/three@~9.7.1":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/three/-/three-9.7.2.tgz#2dd23e6e654fc57589cf6f89d6a809bc7f8a96b1"
-  integrity sha512-u7VAjc+az82PM+WOC2sTbZQLBixuN+0jX/oahzyjEnIds5eUJgaBqZRYAAEMupuzGGl8H3QqL3bFgBEQLq6ADQ==
-  dependencies:
-    "@react-spring/animated" "~9.7.2"
-    "@react-spring/core" "~9.7.2"
-    "@react-spring/shared" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
-
-"@react-spring/types@~9.7.2":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/types/-/types-9.7.2.tgz#e04dd72755d88b0e3163ba143ecd8ba78b68a5b0"
-  integrity sha512-GEflx2Ex/TKVMHq5g5MxQDNNPNhqg+4Db9m7+vGTm8ttZiyga7YQUF24shgRNebKIjahqCuei16SZga8h1pe4g==
-
-"@react-spring/web@~9.7.1":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/web/-/web-9.7.2.tgz#76e53dd24033764c3062f9927f88b0f3194688d4"
-  integrity sha512-7qNc7/5KShu2D05x7o2Ols2nUE7mCKfKLaY2Ix70xPMfTle1sZisoQMBFgV9w/fSLZlHZHV9P0uWJqEXQnbV4Q==
-  dependencies:
-    "@react-spring/animated" "~9.7.2"
-    "@react-spring/core" "~9.7.2"
-    "@react-spring/shared" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
-
-"@react-spring/zdog@~9.7.1":
-  version "9.7.2"
-  resolved "https://registry.yarnpkg.com/@react-spring/zdog/-/zdog-9.7.2.tgz#3dcbdb28b6c04d4480a2a68b020802f7ec5c44dd"
-  integrity sha512-6z2qqhmbpoZrw1oThyn4zfejtLkuadsaZFVMFf/5l5cHTEdRC8HZsBRLo+Wiomkprg/F1hyhcXI5X1lJ+T/zdQ==
-  dependencies:
-    "@react-spring/animated" "~9.7.2"
-    "@react-spring/core" "~9.7.2"
-    "@react-spring/shared" "~9.7.2"
-    "@react-spring/types" "~9.7.2"
 
 "@remix-run/router@1.5.0":
   version "1.5.0"
@@ -3145,11 +3052,6 @@
   resolved "https://registry.yarnpkg.com/@types/d3-time/-/d3-time-2.1.1.tgz#743fdc821c81f86537cbfece07093ac39b4bc342"
   integrity sha512-9MVYlmIgmRR31C5b4FVSWtuMmBHh2mOWQYfl7XAYOa8dsnb7iEmUmRSWSFgXFtkjxO65d7hTUHQC+RhR/9IWFg==
 
-"@types/d3-voronoi@^1.1.9":
-  version "1.1.9"
-  resolved "https://registry.yarnpkg.com/@types/d3-voronoi/-/d3-voronoi-1.1.9.tgz#7bbc210818a3a5c5e0bafb051420df206617c9e5"
-  integrity sha512-DExNQkaHd1F3dFPvGA/Aw2NGyjMln6E9QzsiqOcBgnE+VInYnFBHBBySbZQts6z6xD+5jTfKCP7M4OqMyVjdwQ==
-
 "@types/eslint-scope@^3.7.3":
   version "3.7.4"
   resolved "https://registry.yarnpkg.com/@types/eslint-scope/-/eslint-scope-3.7.4.tgz#37fc1223f0786c39627068a12e94d6e6fc61de16"
@@ -3359,33 +3261,6 @@
   dependencies:
     "@types/node" "*"
 
-"@visx/annotation@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@visx/annotation/-/annotation-3.0.1.tgz#007c0030155d95897a74422a9d3aad65c7ef82a7"
-  integrity sha512-otf2AZDlt/XCpOBG0gkPowXVerLJW5yXPFis94Km0bj629htyKOsY5GeJKlBeB89ddxdi4zWHkaFxGFJ79Pqog==
-  dependencies:
-    "@types/react" "*"
-    "@visx/drag" "3.0.1"
-    "@visx/group" "3.0.0"
-    "@visx/text" "3.0.0"
-    classnames "^2.3.1"
-    prop-types "^15.5.10"
-    react-use-measure "^2.0.4"
-
-"@visx/axis@3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@visx/axis/-/axis-3.1.0.tgz#775b221e5abfdec25304c607eeae8cda1a8bade6"
-  integrity sha512-JDj/1VYx0JO0pHFtwoFtYcnqdoZFh/dpHImEl169S5nTslSFlIoNTXA/ekpBP6ELkEZ59gmF1X5k29x6MFBwCA==
-  dependencies:
-    "@types/react" "*"
-    "@visx/group" "3.0.0"
-    "@visx/point" "3.0.1"
-    "@visx/scale" "3.0.0"
-    "@visx/shape" "3.0.0"
-    "@visx/text" "3.0.0"
-    classnames "^2.3.1"
-    prop-types "^15.6.0"
-
 "@visx/axis@^2.17.0":
   version "2.18.0"
   resolved "https://registry.yarnpkg.com/@visx/axis/-/axis-2.18.0.tgz#9175e9d969df420592082b1ea64c16422377b389"
@@ -3409,16 +3284,15 @@
     "@types/react-dom" "*"
     prop-types "^15.5.10"
 
-"@visx/bounds@3.0.0":
+"@visx/clip-path@3.0.0":
   version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@visx/bounds/-/bounds-3.0.0.tgz#cf357cbff90a1fe5f95eb9d9288dd8794b744a7f"
-  integrity sha512-YQaSSER9erxlhppzRms6cvYdKqcIwk6eksrGdbJkBoHobhPo1JCIUXlmrA4qgrEnXInPJpueGE+PE5F+Dk12DA==
+  resolved "https://registry.yarnpkg.com/@visx/clip-path/-/clip-path-3.0.0.tgz#e3a806ebb3fb9ffd14132a20611e27fc9f4b6215"
+  integrity sha512-Kvoi2qDVNrB4PoSaOUhw7SKEVSXrSyz8oZggoIb5OoA6feeG7CQQEbNQyOS2wW2zmOuxnwkg3EB7sOBxC6c7WA==
   dependencies:
     "@types/react" "*"
-    "@types/react-dom" "*"
     prop-types "^15.5.10"
 
-"@visx/curve@2.17.0", "@visx/curve@^2.1.0":
+"@visx/curve@2.17.0":
   version "2.17.0"
   resolved "https://registry.yarnpkg.com/@visx/curve/-/curve-2.17.0.tgz#9b4c87dd0d10a62a0f85d5a72e4c0400316df9bf"
   integrity sha512-8Fw2ZalgYbpeoelLqTOmMs/wD8maSKsKS9rRIwmHZ0O0XxY8iG9oVYbD4CLWzf/uFWCY6+qofk4J1g9BWQSXJQ==
@@ -3434,25 +3308,7 @@
     "@types/d3-shape" "^1.3.1"
     d3-shape "^1.0.6"
 
-"@visx/drag@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@visx/drag/-/drag-3.0.1.tgz#753d5f471d4e31679ca4fddcb476cf2d5c7eb6e4"
-  integrity sha512-yi2AB/unUfNYBRKS4pmUOuz8MjaAAYjsQGYcD/s4LqeQjd+lBZF7CuNcYZ/maGNQAEUfgLr2czIzADanOMtMaw==
-  dependencies:
-    "@types/react" "*"
-    "@visx/event" "3.0.1"
-    "@visx/point" "3.0.1"
-    prop-types "^15.5.10"
-
-"@visx/event@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@visx/event/-/event-3.0.1.tgz#d5358f52ff5ef30036d955bd2b68b96472ff2d6f"
-  integrity sha512-tK1EUYQLLStBuoCMbm8LJ3VbDyCVI8HjT0pMRQxm+C75FSIVWvrThgrfrC9sWOFnEMEYWspZO7hI5zjsPKjLQA==
-  dependencies:
-    "@types/react" "*"
-    "@visx/point" "3.0.1"
-
-"@visx/event@^2.6.0":
+"@visx/event@^2.17.0":
   version "2.17.0"
   resolved "https://registry.yarnpkg.com/@visx/event/-/event-2.17.0.tgz#220c7674505e0d7a55f36bce9575482a7fa7dc23"
   integrity sha512-fg2UWo89RgKgWWnnqI+i7EF8Ry+3CdMHTND4lo4DyJvcZZUCOwhxCHMQ4/PHW0EAUfxI51nGadcE1BcEVR5zWw==
@@ -3460,33 +3316,7 @@
     "@types/react" "*"
     "@visx/point" "2.17.0"
 
-"@visx/glyph@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@visx/glyph/-/glyph-3.0.0.tgz#218a96aa0ccba95dc77e46ab08d26ad89198f3a8"
-  integrity sha512-r1B0IocfWfhTABKjam0qqsWKjxLxZfGwefnwn8IcfELSd9iAUtLbI/46nP4roQRHhB/Wl3RBbgA97fZw8f1MxA==
-  dependencies:
-    "@types/d3-shape" "^1.3.1"
-    "@types/react" "*"
-    "@visx/group" "3.0.0"
-    classnames "^2.3.1"
-    d3-shape "^1.2.0"
-    prop-types "^15.6.2"
-
-"@visx/grid@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@visx/grid/-/grid-3.0.1.tgz#d91085ed92e7e1c0c2e58710bc33b2f0f33b8e74"
-  integrity sha512-cln5CVvFG58C5Uz1Uf0KRBFmGmgD1NALOQdYDu5yPsTuY2yLzVYPvCIlYBMdUtE0uzfNq972SmkZHfZYs03jxQ==
-  dependencies:
-    "@types/react" "*"
-    "@visx/curve" "3.0.0"
-    "@visx/group" "3.0.0"
-    "@visx/point" "3.0.1"
-    "@visx/scale" "3.0.0"
-    "@visx/shape" "3.0.0"
-    classnames "^2.3.1"
-    prop-types "^15.6.2"
-
-"@visx/grid@^2.12.2":
+"@visx/grid@^2.17.0":
   version "2.18.0"
   resolved "https://registry.yarnpkg.com/@visx/grid/-/grid-2.18.0.tgz#ae68e975d4b203a626ddba3a39d67a135816d6be"
   integrity sha512-bmOowI5QA0R1KgNKxj5y+Belj5MbUz+RRW2BxTsXa7NbDV6IsA7H4l+kj3DDldRi7Q5SVm9zpfwWXNIBAhiFdA==
@@ -3534,35 +3364,7 @@
   resolved "https://registry.yarnpkg.com/@visx/point/-/point-2.17.0.tgz#c11f1efee5241bcd612a29f3b3099cb435c9604e"
   integrity sha512-fUdGQBLGaSVbFTbQ6k+1nPisbqYjTjAdo9FhlwLd3W3uyXN/39Sx2z3N2579sVNBDzmCKdYNQIU0HC+/3Vqo6w==
 
-"@visx/point@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@visx/point/-/point-3.0.1.tgz#77587ddaabf6f3023f09f8a0ce33a2c27c9d64c8"
-  integrity sha512-S5WOBMgEP2xHcgs3A2BFB2vwzrk0tMmn3PGZAbQJ+lu4HlnalDP72klUnxLTH8xclNNvpUHtHM5eLIJXyHx6Pw==
-
-"@visx/react-spring@3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@visx/react-spring/-/react-spring-3.1.0.tgz#dad4770e74a3880da862cac104bad61e466cee01"
-  integrity sha512-8GHfXvJwnscGgf5UVCMeKw8Genq+cllcQJ8T6aAe1uC2ttYa2InmRIPsJEoA7VDLcxNIJgvw1bRd22QrgT9LtA==
-  dependencies:
-    "@types/react" "*"
-    "@visx/axis" "3.1.0"
-    "@visx/grid" "3.0.1"
-    "@visx/scale" "3.0.0"
-    "@visx/text" "3.0.0"
-    classnames "^2.3.1"
-    prop-types "^15.6.2"
-
-"@visx/responsive@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@visx/responsive/-/responsive-3.0.0.tgz#e183c54ce04cffe756378872d30ac88c66a137ac"
-  integrity sha512-immnxQwOWlrxbnlCIqJWuDpPfrM6tglgMTN1WsyXyGluLMJqhuuxqxllfXaRPkQFS4fcvs66KCEELdazh96U2w==
-  dependencies:
-    "@types/lodash" "^4.14.172"
-    "@types/react" "*"
-    lodash "^4.17.21"
-    prop-types "^15.6.1"
-
-"@visx/responsive@^2.10.0":
+"@visx/responsive@^2.17.0":
   version "2.17.0"
   resolved "https://registry.yarnpkg.com/@visx/responsive/-/responsive-2.17.0.tgz#8a31f016a270234bfecf25fb066f30d19784ddc7"
   integrity sha512-3dY2shGbQnoknIRv3Vfnwsy3ZA8Q5Q/rYnTLiokWChYRfNC8NMPoX9mprEeb/gMAxtKjaLn3zcCgd8R+eetxIQ==
@@ -3645,30 +3447,18 @@
     prop-types "^15.7.2"
     reduce-css-calc "^1.3.0"
 
-"@visx/text@3.0.0":
+"@visx/threshold@^3.0.0":
   version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@visx/text/-/text-3.0.0.tgz#9099c3605027b9ab4c54bde97518a648136c3629"
-  integrity sha512-LW6v5T/gpd9RGw83/ScXncYc6IlcfzXTpaN8WbbxLRI65gdvSqrykwAMR0cbpQmzoVFuZXljqOf0QslHGnBg1w==
-  dependencies:
-    "@types/lodash" "^4.14.172"
-    "@types/react" "*"
-    classnames "^2.3.1"
-    lodash "^4.17.21"
-    prop-types "^15.7.2"
-    reduce-css-calc "^1.3.0"
-
-"@visx/tooltip@3.1.2":
-  version "3.1.2"
-  resolved "https://registry.yarnpkg.com/@visx/tooltip/-/tooltip-3.1.2.tgz#6c7bb36a296f4501adb99b59487412e39fe06f44"
-  integrity sha512-p46qztGRNkEDbxzc3V1virahvz3UQ29TzddUjA0oaTIBCrOd9UJuLvv1Tq9OpeUYPdbrO/ZRwaEeri2pbwv04Q==
+  resolved "https://registry.yarnpkg.com/@visx/threshold/-/threshold-3.0.0.tgz#e1e33948d58d11a5d737f50b5c15f3be75219e3c"
+  integrity sha512-fEvn0kTjV9+GVOan+a9zodNjCuJggGiQtujcYEGb0ozjpKGI5peMye19JBAAChFukQ5smiW3L5a3mLJW3wUvoQ==
   dependencies:
     "@types/react" "*"
-    "@visx/bounds" "3.0.0"
+    "@visx/clip-path" "3.0.0"
+    "@visx/shape" "3.0.0"
     classnames "^2.3.1"
     prop-types "^15.5.10"
-    react-use-measure "^2.0.4"
 
-"@visx/tooltip@^2.16.0":
+"@visx/tooltip@^2.17.0":
   version "2.17.0"
   resolved "https://registry.yarnpkg.com/@visx/tooltip/-/tooltip-2.17.0.tgz#e5e39a62795d2f6c7d2a1472e7af092005374106"
   integrity sha512-+dMHURP9NqSFZLomMUnoVYjRs+I2qcOw1yYvLtTp/4GUAFRMSUJoSJeuLwng1VBIgCEB95xuQ95NgGID4qzPxA==
@@ -3678,44 +3468,6 @@
     classnames "^2.3.1"
     prop-types "^15.5.10"
     react-use-measure "^2.0.4"
-
-"@visx/voronoi@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@visx/voronoi/-/voronoi-3.0.0.tgz#24a3513252dde1d6e85b88144e7a65b6d5936275"
-  integrity sha512-ySX7+Ic+irfgZQMij/0RJnryETonuKDWA3Upw3V6YtIiodPOEQ5w8FW8TvEbhaBlAUfSwQtHJ5ECvv3ZDrJa2A==
-  dependencies:
-    "@types/d3-voronoi" "^1.1.9"
-    "@types/react" "*"
-    classnames "^2.3.1"
-    d3-voronoi "^1.1.2"
-    prop-types "^15.6.1"
-
-"@visx/xychart@^3.1.2":
-  version "3.1.2"
-  resolved "https://registry.yarnpkg.com/@visx/xychart/-/xychart-3.1.2.tgz#149336ca7d169e8075b251b298be15716f4e0450"
-  integrity sha512-ra8BAPzchVgvVDEJSBKYd5Hi2xXZ+m8gnQxJlrDBUg/LnCMRXebQWIjjhDBfumOjXT255IELB/vPrUfeMZD9jA==
-  dependencies:
-    "@types/lodash" "^4.14.172"
-    "@types/react" "*"
-    "@visx/annotation" "3.0.1"
-    "@visx/axis" "3.1.0"
-    "@visx/event" "3.0.1"
-    "@visx/glyph" "3.0.0"
-    "@visx/grid" "3.0.1"
-    "@visx/react-spring" "3.1.0"
-    "@visx/responsive" "3.0.0"
-    "@visx/scale" "3.0.0"
-    "@visx/shape" "3.0.0"
-    "@visx/text" "3.0.0"
-    "@visx/tooltip" "3.1.2"
-    "@visx/voronoi" "3.0.0"
-    classnames "^2.3.1"
-    d3-array "^2.6.0"
-    d3-interpolate-path "2.2.1"
-    d3-shape "^2.0.0"
-    lodash "^4.17.21"
-    mitt "^2.1.0"
-    prop-types "^15.6.2"
 
 "@wallet-standard/app@^1.0.1":
   version "1.0.1"
@@ -5510,7 +5262,7 @@ cypress@^12.1.0:
     untildify "^4.0.0"
     yauzl "^2.10.0"
 
-d3-array@2, d3-array@^2.3.0, d3-array@^2.6.0:
+d3-array@2, d3-array@^2.3.0:
   version "2.12.1"
   resolved "https://registry.yarnpkg.com/d3-array/-/d3-array-2.12.1.tgz#e20b41aafcdffdf5d50928004ececf815a465e81"
   integrity sha512-B0ErZK/66mHtEsR1TkPEEkwdy+WDesimkM5gpZr5Dsg54BiTA5RXtYW5qTLIAcekaS9xfZrzBLF/OAkB3Qn1YQ==
@@ -5549,11 +5301,6 @@ d3-color@1:
   resolved "https://registry.yarnpkg.com/d3-format/-/d3-format-3.1.0.tgz#9260e23a28ea5cb109e93b21a06e24e2ebd55641"
   integrity sha512-YyUI6AEuY/Wpt8KWLgZHsIU86atmikuoOmCfommt0LYHiQSPjvX2AcFc38PX0CBpr2RCyZhjex+NS/LPOv6YqA==
 
-d3-interpolate-path@2.2.1:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/d3-interpolate-path/-/d3-interpolate-path-2.2.1.tgz#fd8ff20a90aff3f380bcd1c15305e7b531e55d07"
-  integrity sha512-6qLLh/KJVzls0XtMsMpcxhqMhgVEN7VIbR/6YGZe2qlS8KDgyyVB20XcmGnDyB051HcefQXM/Tppa9vcANEA4Q==
-
 "d3-interpolate@1.2.0 - 2":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/d3-interpolate/-/d3-interpolate-2.0.1.tgz#98be499cfb8a3b94d4ff616900501a64abc91163"
@@ -5579,11 +5326,6 @@ d3-path@1, d3-path@^1.0.5:
   version "1.0.9"
   resolved "https://registry.yarnpkg.com/d3-path/-/d3-path-1.0.9.tgz#48c050bb1fe8c262493a8caf5524e3e9591701cf"
   integrity sha512-VLaYcn81dtHVTjEHd8B+pbe9yHWpXKZUC87PzoFmsFrJqgFwDe/qxfp5MlfsfM1V5E/iVt0MmEbWQ7FVIXh/bg==
-
-"d3-path@1 - 2":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/d3-path/-/d3-path-2.0.0.tgz#55d86ac131a0548adae241eebfb56b4582dd09d8"
-  integrity sha512-ZwZQxKhBnv9yHaiWd6ZU4x5BtCQ7pXszEV9CU6kRgwIQVQGLMv1oiL4M+MK/n79sYzsj+gcgpPQSctJUsLN7fA==
 
 d3-scale@^3.3.0:
   version "3.3.0"
@@ -5614,13 +5356,6 @@ d3-shape@^1.0.6, d3-shape@^1.2.0:
   dependencies:
     d3-path "1"
 
-d3-shape@^2.0.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/d3-shape/-/d3-shape-2.1.0.tgz#3b6a82ccafbc45de55b57fcf956c584ded3b666f"
-  integrity sha512-PnjUqfM2PpskbSLTJvAzp2Wv4CZsnAgTfcVRTwW03QR3MkXF8Uo7B1y/lWkAsmbKwuecto++4NlsYcvYpXpTHA==
-  dependencies:
-    d3-path "1 - 2"
-
 "d3-time-format@2 - 3":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/d3-time-format/-/d3-time-format-3.0.0.tgz#df8056c83659e01f20ac5da5fdeae7c08d5f1bb6"
@@ -5648,11 +5383,6 @@ d3-shape@^2.0.0:
   integrity sha512-VqKjzBLejbSMT4IgbmVgDjpkYrNWUYJnbCGo874u7MMKIWsILRX+OpX/gTk8MqjpT1A/c6HY2dCA77ZN0lkQ2Q==
   dependencies:
     d3-array "2 - 3"
-
-d3-voronoi@^1.1.2:
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/d3-voronoi/-/d3-voronoi-1.1.4.tgz#dd3c78d7653d2bb359284ae478645d95944c8297"
-  integrity sha512-dArJ32hchFsrQ8uMiTBLq256MpnZjeuBtdHpaDlYuQyjU0CVzCJl/BVW+SkszaAeH95D/8gxqAhgx0ouAWAfRg==
 
 dashdash@^1.12.0:
   version "1.14.1"
@@ -5900,11 +5630,6 @@ duplexify@^4.1.2:
     inherits "^2.0.3"
     readable-stream "^3.1.1"
     stream-shift "^1.0.0"
-
-e2e-react-adapter@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/e2e-react-adapter/-/e2e-react-adapter-0.1.1.tgz#05f5361df3d497b5c60505cae79233c54f2530cc"
-  integrity sha512-SShCMRLQ4l1t3O3ltMyOqODYzsIwtsHx12w8IEzaF7/B07rS8s45BLeNZsMRuCiLqIPC8oaffPLTMgambsMe0g==
 
 eastasianwidth@^0.2.0:
   version "0.2.0"
@@ -7640,11 +7365,6 @@ minimist@^1.2.0, minimist@^1.2.6, minimist@^1.2.7:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
 
-mitt@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/mitt/-/mitt-2.1.0.tgz#f740577c23176c6205b121b2973514eade1b2230"
-  integrity sha512-ILj2TpLiysu2wkBbWjAmww7TkZb65aiQO+DkVdUTBpBXq+MHYiETENkKFMtsJZX1Lf4pe4QOrTSjIfUwN5lRdg==
-
 moment@^2.24.0, moment@^2.29.2:
   version "2.29.4"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.4.tgz#3dbe052889fe7c1b2ed966fcb3a77328964ef108"
@@ -9130,18 +8850,6 @@ react-router@6.10.0:
   integrity sha512-Nrg0BWpQqrC3ZFFkyewrflCud9dio9ME3ojHCF/WLsprJVzkq3q3UeEhMCAW1dobjeGbWgjNn/PVF6m46ANxXQ==
   dependencies:
     "@remix-run/router" "1.5.0"
-
-react-spring@^9.7.1:
-  version "9.7.1"
-  resolved "https://registry.yarnpkg.com/react-spring/-/react-spring-9.7.1.tgz#8acfed700823490a4d9d4cf131c5fea12d1aaa93"
-  integrity sha512-o2+r2DNQDVEuefiz33ZF76DPd/gLq3kbdObJmllGF2IUfv2W6x+ZP0gR97QYCSR4QLbmOl1mPKUBbI+FJdys2Q==
-  dependencies:
-    "@react-spring/core" "~9.7.1"
-    "@react-spring/konva" "~9.7.1"
-    "@react-spring/native" "~9.7.1"
-    "@react-spring/three" "~9.7.1"
-    "@react-spring/web" "~9.7.1"
-    "@react-spring/zdog" "~9.7.1"
 
 react-string-replace@^1.1.0:
   version "1.1.0"

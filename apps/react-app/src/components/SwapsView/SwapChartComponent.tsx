@@ -7,7 +7,7 @@ import { ScaleSVG } from '@visx/responsive';
 import { Line, Bar, LinePath } from '@visx/shape';
 import { TooltipWithBounds, defaultStyles, useTooltip } from '@visx/tooltip';
 import { Threshold } from '@visx/threshold';
-import { PriceLevel } from '@jet-lab/store';
+import { PriceLevel, SwapLiquidityTokenInfo } from '@jet-lab/store';
 import { localPoint } from '@visx/event';
 import { pointAtCoordinateX } from '@components/fixed-term/shared/charts/utils';
 
@@ -32,11 +32,13 @@ interface SwapChartComponentProps {
     bottom: number;
     left: number;
   };
-  bids?: [price: number, amt: number][];
-  asks?: [price: number, amt: number][];
+  bids: [price: number, amt: number][];
+  asks: [price: number, amt: number][];
   oraclePrice: number;
-  priceRange?: [min: number, max: number];
-  liquidityRange?: [min: number, max: number];
+  priceRange: [min: number, max: number];
+  liquidityRange: [min: number, max: number];
+  base: SwapLiquidityTokenInfo;
+  quote: SwapLiquidityTokenInfo;
 }
 
 export const SwapChartComponent = ({
@@ -47,7 +49,9 @@ export const SwapChartComponent = ({
   asks = [],
   oraclePrice,
   priceRange = [0, 0],
-  liquidityRange = [0, 0]
+  liquidityRange = [0, 0],
+  base,
+  quote
 }: SwapChartComponentProps) => {
   const dictionary = useRecoilValue(Dictionary);
 
@@ -188,7 +192,7 @@ export const SwapChartComponent = ({
           })}
         />
         <AxisBottom
-          label={`x axis label ${width}`}
+          label={`${base.symbol} / ${quote.symbol}`}
           scale={xScale}
           top={height - (padding.bottom + padding.top)}
           labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, dy: 15, textAnchor: 'middle' }}
@@ -216,8 +220,12 @@ export const SwapChartComponent = ({
       </ScaleSVG>
       {tooltipData && (
         <TooltipWithBounds top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
-          <span>Quantity: {tooltipData.qty}</span>
-          <span>Price: {tooltipData.price}</span>
+          <span>
+            QTY: {tooltipData.qty.toFixed(-base.expo)} {base.symbol}
+          </span>
+          <span>
+            Price: {tooltipData.price.toFixed(-quote.expo)} {quote.symbol}
+          </span>
         </TooltipWithBounds>
       )}
     </>

@@ -75,9 +75,9 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
   );
 
   const oraclePrice = useMemo(() => {
-    if (!data || !prices) return 0;
-    const base = prices[data.base].price;
-    const quote = prices[data.quote].price;
+    if (!data || !prices || !prices[data.base.mint]) return 0;
+    const base = prices[data.base.mint].price;
+    const quote = prices[data.quote.mint].price;
     return base / quote;
   }, [data, prices]);
 
@@ -101,19 +101,25 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
           )}
         </LegendOrdinal>
       </div>
-      <ParentSizeModern>
-        {({ height, width }) => (
-          <SwapChartComponent
-            oraclePrice={oraclePrice}
-            bids={data?.bids}
-            asks={data?.asks}
-            height={height}
-            width={width}
-            priceRange={data?.price_range}
-            liquidityRange={data?.liquidity_range}
-          />
-        )}
-      </ParentSizeModern>
+      {data && oraclePrice > 0 ? (
+        <ParentSizeModern>
+          {({ height, width }) => (
+            <SwapChartComponent
+              oraclePrice={oraclePrice}
+              bids={data.bids}
+              asks={data.asks}
+              height={height}
+              width={width}
+              priceRange={data.price_range}
+              liquidityRange={data.liquidity_range}
+              base={data.base}
+              quote={data?.quote}
+            />
+          )}
+        </ParentSizeModern>
+      ) : (
+        <LoadingOutlined />
+      )}
     </>
   );
 };
