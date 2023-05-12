@@ -22,7 +22,7 @@ export enum ActionResponse {
 }
 export function useMarginActions() {
   const config = useRecoilValue(MainConfig);
-  const cluster = useJetStore(state => state.settings.cluster);
+  const [cluster, prices] = useJetStore(state => [state.settings.cluster, state.prices]);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
@@ -103,7 +103,8 @@ export function useMarginActions() {
         seed,
         undefined, // airspace
         pools.tokenPools,
-        walletTokens
+        walletTokens,
+        prices,
       );
 
       const instructions: TransactionInstruction[] = []

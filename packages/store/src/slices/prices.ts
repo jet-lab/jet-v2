@@ -1,13 +1,7 @@
 import { StateCreator } from 'zustand';
 import { PRICE_UPDATE, TOKEN_PRICE_UPDATE } from '../events';
 import { JetStore } from '../store';
-
-export interface PriceInfo {
-  price: number;
-  ema: number;
-  confidence: number;
-  timestamp: Date;
-}
+import { StorePriceInfo as PriceInfo } from '@jet-lab/margin'
 
 export interface PricesSlice {
   prices?: Record<string, PriceInfo>;

@@ -86,7 +86,7 @@ export const AccountHistoryLoaded = atom({
 
 // A syncer to be called so that we can have dependent atom state
 export function useAccountsSyncer() {
-  const cluster = useJetStore(state => state.settings.cluster);
+  const [cluster, prices] = useJetStore(state => [state.settings.cluster, state.prices]);
   const marginConfig = useRecoilValue(MainConfig);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
@@ -124,7 +124,8 @@ export function useAccountsSyncer() {
         provider,
         pools: pools.tokenPools,
         walletTokens,
-        owner
+        owner,
+        prices,
       });
       for (const account of allAccounts) {
         const exists = await account.exists();

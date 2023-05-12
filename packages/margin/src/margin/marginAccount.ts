@@ -24,7 +24,7 @@ import {
   PositionKind
 } from "./state"
 import { MarginTokenConfig } from "./config"
-import { AccountPosition, PriceInfo } from "./accountPosition"
+import { AccountPosition, PriceInfo, StorePriceInfo } from "./accountPosition"
 import { AssociatedToken, TokenAmount, bigIntToBn, bnToNumber } from "../token"
 import {
   Number128,
@@ -149,6 +149,7 @@ export class MarginAccount {
   /** The [[Valuation]] of the margin account. */
   valuation: Valuation
   summary: AccountSummary
+  prices?: Record<string, StorePriceInfo>
 
   get liquidator() {
     return this.info?.marginAccount.liquidator
@@ -209,7 +210,8 @@ export class MarginAccount {
     public seed: number,
     public airspaceAddress?: Address,
     public pools?: Record<string, Pool>,
-    public walletTokens?: MarginWalletTokens
+    public walletTokens?: MarginWalletTokens,
+    prices?: Record<string, StorePriceInfo>,
   ) {
     this.owner = translateAddress(owner)
     this.address = MarginAccount.derive(programs, owner, seed)
@@ -218,6 +220,7 @@ export class MarginAccount {
       : Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name)
     this.pools = pools
     this.walletTokens = walletTokens
+    this.prices = prices
     this.positions = this.getPositions()
     this.valuation = this.getValuation(true)
     this.poolPositions = this.getAllPoolPositions()
@@ -325,7 +328,8 @@ export class MarginAccount {
     pools,
     walletTokens,
     owner,
-    seed
+    seed,
+    prices,
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
@@ -334,8 +338,9 @@ export class MarginAccount {
     walletTokens?: MarginWalletTokens
     owner: Address
     seed: number
+    prices: Record<string, StorePriceInfo>
   }): Promise<MarginAccount> {
-    const marginAccount = new MarginAccount(programs, provider, owner, seed, airspaceAddress, pools, walletTokens)
+    const marginAccount = new MarginAccount(programs, provider, owner, seed, airspaceAddress, pools, walletTokens, prices)
     await marginAccount.refresh()
     return marginAccount
   }
@@ -366,7 +371,8 @@ export class MarginAccount {
     pools,
     walletTokens,
     owner,
-    filters
+    filters,
+    prices,
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
@@ -374,6 +380,7 @@ export class MarginAccount {
     walletTokens?: MarginWalletTokens
     owner: Address
     filters?: GetProgramAccountsFilter[]
+    prices?: Record<string, StorePriceInfo>
   }): Promise<MarginAccount[]> {
     const ownerFilter: MemcmpFilter = {
       memcmp: {
@@ -405,7 +412,8 @@ export class MarginAccount {
           seed,
           account.airspace,
           pools,
-          walletTokens
+          walletTokens,
+          prices,
         )
         await marginAccount.refresh()
         marginAccounts.push(marginAccount)

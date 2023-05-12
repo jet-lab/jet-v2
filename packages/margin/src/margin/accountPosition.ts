@@ -11,6 +11,13 @@ export interface PriceInfo {
   isValid: number
 }
 
+export interface StorePriceInfo {
+  price: number;
+  ema: number;
+  confidence: number;
+  timestamp: Date;
+}
+
 export class AccountPosition {
   /** The raw account position deserialized by anchor */
   info: AccountPositionInfo
