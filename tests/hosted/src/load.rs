@@ -21,6 +21,7 @@ use crate::{
 };
 
 pub struct UnhealthyAccountsLoadTestScenario {
+-b     pub airspace: String,
     pub user_count: usize,
     pub mint_count: usize,
     pub repricing_delay: usize,
@@ -32,6 +33,7 @@ pub struct UnhealthyAccountsLoadTestScenario {
 impl Default for UnhealthyAccountsLoadTestScenario {
     fn default() -> Self {
         Self {
+            airspace: "default".into(),
             user_count: 2,
             mint_count: 2,
             repricing_delay: 1,
@@ -51,7 +53,6 @@ pub fn load_default_keypair() -> anyhow::Result<Keypair> {
 pub async fn unhealthy_accounts_load_test(
     scenario: UnhealthyAccountsLoadTestScenario,
 ) -> Result<(), anyhow::Error> {
-    let ctx = margin_test_context!();
     let UnhealthyAccountsLoadTestScenario {
         user_count,
         mint_count,
@@ -59,7 +60,9 @@ pub async fn unhealthy_accounts_load_test(
         repricing_scale,
         keep_looping,
         liquidator,
+        airspace,
     } = scenario;
+    let ctx = margin_test_context!(&airspace);
     let liquidator = liquidator.unwrap_or_else(|| load_default_keypair().unwrap().pubkey());
     println!("authorizing liquidator: {liquidator}");
     ctx.margin_client()
@@ -105,7 +108,6 @@ pub async fn unhealthy_accounts_load_test(
 pub async fn under_collateralized_fixed_term_borrow_orders(
     scenario: UnhealthyAccountsLoadTestScenario,
 ) -> Result<(), anyhow::Error> {
-    let ctx = margin_test_context!();
     let UnhealthyAccountsLoadTestScenario {
         user_count,
         mint_count: _, //todo
@@ -113,7 +115,9 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
         repricing_scale,
         keep_looping,
         liquidator,
+        airspace,
     } = scenario;
+    let ctx = margin_test_context!(&airspace);
     let liquidator = liquidator.unwrap_or_else(|| load_default_keypair().unwrap().pubkey());
     println!("authorizing liquidator: {liquidator}");
     ctx.margin_client()
