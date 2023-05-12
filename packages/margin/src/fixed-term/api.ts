@@ -116,7 +116,7 @@ export const offerLoan = async ({
     instructions: orderInstructions,
     adapterInstruction: loanOffer
   })
-  return sendAndConfirmV0(provider, [instructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [instructions.concat(orderInstructions)], airspaceLookupTables, [])
 }
 
 interface ICreateBorrowOrder {
@@ -196,7 +196,7 @@ export const requestLoan = async ({
     instructions: orderInstructions,
     adapterInstruction: borrowOffer
   })
-  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions.concat(orderInstructions)], airspaceLookupTables, [])
 }
 
 interface ICancelOrder {
@@ -336,7 +336,7 @@ export const borrowNow = async ({
     instructions: orderInstructions,
     adapterInstruction: depositIx
   })
-  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions.concat(orderInstructions)], airspaceLookupTables, [])
 }
 
 interface ILendNow {
@@ -408,7 +408,11 @@ export const lendNow = async ({
 
   await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
 
-  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [
+    setupInstructions.concat(
+      orderInstructions
+    )
+  ], airspaceLookupTables, [])
 }
 
 interface ISettle {
@@ -465,7 +469,7 @@ export const settle = async ({
     adapterInstruction: depositIx
   })
   await marginAccount.withUpdatePositionBalance({ instructions: settleInstructions, position })
-  return sendAndConfirmV0(provider, [refreshInstructions, settleInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [refreshInstructions.concat(settleInstructions)], airspaceLookupTables, [])
 }
 
 interface IRepay {
@@ -564,7 +568,7 @@ export const repay = async ({
     marketAddress: market.market.address
   })
   instructions = instructions.concat(refreshIxs)
-  return sendAndConfirmV0(provider, [refreshInstructions, instructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [refreshInstructions.concat(instructions)], airspaceLookupTables, [])
 }
 
 interface IRedeem {
