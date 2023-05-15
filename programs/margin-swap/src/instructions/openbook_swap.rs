@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{num::NonZeroU64};
+use std::num::NonZeroU64;
 
 use anchor_openbook::serum_dex::{
     instruction::SelfTradeBehavior,
