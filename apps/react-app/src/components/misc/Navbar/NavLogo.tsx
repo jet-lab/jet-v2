@@ -1,12 +1,11 @@
-import { useChangeView } from '@utils/ui';
-
+import { useNavigate } from 'react-router-dom';
 // Jet logo in the Navbar
 export function NavLogo(): JSX.Element {
-  const changeView = useChangeView();
+  const navigate = useNavigate();
 
   return (
     <img
-      onClick={() => changeView('/')}
+      onClick={() => navigate('/')}
       className="nav-logo"
       src="img/jet/jet_logo.png"
       width="100%"
