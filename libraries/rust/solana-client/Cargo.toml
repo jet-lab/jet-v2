@@ -27,5 +27,4 @@ solana-client-wasm = { version = "1.14", optional = true }
 spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
 spl-token = { version = "3", features = ["no-entrypoint"] }
 
-anchor-lang = "0.26"
-
+anchor-lang = "0.27"

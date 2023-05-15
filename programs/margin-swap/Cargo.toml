@@ -21,8 +21,8 @@ devnet = ["jet-static-program-registry/devnet", "anchor-spl/devnet"]
 [dependencies]
 bytemuck = "1"
 
-anchor-lang = "0.26"
-anchor-spl = { version = "0.26", features = ["dex"] }
+anchor-lang = "0.27"
+anchor-spl = { version = "0.27", features = ["dex"] }
 
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }

@@ -33,7 +33,7 @@ pub struct RedeemDeposit<'info> {
     /// The Market responsible for the asset
     #[account(
         has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
-        constraint = !market.load()?.tickets_paused @ FixedTermErrorCode::TicketsPaused,
+        constraint = !market.load()?.tickets_paused.as_bool() @ FixedTermErrorCode::TicketsPaused,
     )]
     pub market: AccountLoader<'info, Market>,
 
