@@ -6,7 +6,7 @@ import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/Connecti
 import { Typography } from 'antd';
 import { useJetStore, getSwapLiquidity } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
-import { SwapChartComponent } from './SwapChartComponent';
+import { DepthChart } from '../charts/depth-chart';
 import { ParentSizeModern } from '@visx/responsive';
 import { Pool } from '@jet-lab/margin';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -104,14 +104,14 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
       {data && oraclePrice > 0 ? (
         <ParentSizeModern>
           {({ height, width }) => (
-            <SwapChartComponent
-              oraclePrice={oraclePrice}
-              bids={data.bids}
-              asks={data.asks}
+            <DepthChart
+              midPoint={oraclePrice}
+              bidsDescending={data.bids}
+              asksAscending={data.asks}
               height={height}
               width={width}
-              priceRange={data.price_range}
-              liquidityRange={data.liquidity_range}
+              xRange={data.price_range}
+              yRange={data.liquidity_range}
               base={data.base}
               quote={data?.quote}
             />
@@ -123,6 +123,3 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
     </>
   );
 };
-// todo - fix tooltip info
-// todo - fix output token state for swap entry
-// todo - fix entry state error, not match update, one state behind

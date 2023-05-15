@@ -1442,20 +1442,6 @@ html {
   .swaps-graph {
     flex: 1;
 
-    .swaps-chart-root {
-      margin-top: 50px;
-      height: 100%;
-      width: 100%;
-      position: relative;
-
-      .swaps-chart-legend {
-        position: absolute;
-        top: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-      }
-    }
-
     &-head {
       position: absolute;
       top: 0;
@@ -3046,5 +3032,19 @@ html {
       /* Internet Explorer 10-11 */
       color: #666;
     }
+  }
+}
+
+.swaps-chart-root {
+  margin-top: 50px;
+  height: 100%;
+  width: 100%;
+  position: relative;
+
+  .swaps-chart-legend {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
