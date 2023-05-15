@@ -8,7 +8,7 @@ use jet_fixed_term::{
 use solana_sdk::instruction::Instruction;
 use spl_associated_token_account::get_associated_token_address as ata;
 
-use crate::fixed_term::derive::*;
+use crate::{airspace::derive_permit, fixed_term::derive::*};
 
 /// can derive keys from `owner`, else needs vault addresses
 pub fn convert_tokens(
@@ -126,12 +126,14 @@ pub fn sell_tickets_order(
 pub fn sell_tickets_order_accounts(
     orderbook_mut: OrderbookMut,
     authority: Pubkey,
+    airspace: Pubkey,
     underlying_mint: &Pubkey,
     ticket_source: Option<Pubkey>,
     token_destination: Option<Pubkey>,
 ) -> jet_fixed_term::accounts::SellTicketsOrder {
     let ticket_mint = ticket_mint(&orderbook_mut.market);
     jet_fixed_term::accounts::SellTicketsOrder {
+        permit: derive_permit(&airspace, &authority),
         authority,
         user_ticket_vault: ticket_source.unwrap_or_else(|| ata(&authority, &ticket_mint)),
         user_token_vault: token_destination.unwrap_or_else(|| ata(&authority, underlying_mint)),
@@ -145,6 +147,7 @@ pub fn sell_tickets_order_accounts(
 pub fn lend_order(
     params: OrderParams,
     seed: &[u8],
+    airspace: Pubkey,
     market: &Pubkey,
     authority: Pubkey,
     lender_tickets: Option<Pubkey>,
@@ -161,6 +164,7 @@ pub fn lend_order(
     let accounts = lend_order_accounts(
         params,
         seed,
+        airspace,
         market,
         authority,
         lender_tickets,
@@ -175,6 +179,7 @@ pub fn lend_order(
 pub fn lend_order_accounts(
     params: OrderParams,
     seed: &[u8],
+    airspace: Pubkey,
     market: &Pubkey,
     authority: Pubkey,
     lender_tickets: Option<Pubkey>,
@@ -188,6 +193,7 @@ pub fn lend_order_accounts(
     let lender_tokens = lender_tokens.unwrap_or_else(|| ata(&authority, &underlying_mint));
     let deposit = term_deposit_bytes(market, &authority, seed);
     jet_fixed_term::accounts::LendOrder {
+        permit: derive_permit(&airspace, &authority),
         authority,
         ticket_settlement: if params.auto_stake {
             deposit

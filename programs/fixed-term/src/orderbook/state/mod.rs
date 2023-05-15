@@ -107,6 +107,10 @@ impl<'info> OrderbookMut<'info> {
         self.market.load().unwrap().claims_mint
     }
 
+    pub fn airspace(&self) -> Pubkey {
+        self.market.load().unwrap().airspace
+    }
+
     fn place_order(
         &self,
         side: Side,

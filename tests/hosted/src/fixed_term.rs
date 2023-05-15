@@ -813,11 +813,12 @@ pub trait GenerateProxy {
 #[async_trait]
 impl GenerateProxy for NoProxy {
     async fn generate(
-        _ctx: Arc<MarginTestContext>,
+        ctx: Arc<MarginTestContext>,
         _manager: Arc<TestManager>,
         owner: &Keypair,
         _seed: u16,
     ) -> Result<Self> {
+        ctx.issue_permit(owner.pubkey()).await?;
         Ok(NoProxy(owner.pubkey()))
     }
 }

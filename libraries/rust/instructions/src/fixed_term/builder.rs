@@ -325,6 +325,7 @@ impl FixedTermIxBuilder {
             ix::sell_tickets_order_accounts(
                 self.orderbook_mut(),
                 user,
+                self.airspace,
                 &self.underlying_mint,
                 ticket_source,
                 token_destination,
@@ -346,6 +347,7 @@ impl FixedTermIxBuilder {
             ix::sell_tickets_order_accounts(
                 self.orderbook_mut(),
                 margin_account,
+                self.airspace,
                 &self.underlying_mint,
                 ticket_source,
                 token_destination,
@@ -380,6 +382,7 @@ impl FixedTermIxBuilder {
         ix::lend_order(
             params,
             seed,
+            self.airspace,
             &self.market,
             user,
             lender_tickets,

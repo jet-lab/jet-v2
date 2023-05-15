@@ -76,8 +76,14 @@ pub fn margin_sell_tickets_order(
     let accounts = jet_fixed_term::accounts::MarginSellTicketsOrder {
         ticket_collateral: user_ticket_collateral(&margin_user),
         ticket_collateral_mint: ticket_collateral_mint(&inner.orderbook_mut.market),
-        inner,
         margin_user,
+        margin_account: inner.authority,
+        user_ticket_vault: inner.user_ticket_vault,
+        user_token_vault: inner.user_token_vault,
+        orderbook_mut: inner.orderbook_mut,
+        ticket_mint: inner.ticket_mint,
+        underlying_token_vault: inner.underlying_token_vault,
+        token_program: inner.token_program,
     }
     .to_account_metas(None);
     Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
@@ -129,6 +135,7 @@ pub fn margin_lend_order(
     let inner = lend_order_accounts(
         params,
         &deposit_seqno.to_le_bytes(),
+        Pubkey::default(), // Airspace only needed to derive permit for non-margin users
         &market,
         margin_account,
         Some(ata(&margin_account, &ticket_mint(&market))),
@@ -140,8 +147,16 @@ pub fn margin_lend_order(
     let accounts = jet_fixed_term::accounts::MarginLendOrder {
         ticket_collateral: user_ticket_collateral(&margin_user),
         ticket_collateral_mint: ticket_collateral_mint(&inner.orderbook_mut.market),
-        inner,
         margin_user,
+        margin_account,
+        orderbook_mut: inner.orderbook_mut,
+        ticket_settlement: inner.ticket_settlement,
+        lender_tokens: inner.lender_tokens,
+        underlying_token_vault: inner.underlying_token_vault,
+        ticket_mint: inner.ticket_mint,
+        payer,
+        system_program: inner.system_program,
+        token_program: inner.token_program,
     }
     .to_account_metas(None);
     Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
