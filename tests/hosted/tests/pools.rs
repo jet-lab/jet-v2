@@ -1,15 +1,9 @@
-use hosted_tests::{
-    actions::*,
-    context::{default_test_setup, TestContext},
-    util::assert_program_error,
-};
+use hosted_tests::{actions::*, test_context, util::assert_program_error};
 use jet_client::state::margin_pool::MarginPoolCacheExt;
 
 #[tokio::test]
 async fn simple_pool_lend_borrow_workflow() -> anyhow::Result<()> {
-    let ctx = TestContext::new("simple-pool-lend-borrow", &default_test_setup())
-        .await
-        .unwrap();
+    let ctx = test_context!();
 
     // derive mints for default config tokens
     let usdc = Token::from_context(&ctx, "USDC");
@@ -18,10 +12,6 @@ async fn simple_pool_lend_borrow_workflow() -> anyhow::Result<()> {
     // Create two user wallets to get started
     let user_a = ctx.create_user().await?;
     let user_b = ctx.create_user().await?;
-
-    // Create margin accounts for each user
-    user_a.margin().create_account().await?;
-    user_b.margin().create_account().await?;
 
     // Get some tokens for each user to deposit
     airdrop(&user_a, &usdc, usdc.amount(1_000_000.0)).await;
@@ -107,9 +97,7 @@ async fn simple_pool_lend_borrow_workflow() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn max_pool_util_ratio_after_borrow() -> anyhow::Result<()> {
-    let ctx = TestContext::new("max-pool-util-ratio-after-borrow", &default_test_setup())
-        .await
-        .unwrap();
+    let ctx = test_context!();
 
     // derive mints for default config tokens
     let usdc = Token::from_context(&ctx, "USDC");
@@ -118,10 +106,6 @@ async fn max_pool_util_ratio_after_borrow() -> anyhow::Result<()> {
     // Create two user wallets to get started
     let user_a = ctx.create_user().await?;
     let user_b = ctx.create_user().await?;
-
-    // Create margin accounts for each user
-    user_a.margin().create_account().await?;
-    user_b.margin().create_account().await?;
 
     // Get some tokens for each user to deposit
     airdrop(&user_a, &usdc, usdc.amount(1_000_000.0)).await;

@@ -10,7 +10,7 @@ use hosted_tests::{context::MarginTestContext, margin::MarginPoolSetupInfo, marg
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::{assert_custom_program_error, create_wallet};
+use jet_simulation::assert_custom_program_error;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -33,10 +33,10 @@ struct TestEnv {
 }
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
-    let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
-    let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
+    let usdc = ctx.tokens().create_token(6, None, None).await?;
+    let usdc_oracle = ctx.tokens().create_oracle(&usdc).await?;
+    let tsol = ctx.tokens().create_token(9, None, None).await?;
+    let tsol_oracle = ctx.tokens().create_oracle(&tsol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
@@ -58,7 +58,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     ];
 
     for pool_info in pools {
-        ctx.margin.create_pool(&pool_info).await?;
+        ctx.margin_client().create_pool(&pool_info).await?;
     }
 
     Ok(TestEnv { usdc, tsol })
@@ -70,47 +70,37 @@ async fn rounding_poc() -> Result<()> {
     let ctx = margin_test_context!();
     let env = setup_environment(&ctx).await.unwrap();
 
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
-        .await
-        .unwrap();
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
-        .await
-        .unwrap();
-    let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
-        .await
-        .unwrap();
-
-    let user_a = ctx.margin.user(&wallet_a, 0).unwrap();
-    let user_b = ctx.margin.user(&wallet_b, 0).unwrap();
-    let user_c = ctx.margin.user(&wallet_c, 0).unwrap();
+    let wallet_a = ctx.create_wallet(10).await.unwrap();
+    let wallet_b = ctx.create_wallet(10).await.unwrap();
+    let wallet_c = ctx.create_wallet(10).await.unwrap();
 
     // issue permits for the users
     ctx.issue_permit(wallet_a.pubkey()).await?;
     ctx.issue_permit(wallet_b.pubkey()).await?;
     ctx.issue_permit(wallet_c.pubkey()).await?;
 
-    user_a.create_account().await.unwrap();
-    user_b.create_account().await.unwrap();
-    user_c.create_account().await.unwrap();
+    let user_a = ctx.margin_client().user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin_client().user(&wallet_b, 0).created().await?;
+    let user_c = ctx.margin_client().user(&wallet_c, 0).created().await?;
 
     let user_a_usdc_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.usdc, &wallet_a.pubkey(), 10_000_000 * ONE_USDC)
         .await
         .unwrap();
     let user_b_tsol_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10_000 * ONE_TSOL)
         .await
         .unwrap();
     let user_c_usdc_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.usdc, &wallet_c.pubkey(), 0)
         .await
         .unwrap();
 
     // Set the prices for each token
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 1 USD +- 0.01
             &env.usdc,
@@ -123,7 +113,7 @@ async fn rounding_poc() -> Result<()> {
         )
         .await
         .unwrap();
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 100 USD +- 1
             &env.tsol,
@@ -162,14 +152,14 @@ async fn rounding_poc() -> Result<()> {
         .await
         .unwrap();
 
-    let mut clk: Clock = match ctx.rpc.get_clock().await {
+    let mut clk: Clock = match ctx.rpc().get_clock().await {
         Ok(c) => c,
         _ => panic!("bad"),
     };
 
     // 1 second later...
     clk.unix_timestamp += 1;
-    ctx.rpc.set_clock(clk).await.unwrap();
+    ctx.rpc().set_clock(clk).await.unwrap();
 
     user_a.refresh_all_pool_positions().await.unwrap();
     user_b.refresh_all_pool_positions().await.unwrap();

@@ -1,16 +1,20 @@
 use std::{collections::HashSet, sync::Arc};
 
+use jet_program_common::interest_pricing::f64_to_fp32;
 use serde::{Deserialize, Serialize};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
 use jet_fixed_term::{
     control::state::Market,
-    margin::{origination_fee::FEE_UNIT, state::TermLoan},
+    margin::{
+        origination_fee::FEE_UNIT,
+        state::{AutoRollConfig, TermLoan},
+    },
     orderbook::state::OrderParams,
     tickets::state::TermDeposit,
 };
-use jet_instructions::fixed_term::{derive_term_deposit, FixedTermIxBuilder};
+use jet_instructions::fixed_term::{derive, FixedTermIxBuilder};
 
 use crate::{
     bail,
@@ -20,9 +24,6 @@ use crate::{
     NetworkUserInterface,
 };
 
-use self::interest_pricing::f64_to_fp32;
-
-mod interest_pricing;
 pub mod util;
 
 /// Details about a fixed term market
@@ -336,12 +337,11 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
             .await?;
 
         ixns.extend(matured_deposits.into_iter().map(|d| {
-            let deposit_key = derive_term_deposit(
+            let deposit_key = derive::term_deposit(
                 &self.builder.market(),
                 &self.account.address(),
                 d.sequence_number,
             );
-
             self.account
                 .builder
                 .adapter_invoke(self.builder.margin_redeem_deposit(
@@ -402,8 +402,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     pub async fn request_loan_with_params(&self, params: OrderParams) -> ClientResult<I, ()> {
         let mut ixns = vec![];
 
-        let token_account = self
-            .account
+        self.account
             .with_deposit_position(&self.builder.token_mint(), &mut ixns)
             .await?;
 
@@ -414,7 +413,6 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
                 .builder
                 .adapter_invoke(self.builder.margin_borrow_order(
                     self.account.address,
-                    Some(token_account),
                     params,
                     self.get_next_loan_seq_no(),
                 )),
@@ -455,6 +453,62 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
         self.account.send_with_refresh(&ixns).await
     }
 
+    /// Configure the auto-roll setting for this account
+    ///
+    /// # Parameters
+    ///
+    /// * `config` - The auto-roll configuration
+    pub async fn configure_auto_roll(&self, config: AutoRollConfig) -> ClientResult<I, ()> {
+        let mut ixns = vec![];
+
+        self.with_user_registration(&mut ixns).await?;
+
+        ixns.push(
+            self.account.builder.adapter_invoke(
+                self.builder
+                    .configure_auto_roll(self.account.address, config),
+            ),
+        );
+
+        self.account.send_with_refresh(&ixns).await
+    }
+
+    /// Toggle a deposit's auto-roll setting
+    ///
+    /// # Parameters
+    ///
+    /// * `deposit` - The address of the deposit that has been configured to auto-roll
+    pub async fn toggle_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<I, ()> {
+        let mut ixns = vec![];
+
+        ixns.push(
+            self.account.builder.adapter_invoke(
+                self.builder
+                    .toggle_auto_roll_deposit(self.account.address, deposit),
+            ),
+        );
+
+        self.account.send_with_refresh(&ixns).await
+    }
+
+    /// Toggle a loan's auto-roll setting
+    ///
+    /// # Parameters
+    ///
+    /// * `loan` - The address of the loan that has been configured to auto-roll
+    pub async fn toggle_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<I, ()> {
+        let mut ixns = vec![];
+
+        ixns.push(
+            self.account.builder.adapter_invoke(
+                self.builder
+                    .toggle_auto_roll_loan(self.account.address, loan),
+            ),
+        );
+
+        self.account.send_with_refresh(&ixns).await
+    }
+
     async fn with_user_registration(&self, ixns: &mut Vec<Instruction>) -> ClientResult<I, ()> {
         let user_market_account = self.builder.margin_user_account(self.account.address);
 
@@ -481,27 +535,27 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
 
     fn should_auto_roll_lend_order(&self) -> bool {
         self.get_user_market_state()
-            .map(|s| s.borrow_roll_config.limit_price > 0)
+            .map(|s| s.lend_roll_config.is_some())
             .unwrap_or_default()
     }
 
     fn should_auto_roll_borrow_order(&self) -> bool {
         self.get_user_market_state()
-            .map(|s| s.borrow_roll_config.limit_price > 0)
+            .map(|s| s.borrow_roll_config.is_some())
             .unwrap_or_default()
     }
 
     fn get_next_loan_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
         user_account
-            .map(|u| u.debt.next_new_loan_seqno())
+            .map(|u| u.debt().next_new_loan_seqno())
             .unwrap_or_default()
     }
 
     fn get_next_deposit_seq_no(&self) -> u64 {
         let user_account = self.get_user_market_state();
         user_account
-            .map(|u| u.assets.next_new_deposit_seqno())
+            .map(|u| u.assets().next_new_deposit_seqno())
             .unwrap_or_default()
     }
 
@@ -525,7 +579,9 @@ pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
     refreshing_tokens: &mut HashSet<Pubkey>,
 ) -> ClientResult<I, Instruction> {
     let found = account.client.state().filter(|_, state: &MarketState| {
-        state.market.claims_mint == *token || state.market.ticket_collateral_mint == *token
+        state.market.claims_mint == *token
+            || state.market.ticket_collateral_mint == *token
+            || state.market.underlying_collateral_mint == *token
     });
 
     let Some((_, market_state)) = found.into_iter().next() else {

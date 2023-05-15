@@ -1,6 +1,6 @@
 import { FixedTermMarket, MarginAccount, Pool, TokenAmount } from '@jet-lab/margin';
 import { Table } from 'antd';
-import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import formatDistanceToNowStrict from 'date-fns/formatDistanceToNowStrict';
 import BN from 'bn.js';
@@ -43,7 +43,7 @@ const getPostOrderColumns = ({
     title: 'Issue date',
     dataIndex: 'created_timestamp',
     key: 'created_timestamp',
-    render: (date: number) => `${formatDistanceToNowStrict(date)} ago`,
+    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
     sorter: (a, b) => a.created_timestamp - b.created_timestamp,
     sortDirections: ['descend']
   },
@@ -74,8 +74,20 @@ const getPostOrderColumns = ({
     sortDirections: ['descend']
   },
   {
+    title: 'Autoroll',
+    dataIndex: 'is_auto_roll',
+    key: 'is_auto_roll',
+    align: 'center',
+    render: (is_auto_roll: boolean) => {
+      return is_auto_roll ? <CheckOutlined /> : null;
+    },
+    sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
+    sortDirections: ['descend']
+  },
+  {
     title: 'Cancel',
     key: 'cancel',
+    align: 'center',
     render: (order: OpenOrder) => {
       return ordersPendingDeletion.includes(order.order_id) ? (
         <LoadingOutlined />
@@ -123,7 +135,8 @@ const cancel = async (
       provider,
       orderId: new BN(order.order_id),
       pools,
-      markets
+      markets,
+      airspaceLookupTables: []
     });
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
     setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
@@ -135,8 +148,7 @@ const cancel = async (
       'error',
       getExplorerUrl(e.signature, cluster, explorer)
     );
-
-    throw e;
+    console.error(e);
   }
 };
 

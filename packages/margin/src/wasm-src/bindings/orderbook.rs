@@ -26,9 +26,9 @@ impl JsOrderbookModel {
 #[wasm_bindgen(js_class = "OrderbookModel")]
 impl JsOrderbookModel {
     #[wasm_bindgen(constructor)]
-    pub fn new(tenor: u64) -> Self {
+    pub fn new(tenor: u64, origination_fee: u64) -> Self {
         Self {
-            inner: OrderbookModel::new(tenor),
+            inner: OrderbookModel::new(tenor, origination_fee),
             serializer: Self::get_serializer(),
         }
     }
@@ -44,9 +44,16 @@ impl JsOrderbookModel {
         self.inner.refresh_from_snapshot(snapshot);
     }
 
-    #[wasm_bindgen(js_name = "sampleLiquidity")]
+    #[wasm_bindgen(js_name = "sampleLiquidityDeprecated")]
     pub fn sample_liquidity(&self, side: &str) -> Result<JsValue, JsError> {
-        let sample = self.inner.sample_liquidity(side.into()); // TODO try_into
+        let sample = self.inner.sample_liquidity(side.into(), None, None); // TODO try_into
+
+        self.to_js(&sample)
+    }
+
+    #[wasm_bindgen(js_name = "sampleLiquidity")]
+    pub fn sample_liquidity_v2(&self, max_quote_qty: u64) -> Result<JsValue, JsError> {
+        let sample = self.inner.sample_liquidity_v2(max_quote_qty);
 
         self.to_js(&sample)
     }
@@ -62,14 +69,14 @@ impl JsOrderbookModel {
     pub fn simulate_taker(
         &self,
         action: &str,
-        quoteQty: u64,
+        userQuoteQty: u64,
         limitPrice: Option<u64>,
         user: Option<Box<[u8]>>,
     ) -> Result<JsValue, JsError> {
         let user = user.map(|b| Pubkey::try_from(&*b).unwrap());
         let sim = self
             .inner
-            .simulate_taker(action.into(), quoteQty, limitPrice, user); // TODO try_into
+            .simulate_taker(action.into(), userQuoteQty, limitPrice, user); // TODO try_into
 
         self.to_js(&sim)
     }
@@ -79,14 +86,14 @@ impl JsOrderbookModel {
     pub fn simulate_maker(
         &self,
         action: &str,
-        quoteQty: u64,
+        userQuoteQty: u64,
         limitPrice: u64,
         user: Option<Box<[u8]>>,
     ) -> Result<JsValue, JsError> {
         let user = user.map(|b| Pubkey::try_from(&*b).unwrap());
         let sim = self
             .inner
-            .simulate_maker(action.into(), quoteQty, limitPrice, user);
+            .simulate_maker(action.into(), userQuoteQty, limitPrice, user);
 
         self.to_js(&sim)
     }
@@ -123,62 +130,83 @@ export type LiquidityObservation = {
     cumulative_rate: number,
 };
 
-export type LiquiditySample = {
+export type LiquiditySampleDeprecated = {
     side: any,
     total_quote_qty: bigint,
     sample_quote_qty: bigint,
     points: Array<LiquidityObservation>,
 }
 
-export type TakerSimulation = {
-    order_quote_qty: bigint,
-    limit_price: number,
+export type LiquiditySample = {
+    base: any,
+    quote: any,
+    bids: Array<[number, bigint]>,
+    asks: Array<[number, bigint]>,
+    price_range: [number, number],
+    liquidity_range: [bigint, bigint],
+}
 
-    would_match: bool,
-    self_match: bool,
+export type TakerSimulation = {
+    totalQuoteQty: bigint,
+    userQuoteQty: bigint,
+    feeQuoteQty: bigint,
+    limitPrice: number,
+
+    wouldMatch: bool,
+    selfMatch: bool,
     matches: bigint,
-    filled_quote_qty: bigint,
-    filled_base_qty: bigint,
-    filled_vwap: number,
-    filled_vwar: number,
+    filledQuoteQty: bigint,
+    filledUserQty: bigint,
+    filledFeeQty: bigint,
+    filledBaseQty: bigint,
+    filledVwap: number,
+    filledVwar: number,
     fills: Array<Fill>,
 
-    unfilled_quote_qty: bigint,
+    unfilledQuoteQty: bigint,
 }
 
 export type Fill = {
     base_qty: bigint,
     quote_qty: bigint,
+    user_qty: bigint,
+    fee_qty: bigint,
     price: number,
 }
 
 export type MakerSimulation = {
-    order_quote_qty: bigint,
-    limit_price: number,
+    totalQuoteQty: bigint,
+    userQuoteQty: bigint,
+    feeQuoteQty: bigint,
+    limitPrice: number,
 
-    full_quote_qty: bigint,
-    full_base_qty: bigint,
-    full_vwap: number,
-    full_vwar: number,
+    fullQuoteQty: bigint,
+    fullBaseQty: bigint,
+    fullVwap: number,
+    fullvwar: number,
 
-    would_post: bool,
+    wouldPost: bool,
     depth: bigint,
-    posted_quote_qty: bigint,
-    posted_base_qty: bigint,
-    posted_vwap: number,
-    posted_vwar: number,
-    preceding_base_qty: bigint,
-    preceding_quote_qty: bigint,
-    preceding_vwap: number,
-    preceding_vwar: number,
+    postedQuoteQty: bigint,
+    postedUserQty: bigint,
+    postedFeeQty: bigint,
+    postedBaseQty: bigint,
+    postedVwap: number,
+    postedVwar: number,
+    precedingBaseQty: bigint,
+    precedingQuoteQty: bigint,
+    precedingVwap: number,
+    precedingVwar: number,
 
-    would_match: bool,
-    self_match: bool,
+    wouldMatch: bool,
+    selfMatch: bool,
     matches: bigint,
-    filled_quote_qty: bigint,
-    filled_base_qty: bigint,
-    filled_vwap: number,
-    filled_vwar: number,
+    filledQuoteQty: bigint,
+    filledUserQty: bigint,
+    filledFeeQty: bigint,
+    filledBaseQty: bigint,
+    filledVwap: number,
+    filledVwar: number,
     fills: Array<Fill>,
 }
 "#;
@@ -191,8 +219,9 @@ export class OrderbookModel {
     free(): void;
     /**
     * @param {bigint} tenor
+    * @param {bigint} originationFee
     */
-    constructor(tenor: bigint);
+    constructor(tenor: bigint, originationFee: bigint);
     /**
     * @param {Uint8Array} bidsBuffer
     * @param {Uint8Array} asksBuffer
@@ -204,9 +233,14 @@ export class OrderbookModel {
     refreshFromSnapshot(snapshot: OrderbookSnapshot): void;
     /**
     * @param {string} side
+    * @returns {LiquiditySampleDeprecated}
+    */
+    sampleLiquidityDeprecated(side: string): LiquiditySampleDeprecated;
+    /**
+    * @param {bigint} maxQuoteQty
     * @returns {LiquiditySample}
     */
-    sampleLiquidity(side: string): LiquiditySample;
+    sampleLiquidity(maxQuoteQty: u64): LiquiditySample;
     /**
     * @param {string} action
     * @param {bigint} limitPrice
@@ -215,20 +249,20 @@ export class OrderbookModel {
     wouldMatch(action: string, limitPrice: bigint): boolean;
     /**
     * @param {string} action
-    * @param {bigint} quoteQty
+    * @param {bigint} userQuoteQty
     * @param {bigint | undefined} limitPrice
     * @param {Uint8Array | undefined} user
     * @returns {TakerSimulation}
     */
-    simulateTaker(action: string, quoteQty: bigint, limitPrice?: bigint, user?: Uint8Array): TakerSimulation;
+    simulateTaker(action: string, userQuoteQty: bigint, limitPrice?: bigint, user?: Uint8Array): TakerSimulation;
     /**
     * @param {string} action
-    * @param {bigint} quoteQty
+    * @param {bigint} userQuoteQty
     * @param {bigint} limitPrice
     * @param {Uint8Array | undefined} user
     * @returns {MakerSimulation}
     */
-    simulateMaker(action: string, quoteQty: bigint, limitPrice: bigint, user?: Uint8Array): MakerSimulation;
+    simulateMaker(action: string, userQuoteQty: bigint, limitPrice: bigint, user?: Uint8Array): MakerSimulation;
     /**
     * @returns {Array<Order>}
     */

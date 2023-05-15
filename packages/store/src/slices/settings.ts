@@ -41,7 +41,11 @@ export const createSettingsSlice: StateCreator<JetStore, [['zustand/devtools', n
   get
 ) => ({
   settings: {
-    cluster: window.location.href.includes('devnet') ? 'devnet' : 'mainnet-beta',
+    cluster: window.location.href.includes('devnet')
+      ? 'devnet'
+      : window.location.href.includes('cluster=localnet')
+      ? 'localnet'
+      : 'mainnet-beta',
     explorer: 'solanaExplorer',
     rpc: rpc
   },

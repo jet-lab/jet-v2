@@ -15,11 +15,6 @@ devnet = []
 paste = "1.0"
 anchor-lang = "0.27"
 
-[dependencies.spl-token-swap-v200]
-package = "spl-token-swap"
-version = "2.0.0"
-features = ["no-entrypoint"]
-
 # https://docs.orca.so/#has-orca-been-audited
 [dependencies.spl-token-swap-3613cea3c]
 package = "spl-token-swap"
@@ -27,9 +22,13 @@ git = "https://github.com/solana-labs/solana-program-library"
 rev = "3613cea3cabbb5f7e4445d6203b7292d413732da"
 features = ["no-entrypoint"]
 
-# https://docs.orca.so/#has-orca-been-audited
+# https://docs.orca.so/#has-orca-been-audited  
+# The actual deployed commit is: 813aa3304022528cbf3cf7a3d32bca339194a492  
+# The only diff in this commit 629a8 is that it uses the crates.io version of
+# spl-math 0.1 instead of the repo version, so this repo can be more easily
+# vendored with other crates that rely on spl-math 0.1.0.
 [dependencies.spl-token-swap-813aa3]
 package = "spl-token-swap"
-git = "https://github.com/solana-labs/solana-program-library"
-rev = "813aa3304022528cbf3cf7a3d32bca339194a492"
+git = "https://github.com/jet-lab/solana-program-library"
+rev = "629a8d5524944b1c0b33651db72d3da64ed04bac"
 features = ["no-entrypoint"]

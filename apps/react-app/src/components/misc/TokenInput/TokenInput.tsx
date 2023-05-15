@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import { feesBuffer, MarginAccount, TokenAmount, PoolAction, Pool } from '@jet-lab/margin';
 import { PoolOption, Pools } from '@state/pools/pools';
 import {
+  ActionRefresh,
   CurrentAction,
   MaxTradeAmounts,
   SendingTransaction,
@@ -70,17 +71,26 @@ export function TokenInput(props: {
   const resetTokenInputString = useResetRecoilState(TokenInputString);
   // If an input amount was specified, reference that amount otherwise reference the current tokenInputAmount
   const inputAmount = props.value ?? tokenInputAmount;
-  const zeroInputAmount = TokenAmount.zero(tokenPool?.decimals ?? DEFAULT_DECIMALS);
-  const [maxInput, setMaxInput] = useState(zeroInputAmount);
   const [maxTradeAmounts, setMaxTradeAmounts] = useRecoilState(MaxTradeAmounts);
   const disabledMessage = useTokenInputDisabledMessage();
   const warningMessage = useTokenInputWarningMessage();
   const errorMessage = useTokenInputErrorMessage();
   // If we're given an external value, are sendingTransaction, can't enter an input or have a disabled message
   const sendingTransaction = useRecoilValue(SendingTransaction);
+  const setActionRefresh = useSetRecoilState(ActionRefresh);
+
+  const zeroInputAmount = useMemo(
+    () => TokenAmount.zero(tokenPool?.decimals ?? DEFAULT_DECIMALS),
+    [tokenPool?.decimals]
+  );
+  const [maxInput, setMaxInput] = useState(zeroInputAmount);
 
   const disabled = sendingTransaction || props.value !== undefined || disabledMessage.length > 0 || maxInput.isZero();
   const { Text } = Typography;
+
+  useEffect(() => {
+    setActionRefresh(Date.now());
+  }, [tokenPool]);
 
   // If current action changes, keep input within the maxInput range
   useEffect(() => {
@@ -93,44 +103,35 @@ export function TokenInput(props: {
 
   const debouncedUpdateTokenAmount = useMemo(
     () =>
-      debounce(
-        (
-          tokenPool: Pool,
-          tokenInputString: string,
-          tokenInputAmount: TokenAmount,
-          maxInput: TokenAmount,
-          value?: TokenAmount
-        ) => {
-          // Create TokenAmount from tokenInputString and update tokenInputAmount
-          if (!tokenPool || tokenInputString === tokenInputAmount.uiTokens || value !== undefined) {
-            return;
-          }
+      debounce((tokenPool: Pool, tokenInputString: string, maxInput: TokenAmount, value?: TokenAmount) => {
+        // Create TokenAmount from tokenInputString and update tokenInputAmount
+        if (!tokenPool || value !== undefined) {
+          return;
+        }
 
-          // Remove unnecessary 0's from beginning / end of input string
-          const inputString = parseFloat(fromLocaleString(tokenInputString)).toString();
+        // Remove unnecessary 0's from beginning / end of input string
+        const inputString = parseFloat(fromLocaleString(tokenInputString)).toString();
 
-          // Keep input within the user's maxInput range
-          const inputTokenAmount = getTokenAmountFromNumber(parseFloat(inputString), tokenPool.decimals);
-          const withinMaxRange = TokenAmount.min(inputTokenAmount, maxInput);
+        // Keep input within the user's maxInput range
+        const inputTokenAmount = getTokenAmountFromNumber(parseFloat(inputString), tokenPool.decimals);
+        const withinMaxRange = TokenAmount.min(inputTokenAmount, maxInput);
 
-          // Adjust state
-          setTokenInputAmount(withinMaxRange);
-          if (inputTokenAmount.gt(withinMaxRange)) {
-            const { format } = new Intl.NumberFormat(navigator.language);
-            setTokenInputString(format(withinMaxRange.tokens));
-          }
-        },
-        300
-      ),
+        // Adjust state
+        setTokenInputAmount(withinMaxRange);
+        if (inputTokenAmount.gt(withinMaxRange)) {
+          const { format } = new Intl.NumberFormat(navigator.language);
+          setTokenInputString(format(withinMaxRange.tokens));
+        }
+      }, 300),
     []
   );
 
   // Keep tokenInputAmount up to date with tokenInputString
   useEffect(() => {
     if (tokenPool) {
-      debouncedUpdateTokenAmount(tokenPool, tokenInputString, tokenInputAmount, maxInput, props.value);
+      debouncedUpdateTokenAmount(tokenPool, tokenInputString, maxInput, props.value);
     }
-  }, [tokenPool, tokenInputString, tokenInputAmount.uiTokens, props.value, maxInput]);
+  }, [tokenPool, tokenInputString, props.value, maxInput]);
 
   // Update maxInput on pool position update
   useEffect(() => {

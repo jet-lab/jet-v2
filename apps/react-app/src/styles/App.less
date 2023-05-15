@@ -35,7 +35,7 @@ html {
 
   // TPS warning banner
   .tps-banner {
-    width: calc(100% - (@spacing-sm + @spacing-xl));
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -534,6 +534,10 @@ html {
 
       .rent-fee-info {
         padding: @spacing-base @spacing-xs 0 @spacing-xs;
+
+        .underlined {
+          text-decoration: underline;
+        }
       }
     }
   }
@@ -977,7 +981,7 @@ html {
     &-head,
     &-body,
     &-footer {
-      width: calc(100% - (@spacing-sm * 2));
+      width: 100%;
       padding: @spacing-xs @spacing-sm;
     }
 
@@ -1042,11 +1046,11 @@ html {
 
     &-body {
       position: relative;
-      width: calc(100% - (@spacing-xl * 2));
+      width: 100%;
       padding: @spacing-lg @spacing-xl @spacing-xl @spacing-xl;
 
       &-item {
-        width: 33%;
+        width: 25%;
 
         h1 {
           margin: @spacing-sm 0 @spacing-xs 0;
@@ -1168,6 +1172,14 @@ html {
           margin: @spacing-xs;
         }
 
+        .copiable-field {
+          margin-top: 12px;
+
+          .ant-typography {
+            margin: 0;
+          }
+        }
+
         &-top {
           position: absolute;
           top: 0;
@@ -1245,7 +1257,7 @@ html {
       }
 
       &-body {
-        width: calc(100% - (@spacing-lg * 2));
+        width: 100%;
         height: 525px;
         padding: @spacing-lg;
 
@@ -1391,13 +1403,13 @@ html {
 
     .fixed-term-graph {
       flex: 1;
-      height: 660px;
+      min-height: 300px;
 
       &-head {
         position: absolute;
         top: 0;
         left: 0;
-        width: calc(100% - (@spacing-base * 2));
+        width: 100%;
         height: 50px;
         padding: 0 @spacing-base;
         background: @header-bg;
@@ -1429,13 +1441,13 @@ html {
 
   .swaps-graph {
     flex: 1;
-    height: 600px;
+    min-height: 300px;
 
     &-head {
       position: absolute;
       top: 0;
       left: 0;
-      width: calc(100% - (@spacing-base * 2));
+      width: 100%;
       height: 50px;
       padding: 0 @spacing-base;
       background: @header-bg;
@@ -1856,7 +1868,7 @@ html {
 
       &-head {
         position: relative;
-        width: calc(100% - 60px);
+        width: 100%;
         height: 40px;
         background: @header-bg;
         padding: @spacing-xs @spacing-xxl;
@@ -1985,7 +1997,7 @@ html {
     .pools-table {
       &-head {
         position: relative;
-        width: calc(100% - 60px);
+        width: 100%;
         height: 40px;
         background: @header-bg;
         padding: @spacing-xs @spacing-xxl;
@@ -2095,6 +2107,7 @@ html {
 
   // Any account Table
   .account-table {
+    min-height: 160px;
     &-search {
       position: absolute;
       top: @spacing-xs;
@@ -2160,7 +2173,7 @@ html {
       width: 100%;
 
       &-nav-list {
-        width: calc(100% - (@spacing-xl * 2));
+        width: 100%;
         height: 50px;
         padding: 0 @spacing-xl;
         background: @header-bg;
@@ -2347,7 +2360,7 @@ html {
       position: absolute;
       top: 0;
       left: 0;
-      width: calc(100% - (@spacing-xl * 2));
+      width: 100%;
       height: 55px;
       padding: 0 @spacing-xl;
       background: @header-bg;
@@ -2360,7 +2373,7 @@ html {
     }
 
     .ant-table-wrapper {
-      width: calc(100% - (@spacing-lg * 2));
+      width: 100%;
       padding: @spacing-lg;
       margin-top: 55px;
     }
@@ -2636,6 +2649,7 @@ html {
 
 .fixed-lend-entry,
 .fixed-borrow-entry {
+  height: 720px !important;
   .ant-tabs {
     width: 100%;
     text-transform: uppercase;
@@ -2654,12 +2668,22 @@ html {
   .order-entry-body {
     display: flex;
     flex-direction: column;
+    height: 100% !important;
+
+    p {
+      margin-bottom: 16px;
+      color: rgb(var(--secondary-4));
+    }
+  }
+
+  .submit-button {
+    margin-top: auto;
   }
 
   .fixed-order-entry-fields {
     display: flex;
     align-items: center;
-    padding-top: 24px;
+    margin-bottom: 16px;
 
     label {
       text-transform: uppercase;
@@ -2733,6 +2757,15 @@ html {
     display: flex;
     align-items: center;
     padding: 16px 0;
+
+    svg {
+      margin: @spacing-sm;
+      cursor: pointer;
+
+      &:hover {
+        fill: @jet-green;
+      }
+    }
   }
 
   .stats {
@@ -2741,7 +2774,7 @@ html {
     border: 1px solid @jet-green;
     display: flex;
     flex-direction: column;
-    margin: 0 5px 36px;
+    margin: 0 6px 8px;
 
     .stat-line {
       padding: 4px;
@@ -2843,6 +2876,10 @@ html {
   width: calc(100% - (@spacing-sm * 2));
   margin: @spacing-sm;
 
+  .ant-switch.debt-table-switch {
+    margin: auto;
+  }
+
   .ant-typography {
     margin: unset;
   }
@@ -2876,7 +2913,7 @@ html {
   }
 }
 
-.pool-details-address {
+.copiable-field {
   display: flex;
   transition: all 0.3s;
   padding: 2px 4px;
@@ -2884,6 +2921,7 @@ html {
 
   cursor: pointer;
   align-items: center;
+  justify-content: center;
 
   & svg {
     margin-right: 8px;
@@ -2934,4 +2972,72 @@ html {
   bottom: 16px;
   left: 50%;
   transform: translate(-50%, 0);
+}
+
+.fixed-order-entry-fields label,
+.autoroll-modal label {
+  text-transform: uppercase;
+  font-size: 10px;
+  color: rgb(var(--secondary-5));
+
+  &:first-child {
+    margin-right: 22px;
+  }
+
+  .ant-input-number-wrapper.ant-input-number-group {
+    position: relative;
+  }
+
+  .ant-input-number-group-addon {
+    font-size: 14px;
+    position: absolute;
+    right: 0;
+    bottom: 16px;
+  }
+
+  input {
+    background: transparent;
+    box-shadow: none;
+    padding: 8px 0;
+    border-bottom: 1px solid rgb(var(--primary-3));
+    font-size: 20px;
+    color: white;
+    border-radius: 0;
+    transition: border-color 0.3s;
+
+    &:hover,
+    &:focus {
+      box-shadow: none;
+    }
+
+    &:hover {
+      border-bottom: 1px solid @jet-green-3;
+    }
+
+    &:focus {
+      border-bottom: 1px solid @jet-green;
+    }
+
+    &::-webkit-input-placeholder {
+      /* WebKit, Blink, Edge */
+      color: #666;
+    }
+
+    &:-moz-placeholder {
+      /* Mozilla Firefox 4 to 18 */
+      color: #666;
+      opacity: 1;
+    }
+
+    &::-moz-placeholder {
+      /* Mozilla Firefox 19+ */
+      color: #666;
+      opacity: 1;
+    }
+
+    &:-ms-input-placeholder {
+      /* Internet Explorer 10-11 */
+      color: #666;
+    }
+  }
 }

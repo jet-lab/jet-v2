@@ -3,6 +3,7 @@ import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@
 import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   AccountMeta,
+  AddressLookupTableProgram,
   GetProgramAccountsFilter,
   MemcmpFilter,
   PublicKey,
@@ -38,6 +39,8 @@ import { MarginPrograms } from "./marginClient"
 import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
 import { Airspace } from "./airspace"
 
+const LOOKUP_REGISTRY_PROGRAM = new PublicKey("LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru");
+
 /** A description of a position associated with a [[MarginAccount]] and [[Pool]] */
 export interface PoolPosition {
   /** The [[MarginTokenConfig]] associated with the [[Pool]] token. */
@@ -72,10 +75,6 @@ export interface AccountSummary {
   accountBalance: number
   availableCollateral: number
   leverage: number
-  /** @deprecated use riskIndicator */
-  cRatio: number
-  /** @deprecated use riskIndicator */
-  minCRatio: number
 }
 
 /** A summation of the USD values of various positions used in margin accounting. */
@@ -90,6 +89,7 @@ export interface Valuation {
   staleCollateralList: [PublicKey, ErrorCode][]
   pastDue: boolean
   claimErrorList: [PublicKey, ErrorCode][]
+  assets: Number128
 }
 
 /**
@@ -381,8 +381,17 @@ export class MarginAccount {
         bytes: owner.toString()
       }
     }
+
+    const airspaceFilter: MemcmpFilter = {
+      memcmp: {
+        offset: 48,
+        bytes: Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name).toString()
+      }
+    }
+
     filters ??= []
     filters.push(ownerFilter)
+    filters.push(airspaceFilter)
     const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
     const marginAccounts: MarginAccount[] = []
     for (let i = 0; i < infos.length; i++) {
@@ -467,9 +476,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-            .div(collateralWeight.mul(warningRiskLevel))
-            .div(lamportPrice)
+              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+              .div(collateralWeight.mul(warningRiskLevel))
+              .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
@@ -593,43 +602,27 @@ export class MarginAccount {
   }
 
   private getSummary(): AccountSummary {
-    let collateralValue = Number128.ZERO
-
-    for (const position of this.positions) {
-      const kind = position.kind
-      if (kind === PositionKind.Deposit) {
-        collateralValue = collateralValue.add(position.valueRaw)
-      }
-    }
-
-    const equity = collateralValue.sub(this.valuation.liabilities)
-
-    const exposureNumber = this.valuation.liabilities.toNumber()
-    const cRatio = exposureNumber === 0 ? Infinity : collateralValue.toNumber() / exposureNumber
-    const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.toNumber() / exposureNumber
-    const depositedValue = collateralValue.toNumber()
-    const borrowedValue = this.valuation.liabilities.toNumber()
-    const accountBalance = equity.toNumber()
-
     let leverage = 1.0
-    if (this.valuation.liabilities.gt(Number128.ZERO)) {
-      if (equity.lt(Number128.ZERO) || equity.eq(Number128.ZERO)) {
+    const assets = this.valuation.assets
+    const liabilities = this.valuation.liabilities
+    const equity = assets.sub(liabilities)
+
+    if (liabilities.gt(Number128.ZERO)) {
+      if (assets.lt(Number128.ZERO) || assets.eq(Number128.ZERO)) {
         leverage = Infinity
       } else {
-        collateralValue.div(equity).toNumber()
+        leverage = assets.div(equity).toNumber()
       }
     }
 
     const availableCollateral = this.valuation.effectiveCollateral.sub(this.valuation.requiredCollateral).toNumber()
 
     return {
-      depositedValue,
-      borrowedValue,
-      accountBalance,
+      depositedValue: assets.toNumber(),
+      borrowedValue: liabilities.toNumber(),
+      accountBalance: equity.toNumber(),
       availableCollateral,
-      leverage,
-      cRatio,
-      minCRatio
+      leverage
     }
   }
 
@@ -721,6 +714,8 @@ export class MarginAccount {
     let requiredCollateral = Number128.ZERO
     let requiredSetupCollateral = Number128.ZERO
     let weightedCollateral = Number128.ZERO
+    let assets = Number128.ZERO
+
     const staleCollateralList: [PublicKey, ErrorCode][] = []
     const claimErrorList: [PublicKey, ErrorCode][] = []
 
@@ -770,6 +765,7 @@ export class MarginAccount {
       } else if (kind === PositionKind.Deposit || kind === PositionKind.AdapterCollateral) {
         if (staleReason === undefined || includeStalePositions) {
           weightedCollateral = weightedCollateral.add(position.collateralValue())
+          assets = assets.add(position.valueRaw)
         }
         if (staleReason !== undefined) {
           staleCollateralList.push([position.token, staleReason])
@@ -793,7 +789,8 @@ export class MarginAccount {
         return effectiveCollateral.sub(requiredSetupCollateral)
       },
       staleCollateralList,
-      claimErrorList
+      claimErrorList,
+      assets
     }
   }
 
@@ -920,7 +917,18 @@ export class MarginAccount {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
     }
     const marginAccount = new MarginAccount(programs, provider, owner, seed, airspaceAddress, pools, walletTokens)
-    await marginAccount.createAccount()
+    const instructions: TransactionInstruction[] = [];
+    await marginAccount.withCreateAccount(instructions);
+    // Add a lookup registry account
+    await marginAccount.withInitLookupRegistry(instructions);
+    const slot = await provider.connection.getSlot()
+    const marginLookup = await marginAccount.withCreateLookupTable({
+      instructions,
+      slot,
+      discriminator: 10, // TODO
+    });
+    await marginAccount.sendAndConfirm(instructions);
+    console.log("Lookup address is ", marginLookup.toBase58())
     return marginAccount
   }
 
@@ -992,7 +1000,7 @@ export class MarginAccount {
   async createAccount(): Promise<string> {
     const instructions: TransactionInstruction[] = []
     await this.withCreateAccount(instructions)
-    return await this.sendAll([instructions])
+    return await this.sendAndConfirmV0(instructions, [])
   }
 
   /**
@@ -1711,6 +1719,118 @@ export class MarginAccount {
     return accounts
   }
 
+  /** Create an address lookup table registry account owned by the margin account.
+   */
+  async initLookupRegistry(): Promise<void> {
+    const ix: TransactionInstruction[] = []
+    await this.withInitLookupRegistry(ix)
+    await this.sendAndConfirm(ix)
+  }
+
+  async withInitLookupRegistry(instructions: TransactionInstruction[]) {
+    const [registryAccount] = PublicKey.findProgramAddressSync([
+      this.address.toBytes()
+    ], LOOKUP_REGISTRY_PROGRAM)
+    const ix = await this.programs.margin.methods
+      .initLookupRegistry()
+      .accounts({
+        marginAuthority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        registryAccount,
+        registryProgram: LOOKUP_REGISTRY_PROGRAM,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction()
+    instructions.push(ix)
+  }
+
+  async createLookupTable(slot: number, discriminator: number): Promise<PublicKey> {
+    const ix: TransactionInstruction[] = []
+    const lookupTable = await this.withCreateLookupTable({ instructions: ix, slot, discriminator })
+    await this.sendAndConfirm(ix)
+    return lookupTable
+  }
+
+  async withCreateLookupTable({
+    instructions,
+    slot,
+    discriminator
+  }: {
+    instructions: TransactionInstruction[],
+    slot: number,
+    discriminator: number,
+  }): Promise<PublicKey> {
+    const [registryAccount] = PublicKey.findProgramAddressSync([
+      this.address.toBytes()
+    ], LOOKUP_REGISTRY_PROGRAM);
+    const [_, lookupTable] = AddressLookupTableProgram.createLookupTable({
+      authority: this.address,
+      payer: this.provider.wallet.publicKey,
+      recentSlot: slot
+    });
+    const ix = await this.programs.margin.methods
+      .createLookupTable(
+        new BN(slot),
+        new BN(discriminator),
+      )
+      .accounts({
+        marginAuthority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        registryAccount,
+        registryProgram: LOOKUP_REGISTRY_PROGRAM,
+        systemProgram: SystemProgram.programId,
+        lookupTable,
+        addressLookupTableProgram: AddressLookupTableProgram.programId
+      })
+      .instruction()
+    instructions.push(ix)
+    return lookupTable
+  }
+
+  async appendToLookupTable(args: {
+    lookupTable: PublicKey,
+    discriminator: number,
+    addresses: PublicKey[]
+  }) {
+    const ix: TransactionInstruction[] = []
+    await this.withAppendToLookupTable({ instructions: ix, ...args })
+    await this.sendAndConfirm(ix)
+  }
+
+  async withAppendToLookupTable({
+    instructions,
+    lookupTable,
+    discriminator,
+    addresses
+  }: {
+    instructions: TransactionInstruction[],
+    lookupTable: PublicKey,
+    discriminator: number,
+    addresses: PublicKey[]
+  }) {
+    const [registryAccount] = PublicKey.findProgramAddressSync([
+      this.address.toBytes()
+    ], LOOKUP_REGISTRY_PROGRAM);
+    const ix = await this.programs.margin.methods
+      .appendToLookup(
+        new BN(discriminator), addresses
+      )
+      .accounts({
+        marginAuthority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        registryAccount,
+        registryProgram: LOOKUP_REGISTRY_PROGRAM,
+        systemProgram: SystemProgram.programId,
+        lookupTable,
+        addressLookupTableProgram: AddressLookupTableProgram.programId
+      })
+      .instruction()
+    instructions.push(ix)
+  }
+
   /**
    * Sends a transaction using the [[MarginAccount]] [[AnchorProvider]]
    *
@@ -1725,10 +1845,10 @@ export class MarginAccount {
 
   async sendAndConfirmV0(
     instructions: TransactionInstruction[],
-    lookupTables: PublicKey[],
+    lookupTables: { address: string; data: Uint8Array }[],
     signers?: Signer[]
   ): Promise<string> {
-    return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
+    return await sendAndConfirmV0(this.provider, [instructions], lookupTables, signers)
   }
 
   /**
@@ -1797,24 +1917,28 @@ export class MarginAccount {
   }
 
   /**
-* Refresh any deposit position
-*
-* @param {({
-  *     instructions: TransactionInstruction[] 
-  *     config: Address
-  *     priceOracle: PublicKey
-  *   })} {
-  *     instructions,
-  *     pools,
-  *     marginAccount
-  *   }
-  * @return {Promise<void>}
-  */
+   * Refresh any deposit position
+   *
+   * @param {({
+   *     instructions: TransactionInstruction[]
+   *     config: Address
+   *     priceOracle: PublicKey
+   *   })} {
+   *     instructions,
+   *     pools,
+   *     marginAccount
+   *   }
+   * @return {Promise<void>}
+   */
   async withRefreshDepositPosition({
     instructions,
     config,
     priceOracle
-  }: { instructions: TransactionInstruction[], config: Address, priceOracle: Address }): Promise<void> {
+  }: {
+    instructions: TransactionInstruction[]
+    config: Address
+    priceOracle: Address
+  }): Promise<void> {
     const ix = await this.programs.margin.methods
       .refreshDepositPosition()
       .accounts({

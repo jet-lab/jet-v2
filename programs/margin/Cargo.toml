@@ -40,6 +40,12 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-metadata = { path = "../metadata", features = ["no-entrypoint"] }
 jet-airspace = { path = "../airspace", features = ["no-entrypoint"] }
 
+[dependencies.lookup-table-registry]
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+default-features = false
+features = ["cpi"]
+
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_test = "1.0"

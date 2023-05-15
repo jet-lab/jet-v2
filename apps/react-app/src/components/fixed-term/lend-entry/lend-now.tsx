@@ -1,4 +1,4 @@
-import { Button, InputNumber, Switch, Tooltip } from 'antd';
+import { Button, InputNumber, Switch } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import {
   bigIntToBn,
@@ -24,7 +24,9 @@ import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@sta
 import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
-import { LoadingOutlined } from '@ant-design/icons';
+import { EditOutlined, LoadingOutlined } from '@ant-design/icons';
+import { AutoRollChecks } from '../shared/autoroll-checks';
+import { AutoRollModal } from '../shared/autoroll-modal';
 
 interface RequestLoanProps {
   decimals: number;
@@ -48,10 +50,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
-  const { cluster, explorer, selectedPoolKey } = useJetStore(state => ({
+  const { cluster, explorer, selectedPoolKey, airspaceLookupTables } = useJetStore(state => ({
     cluster: state.settings.cluster,
     explorer: state.settings.explorer,
-    selectedPoolKey: state.selectedPoolKey
+    selectedPoolKey: state.selectedPoolKey,
+    airspaceLookupTables: state.airspaceLookupTables
   }));
   const currentPool = useMemo(
     () =>
@@ -59,26 +62,31 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     [selectedPoolKey, pools]
   );
   const wallet = useWallet();
-  const [amount, setAmount] = useState(new BN(0));
+  const [amount, setAmount] = useState<BN | undefined>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
 
   const [pending, setPending] = useState(false);
+  const [showAutorollModal, setShowAutorollModal] = useState(false);
+  const [autorollEnabled, setAutorollEnabled] = useState(false);
 
   const tokenBalance = marginAccount?.poolPositions[token.symbol].depositBalance;
-  const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount, token.decimals));
+  const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount || new BN(0), token.decimals));
+
+  const enoughLiquidity = forecast && forecast.unfilledQty <= 0;
 
   const disabled =
     !marginAccount ||
     !wallet.publicKey ||
     !currentPool ||
     !pools ||
-    amount.lte(new BN(0)) ||
+    amount?.lte(new BN(0)) ||
     !forecast?.effectiveRate ||
     forecast.selfMatch ||
     !forecast.fulfilled ||
     !hasEnoughTokens ||
+    !enoughLiquidity ||
     !forecast?.hasEnoughCollateral;
 
   const handleForecast = (amount: BN) => {
@@ -88,7 +96,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
     }
     const orderbookModel = marketAndConfig.market.orderbookModel as OrderbookModel;
     try {
-      const sim = orderbookModel.simulateTaker('lend', bnToBigInt(amount), undefined);
+      const sim = orderbookModel.simulateTaker('lend', bnToBigInt(amount), undefined, marginAccount?.address.toBytes());
 
       let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
       if (correspondingPool == undefined) {
@@ -102,16 +110,16 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       const setupCheckEstimate = productModel?.takerAccountForecast('lend', sim, 'setup');
       const valuationEstimate = productModel?.takerAccountForecast('lend', sim);
 
-      const repayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-      const lendAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilled_quote_qty - sim.matches), token.decimals);
+      const repayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+      const lendAmount = new TokenAmount(bigIntToBn(sim.filledQuoteQty), token.decimals);
+      const unfilledQty = new TokenAmount(bigIntToBn(sim.unfilledQuoteQty - sim.matches), token.decimals);
 
       setForecast({
         repayAmount: repayAmount.tokens,
         interest: repayAmount.sub(lendAmount).tokens,
-        effectiveRate: sim.filled_vwar,
-        selfMatch: sim.self_match,
-        fulfilled: sim.filled_quote_qty >= sim.order_quote_qty - BigInt(1) * sim.matches,
+        effectiveRate: sim.filledVwar,
+        selfMatch: sim.selfMatch,
+        fulfilled: sim.filledQuoteQty >= sim.totalQuoteQty - BigInt(1) * sim.matches,
         riskIndicator: valuationEstimate?.riskIndicator,
         unfilledQty: unfilledQty.tokens,
         hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false
@@ -124,6 +132,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   };
 
   const marketLendOrder = async () => {
+    if (!amount) return;
     setPending(true);
     let signature: string;
     try {
@@ -135,43 +144,71 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
         amount,
-        markets: markets.map(m => m.market)
+        markets: markets.map(m => m.market),
+        autorollEnabled,
+        airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
         refreshOrderBooks();
         notify(
           'Lend Successful',
-          `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
+          `Your loan order for ${amount
+            .div(new BN(10 ** decimals))
+            .toNumber()
+            .toFixed(token.precision)} ${token.name} was filled successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
         setPending(false);
-      }, 2000); // TODO: Ugly and unneded. update when websocket is fully integrated
+      }, 3000); // TODO: Ugly and unneded. update when websocket is fully integrated
     } catch (e: any) {
       notify(
         'Lend Order Failed',
-        `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
+        `Your loan order for ${amount
+          .div(new BN(10 ** decimals))
+          .toNumber()
+          .toFixed(token.precision)} ${token.name} failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
       setPending(false);
-      throw e;
+      console.error(e);
+    } finally {
+      setAmount(undefined);
+      setForecast(undefined);
     }
   };
 
   useEffect(() => {
-    handleForecast(amount);
+    if (amount) {
+      handleForecast(amount);
+    } else {
+      setForecast(undefined);
+    }
   }, [amount, marginAccount?.address, marketAndConfig]);
+
+  useEffect(() => {
+    setAutorollEnabled(false);
+  }, [marketAndConfig]);
 
   return (
     <div className="fixed-term order-entry-body">
+      <p>
+        You are lending as a taker. Your order will be filled at the prevailing market rates. Any unfilled quantity will
+        not be posted to the order book.
+      </p>
       <div className="lend-now fixed-order-entry-fields">
         <label>
           Loan amount
           <InputNumber
             className="input-amount"
+            value={amount ? new TokenAmount(amount, decimals).tokens : ''}
             onChange={debounce(e => {
-              setAmount(new BN(e * 10 ** decimals));
+              if (!e) {
+                setAmount(undefined);
+              } else {
+                setAmount(new BN(e * 10 ** decimals));
+              }
             }, 300)}
             placeholder={'10,000'}
             min={0}
@@ -182,12 +219,35 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         </label>
       </div>
 
-      <div className="auto-roll-controls">
-        <Tooltip title="Coming soon...">
-          <Switch disabled={true} />
-        </Tooltip>
-        Auto-roll Off
-      </div>
+      <AutoRollChecks market={marketAndConfig.market} marginAccount={marginAccount}>
+        {({ hasConfig, refresh, borrowRate, lendRate }) => (
+          <div className="auto-roll-controls">
+            <AutoRollModal
+              onClose={() => {
+                setShowAutorollModal(false);
+              }}
+              open={showAutorollModal}
+              marketAndConfig={marketAndConfig}
+              marginAccount={marginAccount}
+              refresh={refresh}
+              borrowRate={borrowRate}
+              lendRate={lendRate}
+            />
+            <Switch
+              checked={autorollEnabled}
+              onClick={() => {
+                if (hasConfig) {
+                  setAutorollEnabled(!autorollEnabled);
+                } else {
+                  setShowAutorollModal(true);
+                }
+              }}
+            />
+            Auto-roll
+            <EditOutlined onClick={() => setShowAutorollModal(true)} />
+          </div>
+        )}
+      </AutoRollChecks>
 
       <div className="stats">
         <div className="stat-line">
@@ -203,23 +263,23 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         </div>
         <div className="stat-line">
           <span>Repayment Amount</span>
-          {forecast?.repayAmount && (
+          {forecast?.repayAmount && enoughLiquidity ? (
             <span>
               {forecast.repayAmount.toFixed(token.precision)} {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Total Interest</span>
-          {forecast?.interest && (
+          {forecast?.interest && enoughLiquidity ? (
             <span>
               {forecast.interest.toFixed(token.precision)} {token.symbol}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="stat-line">
           <span>Interest Rate</span>
-          <RateDisplay rate={forecast?.effectiveRate} />
+          {enoughLiquidity && <RateDisplay rate={forecast?.effectiveRate} />}
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
@@ -246,14 +306,11 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       {!hasEnoughTokens && (
         <div className="fixed-term-warning">Not enough deposited {token.symbol} to submit this request</div>
       )}
-      {!forecast?.hasEnoughCollateral && !amount.isZero() && (
+      {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
       )}
-      {forecast && forecast.unfilledQty > 0 && (
-        <div className="fixed-term-warning">
-          Current max liquidity on this market is{' '}
-          {(new TokenAmount(amount, token.decimals).tokens - forecast.unfilledQty).toFixed(3)} {token.symbol}
-        </div>
+      {forecast && !enoughLiquidity && (
+        <div className="fixed-term-warning">Not enough liquidity on this market, try a smaller amount.</div>
       )}
       {forecast && forecast.effectiveRate === 0 && (
         <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing lend amount.</div>

@@ -1,0 +1,30 @@
+[package]
+name = "jet-alt-registry-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { version = "1", features = ["backtrace"] }
+env_logger = "0.10"
+tokio = { version = "1", features = ["macros"] }
+clap = { version = "3.2", features = ["derive", "env"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_with = "1"
+serde_json = "1.0"
+indicatif = "0.16"
+dialoguer = "0.10"
+
+anchor-lang = "0.27"
+solana-sdk = "1.14"
+solana-client = "1.14"
+solana-clap-utils = "1.14"
+solana-cli-config = "1.14"
+
+lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }
+jet-margin-sdk = { path = "../../libraries/rust/margin" }
+jet-simulation = { path = "../../libraries/rust/simulation" }
+jet-solana-client = { path = "../../libraries/rust/solana-client" }
+
+# For deriving ATAs
+spl-token = "3"
+spl-associated-token-account = "1"

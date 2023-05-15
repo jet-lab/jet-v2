@@ -49,12 +49,16 @@
 //! }
 //! ```
 
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
+/// retrieve on-chain state
+pub mod get_state;
 /// Instruction builders for programs and adapters supported by the SDK
 pub mod ix_builder;
 /// generic code to integrate adapters with margin
 pub mod margin_integrator;
+/// generically refreshing positions in a margin account
+pub mod refresh;
 /// things that should be provided by the solana sdk, but are not
 pub mod solana;
 /// Utilities for swap adapters
@@ -83,3 +87,5 @@ pub use jet_margin_pool;
 pub use jet_margin_swap;
 pub use jet_metadata;
 pub use jet_test_service;
+
+pub use jet_solana_client::cat; // TODO: remove

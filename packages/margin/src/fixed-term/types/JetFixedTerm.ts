@@ -434,7 +434,235 @@ export type JetFixedTerm = {
       args: []
     },
     {
-      name: "configureAutoRoll"
+      name: "autoRollBorrowOrder"
+      docs: ["Instruction for authorized servicer to auto roll a `TermLoan` into another order"]
+      accounts: [
+        {
+          name: "marginUser"
+          isMut: true
+          isSigner: false
+          docs: ["The `MarginUser` account for this market"]
+        },
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: false
+          docs: ["The `MarginAccount` this `TermDeposit` belongs to"]
+        },
+        {
+          name: "claims"
+          isMut: true
+          isSigner: false
+          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "claimsMint"
+          isMut: true
+          isSigner: false
+          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "underlyingCollateral"
+          isMut: true
+          isSigner: false
+          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "underlyingCollateralMint"
+          isMut: true
+          isSigner: false
+          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "underlyingTokenVault"
+          isMut: true
+          isSigner: false
+          docs: ["The market token vault"]
+        },
+        {
+          name: "feeVault"
+          isMut: true
+          isSigner: false
+          docs: ["The market fee vault"]
+        },
+        {
+          name: "loan"
+          isMut: true
+          isSigner: false
+          docs: ["The `TermDeposit` account to roll"]
+        },
+        {
+          name: "newLoan"
+          isMut: true
+          isSigner: false
+          docs: ["In the case the order matches, the new `TermLoan` to account for"]
+        },
+        {
+          name: "rentReceiver"
+          isMut: true
+          isSigner: false
+          docs: ["Reciever for rent from the closing of the TermDeposit"]
+        },
+        {
+          name: "orderbookMut"
+          accounts: [
+            {
+              name: "market"
+              isMut: true
+              isSigner: false
+              docs: ["The `Market` account tracks global information related to this particular fixed term market"]
+            },
+            {
+              name: "orderbookMarketState"
+              isMut: true
+              isSigner: false
+            },
+            {
+              name: "eventQueue"
+              isMut: true
+              isSigner: false
+            },
+            {
+              name: "bids"
+              isMut: true
+              isSigner: false
+            },
+            {
+              name: "asks"
+              isMut: true
+              isSigner: false
+            }
+          ]
+        },
+        {
+          name: "payer"
+          isMut: true
+          isSigner: true
+          docs: ["Payer for PDA initialization"]
+        },
+        {
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: []
+    },
+    {
+      name: "autoRollLendOrder"
+      docs: ["Instruction for authorized servicer to auto roll a matured `TermDeposit` into another order"]
+      accounts: [
+        {
+          name: "marginUser"
+          isMut: true
+          isSigner: false
+          docs: ["The `MarginUser` account for this market"]
+        },
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: false
+          docs: ["The `MarginAccount` this `TermDeposit` belongs to"]
+        },
+        {
+          name: "deposit"
+          isMut: true
+          isSigner: false
+          docs: ["The `TermDeposit` account to roll"]
+        },
+        {
+          name: "newDeposit"
+          isMut: true
+          isSigner: false
+          docs: ["In the case the order matches, the new `TermDeposit` to account for"]
+        },
+        {
+          name: "ticketCollateral"
+          isMut: true
+          isSigner: false
+          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "ticketCollateralMint"
+          isMut: true
+          isSigner: false
+          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "ticketMint"
+          isMut: true
+          isSigner: false
+          docs: ["The market token vault"]
+        },
+        {
+          name: "underlyingTokenVault"
+          isMut: true
+          isSigner: false
+          docs: ["The market token vault"]
+        },
+        {
+          name: "rentReceiver"
+          isMut: true
+          isSigner: false
+          docs: ["Reciever for rent from the closing of the TermDeposit"]
+        },
+        {
+          name: "orderbookMut"
+          accounts: [
+            {
+              name: "market"
+              isMut: true
+              isSigner: false
+              docs: ["The `Market` account tracks global information related to this particular fixed term market"]
+            },
+            {
+              name: "orderbookMarketState"
+              isMut: true
+              isSigner: false
+            },
+            {
+              name: "eventQueue"
+              isMut: true
+              isSigner: false
+            },
+            {
+              name: "bids"
+              isMut: true
+              isSigner: false
+            },
+            {
+              name: "asks"
+              isMut: true
+              isSigner: false
+            }
+          ]
+        },
+        {
+          name: "payer"
+          isMut: true
+          isSigner: true
+          docs: ["Payer for PDA initialization"]
+        },
+        {
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: []
+    },
+    {
+      name: "configureAutoRollBorrow"
       docs: ["Configure settings for rolling orders"]
       accounts: [
         {
@@ -448,20 +676,98 @@ export type JetFixedTerm = {
           isMut: false
           isSigner: true
           docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "market"
+          isMut: false
+          isSigner: false
+          docs: ["The fixed-term market this user belongs to"]
         }
       ]
       args: [
         {
-          name: "side"
-          type: "u8"
-        },
-        {
           name: "config"
           type: {
-            defined: "AutoRollConfig"
+            defined: "BorrowAutoRollConfig"
           }
         }
       ]
+    },
+    {
+      name: "configureAutoRollLend"
+      docs: ["Configure settings for rolling orders"]
+      accounts: [
+        {
+          name: "marginUser"
+          isMut: true
+          isSigner: false
+          docs: ["The `MarginUser` account.", "This account is specific to a particular fixed-term market"]
+        },
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
+          docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "market"
+          isMut: false
+          isSigner: false
+          docs: ["The fixed-term market this user belongs to"]
+        }
+      ]
+      args: [
+        {
+          name: "config"
+          type: {
+            defined: "LendAutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
+      name: "toggleAutoRollDeposit"
+      docs: ["Toggle the status of a term deposit's auto-roll"]
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
+          docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "deposit"
+          isMut: true
+          isSigner: false
+          docs: ["The fixed-term market this user belongs to"]
+        }
+      ]
+      args: []
+    },
+    {
+      name: "toggleAutoRollLoan"
+      docs: ["Toggle the status of a term loan's auto-roll"]
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
+          docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "marginUser"
+          isMut: true
+          isSigner: false
+          docs: ["The fixed-term market state for the user"]
+        },
+        {
+          name: "loan"
+          isMut: true
+          isSigner: false
+          docs: ["The fixed-term market this user belongs to"]
+        }
+      ]
+      args: []
     },
     {
       name: "initializeMarginUser"
@@ -508,6 +814,17 @@ export type JetFixedTerm = {
           isSigner: false
         },
         {
+          name: "tokenCollateral"
+          isMut: true
+          isSigner: false
+          docs: ["Token account used by the margin program to track owned assets"]
+        },
+        {
+          name: "tokenCollateralMint"
+          isMut: false
+          isSigner: false
+        },
+        {
           name: "payer"
           isMut: true
           isSigner: true
@@ -535,6 +852,12 @@ export type JetFixedTerm = {
         },
         {
           name: "ticketCollateralMetadata"
+          isMut: false
+          isSigner: false
+          docs: ["Token metadata account needed by the margin program to register the collateral position"]
+        },
+        {
+          name: "tokenCollateralMetadata"
           isMut: false
           isSigner: false
           docs: ["Token metadata account needed by the margin program to register the collateral position"]
@@ -577,13 +900,13 @@ export type JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateral"
+          name: "tokenCollateral"
           isMut: true
           isSigner: false
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint"
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -675,13 +998,13 @@ export type JetFixedTerm = {
           docs: ["The account tracking borrower debts"]
         },
         {
-          name: "ticketCollateral"
+          name: "tokenCollateral"
           isMut: true
           isSigner: false
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint"
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -1139,6 +1462,16 @@ export type JetFixedTerm = {
         },
         {
           name: "ticketCollateralMint"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "tokenCollateral"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "tokenCollateralMint"
           isMut: true
           isSigner: false
         },
@@ -1810,6 +2143,15 @@ export type JetFixedTerm = {
             type: "publicKey"
           },
           {
+            name: "tokenCollateralMint"
+            docs: [
+              "Mint owned by fixed-term market to issue collateral value to a user for",
+              "positions that are priced as tokens. The collateral notes are monitored",
+              "by the margin program to track value"
+            ]
+            type: "publicKey"
+          },
+          {
             name: "underlyingOracle"
             docs: ["oracle that defines the value of the underlying asset"]
             type: "publicKey"
@@ -1945,6 +2287,15 @@ export type JetFixedTerm = {
             type: "publicKey"
           },
           {
+            name: "tokenCollateral"
+            docs: [
+              "Token account used by the margin program to track the collateral value of positions",
+              "related to a collateralized value of a token as it rests in the control of the Fixed-Term orderbook",
+              "for now this specifically tracks the tokens locked in an open borrow order"
+            ]
+            type: "publicKey"
+          },
+          {
             name: "debt"
             docs: [
               "The amount of debt that must be collateralized or repaid",
@@ -1965,14 +2316,14 @@ export type JetFixedTerm = {
             name: "borrowRollConfig"
             docs: ['Settings for borrow order "auto rolling"']
             type: {
-              defined: "AutoRollConfig"
+              defined: "BorrowAutoRollConfig"
             }
           },
           {
             name: "lendRollConfig"
             docs: ['Settings for lend order "auto rolling"']
             type: {
-              defined: "AutoRollConfig"
+              defined: "LendAutoRollConfig"
             }
           }
         ]
@@ -2258,7 +2609,25 @@ export type JetFixedTerm = {
       }
     },
     {
-      name: "AutoRollConfig"
+      name: "BorrowAutoRollConfig"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "limitPrice"
+            docs: ["the limit price at which orders may be placed by an authority"]
+            type: "u64"
+          },
+          {
+            name: "rollTenor"
+            docs: ["The borrow roll tenor"]
+            type: "u64"
+          }
+        ]
+      }
+    },
+    {
+      name: "LendAutoRollConfig"
       type: {
         kind: "struct"
         fields: [
@@ -2700,6 +3069,11 @@ export type JetFixedTerm = {
           name: "postAllowed"
           type: "bool"
           index: false
+        },
+        {
+          name: "autoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -2780,6 +3154,11 @@ export type JetFixedTerm = {
           name: "finalBalance"
           type: "u64"
           index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -2809,6 +3188,11 @@ export type JetFixedTerm = {
         {
           name: "timestamp"
           type: "i64"
+          index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
           index: false
         }
       ]
@@ -2861,6 +3245,11 @@ export type JetFixedTerm = {
         {
           name: "amount"
           type: "u64"
+          index: false
+        },
+        {
+          name: "flags"
+          type: "u8" // should be "u8"
           index: false
         }
       ]
@@ -3887,7 +4276,235 @@ export const IDL: JetFixedTerm = {
       args: []
     },
     {
-      name: "configureAutoRoll",
+      name: "autoRollBorrowOrder",
+      docs: ["Instruction for authorized servicer to auto roll a `TermLoan` into another order"],
+      accounts: [
+        {
+          name: "marginUser",
+          isMut: true,
+          isSigner: false,
+          docs: ["The `MarginUser` account for this market"]
+        },
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: false,
+          docs: ["The `MarginAccount` this `TermDeposit` belongs to"]
+        },
+        {
+          name: "claims",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "claimsMint",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "underlyingCollateral",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "underlyingCollateralMint",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "underlyingTokenVault",
+          isMut: true,
+          isSigner: false,
+          docs: ["The market token vault"]
+        },
+        {
+          name: "feeVault",
+          isMut: true,
+          isSigner: false,
+          docs: ["The market fee vault"]
+        },
+        {
+          name: "loan",
+          isMut: true,
+          isSigner: false,
+          docs: ["The `TermDeposit` account to roll"]
+        },
+        {
+          name: "newLoan",
+          isMut: true,
+          isSigner: false,
+          docs: ["In the case the order matches, the new `TermLoan` to account for"]
+        },
+        {
+          name: "rentReceiver",
+          isMut: true,
+          isSigner: false,
+          docs: ["Reciever for rent from the closing of the TermDeposit"]
+        },
+        {
+          name: "orderbookMut",
+          accounts: [
+            {
+              name: "market",
+              isMut: true,
+              isSigner: false,
+              docs: ["The `Market` account tracks global information related to this particular fixed term market"]
+            },
+            {
+              name: "orderbookMarketState",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "eventQueue",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "bids",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "asks",
+              isMut: true,
+              isSigner: false
+            }
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: ["Payer for PDA initialization"]
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "tokenProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "autoRollLendOrder",
+      docs: ["Instruction for authorized servicer to auto roll a matured `TermDeposit` into another order"],
+      accounts: [
+        {
+          name: "marginUser",
+          isMut: true,
+          isSigner: false,
+          docs: ["The `MarginUser` account for this market"]
+        },
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: false,
+          docs: ["The `MarginAccount` this `TermDeposit` belongs to"]
+        },
+        {
+          name: "deposit",
+          isMut: true,
+          isSigner: false,
+          docs: ["The `TermDeposit` account to roll"]
+        },
+        {
+          name: "newDeposit",
+          isMut: true,
+          isSigner: false,
+          docs: ["In the case the order matches, the new `TermDeposit` to account for"]
+        },
+        {
+          name: "ticketCollateral",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "ticketCollateralMint",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "ticketMint",
+          isMut: true,
+          isSigner: false,
+          docs: ["The market token vault"]
+        },
+        {
+          name: "underlyingTokenVault",
+          isMut: true,
+          isSigner: false,
+          docs: ["The market token vault"]
+        },
+        {
+          name: "rentReceiver",
+          isMut: true,
+          isSigner: false,
+          docs: ["Reciever for rent from the closing of the TermDeposit"]
+        },
+        {
+          name: "orderbookMut",
+          accounts: [
+            {
+              name: "market",
+              isMut: true,
+              isSigner: false,
+              docs: ["The `Market` account tracks global information related to this particular fixed term market"]
+            },
+            {
+              name: "orderbookMarketState",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "eventQueue",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "bids",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "asks",
+              isMut: true,
+              isSigner: false
+            }
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: ["Payer for PDA initialization"]
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "tokenProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "configureAutoRollBorrow",
       docs: ["Configure settings for rolling orders"],
       accounts: [
         {
@@ -3901,20 +4518,98 @@ export const IDL: JetFixedTerm = {
           isMut: false,
           isSigner: true,
           docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "market",
+          isMut: false,
+          isSigner: false,
+          docs: ["The fixed-term market this user belongs to"]
         }
       ],
       args: [
         {
-          name: "side",
-          type: "u8"
-        },
-        {
           name: "config",
           type: {
-            defined: "AutoRollConfig"
+            defined: "BorrowAutoRollConfig"
           }
         }
       ]
+    },
+    {
+      name: "configureAutoRollLend",
+      docs: ["Configure settings for rolling orders"],
+      accounts: [
+        {
+          name: "marginUser",
+          isMut: true,
+          isSigner: false,
+          docs: ["The `MarginUser` account.", "This account is specific to a particular fixed-term market"]
+        },
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: true,
+          docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "market",
+          isMut: false,
+          isSigner: false,
+          docs: ["The fixed-term market this user belongs to"]
+        }
+      ],
+      args: [
+        {
+          name: "config",
+          type: {
+            defined: "LendAutoRollConfig"
+          }
+        }
+      ]
+    },
+    {
+      name: "toggleAutoRollDeposit",
+      docs: ["Toggle the status of a term deposit's auto-roll"],
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: true,
+          docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "deposit",
+          isMut: true,
+          isSigner: false,
+          docs: ["The fixed-term market this user belongs to"]
+        }
+      ],
+      args: []
+    },
+    {
+      name: "toggleAutoRollLoan",
+      docs: ["Toggle the status of a term loan's auto-roll"],
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: true,
+          docs: ["The signing authority for this user account"]
+        },
+        {
+          name: "marginUser",
+          isMut: true,
+          isSigner: false,
+          docs: ["The fixed-term market state for the user"]
+        },
+        {
+          name: "loan",
+          isMut: true,
+          isSigner: false,
+          docs: ["The fixed-term market this user belongs to"]
+        }
+      ],
+      args: []
     },
     {
       name: "initializeMarginUser",
@@ -3961,6 +4656,17 @@ export const IDL: JetFixedTerm = {
           isSigner: false
         },
         {
+          name: "tokenCollateral",
+          isMut: true,
+          isSigner: false,
+          docs: ["Token account used by the margin program to track owned assets"]
+        },
+        {
+          name: "tokenCollateralMint",
+          isMut: false,
+          isSigner: false
+        },
+        {
           name: "payer",
           isMut: true,
           isSigner: true
@@ -3988,6 +4694,12 @@ export const IDL: JetFixedTerm = {
         },
         {
           name: "ticketCollateralMetadata",
+          isMut: false,
+          isSigner: false,
+          docs: ["Token metadata account needed by the margin program to register the collateral position"]
+        },
+        {
+          name: "tokenCollateralMetadata",
           isMut: false,
           isSigner: false,
           docs: ["Token metadata account needed by the margin program to register the collateral position"]
@@ -4030,13 +4742,13 @@ export const IDL: JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateral",
+          name: "tokenCollateral",
           isMut: true,
           isSigner: false,
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint",
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false,
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -4128,13 +4840,13 @@ export const IDL: JetFixedTerm = {
           docs: ["The account tracking borrower debts"]
         },
         {
-          name: "ticketCollateral",
+          name: "tokenCollateral",
           isMut: true,
           isSigner: false,
           docs: ["Token account used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "ticketCollateralMint",
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false,
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
@@ -4592,6 +5304,16 @@ export const IDL: JetFixedTerm = {
         },
         {
           name: "ticketCollateralMint",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "tokenCollateral",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "tokenCollateralMint",
           isMut: true,
           isSigner: false
         },
@@ -5263,6 +5985,15 @@ export const IDL: JetFixedTerm = {
             type: "publicKey"
           },
           {
+            name: "tokenCollateralMint",
+            docs: [
+              "Mint owned by fixed-term market to issue collateral value to a user for",
+              "positions that are priced as tokens. The collateral notes are monitored",
+              "by the margin program to track value"
+            ],
+            type: "publicKey"
+          },
+          {
             name: "underlyingOracle",
             docs: ["oracle that defines the value of the underlying asset"],
             type: "publicKey"
@@ -5397,6 +6128,16 @@ export const IDL: JetFixedTerm = {
             ],
             type: "publicKey"
           },
+
+          {
+            name: "tokenCollateral",
+            docs: [
+              "Token account used by the margin program to track the collateral value of positions",
+              "related to a collateralized value of a token as it rests in the control of the Fixed-Term orderbook",
+              "for now this specifically tracks the tokens locked in an open borrow order"
+            ],
+            type: "publicKey"
+          },
           {
             name: "debt",
             docs: [
@@ -5418,14 +6159,14 @@ export const IDL: JetFixedTerm = {
             name: "borrowRollConfig",
             docs: ['Settings for borrow order "auto rolling"'],
             type: {
-              defined: "AutoRollConfig"
+              defined: "BorrowAutoRollConfig"
             }
           },
           {
             name: "lendRollConfig",
             docs: ['Settings for lend order "auto rolling"'],
             type: {
-              defined: "AutoRollConfig"
+              defined: "LendAutoRollConfig"
             }
           }
         ]
@@ -5711,7 +6452,25 @@ export const IDL: JetFixedTerm = {
       }
     },
     {
-      name: "AutoRollConfig",
+      name: "BorrowAutoRollConfig",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "limitPrice",
+            docs: ["the limit price at which orders may be placed by an authority"],
+            type: "u64"
+          },
+          {
+            name: "rollTenor",
+            docs: ["The borrow roll tenor"],
+            type: "u64"
+          }
+        ]
+      }
+    },
+    {
+      name: "LendAutoRollConfig",
       type: {
         kind: "struct",
         fields: [
@@ -6153,6 +6912,11 @@ export const IDL: JetFixedTerm = {
           name: "postAllowed",
           type: "bool",
           index: false
+        },
+        {
+          name: "autoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -6233,6 +6997,11 @@ export const IDL: JetFixedTerm = {
           name: "finalBalance",
           type: "u64",
           index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
+          index: false
         }
       ]
     },
@@ -6262,6 +7031,11 @@ export const IDL: JetFixedTerm = {
         {
           name: "timestamp",
           type: "i64",
+          index: false
+        },
+        {
+          name: "isAutoRoll",
+          type: "bool",
           index: false
         }
       ]
@@ -6314,6 +7088,11 @@ export const IDL: JetFixedTerm = {
         {
           name: "amount",
           type: "u64",
+          index: false
+        },
+        {
+          name: "flags",
+          type: "u8", // should be "u8"
           index: false
         }
       ]

@@ -3,7 +3,7 @@ import { atom, selector, useRecoilState, useRecoilValue, useResetRecoilState, us
 // import axios from 'axios';
 import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { MarginAccount, MarginClient, AccountTransaction, TokenAmount } from '@jet-lab/margin';
+import { MarginAccount, MarginClient, TokenAmount, FlightLog } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
 import { Dictionary } from '../settings/localization/localization';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
@@ -15,7 +15,7 @@ import { useJetStore } from '@jet-lab/store';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {
-  transactions: AccountTransaction[];
+  transactions: FlightLog[];
 }
 // Interface for a particular token's balances associated with an account
 export interface AccountBalance {
@@ -139,18 +139,27 @@ export function useAccountsSyncer() {
       const sortedAccountNames: Record<string, string> = {};
       for (const account of accounts) {
         const accountKey = account.address.toString();
-        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${
-          account.seed + 1
-        }`;
+        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${account.seed + 1
+          }`;
 
         // If account is currently being liquidated, switch to that account
         if (account.isBeingLiquidated) {
           setCurrentAccountAddress(accountKey);
         }
       }
+
       // If no currentAccount select first
-      if (!currentAccountAddress && accounts.length > 0) {
-        setCurrentAccountAddress(accounts[0].address.toString());
+      if (accounts.length > 0) {
+        if (currentAccountAddress) {
+          const match = accounts.find(acc => acc.address.toBase58() === currentAccountAddress)
+          if (!match) {
+            setCurrentAccountAddress(accounts[0].address.toBase58())
+          }
+        } else {
+          setCurrentAccountAddress(accounts[0].address.toBase58());
+        }
+      } else {
+        setCurrentAccountAddress('')
       }
 
       setAccounts(accounts);
@@ -163,7 +172,7 @@ export function useAccountsSyncer() {
     const accountsInterval = setInterval(getAccounts, ACTION_REFRESH_INTERVAL);
     return () => clearInterval(accountsInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pools, owner, provider.connection, actionRefresh]);
+  }, [pools, owner, provider.connection, actionRefresh, publicKey, currentAccountAddress]);
 
   // Update current account history
   useEffect(() => {
@@ -182,7 +191,7 @@ export function useAccountsSyncer() {
       }
 
       // Account trasactions
-      const transactions = await MarginClient.getBlackBoxHistory(currentAccount.address, cluster);
+      const transactions: FlightLog[] = await MarginClient.getBlackBoxHistory(currentAccount.address, cluster, pools.tokenPools);
 
       setAccountHistoryLoaded(true);
       return {

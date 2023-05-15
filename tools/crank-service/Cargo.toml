@@ -23,9 +23,10 @@ solana-sdk = "1.14"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 jet-ctl-cli = { path = "../ctl" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-environment = { path = "../../libraries/rust/environment" }
 jet-simulation = { path = "../../libraries/rust/simulation" }
+jet-solana-client = { path = "../../libraries/rust/solana-client" }

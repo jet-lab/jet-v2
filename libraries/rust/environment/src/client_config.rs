@@ -8,7 +8,7 @@ use solana_sdk::{program_error::ProgramError, pubkey::Pubkey};
 
 use jet_instructions::{
     airspace::derive_airspace,
-    fixed_term::derive_market_from_tenor,
+    fixed_term,
     test_service::{derive_pyth_price, derive_spl_swap_pool, derive_token_mint},
 };
 use jet_solana_client::{ExtError, NetworkUserInterface, NetworkUserInterfaceExt};
@@ -55,6 +55,7 @@ impl JetAppConfig {
     pub async fn from_env_config<I: NetworkUserInterface>(
         env: EnvironmentConfig,
         network: &I,
+        override_lookup_authority: Option<Pubkey>,
     ) -> Result<Self, ConfigError<I>> {
         let mut seen = HashSet::new();
         let mut tokens = vec![];
@@ -68,6 +69,11 @@ impl JetAppConfig {
 
                 seen.insert(token.name.clone());
                 tokens.push(TokenInfo::from_desc(network, token).await?);
+            }
+            // Override the airspace config address if a default is provided
+            let mut airspace = airspace.clone();
+            if let Some(override_lookup_authority) = override_lookup_authority {
+                airspace.lookup_registry_authority = Some(override_lookup_authority);
             }
 
             airspaces.push(airspace.clone().into());
@@ -117,6 +123,8 @@ pub struct AirspaceInfo {
 
     #[serde_as(as = "Vec<DisplayFromStr>")]
     pub fixed_term_markets: Vec<Pubkey>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub lookup_registry_authority: Option<Pubkey>,
 }
 
 impl From<AirspaceConfig> for AirspaceInfo {
@@ -132,12 +140,12 @@ impl From<AirspaceConfig> for AirspaceInfo {
                 .flat_map(|token| {
                     let mint = token.mint.unwrap_or_else(|| derive_token_mint(&token.name));
 
-                    token
-                        .fixed_term_markets
-                        .iter()
-                        .map(move |m| derive_market_from_tenor(&airspace, &mint, m.borrow_tenor))
+                    token.fixed_term_markets.iter().map(move |m| {
+                        fixed_term::derive::market_from_tenor(&airspace, &mint, m.borrow_tenor)
+                    })
                 })
                 .collect(),
+            lookup_registry_authority: config.lookup_registry_authority,
         }
     }
 }
@@ -148,6 +156,7 @@ impl Default for AirspaceInfo {
             name: "default".to_owned(),
             tokens: vec![],
             fixed_term_markets: vec![],
+            lookup_registry_authority: None,
         }
     }
 }
@@ -222,6 +231,7 @@ pub mod legacy {
 
     use jet_instructions::{fixed_term::Market, margin_swap::derive_spl_swap_authority};
     use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+    use jet_static_program_registry::orca_swap_v2;
 
     use crate::programs::{ORCA_V2, ORCA_V2_DEVNET};
 
@@ -301,7 +311,7 @@ pub mod legacy {
                     continue;
                 }
 
-                Some(d) => spl_token_swap::state::SwapVersion::unpack(&d.data)
+                Some(d) => orca_swap_v2::state::SwapVersion::unpack(&d.data)
                     .map_err(|e| ConfigError::UnpackError(e))?,
             };
 

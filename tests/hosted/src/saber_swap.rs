@@ -29,7 +29,7 @@ use async_trait::async_trait;
 use itertools::Itertools;
 use jet_margin_sdk::swap::saber_swap::SaberSwapPool;
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use saber_client::state::SwapInfo;
 use solana_sdk::signature::Signer;
 use solana_sdk::{program_pack::Pack, system_instruction};
@@ -99,7 +99,7 @@ impl SaberSwapPoolConfig for SaberSwapPool {
 
         // Create a TokenManager instance
         let token_manager = TokenManager::new(ctx.clone());
-        let keypair = generate_keypair();
+        let keypair = ctx.keygen.generate_key();
 
         // Token mint decimals must be the same, check them early
         let mint_a_account = token_manager.get_mint(mint_a).await?;

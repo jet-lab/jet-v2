@@ -16,10 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anyhow::Error;
-use solana_client::client_error::ClientError;
+use lazy_static::__Deref;
 use std::{
-    mem::MaybeUninit,
-    sync::{Mutex, Once},
+    cell::RefCell,
+    sync::{Arc, Mutex},
 };
 
 use rand::rngs::mock::StepRng;
@@ -28,13 +28,16 @@ use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::TransactionError,
 };
 
+use jet_solana_client::rpc::ClientError;
+
+mod log;
 #[doc(hidden)]
 pub mod runtime;
 
 pub mod solana_rpc_api;
 
 pub use runtime::{Entrypoint, TestRuntime};
-pub use solana_rpc_api::{RpcConnection, SolanaRpcClient};
+pub use solana_rpc_api::SolanaRpcClient;
 
 pub type EntryFn =
     Box<dyn Fn(&Pubkey, &[AccountInfo], &[u8]) -> Result<(), ProgramError> + Send + Sync>;
@@ -58,18 +61,6 @@ pub async fn send_and_confirm(
     rpc.send_and_confirm_transaction(&tx).await
 }
 
-/// Generate a new wallet keypair with some initial funding
-pub async fn create_wallet(
-    rpc: &std::sync::Arc<dyn SolanaRpcClient>,
-    lamports: u64,
-) -> Result<solana_sdk::signature::Keypair, anyhow::Error> {
-    let wallet = solana_sdk::signature::Keypair::new();
-
-    rpc.airdrop(&wallet.pubkey(), lamports).await?;
-
-    Ok(wallet)
-}
-
 /// Asserts that an error is a custom solana error with the expected code number
 pub fn assert_custom_program_error<
     T: std::fmt::Debug,
@@ -83,13 +74,20 @@ pub fn assert_custom_program_error<
     let actual_err: Error = actual_result.expect_err("result is not an error").into();
 
     let actual_num = match (
-        actual_err
-            .downcast_ref::<ClientError>()
-            .and_then(ClientError::get_transaction_error),
+        actual_err.downcast_ref::<ClientError>(),
+        actual_err.downcast_ref::<TransactionError>(),
         actual_err.downcast_ref::<ProgramError>(),
     ) {
-        (Some(TransactionError::InstructionError(_, InstructionError::Custom(n))), _) => n,
-        (_, Some(ProgramError::Custom(n))) => *n,
+        (
+            Some(ClientError::TransactionError(TransactionError::InstructionError(
+                _,
+                InstructionError::Custom(n),
+            ))),
+            _,
+            _,
+        ) => *n,
+        (_, Some(TransactionError::InstructionError(_, InstructionError::Custom(n))), _) => *n,
+        (_, _, Some(ProgramError::Custom(n))) => *n,
         _ => panic!("not a custom program error: {:?}", actual_err),
     };
 
@@ -117,23 +115,42 @@ macro_rules! assert_program_error {
     }};
 }
 
-pub fn generate_keypair() -> Keypair {
-    static MOCK_RNG_INIT: Once = Once::new();
-    static mut MOCK_RNG: MaybeUninit<Mutex<MockRng>> = MaybeUninit::uninit();
+pub trait Keygen: Send + Sync {
+    fn generate_key(&self) -> Keypair;
+}
+impl Keygen for Arc<dyn Keygen> {
+    fn generate_key(&self) -> Keypair {
+        self.deref().generate_key()
+    }
+}
 
-    unsafe {
-        MOCK_RNG_INIT.call_once(|| {
-            MOCK_RNG.write(Mutex::new(MockRng(StepRng::new(1, 1))));
-        });
+#[derive(Clone)]
+pub struct DeterministicKeygen(Arc<Mutex<RefCell<MockRng>>>);
+impl DeterministicKeygen {
+    pub fn new(seed: &str) -> Self {
+        Self(Arc::new(Mutex::new(RefCell::new(MockRng(StepRng::new(
+            hash(seed),
+            1,
+        ))))))
+    }
+}
 
-        Keypair::generate(&mut *MOCK_RNG.assume_init_ref().lock().unwrap())
+impl Keygen for DeterministicKeygen {
+    fn generate_key(&self) -> Keypair {
+        Keypair::generate(&mut *self.0.lock().unwrap().borrow_mut())
+    }
+}
+
+#[derive(Clone)]
+pub struct RandomKeygen;
+impl Keygen for RandomKeygen {
+    fn generate_key(&self) -> Keypair {
+        Keypair::new()
     }
 }
 
 struct MockRng(StepRng);
-
 impl rand::CryptoRng for MockRng {}
-
 impl rand::RngCore for MockRng {
     fn next_u32(&mut self) -> u32 {
         self.0.next_u32()
@@ -150,4 +167,10 @@ impl rand::RngCore for MockRng {
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand::Error> {
         self.0.try_fill_bytes(dest)
     }
+}
+
+pub fn hash<T: std::hash::Hash + ?Sized>(item: &T) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    item.hash(&mut hasher);
+    std::hash::Hasher::finish(&hasher)
 }

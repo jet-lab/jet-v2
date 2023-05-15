@@ -9,7 +9,6 @@ use hosted_tests::{context::MarginTestContext, margin::MarginPoolSetupInfo, marg
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::create_wallet;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_USDT: u64 = 1_000_000;
@@ -34,12 +33,12 @@ struct TestEnv {
 }
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
-    let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
-    let usdt = ctx.tokens.create_token(6, None, None).await?;
-    let usdt_oracle = ctx.tokens.create_oracle(&usdt).await?;
-    let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
+    let usdc = ctx.tokens().create_token(6, None, None).await?;
+    let usdc_oracle = ctx.tokens().create_oracle(&usdc).await?;
+    let usdt = ctx.tokens().create_token(6, None, None).await?;
+    let usdt_oracle = ctx.tokens().create_oracle(&usdt).await?;
+    let tsol = ctx.tokens().create_token(9, None, None).await?;
+    let tsol_oracle = ctx.tokens().create_oracle(&tsol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
@@ -69,7 +68,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     ];
 
     for pool_info in pools {
-        ctx.margin.create_pool(&pool_info).await?;
+        ctx.margin_client().create_pool(&pool_info).await?;
     }
 
     Ok(TestEnv { usdc, usdt, tsol })
@@ -91,46 +90,41 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
     let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-
-    // Create the user context helpers, which give a simple interface for executing
-    // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
-    let user_c = ctx.margin.user(&wallet_c, 0)?;
+    let wallet_a = ctx.create_wallet(10).await?;
+    let wallet_b = ctx.create_wallet(10).await?;
+    let wallet_c = ctx.create_wallet(10).await?;
 
     // issue permits for the users
     ctx.issue_permit(wallet_a.pubkey()).await?;
     ctx.issue_permit(wallet_b.pubkey()).await?;
     ctx.issue_permit(wallet_c.pubkey()).await?;
 
-    // Initialize the margin accounts for each user
-    user_a.create_account().await?;
-    user_b.create_account().await?;
-    user_c.create_account().await?;
+    // Create the user context helpers, which give a simple interface for executing
+    // common actions on a margin account
+    let user_a = ctx.margin_client().user(&wallet_a, 0).created().await?;
+    let user_b = ctx.margin_client().user(&wallet_b, 0).created().await?;
+    let user_c = ctx.margin_client().user(&wallet_c, 0).created().await?;
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.usdc, &wallet_a.pubkey(), 1_000_000 * ONE_USDC)
         .await?;
     let user_b_tsol_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 1_000 * ONE_TSOL)
         .await?;
     let user_c_usdt_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.usdt, &wallet_c.pubkey(), 1_000_000 * ONE_USDT)
         .await?;
     let user_c_tsol_account = ctx
-        .tokens
+        .tokens()
         .create_account_funded(&env.tsol, &wallet_c.pubkey(), 500 * ONE_TSOL)
         .await?;
 
     // Set the prices for each token
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 1 USD +- 0.01
             &env.usdc,
@@ -142,7 +136,7 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
             },
         )
         .await?;
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 1 USD +- 0.01
             &env.usdt,
@@ -154,7 +148,7 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
             },
         )
         .await?;
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 100 USD +- 1
             &env.tsol,
@@ -199,9 +193,9 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .await?;
 
     // Verify user tokens have been deposited
-    assert_eq!(0, ctx.tokens.get_balance(&user_a_usdc_account).await?);
-    assert_eq!(0, ctx.tokens.get_balance(&user_b_tsol_account).await?);
-    assert_eq!(0, ctx.tokens.get_balance(&user_c_usdt_account).await?);
+    assert_eq!(0, ctx.tokens().get_balance(&user_a_usdc_account).await?);
+    assert_eq!(0, ctx.tokens().get_balance(&user_b_tsol_account).await?);
+    assert_eq!(0, ctx.tokens().get_balance(&user_c_usdt_account).await?);
 
     user_a.refresh_all_pool_positions().await?;
     user_b.refresh_all_pool_positions().await?;
@@ -229,10 +223,10 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
     user_c
         .withdraw(&env.tsol, &user_c_tsol_account, TokenChange::set(0))
         .await?;
-    assert!(ctx.tokens.get_balance(&user_c_tsol_account).await? - 500 * ONE_TSOL < ONE_TSOL);
+    assert!(ctx.tokens().get_balance(&user_c_tsol_account).await? - 500 * ONE_TSOL < ONE_TSOL);
 
     // User C should be able to close all TSOL positions as loan is paid and deposit withdrawn
-    user_c.close_token_positions(&env.tsol).await?;
+    user_c.close_pool_positions(&env.tsol).await?;
 
     Ok(())
 }

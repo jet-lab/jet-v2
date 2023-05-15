@@ -3,7 +3,7 @@ use jet_program_common::pod::PodBool;
 #[cfg(any(feature = "cli", test))]
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
-use crate::margin::origination_fee;
+use crate::{margin::origination_fee, orderbook::state::OrderParams};
 
 /// The `Market` contains all the information necessary to run the fixed term market
 ///
@@ -37,6 +37,10 @@ pub struct Market {
     /// positions that are priced as tickets. The collateral notes are monitored
     /// by the margin program to track value
     pub ticket_collateral_mint: Pubkey,
+    /// Mint owned by fixed-term market to issue collateral value to a user for
+    /// positions that are priced as tokens. The collateral notes are monitored
+    /// by the margin program to track value
+    pub underlying_collateral_mint: Pubkey,
     /// oracle that defines the value of the underlying asset
     pub underlying_oracle: Pubkey,
     /// oracle that defines the value of the tickets
@@ -66,6 +70,12 @@ pub struct Market {
 }
 
 impl Market {
+    /// Mutates the `OrderParams` to add a market origination fee
+    pub fn add_origination_fee(&self, params: &mut OrderParams) {
+        params.max_ticket_qty = self.borrow_order_qty(params.max_ticket_qty);
+        params.max_underlying_token_qty = self.borrow_order_qty(params.max_underlying_token_qty);
+    }
+
     /// for signing CPIs with the market account
     pub fn authority_seeds(&self) -> [&[u8]; 5] {
         [
@@ -94,8 +104,8 @@ impl Serialize for Market {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_struct("Market", 14)?;
-        s.serialize_field("version", &self.version_tag)?;
+        let mut s = serializer.serialize_struct("Market", 22)?;
+        s.serialize_field("versionTag", &self.version_tag)?;
         s.serialize_field("airspace", &self.airspace.to_string())?;
         s.serialize_field(
             "orderbookMarketState",
@@ -118,13 +128,20 @@ impl Serialize for Market {
             "ticketCollateralMint",
             &self.ticket_collateral_mint.to_string(),
         )?;
+        s.serialize_field(
+            "underlyingCollateralMint",
+            &self.underlying_collateral_mint.to_string(),
+        )?;
         s.serialize_field("underlyingOracle", &self.underlying_oracle.to_string())?;
         s.serialize_field("ticketOracle", &self.ticket_oracle.to_string())?;
+        s.serialize_field("feeVault", &self.fee_vault.to_string())?;
+        s.serialize_field("feeDestination", &self.fee_destination.to_string())?;
         s.serialize_field("seed", &Pubkey::new_from_array(self.seed).to_string())?;
-        s.serialize_field("orderbookPaused", &self.orderbook_paused)?;
-        s.serialize_field("ticketsPaused", &self.tickets_paused)?;
+        s.serialize_field("orderbookPaused", &self.orderbook_paused.as_bool())?;
+        s.serialize_field("ticketsPaused", &self.tickets_paused.as_bool())?;
         s.serialize_field("borrowTenor", &self.borrow_tenor)?;
         s.serialize_field("lendTenor", &self.lend_tenor)?;
+        s.serialize_field("originationFee", &self.origination_fee)?;
         s.end()
     }
 }
@@ -140,26 +157,30 @@ pub struct CrankAuthorization {
 #[test]
 fn serialize_market() {
     let json = serde_json::to_string_pretty(&<Market as bytemuck::Zeroable>::zeroed()).unwrap();
-    let expected = "{
-      \"version\": 0,
-      \"airspace\": \"11111111111111111111111111111111\",
-      \"orderbookMarketState\": \"11111111111111111111111111111111\",
-      \"eventQueue\": \"11111111111111111111111111111111\",
-      \"asks\": \"11111111111111111111111111111111\",
-      \"bids\": \"11111111111111111111111111111111\",
-      \"underlyingTokenMint\": \"11111111111111111111111111111111\",
-      \"underlyingTokenVault\": \"11111111111111111111111111111111\",
-      \"ticketMint\": \"11111111111111111111111111111111\",
-      \"claimsMint\": \"11111111111111111111111111111111\",
-      \"ticketCollateralMint\": \"11111111111111111111111111111111\",
-      \"underlyingOracle\": \"11111111111111111111111111111111\",
-      \"ticketOracle\": \"11111111111111111111111111111111\",
-      \"seed\": \"11111111111111111111111111111111\",
-      \"orderbookPaused\": 0,
-      \"ticketsPaused\": 0,
-      \"borrowTenor\": 0,
-      \"lendTenor\": 0
-    }";
+    let expected = r#"{
+      "versionTag": 0,
+      "airspace": "11111111111111111111111111111111",
+      "orderbookMarketState": "11111111111111111111111111111111",
+      "eventQueue": "11111111111111111111111111111111",
+      "asks": "11111111111111111111111111111111",
+      "bids": "11111111111111111111111111111111",
+      "underlyingTokenMint": "11111111111111111111111111111111",
+      "underlyingTokenVault": "11111111111111111111111111111111",
+      "ticketMint": "11111111111111111111111111111111",
+      "claimsMint": "11111111111111111111111111111111",
+      "ticketCollateralMint": "11111111111111111111111111111111",
+      "underlyingCollateralMint": "11111111111111111111111111111111",
+      "underlyingOracle": "11111111111111111111111111111111",
+      "ticketOracle": "11111111111111111111111111111111",
+      "feeVault": "11111111111111111111111111111111",
+      "feeDestination": "11111111111111111111111111111111",
+      "seed": "11111111111111111111111111111111",
+      "orderbookPaused": false,
+      "ticketsPaused": false,
+      "borrowTenor": 0,
+      "lendTenor": 0,
+      "originationFee": 0
+    }"#;
     assert_eq!(
         itertools::Itertools::join(&mut expected.split_whitespace(), " "),
         itertools::Itertools::join(&mut json.split_whitespace(), " ")

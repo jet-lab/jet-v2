@@ -20,7 +20,7 @@ export const CopyableField = ({ content }: CopyableField) => {
     }, 1000);
   };
   return (
-    <div className={`pool-details-address ${copied ? 'copied' : ''}`} onClick={onClick}>
+    <div className={`copiable-field ${copied ? 'copied' : ''}`} onClick={onClick}>
       <CopyOutlined />
       <Text>{formatPubkey(content)}</Text>
     </div>

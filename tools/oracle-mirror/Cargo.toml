@@ -16,7 +16,6 @@ solana-cli-config = "1.14"
 solana-client = "1.14"
 solana-sdk = "1.14"
 
-spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 spl-token = "3"
 
 anchor-lang = "0.27"

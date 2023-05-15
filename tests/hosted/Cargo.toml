@@ -36,7 +36,7 @@ solana-sdk = "1.14"
 solana-client = "1.14"
 solana-cli-config = "1.14"
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
 anchor-lang = "0.27"
 anchor-spl = { version = "0.27", features = ["dex", "devnet"] }
@@ -67,6 +67,13 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { path = "../../libraries/rust/simulation" }
-
 itertools = "0.10.3"
+
+[dependencies.jet-simulation]
+path = "../../libraries/rust/simulation"
+features = ["test-runtime"]
+
+[dependencies.lookup-table-registry]
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+features = ["program"]

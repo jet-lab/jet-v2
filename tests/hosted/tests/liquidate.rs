@@ -58,7 +58,7 @@ async fn scenario1_with_ctx(ctx: &Arc<MarginTestContext>) -> Result<Scenario1> {
     // Have each user borrow the other's funds
 
     vec![
-        ctx.tokens.refresh_to_same_price_tx(&tsol).await.unwrap(),
+        ctx.tokens().refresh_to_same_price_tx(&tsol).await.unwrap(),
         user_a
             .user
             .tx
@@ -66,19 +66,19 @@ async fn scenario1_with_ctx(ctx: &Arc<MarginTestContext>) -> Result<Scenario1> {
             .await
             .unwrap(),
     ]
-    .send_and_confirm_condensed_in_order(&ctx.rpc)
+    .send_and_confirm_condensed_in_order(&ctx.rpc())
     .await
     .unwrap();
 
     vec![
-        ctx.tokens.refresh_to_same_price_tx(&usdc).await?,
+        ctx.tokens().refresh_to_same_price_tx(&usdc).await?,
         user_b
             .user
             .tx
             .borrow(&usdc, TokenChange::shift(3_500_000 * ONE_USDC))
             .await?,
     ]
-    .send_and_confirm_condensed_in_order(&ctx.rpc)
+    .send_and_confirm_condensed_in_order(&ctx.rpc())
     .await
     .unwrap();
 
@@ -89,7 +89,7 @@ async fn scenario1_with_ctx(ctx: &Arc<MarginTestContext>) -> Result<Scenario1> {
     // Total claims = 3'500'000
     // C ratio = 127%
 
-    ctx.tokens
+    ctx.tokens()
         .set_price(
             // Set price to 80 USD +- 1
             &tsol,
@@ -173,7 +173,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1!().unwrap().1;
 
     let liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
-    liq.verify_healthy().await.err().unwrap();
+    liq.verify_unhealthy().await.unwrap();
 
     // Execute a repayment on behalf of the user
     liq.margin_repay(&scen.usdc, 1_000_000 * ONE_USDC)
@@ -195,7 +195,7 @@ async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     let scen = scenario1!().unwrap().1;
 
     let liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
-    liq.verify_healthy().await.err().unwrap();
+    liq.verify_unhealthy().await.unwrap();
     liq.liquidate_end(None).await.unwrap();
 
     Ok(())
@@ -213,7 +213,7 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     // be able to begin or stop liquidating it
     let rogue_liquidator = ctx.create_liquidator(100).await.unwrap();
     let user_b_rliq = ctx
-        .margin
+        .margin_client()
         .liquidator(&rogue_liquidator, scen.user_b.owner(), scen.user_b.seed())
         .unwrap();
 
@@ -333,9 +333,9 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
 
     scen.liquidator.begin(&scen.user_b, false).await.unwrap();
 
-    let mut clock = ctx.rpc.get_clock().await.unwrap();
+    let mut clock = ctx.rpc().get_clock().await.unwrap();
     clock.unix_timestamp += 61;
-    ctx.rpc.set_clock(clock).await.unwrap();
+    ctx.rpc().set_clock(clock).await.unwrap();
 
     scen.user_b
         .liquidate_end(Some(scen.liquidator.wallet.pubkey()))
@@ -350,7 +350,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
 async fn liquidator_permission_is_removable() -> Result<()> {
     let (ctx, scen) = scenario1!().unwrap();
 
-    ctx.margin
+    ctx.margin_client()
         .set_liquidator_metadata(scen.liquidator.wallet.pubkey(), false)
         .await
         .unwrap();

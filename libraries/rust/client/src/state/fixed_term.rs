@@ -19,7 +19,7 @@ use jet_fixed_term::{
     orderbook::state::{CallbackInfo, OrderTag},
     tickets::state::TermDeposit,
 };
-use jet_instructions::fixed_term::{derive_margin_user, derive_term_deposit, derive_term_loan};
+use jet_instructions::fixed_term::derive;
 use jet_margin::MarginAccount;
 use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
 
@@ -190,7 +190,7 @@ pub async fn sync_user_accounts<I: NetworkUserInterface>(
         .flat_map(|account| {
             markets
                 .iter()
-                .map(|market| derive_margin_user(market, account))
+                .map(|market| derive::margin_user(market, account))
         })
         .collect::<Vec<_>>();
 
@@ -215,15 +215,15 @@ async fn sync_user_debt_assets<I: NetworkUserInterface>(
 ) -> ClientResult<I, ()> {
     let loans: Vec<Arc<TermLoan>> = load_user_positions(
         states,
-        |state| state.debt.active_loans(),
-        |user, state, seqno| derive_term_loan(&state.market, user, seqno),
+        |state| state.debt().active_loans(),
+        |user, state, seqno| derive::term_loan(&state.market, user, seqno),
     )
     .await?;
 
     let deposits: Vec<Arc<TermDeposit>> = load_user_positions(
         states,
-        |state| state.assets.active_deposits(),
-        |_, state, seqno| derive_term_deposit(&state.market, &state.margin_account, seqno),
+        |state| state.assets().active_deposits(),
+        |_, state, seqno| derive::term_deposit(&state.market, &state.margin_account, seqno),
     )
     .await?;
 

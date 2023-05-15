@@ -3,6 +3,10 @@ name = "jet-simulation"
 version = "0.2.0"
 edition = "2021"
 
+[features]
+test-runtime = ["solana-address-lookup-table-program/full"]
+default = []
+
 [dependencies]
 anyhow = "1"
 async-trait = "0.1"
@@ -14,7 +18,7 @@ rand = "0.7"
 lazy_static = "1"
 base64 = "0.13"
 log = "0.4"
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["rt", "time"] }
 
 solana-account-decoder = "1.14.1"
 solana-client = "1.14.1"
@@ -24,6 +28,13 @@ solana-runtime = "1.14.1"
 solana-program-runtime = "1.14.1"
 solana-bpf-loader-program = "1.14.1"
 solana-program-test = "1.14.1"
-solana-address-lookup-table-program = "1.14.1"
 
 solana_rbpf = "0.2.31"
+
+jet-solana-client = { path = "../solana-client" }
+
+[dependencies.solana-address-lookup-table-program]
+package = "solana-address-lookup-table-program-gateway"
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+features = []

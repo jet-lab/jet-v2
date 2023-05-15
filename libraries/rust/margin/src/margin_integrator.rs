@@ -2,11 +2,16 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::future::join_all;
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
+use jet_instructions::margin::derive_margin_account;
+use jet_simulation::SolanaRpcClient;
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer};
 
 use crate::{
     ix_builder::MarginIxBuilder,
+    refresh::{
+        canonical_position_refresher,
+        position_refresher::{PositionRefresher, SmartRefresher},
+    },
     solana::transaction::{TransactionBuilder, WithSigner},
 };
 
@@ -24,25 +29,32 @@ pub struct RefreshingProxy<P: Proxy> {
     /// underlying proxy
     pub proxy: P,
     /// adapter-specific implementations to refresh positions in a margin account
-    pub refreshers: Vec<Arc<dyn PositionRefresher>>,
+    pub refresher: SmartRefresher,
+}
+
+impl RefreshingProxy<MarginIxBuilder> {
+    /// This returns a proxy that is expected to know about all the possible
+    /// positions that may need to be refreshed.
+    pub fn full(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        wallet: &Keypair,
+        seed: u16,
+        airspace: Pubkey,
+    ) -> Self {
+        RefreshingProxy {
+            proxy: MarginIxBuilder::new(airspace, wallet.pubkey(), seed)
+                .with_payer(rpc.payer().pubkey()),
+            refresher: canonical_position_refresher(rpc.clone())
+                .for_address(derive_margin_account(&airspace, &wallet.pubkey(), seed)),
+        }
+    }
 }
 
 impl<P: Proxy> RefreshingProxy<P> {
     /// The instructions to refresh any positions that are refreshable by the
     /// included refreshers.
     pub async fn refresh(&self) -> Result<Vec<TransactionBuilder>> {
-        Ok(join_all(
-            self.refreshers
-                .clone()
-                .iter()
-                .map(|r| r.refresh_positions()),
-        )
-        .await
-        .into_iter()
-        .collect::<Result<Vec<Vec<_>>>>()?
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>())
+        self.refresher.refresh_positions(&()).await
     }
 }
 
@@ -74,13 +86,6 @@ impl<P: Proxy> Proxy for RefreshingProxy<P> {
     fn invoke_signed(&self, ix: Instruction) -> Instruction {
         self.proxy.invoke_signed(ix)
     }
-}
-
-/// Enable generic refreshing of any margin positions without caring how
-#[async_trait]
-pub trait PositionRefresher {
-    /// same as above
-    async fn refresh_positions(&self) -> Result<Vec<TransactionBuilder>>;
 }
 
 /// Allows wrapping of instructions for execution by a program that acts as a

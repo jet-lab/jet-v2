@@ -126,6 +126,7 @@ pub mod jet_test_service {
     /// Invokes arbitrary program iff an account is not yet initialized.
     /// Typically used to run an instruction that initializes the account,
     /// ensuring multiple initializations will not collide.
+    /// TODO: this may be generally useful even on mainnet and warrant a separate program
     pub fn if_not_initialized(ctx: Context<IfNotInitialized>, instruction: Vec<u8>) -> Result<()> {
         if_not_initialized_handler(ctx, instruction)
     }

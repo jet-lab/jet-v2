@@ -8,12 +8,12 @@ use spl_associated_token_account::{
 use jet_instructions::{
     control::get_control_authority_address,
     fixed_term::{
-        derive_market_from_tenor, event_queue_len, orderbook_slab_len, FixedTermIxBuilder, Market,
-        OrderBookAddresses, FIXED_TERM_PROGRAM,
+        derive::{self, market_from_tenor},
+        event_queue_len, orderbook_slab_len, FixedTermIxBuilder, InitializeMarketParams, Market,
+        OrderbookAddresses, FIXED_TERM_PROGRAM,
     },
     test_service::{
-        self, derive_pyth_price, derive_pyth_product, derive_ticket_mint, derive_token_info,
-        TokenCreateParams,
+        self, derive_pyth_price, derive_pyth_product, derive_token_info, TokenCreateParams,
     },
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
@@ -23,32 +23,36 @@ use jet_solana_client::{
 
 use crate::config::FixedTermMarketConfig;
 
-use super::{margin::configure_margin_token, Builder, BuilderError, NetworkKind, TokenContext};
+use super::{
+    margin::configure_margin_token, Builder, BuilderError, NetworkKind, SetupPhase, TokenContext,
+};
 
 const EVENT_QUEUE_CAPACITY: usize = 8192;
 const ORDERBOOK_CAPACITY: usize = 16384;
 
-pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
+pub async fn configure_market_for_token<I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     cranks: &[Pubkey],
     token: &TokenContext,
     config: &FixedTermMarketConfig,
-) -> Result<(), BuilderError> {
+) -> Result<FixedTermIxBuilder, BuilderError> {
     let payer = builder.payer();
 
-    let market_address =
-        derive_market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
+    let market_address = market_from_tenor(&token.airspace, &token.mint, config.borrow_tenor);
 
     let control_authority = get_control_authority_address();
     let fee_destination = get_associated_token_address(&control_authority, &token.mint);
 
     if !builder.account_exists(&fee_destination).await? {
-        builder.setup([create_associated_token_account_idempotent(
-            &payer,
-            &control_authority,
-            &token.mint,
-            &spl_token::ID,
-        )]);
+        builder.setup(
+            SetupPhase::TokenAccounts,
+            [create_associated_token_account_idempotent(
+                &payer,
+                &control_authority,
+                &token.mint,
+                &spl_token::ID,
+            )],
+        );
     }
 
     let market = builder
@@ -63,11 +67,11 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
             token.airspace,
             token.mint,
             market_address,
-            builder.authority,
+            builder.proposal_authority(),
             token.pyth_price,
-            token.pyth_price,
+            token.pyth_price, // TODO: reconsider for mainnet
             Some(fee_destination),
-            OrderBookAddresses {
+            OrderbookAddresses {
                 bids: market.bids,
                 asks: market.asks,
                 event_queue: market.event_queue,
@@ -77,7 +81,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
 
     if builder.network != NetworkKind::Mainnet {
         // Register to get an oracle for the ticket token on testing networks
-        let ticket_mint = derive_ticket_mint(&market_address);
+        let ticket_mint = derive::ticket_mint(&market_address);
         let ticket_info = derive_token_info(&ticket_mint);
 
         log::info!(
@@ -87,23 +91,30 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
         );
 
         if !builder.account_exists(&ticket_info).await? {
-            builder.setup([test_service::if_not_initialized(
-                ticket_info,
-                test_service::token_register(
-                    &payer,
-                    ticket_mint,
-                    &TokenCreateParams {
-                        authority: builder.authority,
-                        oracle_authority: token.oracle_authority,
-                        decimals: token.desc.decimals.unwrap(),
-                        max_amount: u64::MAX,
-                        source_symbol: token.desc.symbol.clone(),
-                        price_ratio: config.ticket_price.unwrap_or(1.0),
-                        symbol: format!("{}_{}", token.desc.symbol.clone(), config.borrow_tenor),
-                        name: format!("{}_{}", token.desc.name.clone(), config.borrow_tenor),
-                    },
-                ),
-            )]);
+            builder.setup(
+                SetupPhase::TokenMints,
+                [test_service::if_not_initialized(
+                    ticket_info,
+                    test_service::token_register(
+                        &payer,
+                        ticket_mint,
+                        &TokenCreateParams {
+                            authority: builder.proposal_authority(),
+                            oracle_authority: token.oracle_authority,
+                            decimals: token.desc.decimals.unwrap(),
+                            max_amount: u64::MAX,
+                            source_symbol: token.desc.symbol.clone(),
+                            price_ratio: config.ticket_price.unwrap_or(1.0),
+                            symbol: format!(
+                                "{}_{}",
+                                token.desc.symbol.clone(),
+                                config.borrow_tenor
+                            ),
+                            name: format!("{}_{}", token.desc.name.clone(), config.borrow_tenor),
+                        },
+                    ),
+                )],
+            );
         }
     }
 
@@ -115,7 +126,7 @@ pub(crate) async fn configure_market_for_token<I: NetworkUserInterface>(
     // set permissions for cranks
     configure_cranks_for_market(builder, &ix_builder, cranks).await?;
 
-    Ok(())
+    Ok(ix_builder)
 }
 
 async fn configure_cranks_for_market<I: NetworkUserInterface>(
@@ -139,12 +150,12 @@ async fn configure_cranks_for_market<I: NetworkUserInterface>(
     }
 
     if builder.network == NetworkKind::Localnet && cranks.is_empty() {
-        let authorization = ix_builder.crank_authorization(&builder.authority);
+        let authorization = ix_builder.crank_authorization(&builder.proposal_authority());
 
         if !builder.account_exists(&authorization).await? {
             builder.propose([test_service::if_not_initialized(
                 authorization,
-                ix_builder.authorize_crank(builder.authority),
+                ix_builder.authorize_crank(builder.proposal_authority()),
             )]);
         }
     }
@@ -158,9 +169,10 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     market_address: &Pubkey,
     config: &FixedTermMarketConfig,
 ) -> Result<(), BuilderError> {
-    let claims_mint = FixedTermIxBuilder::claims_mint(market_address);
-    let ticket_collateral_mint = FixedTermIxBuilder::ticket_collateral_mint(market_address);
-    let ticket_mint = derive_ticket_mint(market_address);
+    let claims_mint = derive::claims_mint(market_address);
+    let ticket_collateral_mint = derive::ticket_collateral_mint(market_address);
+    let underlying_collateral_mint = derive::underlying_collateral_mint(market_address);
+    let ticket_mint = test_service::derive_ticket_mint(market_address);
 
     let ticket_oracle = match builder.network {
         NetworkKind::Localnet | NetworkKind::Devnet => Some(TokenOracle::Pyth {
@@ -189,6 +201,7 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     )
     .await?;
 
+    // ticket collateral
     configure_margin_token(
         builder,
         &token.airspace,
@@ -198,6 +211,21 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
             admin: TokenAdmin::Adapter(FIXED_TERM_PROGRAM),
             token_kind: TokenKind::AdapterCollateral,
             value_modifier: config.ticket_collateral_weight,
+            max_staleness: 0,
+        }),
+    )
+    .await?;
+
+    // token collateral
+    configure_margin_token(
+        builder,
+        &token.airspace,
+        &underlying_collateral_mint,
+        Some(TokenConfigUpdate {
+            underlying_mint: token.mint,
+            admin: TokenAdmin::Adapter(FIXED_TERM_PROGRAM),
+            token_kind: TokenKind::AdapterCollateral,
+            value_modifier: token.desc.collateral_weight,
             max_staleness: 0,
         }),
     )
@@ -230,7 +258,7 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     let key_bids = Keypair::new();
     let key_asks = Keypair::new();
 
-    let orderbook = OrderBookAddresses {
+    let orderbook = OrderbookAddresses {
         bids: key_bids.pubkey(),
         asks: key_asks.pubkey(),
         event_queue: key_eq.pubkey(),
@@ -248,7 +276,7 @@ async fn create_market_for_token<I: NetworkUserInterface>(
         &token.airspace,
         &token.mint,
         seed,
-        builder.authority,
+        builder.proposal_authority(),
         token.pyth_price,
         token.pyth_price,
         Some(fee_destination),
@@ -266,47 +294,52 @@ async fn create_market_for_token<I: NetworkUserInterface>(
     let rent = Rent::default();
 
     // Intialize event/orderbook data accounts
-    builder.setup([
-        TransactionBuilder {
-            instructions: vec![system_instruction::create_account(
-                &payer,
-                &key_eq.pubkey(),
-                rent.minimum_balance(len_eq),
-                len_eq as u64,
-                &jet_fixed_term::ID,
-            )],
-            signers: vec![key_eq],
-        },
-        TransactionBuilder {
-            instructions: vec![system_instruction::create_account(
-                &payer,
-                &key_bids.pubkey(),
-                rent.minimum_balance(len_orders),
-                len_orders as u64,
-                &jet_fixed_term::ID,
-            )],
-            signers: vec![key_bids],
-        },
-        TransactionBuilder {
-            instructions: vec![system_instruction::create_account(
-                &payer,
-                &key_asks.pubkey(),
-                rent.minimum_balance(len_orders),
-                len_orders as u64,
-                &jet_fixed_term::ID,
-            )],
-            signers: vec![key_asks],
-        },
-    ]);
+    builder.setup(
+        SetupPhase::TokenMints,
+        [
+            TransactionBuilder {
+                instructions: vec![system_instruction::create_account(
+                    &payer,
+                    &key_eq.pubkey(),
+                    rent.minimum_balance(len_eq),
+                    len_eq as u64,
+                    &jet_fixed_term::ID,
+                )],
+                signers: vec![key_eq],
+            },
+            TransactionBuilder {
+                instructions: vec![system_instruction::create_account(
+                    &payer,
+                    &key_bids.pubkey(),
+                    rent.minimum_balance(len_orders),
+                    len_orders as u64,
+                    &jet_fixed_term::ID,
+                )],
+                signers: vec![key_bids],
+            },
+            TransactionBuilder {
+                instructions: vec![system_instruction::create_account(
+                    &payer,
+                    &key_asks.pubkey(),
+                    rent.minimum_balance(len_orders),
+                    len_orders as u64,
+                    &jet_fixed_term::ID,
+                )],
+                signers: vec![key_asks],
+            },
+        ],
+    );
 
     builder.propose([
         ix_builder.initialize_market(
             builder.proposal_payer(),
-            1,
-            seed,
-            config.borrow_tenor,
-            config.lend_tenor,
-            config.origination_fee,
+            InitializeMarketParams {
+                version_tag: 1,
+                seed,
+                borrow_tenor: config.borrow_tenor,
+                lend_tenor: config.lend_tenor,
+                origination_fee: config.origination_fee,
+            },
         ),
         ix_builder.initialize_orderbook(builder.proposal_payer(), config.min_order_size),
     ]);

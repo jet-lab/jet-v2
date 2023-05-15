@@ -1,5 +1,3 @@
-#![allow(missing_docs)] // redundant to require here
-
 /// Combine an item of some type with another item of the
 /// same type to output a combined item of the same type
 pub trait Concat {
@@ -20,6 +18,32 @@ impl<T: Clone> Concat for Vec<T> {
     }
 }
 
+/// Add an item to a collection and return the collection
+pub trait With {
+    type Inner;
+    fn with(self, other: Self::Inner) -> Self;
+}
+
+impl<T> With for Vec<T> {
+    type Inner = T;
+
+    fn with(mut self, other: Self::Inner) -> Self {
+        self.push(other);
+        self
+    }
+}
+
+pub trait DeepReverse {
+    fn deep_reverse(self) -> Self;
+}
+
+impl<T: DeepReverse> DeepReverse for Vec<T> {
+    fn deep_reverse(mut self) -> Self {
+        self.reverse();
+        self.into_iter().map(DeepReverse::deep_reverse).collect()
+    }
+}
+
 /// joins a collection of items that implement Concat using concat method
 #[macro_export]
 macro_rules! cat {
@@ -28,7 +52,7 @@ macro_rules! cat {
     };
     ($concattable:expr, $($therest:expr),+$(,)?) => {{
         use $crate::util::data::Concat;
-        $concattable.cat(cat![$($therest),+])
+        $concattable.cat($crate::cat![$($therest),+])
     }};
 }
 

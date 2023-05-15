@@ -13,7 +13,7 @@ use jet_solana_client::NetworkUserInterface;
 
 use super::{
     filter_initializers, fixed_term, margin::configure_margin_token, margin_pool, Builder,
-    BuilderError, NetworkKind, TokenContext,
+    BuilderError, NetworkKind, SetupPhase, TokenContext,
 };
 use crate::config::{AirspaceConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS};
 
@@ -29,11 +29,12 @@ pub async fn configure_environment<I: NetworkUserInterface>(
     }
 
     let payer = builder.payer();
-    let as_ix = AirspaceIxBuilder::new("", payer, builder.authority);
-    let ctrl_ix = ControlIxBuilder::new_for_authority(builder.authority, payer);
+    let as_ix = AirspaceIxBuilder::new("", payer, builder.proposal_authority());
+    let ctrl_ix = ControlIxBuilder::new_for_authority(builder.proposal_authority(), payer);
 
     // global authority accounts
     builder.setup(
+        SetupPhase::TokenMints,
         filter_initializers(
             builder,
             [
@@ -114,7 +115,7 @@ async fn register_airspace_adapters<'a, I: NetworkUserInterface>(
     Ok(())
 }
 
-pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
+pub async fn configure_tokens<'a, I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     airspace: &Pubkey,
     cranks: &[Pubkey],
@@ -122,43 +123,19 @@ pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
     tokens: impl IntoIterator<Item = &'a TokenDescription>,
 ) -> Result<(), BuilderError> {
     for desc in tokens {
-        let (mint, pyth_price, pyth_product) = match builder.network {
-            NetworkKind::Localnet | NetworkKind::Devnet => {
-                let mint = derive_token_mint(&desc.name);
-                let pyth_price = derive_pyth_price(&mint);
-                let pyth_product = derive_pyth_product(&mint);
-
-                (mint, pyth_price, pyth_product)
-            }
-
-            NetworkKind::Mainnet => {
-                let Some(mint) = desc.mint else {
-                        return  Err(BuilderError::MissingMint(desc.name.clone()));
-                    };
-
-                let Some(pyth_price) = desc.pyth_price else {
-                        return Err(BuilderError::MissingPythPrice(desc.name.clone()));
-                    };
-
-                let Some(pyth_product) = desc.pyth_product else {
-                        return Err(BuilderError::MissingPythProduct(desc.name.clone()));
-                    };
-
-                (mint, pyth_price, pyth_product)
-            }
-        };
+        let token_context = token_context(builder.network, airspace, *oracle_authority, desc)?;
 
         // Set margin config for the token itself
         configure_margin_token(
             builder,
             airspace,
-            &mint,
+            &token_context.mint,
             Some(TokenConfigUpdate {
-                underlying_mint: mint,
+                underlying_mint: token_context.mint,
                 admin: TokenAdmin::Margin {
                     oracle: TokenOracle::Pyth {
-                        price: pyth_price,
-                        product: pyth_product,
+                        price: token_context.pyth_price,
+                        product: token_context.pyth_product,
                     },
                 },
                 token_kind: TokenKind::Collateral,
@@ -167,15 +144,6 @@ pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
             }),
         )
         .await?;
-
-        let token_context = TokenContext {
-            airspace: *airspace,
-            desc: desc.clone(),
-            oracle_authority: *oracle_authority,
-            mint,
-            pyth_price,
-            pyth_product,
-        };
 
         // Create a pool if configured
         margin_pool::configure_for_token(builder, &token_context).await?;
@@ -190,7 +158,49 @@ pub(crate) async fn configure_tokens<'a, I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn create_test_tokens<'a, I: NetworkUserInterface>(
+pub fn token_context(
+    network: NetworkKind,
+    airspace: &Pubkey,
+    oracle_authority: Pubkey,
+    desc: &TokenDescription,
+) -> Result<TokenContext, BuilderError> {
+    let (mint, pyth_price, pyth_product) = match network {
+        NetworkKind::Localnet | NetworkKind::Devnet => {
+            let mint = derive_token_mint(&desc.name);
+            let pyth_price = derive_pyth_price(&mint);
+            let pyth_product = derive_pyth_product(&mint);
+
+            (mint, pyth_price, pyth_product)
+        }
+
+        NetworkKind::Mainnet => {
+            let Some(mint) = desc.mint else {
+                    return  Err(BuilderError::MissingMint(desc.name.clone()));
+                };
+
+            let Some(pyth_price) = desc.pyth_price else {
+                    return Err(BuilderError::MissingPythPrice(desc.name.clone()));
+                };
+
+            let Some(pyth_product) = desc.pyth_product else {
+                    return Err(BuilderError::MissingPythProduct(desc.name.clone()));
+                };
+
+            (mint, pyth_price, pyth_product)
+        }
+    };
+
+    Ok(TokenContext {
+        airspace: *airspace,
+        desc: desc.clone(),
+        oracle_authority,
+        mint,
+        pyth_price,
+        pyth_product,
+    })
+}
+
+pub async fn create_test_tokens<'a, I: NetworkUserInterface>(
     builder: &mut Builder<I>,
     oracle_authority: &Pubkey,
     tokens: impl IntoIterator<Item = &'a TokenDescription>,
@@ -237,7 +247,7 @@ async fn create_test_tokens<'a, I: NetworkUserInterface>(
                             &TokenCreateParams {
                                 symbol: desc.symbol.clone(),
                                 name: desc.name.clone(),
-                                authority: builder.authority,
+                                authority: builder.proposal_authority(),
                                 oracle_authority: *oracle_authority,
                                 source_symbol: desc.symbol.clone(),
                                 price_ratio: 1.0,
@@ -252,7 +262,7 @@ async fn create_test_tokens<'a, I: NetworkUserInterface>(
     )
     .await?;
 
-    builder.setup(ixns);
+    builder.setup(SetupPhase::TokenMints, ixns);
 
     Ok(())
 }

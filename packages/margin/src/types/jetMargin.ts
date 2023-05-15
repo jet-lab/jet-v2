@@ -305,57 +305,6 @@ export type JetMargin = {
       args: []
     },
     {
-      name: "refreshPositionMetadata"
-      docs: [
-        "Update the metadata for a position stored in the margin account,",
-        "in the case where the metadata has changed after the position was",
-        "created.",
-        "",
-        "# [Accounts](jet_margin::accounts::RefreshPositionMetadata)",
-        "",
-        "|     |     |     |",
-        "| --- | --- | --- |",
-        "| **Name** | **Type** | **Description** |",
-        "| `margin_account` | `writable` | The margin account with the position to be refreshed. |",
-        "| `metadata` | `read_only` | The metadata account for the token, which has been updated. |",
-        "",
-        "# Events",
-        "",
-        "|     |     |",
-        "| --- | --- |",
-        "| **Event Name** | **Description** |",
-        "| [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |",
-        ""
-      ]
-      accounts: [
-        {
-          name: "marginAccount"
-          isMut: true
-          isSigner: false
-          docs: ["The margin account with the position to be refreshed"]
-        },
-        {
-          name: "metadata"
-          isMut: false
-          isSigner: false
-          docs: ["The metadata account for the token, which has been updated"]
-        },
-        {
-          name: "permit"
-          isMut: false
-          isSigner: false
-          docs: ["permit that authorizes the refresher"]
-        },
-        {
-          name: "refresher"
-          isMut: false
-          isSigner: true
-          docs: ["account that is authorized to refresh position metadata"]
-        }
-      ]
-      args: []
-    },
-    {
       name: "closePosition"
       docs: [
         "Close out a position, removing it from the account.",
@@ -643,10 +592,10 @@ export type JetMargin = {
           docs: ["The liquidator account performing the liquidation actions"]
         },
         {
-          name: "liquidatorMetadata"
+          name: "permit"
           isMut: false
           isSigner: false
-          docs: ["The metadata describing the liquidator"]
+          docs: ["The permit allowing the liquidator to do this"]
         },
         {
           name: "liquidation"
@@ -920,7 +869,7 @@ export type JetMargin = {
         {
           name: "sourceOwner"
           isMut: false
-          isSigner: true
+          isSigner: false
           docs: ["The authority for the source account"]
         },
         {
@@ -1119,6 +1068,24 @@ export type JetMargin = {
       ]
     },
     {
+      name: "configureAccountAirspace"
+      docs: [
+        "Configure an account to join the default airspace",
+        "",
+        "This can be used to migrate margin accounts existing before the introduction of airspaces",
+        "into the default airspace."
+      ]
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: true
+          isSigner: false
+          docs: ["The account to be configured"]
+        }
+      ]
+      args: []
+    },
+    {
       name: "configurePositionConfigRefresher"
       accounts: [
         {
@@ -1213,6 +1180,210 @@ export type JetMargin = {
         {
           name: "amount"
           type: "u64"
+        }
+      ]
+    },
+    {
+      name: "initLookupRegistry",
+      docs: [
+        "Create a lookup table registry account owned by a margin account.",
+        "",
+        "The registry account can store addresses for accounts owned by the margin account,",
+        "such as PDAs, pool accounts and other accounts from adapters that the margin account",
+        "interacts with.",
+        "This should ideally not hold random other accounts including program."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "createLookupTable",
+      docs: [
+        "Create a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "recentSlot",
+          type: "u64"
+        },
+        {
+          name: "discriminator",
+          type: "u64"
+        }
+      ]
+    },
+    {
+      name: "appendToLookup",
+      docs: [
+        "Append addresses to a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "discriminator",
+          type: "u64"
+        },
+        {
+          name: "addresses",
+          type: {
+            vec: "publicKey"
+          }
         }
       ]
     }
@@ -1721,20 +1892,13 @@ export type JetMargin = {
             type: "i64"
           },
           {
-            name: "equityChange"
-            docs: [
-              "cumulative change in equity caused by invocations during the liquidation so far",
-              "negative if equity is lost"
-            ]
+            name: "equityLoss"
+            docs: ["The cumulative amount of equity lost during liquidation so far"]
             type: "i128"
           },
           {
-            name: "minEquityChange"
-            docs: [
-              "lowest amount of equity change that is allowed during invoke steps",
-              "typically negative or zero",
-              "if equity_change goes lower than this number, liquidate_invoke should fail"
-            ]
+            name: "maxEquityLoss"
+            docs: ["The maximum amount of collateral allowed to be lost during all steps"]
             type: "i128"
           }
         ]
@@ -1838,6 +2002,53 @@ export type JetMargin = {
                 type: "publicKey"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenAdmin"
+      docs: ["Description of which program administers a token"]
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "Margin"
+            fields: [
+              {
+                name: "oracle"
+                docs: ["An oracle that can be used to collect price information for a token"]
+                type: {
+                  defined: "TokenOracle"
+                }
+              }
+            ]
+          },
+          {
+            name: "Adapter"
+            fields: ["publicKey"]
+          }
+        ]
+      }
+    },
+    {
+      name: "SyscallProvider"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "Mock"
+            fields: [
+              {
+                defined: "dynFn()->T"
+              }
+            ]
+          },
+          {
+            name: "SolanaRuntime"
+          },
+          {
+            name: "Stub"
           }
         ]
       }
@@ -2335,6 +2546,11 @@ export type JetMargin = {
       msg: "attempting to use or set invalid configuration"
     },
     {
+      code: 141053
+      name: "AlreadyJoinedAirspace"
+      msg: "account is already joined to an airspace"
+    },
+    {
       code: 141060
       name: "InsufficientPermissions"
       msg: "the permit does not authorize this action"
@@ -2345,9 +2561,6 @@ export type JetMargin = {
       msg: "the permit is not owned by the current user"
     }
   ]
-  metadata: {
-    address: "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
-  }
 }
 
 export const IDL: JetMargin = {
@@ -2657,57 +2870,6 @@ export const IDL: JetMargin = {
       args: []
     },
     {
-      name: "refreshPositionMetadata",
-      docs: [
-        "Update the metadata for a position stored in the margin account,",
-        "in the case where the metadata has changed after the position was",
-        "created.",
-        "",
-        "# [Accounts](jet_margin::accounts::RefreshPositionMetadata)",
-        "",
-        "|     |     |     |",
-        "| --- | --- | --- |",
-        "| **Name** | **Type** | **Description** |",
-        "| `margin_account` | `writable` | The margin account with the position to be refreshed. |",
-        "| `metadata` | `read_only` | The metadata account for the token, which has been updated. |",
-        "",
-        "# Events",
-        "",
-        "|     |     |",
-        "| --- | --- |",
-        "| **Event Name** | **Description** |",
-        "| [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |",
-        ""
-      ],
-      accounts: [
-        {
-          name: "marginAccount",
-          isMut: true,
-          isSigner: false,
-          docs: ["The margin account with the position to be refreshed"]
-        },
-        {
-          name: "metadata",
-          isMut: false,
-          isSigner: false,
-          docs: ["The metadata account for the token, which has been updated"]
-        },
-        {
-          name: "permit",
-          isMut: false,
-          isSigner: false,
-          docs: ["permit that authorizes the refresher"]
-        },
-        {
-          name: "refresher",
-          isMut: false,
-          isSigner: true,
-          docs: ["account that is authorized to refresh position metadata"]
-        }
-      ],
-      args: []
-    },
-    {
       name: "closePosition",
       docs: [
         "Close out a position, removing it from the account.",
@@ -2995,10 +3157,10 @@ export const IDL: JetMargin = {
           docs: ["The liquidator account performing the liquidation actions"]
         },
         {
-          name: "liquidatorMetadata",
+          name: "permit",
           isMut: false,
           isSigner: false,
-          docs: ["The metadata describing the liquidator"]
+          docs: ["The permit allowing the liquidator to do this"]
         },
         {
           name: "liquidation",
@@ -3272,7 +3434,7 @@ export const IDL: JetMargin = {
         {
           name: "sourceOwner",
           isMut: false,
-          isSigner: true,
+          isSigner: false,
           docs: ["The authority for the source account"]
         },
         {
@@ -3471,6 +3633,24 @@ export const IDL: JetMargin = {
       ]
     },
     {
+      name: "configureAccountAirspace",
+      docs: [
+        "Configure an account to join the default airspace",
+        "",
+        "This can be used to migrate margin accounts existing before the introduction of airspaces",
+        "into the default airspace."
+      ],
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: ["The account to be configured"]
+        }
+      ],
+      args: []
+    },
+    {
       name: "configurePositionConfigRefresher",
       accounts: [
         {
@@ -3565,6 +3745,210 @@ export const IDL: JetMargin = {
         {
           name: "amount",
           type: "u64"
+        }
+      ]
+    },
+    {
+      name: "initLookupRegistry",
+      docs: [
+        "Create a lookup table registry account owned by a margin account.",
+        "",
+        "The registry account can store addresses for accounts owned by the margin account,",
+        "such as PDAs, pool accounts and other accounts from adapters that the margin account",
+        "interacts with.",
+        "This should ideally not hold random other accounts including program."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "createLookupTable",
+      docs: [
+        "Create a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "recentSlot",
+          type: "u64"
+        },
+        {
+          name: "discriminator",
+          type: "u64"
+        }
+      ]
+    },
+    {
+      name: "appendToLookup",
+      docs: [
+        "Append addresses to a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "discriminator",
+          type: "u64"
+        },
+        {
+          name: "addresses",
+          type: {
+            vec: "publicKey"
+          }
         }
       ]
     }
@@ -4073,20 +4457,13 @@ export const IDL: JetMargin = {
             type: "i64"
           },
           {
-            name: "equityChange",
-            docs: [
-              "cumulative change in equity caused by invocations during the liquidation so far",
-              "negative if equity is lost"
-            ],
+            name: "equityLoss",
+            docs: ["The cumulative amount of equity lost during liquidation so far"],
             type: "i128"
           },
           {
-            name: "minEquityChange",
-            docs: [
-              "lowest amount of equity change that is allowed during invoke steps",
-              "typically negative or zero",
-              "if equity_change goes lower than this number, liquidate_invoke should fail"
-            ],
+            name: "maxEquityLoss",
+            docs: ["The maximum amount of collateral allowed to be lost during all steps"],
             type: "i128"
           }
         ]
@@ -4190,6 +4567,53 @@ export const IDL: JetMargin = {
                 type: "publicKey"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenAdmin",
+      docs: ["Description of which program administers a token"],
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "Margin",
+            fields: [
+              {
+                name: "oracle",
+                docs: ["An oracle that can be used to collect price information for a token"],
+                type: {
+                  defined: "TokenOracle"
+                }
+              }
+            ]
+          },
+          {
+            name: "Adapter",
+            fields: ["publicKey"]
+          }
+        ]
+      }
+    },
+    {
+      name: "SyscallProvider",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "Mock",
+            fields: [
+              {
+                defined: "dynFn()->T"
+              }
+            ]
+          },
+          {
+            name: "SolanaRuntime"
+          },
+          {
+            name: "Stub"
           }
         ]
       }
@@ -4687,6 +5111,11 @@ export const IDL: JetMargin = {
       msg: "attempting to use or set invalid configuration"
     },
     {
+      code: 141053,
+      name: "AlreadyJoinedAirspace",
+      msg: "account is already joined to an airspace"
+    },
+    {
       code: 141060,
       name: "InsufficientPermissions",
       msg: "the permit does not authorize this action"
@@ -4696,8 +5125,5 @@ export const IDL: JetMargin = {
       name: "PermitNotOwned",
       msg: "the permit is not owned by the current user"
     }
-  ],
-  metadata: {
-    address: "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
-  }
+  ]
 }

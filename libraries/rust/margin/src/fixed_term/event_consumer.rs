@@ -1,14 +1,16 @@
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
-    time::SystemTime,
+    time::Duration,
 };
 
 use agnostic_orderbook::state::{
-    event_queue::{EventQueue, EventRef, FillEvent, FillEventRef, OutEventRef},
+    event_queue::{EventQueue, EventRef, FillEventRef, OutEventRef},
     AccountTag,
 };
 use anchor_lang::AccountDeserialize;
+use futures::{future::join_all, lock::Mutex as AsyncMutex};
+use jet_solana_client::rpc::AccountFilter;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, packet::PACKET_DATA_SIZE, pubkey::Pubkey,
     signer::Signer, transaction::Transaction,
@@ -49,7 +51,7 @@ pub enum EventConsumerError {
 /// Utility for running consume-events for fixed term markets
 pub struct EventConsumer {
     rpc: Arc<dyn SolanaRpcClient>,
-    markets: Mutex<HashMap<Pubkey, Arc<Mutex<MarketState>>>>,
+    markets: Mutex<HashMap<Pubkey, Arc<AsyncMutex<MarketState>>>>,
 }
 
 /// does not guarantee successful downloads, some may be omitted
@@ -101,7 +103,7 @@ impl EventConsumer {
         let builder = FixedTermIxBuilder::new_from_state(self.rpc.payer().pubkey(), &market);
         self.markets.lock().unwrap().insert(
             builder.market(),
-            Arc::new(Mutex::new(MarketState {
+            Arc::new(AsyncMutex::new(MarketState {
                 market_address: builder.market(),
                 market,
                 queue: Vec::new(),
@@ -112,6 +114,27 @@ impl EventConsumer {
         );
     }
 
+    /// Start a loop to continuously consume events. Never returns. Logs errors
+    pub async fn sync_and_consume_forever(&self, targets: &[Pubkey], delay: Duration) {
+        loop {
+            if let Err(e) = self.sync_and_consume_all(targets).await {
+                tracing::error!("Error while consuming events: {e:?}");
+            }
+            tokio::time::sleep(delay).await;
+        }
+    }
+
+    pub async fn sync_and_consume_all(&self, targets: &[Pubkey]) -> Result<(), EventConsumerError> {
+        self.sync_queues().await?;
+        while self.total_pending_events(targets).await? > 0 {
+            self.sync_users().await?;
+            self.consume().await?;
+            self.sync_queues().await?;
+        }
+
+        Ok(())
+    }
+
     /// Sync state for all users in the market
     pub async fn sync_users(&self) -> Result<(), EventConsumerError> {
         tracing::trace!("beginning user sync");
@@ -120,7 +143,9 @@ impl EventConsumer {
             .rpc
             .get_program_accounts(
                 &jet_fixed_term::ID,
-                Some(8 + std::mem::size_of::<MarginUser>()),
+                vec![AccountFilter::DataSize(
+                    8 + std::mem::size_of::<MarginUser>(),
+                )],
             )
             .await?;
 
@@ -133,8 +158,8 @@ impl EventConsumer {
                 }
             };
 
-            if let Some(state) = self.markets.lock().unwrap().get_mut(&structure.market) {
-                let mut state = state.lock().unwrap();
+            if let Some(state) = self.get_market(&structure.market) {
+                let mut state = state.lock().await;
 
                 if state.users.insert(address, structure.clone()).is_none() {
                     tracing::trace!(
@@ -147,9 +172,8 @@ impl EventConsumer {
         }
 
         if tracing::enabled!(tracing::Level::TRACE) {
-            for (market, state) in self.markets.lock().unwrap().iter() {
-                let state = state.lock().unwrap();
-
+            for (market, state) in self.markets() {
+                let state = state.lock().await;
                 tracing::trace!(?market, "sync {} total users", state.users.len());
             }
         }
@@ -157,25 +181,38 @@ impl EventConsumer {
         Ok(())
     }
 
+    fn get_market(&self, market: &Pubkey) -> Option<Arc<AsyncMutex<MarketState>>> {
+        self.markets.lock().unwrap().get(market).cloned()
+    }
+
+    fn markets(&self) -> impl Iterator<Item = (Pubkey, Arc<AsyncMutex<MarketState>>)> {
+        self.markets
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|(x, y)| (*x, y.clone()))
+            .collect::<Vec<_>>()
+            .into_iter()
+    }
+
     /// Sync the event queues
     pub async fn sync_queues(&self) -> Result<(), EventConsumerError> {
         tracing::trace!("sync event queues");
 
-        let (markets, addresses): (Vec<_>, Vec<_>) = self
-            .markets
-            .lock()
-            .unwrap()
-            .iter()
-            .map(|(addr, state)| {
-                let state = state.lock().unwrap();
-                (*addr, state.market.event_queue)
-            })
+        let (markets, addresses): (Vec<_>, Vec<_>) =
+            join_all(self.markets().map(|(addr, state)| async move {
+                let state = state.lock().await;
+                (addr, state.market.event_queue)
+            }))
+            .await
+            .into_iter()
             .unzip();
+
         let accounts = self.rpc.get_multiple_accounts(&addresses).await?;
 
         for (market, account) in markets.into_iter().zip(accounts) {
-            let mut map = self.markets.lock().unwrap();
-            let mut market_state = map.get_mut(&market).unwrap().lock().unwrap();
+            let mkt = self.get_market(&market).unwrap();
+            let mut market_state = mkt.lock().await;
 
             if let Some(account) = account {
                 market_state.queue = account.data;
@@ -200,8 +237,7 @@ impl EventConsumer {
             .iter()
             .map(|(address, state)| (*address, state.clone()))
             .map(|(address, state)| async move {
-                let mut state = state.lock().unwrap();
-
+                let mut state = state.lock().await;
                 state
                     .consume_next(&*self.rpc)
                     .await
@@ -228,14 +264,26 @@ impl EventConsumer {
     }
 
     /// Count the events waiting to be consumed in a market
-    pub fn pending_events(&self, market: &Pubkey) -> Result<usize, EventConsumerError> {
-        let map = self.markets.lock().unwrap();
-        let state = match map.get(market) {
-            Some(state) => state.lock().unwrap(),
-            None => return Ok(0),
-        };
+    pub async fn pending_events(&self, market: &Pubkey) -> Result<usize, EventConsumerError> {
+        match self.get_market(market) {
+            Some(state) => state.lock().await.pending_events(),
+            None => Ok(0),
+        }
+    }
 
-        state.pending_events()
+    /// Count the total events waiting to be consumed in all provided market
+    pub async fn total_pending_events(
+        &self,
+        targets: &[Pubkey],
+    ) -> Result<usize, EventConsumerError> {
+        Ok(join_all(
+            targets
+                .iter()
+                .map(|market| async { self.pending_events(market).await.unwrap() }),
+        )
+        .await
+        .into_iter()
+        .sum::<usize>())
     }
 }
 
@@ -262,7 +310,7 @@ impl MarketState {
         let mut consume_tx = Transaction::default();
         let mut margin_accounts_to_settle = Vec::new();
 
-        tracing::trace!(
+        tracing::debug!(
             "processing queue of length {}",
             queue.inner().unwrap().len()
         );
@@ -277,7 +325,6 @@ impl MarketState {
                 EventRef::Fill(FillEventRef {
                     maker_callback_info,
                     taker_callback_info,
-                    event,
                     ..
                 }) => {
                     let maker_user_callback_info = UserCallbackInfo::from(*maker_callback_info);
@@ -291,8 +338,7 @@ impl MarketState {
                             margin_accounts_to_settle.push(info.margin_account);
 
                             FillAccounts {
-                                user_accounts: self
-                                    .margin_fill_accounts(&mut seed, event, &info)?,
+                                user_accounts: self.margin_fill_accounts(&mut seed, &info)?,
                                 maker_queue: maybe_adapter!(info),
                                 taker_queue: taker_callback_info.adapter(),
                             }
@@ -371,7 +417,6 @@ impl MarketState {
     fn margin_fill_accounts(
         &mut self,
         seed: &mut Vec<u8>,
-        event: &FillEvent,
         info: &MarginCallbackInfo,
     ) -> Result<UserFillAccounts, EventConsumerError> {
         let term_account = if info.flags.contains(CallbackFlags::AUTO_STAKE) {
@@ -382,9 +427,8 @@ impl MarketState {
                 .users
                 .get_mut(&info.margin_user)
                 .ok_or(EventConsumerError::InvalidUserKey(info.margin_user))?
-                .assets
-                .new_deposit(event.base_size)
-                .unwrap()
+                .assets()
+                .next_new_deposit_seqno()
                 .to_le_bytes()
                 .to_vec();
 
@@ -403,16 +447,9 @@ impl MarketState {
                 // In this case, the maker is using a margin account, so we
                 // derive the new `TermLoan` account based on the debt sequence
                 // number in the account state
-                let matures_at = self.market.borrow_tenor
-                    + SystemTime::now()
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs();
-
                 *seed = maker_user
-                    .debt
-                    .new_term_loan_from_fill(event.quote_size, matures_at as i64)
-                    .unwrap()
+                    .debt()
+                    .next_new_loan_seqno()
                     .to_le_bytes()
                     .to_vec();
 

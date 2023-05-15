@@ -66,13 +66,13 @@ export function DebtTable() {
     error: ordersError,
     isLoading: ordersLoading,
     mutate: ordersRefresh
-  } = useOrdersForUser(String(apiEndpoint), market?.market, account);
+  } = useOrdersForUser(String(apiEndpoint), market?.market.address.toBase58(), account?.address.toBase58());
   const {
     data: positionsData,
     error: positionsError,
     isLoading: positionsLoading,
     mutate: positionsRefresh
-  } = useOpenPositions(String(apiEndpoint), market?.market, account);
+  } = useOpenPositions(String(apiEndpoint), market?.market.address.toBase58(), account?.address.toBase58());
 
   useEffect(() => {
     ordersRefresh();
@@ -128,7 +128,7 @@ export function DebtTable() {
             {
               label: (
                 <TabLink
-                  name="Open Deposits"
+                  name="Open Lends"
                   amount={positionsData.total_lent}
                   decimals={markets[selectedMarket].token.decimals}
                 />
@@ -184,11 +184,21 @@ export function DebtTable() {
                 />
               ),
               key: 'open-borrows',
-              children: positionsLoading ? (
-                <LoadingOutlined />
-              ) : (
-                <OpenBorrowsTable data={positionsData.loans} market={markets[selectedMarket]} />
-              )
+              children:
+                positionsLoading || !account ? (
+                  <LoadingOutlined />
+                ) : (
+                  <OpenBorrowsTable
+                    data={positionsData.loans}
+                    market={markets[selectedMarket]}
+                    marginAccount={account}
+                    provider={provider}
+                    cluster={cluster}
+                    explorer={explorer}
+                    pools={pools.tokenPools}
+                    markets={markets.map(m => m.market)}
+                  />
+                )
             }
           ]}
           size="large"
