@@ -22,7 +22,7 @@ use std::convert::TryFrom;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use jet_program_common::Number128;
+use jet_program_common::{pod::PodBytes, Number128};
 
 use anchor_lang::Result as AnchorResult;
 use std::result::Result;
@@ -65,7 +65,7 @@ pub struct MarginAccount {
     pub liquidator: Pubkey,
 
     /// The storage for tracking account balances
-    pub positions: [u8; 7432],
+    pub positions: PodBytes<7432>,
 }
 
 #[cfg(any(test, feature = "cli"))]
@@ -460,11 +460,11 @@ impl MarginAccount {
     }
 
     fn position_list(&self) -> &AccountPositionList {
-        bytemuck::from_bytes(&self.positions)
+        bytemuck::from_bytes(&self.positions.0)
     }
 
     fn position_list_mut(&mut self) -> &mut AccountPositionList {
-        bytemuck::from_bytes_mut(&mut self.positions)
+        bytemuck::from_bytes_mut(&mut self.positions.0)
     }
 }
 
@@ -636,7 +636,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation,
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
         let output = "MarginAccount {
             version: 1,
@@ -708,7 +708,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
 
         assert_ser_tokens(
@@ -795,7 +795,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
         let pos = register_position(&mut margin_account, 0, TokenKind::Claim);
         margin_account
@@ -816,7 +816,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
 
         let pos = register_position(&mut margin_account, 0, TokenKind::AdapterCollateral);
@@ -858,7 +858,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
         let user_approval = &[Approver::MarginAccountAuthority];
         let adapter_approval = &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)];
@@ -987,7 +987,7 @@ mod tests {
 
         // There should be no positions left
         assert_eq!(margin_account.positions().count(), 0);
-        assert_eq!(margin_account.positions, [0; 7432]);
+        assert_eq!(margin_account.positions, [0; 7432].into());
     }
 
     #[test]
@@ -1003,7 +1003,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
         let (token_a, address_a) = create_position_input(&margin_address);
         let (token_b, address_b) = create_position_input(&margin_address);
@@ -1085,7 +1085,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
         let (token, address) = create_position_input(&margin_address);
 
@@ -1117,7 +1117,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         };
         let collateral = register_position(&mut acc, 0, TokenKind::Collateral);
         let claim = register_position(&mut acc, 1, TokenKind::Claim);
@@ -1310,7 +1310,7 @@ mod tests {
             airspace: Pubkey::default(),
             liquidator: Pubkey::default(),
             invocation: Invocation::default(),
-            positions: [0; 7432],
+            positions: [0; 7432].into(),
         }
     }
 }

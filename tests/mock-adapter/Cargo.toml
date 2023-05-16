@@ -16,6 +16,6 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.26"
-anchor-spl = "0.26"
+anchor-lang = "0.27"
+anchor-spl = "0.27"
 jet-margin = { path = "../../programs/margin", features = ["cpi"] }

@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use jet_program_common::pod::PodBool;
 #[cfg(any(feature = "cli", test))]
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
@@ -53,11 +54,11 @@ pub struct Market {
     /// The bump seed value for generating the authority address.
     pub(crate) bump: [u8; 1],
     /// Is the market taking orders
-    pub orderbook_paused: bool,
+    pub orderbook_paused: PodBool,
     /// Can tickets be redeemed
-    pub tickets_paused: bool,
+    pub tickets_paused: PodBool,
     /// reserved for future use
-    pub(crate) _reserved: [u8; 28],
+    pub(crate) _reserved: [u8; 29],
     /// Length of time before a borrow is marked as due, in seconds
     pub borrow_tenor: u64,
     /// Length of time before a claim is marked as mature, in seconds
@@ -136,8 +137,8 @@ impl Serialize for Market {
         s.serialize_field("feeVault", &self.fee_vault.to_string())?;
         s.serialize_field("feeDestination", &self.fee_destination.to_string())?;
         s.serialize_field("seed", &Pubkey::new_from_array(self.seed).to_string())?;
-        s.serialize_field("orderbookPaused", &self.orderbook_paused)?;
-        s.serialize_field("ticketsPaused", &self.tickets_paused)?;
+        s.serialize_field("orderbookPaused", &self.orderbook_paused.as_bool())?;
+        s.serialize_field("ticketsPaused", &self.tickets_paused.as_bool())?;
         s.serialize_field("borrowTenor", &self.borrow_tenor)?;
         s.serialize_field("lendTenor", &self.lend_tenor)?;
         s.serialize_field("originationFee", &self.origination_fee)?;
