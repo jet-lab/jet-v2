@@ -134,12 +134,11 @@ mod test {
     /// powers of two, primes, and polynomial
     fn u64_lower_sample_set() -> Vec<u64> {
         (0..63)
-            .into_iter()
             .flat_map(|x| {
                 let p = 2u64.pow(x);
                 p - 1..p + 1
             })
-            .chain((0u64..41).into_iter().map(|x| x.pow(12)))
+            .chain((0u64..41).map(|x| x.pow(12)))
             .collect()
     }
 

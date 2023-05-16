@@ -13,7 +13,7 @@ devnet = []
 
 [dependencies]
 paste = "1.0"
-anchor-lang = "0.26"
+anchor-lang = "0.27"
 
 # https://docs.orca.so/#has-orca-been-audited
 [dependencies.spl-token-swap-3613cea3c]
