@@ -131,7 +131,7 @@ pub async fn under_collateralized_fixed_term_borrow_orders(
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     println!("creating users with collateral");
-    let users = join_all((0..user_count).into_iter().map(|_| {
+    let users = join_all((0..user_count).map(|_| {
         create_and_fund_fixed_term_market_margin_user(
             &ctx,
             manager.clone(),

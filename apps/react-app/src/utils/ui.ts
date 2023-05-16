@@ -1,5 +1,4 @@
 import { Connection } from '@solana/web3.js';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { blockExplorers } from '@state/settings/settings';
 
 // Timeout for app page / theme transitions (in ms)
@@ -64,22 +63,6 @@ export function animateDataUpdate(animationClass: string, elementQuery: string) 
       setTimeout(() => element.classList.remove('animated'), 300);
     }
   }
-}
-
-// Change view with a transition
-export function useChangeView() {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-
-  // Animate view transition and navigate to new page
-  return (route: string, replace = true) => {
-    // If changing to the current view, do nothing
-    if (route === pathname) {
-      return;
-    }
-
-    navigate(route, { replace });
-  };
 }
 
 // Switch from camelCase to dash-case

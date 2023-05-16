@@ -10,7 +10,7 @@ jobs:
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
+      image: jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
     env:
       BATCH: batch1
     steps:
@@ -35,7 +35,7 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
+      image: jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
     env:
       BATCH: batch2
     steps:
@@ -60,7 +60,7 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
+      image: jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -99,7 +99,7 @@ jobs:
             target/
 
       - name: Run tests
-        uses: docker://jetprotocol/builder:rust-1.67.1-node-18.14.2-solana-1.14.17-anchor-0.26.0-2
+        uses: docker://jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
         with: 
           options: -e HOME=/home/tools -e CODECOV=true
           args: /github-entrypoint.sh ./check cargo-test
@@ -167,7 +167,7 @@ jobs:
       - name: Install Solana
         if: steps.cachedeps.outputs.cache-hit != 'true'
         # run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.14.16/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.14.17/install)"
 
       - name: Install wasm-pack
         if: steps.cachedeps.outputs.cache-hit != 'true'
@@ -176,7 +176,7 @@ jobs:
       - run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Install Anchor CLI
-        run: yarn global add @project-serum/anchor-cli@0.26.0
+        run: cargo install --git https://github.com/project-serum/anchor --tag v0.27.0 anchor-cli --locked
 
       - run: solana-keygen new --no-bip39-passphrase
 

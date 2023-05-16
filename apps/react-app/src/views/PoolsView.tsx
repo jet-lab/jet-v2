@@ -1,18 +1,20 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Dictionary } from '../state/settings/localization/localization';
+import { Dictionary, Geobanned } from '../state/settings/localization/localization';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
 import { PoolsTable } from '@components/PoolsView/PoolsTable/PoolsTable';
 import { PoolDetail } from '@components/PoolsView/PoolDetail/PoolDetail';
 import { PoolsViewOrder } from '@state/views/views';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
+import { GeobannedComponent } from '@components/misc/GeoBanned';
 
 // App view for using / viewing Jet pools
 function PoolsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const networkState = useRecoilValue(NetworkStateAtom);
   const viewOrder = useRecoilValue(PoolsViewOrder);
+  const geoBanned = useRecoilValue(Geobanned);
 
   // Localize page title
   useEffect(() => {
@@ -33,7 +35,12 @@ function PoolsView(): JSX.Element {
     return <div className="pools-view view">{PoolsViewComponents}</div>;
   };
 
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
+  if (networkState !== 'connected' || geoBanned === undefined)
+    return <WaitingForNetworkView networkState={networkState} />;
+
+  if (geoBanned) {
+    return <GeobannedComponent />;
+  }
 
   return PoolsView();
 }
