@@ -1,6 +1,8 @@
 use anchor_lang::prelude::Pubkey;
+use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::hash::Hash;
-use solana_sdk::message::Message;
+use solana_sdk::message::{v0, CompileError, Message, VersionedMessage};
+use solana_sdk::signer::SignerError;
 use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{
     instruction::Instruction,
@@ -8,6 +10,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use std::cmp::{max, min};
+use thiserror::Error;
 
 use crate::util::{
     data::{Concat, DeepReverse, Join},
@@ -196,6 +199,24 @@ pub fn condense_left(
     }
 }
 
+/// Compile the instructions into a versioned transaction
+pub fn compile_versioned_transaction(
+    instructions: &[Instruction],
+    payer: &Pubkey,
+    recent_blockhash: Hash,
+    lookup_tables: &[AddressLookupTableAccount],
+    signers: Vec<&Keypair>,
+) -> Result<VersionedTransaction, TransactionBuildError> {
+    let message = VersionedMessage::V0(v0::Message::try_compile(
+        payer,
+        instructions,
+        lookup_tables,
+        recent_blockhash,
+    )?);
+    let tx = VersionedTransaction::try_new(message, &signers)?;
+    Ok(tx)
+}
+
 /// Searches efficiently for the largest continuous group of TransactionBuilders
 /// starting from index 0 that can be merged into a single transaction without
 /// exceeding the transaction size limit.
@@ -331,4 +352,12 @@ impl ToTransactionBuilderVec for Vec<TransactionBuilder> {
     fn to_tx_builder_vec(self) -> Vec<TransactionBuilder> {
         self
     }
+}
+
+#[derive(Error, Debug)]
+pub enum TransactionBuildError {
+    #[error("Error compiling versioned transaction")]
+    CompileError(#[from] CompileError),
+    #[error("Error signing transaction")]
+    SigningError(#[from] SignerError),
 }

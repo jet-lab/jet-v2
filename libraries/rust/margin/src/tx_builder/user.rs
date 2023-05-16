@@ -24,7 +24,9 @@ use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
+use jet_solana_client::transaction::compile_versioned_transaction;
 use jet_solana_client::util::keypair::KeypairExt;
+use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
@@ -600,7 +602,7 @@ impl MarginTxBuilder {
     pub async fn route_swap_with_lookup(
         &self,
         builder: &MarginSwapRouteIxBuilder,
-        account_lookup_tables: &[Pubkey],
+        lookup_tables: &[AddressLookupTableAccount],
         signer: &Keypair,
     ) -> Result<VersionedTransaction> {
         // We can't get the instruction if not finalized, get it to check.
@@ -610,13 +612,15 @@ impl MarginTxBuilder {
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
 
-        let tx = LookupTable::use_lookup_tables(
-            &self.rpc,
-            account_lookup_tables,
+        let recent_blockhash = self.rpc.get_latest_blockhash().await?;
+        let tx = compile_versioned_transaction(
             &instructions,
-            &[signer],
-        )
-        .await?;
+            &signer.pubkey(),
+            recent_blockhash,
+            lookup_tables,
+            vec![&signer],
+        )?;
+
         Ok(tx)
     }
 

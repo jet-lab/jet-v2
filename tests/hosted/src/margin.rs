@@ -46,6 +46,7 @@ use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use jet_solana_client::rpc::AccountFilter;
 use jet_solana_client::signature::Authorization;
+use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::system_program;
@@ -612,7 +613,7 @@ impl MarginUser {
     pub async fn route_swap(
         &self,
         builder: &MarginSwapRouteIxBuilder,
-        account_lookup_tables: &[Pubkey],
+        account_lookup_tables: &[AddressLookupTableAccount],
     ) -> Result<(), Error> {
         // If there are lookup tables, use them
         if account_lookup_tables.is_empty() {

@@ -6,7 +6,7 @@ use std::{
 
 use jet_instructions::airspace::derive_airspace;
 use jet_solana_client::rpc::SolanaRpc;
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{address_lookup_table_account::AddressLookupTableAccount, pubkey::Pubkey};
 
 use crate::{
     client::ClientResult,
@@ -27,6 +27,7 @@ pub struct AccountStates {
     pub(crate) network: Arc<dyn SolanaRpc>,
     pub(crate) wallet: Pubkey,
     pub(crate) config: StateConfig,
+    pub(crate) lookup_tables: LookupTableCache,
     cache: AccountCache,
 }
 
@@ -49,6 +50,7 @@ impl AccountStates {
         let config = StateConfig {
             airspace: derive_airspace(&airspace_seed),
             airspace_seed,
+            airspace_lookup_registry_authority: airspace_config.lookup_registry_authority,
             tokens: airspace_config
                 .tokens
                 .clone()
@@ -63,12 +65,14 @@ impl AccountStates {
         log::debug!("loaded state config: {config:#?}");
 
         let cache = AccountCache::default();
+        let lookup_tables = LookupTableCache::default();
 
         Ok(Self {
             config,
             wallet,
             network,
             cache,
+            lookup_tables,
         })
     }
 
@@ -79,6 +83,8 @@ impl AccountStates {
         self::fixed_term::sync(self).await?;
         self::margin::sync(self).await?;
         self::tokens::sync(self).await?;
+
+        // Sync lookup tables
 
         Ok(())
     }
@@ -109,6 +115,7 @@ impl std::ops::Deref for AccountStates {
 pub struct StateConfig {
     pub airspace_seed: String,
     pub airspace: Pubkey,
+    pub airspace_lookup_registry_authority: Option<Pubkey>,
     pub tokens: Vec<TokenInfo>,
     pub fixed_term_markets: Vec<Pubkey>,
     pub exchanges: Vec<DexInfo>,
@@ -248,5 +255,24 @@ impl AccountCache {
         if !accounts.contains_key(address) {
             accounts.insert(*address, None);
         }
+    }
+}
+
+#[derive(Default)]
+pub struct LookupTableCache {
+    states: Mutex<HashMap<Pubkey, AddressLookupTableAccount>>,
+}
+
+impl LookupTableCache {
+    pub fn get(&self, address: &Pubkey) -> Option<AddressLookupTableAccount> {
+        let states = self.states.lock().unwrap();
+
+        states.get(address).cloned()
+    }
+
+    pub fn set(&self, address: &Pubkey, data: AddressLookupTableAccount) {
+        let mut states = self.states.lock().unwrap();
+
+        states.insert(*address, data);
     }
 }

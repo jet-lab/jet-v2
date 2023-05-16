@@ -76,6 +76,10 @@ impl ClientState {
         self.state.config.airspace
     }
 
+    pub fn airspace_lookup_registry(&self) -> Option<Pubkey> {
+        self.state.config.airspace_lookup_registry_authority
+    }
+
     pub fn state(&self) -> &AccountStates {
         &self.state
     }
@@ -90,6 +94,10 @@ impl ClientState {
 
     pub async fn send(&self, transaction: &impl ToTransaction) -> ClientResult<()> {
         self.send_ordered([transaction]).await
+    }
+
+    pub async fn get_slot(&self) -> ClientResult<u64> {
+        Ok(self.network.get_slot()?)
     }
 
     pub async fn send_ordered(

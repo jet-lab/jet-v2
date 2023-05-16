@@ -132,34 +132,17 @@ impl LookupTable {
         Ok(())
     }
 
-    /// Use a lookup table to create a [VersionedTransaction]
-    pub async fn use_lookup_tables(
+    /// Materialize lookup addresses for use in building versioned transactions
+    pub async fn get_lookup_addresses(
         rpc: &Arc<dyn SolanaRpcClient>,
         table_addresses: &[Pubkey],
-        instructions: &[Instruction],
-        keypairs: &[&Keypair],
-    ) -> Result<VersionedTransaction> {
+    ) -> Result<Vec<AddressLookupTableAccount>> {
         let mut tables = vec![];
         for address in table_addresses {
             if let Ok(Some(table)) = Self::get_lookup_table(rpc, address).await {
                 tables.push(table)
             }
         }
-
-        let mut signers = vec![rpc.payer()];
-        signers.extend_from_slice(keypairs);
-
-        let blockhash = rpc.get_latest_blockhash().await?;
-        let tx = VersionedTransaction::try_new(
-            solana_sdk::message::VersionedMessage::V0(v0::Message::try_compile(
-                &rpc.payer().pubkey(),
-                instructions,
-                &tables,
-                blockhash,
-            )?),
-            &signers,
-        )?;
-
-        Ok(tx)
+        Ok(tables)
     }
 }

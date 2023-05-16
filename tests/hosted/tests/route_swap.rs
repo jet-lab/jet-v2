@@ -390,8 +390,13 @@ async fn route_swap() -> anyhow::Result<()> {
 
     swap_builder.finalize().unwrap();
 
+    let lookup_addresses = LookupTable::get_lookup_addresses(&ctx.rpc(), &[table]).await?;
+
     // Now user A swaps their USDC for TSOL
-    user_a.route_swap(&swap_builder, &[table]).await.unwrap();
+    user_a
+        .route_swap(&swap_builder, &lookup_addresses)
+        .await
+        .unwrap();
 
     Ok(())
 }
