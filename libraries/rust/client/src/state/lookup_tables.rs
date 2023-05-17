@@ -62,7 +62,7 @@ async fn get_lookup_tables<I: NetworkUserInterface>(
                 let account = account?;
                 let table =
                     solana_address_lookup_table_program::state::AddressLookupTable::deserialize(
-                        &account.data(),
+                        account.data(),
                     )
                     .ok()?;
                 let table = AddressLookupTableAccount {

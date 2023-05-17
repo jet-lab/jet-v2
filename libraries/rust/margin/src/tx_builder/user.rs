@@ -617,7 +617,7 @@ impl MarginTxBuilder {
             &signer.pubkey(),
             recent_blockhash,
             lookup_tables,
-            vec![&signer],
+            vec![signer],
         )?;
 
         Ok(tx)

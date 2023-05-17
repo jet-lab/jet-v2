@@ -312,7 +312,7 @@ impl MarginAccountClient {
     pub async fn update_lookup_tables(&self) -> ClientResult<I, ()> {
         // Check if a lookup registry exists, it should be created separately
         let registry_address =
-            Pubkey::find_program_address(&[&self.address.as_ref()], &LOOKUP_TABLE_REGISTRY_ID).0;
+            Pubkey::find_program_address(&[self.address.as_ref()], &LOOKUP_TABLE_REGISTRY_ID).0;
         let registry = self
             .client()
             .client
