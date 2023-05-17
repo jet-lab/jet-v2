@@ -15,12 +15,12 @@ use crate::{
 };
 
 pub mod fixed_term;
+pub mod lookup_tables;
 pub mod margin;
 pub mod margin_pool;
 pub mod oracles;
 pub mod spl_swap;
 pub mod tokens;
-
 /// A utility for synchronizing information about the current protocol state
 /// with an active Solana network.
 pub struct AccountStates {
@@ -84,7 +84,7 @@ impl AccountStates {
         self::margin::sync(self).await?;
         self::tokens::sync(self).await?;
 
-        // Sync lookup tables
+        self::lookup_tables::sync(self).await?;
 
         Ok(())
     }
@@ -260,19 +260,19 @@ impl AccountCache {
 
 #[derive(Default)]
 pub struct LookupTableCache {
-    states: Mutex<HashMap<Pubkey, AddressLookupTableAccount>>,
+    states: Mutex<HashMap<Pubkey, HashMap<Pubkey, AddressLookupTableAccount>>>,
 }
 
 impl LookupTableCache {
-    pub fn get(&self, address: &Pubkey) -> Option<AddressLookupTableAccount> {
+    pub fn get(&self, authority: &Pubkey) -> Option<HashMap<Pubkey, AddressLookupTableAccount>> {
         let states = self.states.lock().unwrap();
 
-        states.get(address).cloned()
+        states.get(authority).cloned()
     }
 
-    pub fn set(&self, address: &Pubkey, data: AddressLookupTableAccount) {
+    pub fn set(&self, authority: &Pubkey, data: HashMap<Pubkey, AddressLookupTableAccount>) {
         let mut states = self.states.lock().unwrap();
 
-        states.insert(*address, data);
+        states.insert(*authority, data);
     }
 }
