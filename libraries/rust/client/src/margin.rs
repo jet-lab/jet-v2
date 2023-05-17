@@ -22,10 +22,7 @@ use jet_instructions::{
 use jet_margin::{AccountPosition, MarginAccount, TokenAdmin, TokenConfig, TokenKind, TokenOracle};
 use jet_margin_pool::{Amount, MarginPool, PoolAction};
 use jet_program_common::Number128;
-use jet_solana_client::{
-    rpc::SolanaRpcExtra,
-    transaction::{condense, TransactionBuilder},
-};
+use jet_solana_client::{rpc::SolanaRpcExtra, NetworkUserInterface, NetworkUserInterfaceExt};
 
 use crate::{
     bail,
@@ -169,6 +166,10 @@ impl MarginAccountClient {
         self.client.airspace()
     }
 
+    pub fn airspace_lookup_registry_authority(&self) -> Option<Pubkey> {
+        self.client.airspace_lookup_registry_authority()
+    }
+
     /// The positions currently held by this account
     pub fn positions(&self) -> Vec<MarginPosition> {
         let list = self.positions_with_token_configs();
@@ -210,12 +211,24 @@ impl MarginAccountClient {
 
     /// Send a transaction prefixed with refresh instructions for all positions
     pub async fn send_with_refresh(&self, instructions: &[Instruction]) -> ClientResult<()> {
-        let mut txns = self.instructions_for_refresh_positions()?;
+        let mut ixs = self.instructions_for_refresh_positions()?;
 
-        txns.extend(instructions.iter().map(|ix| ix.clone().into()));
+        ixs.extend(instructions.iter().cloned());
+
+        let lookup_authorities = &[
+            self.address(),
+            self.airspace_lookup_registry_authority()
+                .unwrap_or_default(),
+        ];
+        let lookup_tables = self
+            .client
+            .state()
+            .lookup_tables
+            .get_authority_tables(lookup_authorities);
 
         self.client
-            .send_ordered(condense(&txns, &self.client.signer())?)
+            // .send_ordered(condense(&txns, &self.client.signer())?) // TODO:Neville
+            .send_with_lookup_tables(&ixs, &lookup_tables)
             .await
     }
 
@@ -480,31 +493,24 @@ impl MarginAccountClient {
 
                     txns.push(
                         self.builder
-                            .refresh_deposit_position(position.token, &oracle, true)
-                            .into(),
+                            .refresh_deposit_position(position.token, &oracle, true),
                     );
                 }
 
                 id if id == jet_margin_pool::ID => {
-                    txns.push(
-                        crate::margin_pool::instruction_for_refresh(
-                            self,
-                            &position.token,
-                            &mut included,
-                        )?
-                        .into(),
-                    );
+                    txns.push(crate::margin_pool::instruction_for_refresh(
+                        self,
+                        &position.token,
+                        &mut included,
+                    )?);
                 }
 
                 id if id == jet_fixed_term::ID => {
-                    txns.push(
-                        crate::fixed_term::instruction_for_refresh(
-                            self,
-                            &position.token,
-                            &mut included,
-                        )?
-                        .into(),
-                    );
+                    txns.push(crate::fixed_term::instruction_for_refresh(
+                        self,
+                        &position.token,
+                        &mut included,
+                    )?);
                 }
 
                 address => {

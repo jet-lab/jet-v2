@@ -275,4 +275,15 @@ impl LookupTableCache {
 
         states.insert(*authority, data);
     }
+
+    pub fn get_authority_tables(&self, authorities: &[Pubkey]) -> Vec<AddressLookupTableAccount> {
+        let states = self.states.lock().unwrap();
+
+        authorities
+            .iter()
+            .filter_map(|authority| states.get(authority))
+            .flat_map(|tables| tables.values())
+            .cloned()
+            .collect()
+    }
 }

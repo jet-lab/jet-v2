@@ -6,14 +6,18 @@ use std::{
 };
 use thiserror::Error;
 
-use solana_sdk::{hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Signature};
+use solana_sdk::{
+    address_lookup_table_account::AddressLookupTableAccount, hash::Hash, instruction::Instruction,
+    pubkey::Pubkey, signature::Signature,
+};
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
 
 use jet_solana_client::{
     rpc::{SolanaRpc, SolanaRpcExtra},
-    transaction::ToTransaction,
+    transaction::{compile_versioned_transaction, ToTransaction},
+    ExtError, NetworkUserInterface,
 };
 
 use crate::{config::JetAppConfig, state::AccountStates, Wallet};
@@ -76,7 +80,7 @@ impl ClientState {
         self.state.config.airspace
     }
 
-    pub fn airspace_lookup_registry(&self) -> Option<Pubkey> {
+    pub fn airspace_lookup_registry_authority(&self) -> Option<Pubkey> {
         self.state.config.airspace_lookup_registry_authority
     }
 
@@ -145,6 +149,52 @@ impl ClientState {
             Some(e) => Err(e.into()),
             None => Ok(()),
         }
+
+        Ok(())
+    }
+
+    pub async fn send_with_lookup_tables(
+        &self,
+        instructions: &[Instruction],
+        lookup_tables: &[AddressLookupTableAccount],
+    ) -> ClientResult<()> {
+        let recent_blockhash = self.get_latest_blockhash().await?;
+        let tx = compile_versioned_transaction(
+            instructions,
+            &self.signer(),
+            recent_blockhash,
+            lookup_tables,
+            vec![],
+        )
+        .unwrap();
+        let signature = self.network.send(tx).await.unwrap();
+        log::info!("tx result success: {signature}");
+        let mut tx_log = self.tx_log.lock().unwrap();
+        tx_log.push_back(signature);
+
+        Ok(())
+    }
+
+    pub async fn _send_unordered(
+        &self,
+        transactions: &[impl ToTransaction],
+    ) -> ClientResult<I, Vec<(usize, I::Error)>> {
+        let recent_blockhash = self.get_latest_blockhash().await?;
+        let txs = transactions
+            .iter()
+            .map(|tx| tx.to_transaction(&self.signer(), recent_blockhash))
+            .collect::<Vec<_>>();
+
+        let results = self
+            .network
+            .send_unordered(&txs, Some(recent_blockhash))
+            .await;
+
+        Ok(results
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, result)| result.err().map(|e| (i, e)))
+            .collect())
     }
 
     pub(crate) async fn with_wallet_account(
