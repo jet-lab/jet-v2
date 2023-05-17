@@ -21,7 +21,6 @@ use jet_fixed_term::{
 };
 use jet_margin_sdk::{
     fixed_term::settler::SETTLES_PER_TX,
-    ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
     solana::{
         keypair::KeypairExt,
@@ -45,14 +44,6 @@ async fn non_margin_orders() -> Result<(), anyhow::Error> {
     let ctx = margin_test_context!();
     let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
     non_margin_orders_for_proxy::<NoProxy>(ctx, manager).await
-}
-
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let ctx = margin_test_context!();
-    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
-    non_margin_orders_for_proxy::<MarginIxBuilder>(ctx, manager).await
 }
 
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(

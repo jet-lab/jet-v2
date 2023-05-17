@@ -319,19 +319,15 @@ export class FixedTermMarket {
       .accounts({
         ...this.addresses,
         marginUser: marketUser,
+        marginAccount: user.address,
         ticketCollateralMint: this.addresses.ticketCollateralMint,
         ticketCollateral,
-        inner: {
-          ...this.addresses,
-          orderbookMut: this.orderbookMut(),
-          authority: user.address,
-          payer,
-          ticketMint: this.addresses.ticketMint,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-          lenderTokens: userTokenVault,
-          ticketSettlement
-        }
+        ticketSettlement,
+        lenderTokens: userTokenVault,
+        orderbookMut: this.orderbookMut(),
+        payer,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId
       })
       .instruction()
   }

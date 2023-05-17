@@ -1194,90 +1194,85 @@ export type JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "inner"
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
+          docs: ["The margin account responsible for this order"]
+        },
+        {
+          name: "orderbookMut"
           accounts: [
             {
-              name: "authority"
-              isMut: false
-              isSigner: true
-              docs: ["Signing authority over the token vault transferring for a lend order"]
-            },
-            {
-              name: "orderbookMut"
-              accounts: [
-                {
-                  name: "market"
-                  isMut: true
-                  isSigner: false
-                  docs: ["The `Market` account tracks global information related to this particular fixed term market"]
-                },
-                {
-                  name: "orderbookMarketState"
-                  isMut: true
-                  isSigner: false
-                },
-                {
-                  name: "eventQueue"
-                  isMut: true
-                  isSigner: false
-                },
-                {
-                  name: "bids"
-                  isMut: true
-                  isSigner: false
-                },
-                {
-                  name: "asks"
-                  isMut: true
-                  isSigner: false
-                }
-              ]
-            },
-            {
-              name: "ticketSettlement"
+              name: "market"
               isMut: true
               isSigner: false
-              docs: [
-                "where to settle tickets on match:",
-                "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
-                "- ticket token account to receive tickets",
-                "be careful to check this properly. one way is by using lender_tickets_token_account"
-              ]
+              docs: ["The `Market` account tracks global information related to this particular fixed term market"]
             },
             {
-              name: "lenderTokens"
+              name: "orderbookMarketState"
               isMut: true
               isSigner: false
-              docs: ["where to loan tokens from"]
             },
             {
-              name: "underlyingTokenVault"
+              name: "eventQueue"
               isMut: true
               isSigner: false
-              docs: ["The market token vault"]
             },
             {
-              name: "ticketMint"
+              name: "bids"
               isMut: true
               isSigner: false
-              docs: ["The market token vault"]
             },
             {
-              name: "payer"
+              name: "asks"
               isMut: true
-              isSigner: true
-            },
-            {
-              name: "systemProgram"
-              isMut: false
-              isSigner: false
-            },
-            {
-              name: "tokenProgram"
-              isMut: false
               isSigner: false
             }
           ]
+        },
+        {
+          name: "ticketSettlement"
+          isMut: true
+          isSigner: false
+          docs: [
+            "where to settle tickets on match:",
+            "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- ticket token account to receive tickets",
+            "be careful to check this properly. one way is by using lender_tickets_token_account"
+          ]
+        },
+        {
+          name: "lenderTokens"
+          isMut: true
+          isSigner: false
+          docs: ["where to loan tokens from"]
+        },
+        {
+          name: "underlyingTokenVault"
+          isMut: true
+          isSigner: false
+          docs: ["The market token vault"]
+        },
+        {
+          name: "ticketMint"
+          isMut: true
+          isSigner: false
+          docs: ["The market token vault"]
+        },
+        {
+          name: "payer"
+          isMut: true
+          isSigner: true
+        },
+        {
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         }
       ]
       args: [
@@ -3071,8 +3066,8 @@ export type JetFixedTerm = {
           index: false
         },
         {
-          name: "autoRoll",
-          type: "bool",
+          name: "autoRoll"
+          type: "bool"
           index: false
         }
       ]
@@ -3156,8 +3151,8 @@ export type JetFixedTerm = {
           index: false
         },
         {
-          name: "isAutoRoll",
-          type: "bool",
+          name: "isAutoRoll"
+          type: "bool"
           index: false
         }
       ]
@@ -3191,8 +3186,8 @@ export type JetFixedTerm = {
           index: false
         },
         {
-          name: "isAutoRoll",
-          type: "bool",
+          name: "isAutoRoll"
+          type: "bool"
           index: false
         }
       ]
@@ -5036,90 +5031,85 @@ export const IDL: JetFixedTerm = {
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
         {
-          name: "inner",
+          name: "marginAccount",
+          isMut: false,
+          isSigner: true,
+          docs: ["The margin account responsible for this order"]
+        },
+        {
+          name: "orderbookMut",
           accounts: [
             {
-              name: "authority",
-              isMut: false,
-              isSigner: true,
-              docs: ["Signing authority over the token vault transferring for a lend order"]
-            },
-            {
-              name: "orderbookMut",
-              accounts: [
-                {
-                  name: "market",
-                  isMut: true,
-                  isSigner: false,
-                  docs: ["The `Market` account tracks global information related to this particular fixed term market"]
-                },
-                {
-                  name: "orderbookMarketState",
-                  isMut: true,
-                  isSigner: false
-                },
-                {
-                  name: "eventQueue",
-                  isMut: true,
-                  isSigner: false
-                },
-                {
-                  name: "bids",
-                  isMut: true,
-                  isSigner: false
-                },
-                {
-                  name: "asks",
-                  isMut: true,
-                  isSigner: false
-                }
-              ]
-            },
-            {
-              name: "ticketSettlement",
+              name: "market",
               isMut: true,
               isSigner: false,
-              docs: [
-                "where to settle tickets on match:",
-                "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
-                "- ticket token account to receive tickets",
-                "be careful to check this properly. one way is by using lender_tickets_token_account"
-              ]
+              docs: ["The `Market` account tracks global information related to this particular fixed term market"]
             },
             {
-              name: "lenderTokens",
+              name: "orderbookMarketState",
               isMut: true,
-              isSigner: false,
-              docs: ["where to loan tokens from"]
-            },
-            {
-              name: "underlyingTokenVault",
-              isMut: true,
-              isSigner: false,
-              docs: ["The market token vault"]
-            },
-            {
-              name: "ticketMint",
-              isMut: true,
-              isSigner: false,
-              docs: ["The market token vault"]
-            },
-            {
-              name: "payer",
-              isMut: true,
-              isSigner: true
-            },
-            {
-              name: "systemProgram",
-              isMut: false,
               isSigner: false
             },
             {
-              name: "tokenProgram",
-              isMut: false,
+              name: "eventQueue",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "bids",
+              isMut: true,
+              isSigner: false
+            },
+            {
+              name: "asks",
+              isMut: true,
               isSigner: false
             }
           ]
+        },
+        {
+          name: "ticketSettlement",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "where to settle tickets on match:",
+            "- TermDeposit that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- ticket token account to receive tickets",
+            "be careful to check this properly. one way is by using lender_tickets_token_account"
+          ]
+        },
+        {
+          name: "lenderTokens",
+          isMut: true,
+          isSigner: false,
+          docs: ["where to loan tokens from"]
+        },
+        {
+          name: "underlyingTokenVault",
+          isMut: true,
+          isSigner: false,
+          docs: ["The market token vault"]
+        },
+        {
+          name: "ticketMint",
+          isMut: true,
+          isSigner: false,
+          docs: ["The market token vault"]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "tokenProgram",
+          isMut: false,
+          isSigner: false
         }
       ],
       args: [
