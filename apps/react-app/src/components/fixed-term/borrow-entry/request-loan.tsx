@@ -13,7 +13,7 @@ import {
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
-import { feesCalc, marketToString } from '@utils/jet/fixed-term-utils';
+import { marketToString } from '@utils/jet/fixed-term-utils';
 import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
@@ -53,9 +53,12 @@ interface Forecast {
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey } = useJetStore(state => ({
-    selectedPoolKey: state.selectedPoolKey
-  }));
+  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
+    return {
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables
+    }
+  });
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -101,7 +104,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         basisPoints: basisPoints,
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
-        autorollEnabled
+        autorollEnabled,
+        airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
         refreshOrderBooks();
@@ -111,8 +115,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
             .div(new BN(10 ** decimals))
             .toNumber()
             .toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(
-            2
-          )}% was created successfully`,
+              2
+            )}% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -141,6 +145,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   function orderbookModelLogic(amount: bigint, limitPrice: bigint) {
     const model = marketAndConfig.market.orderbookModel as OrderbookModel;
     const sim = model.simulateMaker('borrow', amount, limitPrice, marginAccount?.address.toBytes());
+
     let correspondingPool = pools?.tokenPools[marketAndConfig.token.symbol];
     if (correspondingPool == undefined) {
       console.log('ERROR `correspondingPool` must be defined.');
@@ -153,14 +158,14 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     const setupCheckEstimate = productModel?.makerAccountForecast('borrow', sim, 'setup');
     const valuationEstimate = productModel?.makerAccountForecast('borrow', sim);
 
-    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filled_base_qty), token.decimals);
-    const matchBorrowAmount = new TokenAmount(bigIntToBn(sim.filled_quote_qty), token.decimals);
-    const matchRate = sim.filled_vwar;
-    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.posted_base_qty), token.decimals);
-    const postedBorrowAmount = new TokenAmount(bigIntToBn(sim.posted_quote_qty), token.decimals);
-    const postedRate = sim.posted_vwar;
-    const matchedInterest = matchRepayAmount.sub(matchBorrowAmount);
-    const postedInterest = postedRepayAmount.sub(postedBorrowAmount);
+    const matchRepayAmount = new TokenAmount(bigIntToBn(sim.filledBaseQty), token.decimals);
+    const matchRate = sim.filledVwar;
+    const matchedInterest = new TokenAmount(bigIntToBn(sim.filledBaseQty - sim.filledQuoteQty), token.decimals);
+    const matchedFees = new TokenAmount(bigIntToBn(sim.filledFeeQty), token.decimals);
+    const postedRepayAmount = new TokenAmount(bigIntToBn(sim.postedBaseQty), token.decimals);
+    const postedRate = sim.postedVwar;
+    const postedInterest = new TokenAmount(bigIntToBn(sim.postedBaseQty - sim.postedQuoteQty), token.decimals);
+    const postedFees = new TokenAmount(bigIntToBn(sim.postedFeeQty), token.decimals);
 
     setForecast({
       matchedAmount: matchRepayAmount.tokens,
@@ -169,12 +174,10 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       postedRepayAmount: postedRepayAmount.tokens,
       postedInterest: postedInterest.tokens,
       postedRate,
-      selfMatch: sim.self_match,
+      selfMatch: sim.selfMatch,
       riskIndicator: valuationEstimate?.riskIndicator,
       hasEnoughCollateral: setupCheckEstimate && setupCheckEstimate.riskIndicator < 1 ? true : false,
-      fees: matchedInterest.tokens
-        ? feesCalc(sim.filled_vwar, matchedInterest.tokens)
-        : feesCalc(sim.posted_vwar, postedInterest.tokens)
+      fees: matchedFees.add(postedFees).tokens
     });
   }
 

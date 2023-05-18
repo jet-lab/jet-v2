@@ -59,5 +59,5 @@ pub async fn read_market_account(
 }
 
 fn read_address(bytes: [u64; 4]) -> Pubkey {
-    Pubkey::new(bytemuck::bytes_of(&bytes))
+    Pubkey::try_from(bytemuck::bytes_of(&bytes)).unwrap()
 }

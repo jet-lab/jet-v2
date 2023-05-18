@@ -66,7 +66,11 @@ const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; cu
       const currentMarketConfig = allMarkets.find(market => market.name === current.name)?.config;
       if (!currentMarketConfig) return all;
 
-      const sample = current.orderbook.sampleLiquidity(orderTypeKey);
+      const sample = current.orderbook.sampleLiquidityDeprecated(orderTypeKey);
+
+      console.log("=== NEW LIQUIDITY STRUCT ===")
+      console.log(current.orderbook.sampleLiquidity(1000000000000000n));
+
       const currentSeries = {
         id: current.name,
         type: orderTypeKey,

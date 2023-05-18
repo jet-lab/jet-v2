@@ -58,7 +58,7 @@ pub struct OrderbookMut<'info> {
             has_one = bids @ FixedTermErrorCode::WrongBids,
             has_one = asks @ FixedTermErrorCode::WrongAsks,
             has_one = event_queue @ FixedTermErrorCode::WrongEventQueue,
-            constraint = !market.load()?.orderbook_paused @ FixedTermErrorCode::OrderbookPaused,
+            constraint = !market.load()?.orderbook_paused.as_bool() @ FixedTermErrorCode::OrderbookPaused,
         )]
     pub market: AccountLoader<'info, Market>,
 

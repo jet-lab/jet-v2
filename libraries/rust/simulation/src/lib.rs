@@ -17,7 +17,6 @@
 
 use anyhow::Error;
 use lazy_static::__Deref;
-use solana_client::client_error::ClientError;
 use std::{
     cell::RefCell,
     sync::{Arc, Mutex},
@@ -29,6 +28,8 @@ use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::TransactionError,
 };
 
+use jet_solana_client::rpc::ClientError;
+
 mod log;
 #[doc(hidden)]
 pub mod runtime;
@@ -36,7 +37,7 @@ pub mod runtime;
 pub mod solana_rpc_api;
 
 pub use runtime::{Entrypoint, TestRuntime};
-pub use solana_rpc_api::{RpcConnection, SolanaRpcClient};
+pub use solana_rpc_api::SolanaRpcClient;
 
 pub type EntryFn =
     Box<dyn Fn(&Pubkey, &[AccountInfo], &[u8]) -> Result<(), ProgramError> + Send + Sync>;
@@ -73,13 +74,20 @@ pub fn assert_custom_program_error<
     let actual_err: Error = actual_result.expect_err("result is not an error").into();
 
     let actual_num = match (
-        actual_err
-            .downcast_ref::<ClientError>()
-            .and_then(ClientError::get_transaction_error),
+        actual_err.downcast_ref::<ClientError>(),
+        actual_err.downcast_ref::<TransactionError>(),
         actual_err.downcast_ref::<ProgramError>(),
     ) {
-        (Some(TransactionError::InstructionError(_, InstructionError::Custom(n))), _) => n,
-        (_, Some(ProgramError::Custom(n))) => *n,
+        (
+            Some(ClientError::TransactionError(TransactionError::InstructionError(
+                _,
+                InstructionError::Custom(n),
+            ))),
+            _,
+            _,
+        ) => *n,
+        (_, Some(TransactionError::InstructionError(_, InstructionError::Custom(n))), _) => *n,
+        (_, _, Some(ProgramError::Custom(n))) => *n,
         _ => panic!("not a custom program error: {:?}", actual_err),
     };
 

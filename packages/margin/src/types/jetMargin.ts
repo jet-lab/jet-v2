@@ -1182,6 +1182,210 @@ export type JetMargin = {
           type: "u64"
         }
       ]
+    },
+    {
+      name: "initLookupRegistry",
+      docs: [
+        "Create a lookup table registry account owned by a margin account.",
+        "",
+        "The registry account can store addresses for accounts owned by the margin account,",
+        "such as PDAs, pool accounts and other accounts from adapters that the margin account",
+        "interacts with.",
+        "This should ideally not hold random other accounts including program."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "createLookupTable",
+      docs: [
+        "Create a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "recentSlot",
+          type: "u64"
+        },
+        {
+          name: "discriminator",
+          type: "u64"
+        }
+      ]
+    },
+    {
+      name: "appendToLookup",
+      docs: [
+        "Append addresses to a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "discriminator",
+          type: "u64"
+        },
+        {
+          name: "addresses",
+          type: {
+            vec: "publicKey"
+          }
+        }
+      ]
     }
   ]
   accounts: [
@@ -3541,6 +3745,210 @@ export const IDL: JetMargin = {
         {
           name: "amount",
           type: "u64"
+        }
+      ]
+    },
+    {
+      name: "initLookupRegistry",
+      docs: [
+        "Create a lookup table registry account owned by a margin account.",
+        "",
+        "The registry account can store addresses for accounts owned by the margin account,",
+        "such as PDAs, pool accounts and other accounts from adapters that the margin account",
+        "interacts with.",
+        "This should ideally not hold random other accounts including program."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "createLookupTable",
+      docs: [
+        "Create a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "recentSlot",
+          type: "u64"
+        },
+        {
+          name: "discriminator",
+          type: "u64"
+        }
+      ]
+    },
+    {
+      name: "appendToLookup",
+      docs: [
+        "Append addresses to a lookup table in a registry account owned by a margin account."
+      ],
+      accounts: [
+        {
+          name: "marginAuthority",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The authority that can register a lookup table for a margin account"
+          ]
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true,
+          docs: [
+            "The payer of the transaction"
+          ]
+        },
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The margin account to create this lookup account for"
+          ]
+        },
+        {
+          name: "registryAccount",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The registry account"
+          ]
+        },
+        {
+          name: "lookupTable",
+          isMut: true,
+          isSigner: false,
+          docs: [
+            "The lookup table being created"
+          ]
+        },
+        {
+          name: "addressLookupTableProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "registryProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "discriminator",
+          type: "u64"
+        },
+        {
+          name: "addresses",
+          type: {
+            vec: "publicKey"
+          }
         }
       ]
     }

@@ -33,8 +33,8 @@ indicatif = "0.16"
 clap = { version = "3.2", features = ["derive", "env"] }
 comfy-table = "6"
 
-anchor-syn = { version = "0.26", features = ["idl"] }
-anchor-lang = "0.26"
+anchor-syn = { version = "0.27", features = ["idl"] }
+anchor-lang = "0.27"
 spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
 pyth-sdk-solana = "0.7"
 

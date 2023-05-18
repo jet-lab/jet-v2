@@ -13,7 +13,7 @@ tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-anchor-lang = "0.26"
+anchor-lang = "0.27"
 
 solana-client = "1.14"
 solana-cli-config = "1.14"
@@ -29,3 +29,4 @@ jet-ctl-cli = { path = "../ctl" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-environment = { path = "../../libraries/rust/environment" }
 jet-simulation = { path = "../../libraries/rust/simulation" }
+jet-solana-client = { path = "../../libraries/rust/solana-client" }

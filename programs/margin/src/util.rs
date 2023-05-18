@@ -259,7 +259,7 @@ mod test {
     #[test]
     fn check_all_heights_with_any_marks() {
         for size in 0..MAX_DEPTH + 2 {
-            for combo in (0..MAX_DEPTH + 1).into_iter().combinations(size.into()) {
+            for combo in (0..MAX_DEPTH + 1).combinations(size.into()) {
                 let mut subject = Invocation::default();
                 for depth in combo.clone() {
                     mock_sys!(stack_height = depth as usize);

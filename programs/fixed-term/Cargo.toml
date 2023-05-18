@@ -35,8 +35,8 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
-anchor-lang = "0.26"
-anchor-spl =  "0.26"
+anchor-lang = "0.27"
+anchor-spl =  "0.27"
 
 jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
 jet-program-common = { path = "../../libraries/rust/program-common" }

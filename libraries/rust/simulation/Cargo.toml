@@ -18,7 +18,7 @@ rand = "0.7"
 lazy_static = "1"
 base64 = "0.13"
 log = "0.4"
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["rt", "time"] }
 
 solana-account-decoder = "1.14.1"
 solana-client = "1.14.1"
@@ -30,6 +30,8 @@ solana-bpf-loader-program = "1.14.1"
 solana-program-test = "1.14.1"
 
 solana_rbpf = "0.2.31"
+
+jet-solana-client = { path = "../solana-client" }
 
 [dependencies.solana-address-lookup-table-program]
 package = "solana-address-lookup-table-program-gateway"

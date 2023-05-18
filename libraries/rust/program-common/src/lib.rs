@@ -7,6 +7,7 @@ mod number;
 mod number_128;
 
 pub mod interest_pricing;
+pub mod pod;
 pub mod serialization;
 pub mod traits;
 

@@ -38,8 +38,8 @@ solana-cli-config = "1.14"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
-anchor-lang = "0.26"
-anchor-spl = { version = "0.26", features = ["dex", "devnet"] }
+anchor-lang = "0.27"
+anchor-spl = { version = "0.27", features = ["dex", "devnet"] }
 
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
 spl-token = "3.1.0"

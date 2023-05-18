@@ -1,12 +1,12 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
-import { E2EWalletAdapter } from '@jet-lab/e2e-react-adapter';
 import { WalletProvider } from '@solana/wallet-adapter-react';
 import {
   MathWalletAdapter,
   SolflareWalletAdapter,
   SolongWalletAdapter,
-  BraveWalletAdapter
+  BraveWalletAdapter,
+  UnsafeBurnerWalletAdapter
 } from '@solana/wallet-adapter-wallets';
 import { lazy, Suspense, useMemo } from 'react';
 import './styles/App.less';
@@ -23,7 +23,7 @@ const StateSyncer = lazy(() => import('@state/StateSyncer'));
 const FixedLendView = lazy(() => import('@views/FixedLendView'));
 const FixedBorrowView = lazy(() => import('@views/FixedBorrowView'));
 
-const isDebug = window.location.href.includes('localhost');
+export const isDebug = window.location.href.includes('localhost');
 
 export const App = (): JSX.Element => {
   const wallets = useMemo(
@@ -32,7 +32,7 @@ export const App = (): JSX.Element => {
       new SolflareWalletAdapter(),
       new SolongWalletAdapter(),
       new MathWalletAdapter(),
-      ...(isDebug ? [new E2EWalletAdapter()] : [])
+      ...(isDebug ? [new UnsafeBurnerWalletAdapter()] : [])
     ],
     [isDebug]
   );

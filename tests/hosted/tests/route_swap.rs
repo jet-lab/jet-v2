@@ -1,4 +1,4 @@
-use std::{collections::HashSet, num::NonZeroU64, sync::Arc, time::Duration};
+use std::{collections::HashSet, num::NonZeroU64, sync::Arc};
 
 use anchor_lang::Id;
 use anchor_spl::dex::{
@@ -150,9 +150,7 @@ async fn setup_swap_accounts<'a>(
     }
 }
 
-#[cfg_attr(not(feature = "localnet"), ignore = "only runs on localnet")]
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+#[tokio::test]
 async fn route_swap() -> anyhow::Result<()> {
     let swap_program_id = spl_token_swap_v2::id();
     // Get the mocked runtime
@@ -367,7 +365,7 @@ async fn route_swap() -> anyhow::Result<()> {
         .unwrap();
 
     // Wait a bit before starting to use lookup table
-    tokio::time::sleep(Duration::from_secs(10)).await;
+    ctx.rpc().wait_for_next_block().await.unwrap();
 
     // Create a swap route and execute it
     let mut swap_builder = MarginSwapRouteIxBuilder::try_new(

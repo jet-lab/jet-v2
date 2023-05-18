@@ -590,18 +590,6 @@ html {
     }
   }
 
-  // Geobanned Modal
-  .geobanned-modal {
-    .ant-modal-content {
-      max-width: 300px;
-
-      .ant-typography {
-        margin: 0 0 @spacing-lg 0;
-        font-weight: 300;
-      }
-    }
-  }
-
   // Liquidation Modal
   .liquidation-modal {
     .ant-modal-content {
@@ -1403,6 +1391,7 @@ html {
 
     .fixed-term-graph {
       flex: 1;
+      min-height: 300px;
 
       &-head {
         position: absolute;
@@ -1440,6 +1429,7 @@ html {
 
   .swaps-graph {
     flex: 1;
+    min-height: 300px;
 
     &-head {
       position: absolute;
@@ -2105,6 +2095,7 @@ html {
 
   // Any account Table
   .account-table {
+    min-height: 160px;
     &-search {
       position: absolute;
       top: @spacing-xs;
@@ -2666,6 +2657,11 @@ html {
     display: flex;
     flex-direction: column;
     height: 100% !important;
+
+    p {
+      margin-bottom: 16px;
+      color: rgb(var(--secondary-4));
+    }
   }
 
   .submit-button {
@@ -3032,4 +3028,12 @@ html {
       color: #666;
     }
   }
+}
+
+.geobanned-container {
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  max-width: 300px;
+  margin-top: 80px;
 }

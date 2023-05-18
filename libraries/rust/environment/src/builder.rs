@@ -1,4 +1,4 @@
-use std::{any::Any, fmt::Debug, str::FromStr};
+use std::{any::Any, collections::BTreeMap, fmt::Debug, str::FromStr};
 
 use spl_governance::state::{
     native_treasury::get_native_treasury_address,
@@ -113,15 +113,22 @@ pub struct TokenContext {
 }
 
 pub struct PlanInstructions {
-    pub setup: Vec<TransactionBuilder>,
+    pub setup: Vec<Vec<TransactionBuilder>>,
     pub propose: Vec<TransactionBuilder>,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum SetupPhase {
+    TokenMints,
+    TokenAccounts,
+    Swaps,
 }
 
 pub struct Builder<I> {
     pub(crate) network: NetworkKind,
     pub(crate) interface: I,
     pub(crate) proposal_execution: ProposalExecution,
-    setup_tx: Vec<TransactionBuilder>,
+    setup_tx: BTreeMap<SetupPhase, Vec<TransactionBuilder>>,
     propose_tx: Vec<TransactionBuilder>,
 }
 
@@ -136,7 +143,7 @@ impl<I: NetworkUserInterface> Builder<I> {
                 .map_err(|e| BuilderError::InterfaceError(Box::new(e)))?,
             interface: network_interface,
             proposal_execution,
-            setup_tx: vec![],
+            setup_tx: BTreeMap::new(),
             propose_tx: vec![],
         })
     }
@@ -154,14 +161,14 @@ impl<I: NetworkUserInterface> Builder<I> {
             network,
             interface: network_interface,
             proposal_execution,
-            setup_tx: vec![],
+            setup_tx: BTreeMap::new(),
             propose_tx: vec![],
         }
     }
 
     pub fn build(self) -> PlanInstructions {
         PlanInstructions {
-            setup: self.setup_tx,
+            setup: self.setup_tx.into_values().collect(),
             propose: self.propose_tx,
         }
     }
@@ -207,8 +214,17 @@ impl<I: NetworkUserInterface> Builder<I> {
         Ok(self.interface.get_anchor_accounts(&addresses).await?)
     }
 
-    pub fn setup<T: Into<TransactionBuilder>>(&mut self, txns: impl IntoIterator<Item = T>) {
-        self.setup_tx.extend(txns.into_iter().map(|t| t.into()))
+    pub fn setup<T: Into<TransactionBuilder>>(
+        &mut self,
+        phase: SetupPhase,
+        txns: impl IntoIterator<Item = T>,
+    ) {
+        let setup_tx = match self.setup_tx.get_mut(&phase) {
+            Some(tx) => tx,
+            None => self.setup_tx.entry(phase).or_default(),
+        };
+
+        setup_tx.extend(txns.into_iter().map(|t| t.into()))
     }
 
     pub fn propose(&mut self, instructions: impl IntoIterator<Item = Instruction>) {
