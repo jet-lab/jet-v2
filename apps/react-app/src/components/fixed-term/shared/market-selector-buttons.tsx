@@ -57,7 +57,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
     deposit => new Date(deposit.maturation_timestamp).getTime() <= Date.now()
   );
   const amountToClaim = depositsToClaim.reduce((sum, item) => {
-    const value = new BN(item.balance);
+    const value = new BN(item.interest + item.principal);
     return sum.add(value);
   }, new BN(0));
   const hasToClaim = depositsToClaim.length > 0;

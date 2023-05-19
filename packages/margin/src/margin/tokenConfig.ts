@@ -14,7 +14,7 @@ export interface TokenConfigInfo {
   airspace: PublicKey
   admin: number[]
   tokenKind: number
-  valueModifier: BN
+  valueModifier: number
   maxStaleness: BN
 }
 
@@ -66,7 +66,7 @@ export class TokenConfig {
       return
     }
     this.info = this.programs.margin.coder.accounts.decode("TokenConfig", info.data)
-    this.valueModifier = this.info!.valueModifier.toNumber() / 100
+    this.valueModifier = this.info!.valueModifier / 100
     this.tokenKind = TokenConfig.decodeTokenKind(this.info!.tokenKind)
   }
 

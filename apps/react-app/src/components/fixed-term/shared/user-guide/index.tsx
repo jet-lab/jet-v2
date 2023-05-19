@@ -188,7 +188,7 @@ const Page4Sidebar = () => {
 
 export const UserGuide = () => (
   // <div className="relative top-44 left-96 rounded">
-  <DismissModal storageKey="fixed-term-guide" title="Fixed Rate Debt Markets" className="w-3/4">
+  <DismissModal storageKey="fixed-term-guide" title="Fixed Rate Debt Markets" className="w-3/4" open={false}>
     {({ dismiss }) => (
       <Carousel
         pagesToRender={4}

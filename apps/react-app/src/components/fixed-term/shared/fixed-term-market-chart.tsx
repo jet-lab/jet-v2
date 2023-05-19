@@ -36,7 +36,6 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
 };
 
 const asksKeys = ['lend-now', 'request-loan'];
-const requestKeys = ['lend-now', 'borrow-now'];
 
 const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; currentTab: string }) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
@@ -89,7 +88,7 @@ const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; cu
   }, [openOrders, currentTab, selectedMarketIndex]);
 
   return (
-    <ResponsiveLineChart symbol={market.token.symbol} isRequest={requestKeys.includes(currentTab)} series={series} />
+    <ResponsiveLineChart symbol={market.token.symbol} series={series} />
   );
 };
 
