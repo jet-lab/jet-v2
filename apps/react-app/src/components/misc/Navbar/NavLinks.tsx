@@ -1,9 +1,8 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { NavDrawerOpen } from '@state/views/views';
 import { SendingTransaction } from '@state/actions/actions';
-import { useChangeView } from '@utils/ui';
 import { Tooltip, Typography } from 'antd';
 import { useJetStore } from '@jet-lab/store';
 
@@ -54,7 +53,7 @@ export function NavLinks(): JSX.Element {
 function NavLink(link: Link): JSX.Element {
   const sendingTransaction = useRecoilValue(SendingTransaction);
   const { pathname } = useLocation();
-  const changeView = useChangeView();
+  const navigate = useNavigate();
   const setDrawerOpen = useSetRecoilState(NavDrawerOpen);
   const { Text } = Typography;
 
@@ -64,7 +63,7 @@ function NavLink(link: Link): JSX.Element {
       disabled={link.disabled}
       onClick={() => {
         if (!link.disabled && !sendingTransaction) {
-          changeView(link.route);
+          navigate(link.route);
           setDrawerOpen(false);
         }
       }}

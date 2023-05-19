@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Geobanned } from '@state/settings/localization/localization';
 import {
   WalletModal as WalletModalState,
   NewAccountModal as NewAccountModalState,
@@ -8,7 +7,6 @@ import {
   NotificationsModal as NotificationsModalState
 } from '@state/modals/modals';
 import { CurrentAction } from '@state/actions/actions';
-import { GeobannedModal } from './GeobannedModal';
 import { DisclaimerModal } from './DisclaimerModal';
 import { WalletModal } from './WalletModal';
 import { DepositWithdrawModal } from './actions/DepositWithdrawModal';
@@ -20,7 +18,6 @@ import { NotificationsModal } from './NotificationsModal';
 
 // Wrapper component to include all app modals
 export function Modals(): JSX.Element {
-  const geobanned = useRecoilValue(Geobanned);
   const WalletModalOpen = useRecoilValue(WalletModalState);
   const currentAction = useRecoilValue(CurrentAction);
   const newAccountModalOpen = useRecoilValue(NewAccountModalState);
@@ -29,23 +26,15 @@ export function Modals(): JSX.Element {
 
   // Disable scroll when these modals are open
   useEffect(() => {
-    if (
-      geobanned ||
-      WalletModalOpen ||
-      currentAction ||
-      newAccountModalOpen ||
-      settingsModalOpen ||
-      notificationsModalOpen
-    ) {
+    if (WalletModalOpen || currentAction || newAccountModalOpen || settingsModalOpen || notificationsModalOpen) {
       document.body.style.overflowY = 'hidden';
     } else {
       document.body.style.overflowY = 'unset';
     }
-  }, [geobanned, WalletModalOpen, currentAction, newAccountModalOpen, settingsModalOpen, notificationsModalOpen]);
+  }, [WalletModalOpen, currentAction, newAccountModalOpen, settingsModalOpen, notificationsModalOpen]);
 
   return (
     <>
-      <GeobannedModal />
       <DisclaimerModal />
       <WalletModal />
       <DepositWithdrawModal />

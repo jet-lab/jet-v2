@@ -36,9 +36,9 @@ solana-client = "1.14"
 # Only used to manually construct RPC calls for versioned transactions, remove when upgrading to 1.14
 solana-transaction-status = "1.14"
 
-anchor-lang = "0.26"
-anchor-spl = "0.26"
-anchor-client = "0.26"
+anchor-lang = "0.27"
+anchor-spl = "0.27"
+anchor-client = "0.27"
 
 jet-simulation = { path = "../simulation" }
 jet-program-common = { path = "../program-common" }

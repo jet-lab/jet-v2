@@ -590,18 +590,6 @@ html {
     }
   }
 
-  // Geobanned Modal
-  .geobanned-modal {
-    .ant-modal-content {
-      max-width: 300px;
-
-      .ant-typography {
-        margin: 0 0 @spacing-lg 0;
-        font-weight: 300;
-      }
-    }
-  }
-
   // Liquidation Modal
   .liquidation-modal {
     .ant-modal-content {
@@ -3047,4 +3035,12 @@ html {
     left: 50%;
     transform: translateX(-50%);
   }
+}
+
+.geobanned-container {
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  max-width: 300px;
+  margin-top: 80px;
 }
