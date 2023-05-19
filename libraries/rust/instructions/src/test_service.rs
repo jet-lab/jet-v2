@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::{Id, InstructionData, ToAccountMetas};
+use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_fixed_term::seeds;
 use solana_sdk::{
     instruction::Instruction,
@@ -347,7 +347,7 @@ pub fn openbook_market_create(
     request_queue: &Pubkey,
     liquidity_amount: u64,
 ) -> Instruction {
-    let addrs = derive_openbook_market(dex_program, token_base, token_quote);
+    let addrs = derive_openbook_market(dex_program, token_base, token_quote, payer);
     let accounts = jet_test_service::accounts::OpenBookMarketCreate {
         payer: *payer,
         mint_base: *token_base,
@@ -356,7 +356,6 @@ pub fn openbook_market_create(
         info_quote: derive_token_info(token_quote),
         market_info: addrs.info,
         market_state: addrs.state,
-        market_authority: addrs.authority,
         vault_signer: addrs.vault_signer,
         vault_base: addrs.vault_base,
         vault_quote: addrs.vault_quote,
@@ -364,6 +363,7 @@ pub fn openbook_market_create(
         asks: *asks,
         event_queue: *event_queue,
         request_queue: *request_queue,
+        open_orders: addrs.open_orders,
         dex_program: *dex_program,
         token_program: spl_token::ID,
         system_program: system_program::ID,
@@ -377,12 +377,12 @@ pub fn openbook_market_create(
         data: jet_test_service::instruction::OpenbookMarketCreate {
             params: OpenBookMarketCreateParams {
                 vault_signer_nonce: addrs.vault_signer_nonce,
-                base_lot_size: 1000000,
+                base_lot_size: 1000, // This is a safe number for most markets
                 quote_lot_size: 1,
                 quote_dust_threshold: 1,
                 liquidity_amount,
-                initial_spread: 100,
-                incremental_spread: 200,
+                initial_spread: 100,     // 1%
+                incremental_spread: 200, // 2%
                 basket_sizes: [1, 2, 3, 4, 5, 2, 2, 1],
             },
         }
@@ -395,16 +395,15 @@ pub fn openbook_market_make(
     dex_program: &Pubkey,
     token_base: &Pubkey,
     token_quote: &Pubkey,
-    scratch_a: &Pubkey,
-    scratch_b: &Pubkey,
+    scratch_base: &Pubkey,
+    scratch_quote: &Pubkey,
     payer: &Pubkey,
-    open_orders: &Pubkey,
     bids: &Pubkey,
     asks: &Pubkey,
     request_queue: &Pubkey,
     event_queue: &Pubkey,
 ) -> Instruction {
-    let addrs = derive_openbook_market(dex_program, token_base, token_quote);
+    let addrs = derive_openbook_market(dex_program, token_base, token_quote, payer);
 
     let accounts = jet_test_service::accounts::OpenBookMarketMake {
         payer: *payer,
@@ -413,20 +412,23 @@ pub fn openbook_market_make(
         mint_quote: *token_quote,
         vault_base: addrs.vault_base,
         vault_quote: addrs.vault_quote,
-        wallet_base: *scratch_a,
-        wallet_quote: *scratch_b,
+        wallet_base: *scratch_base,
+        wallet_quote: *scratch_quote,
         market_info: addrs.info,
         market_state: addrs.state,
         bids: *bids,
         asks: *asks,
         request_queue: *request_queue,
         event_queue: *event_queue,
-        open_orders: *open_orders,
+        open_orders: addrs.open_orders,
         pyth_price_base: derive_pyth_price(token_base),
         pyth_price_quote: derive_pyth_price(token_quote),
         dex_program: *dex_program,
         token_program: spl_token::ID,
         rent: sysvar::rent::ID,
+        info_base: derive_token_info(token_base),
+        info_quote: derive_token_info(token_quote),
+        vault_signer: addrs.vault_signer,
     }
     .to_account_metas(None);
 
@@ -490,6 +492,15 @@ pub fn derive_pyth_price(mint: &Pubkey) -> Pubkey {
 /// Get the pyth price account
 pub fn derive_ticket_mint(market: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(&[seeds::TICKET_MINT, market.as_ref()], &jet_fixed_term::ID).0
+}
+
+/// Get the Openbook open orders account
+pub fn derive_openbook_open_orders(market: &Pubkey, owner: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[b"openbook-open-orders", market.as_ref(), owner.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0
 }
 
 /// Get the addresses for a swap pool
@@ -604,6 +615,7 @@ pub fn derive_openbook_market(
     program: &Pubkey,
     token_base: &Pubkey,
     token_quote: &Pubkey,
+    payer: &Pubkey,
 ) -> OpenbookMarketAddresses {
     let info = Pubkey::find_program_address(
         &[
@@ -627,17 +639,14 @@ pub fn derive_openbook_market(
         let mut i = 0;
         loop {
             assert!(i < 100);
-            if let Ok(pk) = anchor_spl::dex::serum_dex::state::gen_vault_signer_key(
-                i,
-                &state,
-                &anchor_spl::dex::Dex::id(),
-            ) {
+            if let Ok(pk) =
+                anchor_spl::dex::serum_dex::state::gen_vault_signer_key(i, &state, &program)
+            {
                 break (i, pk);
             }
             i += 1;
         }
     };
-    let (authority, _nonce) = Pubkey::find_program_address(&[state.as_ref()], program);
     let vault_base = Pubkey::find_program_address(
         &[SWAP_POOL_TOKENS, state.as_ref(), token_base.as_ref()],
         &jet_test_service::ID,
@@ -649,13 +658,15 @@ pub fn derive_openbook_market(
     )
     .0;
 
+    let open_orders = derive_openbook_open_orders(&state, &payer);
+
     OpenbookMarketAddresses {
         info,
         state,
-        authority,
         vault_base,
         vault_quote,
         vault_signer,
+        open_orders,
         vault_signer_nonce: vault_nonce,
     }
 }
@@ -728,9 +739,6 @@ pub struct OpenbookMarketAddresses {
     /// The address of the swap pool state
     pub state: Pubkey,
 
-    /// The authority
-    pub authority: Pubkey,
-
     /// The token A vault
     pub vault_base: Pubkey,
 
@@ -739,6 +747,9 @@ pub struct OpenbookMarketAddresses {
 
     /// The vault signer
     pub vault_signer: Pubkey,
+
+    /// Open orders
+    pub open_orders: Pubkey,
 
     /// The vault signer nonce
     pub vault_signer_nonce: u64,

@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use anchor_lang::Id;
 use jet_instructions::test_service::derive_token_mint;
 use jet_margin_sdk::swap::openbook_swap::OpenBookMarket;
 use jet_solana_client::rpc::AccountFilter;
@@ -17,34 +18,33 @@ async fn openorder_market_make() -> anyhow::Result<()> {
     // Get the mocked runtime
     let ctx = margin_test_context!();
 
-    // Create a wallet for the market maker
-    let wallet_mm = ctx.create_wallet(10).await?;
-
     let mint_tsol = derive_token_mint("TSOL");
     let mint_usdc = derive_token_mint("USDC");
 
+    let payer = ctx.payer().pubkey();
+
     // Register mints, tokens, oracles
     let mint_base_ix = jet_instructions::test_service::token_create(
-        &wallet_mm.pubkey(),
+        &payer,
         &TokenCreateParams {
             symbol: "USDC".to_string(),
             name: "USDC".to_string(),
             decimals: 6,
-            authority: wallet_mm.pubkey(),
-            oracle_authority: wallet_mm.pubkey(),
+            authority: payer,
+            oracle_authority: payer,
             max_amount: 100_000_000_000,
             source_symbol: "USDC".to_string(),
             price_ratio: 1.0,
         },
     );
     let mint_quote_ix = jet_instructions::test_service::token_create(
-        &wallet_mm.pubkey(),
+        &payer,
         &TokenCreateParams {
             symbol: "TSOL".to_string(),
             name: "TSOL".to_string(),
             decimals: 9,
-            authority: wallet_mm.pubkey(),
-            oracle_authority: wallet_mm.pubkey(),
+            authority: payer,
+            oracle_authority: payer,
             max_amount: 10_000_000_000_000,
             source_symbol: "SOL".to_string(),
             price_ratio: 1.0,
@@ -53,7 +53,7 @@ async fn openorder_market_make() -> anyhow::Result<()> {
 
     let tx = ctx
         .rpc()
-        .create_transaction(&[&wallet_mm], &[mint_base_ix, mint_quote_ix])
+        .create_transaction(&[], &[mint_base_ix, mint_quote_ix])
         .await?;
 
     ctx.rpc().send_and_confirm_transaction(&tx).await?;
@@ -67,14 +67,14 @@ async fn openorder_market_make() -> anyhow::Result<()> {
     let bids = ctx.solana.keygen.generate_key();
     let asks = ctx.solana.keygen.generate_key();
     let bids_ix = system_instruction::create_account(
-        &ctx.rpc().payer().pubkey(),
+        &payer,
         &bids.pubkey(),
         bid_ask_lamports,
         bid_ask_size as u64,
         &dex_program,
     );
     let asks_ix = system_instruction::create_account(
-        &ctx.rpc().payer().pubkey(),
+        &payer,
         &asks.pubkey(),
         bid_ask_lamports,
         bid_ask_size as u64,
@@ -93,14 +93,14 @@ async fn openorder_market_make() -> anyhow::Result<()> {
     let events = ctx.solana.keygen.generate_key();
     let requests = ctx.solana.keygen.generate_key();
     let events_ix = system_instruction::create_account(
-        &ctx.rpc().payer().pubkey(),
+        &payer,
         &events.pubkey(),
         events_lamports,
         event_queue_size as u64,
         &dex_program,
     );
     let requests_ix = system_instruction::create_account(
-        &ctx.rpc().payer().pubkey(),
+        &payer,
         &requests.pubkey(),
         requests_lamports,
         request_queue_size as u64,
@@ -110,7 +110,7 @@ async fn openorder_market_make() -> anyhow::Result<()> {
     // Create a TSOL/USDC market
     let market_create_ix = jet_instructions::test_service::openbook_market_create(
         &dex_program,
-        &wallet_mm.pubkey(),
+        &payer,
         &mint_tsol,
         &mint_usdc,
         &bids.pubkey(),
@@ -123,7 +123,7 @@ async fn openorder_market_make() -> anyhow::Result<()> {
     let tx = ctx
         .rpc()
         .create_transaction(
-            &[&events, &requests, &bids, &asks, &wallet_mm],
+            &[&events, &requests, &bids, &asks],
             &[events_ix, requests_ix, bids_ix, asks_ix, market_create_ix],
         )
         .await?;
@@ -134,62 +134,41 @@ async fn openorder_market_make() -> anyhow::Result<()> {
     supported_mints.insert(mint_usdc);
 
     // There should be 1 openbook market
-    let markets = OpenBookMarket::get_markets(&ctx.rpc(), &supported_mints)
-        .await
-        .unwrap();
+    let markets =
+        OpenBookMarket::get_markets(&ctx.rpc(), &supported_mints, anchor_spl::dex::Dex::id())
+            .await
+            .unwrap();
     assert_eq!(markets.len(), 1);
 
-    // Create an open orders account
     let market = markets.values().next().unwrap();
-    let open_orders = market
-        .init_open_orders(&ctx.rpc(), ctx.solana.keygen.generate_key(), &wallet_mm)
-        .await?;
 
     // Get tokens
-    let token_usdc = ctx
-        .tokens()
-        .create_account(&mint_usdc, &wallet_mm.pubkey())
-        .await?;
-    let token_tsol = ctx
-        .tokens()
-        .create_account(&mint_tsol, &wallet_mm.pubkey())
-        .await?;
-    let base_tokens_ix = jet_instructions::test_service::token_request(
-        &wallet_mm.pubkey(),
-        &mint_tsol,
-        &token_tsol,
-        10_000_000_000_000,
-    );
-    let quote_tokens_ix = jet_instructions::test_service::token_request(
-        &wallet_mm.pubkey(),
-        &mint_usdc,
-        &token_usdc,
-        100_000_000_000,
-    );
+    let token_usdc = ctx.tokens().create_account(&mint_usdc, &payer).await?;
+    let token_tsol = ctx.tokens().create_account(&mint_tsol, &payer).await?;
 
     // Set prices
     let oracle_usdc_ix = jet_instructions::test_service::token_update_pyth_price(
-        &wallet_mm.pubkey(),
+        &payer,
         &mint_usdc,
         101_000_000,
         5_000_000,
-        8,
+        -8,
     );
     let oracle_tsol_ix = jet_instructions::test_service::token_update_pyth_price(
-        &wallet_mm.pubkey(),
+        &payer,
         &mint_tsol,
         2_000_000_000,
         10_000_000,
-        8,
+        -8,
     );
 
     let tx = ctx
         .rpc()
         .create_transaction(
-            &[&wallet_mm],
+            &[],
             &[
-                base_tokens_ix,
-                quote_tokens_ix,
+                // base_tokens_ix,
+                // quote_tokens_ix,
                 oracle_usdc_ix,
                 oracle_tsol_ix,
             ],
@@ -204,18 +183,14 @@ async fn openorder_market_make() -> anyhow::Result<()> {
         &mint_usdc,
         &token_tsol,
         &token_usdc,
-        &wallet_mm.pubkey(),
-        &open_orders,
+        &payer,
         &bids.pubkey(),
         &asks.pubkey(),
         &requests.pubkey(),
         &events.pubkey(),
     );
 
-    let tx = ctx
-        .rpc()
-        .create_transaction(&[&wallet_mm], &[market_make_ix])
-        .await?;
+    let tx = ctx.rpc().create_transaction(&[], &[market_make_ix]).await?;
     ctx.rpc().send_and_confirm_transaction(&tx).await?;
 
     // Find all open orders to consume
@@ -250,7 +225,7 @@ async fn openorder_market_make() -> anyhow::Result<()> {
             &ctx.rpc(),
             token_usdc,
             token_tsol,
-            vec![&open_orders],
+            vec![&open_orders_accounts[0].0],
             u16::MAX,
         )
         .await?;

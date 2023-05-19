@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -9,6 +9,7 @@ use anyhow::{bail, Result};
 use clap::Parser;
 
 use jet_environment::{builder::resolve_swap_program, programs::SABER};
+use jet_margin_sdk::swap::openbook_swap::OpenBookMarket;
 use jet_solana_client::{network::NetworkKind, rpc::native::RpcConnection};
 use solana_clap_utils::input_validators::normalize_to_url_if_moniker;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
@@ -91,11 +92,14 @@ pub async fn run(opts: CliOpts) -> Result<()> {
     )) as Arc<dyn SolanaRpcClient>;
 
     let spl_swap_program = get_spl_program(&target_client).await?;
+    let openbook_program = get_openbook_program(&target_client).await?;
 
     let oracle_list = discover_oracles(&source_client, &target_client).await?;
     let spl_pool_list =
         discover_spl_pools(&target_sdk_client, &oracle_list, spl_swap_program).await?;
     let saber_pool_list = discover_saber_pools(&target_sdk_client, &oracle_list).await?;
+    let openbook_market_list =
+        discover_openbook_markets(&target_sdk_client, &oracle_list, openbook_program).await?;
 
     let mut id_file = None;
 
@@ -105,6 +109,13 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         }
         sync_pool_balances(&target_client, &signer, &spl_pool_list, &spl_swap_program).await?;
         sync_pool_balances(&target_client, &signer, &saber_pool_list, &SABER).await?;
+        replace_openbook_orders(
+            &target_client,
+            &signer,
+            &openbook_market_list,
+            &openbook_program,
+        )
+        .await?;
 
         if id_file.is_none() {
             id_file = Some(RunningProcessIdFile::new());
@@ -219,6 +230,66 @@ async fn sync_pool_balances(
     Ok(())
 }
 
+async fn replace_openbook_orders(
+    target: &RpcClient,
+    signer: &Keypair,
+    markets: &HashMap<(Pubkey, Pubkey), OpenBookMarket>,
+    program: &Pubkey,
+) -> Result<()> {
+    for ((token_a, token_b), market) in markets {
+        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(600_000)];
+
+        let scratch_a = get_scratch_address(&signer.pubkey(), token_a);
+        let scratch_b = get_scratch_address(&signer.pubkey(), token_b);
+
+        if dbg!(target.get_balance(&scratch_a).await?) == 0 {
+            instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_a));
+        }
+        if dbg!(target.get_balance(&scratch_b).await?) == 0 {
+            instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
+        }
+
+        instructions.push(
+            jet_margin_sdk::ix_builder::test_service::openbook_market_make(
+                program,
+                token_a,
+                token_b,
+                &scratch_a,
+                &scratch_b,
+                &signer.pubkey(),
+                &market.bids,
+                &market.asks,
+                &market.request_queue,
+                &market.event_queue,
+            ),
+        );
+
+        let balance_tx = Transaction::new_signed_with_payer(
+            &instructions,
+            Some(&signer.pubkey()),
+            &[signer],
+            target.get_latest_blockhash().await?,
+        );
+
+        match target.send_and_confirm_transaction(&balance_tx).await {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("{e}");
+
+                if let ClientErrorKind::RpcError(RpcError::RpcResponseError {
+                    data: RpcResponseErrorData::SendTransactionPreflightFailure(failure),
+                    ..
+                }) = e.kind()
+                {
+                    eprintln!("{:#?}", failure.logs);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 async fn sync_oracles(
     source: &RpcClient,
     target: &RpcClient,
@@ -305,6 +376,19 @@ async fn discover_saber_pools(
     Ok(result.keys().cloned().collect())
 }
 
+async fn discover_openbook_markets(
+    target: &Arc<dyn SolanaRpcClient>,
+    oracles: &[OracleInfo],
+    program: Pubkey,
+) -> Result<HashMap<(Pubkey, Pubkey), OpenBookMarket>> {
+    let supported_mints = HashSet::from_iter(oracles.iter().map(|o| o.target_mint));
+    let result = OpenBookMarket::get_markets(target, &supported_mints, program).await?;
+
+    println!("found {} Openbook markets", result.len());
+
+    Ok(result)
+}
+
 async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<OracleInfo>> {
     use jet_margin_sdk::jet_test_service::state::TokenInfo;
 
@@ -378,6 +462,11 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
 async fn get_spl_program(rpc: &RpcClient) -> Result<Pubkey> {
     let network = get_network_kind_from_rpc(rpc).await?;
     resolve_swap_program(network, "orca-spl-swap").map_err(|e| anyhow::anyhow!("{:?}", e))
+}
+
+async fn get_openbook_program(rpc: &RpcClient) -> Result<Pubkey> {
+    let network = get_network_kind_from_rpc(rpc).await?;
+    resolve_swap_program(network, "openbook").map_err(|e| anyhow::anyhow!("{:?}", e))
 }
 
 async fn get_pyth_program_id(rpc: &RpcClient) -> Result<Pubkey> {

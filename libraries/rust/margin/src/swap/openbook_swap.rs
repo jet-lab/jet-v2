@@ -73,8 +73,8 @@ impl OpenBookMarket {
     pub async fn get_markets(
         rpc: &Arc<dyn SolanaRpcClient>,
         supported_mints: &HashSet<Pubkey>,
+        program: Pubkey,
     ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
-        let program = anchor_spl::dex::id();
         let size = std::mem::size_of::<MarketState>();
         let accounts = rpc
             .get_program_accounts(&program, vec![AccountFilter::DataSize(size + 12)]) // Some(size)

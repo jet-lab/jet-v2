@@ -87,12 +87,6 @@ pub struct OpenBookMarketCreate<'info> {
     #[account(mut)]
     event_queue: AccountInfo<'info>,
 
-    #[account(seeds = [market_state.key().as_ref()],
-              bump,
-              seeds::program = dex::ID
-    )]
-    market_authority: AccountInfo<'info>,
-
     vault_signer: AccountInfo<'info>,
 
     #[account(init,
@@ -120,6 +114,20 @@ pub struct OpenBookMarketCreate<'info> {
               payer = payer,
     )]
     vault_quote: Box<Account<'info, TokenAccount>>,
+
+    // Created as part of this instruction as a convenience
+    #[account(init,
+              seeds = [
+                b"openbook-open-orders",
+                market_state.key().as_ref(),
+                payer.key().as_ref()
+              ],
+              bump,
+              space = 12 + std::mem::size_of::<openbook::state::OpenOrders>(),
+              owner = dex::ID,
+              payer = payer
+    )]
+    open_orders: AccountInfo<'info>,
 
     dex_program: AccountInfo<'info>,
     token_program: Program<'info, Token>,
@@ -175,6 +183,19 @@ pub fn openbook_market_create_handler(
         params.vault_signer_nonce,
         params.quote_dust_threshold,
     )?;
+
+    let open_orders_context = CpiContext::new_with_signer(
+        ctx.accounts.dex_program.to_account_info(),
+        dex::InitOpenOrders {
+            open_orders: ctx.accounts.open_orders.to_account_info(),
+            authority: ctx.accounts.payer.to_account_info(),
+            market: ctx.accounts.market_state.to_account_info(),
+            rent: ctx.accounts.rent.to_account_info(),
+        },
+        &seeds,
+    );
+
+    dex::init_open_orders(open_orders_context)?;
 
     Ok(())
 }

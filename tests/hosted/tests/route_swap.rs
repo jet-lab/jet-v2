@@ -690,7 +690,7 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
     supported_mints.insert(env.msol);
     supported_mints.insert(env.tsol);
 
-    let markets = OpenBookMarket::get_markets(&ctx.rpc(), &supported_mints).await?;
+    let markets = OpenBookMarket::get_markets(&ctx.rpc(), &supported_mints, Dex::id()).await?;
     assert_eq!(markets.len(), 1);
 
     // Add liquidity on the market

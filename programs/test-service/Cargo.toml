@@ -15,7 +15,7 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 testing = []
-devnet = ["jet-program-common/devnet"]
+devnet = ["jet-program-common/devnet", "anchor-spl/devnet"]
 
 [dependencies]
 anchor-lang = "0.27"

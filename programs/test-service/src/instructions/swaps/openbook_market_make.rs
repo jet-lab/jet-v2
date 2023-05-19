@@ -26,8 +26,8 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 use jet_program_common::Number128;
 
 use crate::instructions::utils::read_price;
-use crate::seeds::SWAP_POOL_TOKENS;
-use crate::state::OpenBookMarketInfo;
+use crate::seeds::{SWAP_POOL_TOKENS, TOKEN_INFO};
+use crate::state::{OpenBookMarketInfo, TokenInfo};
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone, Eq, PartialEq)]
 pub struct OpenBookMarketMakeParams {
@@ -42,6 +42,12 @@ pub struct OpenBookMarketMake<'info> {
 
     #[account(mut)]
     open_orders_owner: Signer<'info>,
+
+    #[account(constraint = info_base.mint == mint_base.key())]
+    info_base: Box<Account<'info, TokenInfo>>,
+
+    #[account(constraint = info_quote.mint == mint_quote.key())]
+    info_quote: Box<Account<'info, TokenInfo>>,
 
     #[account(mut)]
     mint_base: Box<Account<'info, Mint>>,
@@ -99,6 +105,8 @@ pub struct OpenBookMarketMake<'info> {
 
     #[account(mut)]
     open_orders: AccountInfo<'info>,
+
+    vault_signer: AccountInfo<'info>,
 
     pyth_price_base: AccountInfo<'info>,
     pyth_price_quote: AccountInfo<'info>,
@@ -180,6 +188,55 @@ impl<'info> OpenBookMarketMake<'info> {
         )
         .map_err(|e| e.into())
     }
+
+    fn settle_funds(&self, signer_seeds: &[&[&[u8]]]) -> Result<()> {
+        let settle_funds_context = CpiContext::new_with_signer(
+            self.dex_program.to_account_info(),
+            dex::SettleFunds {
+                market: self.market_state.to_account_info(),
+                coin_vault: self.vault_base.to_account_info(),
+                pc_vault: self.vault_quote.to_account_info(),
+                open_orders: self.open_orders.to_account_info(),
+                open_orders_authority: self.open_orders_owner.to_account_info(),
+                token_program: self.token_program.to_account_info(),
+                coin_wallet: self.wallet_base.to_account_info(),
+                pc_wallet: self.wallet_quote.to_account_info(),
+                vault_signer: self.vault_signer.to_account_info(),
+            },
+            signer_seeds,
+        );
+
+        dex::settle_funds(settle_funds_context)
+    }
+
+    fn mint_tokens(&self, side: Side, tokens: u64) -> Result<()> {
+        let (mint, to, authority) = match side {
+            Side::Bid => (
+                self.mint_base.to_account_info(),
+                self.wallet_base.to_account_info(),
+                &self.info_base,
+            ),
+            Side::Ask => (
+                self.mint_quote.to_account_info(),
+                self.wallet_quote.to_account_info(),
+                &self.info_quote,
+            ),
+        };
+        let token_mint_signer_seeds = [TOKEN_INFO, mint.key.as_ref(), &[authority.bump_seed]];
+
+        anchor_spl::token::mint_to(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                anchor_spl::token::MintTo {
+                    mint,
+                    to,
+                    authority: authority.to_account_info(),
+                },
+            )
+            .with_signer(&[&token_mint_signer_seeds]),
+            tokens,
+        )
+    }
 }
 
 pub fn openbook_market_make_handler(
@@ -201,6 +258,9 @@ pub fn openbook_market_make_handler(
 
     let market_info = &ctx.accounts.market_info;
 
+    let base_lamports = ctx.accounts.mint_base.decimals as i32;
+    let quote_lamports = ctx.accounts.mint_quote.decimals as i32;
+
     let bid_order_ids: [u64; 8] = (params.bid_from_order_id..)
         .take(8)
         .collect::<Vec<_>>()
@@ -214,15 +274,41 @@ pub fn openbook_market_make_handler(
 
     ctx.accounts.cancel_orders(&seeds, bid_order_ids)?;
     ctx.accounts.cancel_orders(&seeds, ask_order_ids)?;
+    ctx.accounts.settle_funds(&seeds)?;
     // Create new orders of equal size on both sides of the book, with some incremental spread
     let price_base = read_price(&ctx.accounts.pyth_price_base);
     let price_quote = read_price(&ctx.accounts.pyth_price_quote);
 
+    // Determine how much to mint if necessary
+    let buckets: u64 = market_info.basket_sizes.iter().map(|b| *b as u64).sum();
+    // If there are 20 buckets and each one is $1000, we'd need $20k in each side.
+    // We overshoot by asking for double the amount.
+    // To determine the number of tokens, we use:
+    // total_required / price *
+    let total_required = buckets * 2 * market_info.basket_liquidity;
+    let total_required = Number128::from_decimal(total_required, 0);
+    let desired_base = (total_required / price_base).as_u64(-base_lamports);
+    let desired_quote = (total_required / price_quote).as_u64(-quote_lamports);
+
+    let available_base = ctx.accounts.wallet_base.amount;
+    let available_quote = ctx.accounts.wallet_quote.amount;
+
     let market_price = price_base / price_quote;
     msg!("Current market price is {:?}", market_price);
+    msg!("Desired base tokens is {:?}", desired_base);
+    msg!("Desired quote tokens is {:?}", desired_quote);
 
-    let base_lamports = ctx.accounts.mint_base.decimals as i32;
-    let quote_lamports = ctx.accounts.mint_quote.decimals as i32;
+    if desired_base > available_base {
+        let mint_amount = desired_base - available_base;
+        msg!("Minting {:?} base tokens", mint_amount);
+        ctx.accounts.mint_tokens(Side::Bid, mint_amount)?;
+    }
+
+    if desired_quote > available_quote {
+        let mint_amount = desired_quote - available_quote;
+        msg!("Minting {:?} quote tokens", mint_amount);
+        ctx.accounts.mint_tokens(Side::Ask, mint_amount)?;
+    }
 
     let (base_lot_size, quote_lot_size) = {
         let market_account = ctx.accounts.market_state.to_account_info();
@@ -266,8 +352,7 @@ pub fn openbook_market_make_handler(
             .unwrap(),
             order_id,
         )?;
-        bid_price = bid_price * bid_spread_increment;
-        println!("New bid price: {}", bid_price);
+        bid_price *= bid_spread_increment;
     }
     // Asks
     for (order_id, basket_size) in ask_order_ids.into_iter().zip(baskets) {
@@ -289,8 +374,7 @@ pub fn openbook_market_make_handler(
             NonZeroU64::new(u64::MAX).unwrap(),
             order_id,
         )?;
-        ask_price = ask_price * ask_spread_increment;
-        println!("New ask price: {}", ask_price);
+        ask_price *= ask_spread_increment;
     }
 
     Ok(())
