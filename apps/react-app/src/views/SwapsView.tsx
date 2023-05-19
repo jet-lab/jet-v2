@@ -4,16 +4,18 @@ import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapsho
 import { SwapEntry } from '@components/SwapsView/SwapEntry';
 import { SwapsGraph } from '@components/SwapsView/SwapsGraph';
 import { FullAccountBalance } from '@components/tables/FullAccountBalance';
-import { Dictionary } from '@state/settings/localization/localization';
+import { Dictionary, Geobanned } from '@state/settings/localization/localization';
 import { SwapsViewOrder, SwapsRowOrder } from '@state/views/views';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
+import { GeobannedComponent } from '@components/misc/GeoBanned';
 
 // App view for margin swapping
 function SwapsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const rowOrder = useRecoilValue(SwapsRowOrder);
   const networkState = useRecoilValue(NetworkStateAtom);
+  const geoBanned = useRecoilValue(Geobanned);
 
   // Localize page title
   useEffect(() => {
@@ -52,7 +54,12 @@ function SwapsView(): JSX.Element {
     return <div className="swaps-view view">{swapsViewComponents}</div>;
   };
 
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
+  if (networkState !== 'connected' || geoBanned === undefined)
+    return <WaitingForNetworkView networkState={networkState} />;
+
+  if (geoBanned) {
+    return <GeobannedComponent />;
+  }
   return accountView();
 }
 

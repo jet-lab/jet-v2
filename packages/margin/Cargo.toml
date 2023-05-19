@@ -28,7 +28,7 @@ console_error_panic_hook = "0.1.7"
 
 solana-program = "1.14"
 
-anchor-lang = "0.26"
+anchor-lang = "0.27"
 
 jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["cli"] }

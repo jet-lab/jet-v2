@@ -17,7 +17,7 @@
 
 use std::time::Duration;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 
 use solana_sdk::account::Account;
@@ -70,7 +70,7 @@ pub trait SolanaRpcClient: Send + Sync {
         let mut statuses = self.confirm_transactions(&[signature]).await?;
 
         if let Some(err) = statuses.pop().unwrap().status.err() {
-            return Err(err.into());
+            return Err(err).context(format!("Transaction error for {signature}"));
         }
 
         Ok(signature)
