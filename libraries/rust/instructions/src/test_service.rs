@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::{InstructionData, ToAccountMetas};
+use anchor_lang::{Id, InstructionData, ToAccountMetas};
 use jet_fixed_term::seeds;
 use solana_sdk::{
     instruction::Instruction,
@@ -31,7 +31,7 @@ use jet_test_service::{
         SWAP_POOL_FEES, SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS,
         TOKEN_INFO, TOKEN_MINT, TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
     },
-    SaberSwapPoolCreateParams,
+    OpenBookMarketCreateParams, OpenBookMarketMakeParams, SaberSwapPoolCreateParams,
 };
 
 pub use jet_test_service::{SplSwapPoolCreateParams, TokenCreateParams};
@@ -335,6 +335,114 @@ pub fn saber_swap_pool_balance(
     }
 }
 
+/// Create an Openbook market
+pub fn openbook_market_create(
+    dex_program: &Pubkey,
+    payer: &Pubkey,
+    token_base: &Pubkey,
+    token_quote: &Pubkey,
+    bids: &Pubkey,
+    asks: &Pubkey,
+    event_queue: &Pubkey,
+    request_queue: &Pubkey,
+    liquidity_amount: u64,
+) -> Instruction {
+    let addrs = derive_openbook_market(dex_program, token_base, token_quote);
+    let accounts = jet_test_service::accounts::OpenBookMarketCreate {
+        payer: *payer,
+        mint_base: *token_base,
+        mint_quote: *token_quote,
+        info_base: derive_token_info(token_base), // TODO: will clash
+        info_quote: derive_token_info(token_quote),
+        market_info: addrs.info,
+        market_state: addrs.state,
+        market_authority: addrs.authority,
+        vault_signer: addrs.vault_signer,
+        vault_base: addrs.vault_base,
+        vault_quote: addrs.vault_quote,
+        bids: *bids,
+        asks: *asks,
+        event_queue: *event_queue,
+        request_queue: *request_queue,
+        dex_program: *dex_program,
+        token_program: spl_token::ID,
+        system_program: system_program::ID,
+        rent: sysvar::rent::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::OpenbookMarketCreate {
+            params: OpenBookMarketCreateParams {
+                vault_signer_nonce: addrs.vault_signer_nonce,
+                base_lot_size: 1000000,
+                quote_lot_size: 1,
+                quote_dust_threshold: 1,
+                liquidity_amount,
+                initial_spread: 100,
+                incremental_spread: 200,
+                basket_sizes: [1, 2, 3, 4, 5, 2, 2, 1],
+            },
+        }
+        .data(),
+    }
+}
+
+/// Cancel existing Openbook orders and create new ones
+pub fn openbook_market_make(
+    dex_program: &Pubkey,
+    token_base: &Pubkey,
+    token_quote: &Pubkey,
+    scratch_a: &Pubkey,
+    scratch_b: &Pubkey,
+    payer: &Pubkey,
+    open_orders: &Pubkey,
+    bids: &Pubkey,
+    asks: &Pubkey,
+    request_queue: &Pubkey,
+    event_queue: &Pubkey,
+) -> Instruction {
+    let addrs = derive_openbook_market(dex_program, token_base, token_quote);
+
+    let accounts = jet_test_service::accounts::OpenBookMarketMake {
+        payer: *payer,
+        open_orders_owner: *payer,
+        mint_base: *token_base,
+        mint_quote: *token_quote,
+        vault_base: addrs.vault_base,
+        vault_quote: addrs.vault_quote,
+        wallet_base: *scratch_a,
+        wallet_quote: *scratch_b,
+        market_info: addrs.info,
+        market_state: addrs.state,
+        bids: *bids,
+        asks: *asks,
+        request_queue: *request_queue,
+        event_queue: *event_queue,
+        open_orders: *open_orders,
+        pyth_price_base: derive_pyth_price(token_base),
+        pyth_price_quote: derive_pyth_price(token_quote),
+        dex_program: *dex_program,
+        token_program: spl_token::ID,
+        rent: sysvar::rent::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::OpenbookMarketMake {
+            params: OpenBookMarketMakeParams {
+                bid_from_order_id: 100,
+                ask_from_order_id: 200,
+            },
+        }
+        .data(),
+    }
+}
+
 /// if the account is not initialized, invoke the instruction
 pub fn if_not_initialized(account_to_check: Pubkey, ix: Instruction) -> Instruction {
     let mut accounts = jet_test_service::accounts::IfNotInitialized {
@@ -389,7 +497,7 @@ pub fn derive_spl_swap_pool(
     program: &Pubkey,
     token_a: &Pubkey,
     token_b: &Pubkey,
-) -> SwapPoolAddress {
+) -> SplSwapPoolAddress {
     let info = Pubkey::find_program_address(
         &[SWAP_POOL_INFO, token_a.as_ref(), token_b.as_ref()],
         &jet_test_service::ID,
@@ -419,7 +527,7 @@ pub fn derive_spl_swap_pool(
     )
     .0;
 
-    SwapPoolAddress {
+    SplSwapPoolAddress {
         info,
         state,
         authority,
@@ -491,8 +599,69 @@ pub fn derive_saber_swap_pool(
     }
 }
 
+/// Get the addresses for a Saber swap pool
+pub fn derive_openbook_market(
+    program: &Pubkey,
+    token_base: &Pubkey,
+    token_quote: &Pubkey,
+) -> OpenbookMarketAddresses {
+    let info = Pubkey::find_program_address(
+        &[
+            b"openbook-market-info",
+            token_base.as_ref(),
+            token_quote.as_ref(),
+        ],
+        &jet_test_service::ID,
+    )
+    .0;
+    let state = Pubkey::find_program_address(
+        &[
+            b"openbook-market",
+            token_base.as_ref(),
+            token_quote.as_ref(),
+        ],
+        &jet_test_service::ID,
+    )
+    .0;
+    let (vault_nonce, vault_signer) = {
+        let mut i = 0;
+        loop {
+            assert!(i < 100);
+            if let Ok(pk) = anchor_spl::dex::serum_dex::state::gen_vault_signer_key(
+                i,
+                &state,
+                &anchor_spl::dex::Dex::id(),
+            ) {
+                break (i, pk);
+            }
+            i += 1;
+        }
+    };
+    let (authority, _nonce) = Pubkey::find_program_address(&[state.as_ref()], program);
+    let vault_base = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, state.as_ref(), token_base.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let vault_quote = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, state.as_ref(), token_quote.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+
+    OpenbookMarketAddresses {
+        info,
+        state,
+        authority,
+        vault_base,
+        vault_quote,
+        vault_signer,
+        vault_signer_nonce: vault_nonce,
+    }
+}
+
 /// Set of addresses for a test swap pool
-pub struct SwapPoolAddress {
+pub struct SplSwapPoolAddress {
     /// The test-service state about the pool
     pub info: Pubkey,
 
@@ -549,4 +718,28 @@ pub struct SaberSwapPoolAddress {
 
     /// The pool nonce
     pub nonce: u8,
+}
+
+/// Set of addressess for a test openbook market
+pub struct OpenbookMarketAddresses {
+    /// The test-service state about the pool
+    pub info: Pubkey,
+
+    /// The address of the swap pool state
+    pub state: Pubkey,
+
+    /// The authority
+    pub authority: Pubkey,
+
+    /// The token A vault
+    pub vault_base: Pubkey,
+
+    /// The token B vault
+    pub vault_quote: Pubkey,
+
+    /// The vault signer
+    pub vault_signer: Pubkey,
+
+    /// The vault signer nonce
+    pub vault_signer_nonce: u64,
 }

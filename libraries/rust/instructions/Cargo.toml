@@ -9,7 +9,7 @@ solana-sdk = "1.14"
 thiserror = "1"
 
 anchor-lang = "0.27"
-anchor-spl = "0.27"
+anchor-spl = { version = "0.27", features = ["dex"] }
 
 spl-token = "3"
 spl-associated-token-account = "1"

@@ -28,7 +28,10 @@ mod util;
 
 use instructions::*;
 
-pub use instructions::{SaberSwapPoolCreateParams, SplSwapPoolCreateParams, TokenCreateParams};
+pub use instructions::{
+    OpenBookMarketCreateParams, OpenBookMarketMakeParams, SaberSwapPoolCreateParams,
+    SplSwapPoolCreateParams, TokenCreateParams,
+};
 
 declare_id!("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy");
 
@@ -150,5 +153,13 @@ pub mod jet_test_service {
         params: OpenBookMarketCreateParams,
     ) -> Result<()> {
         openbook_market_create_handler(ctx, params)
+    }
+
+    /// Cancel and place orders on an OpenBook market
+    pub fn openbook_market_make(
+        ctx: Context<OpenBookMarketMake>,
+        params: OpenBookMarketMakeParams,
+    ) -> Result<()> {
+        openbook_market_make_handler(ctx, params)
     }
 }

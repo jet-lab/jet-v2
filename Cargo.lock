@@ -2987,6 +2987,7 @@ dependencies = [
  "jet-program-common",
  "jet-static-program-registry",
  "pyth-sdk-solana 0.7.0",
+ "serum_dex 0.5.10",
  "stable-swap-anchor",
  "stable-swap-client",
 ]

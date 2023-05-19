@@ -20,6 +20,7 @@ use jet_margin_sdk::{
 };
 use jet_margin_swap::SwapRouteIdentifier;
 use jet_program_common::CONTROL_AUTHORITY;
+use jet_solana_client::rpc::AccountFilter;
 use jet_static_program_registry::spl_token_swap_v2;
 use openbook::state::OpenOrders;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -779,7 +780,12 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
     let open_orders_accounts = ctx
         .solana
         .rpc
-        .get_program_accounts(&Dex::id(), Some(12 + std::mem::size_of::<OpenOrders>()))
+        .get_program_accounts(
+            &Dex::id(),
+            vec![AccountFilter::DataSize(
+                12 + std::mem::size_of::<OpenOrders>(),
+            )],
+        )
         .await?;
     let accounts = open_orders_accounts
         .iter()
