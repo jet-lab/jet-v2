@@ -7,7 +7,7 @@ use hosted_tests::{
     context::MarginTestContext,
     fixed_term::{
         create_and_fund_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
-        TestManager as FixedTermTestManager, STARTING_TOKENS,
+        TestManager as FixedTermTestManager, LEND_TENOR, STARTING_TOKENS,
     },
     margin_test_context,
     setup_helper::{setup_user, tokens},
@@ -20,7 +20,7 @@ use jet_fixed_term::{
     },
 };
 use jet_margin_sdk::{
-    fixed_term::settler::SETTLES_PER_TX,
+    fixed_term::{auto_roll_servicer::AutoRollServicer, settler::SETTLES_PER_TX},
     margin_integrator::{NoProxy, Proxy},
     solana::{
         keypair::KeypairExt,
@@ -496,6 +496,108 @@ async fn settle_many_margin_accounts() -> Result<()> {
         .await?;
 
     assert!(manager.load_event_queue().await?.is_empty()?);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+async fn auto_roll_many_trades() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(FixedTermTestManager::full(&ctx).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+    let set_prices = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.ticket_mint(), 1.0)
+            .await
+            .unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await
+            .unwrap(),
+    ]
+    .send_and_confirm_condensed(&client);
+
+    let (lender, borrower) = join!(
+        create_and_fund_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]),
+        create_and_fund_fixed_term_market_margin_user(
+            &ctx,
+            manager.clone(),
+            vec![(collateral, 0, u64::MAX / 1_000)],
+        )
+    );
+    let lend_params = OrderParams {
+        auto_roll: true,
+        ..underlying(1_001, 2_000)
+    };
+    let borrow_params = OrderParams {
+        auto_roll: true,
+        ..underlying(1_000, 2_000)
+    };
+    lender
+        .set_lend_roll_config(LendAutoRollConfig {
+            limit_price: lend_params.limit_price,
+        })
+        .await
+        .unwrap();
+    borrower
+        .set_borrow_roll_config(BorrowAutoRollConfig {
+            limit_price: borrow_params.limit_price,
+            roll_tenor: 1,
+        })
+        .await
+        .unwrap();
+
+    let mut trades = vec![];
+
+    // TODO: find exact value
+    let n_trades = SETTLES_PER_TX;
+    for _ in 0..n_trades {
+        trades.push(async {
+            transactions! {
+                lender.proxy.refresh().await.unwrap(),
+                borrower.proxy.refresh().await.unwrap(),
+                lender.margin_lend_order(lend_params).await.unwrap(),
+                borrower.margin_borrow_order(borrow_params).await.unwrap()
+            }
+            .send_and_confirm_condensed_in_order(&client)
+            .await
+        });
+    }
+    set_prices.await.unwrap();
+    join_all(trades)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>>>()?;
+    manager.consume_events().await?;
+
+    #[cfg(not(feature = "localnet"))]
+    {
+        let mut clock = manager.client.get_clock().await?;
+        clock.unix_timestamp += 1;
+        manager.client.set_clock(clock).await?;
+    }
+    #[cfg(feature = "localnet")]
+    {
+        std::thread::sleep(std::time::Duration::from_secs(1 as u64));
+    }
+
+    let servicer = AutoRollServicer::new(manager.client.clone(), manager.ix_builder.clone());
+    servicer.service_all().await?;
+
+    #[cfg(not(feature = "localnet"))]
+    {
+        let mut clock = manager.client.get_clock().await?;
+        clock.unix_timestamp += LEND_TENOR as i64;
+        manager.client.set_clock(clock).await?;
+    }
+    #[cfg(feature = "localnet")]
+    {
+        std::thread::sleep(std::time::Duration::from_secs(LEND_TENOR as u64));
+    }
+    servicer.service_all().await?;
 
     Ok(())
 }
