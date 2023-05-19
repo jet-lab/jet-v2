@@ -423,12 +423,16 @@ impl MarketState {
             // If auto-stake is enabled for lending, then consuming the event
             // requires passing in the right address for the `TermDeposit` account
             // to be created now that the loan has been filled
+            //
+            // This line mutates the `MarginUser` to allow the proper seed to be derived on sub-
+            // sequent calls, but due to incomplete information user assets will not be properly
+            // accounted for until state is re-synced
             *seed = self
                 .users
                 .get_mut(&info.margin_user)
                 .ok_or(EventConsumerError::InvalidUserKey(info.margin_user))?
-                .assets()
-                .next_new_deposit_seqno()
+                .maker_fill_lend_order(true, 1)
+                .map_err(|_| EventConsumerError::InvalidUserKey(info.margin_user))?
                 .to_le_bytes()
                 .to_vec();
 
