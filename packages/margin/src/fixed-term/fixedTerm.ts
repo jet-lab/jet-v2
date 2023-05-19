@@ -679,8 +679,8 @@ export class FixedTermProductModel {
   public static fromMarginAccountPool(marginAccount: MarginAccount, pool: Pool): FixedTermProductModel {
     return new FixedTermProductModel(
       marginAccount,
-      pool.depositNoteMetadata.valueModifier.toNumber(),
-      pool.loanNoteMetadata.valueModifier.toNumber(),
+      pool.depositNoteMetadata.valueModifier,
+      pool.loanNoteMetadata.valueModifier,
       pool
     )
   }
@@ -732,7 +732,7 @@ export class FixedTermProductModel {
       const receivedWeight = this.collateralWeight
       let repaymentFactor = this.requiredCollateralFactor
       if (mode == "setup") {
-        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber()
+        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION
       }
 
       delta = this.accounting.termLoan(receivedAmount, repaymentAmount, receivedWeight, repaymentFactor)
@@ -774,7 +774,7 @@ export class FixedTermProductModel {
       const receivedWeight = this.collateralWeight
       let repaymentFactor = this.requiredCollateralFactor
       if (mode == "setup") {
-        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber()
+        repaymentFactor *= MarginAccount.SETUP_LEVERAGE_FRACTION
       }
 
       delta = this.accounting.merge(
@@ -842,15 +842,15 @@ export class FixedTermProductModel {
     },
 
     apply(account: MarginAccount, delta: ValuationDelta, mode: "setup" | "maintenance"): ValuationEstimate {
-      let assets = account.valuation.assets.toNumber()
-      let liabilities = account.valuation.liabilities.toNumber()
+      let assets = account.valuation.assets
+      let liabilities = account.valuation.liabilities
 
-      let weightedCollateral = account.valuation.weightedCollateral.toNumber()
+      let weightedCollateral = account.valuation.weightedCollateral
       let requiredCollateral: number
       if (mode == "setup") {
-        requiredCollateral = account.valuation.requiredSetupCollateral.toNumber()
+        requiredCollateral = account.valuation.requiredSetupCollateral
       } else if (mode == "maintenance") {
-        requiredCollateral = account.valuation.requiredCollateral.toNumber()
+        requiredCollateral = account.valuation.requiredCollateral
       } else {
         throw Error("unreachable")
       }
