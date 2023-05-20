@@ -205,7 +205,6 @@ pub fn compile_versioned_transaction(
     payer: &Pubkey,
     recent_blockhash: Hash,
     lookup_tables: &[AddressLookupTableAccount],
-    signers: Vec<&Keypair>,
 ) -> Result<VersionedTransaction, TransactionBuildError> {
     let message = VersionedMessage::V0(v0::Message::try_compile(
         payer,
@@ -213,7 +212,10 @@ pub fn compile_versioned_transaction(
         lookup_tables,
         recent_blockhash,
     )?);
-    let tx = VersionedTransaction::try_new(message, &signers)?;
+    let tx = VersionedTransaction {
+        signatures: vec![],
+        message,
+    };
     Ok(tx)
 }
 

@@ -164,7 +164,6 @@ impl ClientState {
             &self.signer(),
             recent_blockhash,
             lookup_tables,
-            vec![],
         )
         .unwrap();
         let signature = self.network.send(tx).await.unwrap();

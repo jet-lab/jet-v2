@@ -623,7 +623,7 @@ impl MarginUser {
         } else {
             let versioned_tx = self
                 .tx
-                .route_swap_with_lookup(builder, account_lookup_tables, &self.signer)
+                .route_swap_with_lookup(builder, account_lookup_tables)
                 .await?;
             self.rpc.send_versioned_transaction(&versioned_tx).await?;
         }

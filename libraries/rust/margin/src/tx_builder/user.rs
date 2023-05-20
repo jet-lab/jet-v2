@@ -602,7 +602,6 @@ impl MarginTxBuilder {
         &self,
         builder: &MarginSwapRouteIxBuilder,
         lookup_tables: &[AddressLookupTableAccount],
-        signer: &Keypair,
     ) -> Result<VersionedTransaction> {
         // We can't get the instruction if not finalized, get it to check.
         let inner_swap_ix = builder.get_instruction()?;
@@ -614,10 +613,9 @@ impl MarginTxBuilder {
         let recent_blockhash = self.rpc.get_latest_blockhash().await?;
         let tx = compile_versioned_transaction(
             &instructions,
-            &signer.pubkey(),
+            &self.signer(),
             recent_blockhash,
             lookup_tables,
-            vec![signer],
         )?;
 
         Ok(tx)
