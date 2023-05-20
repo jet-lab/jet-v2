@@ -55,7 +55,7 @@ pub fn adapter_invoke_handler<'info>(
         adapter_program: ctx.accounts.adapter_program.key(),
     });
 
-    let _events = adapter::invoke(
+    adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -64,10 +64,6 @@ pub fn adapter_invoke_handler<'info>(
         },
         data,
     )?;
-
-    // for event in events {
-    //     event.emit();
-    // }
 
     emit!(events::AdapterInvokeEnd {});
 
