@@ -1,6 +1,4 @@
-//  *** PRICE UPDATE EVENT ***
-
-export interface TOKEN_PRICE_UPDATE {
+interface TOKEN_PRICE_UPDATE {
   underlying_token_mint: string;
   adapter?: string;
   mint: string;
@@ -18,17 +16,14 @@ export interface TOKEN_PRICE_UPDATE {
       expo: number;
       publish_time: number;
     };
-  }
+  };
 }
 
-export interface PRICE_UPDATE {
+interface PRICE_UPDATE {
   type: 'PRICE-UPDATE';
   payload: Record<string, TOKEN_PRICE_UPDATE>;
 }
 
-//  *** END PRICE UPDATE EVENT ***
-
-// *** MARGIN POOL UPDATE EVENT ***
 interface MARGIN_POOL_UPDATE {
   type: 'MARGIN-POOL-UPDATE';
   payload: {
@@ -48,12 +43,12 @@ interface MARGIN_POOL_UPDATE {
 interface SUBSCRIBE {
   type: 'SUBSCRIBE';
   payload: {
-    wallet: string,
-    margin_accounts: string[]
+    wallet: string;
+    margin_accounts: string[];
   };
 }
 // *** END SUBSCRIBE EVENT ***
 
-export type APPLICATION_WS_EVENTS = SUBSCRIBE;
+type APPLICATION_WS_EVENTS = SUBSCRIBE;
 
-export type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE;
+type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE;

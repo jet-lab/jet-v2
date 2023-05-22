@@ -1,4 +1,3 @@
-import { OpenOrders, OpenPositions, OrderbookSnapshot } from './types';
 import useSWR, { SWRResponse } from 'swr';
 
 export const useOrdersForUser = (apiEndpoint: string, market?: string, account?: string): SWRResponse<OpenOrders> => {

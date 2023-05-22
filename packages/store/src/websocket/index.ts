@@ -1,21 +1,18 @@
-import { Cluster } from 'slices/settings';
-import { APPLICATION_WS_EVENTS, JET_WS_EVENTS } from '../events';
-import { PoolDataUpdate } from '../slices/pools';
 import { useJetStore } from '../store';
 
 let connectionRetryTimeout: NodeJS.Timeout;
-let pendingTimeoutType: string | undefined
+let pendingTimeoutType: string | undefined;
 
 export let ws: WebSocket;
 export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
-  console.log('Connecting WS: ', cluster, wallet)
+  console.log('Connecting WS: ', cluster, wallet);
   if (ws) {
     ws.close();
   }
 
   if (cluster !== pendingTimeoutType) {
-    clearTimeout(connectionRetryTimeout)
-    pendingTimeoutType = undefined
+    clearTimeout(connectionRetryTimeout);
+    pendingTimeoutType = undefined;
   }
 
   try {
@@ -71,7 +68,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
 
     ws.onerror = (_: Event) => {
       connectionRetryTimeout = setTimeout(() => {
-        pendingTimeoutType = cluster
+        pendingTimeoutType = cluster;
         initWebsocket(cluster, wallet);
       }, 1000);
     };
