@@ -1,13 +1,11 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
-import { createPoolsSlice, type PoolsSlice } from './slices/pools';
-import { createPricesSlice, PricesSlice } from './slices/prices';
-import { createSettingsSlice, SettingsSlice } from './slices/settings';
-import { AccountsSlice, createAccountsSlice } from './slices/accounts';
+import { createPoolsSlice } from './slices/pools';
+import { createPricesSlice } from './slices/prices';
+import { createSettingsSlice } from './slices/settings';
+import { createAccountsSlice } from './slices/accounts';
 import { initWebsocket } from './websocket';
-
-export type JetStore = PoolsSlice & PricesSlice & SettingsSlice & AccountsSlice;
 
 export const useJetStore = create<JetStore, [['zustand/devtools', never], ['zustand/persist', JetStore]]>(
   devtools(

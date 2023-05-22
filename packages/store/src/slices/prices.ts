@@ -1,12 +1,4 @@
 import { StateCreator } from 'zustand';
-import { PRICE_UPDATE, TOKEN_PRICE_UPDATE } from '../events';
-import { JetStore } from '../store';
-import { StorePriceInfo as PriceInfo } from '@jet-lab/margin'
-
-export interface PricesSlice {
-  prices?: Record<string, PriceInfo>;
-  updatePrices: (update: PRICE_UPDATE) => void;
-}
 
 export const createPricesSlice: StateCreator<JetStore, [['zustand/devtools', never]], [], PricesSlice> = set => ({
   updatePrices: (update: PRICE_UPDATE) =>
