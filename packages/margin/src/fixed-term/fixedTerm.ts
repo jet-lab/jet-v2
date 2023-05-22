@@ -2,7 +2,6 @@ import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
-import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount, translateWasmInstruction } from "./utils"
 import {
   MakerSimulation,
@@ -136,7 +135,7 @@ export class FixedTermMarket {
     marginAdapterMetadata: PublicKey
   }
   readonly info: MarketInfo
-  readonly program: Program<JetFixedTerm>
+  readonly program: Program<JetFixedTermIDL>
   public orderbookModel: OrderbookModel | undefined = undefined
   private constructor(
     market: PublicKey,
@@ -144,7 +143,7 @@ export class FixedTermMarket {
     ticketCollateralMetadata: PublicKey,
     underlyingCollateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
-    program: Program<JetFixedTerm>,
+    program: Program<JetFixedTermIDL>,
     info: MarketInfo
   ) {
     this.addresses = {
@@ -188,7 +187,7 @@ export class FixedTermMarket {
    * @returns
    */
   static async load(
-    program: Program<JetFixedTerm>,
+    program: Program<JetFixedTermIDL>,
     market: Address,
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
@@ -647,19 +646,25 @@ export class FixedTermMarket {
   }
 
   async toggleAutorollDeposit(marginAccount: MarginAccount, deposit: Address) {
-    return await this.program.methods.toggleAutoRollDeposit().accounts({
-      marginAccount: marginAccount.address,
-      deposit,
-    }).instruction()
+    return await this.program.methods
+      .toggleAutoRollDeposit()
+      .accounts({
+        marginAccount: marginAccount.address,
+        deposit
+      })
+      .instruction()
   }
 
   async toggleAutorollLoan(marginAccount: MarginAccount, loan: Address) {
     const marginUser = await this.deriveMarginUserAddress(marginAccount)
-    return await this.program.methods.toggleAutoRollLoan().accounts({
-      marginAccount: marginAccount.address,
-      marginUser: marginUser.toBase58(),
-      loan
-    }).instruction()
+    return await this.program.methods
+      .toggleAutoRollLoan()
+      .accounts({
+        marginAccount: marginAccount.address,
+        marginUser: marginUser.toBase58(),
+        loan
+      })
+      .instruction()
   }
 }
 
@@ -801,7 +806,7 @@ export class FixedTermProductModel {
     ): ValuationDelta {
       // Term deposits are not current credited as collateral, pending a good solution to the ALM
       // problem posed by their liquidation. Until then, use a weight of zero in the forecast.
-      repaymentWeight = 0;
+      repaymentWeight = 0
 
       return {
         liabilities: 0,
@@ -862,11 +867,11 @@ export class FixedTermProductModel {
       const equity = assets - liabilities
       const availableCollateral = weightedCollateral - (liabilities + requiredCollateral)
 
-      let riskIndicator = NaN;
-      if ((requiredCollateral >= 0) && (weightedCollateral >= 0) && (liabilities >= 0)) {
+      let riskIndicator = NaN
+      if (requiredCollateral >= 0 && weightedCollateral >= 0 && liabilities >= 0) {
         riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
       } else {
-        console.error('Unexpected state in forecast accounting')
+        console.error("Unexpected state in forecast accounting")
       }
 
       return {

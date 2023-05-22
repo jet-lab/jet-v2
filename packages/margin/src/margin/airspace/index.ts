@@ -1,6 +1,5 @@
 import { Address, Program, translateAddress } from "@project-serum/anchor"
 import { PublicKey } from "@solana/web3.js"
-import { JetAirspace } from "types"
 import { findDerivedAccount } from "../../utils"
 import { AirspaceData } from "./state"
 
@@ -36,18 +35,18 @@ export class Airspace {
    * @param info The airspace metadata
    */
   constructor(
-    readonly program: Program<JetAirspace>,
+    readonly program: Program<JetAirspaceIDL>,
     readonly address: PublicKey,
     readonly info: AirspaceData | undefined
   ) {}
 
   /**
    *
-   * @param program The JetAirspace program
+   * @param program The IDL program
    * @param airspace The address of this particular airspace
    * @returns
    */
-  static async load(program: Program<JetAirspace>, airspace: Address): Promise<Airspace> {
+  static async load(program: Program<JetAirspaceIDL>, airspace: Address): Promise<Airspace> {
     const address = translateAddress(airspace)
     const data = (await program.provider.connection.getAccountInfo(address))!.data
     const info: AirspaceData = program.coder.accounts.decode("Airspace", data)
