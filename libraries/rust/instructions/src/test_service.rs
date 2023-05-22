@@ -28,10 +28,12 @@ use solana_sdk::{
 
 use jet_test_service::{
     seeds::{
-        SWAP_POOL_FEES, SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS,
-        TOKEN_INFO, TOKEN_MINT, TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
+        OPENBOOK_MARKET, OPENBOOK_MARKET_INFO, OPENBOOK_OPEN_ORDERS, SWAP_POOL_FEES,
+        SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS, TOKEN_INFO, TOKEN_MINT,
+        TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
     },
-    OpenBookMarketCreateParams, OpenBookMarketMakeParams, SaberSwapPoolCreateParams,
+    OpenBookMarketCancelOrdersParams, OpenBookMarketCreateParams, OpenBookMarketMakeParams,
+    SaberSwapPoolCreateParams,
 };
 
 pub use jet_test_service::{SplSwapPoolCreateParams, TokenCreateParams};
@@ -336,6 +338,7 @@ pub fn saber_swap_pool_balance(
 }
 
 /// Create an Openbook market
+#[allow(clippy::too_many_arguments)]
 pub fn openbook_market_create(
     dex_program: &Pubkey,
     payer: &Pubkey,
@@ -390,7 +393,59 @@ pub fn openbook_market_create(
     }
 }
 
-/// Cancel existing Openbook orders and create new ones
+/// Cancel existing Openbook orders
+#[allow(clippy::too_many_arguments)]
+pub fn openbook_market_cancel_orders(
+    dex_program: &Pubkey,
+    token_base: &Pubkey,
+    token_quote: &Pubkey,
+    scratch_base: &Pubkey,
+    scratch_quote: &Pubkey,
+    payer: &Pubkey,
+    bids: &Pubkey,
+    asks: &Pubkey,
+    event_queue: &Pubkey,
+) -> Instruction {
+    let addrs = derive_openbook_market(dex_program, token_base, token_quote, payer);
+
+    let accounts = jet_test_service::accounts::OpenBookMarketCancelOrders {
+        payer: *payer,
+        open_orders_owner: *payer,
+        mint_base: *token_base,
+        mint_quote: *token_quote,
+        vault_base: addrs.vault_base,
+        vault_quote: addrs.vault_quote,
+        wallet_base: *scratch_base,
+        wallet_quote: *scratch_quote,
+        market_state: addrs.state,
+        bids: *bids,
+        asks: *asks,
+        event_queue: *event_queue,
+        open_orders: addrs.open_orders,
+        dex_program: *dex_program,
+        token_program: spl_token::ID,
+        rent: sysvar::rent::ID,
+        info_base: derive_token_info(token_base),
+        info_quote: derive_token_info(token_quote),
+        vault_signer: addrs.vault_signer,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::OpenbookMarketCancelOrders {
+            params: OpenBookMarketCancelOrdersParams {
+                bid_from_order_id: 100,
+                ask_from_order_id: 200,
+            },
+        }
+        .data(),
+    }
+}
+
+/// Create Openbook orders
+#[allow(clippy::too_many_arguments)]
 pub fn openbook_market_make(
     dex_program: &Pubkey,
     token_base: &Pubkey,
@@ -497,7 +552,7 @@ pub fn derive_ticket_mint(market: &Pubkey) -> Pubkey {
 /// Get the Openbook open orders account
 pub fn derive_openbook_open_orders(market: &Pubkey, owner: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
-        &[b"openbook-open-orders", market.as_ref(), owner.as_ref()],
+        &[OPENBOOK_OPEN_ORDERS, market.as_ref(), owner.as_ref()],
         &jet_test_service::ID,
     )
     .0
@@ -619,7 +674,7 @@ pub fn derive_openbook_market(
 ) -> OpenbookMarketAddresses {
     let info = Pubkey::find_program_address(
         &[
-            b"openbook-market-info",
+            OPENBOOK_MARKET_INFO,
             token_base.as_ref(),
             token_quote.as_ref(),
         ],
@@ -627,11 +682,7 @@ pub fn derive_openbook_market(
     )
     .0;
     let state = Pubkey::find_program_address(
-        &[
-            b"openbook-market",
-            token_base.as_ref(),
-            token_quote.as_ref(),
-        ],
+        &[OPENBOOK_MARKET, token_base.as_ref(), token_quote.as_ref()],
         &jet_test_service::ID,
     )
     .0;
@@ -640,7 +691,7 @@ pub fn derive_openbook_market(
         loop {
             assert!(i < 100);
             if let Ok(pk) =
-                anchor_spl::dex::serum_dex::state::gen_vault_signer_key(i, &state, &program)
+                anchor_spl::dex::serum_dex::state::gen_vault_signer_key(i, &state, program)
             {
                 break (i, pk);
             }
@@ -658,7 +709,7 @@ pub fn derive_openbook_market(
     )
     .0;
 
-    let open_orders = derive_openbook_open_orders(&state, &payer);
+    let open_orders = derive_openbook_open_orders(&state, payer);
 
     OpenbookMarketAddresses {
         info,

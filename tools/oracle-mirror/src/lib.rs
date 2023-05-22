@@ -250,6 +250,19 @@ async fn replace_openbook_orders(
         }
 
         instructions.push(
+            jet_margin_sdk::ix_builder::test_service::openbook_market_cancel_orders(
+                program,
+                token_a,
+                token_b,
+                &scratch_a,
+                &scratch_b,
+                &signer.pubkey(),
+                &market.bids,
+                &market.asks,
+                &market.event_queue,
+            ),
+        );
+        instructions.push(
             jet_margin_sdk::ix_builder::test_service::openbook_market_make(
                 program,
                 token_a,

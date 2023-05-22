@@ -18,7 +18,6 @@
 use std::num::NonZeroU64;
 
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program::invoke_signed;
 use anchor_spl::dex;
 use anchor_spl::dex::serum_dex::instruction::SelfTradeBehavior;
 use anchor_spl::dex::serum_dex::matching::{OrderType, Side};
@@ -26,7 +25,7 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 use jet_program_common::Number128;
 
 use crate::instructions::utils::read_price;
-use crate::seeds::{SWAP_POOL_TOKENS, TOKEN_INFO};
+use crate::seeds::{OPENBOOK_MARKET, SWAP_POOL_TOKENS, TOKEN_INFO};
 use crate::state::{OpenBookMarketInfo, TokenInfo};
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone, Eq, PartialEq)]
@@ -86,7 +85,7 @@ pub struct OpenBookMarketMake<'info> {
 
     #[account(mut,
         seeds = [
-          b"openbook-market", // TODO: consts
+          OPENBOOK_MARKET,
           mint_base.key().as_ref(),
           mint_quote.key().as_ref(),
         ],
@@ -161,54 +160,6 @@ impl<'info> OpenBookMarketMake<'info> {
         )
     }
 
-    fn cancel_orders(&self, signer_seeds: &[&[&[u8]]], order_ids: [u64; 8]) -> Result<()> {
-        let cancel_orders_ix = openbook::instruction::cancel_orders_by_client_order_ids(
-            self.dex_program.key,
-            self.market_state.key,
-            self.bids.key,
-            self.asks.key,
-            self.open_orders.key,
-            self.open_orders_owner.key,
-            self.event_queue.key,
-            order_ids,
-        )
-        .unwrap();
-
-        invoke_signed(
-            &cancel_orders_ix,
-            &[
-                self.market_state.to_account_info(),
-                self.bids.to_account_info(),
-                self.asks.to_account_info(),
-                self.open_orders.to_account_info(),
-                self.open_orders_owner.to_account_info(),
-                self.event_queue.to_account_info(),
-            ],
-            signer_seeds,
-        )
-        .map_err(|e| e.into())
-    }
-
-    fn settle_funds(&self, signer_seeds: &[&[&[u8]]]) -> Result<()> {
-        let settle_funds_context = CpiContext::new_with_signer(
-            self.dex_program.to_account_info(),
-            dex::SettleFunds {
-                market: self.market_state.to_account_info(),
-                coin_vault: self.vault_base.to_account_info(),
-                pc_vault: self.vault_quote.to_account_info(),
-                open_orders: self.open_orders.to_account_info(),
-                open_orders_authority: self.open_orders_owner.to_account_info(),
-                token_program: self.token_program.to_account_info(),
-                coin_wallet: self.wallet_base.to_account_info(),
-                pc_wallet: self.wallet_quote.to_account_info(),
-                vault_signer: self.vault_signer.to_account_info(),
-            },
-            signer_seeds,
-        );
-
-        dex::settle_funds(settle_funds_context)
-    }
-
     fn mint_tokens(&self, side: Side, tokens: u64) -> Result<()> {
         let (mint, to, authority) = match side {
             Side::Bid => (
@@ -249,7 +200,7 @@ pub fn openbook_market_make_handler(
     let mint_quote_key = ctx.accounts.mint_quote.key();
 
     let market_signer_seeds = [
-        b"openbook-market",
+        OPENBOOK_MARKET,
         mint_base_key.as_ref(),
         mint_quote_key.as_ref(),
         &[bump],
@@ -272,9 +223,6 @@ pub fn openbook_market_make_handler(
         .try_into()
         .unwrap();
 
-    ctx.accounts.cancel_orders(&seeds, bid_order_ids)?;
-    ctx.accounts.cancel_orders(&seeds, ask_order_ids)?;
-    ctx.accounts.settle_funds(&seeds)?;
     // Create new orders of equal size on both sides of the book, with some incremental spread
     let price_base = read_price(&ctx.accounts.pyth_price_base);
     let price_quote = read_price(&ctx.accounts.pyth_price_quote);
@@ -295,18 +243,24 @@ pub fn openbook_market_make_handler(
 
     let market_price = price_base / price_quote;
     msg!("Current market price is {:?}", market_price);
-    msg!("Desired base tokens is {:?}", desired_base);
-    msg!("Desired quote tokens is {:?}", desired_quote);
 
     if desired_base > available_base {
         let mint_amount = desired_base - available_base;
-        msg!("Minting {:?} base tokens", mint_amount);
+        msg!(
+            "Minting {} base tokens to get {} desired tokens",
+            mint_amount,
+            desired_base
+        );
         ctx.accounts.mint_tokens(Side::Bid, mint_amount)?;
     }
 
     if desired_quote > available_quote {
         let mint_amount = desired_quote - available_quote;
-        msg!("Minting {:?} quote tokens", mint_amount);
+        msg!(
+            "Minting {} quote tokens to get {} desired tokens",
+            mint_amount,
+            desired_quote
+        );
         ctx.accounts.mint_tokens(Side::Ask, mint_amount)?;
     }
 

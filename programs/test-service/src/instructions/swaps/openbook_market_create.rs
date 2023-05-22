@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::dex;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use crate::seeds::SWAP_POOL_TOKENS;
+use crate::seeds::{OPENBOOK_MARKET, OPENBOOK_MARKET_INFO, OPENBOOK_OPEN_ORDERS, SWAP_POOL_TOKENS};
 use crate::state::{OpenBookMarketInfo, TokenInfo};
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone, Eq, PartialEq)]
@@ -53,7 +53,7 @@ pub struct OpenBookMarketCreate<'info> {
 
     #[account(init,
               seeds = [
-                b"openbook-market-info",
+                OPENBOOK_MARKET_INFO,
                 mint_base.key().as_ref(),
                 mint_quote.key().as_ref(),
               ],
@@ -65,7 +65,7 @@ pub struct OpenBookMarketCreate<'info> {
 
     #[account(init,
               seeds = [
-                b"openbook-market", // TODO: consts
+                OPENBOOK_MARKET,
                 mint_base.key().as_ref(),
                 mint_quote.key().as_ref(),
               ],
@@ -118,7 +118,7 @@ pub struct OpenBookMarketCreate<'info> {
     // Created as part of this instruction as a convenience
     #[account(init,
               seeds = [
-                b"openbook-open-orders",
+                OPENBOOK_OPEN_ORDERS,
                 market_state.key().as_ref(),
                 payer.key().as_ref()
               ],
@@ -152,7 +152,7 @@ pub fn openbook_market_create_handler(
     let mint_quote_key = ctx.accounts.mint_quote.key();
 
     let pool_signer_seeds = [
-        b"openbook-market",
+        OPENBOOK_MARKET,
         mint_base_key.as_ref(),
         mint_quote_key.as_ref(),
         &[bump],

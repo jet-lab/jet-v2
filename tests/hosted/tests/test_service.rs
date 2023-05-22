@@ -176,7 +176,26 @@ async fn openorder_market_make() -> anyhow::Result<()> {
         .await?;
     ctx.rpc().send_and_confirm_transaction(&tx).await?;
 
-    // Place an order
+    // Cancel orders
+    let cancel_orders_ix = jet_instructions::test_service::openbook_market_cancel_orders(
+        &dex_program,
+        &mint_tsol,
+        &mint_usdc,
+        &token_tsol,
+        &token_usdc,
+        &payer,
+        &bids.pubkey(),
+        &asks.pubkey(),
+        &events.pubkey(),
+    );
+
+    let tx = ctx
+        .rpc()
+        .create_transaction(&[], &[cancel_orders_ix])
+        .await?;
+    ctx.rpc().send_and_confirm_transaction(&tx).await?;
+
+    // Place orders
     let market_make_ix = jet_instructions::test_service::openbook_market_make(
         &dex_program,
         &mint_tsol,
