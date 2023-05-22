@@ -360,8 +360,7 @@ impl MarginAccountClient {
         }
 
         let mut new_accounts = vec![];
-        let registry_account =
-            RegistryAccount::try_deserialize(&mut registry_account.data()).unwrap();
+        let registry_account = RegistryAccount::try_deserialize(&mut registry_account.data())?;
 
         let mut tables = Vec::with_capacity(registry_account.tables.len());
         for table in &registry_account.tables {
@@ -379,7 +378,7 @@ impl MarginAccountClient {
                 continue;
             };
 
-            let lookup_table = AddressLookupTable::deserialize(&lookup_table_account.data).unwrap();
+            let lookup_table = AddressLookupTable::deserialize(&lookup_table_account.data)?;
 
             let entry = lookup_table_registry_client::Entry {
                 discriminator: table.discriminator,

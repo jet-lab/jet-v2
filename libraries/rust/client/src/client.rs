@@ -38,7 +38,19 @@ pub enum ClientError {
 
 impl From<bincode::Error> for ClientError {
     fn from(err: bincode::Error) -> Self {
-        Self::Unexpected(format!("unexpected encoding error: {err:?}"))
+        Self::Unexpected(format!("Unexpected encoding error: {err:?}"))
+    }
+}
+
+impl<I: NetworkUserInterface> From<anchor_lang::error::Error> for ClientError<I> {
+    fn from(err: anchor_lang::error::Error) -> Self {
+        Self::Unexpected(format!("Unexpected Anchor error: {err:?}"))
+    }
+}
+
+impl<I: NetworkUserInterface> From<solana_sdk::instruction::InstructionError> for ClientError<I> {
+    fn from(err: solana_sdk::instruction::InstructionError) -> Self {
+        Self::Unexpected(format!("Unexpected Solana instruction error: {err:?}"))
     }
 }
 
@@ -165,8 +177,12 @@ impl ClientState {
             recent_blockhash,
             lookup_tables,
         )
-        .unwrap();
-        let signature = self.network.send(tx).await.unwrap();
+        .map_err(|e| ClientError::Unexpected(format!("compile error: {e:?}")))?;
+        let signature = self
+            .network
+            .send(tx)
+            .await
+            .map_err(|e| ClientError::Interface(e))?;
         log::info!("tx result success: {signature}");
         let mut tx_log = self.tx_log.lock().unwrap();
         tx_log.push_back(signature);
