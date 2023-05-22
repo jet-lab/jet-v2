@@ -1,7 +1,7 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY } from "@solana/web3.js"
+import { PublicKey, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY, AccountMeta } from "@solana/web3.js"
 import assert from "assert"
 import { AssociatedToken, bigIntToBn, numberToBn, TokenAddress, TokenFormat } from "../../token"
 import { TokenAmount } from "../../token/tokenAmount"
@@ -14,8 +14,10 @@ import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { FixedTermMarket } from "fixed-term"
+import { base64 } from "@project-serum/anchor/dist/cjs/utils/bytes"
 import { TokenConfig, TokenConfigInfo } from "../tokenConfig"
 import { Airspace } from "../airspace"
+import axios from "axios"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
@@ -43,6 +45,16 @@ export interface PriceResult {
   loanNotePrice: BN
   loanNoteConf: BN
   loanNoteTwap: BN
+}
+
+/**
+ * The swap path for routing swaps
+ */
+export interface SwapPath {
+  from_token: string
+  to_token: string
+  program: string
+  swap_pool: string
 }
 
 /**
@@ -423,7 +435,7 @@ export class Pool {
         tokenMetadata: (await TokenConfig.load(
           this.programs,
           Airspace.deriveAddress(this.programs.airspace.programId, this.programs.config.airspaces[0].name),
-           this.addresses.tokenMint
+          this.addresses.tokenMint
         )).info as TokenConfigInfo
       }
     }
@@ -1198,33 +1210,43 @@ export class Pool {
    * @param `swapAmount` - The amount being swapped.
    * @param `minAmountOut` - The minimum output amount based on swapAmount and slippage.
    */
-  async splTokenSwap({
+  async routeSwap({
+    endpoint,
     marginAccount,
     pools,
-    markets,
     outputToken,
-    swapPool,
     swapAmount,
     minAmountOut,
-    repayWithOutput
+    repayWithOutput,
+    swapPaths,
+    markets,
+    lookupTables,
   }: {
+    endpoint: string
     marginAccount: MarginAccount
     pools: Pool[]
-    markets: FixedTermMarket[]
     outputToken: Pool
-    swapPool: SPLSwapPool
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
     repayWithOutput: boolean
+    swapPaths: SwapPath[]
+    markets: FixedTermMarket[]
+    lookupTables: { address: string; data: Uint8Array }[]
   }) {
     assert(marginAccount)
     assert(swapAmount)
 
-    const refreshInstructions: TransactionInstruction[] = []
-    const registerInstructions: TransactionInstruction[] = []
-    const transitInstructions: TransactionInstruction[] = []
-    const instructions: TransactionInstruction[] = []
-    const repayInstructions: TransactionInstruction[] = []
+    interface RouteAccounts {
+      accounts: {
+        is_signer: boolean
+        is_writable: boolean
+        pubkey: string
+      }[]
+      data: string
+    }
+
+    const setupInstructions: TransactionInstruction[] = []
+    const swapInstructions: TransactionInstruction[] = []
 
     // Setup check for swap
     const projectedRiskLevel = this.projectAfterMarginSwap(
@@ -1241,38 +1263,44 @@ export class Pool {
 
     // Refresh prices
     await marginAccount.withPrioritisedPositionRefresh({
-      instructions: refreshInstructions,
+      instructions: setupInstructions,
       pools,
       markets
     })
 
-    // Source deposit position fetch / creation
-    const sourceAccount = await this.withGetOrRegisterDepositPosition({
-      instructions: registerInstructions,
-      marginAccount
-    })
+    // // Source deposit position fetch / creation
+    // const sourceAccount = await this.withGetOrRegisterDepositPosition({
+    //   instructions: registerInstructions,
+    //   marginAccount
+    // })
 
-    // Destination deposit position fetch / creation
-    const destinationAccount = await outputToken.withGetOrRegisterDepositPosition({
-      instructions: registerInstructions,
-      marginAccount
-    })
+    // // Destination deposit position fetch / creation
+    // const destinationAccount = await outputToken.withGetOrRegisterDepositPosition({
+    //   instructions: registerInstructions,
+    //   marginAccount
+    // })
 
     // Transit source account fetch / creation
-    const transitSourceAccount = await AssociatedToken.withCreate(
-      transitInstructions,
+    await AssociatedToken.withCreate(
+      setupInstructions,
       marginAccount.provider,
       marginAccount.address,
       this.addresses.tokenMint
     )
 
     // Transit destination account fetch / creation
-    const transitDestinationAccount = await AssociatedToken.withCreate(
-      transitInstructions,
+    await AssociatedToken.withCreate(
+      setupInstructions,
       marginAccount.provider,
       marginAccount.address,
       outputToken.tokenMint
     )
+
+    // Destination pool account if it doesn't exist
+    await marginAccount.withGetOrRegisterPosition({
+      instructions: setupInstructions,
+      positionTokenMint: outputToken.addresses.depositNoteMint
+    });
 
     // Default change kind to a shiftBy
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
@@ -1286,28 +1314,40 @@ export class Pool {
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
-        instructions: transitInstructions,
+        instructions: setupInstructions,
         marginAccount
       })
       await this.withMarginBorrow({
-        instructions: transitInstructions,
+        instructions: setupInstructions,
         marginAccount,
         change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
       })
     }
 
-    // Swap ix
-    await this.withSPLTokenSwap({
-      instructions,
+    const swapInstruction = await axios.post<RouteAccounts>(`${endpoint}/swap/instruction`, {
+      margin_account: marginAccount.address.toBase58(),
+      from: this.tokenMint.toBase58(),
+      to: outputToken.tokenMint.toBase58(),
+      path: swapPaths,
+      shift: changeKind.changeKind.isShiftBy(),
+      input: changeKind.value.toNumber(),
+      minimum_out: minAmountOut.lamports.toNumber()
+    })
+
+    const swapAccounts = swapInstruction.data.accounts.map(a => {
+      return {
+        pubkey: new PublicKey(a.pubkey),
+        isSigner: a.is_signer,
+        isWritable: a.is_writable
+      }
+    })
+    const swapData = base64.decode(swapInstruction.data.data)
+
+    await this.withRouteSwap({
+      instructions: swapInstructions,
       marginAccount,
-      outputToken,
-      swapPool,
-      changeKind,
-      minAmountOut,
-      sourceAccount,
-      destinationAccount,
-      transitSourceAccount,
-      transitDestinationAccount
+      swapAccounts,
+      swapData
     })
 
     // If they have a debt of the output token, automatically repay as much as possible
@@ -1317,107 +1357,50 @@ export class Pool {
         ? PoolTokenChange.setTo(0)
         : PoolTokenChange.shiftBy(minAmountOut)
       await outputToken.withMarginRepay({
-        instructions: repayInstructions,
+        instructions: swapInstructions,
         marginAccount,
         change
       })
     }
 
-    return await marginAccount.sendAll([
-      chunks(11, refreshInstructions),
-      registerInstructions,
-      transitInstructions,
-      instructions,
-      repayInstructions
-    ])
+    return await marginAccount.sendAndConfirmV0(
+      [setupInstructions, swapInstructions],
+      lookupTables
+    )
   }
 
-  async withSPLTokenSwap({
+  async withRouteSwap({
     instructions,
     marginAccount,
-    outputToken,
-    swapPool,
-    changeKind,
-    minAmountOut,
-    sourceAccount,
-    destinationAccount,
-    transitSourceAccount,
-    transitDestinationAccount
+    // sourceAccount,
+    // destinationAccount,
+    swapAccounts,
+    swapData
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    outputToken: Pool
-    swapPool: SPLSwapPool
-    changeKind: PoolTokenChange
-    minAmountOut: TokenAmount
-    sourceAccount: Address
-    destinationAccount: Address
-    transitSourceAccount: Address
-    transitDestinationAccount: Address
+    // sourceAccount: Address
+    // destinationAccount: Address
+    swapAccounts: AccountMeta[]
+    swapData: Buffer
   }): Promise<void> {
-    // Determine the direction of the swap
-    let swapAtoB = true
-    if (this.addresses.tokenMint.toBase58() === swapPool.tokenMintB) {
-      swapAtoB = false
-    }
+    // Create instructions for the swap route based on chosen path
 
     // Swap
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterInstruction: await this.programs.marginSwap.methods
-        .marginSwap(changeKind.changeKind.asParam(), changeKind.value, minAmountOut.lamports)
-        .accounts({
-          marginAccount: marginAccount.address,
-          transitSourceAccount,
-          transitDestinationAccount,
-          sourceAccount,
-          destinationAccount,
-          marginPoolProgram: this.programs.marginPool.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          sourceMarginPool: {
-            marginPool: this.address,
-            vault: this.addresses.vault,
-            depositNoteMint: this.addresses.depositNoteMint
-          },
-          destinationMarginPool: {
-            marginPool: outputToken.address,
-            vault: outputToken.addresses.vault,
-            depositNoteMint: outputToken.addresses.depositNoteMint
-          },
-          swapInfo: {
-            swapPool: swapPool.swapPool,
-            authority: findDerivedAccount(new PublicKey(swapPool.swapProgram), swapPool.swapPool),
-            // authority: swapPool.authority,
-            vaultFrom: swapAtoB ? swapPool.tokenB : swapPool.tokenA,
-            vaultInto: swapAtoB ? swapPool.tokenA : swapPool.tokenB,
-            tokenMint: swapPool.poolMint,
-            feeAccount: swapPool.feeAccount,
-            swapProgram: swapPool.swapProgram
-          }
-        })
-        .instruction()
+      adapterInstruction: new TransactionInstruction({
+        programId: this.programs.marginSwap.programId,
+        data: swapData,
+        keys: swapAccounts
+      })
     })
 
-    // TODO: need to close transit accounts
-    // Transit source account closure
-    // const closeTransitSourceAccountIx = closeAccount({
-    //   source: translateAddress(transitSourceAccount),
-    //   destination: marginAccount.owner,
-    //   owner: marginAccount.address
-    // })
-    // instructions.push(closeTransitSourceAccountIx)
-
-    // // Transit destination account closure
-    // const closeTransitDestinationAccountIx = closeAccount({
-    //   source: translateAddress(transitDestinationAccount),
-    //   destination: marginAccount.owner,
-    //   owner: marginAccount.address
-    // })
-    // instructions.push(closeTransitDestinationAccountIx)
-
     // Update account positions
-    await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
-    await marginAccount.withUpdatePositionBalance({ instructions, position: destinationAccount })
+    // await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
+    // await marginAccount.withUpdatePositionBalance({ instructions, position: destinationAccount })
+
+    // TODO: there might be dust in intermediate accounts, refresh those too
   }
 
   /**
@@ -1909,9 +1892,9 @@ export class Pool {
         (totalLiabilities +
           requiredCollateral -
           ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
-            (outputTokenLiabilityValue - Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) +
+          (outputTokenLiabilityValue - Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) +
           ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
-            Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
         (weightedCollateral +
           outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0) -
           inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))
@@ -1920,7 +1903,7 @@ export class Pool {
         (totalLiabilities +
           requiredCollateral +
           ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
-            Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
         (weightedCollateral +
           outputTokenWeight * minAmountOutValue -
           inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))

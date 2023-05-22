@@ -1429,7 +1429,6 @@ html {
 
   .swaps-graph {
     flex: 1;
-    min-height: 300px;
 
     &-head {
       position: absolute;
@@ -1833,11 +1832,6 @@ html {
       }
     }
   }
-
-  .swaps-graph line {
-    stroke: rgba(var(--primary-2), @half-opacity);
-  }
-
   // Pools View
   .pools-view {
     position: relative;
@@ -2961,7 +2955,6 @@ html {
   left: 50%;
   transform: translate(-50%, 0);
 }
-
 .fixed-order-entry-fields label,
 .autoroll-modal label {
   text-transform: uppercase;
@@ -3027,6 +3020,20 @@ html {
       /* Internet Explorer 10-11 */
       color: #666;
     }
+  }
+}
+
+.swaps-chart-root {
+  margin-top: 50px;
+  height: 100%;
+  width: 100%;
+  position: relative;
+
+  .swaps-chart-legend {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 

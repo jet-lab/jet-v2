@@ -6,8 +6,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { SwapsRowOrder } from '@state/views/views';
 import { CurrentAccount } from '@state/user/accounts';
 import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '@state/actions/actions';
-import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
-import { generateSwapPrices, getOutputTokenAmount } from '@utils/actions/swap';
+import { SwapFees } from '@state/swap/splSwap';
 import { useCurrencyFormatting } from '@utils/currency';
 import { fromLocaleString } from '@utils/format';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
@@ -17,9 +16,12 @@ import { Typography } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useJetStore } from '@jet-lab/store';
 import { Pools } from '@state/pools/pools';
+import axios from 'axios';
+import { SwapLiquidity } from '@utils/actions/swap';
 
 // Graph for displaying pricing and slippage data for current swap pair
 export function SwapsGraph(): JSX.Element {
+  const { cluster } = useJetStore(state => state.settings);
   const dictionary = useRecoilValue(Dictionary);
   const currentAccount = useRecoilValue(CurrentAccount);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
@@ -35,74 +37,49 @@ export function SwapsGraph(): JSX.Element {
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
   const [currentChart, setCurrentChart] = useState<ApexCharts | undefined>(undefined);
-  const swapPool = useRecoilValue(CurrentSplSwapPool);
-  const swapPoolTokenAmounts = useRecoilValue(SwapPoolTokenAmounts);
   const swapFees = useRecoilValue(SwapFees);
-  const swapPoolLoading = !swapPoolTokenAmounts;
-  const swapSourceTokens = swapPoolTokenAmounts?.source.lamports.toNumber();
-  const swapDestinationTokens = swapPoolTokenAmounts?.destination.lamports.toNumber();
+  const [chartData, setChartData] = useState<SwapLiquidity | undefined>(undefined);
+  const swapPoolLoading = !chartData;
   const swapMaxTradeAmount =
     currentAccount?.poolPositions[currentPool?.symbol ?? '']?.maxTradeAmounts.swap.lamports.toNumber();
   const [oraclePrice, setOraclePrice] = useState(0);
   const [poolPrice, setPoolPrice] = useState(0);
   const { Title, Text } = Typography;
+  const swapEndpoint = cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API;
+
 
   // Create and render chart on new data / market pair
   useEffect(() => {
-    if (!swapPoolTokenAmounts || !swapPool) {
+    if (!currentPool || !outputToken) {
       return;
     }
 
     // Exponents
-    const expoSource = Math.pow(10, swapPoolTokenAmounts.source.decimals);
-    const expoDestination = Math.pow(10, swapPoolTokenAmounts.destination.decimals);
-    // Get the swap pool account balances
-    const balanceSourceToken = swapPoolTokenAmounts.source.lamports.toNumber();
-    const balanceDestinationToken = swapPoolTokenAmounts.destination.lamports.toNumber();
+    const expoSource = Math.pow(10, 3);
+    const expoDestination = Math.pow(10, 3);
 
     // Oracle price
-    const oraclePrice = !swapPool.inverted
+    const oraclePrice = !true
       ? currentPool!.tokenPrice / outputToken!.tokenPrice
       : outputToken!.tokenPrice / currentPool!.tokenPrice;
     setOraclePrice(oraclePrice);
 
     // Current pool price
     let poolPrice = 0.0;
-    if (swapPool.pool.swapType === 'constantProduct') {
-      const maybePrice = balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource);
-      poolPrice = !swapPool?.inverted ? maybePrice : 1.0 / maybePrice;
-    } else if (swapPool.pool.swapType === 'stable') {
-      poolPrice = oraclePrice;
-    }
     setPoolPrice(poolPrice);
-    const priceWithFee = !swapPool?.inverted ? 1 - swapFees : 1 + swapFees;
+    const priceWithFee = !true ? 1 - swapFees : 1 + swapFees;
 
     // Show 2x what the user can trade
     const maxLeverage = (swapMaxTradeAmount ?? 0) * 2.0;
 
-    // Destroy current chart if necessary
-    const chartData: number[][] = generateSwapPrices(
-      balanceSourceToken,
-      balanceDestinationToken,
-      maxLeverage,
-      swapPool?.pool.swapType,
-      swapFees,
-      expoSource,
-      expoDestination,
-      !swapPool?.inverted,
-      swapPool?.pool.amp ?? 1
-    );
     currentChart?.destroy();
     if (!chartData) {
       setCurrentChart(undefined);
       return;
     }
 
-    const worstOutput = chartData[chartData.length - 1][1];
-    const range = Math.abs(poolPrice - worstOutput);
-
     // Quote token of the pool, uses Token B for consistency
-    const poolQuoteToken = !swapPool.inverted ? ` ${outputToken?.symbol}` : ` ${currentPool?.symbol}`;
+    const poolQuoteToken = !true ? ` ${outputToken?.symbol}` : ` ${currentPool?.symbol}`;
 
     // Create and render new chart
     const swapsGraph = new ApexCharts(document.querySelector('.swaps-graph-container'), {
@@ -128,30 +105,31 @@ export function SwapsGraph(): JSX.Element {
         },
         events: {
           click: function (_event: Event, _ctx?: any, config?: any) {
-            try {
-              const tokenAmount = new TokenAmount(
-                new BN(config.config.series[config.seriesIndex].data[config.dataPointIndex][0] * expoSource),
-                swapPoolTokenAmounts.source.decimals
-              );
-              setTokenInputString(tokenAmount.tokens.toString());
-            } catch (e) {
-              console.error(e);
-            }
+            // try {
+            //   const tokenAmount = new TokenAmount(
+            //     new BN(config.config.series[config.seriesIndex].data[config.dataPointIndex][0] * expoSource),
+            //     swapPoolTokenAmounts.source.decimals
+            //   );
+            //   setTokenInputString(tokenAmount.tokens.toString());
+            // } catch (e) {
+            //   console.error(e);
+            // }
           }
         }
       },
       tooltip: {
         custom: function ({ series, seriesIndex, dataPointIndex, w }: any) {
           const xAmount = w.config.series[seriesIndex].data[dataPointIndex][0];
-          const tokenAmount = new TokenAmount(new BN(xAmount * expoSource), swapPoolTokenAmounts.source.decimals);
-          const outputAmount = getOutputTokenAmount(
-            tokenAmount,
-            swapPoolTokenAmounts.source,
-            swapPoolTokenAmounts.destination,
-            swapPool?.pool.swapType,
-            swapFees,
-            swapPool?.pool.amp ?? 1
-          );
+          const tokenAmount = new TokenAmount(new BN(xAmount * expoSource), 6);
+          // const outputAmount = getOutputTokenAmount(
+          //   tokenAmount,
+          //   swapPoolTokenAmounts.source,
+          //   swapPoolTokenAmounts.destination,
+          //   "constantProduct",
+          //   swapFees,
+          //   1
+          // );
+          const outputAmount = TokenAmount.zero(6);
           const swapInString = currencyAbbrev((xAmount * expoSource) / expoSource, currentPool?.precision ?? 2);
           const swapOutString = currencyAbbrev(
             ((outputAmount?.tokens ?? 0.0) * expoDestination) / expoDestination,
@@ -255,8 +233,8 @@ export function SwapsGraph(): JSX.Element {
         },
         show: true,
         // Bound price to 2% in either direction
-        min: Math.round((poolPrice - range) * 99) / 100,
-        max: Math.round((poolPrice + range) * 101) / 100,
+        // min: Math.round((poolPrice - range) * 99) / 100,
+        // max: Math.round((poolPrice + range) * 101) / 100,
         tickAmount: 5
       },
       grid: {
@@ -287,9 +265,7 @@ export function SwapsGraph(): JSX.Element {
   }, [
     // Only re-render the pool when the numbers in the pool change
     // The numbers will change when pools are changed (unless they're all empty)
-    swapSourceTokens,
-    swapDestinationTokens,
-    swapPool,
+    chartData,
     swapMaxTradeAmount
   ]);
 
@@ -306,20 +282,19 @@ export function SwapsGraph(): JSX.Element {
     if (tokenInputString === '0') {
       return;
     }
-    const output = getOutputTokenAmount(
-      tokenInputAmount,
-      swapPoolTokenAmounts?.source,
-      swapPoolTokenAmounts?.destination,
-      swapPool?.pool.swapType,
-      swapFees,
-      swapPool?.pool.amp ?? 1
-    );
-    if (!output) {
-      return;
-    }
-    const swapPrice = !swapPool?.inverted
-      ? output.tokens / tokenInputAmount.tokens
-      : tokenInputAmount.tokens / output.tokens;
+    // const output = getOutputTokenAmount(
+    //   tokenInputAmount,
+    //   swapPoolTokenAmounts?.source,
+    //   swapPoolTokenAmounts?.destination,
+    //   "constantProduct",
+    //   swapFees,
+    //   1
+    // );
+    // if (!output) {
+    //   return;
+    // }
+    const output = TokenAmount.zero(6);
+    const swapPrice = !true ? output.tokens / tokenInputAmount.tokens : tokenInputAmount.tokens / output.tokens;
 
     try {
       currentChart?.addPointAnnotation(
@@ -341,7 +316,32 @@ export function SwapsGraph(): JSX.Element {
       console.warn('Unable to add annotations', e);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokenInputString, swapPoolTokenAmounts]);
+  }, [tokenInputString]);
+
+  // Fetch chart data
+  useEffect(() => {
+    setChartData(undefined);
+    if (!currentPool || !outputToken) {
+      return;
+    }
+    // TODO: cache swapMaxTradeAmount and only rerun if significantly different
+    const maxAmount = swapMaxTradeAmount;
+    const from = currentPool.tokenMint.toString();
+    const to = outputToken.tokenMint.toString();
+    const fromExpo = Math.pow(10, currentPool.decimals);
+    const toExpo = Math.pow(10, outputToken.decimals);
+    if (!maxAmount) {
+      return;
+    }
+    console.log('max swap amount: ', maxAmount / fromExpo);
+    axios
+      .get<SwapLiquidity>(`${swapEndpoint}/swap/liquidity/${from}/${to}/${maxAmount / fromExpo}`)
+      .then(resp => {
+        console.log('liquidity chart: ', resp.data);
+        setChartData(resp.data);
+      })
+      .catch(err => err);
+  }, [currentPool?.symbol, outputToken?.symbol, swapMaxTradeAmount]);
 
   return (
     <div className="swaps-graph view-element flex align-center justify-end column">

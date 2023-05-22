@@ -3,6 +3,7 @@ lib
 dist
 test-ledger
 tests/oracle-mirror.pid
+.cargo
 
 .anchor
 .DS_Store
