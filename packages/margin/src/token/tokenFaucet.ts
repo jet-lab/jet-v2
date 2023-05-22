@@ -3,7 +3,7 @@ import { Connection, PublicKey, Transaction, TransactionInstruction } from "@sol
 import { AssociatedToken } from "./associatedToken"
 import { Address, BN, AnchorProvider, translateAddress, Program } from "@project-serum/anchor"
 import { MarginTokenConfig } from "../margin"
-import { IDL as JetTestServiceIdl } from "../types/jetTestService"
+import { IDL as JetTestServiceIdl } from "../idls/jetTestService"
 
 const TEST_SERVICE_ID = new PublicKey("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy")
 

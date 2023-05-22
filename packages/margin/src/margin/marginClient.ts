@@ -1,39 +1,28 @@
 import { Program, AnchorProvider } from "@project-serum/anchor"
 import {
-  JetAirspace,
   JetAirspaceIdl,
-  JetControl,
   JetControlIdl,
-  JetMargin,
   JetMarginIdl,
-  JetMarginPool,
   JetMarginPoolIdl,
-  JetMarginSerum,
   JetMarginSerumIdl,
-  JetMarginSwap,
   JetMarginSwapIdl,
-  JetMetadata,
   JetMetadataIdl
-} from "../types"
+} from "../idls"
 import { MarginCluster, MarginConfig, getLatestConfig } from "./config"
-import {
-  Connection,
-  ParsedTransactionWithMeta,
-  PublicKey,
-} from "@solana/web3.js"
+import { Connection, ParsedTransactionWithMeta, PublicKey } from "@solana/web3.js"
 import axios from "axios"
 import { Pool } from "./pool"
 
 export interface MarginPrograms {
-  airspace: Program<JetAirspace>
+  airspace: Program<JetAirspaceIDL>
   config: MarginConfig
   connection: Connection
-  control: Program<JetControl>
-  margin: Program<JetMargin>
-  marginPool: Program<JetMarginPool>
-  marginSerum: Program<JetMarginSerum>
-  marginSwap: Program<JetMarginSwap>
-  metadata: Program<JetMetadata>
+  control: Program<JetControlIDL>
+  margin: Program<JetMarginIDL>
+  marginPool: Program<JetMarginPoolIDL>
+  marginSerum: Program<JetMarginSerumIDL>
+  marginSwap: Program<JetMarginSwapIDL>
+  metadata: Program<JetMetadataIDL>
 }
 
 export interface FlightLog {
@@ -105,34 +94,38 @@ export class MarginClient {
 
   // Blackbox history on mainnet only
   static getBlackboxTx(pools: Record<string, Pool>, flightLog: FlightLog) {
-    const token1Pool = Object.values(pools).find(pool => pool.tokenMint.toBase58() == flightLog.token1);
-    const token2Pool = Object.values(pools).find(pool => pool.tokenMint.toBase58() == flightLog.token2);
+    const token1Pool = Object.values(pools).find(pool => pool.tokenMint.toBase58() == flightLog.token1)
+    const token2Pool = Object.values(pools).find(pool => pool.tokenMint.toBase58() == flightLog.token2)
 
-    flightLog.token1_name = token1Pool?.name || "";
-    flightLog.token2_name = token2Pool?.name || "";
-    flightLog.token1_symbol = token1Pool?.symbol || "";
-    flightLog.token2_symbol = token2Pool?.symbol || "";
+    flightLog.token1_name = token1Pool?.name || ""
+    flightLog.token2_name = token2Pool?.name || ""
+    flightLog.token1_symbol = token1Pool?.symbol || ""
+    flightLog.token2_symbol = token2Pool?.symbol || ""
 
     // Blackbox is currently stripping timezones, fix that locally until it's updated
     flightLog.activity_timestamp = `${flightLog.activity_timestamp}Z`
     flightLog.timestamp = new Date(flightLog.activity_timestamp).valueOf() / 1000
   }
 
-  static async getBlackBoxHistory(pubKey: PublicKey, cluster: MarginCluster, pools: Record<string, Pool>): Promise<FlightLog[]> {
+  static async getBlackBoxHistory(
+    pubKey: PublicKey,
+    cluster: MarginCluster,
+    pools: Record<string, Pool>
+  ): Promise<FlightLog[]> {
     const url =
       cluster === "mainnet-beta"
         ? process.env.REACT_APP_DATA_API
         : cluster === "devnet"
-          ? process.env.REACT_APP_DEV_DATA_API
-          : cluster === "localnet"
-            ? process.env.REACT_APP_LOCAL_DATA_API
-            : ""
+        ? process.env.REACT_APP_DEV_DATA_API
+        : cluster === "localnet"
+        ? process.env.REACT_APP_LOCAL_DATA_API
+        : ""
     const flightLogURL = `${url}/margin/accounts/activity/${pubKey}`
 
     const response = await axios.get(flightLogURL)
     const jetTransactions: FlightLog[] = await response.data
 
-    jetTransactions.map((t) => MarginClient.getBlackboxTx(pools, t))
+    jetTransactions.map(t => MarginClient.getBlackboxTx(pools, t))
     const filteredParsedTransactions = jetTransactions.filter(tx => !!tx) as FlightLog[]
     return filteredParsedTransactions.sort((a, b) => a.activity_slot - b.activity_slot)
   }

@@ -2,7 +2,6 @@ import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
 import { FixedTermMarketConfig, MarginAccount, MarginTokenConfig, Pool } from "../margin"
-import { JetFixedTerm } from "./types"
 import { fetchData, findFixedTermDerivedAccount, translateWasmInstruction } from "./utils"
 import {
   MakerSimulation,
@@ -92,7 +91,7 @@ export class FixedTermMarket {
     marginAdapterMetadata: PublicKey
   }
   readonly info: MarketInfo
-  readonly program: Program<JetFixedTerm>
+  readonly program: Program<JetFixedTermIDL>
   public orderbookModel: OrderbookModel | undefined = undefined
   private constructor(
     market: PublicKey,
@@ -100,7 +99,7 @@ export class FixedTermMarket {
     ticketCollateralMetadata: PublicKey,
     underlyingCollateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
-    program: Program<JetFixedTerm>,
+    program: Program<JetFixedTermIDL>,
     info: MarketInfo
   ) {
     this.addresses = {
@@ -144,7 +143,7 @@ export class FixedTermMarket {
    * @returns
    */
   static async load(
-    program: Program<JetFixedTerm>,
+    program: Program<JetFixedTermIDL>,
     market: Address,
     jetMarginProgramId: Address
   ): Promise<FixedTermMarket> {
