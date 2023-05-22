@@ -46,6 +46,9 @@ pub enum EventConsumerError {
 
     #[error("failed to fetch user: {0}")]
     InvalidUserKey(Pubkey),
+
+    #[error("error resulting from fixed-term program: {0}")]
+    Program(String),
 }
 
 /// Utility for running consume-events for fixed term markets
@@ -423,12 +426,16 @@ impl MarketState {
             // If auto-stake is enabled for lending, then consuming the event
             // requires passing in the right address for the `TermDeposit` account
             // to be created now that the loan has been filled
+            //
+            // This line mutates the `MarginUser` to allow the proper seed to be derived on sub-
+            // sequent calls, but due to incomplete information user assets will not be properly
+            // accounted for until state is re-synced
             *seed = self
                 .users
                 .get_mut(&info.margin_user)
                 .ok_or(EventConsumerError::InvalidUserKey(info.margin_user))?
-                .assets()
-                .next_new_deposit_seqno()
+                .maker_fill_lend_order(true, 1)
+                .map_err(|e| EventConsumerError::Program(e.to_string()))?
                 .to_le_bytes()
                 .to_vec();
 
@@ -447,9 +454,13 @@ impl MarketState {
                 // In this case, the maker is using a margin account, so we
                 // derive the new `TermLoan` account based on the debt sequence
                 // number in the account state
+                //
+                // This line mutates the `MarginUser` to allow the proper seed to be derived on sub-
+                // sequent calls, but due to incomplete information user assets will not be properly
+                // accounted for until state is re-synced
                 *seed = maker_user
-                    .debt()
-                    .next_new_loan_seqno()
+                    .maker_fill_borrow_order(true, 0, 0, 0, 0)
+                    .map_err(|e| EventConsumerError::Program(e.to_string()))?
                     .to_le_bytes()
                     .to_vec();
 
