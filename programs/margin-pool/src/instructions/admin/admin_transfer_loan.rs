@@ -69,7 +69,13 @@ pub fn admin_transfer_loan_handler(ctx: Context<AdminTransferLoan>, amount: u64)
         margin_pool: ctx.accounts.margin_pool.key(),
         source_loan_account: ctx.accounts.source_loan_account.key(),
         target_loan_account: ctx.accounts.target_loan_account.key(),
-        amount
+        amount,
+        source_loan_balance: token::accessor::amount(
+            &ctx.accounts.source_loan_account.to_account_info()
+        )?,
+        target_loan_balance: token::accessor::amount(
+            &ctx.accounts.target_loan_account.to_account_info()
+        )?,
     });
 
     Ok(())

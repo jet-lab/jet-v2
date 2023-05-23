@@ -31,6 +31,7 @@ pub struct Deposit {
     pub destination: Pubkey,
     pub deposit_tokens: u64,
     pub deposit_notes: u64,
+    pub balance_notes: u64,
     pub summary: MarginPoolSummary,
 }
 
@@ -42,6 +43,7 @@ pub struct Withdraw {
     pub destination: Pubkey,
     pub withdraw_tokens: u64,
     pub withdraw_notes: u64,
+    pub balance_notes: u64,
     pub summary: MarginPoolSummary,
 }
 
@@ -54,6 +56,8 @@ pub struct MarginBorrow {
     pub tokens: u64,
     pub loan_notes: u64,
     pub deposit_notes: u64,
+    pub balance_deposit_notes: u64,
+    pub balance_loan_notes: u64,
     pub summary: MarginPoolSummary,
 }
 #[event]
@@ -65,6 +69,8 @@ pub struct MarginRepay {
     pub repaid_tokens: u64,
     pub repaid_loan_notes: u64,
     pub repaid_deposit_notes: u64,
+    pub balance_deposit_notes: u64,
+    pub balance_loan_notes: u64,
     pub summary: MarginPoolSummary,
 }
 #[derive(Debug)]
@@ -76,6 +82,7 @@ pub struct Repay {
     pub repayment_token_account: Pubkey,
     pub repaid_tokens: u64,
     pub repaid_loan_notes: u64,
+    pub balance_notes: u64,
     pub summary: MarginPoolSummary,
 }
 
@@ -94,6 +101,8 @@ pub struct LoanTransferred {
     pub margin_pool: Pubkey,
     pub source_loan_account: Pubkey,
     pub target_loan_account: Pubkey,
+    pub source_loan_balance: u64,
+    pub target_loan_balance: u64,
     pub amount: u64,
 }
 
