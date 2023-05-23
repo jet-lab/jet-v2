@@ -123,6 +123,7 @@ pub fn withdraw_handler(
         withdraw_tokens: withdraw_amount.tokens,
         withdraw_notes: withdraw_amount.notes,
         summary: pool.deref().into(),
+        balance_notes: token::accessor::amount(&ctx.accounts.source.to_account_info())?
     });
 
     Ok(())

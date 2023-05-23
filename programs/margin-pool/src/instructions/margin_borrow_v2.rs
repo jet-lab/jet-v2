@@ -127,6 +127,8 @@ pub fn margin_borrow_v2_handler(ctx: Context<MarginBorrowV2>, amount: u64) -> Re
         loan_notes: borrow_amount.notes,
         deposit_notes: 0,
         summary: pool.deref().into(),
+        balance_loan_notes: token::accessor::amount(&ctx.accounts.loan_account.to_account_info())?,
+        balance_deposit_notes: 0,
     });
 
     Ok(())

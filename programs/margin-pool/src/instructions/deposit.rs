@@ -130,6 +130,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         destination: ctx.accounts.destination.key(),
         deposit_tokens: deposit_amount.tokens,
         deposit_notes: deposit_amount.notes,
+        balance_notes: token::accessor::amount(&ctx.accounts.destination.to_account_info())?,
         summary: pool.deref().into(),
     });
 

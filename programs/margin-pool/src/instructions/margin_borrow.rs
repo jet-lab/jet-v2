@@ -137,6 +137,10 @@ pub fn margin_borrow_handler(
         loan_notes: borrow_amount.notes,
         deposit_notes: deposit_amount.notes,
         summary: pool.deref().into(),
+        balance_loan_notes: token::accessor::amount(&ctx.accounts.loan_account.to_account_info())?,
+        balance_deposit_notes: token::accessor::amount(
+            &ctx.accounts.deposit_account.to_account_info()
+        )?,
     });
 
     Ok(())

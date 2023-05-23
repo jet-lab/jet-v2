@@ -123,6 +123,7 @@ pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) 
         repaid_tokens: repay_amount.tokens,
         repaid_loan_notes: repay_amount.notes,
         summary: (&pool.clone().into_inner()).into(),
+        balance_notes: token::accessor::amount(&ctx.accounts.loan_account.to_account_info())?,
     });
     Ok(())
 }

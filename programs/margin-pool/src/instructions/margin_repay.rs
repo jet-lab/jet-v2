@@ -135,6 +135,10 @@ pub fn margin_repay_handler(
         repaid_loan_notes: repay_amount.notes,
         repaid_deposit_notes: withdraw_amount.notes,
         summary: pool.deref().into(),
+        balance_deposit_notes: token::accessor::amount(
+            &ctx.accounts.deposit_account.to_account_info()
+        )?,
+        balance_loan_notes: token::accessor::amount(&ctx.accounts.loan_account.to_account_info())?,
     });
 
     Ok(())
