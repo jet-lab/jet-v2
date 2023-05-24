@@ -12,7 +12,6 @@ use jet_instructions::{
 };
 use jet_solana_client::{
     network::NetworkKind, transaction::TransactionBuilder, NetworkUserInterface,
-    NetworkUserInterfaceExt,
 };
 
 use jet_program_common::programs::*;
@@ -80,9 +79,12 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
                 if builder.account_exists(&market_info.state).await? {
                     continue;
                 }
+
                 // Create bids, asks, event queue and request queue
-                let state_accounts =
+                let (state_accounts, create_state_acc_tx) =
                     OpenbookStateAccounts::create(&builder.interface, &swap_program).await?;
+
+                builder.setup(SetupPhase::Swaps, [create_state_acc_tx]);
 
                 builder.setup(
                     SetupPhase::Swaps,
@@ -121,13 +123,10 @@ impl OpenbookStateAccounts {
     pub async fn create<I: NetworkUserInterface>(
         client: &I,
         dex_program: &Pubkey,
-    ) -> Result<Self, BuilderError> {
+    ) -> Result<(Self, TransactionBuilder), BuilderError> {
         log::info!("Creating state accounts for an Openbook market");
         // Create large accounts that can't be created as PDAs
         let bid_ask_size = 65536 + 12;
-        // let bid_ask_lamports = client
-        //     .get_minimum_balance_for_rent_exemption(bid_ask_size)
-        //     .await?;
         let bid_ask_lamports = 500_000_000;
         let bids = Keypair::new();
         let asks = Keypair::new();
@@ -147,15 +146,7 @@ impl OpenbookStateAccounts {
         );
         let event_queue_size = 262144 + 12;
         let request_queue_size = 5120 + 12;
-        // let events_lamports = ctx
-        //     .rpc()
-        //     .get_minimum_balance_for_rent_exemption(event_queue_size)
-        //     .await?;
         let events_lamports = 10_000_000_000;
-        // let requests_lamports = ctx
-        //     .rpc()
-        //     .get_minimum_balance_for_rent_exemption(request_queue_size)
-        //     .await?;
         let requests_lamports = 400_000_000;
         let events = Keypair::new();
         let requests = Keypair::new();
@@ -185,14 +176,8 @@ impl OpenbookStateAccounts {
             instructions: vec![bids_ix, asks_ix, events_ix, requests_ix],
             signers: vec![bids, asks, events, requests],
         };
-        let (signatures, error) = client.send_condensed_ordered(&[transaction]).await;
-        if let Some(error) = error {
-            log::error!("Error creating Openbook state accounts: {}", error);
-            return Err(error.into());
-        }
-        log::debug!("Created Openbook state accounts: {:?}", signatures);
 
-        Ok(accounts)
+        Ok((accounts, transaction))
     }
 }
 
