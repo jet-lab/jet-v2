@@ -1,0 +1,23 @@
+[package]
+name = "jet-auth"
+version = "1.0.0"
+description = "Authentication for wallet addresses"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "jet_auth"
+path = "src/lib.rs"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+testing = []
+cli = ["no-entrypoint", "serde"]
+
+[dependencies]
+anchor-lang = "0.27"
+serde = { version = "1.0", optional = true }

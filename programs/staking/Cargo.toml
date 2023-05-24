@@ -1,0 +1,30 @@
+[package]
+name = "jet-staking"
+version = "1.0.0"
+description = "Created with Anchor"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "jet_staking"
+path = "src/lib.rs"
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+testing = []
+cli = ["no-entrypoint", "serde"]
+
+[dependencies]
+anchor-lang = "0.27"
+anchor-spl = "0.27"
+solana-program = "1.9"
+
+spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
+spl-governance-addin-api = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps" }
+spl-governance-tools = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+jet-auth = { path = "../auth", features = ["cpi"] }
