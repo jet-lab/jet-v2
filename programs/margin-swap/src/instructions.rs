@@ -18,6 +18,7 @@
 mod margin_spl_swap;
 mod openbook_accounts;
 mod openbook_swap;
+mod orca_whirlpool_swap;
 mod route_swap;
 mod saber_swap;
 mod spl_token_swap;
@@ -25,6 +26,7 @@ mod spl_token_swap;
 pub use margin_spl_swap::*;
 pub use openbook_accounts::*;
 pub use openbook_swap::*;
+pub use orca_whirlpool_swap::*;
 pub use route_swap::*;
 pub use saber_swap::*;
 pub use spl_token_swap::*;

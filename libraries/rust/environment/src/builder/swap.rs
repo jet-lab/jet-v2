@@ -2,18 +2,26 @@ use std::str::FromStr;
 
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction};
 
-use jet_instructions::test_service::{
-    derive_openbook_market, derive_spl_swap_pool, openbook_market_create, saber_swap_pool_create,
-    spl_swap_pool_create,
+use jet_instructions::{
+    orca::{derive_whirlpool, whirlpool_initialize_fee_tier, WhirlpoolIxBuilder},
+    test_service::{
+        derive_openbook_market, derive_spl_swap_pool, derive_whirlpool_config,
+        openbook_market_create, orca_whirlpool_create_config, saber_swap_pool_create,
+        spl_swap_pool_create,
+    },
 };
 use jet_solana_client::{
     network::NetworkKind, transaction::TransactionBuilder, NetworkUserInterface,
     NetworkUserInterfaceExt,
 };
 
-use crate::{builder::SetupPhase, config::EnvironmentConfig, programs::*};
+use jet_program_common::programs::*;
+
+use crate::{builder::SetupPhase, config::EnvironmentConfig};
 
 use super::{resolve_token_mint, Builder, BuilderError};
+
+pub const DEFAULT_TICK_SPACING: u16 = 64;
 
 pub fn resolve_swap_program(network: NetworkKind, name: &str) -> Result<Pubkey, BuilderError> {
     if let Ok(address) = Pubkey::from_str(name) {
@@ -26,6 +34,7 @@ pub fn resolve_swap_program(network: NetworkKind, name: &str) -> Result<Pubkey, 
             _ => ORCA_V2,
         });
     }
+
     if name == "saber-swap" {
         return Ok(SABER);
     }
@@ -34,6 +43,10 @@ pub fn resolve_swap_program(network: NetworkKind, name: &str) -> Result<Pubkey, 
             NetworkKind::Devnet => OPENBOOK_DEVNET,
             _ => OPENBOOK,
         });
+    }
+
+    if name == "orca-whirlpool" {
+        return Ok(ORCA_WHIRLPOOL);
     }
 
     Err(BuilderError::UnknownSwapProgram(name.to_string()))
@@ -53,46 +66,10 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
         let token_b = resolve_token_mint(config, &pool.quote)?;
         match &pool.program {
             p if p == "spl-swap" => {
-                log::info!("create SPL swap pool for {}/{}", pool.base, pool.quote);
-
-                let swap_info = derive_spl_swap_pool(&swap_program, &token_a, &token_b);
-
-                if builder.account_exists(&swap_info.state).await? {
-                    continue;
-                }
-
-                builder.setup(
-                    SetupPhase::Swaps,
-                    [spl_swap_pool_create(
-                        &swap_program,
-                        &builder.payer(),
-                        &token_a,
-                        &token_b,
-                        8,
-                        500,
-                    )],
-                )
+                create_spl_swap_pool(builder, swap_program, token_a, token_b).await?
             }
             p if p == "saber-swap" => {
-                log::info!("create Saber swap pool for {}/{}", pool.base, pool.quote);
-
-                let swap_info = derive_spl_swap_pool(&swap_program, &token_a, &token_b);
-
-                if builder.account_exists(&swap_info.state).await? {
-                    continue;
-                }
-
-                builder.setup(
-                    SetupPhase::Swaps,
-                    [saber_swap_pool_create(
-                        &swap_program,
-                        &builder.payer(),
-                        &token_a,
-                        &token_b,
-                        8,
-                        500,
-                    )],
-                )
+                create_saber_swap_pool(builder, swap_program, token_a, token_b).await?
             }
             p if p == "openbook" => {
                 log::info!("Create Openbook market for {}/{}", pool.base, pool.quote);
@@ -122,6 +99,7 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
                     )],
                 )
             }
+            p if p == "orca-whirlpool" => create_orca_whirlpool(builder, token_a, token_b).await?,
             p => {
                 log::warn!("ignoring unknown swap program {} {p}", pool.program);
                 continue;
@@ -216,4 +194,129 @@ impl OpenbookStateAccounts {
 
         Ok(accounts)
     }
+}
+
+async fn create_spl_swap_pool<I: NetworkUserInterface>(
+    builder: &mut Builder<I>,
+    swap_program: Pubkey,
+    token_a: Pubkey,
+    token_b: Pubkey,
+) -> Result<(), BuilderError> {
+    let swap_info = derive_spl_swap_pool(&swap_program, &token_a, &token_b);
+
+    if builder.account_exists(&swap_info.state).await? {
+        return Ok(());
+    }
+
+    builder.setup(
+        SetupPhase::Swaps,
+        [spl_swap_pool_create(
+            &swap_program,
+            &builder.payer(),
+            &token_a,
+            &token_b,
+            8,
+            500,
+        )],
+    );
+
+    Ok(())
+}
+
+async fn create_saber_swap_pool<I: NetworkUserInterface>(
+    builder: &mut Builder<I>,
+    swap_program: Pubkey,
+    token_a: Pubkey,
+    token_b: Pubkey,
+) -> Result<(), BuilderError> {
+    let swap_info = derive_spl_swap_pool(&swap_program, &token_a, &token_b);
+
+    if builder.account_exists(&swap_info.state).await? {
+        return Ok(());
+    }
+
+    builder.setup(
+        SetupPhase::Swaps,
+        [saber_swap_pool_create(
+            &swap_program,
+            &builder.payer(),
+            &token_a,
+            &token_b,
+            8,
+            500,
+        )],
+    );
+
+    Ok(())
+}
+
+async fn create_orca_whirlpool<I: NetworkUserInterface>(
+    builder: &mut Builder<I>,
+    token_a: Pubkey,
+    token_b: Pubkey,
+) -> Result<(), BuilderError> {
+    const DEFAULT_FEE_RATE: u16 = 300;
+
+    let whirlpool_config_addr = derive_whirlpool_config();
+
+    if !builder.account_exists(&whirlpool_config_addr).await? {
+        builder.setup(
+            SetupPhase::TokenMints,
+            [
+                orca_whirlpool_create_config(&builder.payer(), &builder.payer(), DEFAULT_FEE_RATE),
+                whirlpool_initialize_fee_tier(
+                    &builder.payer(),
+                    &builder.payer(),
+                    &whirlpool_config_addr,
+                    DEFAULT_TICK_SPACING,
+                    DEFAULT_FEE_RATE,
+                ),
+            ],
+        );
+    }
+
+    let (token_a, token_b) = (
+        std::cmp::min(token_a, token_b),
+        std::cmp::max(token_a, token_b),
+    );
+
+    let (whirlpool_addr, _) = derive_whirlpool(
+        &whirlpool_config_addr,
+        &token_a,
+        &token_b,
+        DEFAULT_TICK_SPACING,
+    );
+
+    if builder.account_exists(&whirlpool_addr).await? {
+        log::debug!(
+            "whirlpool {} for {}/{} already exists",
+            whirlpool_addr,
+            token_a,
+            token_b
+        );
+        return Ok(());
+    }
+
+    let vault_a = Keypair::new();
+    let vault_b = Keypair::new();
+
+    let ix_builder = WhirlpoolIxBuilder::new(
+        builder.payer(),
+        whirlpool_config_addr,
+        token_a,
+        token_b,
+        vault_a.pubkey(),
+        vault_b.pubkey(),
+        DEFAULT_TICK_SPACING,
+    );
+
+    builder.setup(
+        SetupPhase::Swaps,
+        [TransactionBuilder {
+            instructions: vec![ix_builder.initialize_pool(1 << 64)],
+            signers: vec![vault_a, vault_b],
+        }],
+    );
+
+    Ok(())
 }

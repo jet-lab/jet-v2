@@ -23,6 +23,7 @@ use std::{
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
 use jet_program_common::CONTROL_AUTHORITY;
+use orca_whirlpool::math::{MAX_SQRT_PRICE_X64, MIN_SQRT_PRICE_X64};
 
 use crate::*;
 
@@ -530,7 +531,41 @@ fn exec_swap_split<'info>(
 
             dst_ata.to_account_info()
         }
-        SwapRouteIdentifier::Whirlpool => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
+        SwapRouteIdentifier::Whirlpool => {
+            let accounts = remaining_accounts.take(8).cloned().collect::<Vec<_>>();
+            let swap_accounts = OrcaWhirlpoolSwapPoolInfo::try_accounts(
+                &orca_whirlpool::id(),
+                &mut &accounts[..],
+                &[],
+                &mut scratch.bumps,
+                &mut scratch.reallocs,
+            )?;
+
+            let dst_ata = next_account_info(remaining_accounts).unwrap();
+            let dst_mint = token::accessor::mint(dst_ata)?;
+            dst_ata_opening = token::accessor::amount(dst_ata)?;
+
+            let a_to_b = dst_mint == swap_accounts.whirlpool.token_mint_b;
+            let price_limit = match a_to_b {
+                true => MIN_SQRT_PRICE_X64,
+                false => MAX_SQRT_PRICE_X64,
+            };
+
+            swap_accounts.swap(
+                authority,
+                src_ata,
+                dst_ata,
+                token_program,
+                swap_amount_in,
+                0,
+                price_limit,
+                true,
+                a_to_b,
+            )?;
+
+            dst_ata_closing = token::accessor::amount(dst_ata)?;
+            dst_ata.to_account_info()
+        }
         SwapRouteIdentifier::SaberStable => {
             let accounts = remaining_accounts.take(7).cloned().collect::<Vec<_>>();
             let swap_accounts = SaberSwapInfo::try_accounts(

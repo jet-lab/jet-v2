@@ -233,7 +233,7 @@ pub mod legacy {
     use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
     use jet_static_program_registry::orca_swap_v2;
 
-    use crate::programs::{ORCA_V2, ORCA_V2_DEVNET};
+    use jet_program_common::programs::{ORCA_V2, ORCA_V2_DEVNET};
 
     use super::*;
 

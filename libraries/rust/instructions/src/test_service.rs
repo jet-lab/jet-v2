@@ -17,6 +17,7 @@
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_fixed_term::seeds;
+use jet_program_common::programs::ORCA_WHIRLPOOL;
 use solana_sdk::{
     instruction::Instruction,
     pubkey,
@@ -28,9 +29,9 @@ use solana_sdk::{
 
 use jet_test_service::{
     seeds::{
-        OPENBOOK_MARKET, OPENBOOK_MARKET_INFO, OPENBOOK_OPEN_ORDERS, SWAP_POOL_FEES,
-        SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS, TOKEN_INFO, TOKEN_MINT,
-        TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
+        OPENBOOK_MARKET, OPENBOOK_MARKET_INFO, OPENBOOK_OPEN_ORDERS, ORCA_WHIRLPOOL_CONFIG,
+        SWAP_POOL_FEES, SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS,
+        TOKEN_INFO, TOKEN_MINT, TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
     },
     OpenBookMarketCancelOrdersParams, OpenBookMarketCreateParams, OpenBookMarketMakeParams,
     SaberSwapPoolCreateParams,
@@ -158,6 +159,33 @@ pub fn token_update_pyth_price(
         program_id: jet_test_service::ID,
         accounts,
         data: jet_test_service::instruction::TokenUpdatePythPrice { price, conf, expo }.data(),
+    }
+}
+
+/// Create the config for whirlpools
+pub fn orca_whirlpool_create_config(
+    payer: &Pubkey,
+    authority: &Pubkey,
+    default_fee_rate: u16,
+) -> Instruction {
+    let config = derive_whirlpool_config();
+
+    let accounts = jet_test_service::accounts::OrcaWhirlpoolCreateConfig {
+        config,
+        system_program: system_program::ID,
+        payer: *payer,
+        whirlpool_program: ORCA_WHIRLPOOL,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::OrcaWhirlpoolCreateConfig {
+            authority: *authority,
+            default_fee_rate,
+        }
+        .data(),
     }
 }
 
@@ -556,6 +584,11 @@ pub fn derive_openbook_open_orders(market: &Pubkey, owner: &Pubkey) -> Pubkey {
         &jet_test_service::ID,
     )
     .0
+}
+
+/// Get the whirlpool config account
+pub fn derive_whirlpool_config() -> Pubkey {
+    Pubkey::find_program_address(&[ORCA_WHIRLPOOL_CONFIG], &jet_test_service::ID).0
 }
 
 /// Get the addresses for a swap pool

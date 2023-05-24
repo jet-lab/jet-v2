@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
 import { SwapEntry } from '@components/SwapsView/SwapEntry';
-import { SwapsGraph } from '@components/SwapsView/SwapsGraph';
+import { SwapChart } from '@components/SwapsView/SwapChart';
 import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { Dictionary, Geobanned } from '@state/settings/localization/localization';
 import { SwapsViewOrder, SwapsRowOrder } from '@state/views/views';
@@ -25,7 +25,7 @@ function SwapsView(): JSX.Element {
 
   const rowComponents: Record<string, JSX.Element> = {
     swapEntry: <SwapEntry key="swapEntry" />,
-    swapsGraph: <SwapsGraph key="swapsGraph" />
+    swapsGraph: <SwapChart key="swapsGraph2" />
   };
   const swapsRow = (): JSX.Element => {
     const swapsRowComponents: JSX.Element[] = [];

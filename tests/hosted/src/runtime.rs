@@ -1,12 +1,12 @@
 use anchor_lang::prelude::{AccountInfo, Pubkey};
-use jet_solana_client::rpc::native::RpcConnection;
+use jet_solana_client::rpc::{native::RpcConnection, SolanaRpc};
 use solana_sdk::entrypoint::ProgramResult;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use std::sync::Arc;
 
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_simulation::{runtime::TestRuntimeRpcClient, solana_rpc_api::SolanaRpcClient};
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 
 pub use jet_simulation::{DeterministicKeygen, Keygen, RandomKeygen};
@@ -50,19 +50,20 @@ pub fn current_test_attempt_number() -> String {
 #[derive(Clone)]
 pub struct SolanaTestContext {
     pub rpc: Arc<dyn SolanaRpcClient>,
+    pub rpc2: Arc<dyn SolanaRpc>,
     pub keygen: Arc<dyn Keygen>,
 }
 
 impl SolanaTestContext {
     pub async fn new(test_name: &str) -> SolanaTestContext {
         let keygen = Arc::new(DeterministicKeygen::new(test_name));
-        let rpc = init_runtime(keygen.generate_key());
+        let (rpc, rpc2) = init_runtime(keygen.generate_key());
 
         rpc.airdrop(&rpc.payer().pubkey(), 10_000 * LAMPORTS_PER_SOL)
             .await
             .unwrap();
 
-        Self { rpc, keygen }
+        Self { rpc, rpc2, keygen }
     }
 
     pub fn generate_key(&self) -> Keypair {
@@ -79,24 +80,22 @@ impl SolanaTestContext {
     }
 }
 
-fn init_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
+fn init_runtime(payer: Keypair) -> (Arc<dyn SolanaRpcClient>, Arc<dyn SolanaRpc>) {
     if cfg!(feature = "localnet") {
-        localnet_runtime(payer)
+        let rpc = RpcConnection::new_optimistic("http://127.0.0.1:8899");
+
+        (Arc::new((rpc.clone(), payer)), Arc::new(rpc))
     } else {
-        simulation_runtime(payer)
+        let rpc = simulation_runtime();
+
+        (Arc::new((rpc.clone(), payer)), Arc::new(rpc))
     }
 }
 
-fn localnet_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
-    Arc::new((
-        RpcConnection::new_optimistic("http://127.0.0.1:8899"),
-        payer,
-    ))
-}
-
-fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
+fn simulation_runtime() -> TestRuntimeRpcClient {
     let _ = env_logger::builder().is_test(false).try_init();
-    let runtime = jet_simulation::create_test_runtime![
+
+    jet_simulation::create_test_runtime![
         jet_test_service,
         jet_fixed_term,
         jet_control,
@@ -128,9 +127,9 @@ fn simulation_runtime(payer: Keypair) -> Arc<dyn SolanaRpcClient> {
         ),
         (anchor_spl::dex::id(), openbook_processor),
         lookup_table_registry,
-    ];
-
-    Arc::new((runtime.rpc(), payer))
+        orca_whirlpool
+    ]
+    .rpc()
 }
 
 // Register OpenBook, converting a DexError to ProgramError

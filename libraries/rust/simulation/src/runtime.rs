@@ -25,6 +25,7 @@ use solana_sdk::{
     hash::Hash,
     instruction::InstructionError,
     program_error::{ProgramError, UNSUPPORTED_SYSVAR},
+    program_pack::Pack,
     program_stubs::SyscallStubs,
     pubkey::Pubkey,
     signature::Signature,
@@ -35,6 +36,7 @@ use solana_sdk::{
     },
 };
 use solana_transaction_status::{TransactionConfirmationStatus, TransactionStatus};
+use spl_token::state::Account as TokenAccount;
 
 use crate::log::declare_logging;
 
@@ -703,11 +705,37 @@ impl SolanaRpc for TestRuntimeRpcClient {
             .collect();
 
         log::rpc::trace!(
-            "get_program_accounts({}, {:?}) = {:?}",
+            "get_program_accounts({}, {:?}) = {:#?}",
             program,
             filters,
             accounts
         );
+        Ok(accounts)
+    }
+
+    async fn get_token_accounts_by_owner(
+        &self,
+        owner: &Pubkey,
+    ) -> Result<Vec<(Pubkey, TokenAccount)>, ClientError> {
+        let accounts = self
+            .bank()
+            .get_program_accounts(&spl_token::id(), &ScanConfig::default())
+            .unwrap()
+            .into_iter()
+            .filter_map(|(address, account)| {
+                let account: Account = account.into();
+
+                if let Ok(token_account) = TokenAccount::unpack(&account.data) {
+                    if token_account.owner == *owner {
+                        return Some((address, token_account));
+                    }
+                }
+
+                None
+            })
+            .collect();
+
+        log::rpc::trace!("get_token_accounts_by_owner({}) = {:#?}", owner, accounts);
         Ok(accounts)
     }
 }

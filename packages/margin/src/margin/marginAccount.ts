@@ -476,9 +476,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-              .div(collateralWeight.mul(warningRiskLevel))
-              .div(lamportPrice)
+            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+            .div(collateralWeight.mul(warningRiskLevel))
+            .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
@@ -1000,7 +1000,7 @@ export class MarginAccount {
   async createAccount(): Promise<string> {
     const instructions: TransactionInstruction[] = []
     await this.withCreateAccount(instructions)
-    return await this.sendAndConfirmV0(instructions, [])
+    return await this.sendAndConfirmV0([instructions], [])
   }
 
   /**
@@ -1844,11 +1844,11 @@ export class MarginAccount {
   }
 
   async sendAndConfirmV0(
-    instructions: TransactionInstruction[],
+    instructions: TransactionInstruction[][],
     lookupTables: { address: string; data: Uint8Array }[],
     signers?: Signer[]
   ): Promise<string> {
-    return await sendAndConfirmV0(this.provider, [instructions], lookupTables, signers)
+    return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
   }
 
   /**

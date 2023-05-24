@@ -1,4 +1,4 @@
-import { OpenOrders, OpenPositions, OrderbookSnapshot } from './types';
+import { OpenOrders, OpenPositions, OrderbookSnapshot, SwapLiquidity } from './types';
 import useSWR, { SWRResponse } from 'swr';
 
 export const useOrdersForUser = (apiEndpoint: string, market?: string, account?: string): SWRResponse<OpenOrders> => {
@@ -37,9 +37,16 @@ export const useOpenPositions = (
 
 export const getOrderbookSnapshot = async (apiEndpoint: string, market: string): Promise<OrderbookSnapshot> => {
   const path = `fixed/orderbook-snapshot/${market}`;
-  const data: OrderbookSnapshot = await fetch(`${apiEndpoint}/${path}`).then(r => r.json());
-  if (data.bids.length === 0 && data.asks.length === 0) {
-    console.warn('No liquidity either side of the market. Is this a new market?');
-  }
+  const data = await fetch(`${apiEndpoint}/${path}`).then(r => r.json());
   return data;
+};
+
+export const getSwapLiquidity = (
+  apiEndpoint: string,
+  from: string,
+  to: string,
+  amount: number
+): SWRResponse<SwapLiquidity | null> => {
+  const path = `${apiEndpoint}/swap/liquidity/${from}/${to}/${amount}`;
+  return useSWR<SwapLiquidity | null>(path, async () => fetch(path).then(r => r.json()), { refreshInterval: 30_000 });
 };

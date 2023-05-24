@@ -2,9 +2,8 @@ import Title from 'antd/lib/typography/Title';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
-import { ISeries, ResponsiveLineChart } from '@components/fixed-term/shared/charts/line-chart';
+import { DepthChart } from '@components/charts/depth-chart';
 import {
-  AllFixedTermMarketsAtom,
   AllFixedTermMarketsOrderBooksAtom,
   CurrentOrderTab,
   CurrentOrderTabAtom,
@@ -14,7 +13,17 @@ import {
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { Suspense, useMemo } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
-import { MarketAndConfig } from '@jet-lab/margin';
+import { MarginTokenConfig, MarketAndConfig, TokenAmount, bigIntToBn } from '@jet-lab/margin';
+import { LoadingOutlined } from '@ant-design/icons';
+import { ParentSizeModern } from '@visx/responsive';
+import { LegendItem, LegendLabel, LegendOrdinal } from '@visx/legend';
+import { scaleOrdinal } from '@visx/scale';
+
+const ordinalColorScale = scaleOrdinal({
+  domain: ['Asks', 'Bids', 'Oracle Price'],
+  range: ['#e36868', '#84c1ca', '#a79adb']
+});
+
 interface FixedChart {
   type: 'bids' | 'asks';
 }
@@ -35,61 +44,48 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndConfig | nu
   }
 };
 
-const asksKeys = ['lend-now', 'request-loan'];
-const requestKeys = ['lend-now', 'borrow-now'];
-
-const LineChartWithData = ({ market, currentTab }: { market: MarketAndConfig; currentTab: string }) => {
+const FixedTermChart = ({ currentTab, token }: { currentTab: string; token: MarginTokenConfig }) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
-  const allMarkets = useRecoilValue(AllFixedTermMarketsAtom);
   const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
-  const marginConfig = useRecoilValue(MainConfig);
 
-  const token = useMemo(() => {
-    if (!marginConfig || !market) return null;
-    return Object.values(marginConfig?.tokens).find(token => {
-      return market.config.underlyingTokenMint === token.mint.toString();
-    });
-  }, [marginConfig, market?.config]);
-
-  const decimals = useMemo(() => {
-    if (!token || !marginConfig || !market?.config || !token.decimals) return 6;
-    return token.decimals;
-  }, [token]);
-
-  const series = useMemo(() => {
-    let target = openOrders;
-    // If market order we display only the currently selected market
-    target = [openOrders[selectedMarketIndex]];
-
-    const orderTypeKey = asksKeys.includes(currentTab) ? 'asks' : 'bids';
-    return target.reduce((all, current) => {
-      const currentMarketConfig = allMarkets.find(market => market.name === current.name)?.config;
-      if (!currentMarketConfig) return all;
-
-      const sample = current.orderbook.sampleLiquidityDeprecated(orderTypeKey);
-
-      console.log("=== NEW LIQUIDITY STRUCT ===")
-      console.log(current.orderbook.sampleLiquidity(1000000000000000n));
-
-      const currentSeries = {
-        id: current.name,
-        type: orderTypeKey,
-        data: sample.points.map(point => {
-          return {
-            x: Number(BigInt(point.cumulative_quote) / BigInt(10 ** decimals)),
-            y: point.cumulative_rate
-          };
-        })
-      };
-
-      all.push(currentSeries);
-
-      return all;
-    }, [] as ISeries[]);
+  const { asksAscending, bidsDescending, xRange, yRange } = useMemo(() => {
+    const marketData = openOrders[selectedMarketIndex];
+    const liquidity = marketData.orderbook.sampleLiquidity(1000000000000000n);
+    return {
+      asksAscending: liquidity.bids.map(x => [x[0], new TokenAmount(bigIntToBn(x[1]), token.decimals).tokens]) as [
+        price: number,
+        amt: number
+      ][],
+      bidsDescending: liquidity.asks.map(x => [x[0], new TokenAmount(bigIntToBn(x[1]), token.decimals).tokens]) as [
+        price: number,
+        amt: number
+      ][],
+      xRange: [liquidity.price_range[0], liquidity.price_range[1]] as [min: number, max: number],
+      yRange: [0, new TokenAmount(bigIntToBn(liquidity.liquidity_range[1]), token.decimals).tokens] as [
+        min: number,
+        max: number
+      ]
+    };
   }, [openOrders, currentTab, selectedMarketIndex]);
 
+  if (!token) return <LoadingOutlined />;
+
   return (
-    <ResponsiveLineChart symbol={market.token.symbol} isRequest={requestKeys.includes(currentTab)} series={series} />
+    <ParentSizeModern>
+      {({ height, width }) => (
+        <DepthChart
+          asksAscending={asksAscending}
+          bidsDescending={bidsDescending}
+          height={height}
+          width={width}
+          xRange={xRange}
+          yRange={yRange}
+          base={{ symbol: token.symbol, expo: -token.decimals }}
+          quote={{ symbol: token.symbol, expo: -token.decimals }}
+          isPct={true}
+        />
+      )}
+    </ParentSizeModern>
   );
 };
 
@@ -99,10 +95,19 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
 
   const market = useRecoilValue(FixedTermMarketAtom);
 
+  const marginConfig = useRecoilValue(MainConfig);
+
+  const token = useMemo(() => {
+    if (!marginConfig || !market) return null;
+    return Object.values(marginConfig?.tokens).find(token => {
+      return market.config.underlyingTokenMint === token.mint.toString();
+    });
+  }, [marginConfig, market?.config]);
+
   return (
-    <div className="fixed-term-graph view-element view-element-hidden flex align-center justify-end column">
-      <div className="fixed-term-graph-head view-element-item view-element-item-hidden flex justify-center column">
-        <div className="fixed-term-graph-head-info flex align-end">
+    <div className="fixed-term-graph view-element view-element-hidden align-center column flex justify-end">
+      <div className="fixed-term-graph-head view-element-item view-element-item-hidden column flex justify-center">
+        <div className="fixed-term-graph-head-info align-end flex">
           <div className="flex-centered">
             <Title level={2}>{getChartTitle(currentTab, market)}</Title>
           </div>
@@ -110,7 +115,33 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
       </div>
       {market && (
         <Suspense>
-          <LineChartWithData market={market} currentTab={currentTab} />
+          <div className="swaps-chart-root">
+            {!market || !currentTab || !token ? (
+              <LoadingOutlined />
+            ) : (
+              <>
+                <div className="swaps-chart-legend">
+                  <LegendOrdinal scale={ordinalColorScale} labelFormat={label => `${label.toUpperCase()}`}>
+                    {labels => (
+                      <div style={{ display: 'flex', flexDirection: 'row' }}>
+                        {labels.map((label, i) => (
+                          <LegendItem key={`legend-quantile-${i}`} margin="0 5px">
+                            <svg width={15} height={15}>
+                              <rect fill={label.value} width={15} height={15} />
+                            </svg>
+                            <LegendLabel align="left" margin="0 0 0 4px">
+                              {label.text}
+                            </LegendLabel>
+                          </LegendItem>
+                        ))}
+                      </div>
+                    )}
+                  </LegendOrdinal>
+                </div>
+                <FixedTermChart currentTab={currentTab} token={token} />
+              </>
+            )}
+          </div>
         </Suspense>
       )}
       <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
