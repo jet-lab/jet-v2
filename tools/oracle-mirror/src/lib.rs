@@ -238,7 +238,7 @@ async fn replace_openbook_orders(
     program: &Pubkey,
 ) -> Result<()> {
     for ((token_a, token_b), market) in markets {
-        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(600_000)];
+        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(1_200_000)];
 
         let scratch_a = get_scratch_address(&signer.pubkey(), token_a);
         let scratch_b = get_scratch_address(&signer.pubkey(), token_b);
@@ -250,19 +250,19 @@ async fn replace_openbook_orders(
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
         }
 
-        instructions.push(
-            jet_margin_sdk::ix_builder::test_service::openbook_market_cancel_orders(
-                program,
-                token_a,
-                token_b,
-                &scratch_a,
-                &scratch_b,
-                &signer.pubkey(),
-                &market.bids,
-                &market.asks,
-                &market.event_queue,
-            ),
-        );
+        // instructions.push(
+        //     jet_margin_sdk::ix_builder::test_service::openbook_market_cancel_orders(
+        //         program,
+        //         token_a,
+        //         token_b,
+        //         &scratch_a,
+        //         &scratch_b,
+        //         &signer.pubkey(),
+        //         &market.bids,
+        //         &market.asks,
+        //         &market.event_queue,
+        //     ),
+        // );
         instructions.push(
             jet_margin_sdk::ix_builder::test_service::openbook_market_make(
                 program,

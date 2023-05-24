@@ -31,7 +31,7 @@ pub struct OpenBookMarketCreateParams {
     pub liquidity_amount: u64,
     pub initial_spread: u16,
     pub incremental_spread: u16,
-    pub basket_sizes: [u8; 8],
+    pub basket_sizes: [u8; 4],
 }
 
 #[derive(Accounts)]

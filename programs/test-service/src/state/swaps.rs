@@ -54,7 +54,7 @@ pub struct OpenBookMarketInfo {
 
     /// The multiplier to apply when quoting at each level.
     /// 8 bids and asks are placed at each time.
-    pub basket_sizes: [u8; 8],
+    pub basket_sizes: [u8; 4],
 
     /// The amount in USD to provide liquidity per basket.
     /// If the sum of baskets is 10 and each unit is 500, then $5000 of liquidity is provided.

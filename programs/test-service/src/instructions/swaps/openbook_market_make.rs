@@ -212,13 +212,13 @@ pub fn openbook_market_make_handler(
     let base_lamports = ctx.accounts.mint_base.decimals as i32;
     let quote_lamports = ctx.accounts.mint_quote.decimals as i32;
 
-    let bid_order_ids: [u64; 8] = (params.bid_from_order_id..)
-        .take(8)
+    let bid_order_ids: [u64; 4] = (params.bid_from_order_id..)
+        .take(4)
         .collect::<Vec<_>>()
         .try_into()
         .unwrap();
-    let ask_order_ids: [u64; 8] = (params.ask_from_order_id..)
-        .take(8)
+    let ask_order_ids: [u64; 4] = (params.ask_from_order_id..)
+        .take(4)
         .collect::<Vec<_>>()
         .try_into()
         .unwrap();
@@ -242,7 +242,7 @@ pub fn openbook_market_make_handler(
     let available_quote = ctx.accounts.wallet_quote.amount;
 
     let market_price = price_base / price_quote;
-    msg!("Current market price is {:?}", market_price);
+    msg!("Current market price is {}", market_price);
 
     if desired_base > available_base {
         let mint_amount = desired_base - available_base;

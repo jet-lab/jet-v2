@@ -414,7 +414,7 @@ pub fn openbook_market_create(
                 liquidity_amount,
                 initial_spread: 100,     // 1%
                 incremental_spread: 200, // 2%
-                basket_sizes: [1, 2, 3, 4, 5, 2, 2, 1],
+                basket_sizes: [1, 2, 3, 4],
             },
         }
         .data(),
