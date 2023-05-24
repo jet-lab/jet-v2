@@ -22,43 +22,33 @@
   </h4>
 </div>
 
-# Install
+# Jet Protocol v2
 
-## Solana 
+This repository contains the source code for the implementation of Jet Protocol v2 to run on the Solana network,
+and associated tools for using the protocol (like a web frontend). The protocol allows for users to participate in 
+non-custodial borrowing and lending marketplaces.
 
-Make sure you update Solana to a newer version.
+## Status
 
-```bash
-sh -c "$(curl -sSfL https://release.solana.com/v1.11.10/install)"
-```
+The protocol is currently under active development, and all APIs are subject to change.
 
-Install anchor. Please see the [Anchor Documentation](https://project-serum.github.io/anchor/getting-started/installation.html)
+## Documentation
 
-```bash
-cargo install --git https://github.com/project-serum/anchor avm --locked --force
+Auto-generated API docs are available [here](https://jet-lab.github.io/jet-v2/)
 
-avm install 0.24.2
-avm use 0.24.2
-anchor --version # anchor-cli 0.24.2
-```
+## Getting Started
 
-## Wasm Pack
+Install yarn, anchor and the Solana CLI ([instructions](https://www.anchor-lang.com/docs/installation))
 
-Install the wasm-pack tool
+### Wasm Pack
+
+To run the frontend web application also requires wasm-pack, which can be installed with `cargo`:
 
 ```bash
 cargo install wasm-pack
 ```
 
-## Yarn
-
-Install the project's node_modules
-
-```bash
-yarn
-```
-
-# Test
+### Test
 
 Run the full test suite used by the github CI workflow. This requires all dependencies to be installed:
 ```bash
@@ -75,7 +65,7 @@ Run a single job from the workflow:
 ./check [in-docker] [job-name (e.g. e2e-test)]
 ```
 
-# App
+### Web App
 
 Ensure you have a `/app/.env` file with the required variables:
 ```
@@ -85,35 +75,10 @@ REACT_APP_IP_REGISTRY = <YOUR_IP_REGISTRY_TOKEN>
 REACT_APP_LOGROCKET_PROJECT = ""
 ```
 
-Run
+To run the app:
 
 ```bash
 yarn
 yarn --cwd packages build
 yarn dev
 ```
-
-to run the app.
-
-If `watch` or `wasm-pack` are missing (they should be installed automatically after running `yarn`) Install Cargo dependencies
-```bash
-cargo install cargo-watch
-curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-```
-
-# Documentations
-[![Docs](https://img.shields.io/badge/docs-TypeScript-success)](https://jet-lab.github.io/jet-v2/ts-client/)
-[![Docs](https://img.shields.io/badge/docs-Rust-success)](https://jet-lab.github.io/jet-v2/margin-rust/jet_margin/)
-
-
-Developer resources for integrating with Jet Margin Program.
-## Margin Program 
-
-> View the [rust docs](https://jet-lab.github.io/jet-v2/margin-rust/jet_margin/) for the full package documentation and available API.
-> 
-
-## Margin TypeScript Client
-
-> View the [typedocs](https://jet-lab.github.io/jet-v2/ts-client) for the full package documentation and available API.
-> 
-> View more [examples](https://github.com/jet-lab/jet-v2/tree/master/tests/integration/examples) for usage reference.
