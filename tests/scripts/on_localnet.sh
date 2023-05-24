@@ -16,6 +16,7 @@ MGNSWAP_PID=JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN
 SPLSWAP_PID=SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8
 ORCAv1_PID=DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1
 ORCAv2_PID=9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP
+WHIRLPOOL_PID=whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc
 SBR_PID=SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ
 OPNBK_PID=EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj
 LKPRG_PID=LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru
@@ -31,6 +32,7 @@ MGNSWAP_SO=target/deploy/jet_margin_swap.so
 SPLSWAP_SO=$SPL_V20_FROM_CRATES
 ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
+WHIRLPOOL_SO=deps/whirlpool.so
 SBRSWAP_SO=deps/saber_stable_swap.so
 OPNBK_SO=deps/openbook.so
 LKPRG_SO=deps/lookup_table_registry.so
@@ -89,6 +91,7 @@ start-validator() {
         --bpf-program $SPLSWAP_PID $SPLSWAP_SO \
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
+        --bpf-program $WHIRLPOOL_PID $WHIRLPOOL_SO \
         --bpf-program $SBR_PID $SBRSWAP_SO \
         --bpf-program $OPNBK_PID $OPNBK_SO \
         --bpf-program $LKPRG_PID $LKPRG_SO \

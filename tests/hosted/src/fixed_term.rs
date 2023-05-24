@@ -161,6 +161,7 @@ impl TestManager {
         let SolanaTestContext {
             rpc: client,
             keygen,
+            ..
         } = client;
         let payer = client.payer();
 

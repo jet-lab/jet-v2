@@ -7,6 +7,7 @@ pub mod margin;
 pub mod margin_pool;
 pub mod margin_swap;
 pub mod openbook;
+pub mod orca;
 
 /// Instruction builder for the protocol test service
 pub mod test_service;

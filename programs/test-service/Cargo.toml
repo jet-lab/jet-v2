@@ -26,6 +26,7 @@ bytemuck = "1.7"
 
 saber-stable-swap = { package = "stable-swap-anchor", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
 saber-stable-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
+orca-whirlpool = { package = "whirlpool", git = "https://github.com/jet-lab/whirlpools", branch = "anchor-27", features = ["cpi"] }
 
 jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }

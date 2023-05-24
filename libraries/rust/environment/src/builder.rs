@@ -29,7 +29,7 @@ pub(crate) mod swap;
 
 pub use fixed_term::configure_market_for_token;
 pub use global::{configure_environment, configure_tokens, create_test_tokens, token_context};
-pub use swap::resolve_swap_program;
+pub use swap::{resolve_swap_program, DEFAULT_TICK_SPACING as WHIRLPOOL_TICK_SPACING};
 
 /// Descriptions for errors while building the configuration instructions
 /// - TODO: It would be great to find a way to make this Sync + Send, but it's

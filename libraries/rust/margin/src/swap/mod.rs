@@ -27,6 +27,7 @@ use solana_sdk::pubkey::Pubkey;
 pub mod openbook_swap;
 pub mod saber_swap;
 pub mod spl_swap;
+pub mod whirlpool;
 
 // helper function to find mint account
 pub(super) async fn find_mint(

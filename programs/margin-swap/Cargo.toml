@@ -32,3 +32,5 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 
 # Saber, commit from 18 Sep 2022 , rev = "c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f"
 saber-stable-swap = { package = "stable-swap-anchor", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
+
+orca-whirlpool = { package = "whirlpool", git = "https://github.com/jet-lab/whirlpools", branch = "anchor-27", features = ["cpi"] }

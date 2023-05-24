@@ -32,3 +32,9 @@ package = "solana-address-lookup-table-program-gateway"
 git = "https://github.com/jet-lab/lookup-table-registry"
 branch = "main"
 features = ["stub-id", "stub-instruction"]
+
+[dependencies.orca-whirlpool]
+package = "whirlpool"
+git = "https://github.com/jet-lab/whirlpools"
+branch = "anchor-27"
+features = ["no-entrypoint"]
