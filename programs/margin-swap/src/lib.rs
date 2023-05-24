@@ -145,7 +145,7 @@ pub struct MarginPoolInfo<'info> {
 #[error_code]
 pub enum ErrorCode {
     #[msg("Zero tokens have been withdrawn from a pool for the swap")]
-    NoSwapTokensWithdrawn,
+    NoSwapTokensWithdrawn = 137_000,
 
     #[msg("An invalid swap route has been provided")]
     InvalidSwapRoute,

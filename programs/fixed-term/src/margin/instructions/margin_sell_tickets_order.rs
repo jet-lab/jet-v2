@@ -19,6 +19,7 @@ pub struct MarginSellTicketsOrder<'info> {
     /// The account tracking borrower debts
     #[account(mut,
         constraint = margin_user.margin_account == inner.authority.key() @ FixedTermErrorCode::UnauthorizedCaller,
+        constraint = margin_user.market == inner.orderbook_mut.market.key() @ FixedTermErrorCode::UserNotInMarket,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,

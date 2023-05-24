@@ -202,9 +202,9 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
             match self.next_adapter() {
                 Ok(adapter) => {
                     // this needs to fail the ix because it means the crank passed the wrong account
-                    require_eq!(
-                        adapter_key,
-                        &adapter.key(),
+                    require_keys_eq!(
+                        *adapter_key,
+                        adapter.key(),
                         FixedTermErrorCode::WrongAdapter
                     );
                     Ok(Some(adapter))
