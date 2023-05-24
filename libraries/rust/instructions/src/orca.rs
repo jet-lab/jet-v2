@@ -6,15 +6,15 @@ use orca_whirlpool::state::{
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program, sysvar};
 use spl_associated_token_account::get_associated_token_address;
 
-pub use orca_whirlpool::ID as ORCA_WHIRLPOOL_PROGRAM;
+pub use jet_program_common::programs::ORCA_WHIRLPOOL as ORCA_WHIRLPOOL_PROGRAM;
 
 /// A builder for Orca Whirlpools
 pub struct WhirlpoolIxBuilder {
     pub config: Pubkey,
     pub base: Pubkey,
     pub quote: Pubkey,
-    pub base_vault: Pubkey,
-    pub quote_vault: Pubkey,
+    pub token_a_vault: Pubkey,
+    pub token_b_vault: Pubkey,
     pub whirlpool: Pubkey,
 
     tick_spacing: u16,
@@ -28,8 +28,8 @@ impl WhirlpoolIxBuilder {
         config: Pubkey,
         base: Pubkey,
         quote: Pubkey,
-        base_vault: Pubkey,
-        quote_vault: Pubkey,
+        token_a_vault: Pubkey,
+        token_b_vault: Pubkey,
         tick_spacing: u16,
     ) -> Self {
         let (whirlpool, bump) = derive_whirlpool(&config, &base, &quote, tick_spacing);
@@ -39,8 +39,8 @@ impl WhirlpoolIxBuilder {
             config,
             base,
             quote,
-            base_vault,
-            quote_vault,
+            token_a_vault,
+            token_b_vault,
             tick_spacing,
             whirlpool,
             bump,
@@ -53,8 +53,8 @@ impl WhirlpoolIxBuilder {
             config: whirlpool.whirlpools_config,
             base: whirlpool.token_mint_a,
             quote: whirlpool.token_mint_b,
-            base_vault: whirlpool.token_vault_a,
-            quote_vault: whirlpool.token_vault_b,
+            token_a_vault: whirlpool.token_vault_a,
+            token_b_vault: whirlpool.token_vault_b,
             tick_spacing: whirlpool.tick_spacing,
             whirlpool: address,
             bump: whirlpool.whirlpool_bump[0],
@@ -68,8 +68,8 @@ impl WhirlpoolIxBuilder {
             token_mint_a: self.base,
             token_mint_b: self.quote,
             whirlpool: self.whirlpool,
-            token_vault_a: self.base_vault,
-            token_vault_b: self.quote_vault,
+            token_vault_a: self.token_a_vault,
+            token_vault_b: self.token_b_vault,
             fee_tier: derive_fee_tier(&self.config, self.tick_spacing),
             token_program: spl_token::ID,
             rent: sysvar::rent::ID,
@@ -78,7 +78,7 @@ impl WhirlpoolIxBuilder {
         .to_account_metas(None);
 
         Instruction {
-            program_id: orca_whirlpool::ID,
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
             data: orca_whirlpool::instruction::InitializePool {
                 bumps: WhirlpoolBumps {
                     whirlpool_bump: self.bump,
@@ -102,7 +102,7 @@ impl WhirlpoolIxBuilder {
         .to_account_metas(None);
 
         Instruction {
-            program_id: orca_whirlpool::ID,
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
             data: orca_whirlpool::instruction::InitializeTickArray { start_tick_index }.data(),
             accounts,
         }
@@ -135,7 +135,7 @@ impl WhirlpoolIxBuilder {
         .to_account_metas(None);
 
         Instruction {
-            program_id: orca_whirlpool::ID,
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
             data: orca_whirlpool::instruction::OpenPosition {
                 bumps: OpenPositionBumps { position_bump },
                 tick_lower_index,
@@ -161,7 +161,7 @@ impl WhirlpoolIxBuilder {
         .to_account_metas(None);
 
         Instruction {
-            program_id: orca_whirlpool::ID,
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
             data: orca_whirlpool::instruction::ClosePosition {}.data(),
             accounts,
         }
@@ -172,11 +172,11 @@ impl WhirlpoolIxBuilder {
         mint: Pubkey,
         tick_lower_index: i32,
         tick_upper_index: i32,
-        base_source_account: Pubkey,
-        quote_source_account: Pubkey,
+        token_a_source_account: Pubkey,
+        token_b_source_account: Pubkey,
         liquidity_amount: u128,
-        base_max_amount: u64,
-        quote_max_amount: u64,
+        token_a_max_amount: u64,
+        token_b_max_amount: u64,
     ) -> Instruction {
         let (position, _) = derive_position(&mint);
         let position_token_account = get_associated_token_address(&self.payer, &mint);
@@ -195,21 +195,21 @@ impl WhirlpoolIxBuilder {
                 tick_upper_index,
                 self.tick_spacing,
             ),
-            token_vault_a: self.base_vault,
-            token_vault_b: self.quote_vault,
-            token_owner_account_a: base_source_account,
-            token_owner_account_b: quote_source_account,
+            token_vault_a: self.token_a_vault,
+            token_vault_b: self.token_b_vault,
+            token_owner_account_a: token_a_source_account,
+            token_owner_account_b: token_b_source_account,
             position_token_account,
             position,
         }
         .to_account_metas(None);
 
         Instruction {
-            program_id: orca_whirlpool::ID,
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
             data: orca_whirlpool::instruction::IncreaseLiquidity {
                 liquidity_amount,
-                token_max_a: base_max_amount,
-                token_max_b: quote_max_amount,
+                token_max_a: token_a_max_amount,
+                token_max_b: token_b_max_amount,
             }
             .data(),
             accounts,
@@ -221,11 +221,11 @@ impl WhirlpoolIxBuilder {
         mint: Pubkey,
         tick_lower_index: i32,
         tick_upper_index: i32,
-        base_target_account: Pubkey,
-        quote_target_account: Pubkey,
+        token_a_target_account: Pubkey,
+        token_b_target_account: Pubkey,
         liquidity_amount: u128,
-        base_min_amount: u64,
-        quote_min_amount: u64,
+        token_a_min_amount: u64,
+        token_b_min_amount: u64,
     ) -> Instruction {
         let (position, _) = derive_position(&mint);
         let position_token_account = get_associated_token_address(&self.payer, &mint);
@@ -244,21 +244,21 @@ impl WhirlpoolIxBuilder {
                 tick_upper_index,
                 self.tick_spacing,
             ),
-            token_vault_a: self.base_vault,
-            token_vault_b: self.quote_vault,
-            token_owner_account_a: base_target_account,
-            token_owner_account_b: quote_target_account,
+            token_vault_a: self.token_a_vault,
+            token_vault_b: self.token_b_vault,
+            token_owner_account_a: token_a_target_account,
+            token_owner_account_b: token_b_target_account,
             position_token_account,
             position,
         }
         .to_account_metas(None);
 
         Instruction {
-            program_id: orca_whirlpool::ID,
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
             data: orca_whirlpool::instruction::DecreaseLiquidity {
                 liquidity_amount,
-                token_min_a: base_min_amount,
-                token_min_b: quote_min_amount,
+                token_min_a: token_a_min_amount,
+                token_min_b: token_b_min_amount,
             }
             .data(),
             accounts,
@@ -267,8 +267,8 @@ impl WhirlpoolIxBuilder {
 
     pub fn swap(
         &self,
-        base_account: Pubkey,
-        quote_account: Pubkey,
+        token_a_account: Pubkey,
+        token_b_account: Pubkey,
         ticks: [i32; 3],
         amount: u64,
         other_amount_threshold: u64,
@@ -283,16 +283,16 @@ impl WhirlpoolIxBuilder {
             tick_array_1: derive_tick_array(&self.whirlpool, ticks[1], self.tick_spacing),
             tick_array_2: derive_tick_array(&self.whirlpool, ticks[2], self.tick_spacing),
             token_authority: self.payer,
-            token_owner_account_a: base_account,
-            token_owner_account_b: quote_account,
-            token_vault_a: self.base_vault,
-            token_vault_b: self.quote_vault,
+            token_owner_account_a: token_a_account,
+            token_owner_account_b: token_b_account,
+            token_vault_a: self.token_a_vault,
+            token_vault_b: self.token_b_vault,
             token_program: spl_token::ID,
         }
         .to_account_metas(None);
 
         Instruction {
-            program_id: orca_whirlpool::ID,
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
             data: orca_whirlpool::instruction::Swap {
                 amount,
                 other_amount_threshold,
@@ -302,6 +302,34 @@ impl WhirlpoolIxBuilder {
             }
             .data(),
             accounts,
+        }
+    }
+
+    pub fn collect_fees(
+        &self,
+        mint: Pubkey,
+        token_a_target_account: Pubkey,
+        token_b_target_account: Pubkey,
+    ) -> Instruction {
+        let position_token_account = get_associated_token_address(&self.payer, &mint);
+
+        let accounts = orca_whirlpool::accounts::CollectFees {
+            position_token_account,
+            position: derive_position(&mint).0,
+            position_authority: self.payer,
+            token_owner_account_a: token_a_target_account,
+            token_owner_account_b: token_b_target_account,
+            token_program: spl_token::ID,
+            token_vault_a: self.token_a_vault,
+            token_vault_b: self.token_b_vault,
+            whirlpool: self.whirlpool,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: ORCA_WHIRLPOOL_PROGRAM,
+            accounts,
+            data: orca_whirlpool::instruction::CollectFees.data(),
         }
     }
 }
@@ -323,7 +351,7 @@ pub fn whirlpool_initialize_fee_tier(
     .to_account_metas(None);
 
     Instruction {
-        program_id: orca_whirlpool::ID,
+        program_id: ORCA_WHIRLPOOL_PROGRAM,
         data: orca_whirlpool::instruction::InitializeFeeTier {
             default_fee_rate,
             tick_spacing,
@@ -347,7 +375,7 @@ pub fn derive_whirlpool(
             quote.as_ref(),
             tick_spacing.to_le_bytes().as_ref(),
         ],
-        &orca_whirlpool::ID,
+        &ORCA_WHIRLPOOL_PROGRAM,
     )
 }
 
@@ -358,7 +386,7 @@ pub fn derive_fee_tier(config: &Pubkey, tick_spacing: u16) -> Pubkey {
             config.as_ref(),
             tick_spacing.to_le_bytes().as_ref(),
         ],
-        &orca_whirlpool::ID,
+        &ORCA_WHIRLPOOL_PROGRAM,
     )
     .0
 }
@@ -375,17 +403,17 @@ pub fn derive_tick_array(whirlpool: &Pubkey, tick_index: i32, tick_spacing: u16)
             whirlpool.as_ref(),
             start_tick_index.to_string().as_bytes(),
         ],
-        &orca_whirlpool::ID,
+        &ORCA_WHIRLPOOL_PROGRAM,
     )
     .0
 }
 
 pub fn derive_position(mint: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[b"position", mint.as_ref()], &orca_whirlpool::ID)
+    Pubkey::find_program_address(&[b"position", mint.as_ref()], &ORCA_WHIRLPOOL_PROGRAM)
 }
 
 pub fn derive_whirlpool_oracle(whirlpool: &Pubkey) -> Pubkey {
-    Pubkey::find_program_address(&[b"oracle", whirlpool.as_ref()], &orca_whirlpool::ID).0
+    Pubkey::find_program_address(&[b"oracle", whirlpool.as_ref()], &ORCA_WHIRLPOOL_PROGRAM).0
 }
 
 pub fn start_tick_index(tick_index: i32, tick_spacing: u16, offset: i32) -> i32 {

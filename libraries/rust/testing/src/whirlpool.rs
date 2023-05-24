@@ -325,16 +325,30 @@ impl<'a> LiquidityManager<'a> {
             let mut ixns = vec![];
 
             if !Position::is_position_empty(&position) {
+                let account_a = get_associated_token_address(
+                    &self.wallet.pubkey(),
+                    &self.whirlpool.token_mint_a,
+                );
+                let account_b = get_associated_token_address(
+                    &self.wallet.pubkey(),
+                    &self.whirlpool.token_mint_b,
+                );
+
                 ixns.push(self.ix.decrease_liquidity(
                     position.position_mint,
                     position.tick_lower_index,
                     position.tick_upper_index,
-                    self.whirlpool.token_mint_a,
-                    self.whirlpool.token_mint_b,
+                    account_a,
+                    account_b,
                     position.liquidity,
                     0,
                     0,
                 ));
+
+                ixns.push(
+                    self.ix
+                        .collect_fees(position.position_mint, account_a, account_b),
+                );
             }
 
             ixns.push(self.ix.close_position(position.position_mint));

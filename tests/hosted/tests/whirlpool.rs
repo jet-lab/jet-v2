@@ -121,5 +121,14 @@ async fn whirlpool_swap_workflow() -> anyhow::Result<()> {
 
     assert!(balance > tsol.amount(45_000.0));
 
+    jet_testing::whirlpool::set_liquidity(
+        ctx.rpc().payer(),
+        rpc.deref(),
+        whirlpool,
+        target_pool_price * 100.0,
+        9,
+    )
+    .await?;
+
     Ok(())
 }
