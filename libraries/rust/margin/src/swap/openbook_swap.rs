@@ -189,6 +189,7 @@ impl SwapAccounts for OpenBookMarket {
             market_asks: self.asks,
             base_vault: self.base_vault,
             quote_vault: self.quote_vault,
+            quote_mint: self.quote_mint,
             vault_signer: self.vault_signer,
             referrer_account: referrer,
             dex_program: self.program,

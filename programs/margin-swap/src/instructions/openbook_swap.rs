@@ -21,7 +21,10 @@ use anchor_openbook::serum_dex::{
     instruction::SelfTradeBehavior,
     matching::{OrderType, Side},
 };
-use anchor_spl::{dex as anchor_openbook, token::TokenAccount};
+use anchor_spl::{
+    dex as anchor_openbook,
+    token::{Mint, TokenAccount},
+};
 use jet_program_common::CONTROL_AUTHORITY;
 
 use crate::*;
@@ -60,11 +63,13 @@ pub struct OpenbookSwapInfo<'info> {
     #[account(mut)]
     pub quote_vault: AccountInfo<'info>,
 
+    pub quote_mint: Account<'info, Mint>,
+
     /// CHECK:
     pub vault_signer: AccountInfo<'info>,
 
     /// The referrer account owned by the control program
-    #[account(mut, token::authority = CONTROL_AUTHORITY)]
+    #[account(mut, associated_token::mint = quote_mint, associated_token::authority = CONTROL_AUTHORITY)]
     pub referrer_account: Account<'info, TokenAccount>,
 
     /// The address of the swap program
