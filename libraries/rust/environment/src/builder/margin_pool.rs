@@ -4,12 +4,12 @@ use jet_instructions::{
     margin_pool::{derive_margin_pool, MarginPoolIxBuilder, MARGIN_POOL_PROGRAM},
 };
 use jet_margin_pool::MarginPool;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::{Builder, BuilderError, TokenContext};
 
-pub(crate) async fn configure_for_token<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub(crate) async fn configure_for_token(
+    builder: &mut Builder,
     token: &TokenContext,
 ) -> Result<(), BuilderError> {
     let margin_config_ix = builder.margin_config_ix(&token.airspace);
@@ -22,7 +22,7 @@ pub(crate) async fn configure_for_token<I: NetworkUserInterface>(
 
     let pool = builder
         .interface
-        .get_anchor_account::<MarginPool>(&pool_ix.address)
+        .try_get_anchor_account::<MarginPool>(&pool_ix.address)
         .await?;
 
     let mut configure_pool_ixns = vec![];

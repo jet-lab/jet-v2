@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
 
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::AccountStates;
 use crate::{client::ClientResult, ClientError};
@@ -12,7 +12,7 @@ pub type TokenAccount = spl_token::state::Account;
 pub type Mint = spl_token::state::Mint;
 
 /// Sync latest state for all token accounts
-pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     sync_mints(states).await?;
     sync_accounts(states).await?;
 
@@ -20,7 +20,7 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
 }
 
 /// Sync all the mints
-pub async fn sync_mints<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync_mints(states: &AccountStates) -> ClientResult<()> {
     let mut address_set: HashSet<_> =
         HashSet::from_iter(states.config.tokens.iter().map(|t| t.mint));
 
@@ -48,9 +48,7 @@ pub async fn sync_mints<I: NetworkUserInterface>(states: &AccountStates<I>) -> C
 }
 
 /// Sync all the previously loaded token accounts
-pub async fn sync_accounts<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-) -> ClientResult<I, ()> {
+pub async fn sync_accounts(states: &AccountStates) -> ClientResult<()> {
     let mut address_set = HashSet::new();
 
     address_set.extend(states.cache.addresses_of::<TokenAccount>());
@@ -61,7 +59,7 @@ pub async fn sync_accounts<I: NetworkUserInterface>(
             .config
             .tokens
             .iter()
-            .map(|info| get_associated_token_address(&states.network.signer(), &info.mint)),
+            .map(|info| get_associated_token_address(&states.wallet, &info.mint)),
     );
 
     let addresses = address_set.drain().collect::<Vec<_>>();
@@ -69,10 +67,7 @@ pub async fn sync_accounts<I: NetworkUserInterface>(
 }
 
 /// Load token accounts into the state cache
-pub async fn load_accounts<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-    addresses: &[Pubkey],
-) -> ClientResult<I, ()> {
+pub async fn load_accounts(states: &AccountStates, addresses: &[Pubkey]) -> ClientResult<()> {
     let accounts = states.network.get_accounts_all(addresses).await?;
 
     for (address, maybe_account) in addresses.iter().zip(accounts) {

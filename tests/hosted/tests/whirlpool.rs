@@ -1,19 +1,20 @@
 use std::collections::HashSet;
 use std::ops::Deref;
+use std::rc::Rc;
 
-use jet_client_native::{JetSimulationClient, SimulationClient};
+use jet_client::JetClient;
 use jet_environment::builder::WHIRLPOOL_TICK_SPACING;
 use jet_instructions::margin_swap::{MarginSwapRouteIxBuilder, SwapContext};
 use jet_instructions::orca::derive_whirlpool;
 use jet_instructions::test_service::derive_whirlpool_config;
+use jet_margin_pool::TokenChange;
+use jet_margin_sdk::swap::whirlpool::WhirlpoolSwap;
+use jet_solana_client::util::keypair;
 
 use hosted_tests::actions::*;
 use hosted_tests::context::TestContextSetupInfo;
 use hosted_tests::environment::TestToken;
 use hosted_tests::test_context;
-use jet_margin_pool::TokenChange;
-use jet_margin_sdk::swap::whirlpool::WhirlpoolSwap;
-use jet_solana_client::util::keypair;
 
 #[tokio::test]
 async fn whirlpool_swap_workflow() -> anyhow::Result<()> {
@@ -64,14 +65,14 @@ async fn whirlpool_swap_workflow() -> anyhow::Result<()> {
 
     // Create user wallet to try swap
     let margin_user = ctx.inner.create_margin_user(1_000).await.unwrap();
-    let client = SimulationClient::new(
-        ctx.inner.solana.rpc.clone(),
-        Some(keypair::clone(&margin_user.signer)),
-    );
 
-    let user_client =
-        JetSimulationClient::new(client, ctx.config.clone(), &ctx.config.airspaces[0].name)
-            .unwrap();
+    let user_client = JetClient::new(
+        ctx.inner.solana.rpc2.clone(),
+        Rc::new(keypair::clone(&margin_user.signer)),
+        ctx.config.clone(),
+        &ctx.config.airspaces[0].name,
+    )
+    .unwrap();
 
     // Add some user funds to swap with
     let deposit_amount = usdc.amount(1_000_000.0);

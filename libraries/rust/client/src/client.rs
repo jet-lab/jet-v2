@@ -1,4 +1,9 @@
-use std::{collections::VecDeque, error::Error as StdError, sync::Mutex};
+use std::{
+    collections::VecDeque,
+    error::Error as StdError,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 use thiserror::Error;
 
 use solana_sdk::{hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Signature};
@@ -6,43 +11,28 @@ use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
 
-use jet_solana_client::{transaction::ToTransaction, ExtError, NetworkUserInterface};
+use jet_solana_client::{
+    rpc::{SolanaRpc, SolanaRpcExtra},
+    transaction::ToTransaction,
+};
 
-use crate::{config::JetAppConfig, state::AccountStates};
+use crate::{config::JetAppConfig, state::AccountStates, Wallet};
 
-pub type ClientResult<I, T> = std::result::Result<T, ClientError<I>>;
+pub type ClientResult<T> = std::result::Result<T, ClientError>;
 
-#[derive(Error)]
-pub enum ClientError<I: NetworkUserInterface> {
-    #[error("interface error")]
-    Interface(I::Error),
+#[derive(Debug, Error)]
+pub enum ClientError {
+    #[error("rpc client error")]
+    Rpc(#[from] jet_solana_client::rpc::ClientError),
     #[error("decode error: {0}")]
     Deserialize(Box<dyn StdError + Send + Sync>),
+    #[error("wallet is not connected")]
+    MissingWallet,
     #[error("error: {0}")]
     Unexpected(String),
 }
 
-impl<I: NetworkUserInterface> std::fmt::Debug for ClientError<I> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Interface(_) => write!(f, "interface error"),
-            Self::Deserialize(e) => write!(f, "decode error: {}", e),
-            Self::Unexpected(e) => write!(f, "error: {}", e),
-        }
-    }
-}
-
-impl<I: NetworkUserInterface> From<ExtError<I>> for ClientError<I> {
-    fn from(e: ExtError<I>) -> Self {
-        match e {
-            ExtError::Interface(err) => Self::Interface(err),
-            ExtError::Unpack { error, .. } => Self::Deserialize(Box::new(error)),
-            ExtError::Deserialize { error, .. } => Self::Deserialize(Box::new(error)),
-        }
-    }
-}
-
-impl<I: NetworkUserInterface> From<bincode::Error> for ClientError<I> {
+impl From<bincode::Error> for ClientError {
     fn from(err: bincode::Error) -> Self {
         Self::Unexpected(format!("unexpected encoding error: {err:?}"))
     }
@@ -50,106 +40,110 @@ impl<I: NetworkUserInterface> From<bincode::Error> for ClientError<I> {
 
 /// Central object for client implementations, containing the global configuration and any
 /// caching for account data.
-pub struct ClientState<I> {
-    pub(crate) network: I,
-    state: AccountStates<I>,
+pub struct ClientState {
+    pub(crate) network: Arc<dyn SolanaRpc>,
+    pub(crate) pubkey: Pubkey,
+    wallet: Rc<dyn Wallet>,
+    state: AccountStates,
     tx_log: Mutex<VecDeque<Signature>>,
 }
 
-impl<I: NetworkUserInterface> ClientState<I> {
-    pub fn new(network: I, config: JetAppConfig, airspace: String) -> ClientResult<I, Self> {
+impl ClientState {
+    pub fn new(
+        network: Arc<dyn SolanaRpc>,
+        wallet: Rc<dyn Wallet>,
+        config: JetAppConfig,
+        airspace: String,
+    ) -> ClientResult<Self> {
+        let Some(pubkey) = wallet.pubkey() else {
+            return Err(ClientError::MissingWallet);
+        };
+
         Ok(Self {
-            state: AccountStates::new(network.clone(), config, airspace)?,
+            state: AccountStates::new(network.clone(), pubkey, config, airspace)?,
             tx_log: Mutex::new(VecDeque::new()),
             network,
+            wallet,
+            pubkey,
         })
     }
 
     pub fn signer(&self) -> Pubkey {
-        self.network.signer()
+        self.pubkey
     }
 
     pub fn airspace(&self) -> Pubkey {
         self.state.config.airspace
     }
 
-    pub fn state(&self) -> &AccountStates<I> {
+    pub fn state(&self) -> &AccountStates {
         &self.state
     }
 
-    pub async fn account_exists(&self, address: &Pubkey) -> ClientResult<I, bool> {
-        self.network
-            .account_exists(address)
-            .await
-            .map_err(|e| ClientError::Interface(e))
+    pub async fn account_exists(&self, address: &Pubkey) -> ClientResult<bool> {
+        Ok(self.network.account_exists(address).await?)
     }
 
-    pub async fn get_latest_blockhash(&self) -> ClientResult<I, Hash> {
-        self.network
-            .get_latest_blockhash()
-            .await
-            .map_err(|e| ClientError::Interface(e))
+    pub async fn get_latest_blockhash(&self) -> ClientResult<Hash> {
+        Ok(self.network.get_latest_blockhash().await?)
     }
 
-    pub async fn send(&self, transaction: &impl ToTransaction) -> ClientResult<I, ()> {
+    pub async fn send(&self, transaction: &impl ToTransaction) -> ClientResult<()> {
         self.send_ordered([transaction]).await
     }
 
     pub async fn send_ordered(
         &self,
         transactions: impl IntoIterator<Item = impl ToTransaction>,
-    ) -> ClientResult<I, ()> {
-        let recent_blockhash = self.get_latest_blockhash().await?;
-        let txs = transactions
-            .into_iter()
-            .map(|tx| tx.to_transaction(&self.signer(), recent_blockhash))
-            .collect::<Vec<_>>();
+    ) -> ClientResult<()> {
+        let tx_to_send = transactions.into_iter().collect::<Vec<_>>();
+        let mut signatures = vec![];
+        let mut error = None;
 
-        log::debug!("sending {} transactions", txs.len());
-        let (signatures, error) = self.network.send_ordered(&txs).await;
+        log::debug!("sending {} transactions", tx_to_send.len());
+        for (index, tx) in tx_to_send.into_iter().enumerate() {
+            let recent_blockhash = self.get_latest_blockhash().await?;
+            let tx = tx.to_transaction(&self.signer(), recent_blockhash);
+            let tx = self
+                .wallet
+                .sign_transactions(&[tx])
+                .await
+                .ok_or(ClientError::MissingWallet)?
+                .pop()
+                .unwrap();
 
-        for (index, signature) in signatures.iter().enumerate() {
-            log::info!("tx result success: #{index} {signature}");
+            let signature = match self.network.send_transaction(&tx).await {
+                Err(err) => {
+                    log::error!("failed sending transaction: #{index}: {err:?}");
+                    error = Some(err);
+                    break;
+                }
+
+                Ok(signature) => {
+                    log::info!("submitted transaction #{index}: {signature}");
+                    signatures.push(signature);
+
+                    signature
+                }
+            };
+
+            self.network.confirm_transaction_result(signature).await?;
         }
 
         let mut tx_log = self.tx_log.lock().unwrap();
         tx_log.extend(&signatures);
 
-        if let Some(error) = error {
-            log::error!("tx result failed: #{}: {error:?}", signatures.len());
-            return Err(ClientError::Interface(error));
+        match error {
+            Some(e) => Err(e.into()),
+            None => Ok(()),
         }
-
-        Ok(())
-    }
-
-    pub async fn _send_unordered(
-        &self,
-        transactions: &[impl ToTransaction],
-    ) -> ClientResult<I, Vec<(usize, I::Error)>> {
-        let recent_blockhash = self.get_latest_blockhash().await?;
-        let txs = transactions
-            .iter()
-            .map(|tx| tx.to_transaction(&self.signer(), recent_blockhash))
-            .collect::<Vec<_>>();
-
-        let results = self
-            .network
-            .send_unordered(&txs, Some(recent_blockhash))
-            .await;
-
-        Ok(results
-            .into_iter()
-            .enumerate()
-            .filter_map(|(i, result)| result.err().map(|e| (i, e)))
-            .collect())
     }
 
     pub(crate) async fn with_wallet_account(
         &self,
         token: &Pubkey,
         ixns: &mut Vec<Instruction>,
-    ) -> ClientResult<I, Pubkey> {
+    ) -> ClientResult<Pubkey> {
         let address = get_associated_token_address(&self.signer(), token);
 
         if !self.account_exists(&address).await? {

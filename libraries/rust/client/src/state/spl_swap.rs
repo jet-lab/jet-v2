@@ -2,13 +2,13 @@ use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
 
 use jet_program_common::programs::ORCA_V2;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::{tokens::TokenAccount, AccountStates};
 use crate::{client::ClientResult, ClientError};
 
 /// Sync latest state for all swap pools
-pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     let swap_programs = [ORCA_V2];
     let addresses = states
         .config
@@ -26,10 +26,7 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
 }
 
 /// Load state for given swap pools
-async fn load<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-    addresses: &[Pubkey],
-) -> ClientResult<I, ()> {
+async fn load(states: &AccountStates, addresses: &[Pubkey]) -> ClientResult<()> {
     let accounts = states.network.get_accounts_all(addresses).await?;
 
     for (address, maybe_account) in addresses.iter().zip(accounts) {

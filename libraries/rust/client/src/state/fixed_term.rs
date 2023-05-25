@@ -21,7 +21,7 @@ use jet_fixed_term::{
 };
 use jet_instructions::fixed_term::derive;
 use jet_margin::MarginAccount;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::AccountStates;
 use crate::{
@@ -118,7 +118,7 @@ impl std::ops::Deref for UserState {
     }
 }
 
-pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     sync_markets(states).await?;
     sync_user_accounts(states).await?;
 
@@ -126,12 +126,10 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
 }
 
 /// Sync latest state for all fixed term lending markets
-pub async fn sync_markets<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-) -> ClientResult<I, ()> {
+pub async fn sync_markets(states: &AccountStates) -> ClientResult<()> {
     let manager_accounts = states
         .network
-        .get_anchor_accounts::<Market>(&states.config.fixed_term_markets)
+        .try_get_anchor_accounts::<Market>(&states.config.fixed_term_markets)
         .await?;
 
     let (ask_keys, bid_keys): (Vec<_>, Vec<_>) = manager_accounts
@@ -179,9 +177,7 @@ pub async fn sync_markets<I: NetworkUserInterface>(
 /// Sync latest state for all fixed term user data
 ///
 /// The user data for all loaded margin accounts are fetched
-pub async fn sync_user_accounts<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-) -> ClientResult<I, ()> {
+pub async fn sync_user_accounts(states: &AccountStates) -> ClientResult<()> {
     let margin_accounts = states.addresses_of::<MarginAccount>();
     let markets = states.addresses_of::<MarketState>();
 
@@ -196,7 +192,7 @@ pub async fn sync_user_accounts<I: NetworkUserInterface>(
 
     let user_accounts = states
         .network
-        .get_anchor_accounts::<FixedTermUser>(&ft_user_accounts)
+        .try_get_anchor_accounts::<FixedTermUser>(&ft_user_accounts)
         .await?;
 
     for (address, user_state) in ft_user_accounts.into_iter().zip(user_accounts) {
@@ -210,9 +206,7 @@ pub async fn sync_user_accounts<I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn sync_user_debt_assets<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-) -> ClientResult<I, ()> {
+async fn sync_user_debt_assets(states: &AccountStates) -> ClientResult<()> {
     let loans: Vec<Arc<TermLoan>> = load_user_positions(
         states,
         |state| state.debt().active_loans(),
@@ -261,13 +255,12 @@ async fn sync_user_debt_assets<I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn load_user_positions<I, T, FR, FD>(
-    states: &AccountStates<I>,
+async fn load_user_positions<T, FR, FD>(
+    states: &AccountStates,
     range: FR,
     derive_addr: FD,
-) -> ClientResult<I, Vec<Arc<T>>>
+) -> ClientResult<Vec<Arc<T>>>
 where
-    I: NetworkUserInterface,
     T: Any + Send + Sync + AccountDeserialize,
     FR: Fn(&MarginUser) -> Range<u64>,
     FD: Fn(&Pubkey, &MarginUser, u64) -> Pubkey,
@@ -281,7 +274,10 @@ where
         })
         .unzip();
 
-    let accounts_data = states.network.get_anchor_accounts::<T>(&addresses).await?;
+    let accounts_data = states
+        .network
+        .try_get_anchor_accounts::<T>(&addresses)
+        .await?;
 
     Ok(accounts_data.into_iter().enumerate().filter_map(|(idx, maybe_data)| {
         let Some(data) = maybe_data else {

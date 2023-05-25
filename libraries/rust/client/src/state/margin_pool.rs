@@ -4,7 +4,7 @@ use solana_sdk::pubkey::Pubkey;
 
 use jet_instructions::margin_pool::derive_margin_pool;
 use jet_margin_pool::MarginPool;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::AccountStates;
 use crate::client::ClientResult;
@@ -13,14 +13,14 @@ pub trait MarginPoolCacheExt {
     fn get_pool(&self, token: &Pubkey) -> Option<Arc<MarginPool>>;
 }
 
-impl<I> MarginPoolCacheExt for AccountStates<I> {
+impl MarginPoolCacheExt for AccountStates {
     fn get_pool(&self, token: &Pubkey) -> Option<Arc<MarginPool>> {
         self.get::<MarginPool>(&derive_margin_pool(&self.config.airspace, token))
     }
 }
 
 /// Sync latest state for all pools
-pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     let pools = states
         .config
         .tokens
@@ -30,10 +30,10 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
 
     let accounts = states
         .network
-        .get_anchor_accounts::<MarginPool>(&pools)
+        .try_get_anchor_accounts::<MarginPool>(&pools)
         .await?;
 
-    let time = states.network.get_current_time();
+    let time = states.get_current_time();
 
     for (index, account) in accounts.into_iter().enumerate() {
         let address = pools[index];

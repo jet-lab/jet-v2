@@ -13,7 +13,7 @@ use solana_sdk::{
     signature::Signature,
     transaction::{Transaction, TransactionError, VersionedTransaction},
 };
-use spl_token::state::Account as TokenAccount;
+use spl_token::state::{Account as TokenAccount, Mint as TokenMint};
 
 use solana_transaction_status::TransactionStatus;
 
@@ -178,6 +178,16 @@ pub trait SolanaRpcExtra: SolanaRpc {
         Ok(self.get_account(address).await?.is_some())
     }
 
+    /// Check if a set of accounts exist (has lamports)
+    async fn accounts_exist(&self, addresses: &[Pubkey]) -> ClientResult<Vec<bool>> {
+        Ok(self
+            .get_accounts_all(addresses)
+            .await?
+            .into_iter()
+            .map(|a| a.is_some())
+            .collect())
+    }
+
     /// Retrieve a list of accounts
     ///
     /// This will make multiple RPC requests if the number of accounts is greater than the limit
@@ -245,6 +255,11 @@ pub trait SolanaRpcExtra: SolanaRpc {
         self.get_packed_account(address).await
     }
 
+    /// Get the state for a token mint
+    async fn get_token_mint(&self, address: &Pubkey) -> ClientResult<TokenMint> {
+        self.get_packed_account(address).await
+    }
+
     /// Retrieve states for a list of accounts with a specific type implementing `AccountDeserialize` from anchor
     async fn try_get_anchor_accounts<T: AccountDeserialize>(
         &self,
@@ -288,6 +303,19 @@ pub trait SolanaRpcExtra: SolanaRpc {
         self.try_get_anchor_account(address)
             .await?
             .ok_or(ClientError::AccountNotFound(*address))
+    }
+
+    /// Get the state for a set of accounts with a known type
+    async fn get_anchor_accounts<T: AccountDeserialize>(
+        &self,
+        addresses: &[Pubkey],
+    ) -> ClientResult<Vec<T>> {
+        self.try_get_anchor_accounts(addresses)
+            .await?
+            .into_iter()
+            .enumerate()
+            .map(|(i, result)| result.ok_or(ClientError::AccountNotFound(addresses[i])))
+            .collect()
     }
 
     /// Retrieve a list of accounts by their serializable anchor type

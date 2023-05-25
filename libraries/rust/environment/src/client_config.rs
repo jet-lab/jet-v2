@@ -11,7 +11,7 @@ use jet_instructions::{
     fixed_term,
     test_service::{derive_pyth_price, derive_spl_swap_pool, derive_token_mint},
 };
-use jet_solana_client::{ExtError, NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::{ClientError, SolanaRpc, SolanaRpcExtra};
 
 use crate::{
     builder::{resolve_token_mint, swap::resolve_swap_program, BuilderError},
@@ -19,9 +19,9 @@ use crate::{
 };
 
 #[derive(Error, Debug)]
-pub enum ConfigError<I: NetworkUserInterface> {
-    #[error("ext error: {0}")]
-    Ext(#[from] ExtError<I>),
+pub enum ConfigError {
+    #[error("rpc error: {0}")]
+    Rpc(#[from] ClientError),
 
     #[error("builder error: {0}")]
     Builder(#[from] BuilderError),
@@ -52,11 +52,11 @@ impl JetAppConfig {
 }
 
 impl JetAppConfig {
-    pub async fn from_env_config<I: NetworkUserInterface>(
+    pub async fn from_env_config(
         env: EnvironmentConfig,
-        network: &I,
+        network: &(dyn SolanaRpc + 'static),
         override_lookup_authority: Option<Pubkey>,
-    ) -> Result<Self, ConfigError<I>> {
+    ) -> Result<Self, ConfigError> {
         let mut seen = HashSet::new();
         let mut tokens = vec![];
         let mut airspaces = vec![];
@@ -178,21 +178,15 @@ pub struct TokenInfo {
 }
 
 impl TokenInfo {
-    async fn from_desc<I: NetworkUserInterface>(
-        network: &I,
+    async fn from_desc(
+        network: &(dyn SolanaRpc + 'static),
         desc: &TokenDescription,
-    ) -> Result<Self, ConfigError<I>> {
+    ) -> Result<Self, ConfigError> {
         let mint = desc.mint.unwrap_or_else(|| derive_token_mint(&desc.name));
         let oracle = desc.pyth_price.unwrap_or_else(|| derive_pyth_price(&mint));
         let decimals = match desc.decimals {
             Some(d) => d,
-            None => {
-                let Some(mint) = network.get_mint(&mint).await? else {
-                    return Err(ConfigError::InvalidMint(mint));
-                };
-
-                mint.decimals
-            }
+            None => network.get_token_mint(&mint).await?.decimals,
         };
 
         Ok(Self {
@@ -230,7 +224,7 @@ pub mod legacy {
     use std::collections::HashMap;
 
     use jet_instructions::{fixed_term::Market, margin_swap::derive_spl_swap_authority};
-    use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+    use jet_solana_client::rpc::SolanaRpcExtra;
     use jet_static_program_registry::orca_swap_v2;
 
     use jet_program_common::programs::{ORCA_V2, ORCA_V2_DEVNET};
@@ -239,10 +233,10 @@ pub mod legacy {
 
     const SPL_PROGRAMS: [Pubkey; 2] = [ORCA_V2, ORCA_V2_DEVNET];
 
-    pub async fn from_config<I: NetworkUserInterface>(
-        network: &I,
+    pub async fn from_config(
+        network: &(dyn SolanaRpc + 'static),
         config: &super::JetAppConfig,
-    ) -> Result<JetAppConfig, ConfigError<I>> {
+    ) -> Result<JetAppConfig, ConfigError> {
         let tokens = config
             .tokens
             .iter()
@@ -256,7 +250,7 @@ pub mod legacy {
             let mut fixed_term_markets = HashMap::new();
 
             for market_address in &airspace.fixed_term_markets {
-                let Some(market_info) = network.get_anchor_account::<Market>(market_address).await? else {
+                let Some(market_info) = network.try_get_anchor_account::<Market>(market_address).await? else {
                     return Err(ConfigError::MissingMarket(*market_address));
                 };
 
@@ -312,7 +306,7 @@ pub mod legacy {
                 }
 
                 Some(d) => orca_swap_v2::state::SwapVersion::unpack(&d.data)
-                    .map_err(|e| ConfigError::UnpackError(e))?,
+                    .map_err(ConfigError::UnpackError)?,
             };
 
             exchanges.insert(

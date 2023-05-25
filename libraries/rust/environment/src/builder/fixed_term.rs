@@ -17,9 +17,7 @@ use jet_instructions::{
     },
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
-use jet_solana_client::{
-    transaction::TransactionBuilder, NetworkUserInterface, NetworkUserInterfaceExt,
-};
+use jet_solana_client::{rpc::SolanaRpcExtra, transaction::TransactionBuilder};
 
 use crate::config::FixedTermMarketConfig;
 
@@ -30,8 +28,8 @@ use super::{
 const EVENT_QUEUE_CAPACITY: usize = 8192;
 const ORDERBOOK_CAPACITY: usize = 16384;
 
-pub async fn configure_market_for_token<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub async fn configure_market_for_token(
+    builder: &mut Builder,
     cranks: &[Pubkey],
     token: &TokenContext,
     config: &FixedTermMarketConfig,
@@ -57,7 +55,7 @@ pub async fn configure_market_for_token<I: NetworkUserInterface>(
 
     let market = builder
         .interface
-        .get_anchor_account::<Market>(&market_address)
+        .try_get_anchor_account::<Market>(&market_address)
         .await?;
 
     let ix_builder = match market {
@@ -129,8 +127,8 @@ pub async fn configure_market_for_token<I: NetworkUserInterface>(
     Ok(ix_builder)
 }
 
-async fn configure_cranks_for_market<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+async fn configure_cranks_for_market(
+    builder: &mut Builder,
     ix_builder: &FixedTermIxBuilder,
     cranks: &[Pubkey],
 ) -> Result<(), BuilderError> {
@@ -163,8 +161,8 @@ async fn configure_cranks_for_market<I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn configure_margin_for_market<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+async fn configure_margin_for_market(
+    builder: &mut Builder,
     token: &TokenContext,
     market_address: &Pubkey,
     config: &FixedTermMarketConfig,
@@ -248,8 +246,8 @@ async fn configure_margin_for_market<I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn create_market_for_token<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+async fn create_market_for_token(
+    builder: &mut Builder,
     token: &TokenContext,
     config: &FixedTermMarketConfig,
     fee_destination: Pubkey,

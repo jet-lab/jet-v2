@@ -6,11 +6,11 @@ use jet_client::margin::{MarginAccountClient, MarginClient, MarginPosition};
 
 use crate::{
     fixed_term::MarginAccountFixedTermMarketWebClient, margin_pool::MarginAccountPoolWebClient,
-    ClientError, JsNetworkAdapter,
+    ClientError,
 };
 
 #[wasm_bindgen]
-pub struct MarginWebClient(pub(crate) MarginClient<JsNetworkAdapter>);
+pub struct MarginWebClient(pub(crate) MarginClient);
 
 #[wasm_bindgen]
 impl MarginWebClient {
@@ -32,7 +32,7 @@ impl MarginWebClient {
 
 #[wasm_bindgen]
 pub struct MarginAccountWebClient {
-    inner: MarginAccountClient<JsNetworkAdapter>,
+    inner: MarginAccountClient,
 }
 
 #[wasm_bindgen(typescript_custom_section)]

@@ -21,7 +21,6 @@ use crate::{
     client::{ClientResult, ClientState},
     margin::MarginAccountClient,
     state::fixed_term::{MarketState, OrderEntry, UserState},
-    NetworkUserInterface,
 };
 
 pub mod util;
@@ -53,17 +52,17 @@ pub struct MarketInfo {
 
 /// Client for interacting with the margin program
 #[derive(Clone)]
-pub struct FixedTermMarketClient<I> {
-    client: Arc<ClientState<I>>,
+pub struct FixedTermMarketClient {
+    client: Arc<ClientState>,
 }
 
-impl<I: NetworkUserInterface> FixedTermMarketClient<I> {
-    pub(crate) fn new(inner: Arc<ClientState<I>>) -> Self {
+impl FixedTermMarketClient {
+    pub(crate) fn new(inner: Arc<ClientState>) -> Self {
         Self { client: inner }
     }
 
     /// Sync all data for fixed term markets
-    pub async fn sync(&self) -> ClientResult<I, ()> {
+    pub async fn sync(&self) -> ClientResult<()> {
         crate::state::fixed_term::sync(self.client.state()).await
     }
 
@@ -93,18 +92,18 @@ impl<I: NetworkUserInterface> FixedTermMarketClient<I> {
 
 /// Client for interacting with a fixed term market, from the perspective of a margin account
 #[derive(Clone)]
-pub struct MarginAccountMarketClient<I> {
-    pub(crate) client: Arc<ClientState<I>>,
+pub struct MarginAccountMarketClient {
+    pub(crate) client: Arc<ClientState>,
     pub(crate) builder: FixedTermIxBuilder,
-    pub(crate) account: MarginAccountClient<I>,
+    pub(crate) account: MarginAccountClient,
     pub(crate) market: Market,
 }
 
-impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
+impl MarginAccountMarketClient {
     pub fn from_address(
-        account: MarginAccountClient<I>,
+        account: MarginAccountClient,
         market_address: &Pubkey,
-    ) -> ClientResult<I, Self> {
+    ) -> ClientResult<Self> {
         let state = match account.client.state().get::<MarketState>(market_address) {
             Some(m) => m,
             None => {
@@ -152,7 +151,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     }
 
     /// Sync the user market state
-    pub async fn sync(&self) -> ClientResult<I, ()> {
+    pub async fn sync(&self) -> ClientResult<()> {
         crate::state::fixed_term::sync_user_accounts(self.client.state()).await
     }
 
@@ -162,7 +161,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     ///
     /// * `amount` - The amount of tokens to offer for lending
     /// * `interest_rate` - The interest rate to lend the tokens at (in basis points)
-    pub async fn offer_loan(&self, amount: u64, interest_rate: u64) -> ClientResult<I, ()> {
+    pub async fn offer_loan(&self, amount: u64, interest_rate: u64) -> ClientResult<()> {
         let params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: amount,
@@ -183,7 +182,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     ///
     /// * `amount` - The desired amount of tokens to borrow
     /// * `interest_rate` - The interest rate to borrow the tokens at (in basis points)
-    pub async fn request_loan(&self, amount: u64, interest_rate: u64) -> ClientResult<I, ()> {
+    pub async fn request_loan(&self, amount: u64, interest_rate: u64) -> ClientResult<()> {
         let params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: amount,
@@ -204,7 +203,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     ///
     /// * `amount` - The desired amount of tickets to be sold
     /// * `price` - The price to sell the tickets at
-    pub async fn sell_tickets(&self, amount: u64, price: f64) -> ClientResult<I, ()> {
+    pub async fn sell_tickets(&self, amount: u64, price: f64) -> ClientResult<()> {
         let params = OrderParams {
             max_ticket_qty: amount,
             max_underlying_token_qty: u64::MAX,
@@ -225,7 +224,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `amount` - The amount of tokens to offer for lending
-    pub async fn lend_now(&self, amount: u64) -> ClientResult<I, ()> {
+    pub async fn lend_now(&self, amount: u64) -> ClientResult<()> {
         let params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: amount,
@@ -246,7 +245,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `amount` - The amount of tokens to request to borrow
-    pub async fn borrow_now(&self, amount: u64) -> ClientResult<I, ()> {
+    pub async fn borrow_now(&self, amount: u64) -> ClientResult<()> {
         let params = OrderParams {
             max_ticket_qty: u64::MAX,
             max_underlying_token_qty: amount,
@@ -269,7 +268,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `max_repayment` - The upper limit of tokens to transfer as repayment for loans.
-    pub async fn repay(&self, max_repayment: u64) -> ClientResult<I, ()> {
+    pub async fn repay(&self, max_repayment: u64) -> ClientResult<()> {
         let Some(user_state) = self.get_user_market_state() else {
             return Ok(());
         };
@@ -306,7 +305,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// `order_id` - The ID for the order to be canceled
-    pub async fn cancel_order(&self, order_id: u128) -> ClientResult<I, ()> {
+    pub async fn cancel_order(&self, order_id: u128) -> ClientResult<()> {
         let ixns = vec![self
             .account
             .builder
@@ -316,7 +315,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     }
 
     /// Redeem any matured deposits belonging to this account
-    pub async fn redeem_deposits(&self) -> ClientResult<I, ()> {
+    pub async fn redeem_deposits(&self) -> ClientResult<()> {
         let current_time = chrono::Utc::now().timestamp();
         let matured_deposits = self
             .deposits()
@@ -356,7 +355,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     }
 
     /// Settle tokens from matched orders
-    pub async fn settle(&self) -> ClientResult<I, ()> {
+    pub async fn settle(&self) -> ClientResult<()> {
         let mut ixns = vec![];
 
         ixns.push(
@@ -373,7 +372,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `params` - The order parameters
-    pub async fn offer_loan_with_params(&self, params: OrderParams) -> ClientResult<I, ()> {
+    pub async fn offer_loan_with_params(&self, params: OrderParams) -> ClientResult<()> {
         let deposit_account =
             get_associated_token_address(&self.account.address, &self.builder.token_mint());
 
@@ -400,7 +399,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `params` - The order parameters
-    pub async fn request_loan_with_params(&self, params: OrderParams) -> ClientResult<I, ()> {
+    pub async fn request_loan_with_params(&self, params: OrderParams) -> ClientResult<()> {
         let mut ixns = vec![];
 
         self.account
@@ -427,7 +426,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `params` - The order parameters
-    pub async fn sell_tickets_with_params(&self, params: OrderParams) -> ClientResult<I, ()> {
+    pub async fn sell_tickets_with_params(&self, params: OrderParams) -> ClientResult<()> {
         let mut ixns = vec![];
 
         let ticket_account =
@@ -459,7 +458,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `config` - The auto-roll configuration
-    pub async fn configure_auto_roll(&self, config: AutoRollConfig) -> ClientResult<I, ()> {
+    pub async fn configure_auto_roll(&self, config: AutoRollConfig) -> ClientResult<()> {
         let mut ixns = vec![];
 
         self.with_user_registration(&mut ixns).await?;
@@ -478,7 +477,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `deposit` - The address of the deposit that has been configured to auto-roll
-    pub async fn toggle_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<I, ()> {
+    pub async fn toggle_auto_roll_deposit(&self, deposit: Pubkey) -> ClientResult<()> {
         let mut ixns = vec![];
 
         ixns.push(
@@ -496,7 +495,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     /// # Parameters
     ///
     /// * `loan` - The address of the loan that has been configured to auto-roll
-    pub async fn toggle_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<I, ()> {
+    pub async fn toggle_auto_roll_loan(&self, loan: Pubkey) -> ClientResult<()> {
         let mut ixns = vec![];
 
         ixns.push(
@@ -509,7 +508,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
         self.account.send_with_refresh(&ixns).await
     }
 
-    async fn with_user_registration(&self, ixns: &mut Vec<Instruction>) -> ClientResult<I, ()> {
+    async fn with_user_registration(&self, ixns: &mut Vec<Instruction>) -> ClientResult<()> {
         let user_market_account = self.builder.margin_user_account(self.account.address);
 
         self.account
@@ -573,11 +572,11 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
     }
 }
 
-pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
-    account: &MarginAccountClient<I>,
+pub(crate) fn instruction_for_refresh(
+    account: &MarginAccountClient,
     token: &Pubkey,
     refreshing_tokens: &mut HashSet<Pubkey>,
-) -> ClientResult<I, Instruction> {
+) -> ClientResult<Instruction> {
     let found = account.client.state().filter(|_, state: &MarketState| {
         state.market.claims_mint == *token
             || state.market.ticket_collateral_mint == *token

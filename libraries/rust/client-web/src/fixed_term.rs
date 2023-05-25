@@ -3,12 +3,10 @@ use wasm_bindgen::prelude::*;
 
 use jet_client::fixed_term::MarginAccountMarketClient;
 
-use crate::{ClientError, JsNetworkAdapter};
+use crate::ClientError;
 
 #[wasm_bindgen]
-pub struct MarginAccountFixedTermMarketWebClient(
-    pub(crate) MarginAccountMarketClient<JsNetworkAdapter>,
-);
+pub struct MarginAccountFixedTermMarketWebClient(pub(crate) MarginAccountMarketClient);
 
 #[wasm_bindgen]
 impl MarginAccountFixedTermMarketWebClient {

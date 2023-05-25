@@ -10,11 +10,12 @@ wasm-opt = false
 crate-type = ["cdylib"]
 
 [dependencies]
+thiserror = "1"
 async-trait = "0.1"
 wasm-bindgen = "0.2.83"
 wasm-bindgen-futures = "0.4"
-wasm-bindgen-derive = "0.1"
-serde-wasm-bindgen = "0.4"
+wasm-bindgen-derive = "0.2"
+serde-wasm-bindgen = "0.5"
 js-sys = "0.3"
 web-sys = { version = "0.3", features = [
     "Headers",
@@ -42,5 +43,5 @@ solana-sdk = "1.10"
 spl-token = "3"
 
 jet-client = { path = "../client" }
-jet-solana-client = { path = "../solana-client" }
+jet-solana-client = { path = "../solana-client", default-features = false, features = ["client-wasm"] }
 jet-program-common = { path = "../program-common" }

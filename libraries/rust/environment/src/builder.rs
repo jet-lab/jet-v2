@@ -1,4 +1,4 @@
-use std::{any::Any, collections::BTreeMap, fmt::Debug, str::FromStr};
+use std::{collections::BTreeMap, fmt::Debug, str::FromStr, sync::Arc};
 
 use spl_governance::state::{
     native_treasury::get_native_treasury_address,
@@ -6,7 +6,7 @@ use spl_governance::state::{
 };
 use thiserror::Error;
 
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signer::Signer};
 
 use jet_instructions::{
     control::ControlIxBuilder,
@@ -15,8 +15,9 @@ use jet_instructions::{
 };
 use jet_margin::TokenConfig;
 use jet_solana_client::{
-    network::NetworkKind, transaction::TransactionBuilder, ExtError, NetworkUserInterface,
-    NetworkUserInterfaceExt,
+    network::NetworkKind,
+    rpc::{ClientError, SolanaRpc, SolanaRpcExtra},
+    transaction::TransactionBuilder,
 };
 
 use crate::config::{EnvironmentConfig, TokenDescription};
@@ -38,7 +39,7 @@ pub use swap::{resolve_swap_program, DEFAULT_TICK_SPACING as WHIRLPOOL_TICK_SPAC
 #[derive(Error, Debug)]
 pub enum BuilderError {
     #[error("error using network interface: {0:?}")]
-    InterfaceError(Box<dyn Any>),
+    ClientError(#[from] ClientError),
 
     #[error("missing pyth_price field for token {0}")]
     MissingPythPrice(String),
@@ -65,12 +66,6 @@ pub enum BuilderError {
         expected: NetworkKind,
         actual: NetworkKind,
     },
-}
-
-impl<I: NetworkUserInterface> From<ExtError<I>> for BuilderError {
-    fn from(err: ExtError<I>) -> Self {
-        Self::InterfaceError(Box::new(err))
-    }
 }
 
 pub trait AccountsRetriever {
@@ -124,27 +119,28 @@ pub enum SetupPhase {
     Swaps,
 }
 
-pub struct Builder<I> {
+pub struct Builder {
     pub(crate) network: NetworkKind,
-    pub(crate) interface: I,
+    pub(crate) interface: Arc<dyn SolanaRpc>,
+    pub(crate) signer: Arc<dyn Signer>,
     pub(crate) proposal_execution: ProposalExecution,
     setup_tx: BTreeMap<SetupPhase, Vec<TransactionBuilder>>,
     propose_tx: Vec<TransactionBuilder>,
 }
 
-impl<I: NetworkUserInterface> Builder<I> {
+impl Builder {
     pub async fn new(
-        network_interface: I,
+        interface: Arc<dyn SolanaRpc>,
+        signer: Arc<dyn Signer>,
         proposal_execution: ProposalExecution,
     ) -> Result<Self, BuilderError> {
         Ok(Self {
-            network: NetworkKind::from_interface(&network_interface)
-                .await
-                .map_err(|e| BuilderError::InterfaceError(Box::new(e)))?,
-            interface: network_interface,
+            network: NetworkKind::from_interface(interface.as_ref()).await?,
+            interface,
             proposal_execution,
             setup_tx: BTreeMap::new(),
             propose_tx: vec![],
+            signer,
         })
     }
 
@@ -153,16 +149,18 @@ impl<I: NetworkUserInterface> Builder<I> {
     /// ✓ never returns an error  
     /// 🗴 NetworkKind must be known in advance  
     pub fn new_infallible(
-        network_interface: I,
+        interface: Arc<dyn SolanaRpc>,
+        signer: Arc<dyn Signer>,
         proposal_execution: ProposalExecution,
         network: NetworkKind,
     ) -> Self {
         Self {
             network,
-            interface: network_interface,
+            interface,
             proposal_execution,
             setup_tx: BTreeMap::new(),
             propose_tx: vec![],
+            signer,
         }
     }
 
@@ -174,7 +172,7 @@ impl<I: NetworkUserInterface> Builder<I> {
     }
 
     pub fn payer(&self) -> Pubkey {
-        self.interface.signer()
+        self.signer.pubkey()
     }
 
     pub fn proposal_payer(&self) -> Pubkey {
@@ -195,10 +193,7 @@ impl<I: NetworkUserInterface> Builder<I> {
     }
 
     pub async fn account_exists(&self, address: &Pubkey) -> Result<bool, BuilderError> {
-        self.interface
-            .account_exists(address)
-            .await
-            .map_err(|e| BuilderError::InterfaceError(Box::new(e)))
+        Ok(self.interface.account_exists(address).await?)
     }
 
     pub async fn get_margin_token_configs(
@@ -211,7 +206,7 @@ impl<I: NetworkUserInterface> Builder<I> {
             .map(|addr| derive_token_config(airspace, addr))
             .collect::<Vec<_>>();
 
-        Ok(self.interface.get_anchor_accounts(&addresses).await?)
+        Ok(self.interface.try_get_anchor_accounts(&addresses).await?)
     }
 
     pub fn setup<T: Into<TransactionBuilder>>(
@@ -290,16 +285,12 @@ impl<I: NetworkUserInterface> Builder<I> {
     }
 }
 
-pub(crate) async fn filter_initializers<I: NetworkUserInterface>(
-    builder: &Builder<I>,
+pub(crate) async fn filter_initializers(
+    builder: &Builder,
     ixns: impl IntoIterator<Item = (Pubkey, Instruction)>,
 ) -> Result<Vec<Instruction>, BuilderError> {
     let (accounts, ixns): (Vec<_>, Vec<_>) = ixns.into_iter().unzip();
-    let exists = builder
-        .interface
-        .accounts_exist(&accounts)
-        .await
-        .map_err(|e| BuilderError::InterfaceError(Box::new(e)))?;
+    let exists = builder.interface.accounts_exist(&accounts).await?;
 
     Ok(ixns
         .into_iter()

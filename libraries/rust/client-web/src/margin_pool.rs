@@ -4,10 +4,10 @@ use solana_sdk::pubkey::Pubkey;
 
 use jet_client::margin_pool::MarginAccountPoolClient;
 
-use crate::{ClientError, JsNetworkAdapter};
+use crate::ClientError;
 
 #[wasm_bindgen]
-pub struct MarginAccountPoolWebClient(pub(crate) MarginAccountPoolClient<JsNetworkAdapter>);
+pub struct MarginAccountPoolWebClient(pub(crate) MarginAccountPoolClient);
 
 #[wasm_bindgen]
 impl MarginAccountPoolWebClient {
