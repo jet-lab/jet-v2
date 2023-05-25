@@ -3,8 +3,6 @@ import axios from 'axios';
 import Jet_UI_EN from './languages/Jet_UI_EN.json';
 import Jet_Definitions_EN from './languages/Jet_Definitions_EN.json';
 import { localStorageEffect } from '../../effects/localStorageEffect';
-import { WalletPublicKey } from '@state/user/accounts';
-import { isDebug } from '../../../App';
 
 // UI Localization Dictionary
 export const Dictionary = atom({
@@ -72,8 +70,8 @@ interface GeoLocation {
 // Whether user is geobanned
 export const Geobanned = selector<boolean>({
   key: 'geobanned',
-  get: async ({ get }) => {
-    if (isDebug) {
+  get: async () => {
+    if (process.env.REACT_APP_REQUIRE_GEOBLOCKING === 'false') {
       return false;
     }
     const data = await axios
@@ -82,11 +80,6 @@ export const Geobanned = selector<boolean>({
 
     const countryCode = data.location.country.code;
     const tz = data.time_zone.id;
-    const wallet = get(WalletPublicKey);
-    if (wallet && process.env.REACT_APP_ALLOWED_WALLETS?.includes(wallet)) {
-      // is whitelisted
-      return false;
-    }
 
     if (geoBannedCountries.map(country => country.code).includes(countryCode)) {
       // Is in a geobanned country
