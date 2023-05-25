@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, Burn, Mint, Token, TokenAccount};
+use jet_airspace::state::AirspacePermit;
 
 use crate::{
     control::state::Market,
@@ -28,6 +29,13 @@ pub struct StakeTicketsParams {
 #[derive(Accounts)]
 #[instruction(params: StakeTicketsParams)]
 pub struct StakeTickets<'info> {
+    /// Metadata permit allowing this user to interact with this market
+    #[account(
+        constraint = permit.owner == ticket_holder.key() @ FixedTermErrorCode::WrongAirspaceAuthorization,
+        constraint = permit.airspace == market.load()?.airspace @ FixedTermErrorCode::WrongAirspaceAuthorization,
+    )]
+    pub permit: Account<'info, AirspacePermit>,
+
     /// A struct used to track maturation and total claimable funds
     #[account(
         init,

@@ -1,15 +1,22 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+use anchor_spl::token::{accessor::mint, burn, transfer, Mint, Token, TokenAccount, Transfer};
+use jet_airspace::state::AirspacePermit;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    events::OrderType, market_token_manager::MarketTokenManager, orderbook::state::*,
-    serialization::RemainingAccounts, FixedTermErrorCode,
+    events::OrderType, orderbook::state::*, serialization::RemainingAccounts, FixedTermErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct SellTicketsOrder<'info> {
+    /// Metadata permit allowing this user to interact with this market
+    #[account(
+        constraint = permit.owner == authority.key() @ FixedTermErrorCode::WrongAirspaceAuthorization,
+        constraint = permit.airspace == orderbook_mut.airspace() @ FixedTermErrorCode::WrongAirspaceAuthorization,
+    )]
+    pub permit: Account<'info, AirspacePermit>,
+
     /// Signing authority over the ticket vault transferring for a borrow order
     pub authority: Signer<'info>,
 
@@ -43,7 +50,17 @@ pub struct SellTicketsOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-impl<'info> SellTicketsOrder<'info> {
+pub struct SellTicketsAccounts<'a, 'info> {
+    pub authority: &'a AccountInfo<'info>,
+    pub user_ticket_vault: &'a AccountInfo<'info>,
+    pub user_token_vault: &'a AccountInfo<'info>,
+    pub orderbook_mut: &'a OrderbookMut<'info>,
+    pub ticket_mint: &'a AccountInfo<'info>,
+    pub underlying_token_vault: &'a AccountInfo<'info>,
+    pub token_program: &'a AccountInfo<'info>,
+}
+
+impl<'a, 'info> SellTicketsAccounts<'a, 'info> {
     pub fn sell_tickets(
         &self,
         order_tag: u128,
@@ -52,12 +69,22 @@ impl<'info> SellTicketsOrder<'info> {
         margin_user: Option<Pubkey>,
         order_type: OrderType,
     ) -> Result<()> {
-        self.withdraw(
-            &self.underlying_token_vault,
-            &self.user_token_vault,
+        // transfer the filled tokens
+        transfer(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                Transfer {
+                    from: self.underlying_token_vault.to_account_info(),
+                    to: self.user_token_vault.to_account_info(),
+                    authority: self.orderbook_mut.market.to_account_info(),
+                },
+            )
+            .with_signer(&[&self.orderbook_mut.market.load()?.authority_seeds()]),
             order_summary.quote_filled(RoundingAction::FillBorrow.direction())?,
         )?;
-        anchor_spl::token::burn(
+
+        // burn spent tickets
+        burn(
             CpiContext::new(
                 self.token_program.to_account_info(),
                 anchor_spl::token::Burn {
@@ -100,7 +127,17 @@ pub fn handler(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()
         CallbackFlags::empty(),
     )?;
 
-    ctx.accounts.sell_tickets(
+    let a = ctx.accounts;
+    SellTicketsAccounts {
+        authority: &a.authority,
+        user_ticket_vault: a.user_ticket_vault.as_ref(),
+        user_token_vault: a.user_token_vault.as_ref(),
+        orderbook_mut: &a.orderbook_mut,
+        ticket_mint: a.ticket_mint.as_ref(),
+        underlying_token_vault: a.underlying_token_vault.as_ref(),
+        token_program: &a.token_program,
+    }
+    .sell_tickets(
         info.order_tag.as_u128(),
         order_summary,
         &params,

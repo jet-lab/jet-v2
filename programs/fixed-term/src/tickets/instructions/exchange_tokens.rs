@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
+use jet_airspace::state::AirspacePermit;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
@@ -9,6 +10,13 @@ use crate::{
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct ExchangeTokens<'info> {
+    /// Metadata permit allowing this user to interact with this market
+    #[account(
+        constraint = permit.owner == user_authority.key() @ FixedTermErrorCode::WrongAirspaceAuthorization,
+        constraint = permit.airspace == market.load()?.airspace @ FixedTermErrorCode::WrongAirspaceAuthorization,
+    )]
+    pub permit: Account<'info, AirspacePermit>,
+
     /// The Market manages asset tokens for a particular tenor
     #[account(
             has_one = ticket_mint @ FixedTermErrorCode::WrongTicketMint,

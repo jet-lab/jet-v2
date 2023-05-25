@@ -11,12 +11,16 @@ use crate::{
 #[derive(Accounts, MarketTokenManager)]
 pub struct Repay<'info> {
     /// The account tracking information related to this particular user
-    #[account(mut, has_one = claims @ FixedTermErrorCode::WrongClaimAccount)]
+    #[account(mut,
+        has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
+        has_one = market @ FixedTermErrorCode::UserNotInMarket
+    )]
     pub margin_user: Account<'info, MarginUser>,
 
     #[account(
         mut,
-        has_one = margin_user @ FixedTermErrorCode::UserNotInMarket,
+        has_one = margin_user @ FixedTermErrorCode::WrongMarginUser,
+        has_one = market @ FixedTermErrorCode::WrongMarket,
         has_one = payer,
         constraint = term_loan.sequence_number
             == margin_user.debt().next_term_loan_to_repay().unwrap()

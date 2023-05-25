@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 
-use agnostic_orderbook::instruction::resume_matching;
+use agnostic_orderbook::{
+    instruction::resume_matching,
+    state::{market_state::MarketState, AccountTag},
+};
 use jet_airspace::state::Airspace;
 
 use crate::{
@@ -53,10 +56,15 @@ pub fn handler(ctx: Context<ResumeOrderMatching>) -> Result<()> {
     let params = resume_matching::Params {};
     resume_matching::process::<CallbackInfo>(ctx.program_id, accounts, params)?;
 
-    emit!(ToggleOrderMatching {
-        market: ctx.accounts.market.key(),
-        is_orderbook_paused: false
-    });
+    let mut market_data = ctx.accounts.orderbook_market_state.data.borrow_mut();
+    let market_state = MarketState::from_buffer(&mut market_data, AccountTag::Market)?;
+
+    if market_state.pause_matching == 0 {
+        emit!(ToggleOrderMatching {
+            market: ctx.accounts.market.key(),
+            is_orderbook_paused: false
+        });
+    }
 
     Ok(())
 }
