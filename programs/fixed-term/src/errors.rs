@@ -150,4 +150,6 @@ pub enum FixedTermErrorCode {
     TermDepositAlreadyInitialized,
     #[msg("a term deposit belonging to margin account collateral must use the MarginRedeemDeposit instruction")]
     MarginUserCannotUseInstruction,
+    #[msg("cannot place an order with negative interest rates")]
+    PriceOutOfBounds,
 }

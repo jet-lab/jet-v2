@@ -21,8 +21,11 @@ pub struct ConfigureAutoRoll<'info> {
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// The signing authority for this user account
-    #[account(signer)]
+    #[account(has_one = owner)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
+
+    /// The controlling signer for the `MarginAccount`
+    pub owner: Signer<'info>,
 
     /// The fixed-term market this user belongs to
     pub market: AccountLoader<'info, Market>,

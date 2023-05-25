@@ -75,11 +75,11 @@ interface ICreateLendOrder {
   marketAccount?: string
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
-  autorollEnabled: boolean,
+  autorollEnabled: boolean
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
-  }[],
+    address: string
+    data: Uint8Array
+  }[]
 }
 export const offerLoan = async ({
   market,
@@ -157,11 +157,11 @@ interface ICreateBorrowOrder {
   basisPoints: BN
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
-  autorollEnabled: boolean,
+  autorollEnabled: boolean
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
-  }[],
+    address: string
+    data: Uint8Array
+  }[]
 }
 
 export const requestLoan = async ({
@@ -177,7 +177,6 @@ export const requestLoan = async ({
   autorollEnabled,
   airspaceLookupTables
 }: ICreateBorrowOrder): Promise<string> => {
-
   let setupInstructions: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: setupInstructions,
@@ -234,11 +233,11 @@ interface ICancelOrder {
   provider: AnchorProvider
   orderId: BN
   pools: Record<string, Pool>
-  markets: FixedTermMarket[],
+  markets: FixedTermMarket[]
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
-  }[],
+    address: string
+    data: Uint8Array
+  }[]
 }
 export const cancelOrder = async ({
   market,
@@ -287,11 +286,11 @@ interface IBorrowNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
-  autorollEnabled: boolean,
+  autorollEnabled: boolean
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
-  }[],
+    address: string
+    data: Uint8Array
+  }[]
 }
 
 export const borrowNow = async ({
@@ -376,11 +375,11 @@ interface ILendNow {
   pools: Record<string, Pool>
   amount: BN
   markets: FixedTermMarket[]
-  autorollEnabled: boolean,
+  autorollEnabled: boolean
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
-  }[],
+    address: string
+    data: Uint8Array
+  }[]
 }
 
 export const lendNow = async ({
@@ -410,7 +409,7 @@ export const lendNow = async ({
     marginAccount,
     walletAddress
   })
-  setupInstructions = setupInstructions.concat(marketIXS);
+  setupInstructions = setupInstructions.concat(marketIXS)
 
   // TODO: why do we refresh twice?
   await marginAccount.withPrioritisedPositionRefresh({
@@ -437,10 +436,7 @@ export const lendNow = async ({
 
   await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
 
-  return sendAndConfirmV0(provider, [
-    setupInstructions,
-    orderInstructions
-  ], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
 }
 
 interface ISettle {
@@ -449,11 +445,11 @@ interface ISettle {
   marginAccount: MarginAccount
   provider: AnchorProvider
   pools: Record<string, Pool>
-  amount: BN,
+  amount: BN
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
-  }[],
+    address: string
+    data: Uint8Array
+  }[]
 }
 
 export const settle = async ({
@@ -507,11 +503,11 @@ interface IRepay {
   provider: AnchorProvider
   termLoans: Array<Loan>
   pools: Record<string, Pool>
-  markets: FixedTermMarket[],
+  markets: FixedTermMarket[]
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
-  }[],
+    address: string
+    data: Uint8Array
+  }[]
 }
 
 export const repay = async ({
@@ -525,7 +521,7 @@ export const repay = async ({
   airspaceLookupTables
 }: IRepay) => {
   let instructions: TransactionInstruction[] = []
-  let refreshInstructions: TransactionInstruction[] = [];
+  let refreshInstructions: TransactionInstruction[] = []
 
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: refreshInstructions,
@@ -607,8 +603,8 @@ interface IRedeem {
   provider: AnchorProvider
   deposits: Array<Deposit>
   airspaceLookupTables: {
-    address: string;
-    data: Uint8Array;
+    address: string
+    data: Uint8Array
   }[]
 }
 export const redeem = async ({
@@ -663,7 +659,7 @@ export const configAutoroll = async ({
   payload,
   walletAddress
 }: IConfigureAutoRoll) => {
-  const { marketIXS } = await withCreateFixedTermMarketAccounts({
+  let { marketIXS } = await withCreateFixedTermMarketAccounts({
     market: marketAndConfig.market,
     provider,
     marginAccount: account,
@@ -671,21 +667,15 @@ export const configAutoroll = async ({
   })
 
   const lendSetupIX = await marketAndConfig.market.configAutorollLend(account, payload.lendPrice)
-  await account.withAdapterInvoke({
-    instructions: marketIXS,
-    adapterInstruction: lendSetupIX
-  })
+  marketIXS.push(lendSetupIX)
 
   const borrowSetupIX = await marketAndConfig.market.configAutorollBorrow(
     account,
     payload.borrowPrice,
     new BN(marketAndConfig.config.borrowTenor > 120 ? marketAndConfig.config.borrowTenor - 30 * 60 : 100)
   ) // market tenor - 30 minutes of lead time
+  marketIXS.push(borrowSetupIX)
 
-  await account.withAdapterInvoke({
-    instructions: marketIXS,
-    adapterInstruction: borrowSetupIX
-  })
   return sendAndConfirmV0(provider, [marketIXS], [], [])
 }
 
