@@ -243,28 +243,15 @@ async fn replace_openbook_orders(
         let scratch_a = get_scratch_address(&signer.pubkey(), token_a);
         let scratch_b = get_scratch_address(&signer.pubkey(), token_b);
 
-        if dbg!(target.get_balance(&scratch_a).await?) == 0 {
+        if target.get_balance(&scratch_a).await? == 0 {
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_a));
         }
-        if dbg!(target.get_balance(&scratch_b).await?) == 0 {
+        if target.get_balance(&scratch_b).await? == 0 {
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
         }
 
-        // instructions.push(
-        //     jet_margin_sdk::ix_builder::test_service::openbook_market_cancel_orders(
-        //         program,
-        //         token_a,
-        //         token_b,
-        //         &scratch_a,
-        //         &scratch_b,
-        //         &signer.pubkey(),
-        //         &market.bids,
-        //         &market.asks,
-        //         &market.event_queue,
-        //     ),
-        // );
         instructions.push(
-            jet_margin_sdk::ix_builder::test_service::openbook_market_make(
+            jet_margin_sdk::ix_builder::test_service::openbook_market_cancel_orders(
                 program,
                 token_a,
                 token_b,
@@ -273,29 +260,50 @@ async fn replace_openbook_orders(
                 &signer.pubkey(),
                 &market.bids,
                 &market.asks,
-                &market.request_queue,
                 &market.event_queue,
             ),
         );
 
-        let balance_tx = Transaction::new_signed_with_payer(
+        let cancel_tx = Transaction::new_signed_with_payer(
             &instructions,
             Some(&signer.pubkey()),
             &[signer],
             target.get_latest_blockhash().await?,
         );
 
-        match target.send_and_confirm_transaction(&balance_tx).await {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("{e}");
+        let balance_ix = jet_margin_sdk::ix_builder::test_service::openbook_market_make(
+            program,
+            token_a,
+            token_b,
+            &scratch_a,
+            &scratch_b,
+            &signer.pubkey(),
+            &market.bids,
+            &market.asks,
+            &market.request_queue,
+            &market.event_queue,
+        );
 
-                if let ClientErrorKind::RpcError(RpcError::RpcResponseError {
-                    data: RpcResponseErrorData::SendTransactionPreflightFailure(failure),
-                    ..
-                }) = e.kind()
-                {
-                    eprintln!("{:#?}", failure.logs);
+        let balance_tx = Transaction::new_signed_with_payer(
+            &[balance_ix],
+            Some(&signer.pubkey()),
+            &[signer],
+            target.get_latest_blockhash().await?,
+        );
+
+        for tx in [cancel_tx, balance_tx] {
+            match target.send_and_confirm_transaction(&tx).await {
+                Ok(_) => (),
+                Err(e) => {
+                    eprintln!("{e}");
+
+                    if let ClientErrorKind::RpcError(RpcError::RpcResponseError {
+                        data: RpcResponseErrorData::SendTransactionPreflightFailure(failure),
+                        ..
+                    }) = e.kind()
+                    {
+                        eprintln!("{:#?}", failure.logs);
+                    }
                 }
             }
         }
