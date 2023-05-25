@@ -172,8 +172,9 @@ impl MarginUser {
     }
 
     /// Account for a posted lend order leaving the book
-    pub fn cancel_lend_order(&mut self, token_value: u64) -> Result<()> {
+    pub fn cancel_lend_order(&mut self, token_value: u64, ticket_value: u64) -> Result<()> {
         self.assets.entitled_tokens.try_add_assign(token_value)?;
+        self.assets.tickets_posted.try_sub_assign(ticket_value)?;
         self.emit_asset_balances()?;
         Ok(())
     }
