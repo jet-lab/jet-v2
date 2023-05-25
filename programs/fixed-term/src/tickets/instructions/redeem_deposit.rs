@@ -13,6 +13,7 @@ use crate::{
 pub struct RedeemDeposit<'info> {
     /// Metadata permit allowing this user to interact with this market
     #[account(
+        has_one = owner @ FixedTermErrorCode::WrongAirspaceAuthorization,
         constraint = permit.airspace == market.load()?.airspace @ FixedTermErrorCode::WrongAirspaceAuthorization,
     )]
     pub permit: Account<'info, AirspacePermit>,
