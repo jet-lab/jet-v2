@@ -190,12 +190,10 @@ jobs:
         with:
           compose-file: "./.github/e2e-docker-compose.yml"
           down-flags: "--volumes"
+
       # Use this to debug if services don't start
       # - name: Docker and network check
       #   run: sleep 15 && docker compose -f ./.github/e2e-docker-compose.yml ps && netstat -peanut
-
-      # - name: Network check
-      #   run: sleep 15 && netstat -peanut 
 
       - name: E2E
         run: |

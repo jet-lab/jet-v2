@@ -898,7 +898,7 @@ export class MarginAccount {
   async createAccount(): Promise<string> {
     const instructions: TransactionInstruction[] = []
     await this.withCreateAccount(instructions)
-    return await this.sendAndConfirmV0(instructions, [])
+    return await this.sendAndConfirmV0([instructions], [])
   }
 
   /**
@@ -1742,11 +1742,11 @@ export class MarginAccount {
   }
 
   async sendAndConfirmV0(
-    instructions: TransactionInstruction[],
+    instructions: TransactionInstruction[][],
     lookupTables: { address: string; data: Uint8Array }[],
     signers?: Signer[]
   ): Promise<string> {
-    return await sendAndConfirmV0(this.provider, [instructions], lookupTables, signers)
+    return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
   }
 
   /**

@@ -2,23 +2,22 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
+use jet_environment::builder::resolve_swap_program;
 use jet_instructions::fixed_term::derive::market_from_tenor;
 use solana_sdk::pubkey::Pubkey;
 
 use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
 use jet_client::NetworkKind;
 use jet_client_native::{JetSimulationClient, SimulationClient};
-use jet_environment::{
-    config::{
-        AirspaceConfig, DexConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS,
-    },
-    programs::ORCA_V2,
+use jet_environment::config::{
+    AirspaceConfig, DexConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS,
 };
 use jet_instructions::airspace::derive_airspace;
 use jet_instructions::test_service::{derive_pyth_price, derive_token_mint};
 use jet_margin_pool::MarginPoolConfig;
 use jet_margin_sdk::ix_builder::test_service::derive_spl_swap_pool;
 use jet_metadata::TokenKind;
+use jet_program_common::programs::ORCA_V2;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::environment::TestToken;
@@ -158,7 +157,7 @@ impl TestContext {
 pub struct TestContextSetupInfo {
     pub is_restricted: bool,
     pub tokens: Vec<TokenDescription>,
-    pub spl_swap_pools: Vec<&'static str>,
+    pub dexes: Vec<(&'static str, &'static str)>,
 }
 
 impl TestDefault for TestContextSetupInfo {
@@ -169,7 +168,7 @@ impl TestDefault for TestContextSetupInfo {
                 TestToken::with_pool("TSOL").into(),
                 TestToken::with_pool("USDC").into(),
             ],
-            spl_swap_pools: vec!["TSOL/USDC"],
+            dexes: vec![("spl-swap", "TSOL/USDC")],
         }
     }
 }
@@ -191,15 +190,15 @@ impl TestContextSetupInfo {
             })
             .collect::<Vec<_>>();
 
-        let spl_swap_pools = self
-            .spl_swap_pools
+        let dexes = self
+            .dexes
             .iter()
-            .map(|pair_string| {
+            .map(|(program, pair_string)| {
                 let (name_a, name_b) = pair_string.split_once('/').unwrap();
                 let token_a_name = format!("{airspace_name}-{name_a}");
                 let token_b_name = format!("{airspace_name}-{name_b}");
 
-                (token_a_name, token_b_name)
+                (program, (token_a_name, token_b_name))
             })
             .collect::<Vec<_>>();
 
@@ -232,14 +231,14 @@ impl TestContextSetupInfo {
                     .collect(),
                 lookup_registry_authority: None,
             }],
-            exchanges: spl_swap_pools
+            exchanges: dexes
                 .iter()
-                .map(|(name_a, name_b)| {
+                .map(|(program, (name_a, name_b))| {
                     let token_a = derive_token_mint(name_a);
                     let token_b = derive_token_mint(name_b);
 
                     DexInfo {
-                        program: ORCA_V2,
+                        program: resolve_swap_program(NetworkKind::Localnet, program).unwrap(),
                         description: format!("{}/{}", token_a, token_b),
                         address: derive_spl_swap_pool(&ORCA_V2, &token_a, &token_b).state,
                         base: token_a,
@@ -253,10 +252,10 @@ impl TestContextSetupInfo {
             network: NetworkKind::Localnet,
             margin_adapters: DEFAULT_MARGIN_ADAPTERS.to_vec(),
             oracle_authority: Some(payer),
-            exchanges: spl_swap_pools
+            exchanges: dexes
                 .iter()
-                .map(|(a, b)| DexConfig {
-                    program: "spl-swap".to_string(),
+                .map(|(program, (a, b))| DexConfig {
+                    program: program.to_string(),
                     description: None,
                     state: None,
                     base: a.clone(),

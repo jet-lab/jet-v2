@@ -65,6 +65,8 @@ jet-margin-sdk = { path = "../../libraries/rust/margin", features = ["testing"] 
 jet-environment = { path = "../../libraries/rust/environment" }
 jet-program-common = { path = "../../libraries/rust/program-common" }
 
+jet-testing = { path = "../../libraries/rust/testing" }
+
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 itertools = "0.10.3"
@@ -77,3 +79,9 @@ features = ["test-runtime"]
 git = "https://github.com/jet-lab/lookup-table-registry"
 branch = "main"
 features = ["program"]
+
+[dependencies.orca-whirlpool]
+package = "whirlpool"
+git = "https://github.com/jet-lab/whirlpools"
+branch = "anchor-27"
+features = ["no-entrypoint"]

@@ -2,10 +2,10 @@ export const pointAtCoordinateX = (path: SVGPathElement, x: number, tolerance: n
   let length_end = path.getTotalLength(),
     length_start = 0,
     point = path.getPointAtLength((length_end + length_start) / 2), // get the middle point
-    bisection_iterations_max = 50,
+    bisection_iterations_max = 40,
     bisection_iterations = 0;
 
-  const error = 1;
+  const error = 0.1;
 
   while (x < point.x - error || x > point.x + error) {
     point = path.getPointAtLength((length_end + length_start) / 2);

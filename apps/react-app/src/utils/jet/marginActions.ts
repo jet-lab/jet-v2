@@ -1,7 +1,7 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
+import { MarginAccount, Pool, PoolTokenChange, TokenAmount, TokenFaucet } from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
 import { Pools } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
@@ -14,6 +14,8 @@ import { message } from 'antd';
 import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { useJetStore } from '@jet-lab/store';
 import { useMemo } from 'react';
+import { SwapStep } from '@utils/actions/swap';
+import { LookupTable } from '@jet-lab/store/dist/slices/accounts';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -41,6 +43,7 @@ export function useMarginActions() {
   const accountPoolPosition = currentPool?.symbol && currentAccount?.poolPositions[currentPool.symbol];
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
+  const swapEndpoint: string = (cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API) || "";
 
   // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
@@ -316,13 +319,14 @@ export function useMarginActions() {
   }
 
   // Swap
-  async function splTokenSwap(
+  async function routeSwap(
     inputToken: Pool,
     outputToken: Pool,
-    swapPool: SPLSwapPool,
+    swapPaths: SwapStep[],
     swapAmount: TokenAmount,
     minAmountOut: TokenAmount,
-    repayWithOutput: boolean
+    repayWithOutput: boolean,
+    lookupTables: LookupTable[]
   ): Promise<[string | undefined, ActionResponse | undefined]> {
     if (!pools || !inputToken || !outputToken || !currentAccount) {
       console.error('Input/output tokens or current account undefined');
@@ -330,15 +334,17 @@ export function useMarginActions() {
     }
 
     try {
-      const txId = await inputToken.splTokenSwap({
+      const txId = await inputToken.routeSwap({
+        endpoint: swapEndpoint,
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
         markets: markets.map(m => m.market),
         outputToken,
-        swapPool,
         swapAmount,
         minAmountOut,
-        repayWithOutput
+        repayWithOutput,
+        swapPaths,
+        lookupTables
       });
       await actionRefresh();
       if (txId === 'Setup check failed') {
@@ -410,7 +416,7 @@ export function useMarginActions() {
         change: toChange
       });
       const allIx = refreshInstructions.concat(instructions);
-      const txId = await currentAccount.sendAndConfirmV0(allIx, []);
+      const txId = await currentAccount.sendAndConfirmV0([allIx], []);
       await actionRefresh();
       return [txId, ActionResponse.Success];
     } catch (err: any) {
@@ -430,7 +436,7 @@ export function useMarginActions() {
     withdraw,
     borrow,
     repay,
-    splTokenSwap,
+    routeSwap,
     transfer
   };
 }
