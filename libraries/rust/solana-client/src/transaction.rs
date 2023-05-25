@@ -2,7 +2,7 @@ use anchor_lang::prelude::Pubkey;
 use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::hash::Hash;
 use solana_sdk::message::{v0, CompileError, Message, VersionedMessage};
-use solana_sdk::signer::SignerError;
+use solana_sdk::signer::{Signer, SignerError};
 use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{
     instruction::Instruction,
@@ -216,6 +216,23 @@ pub fn compile_versioned_transaction(
         signatures: vec![],
         message,
     };
+    Ok(tx)
+}
+
+/// Compile and sign the instructions into a versioned transaction
+pub fn sign_versioned_transaction(
+    instructions: &[Instruction],
+    signer: &Keypair,
+    recent_blockhash: Hash,
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<VersionedTransaction, TransactionBuildError> {
+    let message = VersionedMessage::V0(v0::Message::try_compile(
+        &signer.pubkey(),
+        instructions,
+        lookup_tables,
+        recent_blockhash,
+    )?);
+    let tx = VersionedTransaction::try_new(message, &[signer])?;
     Ok(tx)
 }
 
