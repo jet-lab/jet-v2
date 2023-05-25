@@ -21,7 +21,11 @@ use anchor_openbook::serum_dex::{
     instruction::SelfTradeBehavior,
     matching::{OrderType, Side},
 };
-use anchor_spl::dex as anchor_openbook;
+use anchor_spl::{
+    dex as anchor_openbook,
+    token::{Mint, TokenAccount},
+};
+use jet_program_common::CONTROL_AUTHORITY;
 
 use crate::*;
 
@@ -59,8 +63,14 @@ pub struct OpenbookSwapInfo<'info> {
     #[account(mut)]
     pub quote_vault: AccountInfo<'info>,
 
+    pub quote_mint: Account<'info, Mint>,
+
     /// CHECK:
     pub vault_signer: AccountInfo<'info>,
+
+    /// The referrer account owned by the control program
+    #[account(mut, associated_token::mint = quote_mint, associated_token::authority = CONTROL_AUTHORITY)]
+    pub referrer_account: Account<'info, TokenAccount>,
 
     /// The address of the swap program
     pub dex_program: Program<'info, anchor_openbook::Dex>,
@@ -89,6 +99,9 @@ impl<'info> OpenbookSwapInfo<'info> {
             let base_mint = Pubkey::from(address_bytes);
             (market.coin_lot_size, base_mint)
         };
+
+        // Track the referrer balance
+        let referrer_opening = token::accessor::amount(&self.referrer_account.to_account_info())?;
 
         // Determine order side
         let source_mint = token::accessor::mint(source)?;
@@ -148,8 +161,19 @@ impl<'info> OpenbookSwapInfo<'info> {
                 pc_wallet: quote_wallet.to_account_info(),
                 vault_signer: self.vault_signer.to_account_info(),
             },
-        );
+        )
+        .with_remaining_accounts(vec![self.referrer_account.to_account_info()]);
         anchor_openbook::settle_funds(settle_ctx)?;
+
+        let referrer_closing = token::accessor::amount(&self.referrer_account.to_account_info())?;
+        let referral_fee = referrer_closing.checked_sub(referrer_opening).unwrap();
+
+        emit!(crate::ProtocolSwapFee {
+            venue: self.market.key(),
+            mint: self.referrer_account.mint,
+            amount: referral_fee,
+            venue_identifier: SwapRouteIdentifier::OpenBook
+        });
 
         Ok(())
     }

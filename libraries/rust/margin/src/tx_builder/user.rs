@@ -633,8 +633,10 @@ impl MarginTxBuilder {
         let mut transactions = vec![];
         let setup_instructions = self.setup_swap(builder).await?;
         if !setup_instructions.is_empty() {
-            transactions.push(self.create_transaction_builder(&setup_instructions));
+            let setup = self.create_transaction_builder(&setup_instructions);
+            transactions.push(setup);
         }
+
         transactions.push(self.create_transaction_builder(&[
             ComputeBudgetInstruction::set_compute_unit_limit(800000),
             self.adapter_invoke_ix(inner_swap_ix),

@@ -39,3 +39,25 @@ pub struct SaberSwapInfo {
     /// The allowance of price deviation before the pool may be rebalanced
     pub price_threshold: u16,
 }
+
+/// Information about an OpebBook market
+#[account]
+pub struct OpenBookMarketInfo {
+    /// The address of the market state
+    pub market_state: Pubkey,
+
+    /// The initial spread from the market price to quote at
+    pub initial_spread: u16,
+
+    /// The incremental spread to quote at after the starting spread
+    pub incremental_spread: u16,
+
+    /// The multiplier to apply when quoting at each level.
+    /// 8 bids and asks are placed at each time.
+    pub basket_sizes: [u8; 4],
+
+    /// The amount in USD to provide liquidity per basket.
+    /// If the sum of baskets is 10 and each unit is 500, then $5000 of liquidity is provided.
+    /// This value is per side of the book.
+    pub basket_liquidity: u64,
+}

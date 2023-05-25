@@ -19,7 +19,10 @@ use jet_margin_sdk::{
     tx_builder::TokenDepositsConfig,
 };
 use jet_margin_swap::SwapRouteIdentifier;
+use jet_program_common::CONTROL_AUTHORITY;
+use jet_solana_client::rpc::AccountFilter;
 use jet_static_program_registry::spl_token_swap_v2;
+use openbook::state::OpenOrders;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -35,6 +38,7 @@ use hosted_tests::{
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
+use spl_associated_token_account::get_associated_token_address;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_USDT: u64 = 1_000_000;
@@ -686,7 +690,7 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
     supported_mints.insert(env.msol);
     supported_mints.insert(env.tsol);
 
-    let markets = OpenBookMarket::get_markets(&ctx.rpc(), &supported_mints).await?;
+    let markets = OpenBookMarket::get_markets(&ctx.rpc(), &supported_mints, Dex::id()).await?;
     assert_eq!(markets.len(), 1);
 
     // Add liquidity on the market
@@ -771,6 +775,25 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
         .await?;
 
     single_leg_swap_margin(&ctx, &env, market).await?;
+
+    // Find all open orders to consume
+    let open_orders_accounts = ctx
+        .solana
+        .rpc
+        .get_program_accounts(
+            &Dex::id(),
+            vec![AccountFilter::DataSize(
+                12 + std::mem::size_of::<OpenOrders>(),
+            )],
+        )
+        .await?;
+    let accounts = open_orders_accounts
+        .iter()
+        .map(|(pubkey, _)| pubkey)
+        .collect::<Vec<_>>();
+
+    assert_eq!(accounts.len(), 3);
+
     market
         .match_orders(&ctx.rpc(), maker_msol_account, maker_tsol_account, u16::MAX)
         .await?;
@@ -779,11 +802,36 @@ async fn route_openbook_swap() -> anyhow::Result<()> {
             &ctx.rpc(),
             maker_msol_account,
             maker_tsol_account,
-            vec![&open_orders],
+            accounts.clone(),
             u16::MAX,
         )
         .await?;
     single_leg_swap(&ctx, &env, market).await?;
+    market
+        .match_orders(&ctx.rpc(), maker_msol_account, maker_tsol_account, u16::MAX)
+        .await?;
+    market
+        .consume_events(
+            &ctx.rpc(),
+            maker_tsol_account,
+            maker_msol_account,
+            accounts,
+            u16::MAX,
+        )
+        .await?;
+
+    let referrer = get_associated_token_address(&CONTROL_AUTHORITY, &env.tsol);
+
+    market
+        .settle(
+            &ctx.rpc(),
+            &maker,
+            &open_orders,
+            maker_msol_account,
+            maker_tsol_account,
+            Some(&referrer),
+        )
+        .await?;
 
     Ok(())
 }

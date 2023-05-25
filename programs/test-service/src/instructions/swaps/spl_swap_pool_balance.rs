@@ -25,6 +25,8 @@ use jet_static_program_registry::orca_swap_v2;
 use crate::seeds::{SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_TOKENS, TOKEN_INFO};
 use crate::state::{SplSwapInfo, TokenInfo};
 
+use super::utils::read_price;
+
 #[derive(Accounts)]
 pub struct SplSwapPoolBalance<'info> {
     payer: Signer<'info>,
@@ -283,11 +285,4 @@ fn apply_change<'info>(
     }
 
     Ok(())
-}
-
-fn read_price(pyth_price: &AccountInfo) -> Number128 {
-    let price_result = pyth_sdk_solana::load_price_feed_from_account_info(pyth_price).unwrap();
-    let price_value = price_result.get_price_unchecked();
-
-    Number128::from_decimal(price_value.price, price_value.expo)
 }

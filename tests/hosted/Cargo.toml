@@ -71,6 +71,9 @@ mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 itertools = "0.10.3"
 
+# Use the latest openbook program that's removed the SRM stuff
+openbook = { package = "serum_dex", git = "https://github.com/openbook-dex/program", branch = "master", features = ["no-entrypoint"] }
+
 [dependencies.jet-simulation]
 path = "../../libraries/rust/simulation"
 features = ["test-runtime"]
