@@ -84,7 +84,7 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
                 let (state_accounts, create_state_acc_tx) =
                     OpenbookStateAccounts::create(&builder.interface, &swap_program).await?;
 
-                builder.setup(SetupPhase::Swaps, [create_state_acc_tx]);
+                builder.setup(SetupPhase::TokenAccounts, [create_state_acc_tx]);
 
                 builder.setup(
                     SetupPhase::Swaps,

@@ -395,7 +395,7 @@ pub fn openbook_market_create(
         event_queue: *event_queue,
         request_queue: *request_queue,
         open_orders: addrs.open_orders,
-        dex_program: dbg!(*dex_program),
+        dex_program: *dex_program,
         token_program: spl_token::ID,
         system_program: system_program::ID,
         rent: sysvar::rent::ID,
