@@ -28,11 +28,13 @@ pub fn initialize_margin_user_js(
 pub fn configure_auto_roll_lend_js(
     market: String,
     margin_account: String,
+    owner: String,
     limit_price: u64,
 ) -> JsResult {
     configure_auto_roll(
         Pubkey::from_str(&market)?,
         Pubkey::from_str(&margin_account)?,
+        Pubkey::from_str(&owner)?,
         AutoRollConfig::Lend(LendAutoRollConfig { limit_price }),
     )
     .to_js_default_serializer()
@@ -42,12 +44,14 @@ pub fn configure_auto_roll_lend_js(
 pub fn configure_auto_roll_borrow_js(
     market: String,
     margin_account: String,
+    owner: String,
     roll_tenor: u64,
     limit_price: u64,
 ) -> JsResult {
     configure_auto_roll(
         Pubkey::from_str(&market)?,
         Pubkey::from_str(&margin_account)?,
+        Pubkey::from_str(&owner)?,
         AutoRollConfig::Borrow(BorrowAutoRollConfig {
             roll_tenor,
             limit_price,
@@ -68,12 +72,14 @@ export function initializeMarginUserIx(
 export function configureAutoRollLendIx(
     market: string,
     marginAccount: string,
+    owner: string,
     limitPrice: bigint
 ): WasmTransactionInstruction;
   
 export function configureAutoRollBorrowIx(
     market: string,
     marginAccount: string,
+    owner: string,
     rollTenor: bigint,
     limitPrice: bigint
 ): WasmTransactionInstruction;

@@ -49,7 +49,7 @@ pub struct AutoRollLendOrder<'info> {
     /// Token mint used by the margin program to track the debt that must be collateralized
     #[account(
         mut,
-        address = orderbook_mut.ticket_collateral_mint() @ FixedTermErrorCode::WrongCollateralMint,
+        address = orderbook_mut.ticket_collateral_mint() @ FixedTermErrorCode::WrongTicketCollateralMint,
     )]
     pub ticket_collateral_mint: Box<Account<'info, Mint>>,
 

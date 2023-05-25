@@ -223,8 +223,8 @@ impl FixedTermIxBuilder {
         )
     }
 
-    pub fn initialize_margin_user(&self, owner: Pubkey) -> Instruction {
-        ix::initialize_margin_user(owner, self.market, self.airspace, self.payer)
+    pub fn initialize_margin_user(&self, margin_account: Pubkey) -> Instruction {
+        ix::initialize_margin_user(margin_account, self.market, self.airspace, self.payer)
     }
 
     /// can derive keys from `owner`. else needs vault addresses
@@ -237,6 +237,7 @@ impl FixedTermIxBuilder {
     ) -> Instruction {
         ix::convert_tokens(
             amount,
+            self.airspace,
             self.market,
             owner,
             underlying_token_source,
@@ -255,6 +256,7 @@ impl FixedTermIxBuilder {
         ix::stake_tickets(
             amount,
             seed,
+            self.airspace,
             self.market,
             ticket_holder,
             ticket_source,
@@ -269,6 +271,7 @@ impl FixedTermIxBuilder {
         token_destination: Option<Pubkey>,
     ) -> Instruction {
         ix::redeem_deposit(ix::redeem_deposit_accounts(
+            self.airspace,
             self.market,
             ticket_holder,
             self.underlying_mint,
@@ -284,23 +287,23 @@ impl FixedTermIxBuilder {
 
     pub fn margin_redeem_deposit(
         &self,
+        owner: Pubkey,
         margin_account: Pubkey,
         deposit: Pubkey,
         token_destination: Option<Pubkey>,
     ) -> Instruction {
         let margin_user = derive::margin_user(&self.market, &margin_account);
-        ix::margin_redeem_deposit(
-            &self.market,
-            margin_user,
-            ix::redeem_deposit_accounts(
-                self.market,
-                margin_account,
-                self.underlying_mint,
-                deposit,
-                token_destination,
-                self.payer,
-            ),
-        )
+        let mut inner = ix::redeem_deposit_accounts(
+            self.airspace,
+            self.market,
+            owner,
+            self.underlying_mint,
+            deposit,
+            token_destination,
+            self.payer,
+        );
+        inner.owner = margin_account;
+        ix::margin_redeem_deposit(&self.market, margin_user, inner)
     }
 
     pub fn refresh_position(&self, margin_account: Pubkey, expect_price: bool) -> Instruction {
@@ -325,6 +328,7 @@ impl FixedTermIxBuilder {
             ix::sell_tickets_order_accounts(
                 self.orderbook_mut(),
                 user,
+                self.airspace,
                 &self.underlying_mint,
                 ticket_source,
                 token_destination,
@@ -346,6 +350,7 @@ impl FixedTermIxBuilder {
             ix::sell_tickets_order_accounts(
                 self.orderbook_mut(),
                 margin_account,
+                self.airspace,
                 &self.underlying_mint,
                 ticket_source,
                 token_destination,
@@ -380,6 +385,7 @@ impl FixedTermIxBuilder {
         ix::lend_order(
             params,
             seed,
+            self.airspace,
             &self.market,
             user,
             lender_tickets,
@@ -496,9 +502,10 @@ impl FixedTermIxBuilder {
     pub fn configure_auto_roll(
         &self,
         margin_account: Pubkey,
+        owner: Pubkey,
         config: AutoRollConfig,
     ) -> Instruction {
-        ix::configure_auto_roll(self.market, margin_account, config)
+        ix::configure_auto_roll(self.market, margin_account, owner, config)
     }
 
     pub fn toggle_auto_roll_deposit(&self, margin_account: Pubkey, deposit: Pubkey) -> Instruction {

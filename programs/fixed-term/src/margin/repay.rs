@@ -63,7 +63,7 @@ impl<'a, 'info> RepayAccounts<'a, 'info> {
         } else {
             let next_term_loan =
                 Account::<TermLoan>::try_from(self.next_term_loan).and_then(|ob| {
-                    require_eq!(
+                    require_keys_eq!(
                         ob.margin_user,
                         self.margin_user.key(),
                         FixedTermErrorCode::UserNotInMarket
