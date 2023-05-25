@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use jet_margin::{AdapterResult, PositionChange};
+use jet_margin::{AdapterResult, MarginAccount, PositionChange};
 
 use crate::{
     control::state::Market,
@@ -29,14 +29,16 @@ pub struct InitializeMarginUser<'info> {
 
     /// The signing authority for this user account
     #[account(
-        constraint = margin_account.owner == &jet_margin::ID,
+        signer,
+        constraint = margin_account.load()?.airspace == market.load()?.airspace
     )]
-    pub margin_account: Signer<'info>,
+    pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The fixed-term header account
     #[account(
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
-        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint
+        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongTicketCollateralMint,
+        has_one = underlying_collateral_mint @ FixedTermErrorCode::WrongUnderlyingCollateralMint
     )]
     pub market: AccountLoader<'info, Market>,
 

@@ -14,6 +14,7 @@ use crate::{
 pub struct MarginRedeemDeposit<'info> {
     #[account(mut,
 		constraint = margin_user.margin_account == inner.owner.key() @ FixedTermErrorCode::WrongMarginUserAuthority,
+        constraint = margin_user.market == inner.market.key() @ FixedTermErrorCode::UserNotInMarket,
         has_one = ticket_collateral,
 	)]
     pub margin_user: Box<Account<'info, MarginUser>>,
