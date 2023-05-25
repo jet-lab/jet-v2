@@ -41,15 +41,15 @@ pub struct InitializeOrderbook<'info> {
     /// AOB market event queue
     ///
     /// Must be initialized
-    #[account(mut)]
+    #[account(zero)]
     pub event_queue: AccountInfo<'info>,
 
     /// AOB market bids
-    #[account(mut)]
+    #[account(zero)]
     pub bids: AccountInfo<'info>,
 
     /// AOB market asks
-    #[account(mut)]
+    #[account(zero)]
     pub asks: AccountInfo<'info>,
 
     /// The authority that must sign to make this change

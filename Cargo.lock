@@ -2618,6 +2618,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "jet-auth"
+version = "1.0.0"
+dependencies = [
+ "anchor-lang",
+ "serde",
+]
+
+[[package]]
 name = "jet-client"
 version = "0.1.0"
 dependencies = [
@@ -3010,6 +3018,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "jet-rewards"
+version = "1.0.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "bitflags",
+ "bytemuck",
+ "jet-program-common",
+ "jet-program-proc-macros",
+ "jet-staking",
+ "serde",
+ "static_assertions",
+]
+
+[[package]]
 name = "jet-simulation"
 version = "0.2.0"
 dependencies = [
@@ -3059,6 +3082,20 @@ dependencies = [
  "spl-token 3.5.0",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "jet-staking"
+version = "1.0.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "jet-auth",
+ "serde",
+ "solana-program",
+ "spl-governance",
+ "spl-governance-addin-api",
+ "spl-governance-tools",
 ]
 
 [[package]]

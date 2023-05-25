@@ -1,11 +1,19 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+use jet_airspace::state::AirspacePermit;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{orderbook::state::*, serialization::RemainingAccounts, FixedTermErrorCode};
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct LendOrder<'info> {
+    /// Metadata permit allowing this user to interact with this market
+    #[account(
+        constraint = permit.owner == authority.key() @ FixedTermErrorCode::WrongAirspaceAuthorization,
+        constraint = permit.airspace == orderbook_mut.airspace() @ FixedTermErrorCode::WrongAirspaceAuthorization,
+    )]
+    pub permit: Account<'info, AirspacePermit>,
+
     /// Authority accounted for as the owner of resulting orderbook bids and `TermDeposit` accounts
     pub authority: Signer<'info>,
 
