@@ -16,6 +16,7 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 testing = []
+devnet = []
 cli = ["no-entrypoint", "serde"]
 
 [dependencies]
