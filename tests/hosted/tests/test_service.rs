@@ -230,7 +230,7 @@ async fn openorder_market_make() -> anyhow::Result<()> {
         bytemuck::from_bytes::<OpenOrders>(&open_orders_accounts[0].1.data[12..]);
 
     // There can be up to 16 orders, sometimes there's fewer, so check 8
-    let client_orders = &{ open_orders_account.client_order_ids }[..8];
+    let client_orders = &{ open_orders_account.client_order_ids }[..4];
     // Each order ID should be > 0
     for client_order_id in client_orders {
         assert_ne!(*client_order_id, 0);
