@@ -10,6 +10,8 @@ jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
     env:
+      REACT_APP_REQUIRE_GEOBLOCKING: 'false'
+
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
       REACT_APP_RPC_DEV_TOKEN: ''
       REACT_APP_RPC_TOKEN: ''
