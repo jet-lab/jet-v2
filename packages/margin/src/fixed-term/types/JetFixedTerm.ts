@@ -1119,6 +1119,12 @@ export type JetFixedTerm = {
           name: "inner"
           accounts: [
             {
+              name: "permit"
+              isMut: false
+              isSigner: false
+              docs: ["The airspace metadata permit"]
+            },
+            {
               name: "deposit"
               isMut: true
               isSigner: false
@@ -4955,6 +4961,12 @@ export const IDL: JetFixedTerm = {
         {
           name: "inner",
           accounts: [
+            {
+              name: "permit",
+              isMut: false,
+              isSigner: false,
+              docs: ["The airspace metadata permit"]
+            },
             {
               name: "deposit",
               isMut: true,

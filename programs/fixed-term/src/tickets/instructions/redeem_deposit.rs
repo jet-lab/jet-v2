@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
+use jet_airspace::state::AirspacePermit;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
@@ -10,6 +11,12 @@ use crate::{
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct RedeemDeposit<'info> {
+    /// Metadata permit allowing this user to interact with this market
+    #[account(
+        constraint = permit.airspace == market.load()?.airspace @ FixedTermErrorCode::WrongAirspaceAuthorization,
+    )]
+    pub permit: Account<'info, AirspacePermit>,
+
     /// The tracking account for the deposit
     #[account(mut,
               close = payer,

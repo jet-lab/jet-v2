@@ -951,7 +951,7 @@ impl<P: Proxy> FixedTermUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .initialize_margin_user(self.proxy.pubkey());
+            .initialize_margin_user(self.owner.pubkey(), self.proxy.pubkey());
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await

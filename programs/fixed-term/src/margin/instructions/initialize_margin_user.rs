@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use jet_margin::{AdapterResult, PositionChange};
+use jet_airspace::state::AirspacePermit;
+use jet_margin::{AdapterResult, MarginAccount, PositionChange};
 
 use crate::{
     control::state::Market,
@@ -13,6 +14,13 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct InitializeMarginUser<'info> {
+    /// Metadata permit allowing this user to interact with this market
+    #[account(
+        constraint = permit.owner == margin_account.load()?.owner @ FixedTermErrorCode::WrongAirspaceAuthorization,
+        constraint = permit.airspace == market.load()?.airspace @ FixedTermErrorCode::WrongAirspaceAuthorization,
+    )]
+    pub permit: Account<'info, AirspacePermit>,
+
     /// The account tracking information related to this particular user
     #[account(
         init,
@@ -28,10 +36,8 @@ pub struct InitializeMarginUser<'info> {
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// The signing authority for this user account
-    #[account(
-        constraint = margin_account.owner == &jet_margin::ID,
-    )]
-    pub margin_account: Signer<'info>,
+    #[account(signer)]
+    pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The fixed-term header account
     #[account(

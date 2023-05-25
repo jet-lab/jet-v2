@@ -345,6 +345,7 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
             self.account
                 .builder
                 .adapter_invoke(self.builder.margin_redeem_deposit(
+                    self.account.state().owner,
                     self.account.address(),
                     deposit_key,
                     Some(token_account),
@@ -517,9 +518,10 @@ impl<I: NetworkUserInterface> MarginAccountMarketClient<I> {
 
         if !self.client.account_exists(&user_market_account).await? {
             ixns.push(
-                self.account
-                    .builder
-                    .adapter_invoke(self.builder.initialize_margin_user(self.account.address)),
+                self.account.builder.adapter_invoke(
+                    self.builder
+                        .initialize_margin_user(self.account.state().owner, self.account.address),
+                ),
             );
 
             ixns.push(

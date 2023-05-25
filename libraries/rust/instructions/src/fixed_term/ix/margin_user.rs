@@ -8,12 +8,14 @@ use jet_fixed_term::{
     accounts::OrderbookMut, margin::state::AutoRollConfig, orderbook::state::OrderParams,
 };
 
+use crate::airspace::derive_permit;
 use crate::fixed_term::derive::*;
 use crate::margin::derive_token_config;
 
 use super::lend_order_accounts;
 
 pub fn initialize_margin_user(
+    owner: Pubkey,
     margin_account: Pubkey,
     market: Pubkey,
     airspace: Pubkey,
@@ -24,6 +26,7 @@ pub fn initialize_margin_user(
     let claims_mint = claims_mint(&market);
     let margin_user = margin_user(&market, &margin_account);
     let accounts = jet_fixed_term::accounts::InitializeMarginUser {
+        permit: derive_permit(&airspace, &owner),
         market,
         payer,
         margin_user,
@@ -60,7 +63,13 @@ pub fn margin_redeem_deposit(
         ticket_collateral: user_ticket_collateral(&margin_user),
         ticket_collateral_mint: ticket_collateral_mint(market),
         margin_user,
-        inner: accounts,
+        margin_account: accounts.owner,
+        deposit: accounts.deposit,
+        payer: accounts.payer,
+        token_account: accounts.token_account,
+        market: accounts.market,
+        underlying_token_vault: accounts.underlying_token_vault,
+        token_program: accounts.token_program,
     }
     .to_account_metas(None);
     Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)

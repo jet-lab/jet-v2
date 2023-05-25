@@ -592,6 +592,7 @@ export class FixedTermMarket {
         ticketCollateral,
         ticketCollateralMint,
         inner: {
+          permit: marginAccount.findAirspacePermitAddress(),
           deposit: deposit.address,
           owner: marginUser,
           authority: marginAccount.address,

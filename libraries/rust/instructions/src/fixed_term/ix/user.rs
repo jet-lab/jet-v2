@@ -13,6 +13,7 @@ use crate::{airspace::derive_permit, fixed_term::derive::*};
 /// can derive keys from `owner`, else needs vault addresses
 pub fn convert_tokens(
     amount: u64,
+    airspace: Pubkey,
     market: Pubkey,
     owner: Pubkey,
     underlying_token_source: Option<Pubkey>,
@@ -22,6 +23,7 @@ pub fn convert_tokens(
     let ticket_mint = ticket_mint(&market);
     let data = jet_fixed_term::instruction::ExchangeTokens { amount }.data();
     let accounts = jet_fixed_term::accounts::ExchangeTokens {
+        permit: derive_permit(&airspace, &owner),
         underlying_token_vault: underlying_token_vault(&market),
         market,
         ticket_mint,
@@ -38,6 +40,7 @@ pub fn convert_tokens(
 pub fn stake_tickets(
     amount: u64,
     seed: &[u8],
+    airspace: Pubkey,
     market: Pubkey,
     ticket_holder: Pubkey,
     ticket_source: Option<Pubkey>,
@@ -53,6 +56,7 @@ pub fn stake_tickets(
     }
     .data();
     let accounts = jet_fixed_term::accounts::StakeTickets {
+        permit: derive_permit(&airspace, &ticket_holder),
         deposit,
         market,
         ticket_holder,
@@ -73,6 +77,7 @@ pub fn redeem_deposit(accounts: jet_fixed_term::accounts::RedeemDeposit) -> Inst
 }
 
 pub fn redeem_deposit_accounts(
+    airspace: Pubkey,
     market: Pubkey,
     owner: Pubkey,
     underlying_mint: Pubkey,
@@ -82,6 +87,7 @@ pub fn redeem_deposit_accounts(
 ) -> jet_fixed_term::accounts::RedeemDeposit {
     let token_account = token_destination.unwrap_or_else(|| ata(&owner, &underlying_mint));
     jet_fixed_term::accounts::RedeemDeposit {
+        permit: derive_permit(&airspace, &owner),
         deposit,
         owner,
         token_account,
