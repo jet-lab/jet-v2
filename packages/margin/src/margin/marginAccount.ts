@@ -670,7 +670,7 @@ export class MarginAccount {
         requiredCollateral += position.requiredCollateralValue()
         requiredSetupCollateral += position.requiredSetupCollateralValue()
       } else if (kind === PositionKind.Deposit || kind === PositionKind.AdapterCollateral) {
-        assets =+ position.value
+        assets += position.value
 
         weightedCollateral += position.collateralValue()
       }
