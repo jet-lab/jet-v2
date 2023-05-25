@@ -1728,7 +1728,7 @@ export class Pool {
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral - amountValue / loanNoteValueModifer
     const weightedCollateral = marginAccount.valuation.weightedCollateral
-    const liabilities = marginAccount.valuation.liabilities - amountValue
+    const liabilities = marginAccount.valuation.liabilities + amountValue
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral >= 0 ? requiredCollateral : 0,
@@ -1769,7 +1769,7 @@ export class Pool {
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral - amountValue / loanNoteValueModifer
     const weightedCollateral = marginAccount.valuation.weightedCollateral - amountValue * depositNoteValueModifer
-    const liabilities = marginAccount.valuation.liabilities - amountValue
+    const liabilities = marginAccount.valuation.liabilities + amountValue
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral > 0 ? requiredCollateral : 0,
@@ -1804,7 +1804,7 @@ export class Pool {
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral + amountValue / loanNoteValueModifer
     const weightedCollateral = marginAccount.valuation.weightedCollateral + amountValue * depositNoteValueModifer
-    const liabilities = marginAccount.valuation.liabilities - amountValue
+    const liabilities = marginAccount.valuation.liabilities + amountValue
 
     const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
