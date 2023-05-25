@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 #[error_code]
 pub enum FixedTermErrorCode {
     #[msg("overflow occured on checked_add")]
-    ArithmeticOverflow,
+    ArithmeticOverflow = 135_500,
     #[msg("underflow occured on checked_sub")]
     ArithmeticUnderflow,
     #[msg("bad fixed-point operation")]
@@ -108,8 +108,10 @@ pub enum FixedTermErrorCode {
     WrongUnderlyingCollateralAccount,
     #[msg("the wrong account was provided for the claims token mint")]
     WrongClaimMint,
-    #[msg("the wrong account was provided for the collateral token mint")]
-    WrongCollateralMint,
+    #[msg("the wrong account was provided for the ticket collateral token mint")]
+    WrongTicketCollateralMint,
+    #[msg("the wrong account was provided for the underlying collateral token mint")]
+    WrongUnderlyingCollateralMint,
     #[msg("wrong fee destination")]
     WrongFeeDestination,
     #[msg("wrong oracle address was sent to instruction")]

@@ -17,8 +17,9 @@ use crate::{
 pub struct MarginSellTicketsOrder<'info> {
     /// The account tracking borrower debts
     #[account(mut,
-        constraint = margin_user.margin_account == margin_account.key() @ FixedTermErrorCode::UnauthorizedCaller,
+        has_one = margin_account @ FixedTermErrorCode::WrongMarginUserAuthority,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        constraint = margin_user.market == orderbook_mut.market.key() @ FixedTermErrorCode::UserNotInMarket,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 

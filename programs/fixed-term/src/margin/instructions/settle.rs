@@ -17,6 +17,7 @@ use crate::{
 pub struct Settle<'info> {
     /// The account tracking information related to this particular user
     #[account(mut,
+        has_one = margin_account,
         has_one = market @ FixedTermErrorCode::UserNotInMarket,
         has_one = claims @ FixedTermErrorCode::WrongClaimAccount,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
@@ -32,7 +33,8 @@ pub struct Settle<'info> {
         has_one = underlying_token_vault @ FixedTermErrorCode::WrongVault,
         has_one = ticket_mint @ FixedTermErrorCode::WrongOracle,
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
-        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint,
+        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongTicketCollateralMint,
+        has_one = underlying_collateral_mint @ FixedTermErrorCode::WrongUnderlyingCollateralMint,
     )]
     pub market: AccountLoader<'info, Market>,
 

@@ -37,7 +37,6 @@ use jet_program_common::{
     Fp32,
 };
 use jet_solana_client::transactions;
-use solana_sdk::signer::Signer;
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -1010,13 +1009,13 @@ async fn fixed_term_borrow_becomes_unhealthy_without_collateral() -> Result<(), 
 
         // add liquidity, so a borrow is possible
         vec![
-            mkt.initialize_margin_user(lender.signer.pubkey(), *lender.address()),
+            mkt.initialize_margin_user(*lender.address()),
             mkt.margin_lend_order(*lender.address(), None, params, 0),
         ].invoke_each(&lender.ctx()),
 
         // borrow with fill
         ctx.refresh_deposit(tsol.mint, *borrower.address()),
-        mkt.initialize_margin_user(borrower.signer.pubkey(), *borrower.address()).invoke(&borrower.ctx()),
+        mkt.initialize_margin_user(*borrower.address()).invoke(&borrower.ctx()),
         vec![
             mkt.refresh_position(*borrower.address(), true),
             mkt.margin_borrow_order(*borrower.address(), params, 0)

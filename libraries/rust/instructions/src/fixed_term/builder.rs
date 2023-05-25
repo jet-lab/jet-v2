@@ -223,14 +223,8 @@ impl FixedTermIxBuilder {
         )
     }
 
-    pub fn initialize_margin_user(&self, owner: Pubkey, margin_account: Pubkey) -> Instruction {
-        ix::initialize_margin_user(
-            owner,
-            margin_account,
-            self.market,
-            self.airspace,
-            self.payer,
-        )
+    pub fn initialize_margin_user(&self, margin_account: Pubkey) -> Instruction {
+        ix::initialize_margin_user(margin_account, self.market, self.airspace, self.payer)
     }
 
     /// can derive keys from `owner`. else needs vault addresses

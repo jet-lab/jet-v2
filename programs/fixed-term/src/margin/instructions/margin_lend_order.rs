@@ -13,8 +13,9 @@ pub struct MarginLendOrder<'info> {
     /// The account tracking borrower debts
     #[account(
         mut,
-        constraint = margin_user.margin_account.key() == margin_account.key(),
+        constraint = margin_user.market == orderbook_mut.market.key() @ FixedTermErrorCode::UserNotInMarket,
         has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        has_one = margin_account @ FixedTermErrorCode::WrongMarginUserAuthority,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -23,7 +24,7 @@ pub struct MarginLendOrder<'info> {
     pub ticket_collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut)]
+    #[account(mut, address = orderbook_mut.ticket_collateral_mint() @ FixedTermErrorCode::WrongTicketCollateralMint)]
     pub ticket_collateral_mint: AccountInfo<'info>,
 
     /// The margin account responsible for this order

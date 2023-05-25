@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use jet_airspace::state::AirspacePermit;
 use jet_margin::{AdapterResult, MarginAccount, PositionChange};
 
 use crate::{
@@ -14,13 +13,6 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct InitializeMarginUser<'info> {
-    /// Metadata permit allowing this user to interact with this market
-    #[account(
-        constraint = permit.owner == margin_account.load()?.owner @ FixedTermErrorCode::WrongAirspaceAuthorization,
-        constraint = permit.airspace == market.load()?.airspace @ FixedTermErrorCode::WrongAirspaceAuthorization,
-    )]
-    pub permit: Account<'info, AirspacePermit>,
-
     /// The account tracking information related to this particular user
     #[account(
         init,
@@ -36,13 +28,17 @@ pub struct InitializeMarginUser<'info> {
     pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// The signing authority for this user account
-    #[account(signer)]
+    #[account(
+        signer,
+        constraint = margin_account.load()?.airspace == market.load()?.airspace
+    )]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The fixed-term header account
     #[account(
         has_one = claims_mint @ FixedTermErrorCode::WrongClaimMint,
-        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongCollateralMint
+        has_one = ticket_collateral_mint @ FixedTermErrorCode::WrongTicketCollateralMint,
+        has_one = underlying_collateral_mint @ FixedTermErrorCode::WrongUnderlyingCollateralMint
     )]
     pub market: AccountLoader<'info, Market>,
 

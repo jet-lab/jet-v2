@@ -221,7 +221,7 @@ impl<'info> OrderbookMut<'info> {
         // drop the refs so the orderbook can borrow the slab data
         drop(buf);
 
-        require_eq!(info_owner, owner, FixedTermErrorCode::WrongUserAccount);
+        require_keys_eq!(info_owner, owner, FixedTermErrorCode::WrongUserAccount);
         let orderbook_params = cancel_order::Params { order_id };
         let order_summary = agnostic_orderbook::instruction::cancel_order::process::<CallbackInfo>(
             &crate::id(),

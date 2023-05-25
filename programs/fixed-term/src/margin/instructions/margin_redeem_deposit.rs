@@ -13,8 +13,9 @@ use crate::{
 #[derive(Accounts, MarketTokenManager)]
 pub struct MarginRedeemDeposit<'info> {
     #[account(mut,
-		has_one = margin_account @ FixedTermErrorCode::WrongMarginUserAuthority,
-        has_one = ticket_collateral,
+        has_one = margin_account @ FixedTermErrorCode::WrongMarginUserAuthority,
+        has_one = ticket_collateral @ FixedTermErrorCode::WrongTicketCollateralAccount,
+        has_one = market @ FixedTermErrorCode::UserNotInMarket,
 	)]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
