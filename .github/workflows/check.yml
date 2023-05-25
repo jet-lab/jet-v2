@@ -127,6 +127,8 @@ jobs:
       REACT_APP_DEV_WS_API: ${{ secrets.REACT_APP_DEV_WS_API }}
       REACT_APP_WS_API: ${{ secrets.REACT_APP_WS_API }}
 
+      REACT_APP_REQUIRE_GEOBLOCKING: 'false'
+
       CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
     steps:
       - name: Checkout
