@@ -101,56 +101,46 @@ jobs:
           yarn install
           anchor build --skip-lint -- --features devnet
 
+      - name: Strip IDL
+        run: |
+          cargo run --bin strip-idl-docs
+
       - name: Deploy Metadata
         run: |
           solana program deploy -u d --program-id JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp target/deploy/jet_metadata.so
-          anchor idl upgrade -f ./target/idl/jet_metadata.json JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp --provider.cluster devnet
+#          anchor idl upgrade -f ./target/idl/jet_metadata.json JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp --provider.cluster devnet
 
       - name: Deploy Control
         run: |
           solana program deploy -u d --program-id JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8 target/deploy/jet_control.so
-          anchor idl upgrade -f ./target/idl/jet_control.json JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8 --provider.cluster devnet
+#          anchor idl upgrade -f ./target/idl/jet_control.json JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8 --provider.cluster devnet
 
       - name: Deploy Margin
         run: |
           solana program deploy -u d --program-id JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ target/deploy/jet_margin.so
-        # anchor idl upgrade -f ./target/idl/jet_margin.json JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ --provider.cluster devnet
+#          anchor idl upgrade -f ./target/idl/jet_margin.json JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ --provider.cluster devnet
 
       - name: Deploy Margin Pool
         run: |
           solana program deploy -u d --program-id JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ target/deploy/jet_margin_pool.so
-          anchor idl upgrade -f ./target/idl/jet_margin_pool.json JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ --provider.cluster devnet
+#          anchor idl upgrade -f ./target/idl/jet_margin_pool.json JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ --provider.cluster devnet
 
       - name: Deploy Margin Swap
         run: |
           solana program deploy -u d --program-id JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN target/deploy/jet_margin_swap.so
-          anchor idl upgrade -f ./target/idl/jet_margin_swap.json JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN --provider.cluster devnet
+#          anchor idl upgrade -f ./target/idl/jet_margin_swap.json JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN --provider.cluster devnet
 
       - name: Deploy Fixed Term
         run: |
           solana program deploy -u d --program-id JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc target/deploy/jet_fixed_term.so
-        # anchor idl upgrade -f ./target/idl/jet_fixed_term.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
+#          anchor idl upgrade -f ./target/idl/jet_fixed_term.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
 
       - name: Deploy Airspace
         run: |
           solana program deploy -u d --program-id JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi target/deploy/jet_airspace.so
-          anchor idl upgrade -f ./target/idl/jet_airspace.json JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi --provider.cluster devnet
+#          anchor idl upgrade -f ./target/idl/jet_airspace.json JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi --provider.cluster devnet
 
       - name: Deploy Test Service
         run: |
           solana program deploy -u d --program-id JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy target/deploy/jet_test_service.so
-          anchor idl upgrade -f ./target/idl/jet_test_service.json JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy --provider.cluster devnet
-
-      - name: Build Programs for Testing
-        run: |
-          anchor build --skip-lint -- --features testing
-
-      - name: Build Docker
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          file: ./Dockerfile
-          context: .
-          tags: gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.VALIDATOR_IMG }}:latest,gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.VALIDATOR_IMG }}:${{ steps.sha.outputs.sha }}
-          build-args: |
-            SOLANA_VERSION=${{ env.SOLANA_CLI_VERSION }}
+#         anchor idl upgrade -f ./target/idl/jet_test_service.json JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy --provider.cluster devnet

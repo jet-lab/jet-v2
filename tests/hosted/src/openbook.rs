@@ -11,12 +11,14 @@ use anyhow::Error;
 use anchor_spl::dex::{serum_dex, Dex};
 use async_trait::async_trait;
 use jet_margin_sdk::swap::openbook_swap::OpenBookMarket;
+use jet_program_common::CONTROL_AUTHORITY;
 use jet_simulation::send_and_confirm;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::{system_instruction, sysvar::SysvarId};
 
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 
 use crate::runtime::SolanaTestContext;
 use crate::tokens::TokenManager;
@@ -64,6 +66,16 @@ pub trait OpenBookMarketConfig: Sized {
         open_orders: Keypair,
         authority: &Keypair,
     ) -> Result<Pubkey, Error>;
+
+    async fn settle(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        open_orders_owner: &Keypair,
+        open_orders: &Pubkey,
+        base_fee_receivable: Pubkey,
+        quote_fee_receivable: Pubkey,
+        referrer: Option<&Pubkey>,
+    ) -> Result<(), Error>;
 }
 
 #[async_trait]
@@ -191,7 +203,15 @@ impl OpenBookMarketConfig for OpenBookMarket {
             quote_dust_threshold,
         )?;
 
-        send_and_confirm(&ctx.rpc, &[init_ix], &[]).await?;
+        // Create the referrer fee account
+        let referrer_ix = create_associated_token_account_idempotent(
+            &ctx.rpc.payer().pubkey(),
+            &CONTROL_AUTHORITY,
+            &quote_mint,
+            &spl_token::id(),
+        );
+
+        send_and_confirm(&ctx.rpc, &[referrer_ix, init_ix], &[]).await?;
 
         let base_mint_decimals = token_manager.get_mint(&base_mint).await?.decimals;
         let quote_mint_decimals = token_manager.get_mint(&quote_mint).await?.decimals;
@@ -311,6 +331,34 @@ impl OpenBookMarketConfig for OpenBookMarket {
         )?;
 
         send_and_confirm(rpc, &[instruction], &[]).await?;
+
+        Ok(())
+    }
+
+    async fn settle(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        open_orders_owner: &Keypair,
+        open_orders: &Pubkey,
+        base_fee_receivable: Pubkey,
+        quote_fee_receivable: Pubkey,
+        referrer: Option<&Pubkey>,
+    ) -> Result<(), Error> {
+        let instruction = serum_dex::instruction::settle_funds(
+            &Dex::id(),
+            &self.market,
+            &spl_token::ID,
+            open_orders,
+            &open_orders_owner.pubkey(),
+            &self.base_vault,
+            &base_fee_receivable,
+            &self.quote_vault,
+            &quote_fee_receivable,
+            referrer,
+            &self.vault_signer,
+        )?;
+
+        send_and_confirm(rpc, &[instruction], &[open_orders_owner]).await?;
 
         Ok(())
     }

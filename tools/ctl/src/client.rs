@@ -377,7 +377,7 @@ impl Client {
                     }
                     Some(Err(e)) => {
                         ui_progress.abandon_with_message(format!("failed {signature}: {e:?}"));
-                        bail!("transaction failed");
+                        bail!("transaction failed: {:#?}", e);
                     }
                 }
             }

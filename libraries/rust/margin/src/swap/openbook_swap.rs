@@ -25,9 +25,11 @@ use std::{
 use anchor_lang::ToAccountMetas;
 use anchor_spl::dex::serum_dex::state::{gen_vault_signer_key, MarketState};
 use jet_margin_swap::{accounts as ix_accounts, seeds::OPENBOOK_OPEN_ORDERS, SwapRouteIdentifier};
+use jet_program_common::CONTROL_AUTHORITY;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_solana_client::rpc::AccountFilter;
 use solana_sdk::{instruction::AccountMeta, pubkey::Pubkey, rent::Rent, sysvar::SysvarId};
+use spl_associated_token_account::get_associated_token_address;
 
 use crate::ix_builder::SwapAccounts;
 
@@ -71,8 +73,8 @@ impl OpenBookMarket {
     pub async fn get_markets(
         rpc: &Arc<dyn SolanaRpcClient>,
         supported_mints: &HashSet<Pubkey>,
+        program: Pubkey,
     ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
-        let program = anchor_spl::dex::id();
         let size = std::mem::size_of::<MarketState>();
         let accounts = rpc
             .get_program_accounts(&program, vec![AccountFilter::DataSize(size + 12)]) // Some(size)
@@ -175,6 +177,8 @@ impl SwapAccounts for OpenBookMarket {
             &jet_margin_swap::id(),
         );
 
+        let referrer = get_associated_token_address(&CONTROL_AUTHORITY, &self.quote_mint);
+
         ix_accounts::OpenbookSwapInfo {
             market: self.market,
             /// This relies on a deterministic open orders account
@@ -185,7 +189,9 @@ impl SwapAccounts for OpenBookMarket {
             market_asks: self.asks,
             base_vault: self.base_vault,
             quote_vault: self.quote_vault,
+            quote_mint: self.quote_mint,
             vault_signer: self.vault_signer,
+            referrer_account: referrer,
             dex_program: self.program,
             rent: Rent::id(),
         }

@@ -28,7 +28,10 @@ mod util;
 
 use instructions::*;
 
-pub use instructions::{SaberSwapPoolCreateParams, SplSwapPoolCreateParams, TokenCreateParams};
+pub use instructions::{
+    OpenBookMarketCancelOrdersParams, OpenBookMarketCreateParams, OpenBookMarketMakeParams,
+    SaberSwapPoolCreateParams, SplSwapPoolCreateParams, TokenCreateParams,
+};
 
 declare_id!("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy");
 
@@ -61,6 +64,15 @@ pub mod seeds {
 
     #[constant]
     pub const SWAP_POOL_FEES: &[u8] = b"swap-pool-fees";
+
+    #[constant]
+    pub const OPENBOOK_OPEN_ORDERS: &[u8] = b"openbook-open-orders";
+
+    #[constant]
+    pub const OPENBOOK_MARKET_INFO: &[u8] = b"openbook-market-info";
+
+    #[constant]
+    pub const OPENBOOK_MARKET: &[u8] = b"openbook-market";
 
     #[constant]
     pub const ORCA_WHIRLPOOL_CONFIG: &[u8] = b"orca-whirlpool-config";
@@ -145,6 +157,30 @@ pub mod jet_test_service {
     /// Balance an SPL swap pool based on current oracle prices
     pub fn saber_swap_pool_balance(ctx: Context<SaberSwapPoolBalance>) -> Result<()> {
         saber_swap_pool_balance_handler(ctx)
+    }
+
+    /// Create an OpenBook market
+    pub fn openbook_market_create(
+        ctx: Context<OpenBookMarketCreate>,
+        params: OpenBookMarketCreateParams,
+    ) -> Result<()> {
+        openbook_market_create_handler(ctx, params)
+    }
+
+    /// Cancel orders on an OpenBook market
+    pub fn openbook_market_cancel_orders(
+        ctx: Context<OpenBookMarketCancelOrders>,
+        params: OpenBookMarketCancelOrdersParams,
+    ) -> Result<()> {
+        openbook_market_cancel_orders_handler(ctx, params)
+    }
+
+    /// Cancel and place orders on an OpenBook market
+    pub fn openbook_market_make(
+        ctx: Context<OpenBookMarketMake>,
+        params: OpenBookMarketMakeParams,
+    ) -> Result<()> {
+        openbook_market_make_handler(ctx, params)
     }
 
     /// Create a whirlpools config
