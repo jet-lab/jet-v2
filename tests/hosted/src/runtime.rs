@@ -138,6 +138,5 @@ fn openbook_processor(
     accounts: &[AccountInfo],
     input: &[u8],
 ) -> ProgramResult {
-    anchor_spl::dex::serum_dex::state::State::process(program_id, accounts, input)
-        .map_err(|e| e.into())
+    openbook::state::State::process(program_id, accounts, input).map_err(|e| e.into())
 }

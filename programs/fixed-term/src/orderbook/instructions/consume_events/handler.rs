@@ -365,7 +365,7 @@ fn handle_margin_out<'info>(
             base_size,
             info.flags.contains(CallbackFlags::NEW_DEBT),
         )?,
-        MarketSide::Lend => user.cancel_lend_order(quote_size)?,
+        MarketSide::Lend => user.cancel_lend_order(quote_size, base_size)?,
     }
 
     emit!(OrderRemoved {

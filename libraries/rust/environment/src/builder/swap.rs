@@ -1,18 +1,20 @@
 use std::str::FromStr;
 
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
+use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction};
 
 use jet_instructions::{
     orca::{derive_whirlpool, whirlpool_initialize_fee_tier, WhirlpoolIxBuilder},
     test_service::{
-        derive_spl_swap_pool, derive_whirlpool_config, orca_whirlpool_create_config,
-        saber_swap_pool_create, spl_swap_pool_create,
+        derive_openbook_market, derive_spl_swap_pool, derive_whirlpool_config,
+        openbook_market_create, orca_whirlpool_create_config, saber_swap_pool_create,
+        spl_swap_pool_create,
     },
 };
-use jet_program_common::programs::{ORCA_V2, ORCA_V2_DEVNET, ORCA_WHIRLPOOL, SABER};
 use jet_solana_client::{
     network::NetworkKind, transaction::TransactionBuilder, NetworkUserInterface,
 };
+
+use jet_program_common::programs::*;
 
 use crate::{builder::SetupPhase, config::EnvironmentConfig};
 
@@ -34,6 +36,12 @@ pub fn resolve_swap_program(network: NetworkKind, name: &str) -> Result<Pubkey, 
 
     if name == "saber-swap" {
         return Ok(SABER);
+    }
+    if name == "openbook" {
+        return Ok(match network {
+            NetworkKind::Devnet => OPENBOOK_DEVNET,
+            _ => OPENBOOK,
+        });
     }
 
     if name == "orca-whirlpool" {
@@ -62,6 +70,37 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
             p if p == "saber-swap" => {
                 create_saber_swap_pool(builder, swap_program, token_a, token_b).await?
             }
+            p if p == "openbook" => {
+                log::info!("Create Openbook market for {}/{}", pool.base, pool.quote);
+
+                let market_info =
+                    derive_openbook_market(&swap_program, &token_a, &token_b, &builder.payer());
+
+                if builder.account_exists(&market_info.state).await? {
+                    continue;
+                }
+
+                // Create bids, asks, event queue and request queue
+                let (state_accounts, create_state_acc_tx) =
+                    OpenbookStateAccounts::create(&builder.interface, &swap_program).await?;
+
+                builder.setup(SetupPhase::TokenAccounts, [create_state_acc_tx]);
+
+                builder.setup(
+                    SetupPhase::Swaps,
+                    [openbook_market_create(
+                        &swap_program,
+                        &builder.payer(),
+                        &token_a,
+                        &token_b,
+                        &state_accounts.bids,
+                        &state_accounts.asks,
+                        &state_accounts.event_queue,
+                        &state_accounts.request_queue,
+                        1000,
+                    )],
+                )
+            }
             p if p == "orca-whirlpool" => create_orca_whirlpool(builder, token_a, token_b).await?,
             p => {
                 log::warn!("ignoring unknown swap program {} {p}", pool.program);
@@ -71,6 +110,75 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
     }
 
     Ok(())
+}
+
+pub struct OpenbookStateAccounts {
+    pub bids: Pubkey,
+    pub asks: Pubkey,
+    pub event_queue: Pubkey,
+    pub request_queue: Pubkey,
+}
+
+impl OpenbookStateAccounts {
+    pub async fn create<I: NetworkUserInterface>(
+        client: &I,
+        dex_program: &Pubkey,
+    ) -> Result<(Self, TransactionBuilder), BuilderError> {
+        log::info!("Creating state accounts for an Openbook market");
+        // Create large accounts that can't be created as PDAs
+        let bid_ask_size = 65536 + 12;
+        let bid_ask_lamports = 500_000_000;
+        let bids = Keypair::new();
+        let asks = Keypair::new();
+        let bids_ix = system_instruction::create_account(
+            &client.signer(),
+            &bids.pubkey(),
+            bid_ask_lamports,
+            bid_ask_size as u64,
+            dex_program,
+        );
+        let asks_ix = system_instruction::create_account(
+            &client.signer(),
+            &asks.pubkey(),
+            bid_ask_lamports,
+            bid_ask_size as u64,
+            dex_program,
+        );
+        let event_queue_size = 262144 + 12;
+        let request_queue_size = 5120 + 12;
+        let events_lamports = 10_000_000_000;
+        let requests_lamports = 400_000_000;
+        let events = Keypair::new();
+        let requests = Keypair::new();
+        let events_ix = system_instruction::create_account(
+            &client.signer(),
+            &events.pubkey(),
+            events_lamports,
+            event_queue_size as u64,
+            dex_program,
+        );
+        let requests_ix = system_instruction::create_account(
+            &client.signer(),
+            &requests.pubkey(),
+            requests_lamports,
+            request_queue_size as u64,
+            dex_program,
+        );
+
+        let accounts = Self {
+            bids: bids.pubkey(),
+            asks: asks.pubkey(),
+            event_queue: events.pubkey(),
+            request_queue: requests.pubkey(),
+        };
+
+        let transaction = TransactionBuilder {
+            instructions: vec![bids_ix, asks_ix, events_ix, requests_ix],
+            signers: vec![bids, asks, events, requests],
+        };
+
+        Ok((accounts, transaction))
+    }
 }
 
 async fn create_spl_swap_pool<I: NetworkUserInterface>(

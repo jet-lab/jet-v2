@@ -183,6 +183,16 @@ pub struct RouteSwapped {
     pub routes: [SwapRouteDetail; 3],
 }
 
+/// An event to log when the protocol earns a swap fee.
+/// The fees are referral fees such as when placing an OpenBook swap.
+#[event]
+pub struct ProtocolSwapFee {
+    pub venue: Pubkey,
+    pub mint: Pubkey,
+    pub amount: u64,
+    pub venue_identifier: SwapRouteIdentifier,
+}
+
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub enum SwapRouteIdentifier {

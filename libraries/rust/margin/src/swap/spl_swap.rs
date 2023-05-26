@@ -77,28 +77,26 @@ impl SplSwapPool {
 
         let mut pool_sizes = HashMap::with_capacity(accounts.len());
         for (swap_address, pool_account) in accounts {
-            let swap = SwapV1::unpack(&pool_account.data[1..]);
-            let swap = match swap {
-                Ok(swap) => swap,
-                Err(_) => continue,
+            let pool_mint = {
+                let swap = SwapV1::unpack(&pool_account.data[1..]);
+                let swap = match swap {
+                    Ok(swap) => swap,
+                    Err(_) => continue,
+                };
+                if supported_mints
+                    .get(&swap.token_a_mint)
+                    .and_then(|_| supported_mints.get(&swap.token_b_mint))
+                    .is_none()
+                {
+                    continue;
+                }
+                swap.pool_mint
             };
-
-            if !swap.is_initialized {
-                continue;
-            }
-
-            if supported_mints
-                .get(&swap.token_a_mint)
-                .and_then(|_| supported_mints.get(&swap.token_b_mint))
-                .is_none()
-            {
-                continue;
-            }
-
             // Get the pool tokens minted as a proxy of size
-            let Ok(pool_mint) = find_mint(rpc, &swap.pool_mint).await else {
+            let Ok(pool_mint) = find_mint(rpc, &pool_mint).await else {
                 continue;
             };
+            let swap = SwapV1::unpack(&pool_account.data[1..]).unwrap();
             let total_supply = pool_mint.supply;
 
             // Check if there is a pool, insert if none, replace if smaller
@@ -173,4 +171,16 @@ impl SwapAccounts for SplSwapPool {
     fn as_any(&self) -> &dyn std::any::Any {
         self as &dyn std::any::Any
     }
+}
+
+#[test]
+#[ignore = "if this compiles, the test has passed"]
+#[allow(unreachable_code, clippy::diverging_sub_expression)]
+fn get_pools_must_be_send_for_the_liquidator() {
+    fn require_send<T: Send>(_: T) {}
+    require_send(SplSwapPool::get_pools(
+        unimplemented!("this test doesn't need to run"),
+        &HashSet::new(),
+        Pubkey::default(),
+    ));
 }

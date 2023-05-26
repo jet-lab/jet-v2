@@ -12,3 +12,8 @@ quote = "USDT"
 program = "saber-swap"
 base = "USDT"
 quote = "USDC"
+
+[[dex]]
+program = "openbook"
+base = "BTC"
+quote = "USDC"

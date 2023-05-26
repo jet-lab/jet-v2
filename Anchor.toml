@@ -56,6 +56,14 @@ program = "./deps/spl-token-swap/crates.io-spl_token_swap==2.0.0.so"
 address = "LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru"
 program = "./deps/lookup_table_registry.so"
 
+[[test.genesis]]
+address = "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX"
+program = "./deps/openbook.so"
+
+[[test.genesis]]
+address = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+program = "./deps/whirlpool.so"
+
 [test]
 startup_wait = 10000
 

@@ -20,3 +20,5 @@ pub const ORCA_V2_MAINNET: Pubkey = pubkey!("9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqG
 pub const ORCA_V2_DEVNET: Pubkey = pubkey!("3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U");
 pub const ORCA_WHIRLPOOL: Pubkey = pubkey!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
 pub const SABER: Pubkey = pubkey!("SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ");
+pub const OPENBOOK: Pubkey = pubkey!("srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX");
+pub const OPENBOOK_DEVNET: Pubkey = pubkey!("EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj");
