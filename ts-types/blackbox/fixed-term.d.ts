@@ -68,13 +68,13 @@ type OrderbookSnapshot = {
   asks: Array<Order>;
 };
 
-export type PriceLevel = [price: number, amt: number];
-export interface SwapLiquidityTokenInfo {
+type PriceLevel = [price: number, amt: number];
+interface SwapLiquidityTokenInfo {
   mint: string;
   symbol: string;
   expo: number;
 }
-export interface SwapLiquidity {
+interface SwapLiquidity {
   base: SwapLiquidityTokenInfo;
   quote: SwapLiquidityTokenInfo;
   bids: PriceLevel[];
