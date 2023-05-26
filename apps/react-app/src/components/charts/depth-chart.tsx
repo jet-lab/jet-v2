@@ -98,14 +98,21 @@ export const DepthChart = ({
       const bids = bidsRef.current;
       let path: SVGPathElement | null;
       let type: 'bid' | 'ask' | 'hidden';
-      if (x >= xScale(asksAscending[0][0])) {
+      if (!asksAscending[0] && !bidsDescending[0]) {
+        hideTooltip();
+        return
+      }
+      
+      if (asksAscending[0] && x >= xScale(asksAscending[0][0])) {
         // asks
         path = asks;
         type = 'ask';
-      } else {
-        // bids
+      } else if(bidsDescending[0] && x <= xScale(bidsDescending[0][0])) {
         path = bids;
         type = 'bid';
+      } else {
+        hideTooltip()
+        return
       }
       if (path && path.getTotalLength() > 0) {
         const y = pointAtCoordinateX(path, x, 2);
