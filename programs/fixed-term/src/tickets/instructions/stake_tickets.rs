@@ -43,6 +43,7 @@ pub struct StakeTickets<'info> {
             seeds::TERM_DEPOSIT,
             market.key().as_ref(),
             ticket_holder.key.as_ref(),
+            seeds::USER,
             params.seed.as_slice(),
         ],
         bump,
