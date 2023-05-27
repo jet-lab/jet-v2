@@ -410,6 +410,9 @@ pub mod seeds {
     pub const TERM_DEPOSIT: &[u8] = b"term_deposit";
 
     #[constant]
+    pub const USER: &[u8] = b"user";
+
+    #[constant]
     pub const ORDERBOOK_MARKET_STATE: &[u8] = b"orderbook_market_state";
 
     #[constant]

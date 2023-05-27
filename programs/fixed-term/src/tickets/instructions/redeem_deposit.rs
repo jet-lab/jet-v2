@@ -21,6 +21,7 @@ pub struct RedeemDeposit<'info> {
     /// The tracking account for the deposit
     #[account(mut,
               close = payer,
+              has_one = market @ FixedTermErrorCode::WrongMarket,
               has_one = owner @ FixedTermErrorCode::WrongDepositOwner,
               has_one = payer
     )]

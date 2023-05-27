@@ -3,7 +3,6 @@ use anchor_lang::prelude::*;
 use jet_airspace::state::Airspace;
 
 use crate::control::state::{CrankAuthorization, Market};
-#[cfg(not(feature = "testing"))]
 use crate::FixedTermErrorCode;
 
 #[derive(Accounts)]
@@ -26,6 +25,7 @@ pub struct AuthorizeCrank<'info> {
     pub crank_authorization: Account<'info, CrankAuthorization>,
 
     /// The market this signer is authorized to send instructions to
+    #[account(has_one = airspace @ FixedTermErrorCode::WrongAirspace)]
     pub market: AccountLoader<'info, Market>,
 
     /// The authority that must sign to make this change
