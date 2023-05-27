@@ -10,7 +10,10 @@ use crate::control::state::CrankAuthorization;
 #[derive(Accounts)]
 pub struct RevokeCrank<'info> {
     /// The account containing the metadata for the key
-    #[account(mut, close = receiver)]
+    #[account(mut,
+              close = receiver,
+              has_one = airspace
+    )]
     pub metadata_account: Account<'info, CrankAuthorization>,
 
     /// The authority that must sign to make this change
