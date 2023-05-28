@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use jet_program_common::Number128;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::AccountStates;
 use crate::client::ClientResult;
@@ -13,7 +13,7 @@ pub struct PriceOracleState {
 }
 
 /// Sync latest state for all oracles
-pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     let mut oracle_address_set = HashSet::new();
 
     oracle_address_set.extend(states.config.tokens.iter().map(|t| t.oracle));

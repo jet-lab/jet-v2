@@ -16,8 +16,8 @@ use jet_margin::{AccountPosition, MarginAccount, TokenAdmin, TokenConfig, TokenK
 use jet_margin_pool::{Amount, MarginPool, PoolAction};
 use jet_program_common::Number128;
 use jet_solana_client::{
+    rpc::SolanaRpcExtra,
     transaction::{condense, TransactionBuilder},
-    NetworkUserInterface, NetworkUserInterfaceExt,
 };
 
 use crate::{
@@ -36,17 +36,17 @@ use crate::{
 
 /// Client for interacting with the margin program
 #[derive(Clone)]
-pub struct MarginClient<I> {
-    client: Arc<ClientState<I>>,
+pub struct MarginClient {
+    client: Arc<ClientState>,
 }
 
-impl<I: NetworkUserInterface> MarginClient<I> {
-    pub(crate) fn new(inner: Arc<ClientState<I>>) -> Self {
+impl MarginClient {
+    pub(crate) fn new(inner: Arc<ClientState>) -> Self {
         Self { client: inner }
     }
 
     /// Get the set of loaded margin accounts belonging to the current user
-    pub fn accounts(&self) -> Vec<MarginAccountClient<I>> {
+    pub fn accounts(&self) -> Vec<MarginAccountClient> {
         self.client
             .state()
             .filter_addresses_of::<MarginAccount>(|_, account| {
@@ -58,7 +58,7 @@ impl<I: NetworkUserInterface> MarginClient<I> {
     }
 
     /// Sync all data related to margin accounting from the network
-    pub async fn sync(&self) -> ClientResult<I, ()> {
+    pub async fn sync(&self) -> ClientResult<()> {
         crate::state::margin_pool::sync(self.client.state()).await?;
         crate::state::margin::sync(self.client.state()).await?;
 
@@ -68,7 +68,7 @@ impl<I: NetworkUserInterface> MarginClient<I> {
     /// Create a new margin account for the current user
     ///
     /// The current client implementation is limited to creating maximum of 32 accounts per user.
-    pub async fn create_account(&self) -> ClientResult<I, ()> {
+    pub async fn create_account(&self) -> ClientResult<()> {
         let (index, (_, _)) = match self
             .get_possible_accounts()
             .await?
@@ -100,7 +100,7 @@ impl<I: NetworkUserInterface> MarginClient<I> {
         Ok(())
     }
 
-    async fn get_possible_accounts(&self) -> ClientResult<I, Vec<(Pubkey, Option<MarginAccount>)>> {
+    async fn get_possible_accounts(&self) -> ClientResult<Vec<(Pubkey, Option<MarginAccount>)>> {
         // Currently limited to check a fixed set of accounts due to performance reasons,
         // as otherwise we would need to do an expensive `getProgramAccounts` to find them all.
         const MAX_DERIVED_ACCOUNTS_TO_CHECK: u16 = 32;
@@ -114,7 +114,7 @@ impl<I: NetworkUserInterface> MarginClient<I> {
         let states = self
             .client
             .network
-            .get_anchor_accounts::<MarginAccount>(&possible_accounts)
+            .try_get_anchor_accounts::<MarginAccount>(&possible_accounts)
             .await?;
 
         Ok(possible_accounts.into_iter().zip(states).collect())
@@ -123,14 +123,14 @@ impl<I: NetworkUserInterface> MarginClient<I> {
 
 /// Client for interacting with a specific margin account
 #[derive(Clone)]
-pub struct MarginAccountClient<I> {
-    pub(crate) client: Arc<ClientState<I>>,
+pub struct MarginAccountClient {
+    pub(crate) client: Arc<ClientState>,
     pub(crate) address: Pubkey,
     pub(crate) builder: MarginIxBuilder,
 }
 
-impl<I: NetworkUserInterface> MarginAccountClient<I> {
-    fn new(client: Arc<ClientState<I>>, address: Pubkey) -> Self {
+impl MarginAccountClient {
+    fn new(client: Arc<ClientState>, address: Pubkey) -> Self {
         let owner = client.signer();
         let builder = MarginIxBuilder::new_for_address(client.airspace(), address, owner);
 
@@ -142,7 +142,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
     }
 
     /// Get the root client object
-    pub fn client(&self) -> JetClient<I> {
+    pub fn client(&self) -> JetClient {
         JetClient {
             client: self.client.clone(),
         }
@@ -172,20 +172,17 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
     }
 
     /// Get a client for using a margin pool with the current account
-    pub fn pool(&self, token: &Pubkey) -> MarginAccountPoolClient<I> {
+    pub fn pool(&self, token: &Pubkey) -> MarginAccountPoolClient {
         MarginAccountPoolClient::new(self.clone(), token)
     }
 
     /// Get a client for using swap pools with the current account
-    pub fn swaps(&self) -> MarginAccountSwapsClient<I> {
+    pub fn swaps(&self) -> MarginAccountSwapsClient {
         MarginAccountSwapsClient::new(self.clone())
     }
 
     /// Get a client for using a fixed term market
-    pub fn fixed_term(
-        &self,
-        market_address: &Pubkey,
-    ) -> ClientResult<I, MarginAccountMarketClient<I>> {
+    pub fn fixed_term(&self, market_address: &Pubkey) -> ClientResult<MarginAccountMarketClient> {
         MarginAccountMarketClient::from_address(self.clone(), market_address)
     }
 
@@ -200,18 +197,18 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
     }
 
     /// Resync the data for this account from the network
-    pub async fn sync(&self) -> ClientResult<I, ()> {
+    pub async fn sync(&self) -> ClientResult<()> {
         load_margin_accounts(self.client.state(), &[self.address]).await
     }
 
     /// Send a transaction prefixed with refresh instructions for all positions
-    pub async fn send_with_refresh(&self, instructions: &[Instruction]) -> ClientResult<I, ()> {
+    pub async fn send_with_refresh(&self, instructions: &[Instruction]) -> ClientResult<()> {
         let mut txns = self.instructions_for_refresh_positions()?;
 
         txns.extend(instructions.iter().map(|ix| ix.clone().into()));
 
         self.client
-            .send_ordered(condense(&txns, &self.client.network.signer())?)
+            .send_ordered(condense(&txns, &self.client.signer())?)
             .await
     }
 
@@ -220,7 +217,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
     /// This can be used to recover the SOL used as rent for the account data.
     ///
     /// The account must be empty (no registered positions) for it to be closed.
-    pub async fn close(&self) -> ClientResult<I, ()> {
+    pub async fn close(&self) -> ClientResult<()> {
         self.client.send(&self.builder.close_account()).await
     }
 
@@ -237,7 +234,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
         token: &Pubkey,
         amount: u64,
         source: Option<&Pubkey>,
-    ) -> ClientResult<I, ()> {
+    ) -> ClientResult<()> {
         let signer = self.client.signer();
         let mut ixns = vec![];
 
@@ -262,7 +259,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
         token: &Pubkey,
         amount: u64,
         destination: Option<&Pubkey>,
-    ) -> ClientResult<I, ()> {
+    ) -> ClientResult<()> {
         let mut ixns = vec![];
 
         let deposit_account = get_associated_token_address(&self.address, token);
@@ -302,7 +299,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
         &self,
         token: &Pubkey,
         ixns: &mut Vec<Instruction>,
-    ) -> ClientResult<I, Pubkey> {
+    ) -> ClientResult<Pubkey> {
         let address = get_associated_token_address(&self.address, token);
 
         if !self.client.account_exists(&address).await? {
@@ -321,7 +318,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
         Ok(address)
     }
 
-    pub(crate) fn token_config(&self, token: &Pubkey) -> ClientResult<I, TokenConfig> {
+    pub(crate) fn token_config(&self, token: &Pubkey) -> ClientResult<TokenConfig> {
         let address = derive_token_config(&self.airspace(), token);
 
         self.client
@@ -331,7 +328,7 @@ impl<I: NetworkUserInterface> MarginAccountClient<I> {
             .ok_or_else(|| ClientError::Unexpected(format!("no config found for token {token}")))
     }
 
-    fn instructions_for_refresh_positions(&self) -> ClientResult<I, Vec<TransactionBuilder>> {
+    fn instructions_for_refresh_positions(&self) -> ClientResult<Vec<TransactionBuilder>> {
         let mut included = HashSet::new();
         let mut txns = vec![];
 

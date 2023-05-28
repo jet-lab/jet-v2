@@ -80,13 +80,13 @@ pub async fn process_generate_app_config(
     let config = jet_environment::config::read_env_config_dir(config_dir)?;
     let app_config = JetAppConfig::from_env_config(
         config.clone(),
-        &client.network_interface(),
+        client.network_interface().as_ref(),
         override_lookup_authority,
     )
     .await
     .unwrap();
     let legacy_app_config = jet_environment::client_config::legacy::from_config(
-        &client.network_interface(),
+        client.network_interface().as_ref(),
         &app_config,
     )
     .await

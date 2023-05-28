@@ -9,19 +9,18 @@ use jet_margin_pool::TokenChange;
 use crate::{
     client::{ClientResult, ClientState},
     margin::MarginAccountClient,
-    NetworkUserInterface,
 };
 
 /// Client for interacting with a margin pool, from the perspective of a margin account
 #[derive(Clone)]
-pub struct MarginAccountPoolClient<I> {
-    pub(crate) client: Arc<ClientState<I>>,
+pub struct MarginAccountPoolClient {
+    pub(crate) client: Arc<ClientState>,
     pub(crate) builder: MarginPoolIxBuilder,
-    pub(crate) account: MarginAccountClient<I>,
+    pub(crate) account: MarginAccountClient,
 }
 
-impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
-    pub fn new(account: MarginAccountClient<I>, token: &Pubkey) -> Self {
+impl MarginAccountPoolClient {
+    pub fn new(account: MarginAccountClient, token: &Pubkey) -> Self {
         let builder = MarginPoolIxBuilder::new(*token);
 
         Self {
@@ -39,7 +38,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
     /// # Parameters
     ///
     /// * `amount` - The token amount to transfer for lending
-    pub async fn lend(&self, amount: u64) -> ClientResult<I, ()> {
+    pub async fn lend(&self, amount: u64) -> ClientResult<()> {
         let mut ixns = vec![];
         let lending_deposit_account = self
             .account
@@ -66,7 +65,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
     /// * `amount` - The token amount to transfer for lending
     /// * `source` - The source token account to deposit from. If `None`, then assumes the
     ///              source as the associated token account for the current user wallet.
-    pub async fn deposit(&self, amount: u64, source: Option<&Pubkey>) -> ClientResult<I, ()> {
+    pub async fn deposit(&self, amount: u64, source: Option<&Pubkey>) -> ClientResult<()> {
         let mut ixns = vec![];
         let lending_deposit_account = self
             .account
@@ -104,7 +103,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
         &self,
         amount: Option<u64>,
         destination: Option<&Pubkey>,
-    ) -> ClientResult<I, ()> {
+    ) -> ClientResult<()> {
         let deposit_account =
             get_associated_token_address(&self.account.address, &self.builder.deposit_note_mint);
 
@@ -145,7 +144,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
         &self,
         amount: u64,
         destination: Option<&Pubkey>,
-    ) -> ClientResult<I, ()> {
+    ) -> ClientResult<()> {
         let mut ixns = vec![];
 
         let token_account = match destination {
@@ -177,7 +176,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
     ///
     /// * `amount` - The token amount to borrow
     /// * `destination` - The account to receive the borrowed tokens
-    pub async fn borrow(&self, amount: u64, destination: Option<&Pubkey>) -> ClientResult<I, ()> {
+    pub async fn borrow(&self, amount: u64, destination: Option<&Pubkey>) -> ClientResult<()> {
         let mut ixns = vec![];
 
         let destination = match destination {
@@ -209,7 +208,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
     ///
     /// * `amount` - The token amount to transfer as a repayment for a loan. If `None`, transfers
     ///              the maximum amount of tokens required to fully pay off the total loan.
-    pub async fn cancel_borrow(&self, amount: Option<u64>) -> ClientResult<I, ()> {
+    pub async fn cancel_borrow(&self, amount: Option<u64>) -> ClientResult<()> {
         let deposit_account = self
             .account
             .builder
@@ -253,7 +252,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
         &self,
         amount: Option<u64>,
         source: Option<&Pubkey>,
-    ) -> ClientResult<I, ()> {
+    ) -> ClientResult<()> {
         let token_account = source.cloned().unwrap_or_else(|| {
             get_associated_token_address(&self.client.signer(), &self.builder.token_mint)
         });
@@ -268,7 +267,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
     ///
     /// * `amount` - The token amount to transfer as a repayment for a loan. If `None`, transfers
     ///              the maximum amount of tokens required to fully pay off the total loan.
-    pub async fn repay(&self, amount: Option<u64>) -> ClientResult<I, ()> {
+    pub async fn repay(&self, amount: Option<u64>) -> ClientResult<()> {
         let token_account =
             get_associated_token_address(&self.account.address, &self.builder.token_mint);
 
@@ -278,7 +277,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
         .await
     }
 
-    fn instruction_for_refresh(&self) -> ClientResult<I, Instruction> {
+    fn instruction_for_refresh(&self) -> ClientResult<Instruction> {
         let token_info = self.client.state().token_info(&self.builder.token_mint)?;
 
         Ok(self.account.builder.accounting_invoke(
@@ -293,7 +292,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
         token_account: &Pubkey,
         amount: Option<u64>,
         proxy_ix: impl Fn(Instruction) -> Instruction,
-    ) -> ClientResult<I, ()> {
+    ) -> ClientResult<()> {
         let loan_account = derive_loan_account(&self.account.address, &self.builder.loan_note_mint);
         let change = match amount {
             None => TokenChange::set(0),
@@ -319,7 +318,7 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
         self.client.send(&instructions).await
     }
 
-    async fn with_create_loan_account(&self) -> ClientResult<I, Vec<Instruction>> {
+    async fn with_create_loan_account(&self) -> ClientResult<Vec<Instruction>> {
         let loan_account = derive_loan_account(&self.account.address, &self.builder.loan_note_mint);
 
         match self.client.account_exists(&loan_account).await? {
@@ -338,11 +337,11 @@ impl<I: NetworkUserInterface> MarginAccountPoolClient<I> {
     }
 }
 
-pub(crate) fn instruction_for_refresh<I: NetworkUserInterface>(
-    account: &MarginAccountClient<I>,
+pub(crate) fn instruction_for_refresh(
+    account: &MarginAccountClient,
     token: &Pubkey,
     refreshing_tokens: &mut HashSet<Pubkey>,
-) -> ClientResult<I, Instruction> {
+) -> ClientResult<Instruction> {
     let token_config = account.token_config(token)?;
     let pool_client = MarginAccountPoolClient::new(account.clone(), &token_config.underlying_mint);
 

@@ -1,4 +1,8 @@
-use jet_client::fixed_term::{util::rate_to_price, MarketInfo};
+use jet_client::{
+    fixed_term::{util::rate_to_price, MarketInfo},
+    margin::MarginAccountClient,
+    ClientResult, JetClient,
+};
 use jet_instructions::fixed_term::OrderParams;
 use jet_margin_sdk::{
     fixed_term::event_consumer::EventConsumer,
@@ -6,14 +10,10 @@ use jet_margin_sdk::{
 };
 use solana_sdk::{clock::Clock, pubkey::Pubkey};
 
-use jet_client_native::{JetSimulationClient, JetSimulationClientResult, SimulationClient};
-
 use crate::{
     context::{token::PriceUpdate, TestContext},
     TestDefault,
 };
-
-pub type MarginAccountClient = jet_client::margin::MarginAccountClient<SimulationClient>;
 
 pub struct Token {
     pub mint: Pubkey,
@@ -21,7 +21,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn from_client(client: &JetSimulationClient, mint: Pubkey) -> Self {
+    pub fn from_client(client: &JetClient, mint: Pubkey) -> Self {
         Self {
             mint,
             decimals: client.state().token_info(&mint).unwrap().decimals,
@@ -74,7 +74,7 @@ pub async fn set_price(ctx: &TestContext, token: &Token, price: f64, confidence:
 }
 
 /// airdrop tokens to a user client
-pub async fn airdrop(user: &JetSimulationClient, token: &Token, amount: u64) {
+pub async fn airdrop(user: &JetClient, token: &Token, amount: u64) {
     user.test_service()
         .token_request(&token.mint, amount)
         .await
@@ -84,7 +84,7 @@ pub async fn airdrop(user: &JetSimulationClient, token: &Token, amount: u64) {
 }
 
 /// sync all user client states
-pub async fn sync_all(users: &[JetSimulationClient]) {
+pub async fn sync_all(users: &[JetClient]) {
     for user in users {
         user.state().sync_all().await.unwrap();
     }
@@ -94,7 +94,7 @@ pub async fn deposit(
     account: &MarginAccountClient,
     token: &Token,
     amount: u64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account.deposit(&token.mint, amount, None).await?;
     account.sync().await.unwrap();
 
@@ -105,7 +105,7 @@ pub async fn withdraw(
     account: &MarginAccountClient,
     token: &Token,
     amount: u64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account.withdraw(&token.mint, amount, None).await?;
     account.sync().await.unwrap();
 
@@ -116,7 +116,7 @@ pub async fn pool_lend(
     account: &MarginAccountClient,
     token: &Token,
     amount: u64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account.pool(&token.mint).lend(amount).await?;
     account.sync().await.unwrap();
 
@@ -127,7 +127,7 @@ pub async fn pool_borrow(
     account: &MarginAccountClient,
     token: &Token,
     amount: u64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account.pool(&token.mint).borrow(amount, None).await?;
     account.sync().await.unwrap();
 
@@ -138,7 +138,7 @@ pub async fn pool_repay(
     account: &MarginAccountClient,
     token: &Token,
     amount: Option<u64>,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account.pool(&token.mint).repay(amount).await?;
     account.sync().await.unwrap();
 
@@ -149,7 +149,7 @@ pub async fn pool_withdraw(
     account: &MarginAccountClient,
     token: &Token,
     amount: Option<u64>,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account.pool(&token.mint).withdraw(amount, None).await?;
     account.sync().await.unwrap();
 
@@ -161,7 +161,7 @@ pub async fn offer_loan(
     market: &MarketInfo,
     amount: u64,
     interest_rate: f64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     let rate = f64_rate_to_bps(interest_rate);
 
     account
@@ -182,7 +182,7 @@ pub async fn offer_loan_no_auto_stake(
     market: &MarketInfo,
     amount: u64,
     interest_rate: f64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     let rate = f64_rate_to_bps(interest_rate);
     let params = OrderParams {
         max_ticket_qty: u64::MAX,
@@ -213,7 +213,7 @@ pub async fn request_loan(
     market: &MarketInfo,
     amount: u64,
     interest_rate: f64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     let rate = f64_rate_to_bps(interest_rate);
 
     account
@@ -233,7 +233,7 @@ pub async fn cancel_order(
     account: &MarginAccountClient,
     market: &MarketInfo,
     order_id: u128,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account
         .fixed_term(&market.address)
         .unwrap()
@@ -252,7 +252,7 @@ pub async fn sell_tickets(
     market: &MarketInfo,
     amount: u64,
     limit_price: f64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account
         .fixed_term(&market.address)
         .unwrap()
@@ -270,7 +270,7 @@ pub async fn repay_term_loan(
     account: &MarginAccountClient,
     market: &MarketInfo,
     max_amount: u64,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account
         .fixed_term(&market.address)
         .unwrap()
@@ -281,10 +281,7 @@ pub async fn repay_term_loan(
     Ok(())
 }
 
-pub async fn market_settle(
-    account: &MarginAccountClient,
-    market: &MarketInfo,
-) -> JetSimulationClientResult<()> {
+pub async fn market_settle(account: &MarginAccountClient, market: &MarketInfo) -> ClientResult<()> {
     account
         .fixed_term(&market.address)
         .unwrap()
@@ -298,7 +295,7 @@ pub async fn market_settle(
 pub async fn redeem_term_deposits(
     account: &MarginAccountClient,
     market: &MarketInfo,
-) -> JetSimulationClientResult<()> {
+) -> ClientResult<()> {
     account
         .fixed_term(&market.address)
         .unwrap()
@@ -331,7 +328,7 @@ pub fn position_balance(account: &MarginAccountClient, token: &Token) -> u64 {
         .balance
 }
 
-pub fn wallet_balance(user: &JetSimulationClient, token: &Token) -> u64 {
+pub fn wallet_balance(user: &JetClient, token: &Token) -> u64 {
     user.wallet_balance(&token.mint)
 }
 

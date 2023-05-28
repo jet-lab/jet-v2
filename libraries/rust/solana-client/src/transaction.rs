@@ -237,20 +237,29 @@ pub trait ToTransaction {
 }
 
 impl ToTransaction for Instruction {
-    fn to_transaction(&self, payer: &Pubkey, _recent_blockhash: Hash) -> VersionedTransaction {
-        Transaction::new_unsigned(Message::new(&[self.clone()], Some(payer))).into()
+    fn to_transaction(&self, payer: &Pubkey, recent_blockhash: Hash) -> VersionedTransaction {
+        let mut tx = Transaction::new_unsigned(Message::new(&[self.clone()], Some(payer)));
+        tx.message.recent_blockhash = recent_blockhash;
+
+        tx.into()
     }
 }
 
 impl ToTransaction for [Instruction] {
-    fn to_transaction(&self, payer: &Pubkey, _recent_blockhash: Hash) -> VersionedTransaction {
-        Transaction::new_unsigned(Message::new(self, Some(payer))).into()
+    fn to_transaction(&self, payer: &Pubkey, recent_blockhash: Hash) -> VersionedTransaction {
+        let mut tx = Transaction::new_unsigned(Message::new(self, Some(payer)));
+        tx.message.recent_blockhash = recent_blockhash;
+
+        tx.into()
     }
 }
 
 impl ToTransaction for Vec<Instruction> {
-    fn to_transaction(&self, payer: &Pubkey, _recent_blockhash: Hash) -> VersionedTransaction {
-        Transaction::new_unsigned(Message::new(self, Some(payer))).into()
+    fn to_transaction(&self, payer: &Pubkey, recent_blockhash: Hash) -> VersionedTransaction {
+        let mut tx = Transaction::new_unsigned(Message::new(self, Some(payer)));
+        tx.message.recent_blockhash = recent_blockhash;
+
+        tx.into()
     }
 }
 
@@ -264,14 +273,20 @@ impl ToTransaction for TransactionBuilder {
 }
 
 impl ToTransaction for Transaction {
-    fn to_transaction(&self, _payer: &Pubkey, _recent_blockhash: Hash) -> VersionedTransaction {
-        self.clone().into()
+    fn to_transaction(&self, _payer: &Pubkey, recent_blockhash: Hash) -> VersionedTransaction {
+        let mut tx = self.clone();
+        tx.message.recent_blockhash = recent_blockhash;
+
+        tx.into()
     }
 }
 
 impl ToTransaction for VersionedTransaction {
-    fn to_transaction(&self, _payer: &Pubkey, _recent_blockhash: Hash) -> VersionedTransaction {
-        self.clone()
+    fn to_transaction(&self, _payer: &Pubkey, recent_blockhash: Hash) -> VersionedTransaction {
+        let mut tx = self.clone();
+        tx.message.set_recent_blockhash(recent_blockhash);
+
+        tx
     }
 }
 

@@ -11,17 +11,16 @@ use crate::{
     bail,
     client::{ClientResult, ClientState},
     margin::MarginAccountClient,
-    NetworkUserInterface,
 };
 
 /// Client for interacting with swap protocols, from the perspective of a margin account
-pub struct MarginAccountSwapsClient<I> {
-    client: Arc<ClientState<I>>,
-    account: MarginAccountClient<I>,
+pub struct MarginAccountSwapsClient {
+    client: Arc<ClientState>,
+    account: MarginAccountClient,
 }
 
-impl<I: NetworkUserInterface> MarginAccountSwapsClient<I> {
-    pub fn new(account: MarginAccountClient<I>) -> Self {
+impl MarginAccountSwapsClient {
+    pub fn new(account: MarginAccountClient) -> Self {
         Self {
             client: account.client.clone(),
             account,
@@ -44,7 +43,7 @@ impl<I: NetworkUserInterface> MarginAccountSwapsClient<I> {
         target_token: &Pubkey,
         amount: Option<u64>,
         minimum_amount_out: u64,
-    ) -> ClientResult<I, ()> {
+    ) -> ClientResult<()> {
         let swap_info = self.get_orca_v2_swap(swap_pool)?;
         let mut instructions = vec![];
 
@@ -86,7 +85,7 @@ impl<I: NetworkUserInterface> MarginAccountSwapsClient<I> {
         self.client.send(&instructions).await
     }
 
-    fn get_orca_v2_swap(&self, swap_pool: &Pubkey) -> ClientResult<I, SplSwap> {
+    fn get_orca_v2_swap(&self, swap_pool: &Pubkey) -> ClientResult<SplSwap> {
         let swap = match self.client.state().get::<SwapV1>(swap_pool) {
             Some(swap) => swap,
             None => bail!("no swap pool found in cache with address {swap_pool}"),

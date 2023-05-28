@@ -1,9 +1,10 @@
-use std::str::FromStr;
+use std::{rc::Rc, sync::Arc};
 
+use jet_solana_client::rpc::wasm::RpcConnection;
 use serde_json::Value;
 use wasm_bindgen::{prelude::*, JsCast};
 
-use solana_sdk::{hash::Hash, pubkey::Pubkey};
+use solana_sdk::pubkey::Pubkey;
 
 use jet_client::{
     config::{CONFIG_URL_DEVNET, CONFIG_URL_MAINNET},
@@ -15,40 +16,35 @@ use jet_client::{
 /// Bindings for the @soalana/web3.js library
 mod solana_web3;
 
-mod network_adapter;
+mod error;
+mod wallet;
 
 pub mod fixed_term;
 pub mod margin;
 pub mod margin_pool;
 
-use network_adapter::{JsNetworkAdapter, SolanaNetworkAdapter};
+pub use error::ClientError;
+use wallet::WalletAdapter;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
 #[wasm_bindgen]
 pub struct JetWebClient {
-    client: JetClient<JsNetworkAdapter>,
+    client: JetClient,
 }
 
 #[wasm_bindgen]
 impl JetWebClient {
     pub async fn connect(
-        user_address: Pubkey,
-        adapter: SolanaNetworkAdapter,
+        wallet: WalletAdapter,
+        url: &str,
         airspace_name: &str,
-    ) -> Result<JetWebClient, JsError> {
+    ) -> Result<JetWebClient, ClientError> {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-        let network_genesis_hash = adapter
-            .get_genesis_hash()
-            .await
-            .unwrap()
-            .as_string()
-            .and_then(|str| Hash::from_str(&str).ok())
-            .ok_or_else(|| js_sys::Error::new("invalid network genesis hash"))
-            .unwrap();
+        let rpc = Arc::new(RpcConnection::new(url));
+        let network_kind = NetworkKind::from_interface(rpc.as_ref()).await?;
 
-        let network_kind = NetworkKind::from_genesis_hash(&network_genesis_hash);
         let config_url = match network_kind {
             NetworkKind::Mainnet => CONFIG_URL_MAINNET,
             NetworkKind::Devnet => CONFIG_URL_DEVNET,
@@ -88,10 +84,10 @@ impl JetWebClient {
 
         let config = serde_json::from_value(config_response).unwrap();
 
-        let adapter = JsNetworkAdapter::new(adapter, user_address);
+        let wallet = Rc::new(wallet);
 
         Ok(Self {
-            client: JetClient::new(adapter, config, airspace_name)?,
+            client: JetClient::new(rpc, wallet, config, airspace_name)?,
         })
     }
 
@@ -115,33 +111,9 @@ impl JetWebClient {
 }
 
 #[derive(Clone)]
-pub struct ClientError {
-    value: js_sys::Error,
-}
-
-impl From<ClientError> for JsValue {
-    fn from(this: ClientError) -> Self {
-        this.value.into()
-    }
-}
-
-impl From<jet_client::ClientError<JsNetworkAdapter>> for ClientError {
-    fn from(err: jet_client::ClientError<JsNetworkAdapter>) -> Self {
-        match err {
-            jet_client::ClientError::Interface(error) => {
-                web_sys::console::log_1(&error);
-                Self { value: error }
-            }
-            rust_err => Self {
-                value: js_sys::Error::new(&format!("sdk error: {}", rust_err)),
-            },
-        }
-    }
-}
-
 #[wasm_bindgen]
 pub struct ClientState {
-    inner: JetClient<JsNetworkAdapter>,
+    inner: JetClient,
 }
 
 #[wasm_bindgen]
@@ -180,7 +152,7 @@ impl ClientState {
 
 #[wasm_bindgen]
 pub struct TestServiceWebClient {
-    inner: TestServiceClient<JsNetworkAdapter>,
+    inner: TestServiceClient,
 }
 
 #[wasm_bindgen]

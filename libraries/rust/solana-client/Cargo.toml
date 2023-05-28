@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 client-native = ["solana-client"]
-client-wasm = ["solana-client-wasm"]
+client-wasm = ["solana-client-wasm", "solana-extra-wasm"]
 default = ["client-native"]
 
 [dependencies]
@@ -24,6 +24,7 @@ solana-transaction-status = "1.14"
 solana-account-decoder = "1.14"
 solana-client = { version = "1.14", optional = true }
 solana-client-wasm = { version = "1.14", optional = true }
+solana-extra-wasm = { version = "1.14", optional = true }
 
 spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
 spl-token = { version = "3", features = ["no-entrypoint"] }

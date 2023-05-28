@@ -60,7 +60,6 @@ jet-test-service = { path = "../../programs/test-service", features = ["no-entry
 jet-instructions = { path = "../../libraries/rust/instructions" }
 jet-solana-client = { path = "../../libraries/rust/solana-client" }
 jet-client = { path = "../../libraries/rust/client" }
-jet-client-native = { path = "../../libraries/rust/client-native" }
 jet-margin-sdk = { path = "../../libraries/rust/margin", features = ["testing"] }
 jet-environment = { path = "../../libraries/rust/environment" }
 jet-program-common = { path = "../../libraries/rust/program-common" }

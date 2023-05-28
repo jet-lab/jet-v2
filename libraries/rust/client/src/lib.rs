@@ -1,9 +1,9 @@
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use solana_sdk::pubkey::Pubkey;
 use spl_associated_token_account::get_associated_token_address;
 
-use jet_solana_client::NetworkUserInterface;
+use jet_solana_client::rpc::SolanaRpc;
 
 use client::ClientState;
 use config::JetAppConfig;
@@ -20,21 +20,33 @@ pub mod margin_pool;
 pub mod state;
 pub mod swaps;
 pub mod test_service;
+mod wallet;
 
 pub use client::{ClientError, ClientResult};
 pub use jet_solana_client::network::NetworkKind;
+pub use wallet::Wallet;
 
 /// Central client object for interacting with the protocol
 #[derive(Clone)]
-pub struct JetClient<I> {
-    client: Arc<ClientState<I>>,
+pub struct JetClient {
+    client: Arc<ClientState>,
 }
 
-impl<I: NetworkUserInterface> JetClient<I> {
+impl JetClient {
     /// Create the client state
-    pub fn new(interface: I, config: JetAppConfig, airspace: &str) -> ClientResult<I, Self> {
+    pub fn new(
+        interface: Arc<dyn SolanaRpc>,
+        wallet: Rc<dyn Wallet>,
+        config: JetAppConfig,
+        airspace: &str,
+    ) -> ClientResult<Self> {
         Ok(Self {
-            client: Arc::new(ClientState::new(interface, config, airspace.to_owned())?),
+            client: Arc::new(ClientState::new(
+                interface,
+                wallet,
+                config,
+                airspace.to_owned(),
+            )?),
         })
     }
 
@@ -44,7 +56,7 @@ impl<I: NetworkUserInterface> JetClient<I> {
     }
 
     /// Get the state management object for this client
-    pub fn state(&self) -> &AccountStates<I> {
+    pub fn state(&self) -> &AccountStates {
         self.client.state()
     }
 
@@ -60,17 +72,17 @@ impl<I: NetworkUserInterface> JetClient<I> {
     }
 
     /// Get the client for the test service program
-    pub fn test_service(&self) -> TestServiceClient<I> {
+    pub fn test_service(&self) -> TestServiceClient {
         TestServiceClient::new(self.client.clone())
     }
 
     /// Get the client for the margin program
-    pub fn margin(&self) -> MarginClient<I> {
+    pub fn margin(&self) -> MarginClient {
         MarginClient::new(self.client.clone())
     }
 
     /// Get the client for the fixed term markets program
-    pub fn fixed_term(&self) -> FixedTermMarketClient<I> {
+    pub fn fixed_term(&self) -> FixedTermMarketClient {
         FixedTermMarketClient::new(self.client.clone())
     }
 }

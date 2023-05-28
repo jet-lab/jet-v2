@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::sync::Arc;
 
 use anyhow::Error;
@@ -7,8 +8,7 @@ use jet_instructions::fixed_term::derive::market_from_tenor;
 use solana_sdk::pubkey::Pubkey;
 
 use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
-use jet_client::NetworkKind;
-use jet_client_native::{JetSimulationClient, SimulationClient};
+use jet_client::{JetClient, NetworkKind};
 use jet_environment::config::{
     AirspaceConfig, DexConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS,
 };
@@ -141,12 +141,12 @@ impl TestContext {
         &self.inner.solana.rpc
     }
 
-    pub async fn create_user(&self) -> Result<JetSimulationClient, Error> {
-        let wallet = self.inner.create_margin_user(1_000).await?.signer;
-        let client = SimulationClient::new(self.inner.solana.rpc.clone(), Some(wallet));
+    pub async fn create_user(&self) -> Result<JetClient, Error> {
+        let wallet = Rc::new(self.inner.create_margin_user(1_000).await?.signer);
 
-        Ok(JetSimulationClient::new(
-            client,
+        Ok(JetClient::new(
+            self.inner.solana.rpc2.clone(),
+            wallet,
             self.config.clone(),
             &self.config.airspaces[0].name,
         )?)
