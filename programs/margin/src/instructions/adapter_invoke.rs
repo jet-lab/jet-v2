@@ -74,7 +74,8 @@ pub fn adapter_invoke_handler<'info>(
     ctx.accounts
         .margin_account
         .load()?
-        .verify_healthy_positions(sys().unix_timestamp())?;
+        .valuation(sys().unix_timestamp())?
+        .verify_healthy()?;
 
     Ok(())
 }

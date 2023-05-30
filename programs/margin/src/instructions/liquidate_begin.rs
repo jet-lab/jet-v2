@@ -70,7 +70,7 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
     let timestamp = sys().unix_timestamp();
 
     // verify the account is subject to liquidation
-    account.verify_unhealthy_positions(timestamp)?;
+    account.valuation(timestamp)?.verify_unhealthy()?;
 
     // verify not already being liquidated
     match account.liquidator {

@@ -32,7 +32,9 @@ pub struct VerifyHealthy<'info> {
 pub fn verify_healthy_handler(ctx: Context<VerifyHealthy>) -> Result<()> {
     let account = ctx.accounts.margin_account.load()?;
 
-    account.verify_healthy_positions(sys().unix_timestamp())?;
+    account
+        .valuation(sys().unix_timestamp())?
+        .verify_healthy()?;
 
     emit!(events::VerifiedHealthy {
         margin_account: ctx.accounts.margin_account.key(),
