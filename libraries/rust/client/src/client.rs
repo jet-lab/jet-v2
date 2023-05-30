@@ -17,7 +17,6 @@ use spl_associated_token_account::{
 use jet_solana_client::{
     rpc::{SolanaRpc, SolanaRpcExtra},
     transaction::{compile_versioned_transaction, ToTransaction},
-    ExtError, NetworkUserInterface,
 };
 
 use crate::{config::JetAppConfig, state::AccountStates, Wallet};
@@ -42,13 +41,13 @@ impl From<bincode::Error> for ClientError {
     }
 }
 
-impl<I: NetworkUserInterface> From<anchor_lang::error::Error> for ClientError<I> {
+impl From<anchor_lang::error::Error> for ClientError {
     fn from(err: anchor_lang::error::Error) -> Self {
         Self::Unexpected(format!("Unexpected Anchor error: {err:?}"))
     }
 }
 
-impl<I: NetworkUserInterface> From<solana_sdk::instruction::InstructionError> for ClientError<I> {
+impl From<solana_sdk::instruction::InstructionError> for ClientError {
     fn from(err: solana_sdk::instruction::InstructionError) -> Self {
         Self::Unexpected(format!("Unexpected Solana instruction error: {err:?}"))
     }
@@ -113,7 +112,7 @@ impl ClientState {
     }
 
     pub async fn get_slot(&self) -> ClientResult<u64> {
-        Ok(self.network.get_slot()?)
+        Ok(self.network.get_slot().await?)
     }
 
     pub async fn send_ordered(
@@ -161,8 +160,6 @@ impl ClientState {
             Some(e) => Err(e.into()),
             None => Ok(()),
         }
-
-        Ok(())
     }
 
     pub async fn send_with_lookup_tables(
@@ -178,38 +175,12 @@ impl ClientState {
             lookup_tables,
         )
         .map_err(|e| ClientError::Unexpected(format!("compile error: {e:?}")))?;
-        let signature = self
-            .network
-            .send(tx)
-            .await
-            .map_err(|e| ClientError::Interface(e))?;
+        let signature = self.network.send_transaction(&tx).await?;
         log::info!("tx result success: {signature}");
         let mut tx_log = self.tx_log.lock().unwrap();
         tx_log.push_back(signature);
 
         Ok(())
-    }
-
-    pub async fn _send_unordered(
-        &self,
-        transactions: &[impl ToTransaction],
-    ) -> ClientResult<I, Vec<(usize, I::Error)>> {
-        let recent_blockhash = self.get_latest_blockhash().await?;
-        let txs = transactions
-            .iter()
-            .map(|tx| tx.to_transaction(&self.signer(), recent_blockhash))
-            .collect::<Vec<_>>();
-
-        let results = self
-            .network
-            .send_unordered(&txs, Some(recent_blockhash))
-            .await;
-
-        Ok(results
-            .into_iter()
-            .enumerate()
-            .filter_map(|(i, result)| result.err().map(|e| (i, e)))
-            .collect())
     }
 
     pub(crate) async fn with_wallet_account(

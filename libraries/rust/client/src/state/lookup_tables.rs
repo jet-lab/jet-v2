@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anchor_lang::AccountDeserialize;
 use jet_margin::MarginAccount;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 use lookup_table_registry::RegistryAccount;
 use lookup_table_registry_client::LOOKUP_TABLE_REGISTRY_ID;
 use solana_sdk::{
@@ -13,7 +13,7 @@ use solana_sdk::{
 use crate::{state::AccountStates, ClientResult};
 
 /// Sync latest state for all token accounts
-pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     // Get the airspace authority registry
     if let Some(airspace_authority) = states.config.airspace_lookup_registry_authority {
         if let Some(lookup_tables) = get_lookup_tables(states, &airspace_authority).await? {
@@ -32,10 +32,10 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
     Ok(())
 }
 
-async fn get_lookup_tables<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
+async fn get_lookup_tables(
+    states: &AccountStates,
     authority: &Pubkey,
-) -> ClientResult<I, Option<HashMap<Pubkey, AddressLookupTableAccount>>> {
+) -> ClientResult<Option<HashMap<Pubkey, AddressLookupTableAccount>>> {
     let registry_address =
         Pubkey::find_program_address(&[authority.as_ref()], &LOOKUP_TABLE_REGISTRY_ID).0;
     if let Some(registry) = states.network.get_account(&registry_address).await? {
@@ -54,7 +54,7 @@ async fn get_lookup_tables<I: NetworkUserInterface>(
             })
             .collect::<Vec<_>>();
 
-        let accounts = states.network.get_accounts(&addresses).await.unwrap();
+        let accounts = states.network.get_accounts_all(&addresses).await.unwrap();
         let tables = accounts
             .into_iter()
             .zip(addresses)

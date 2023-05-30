@@ -22,7 +22,7 @@ use jet_instructions::{
 use jet_margin::{AccountPosition, MarginAccount, TokenAdmin, TokenConfig, TokenKind, TokenOracle};
 use jet_margin_pool::{Amount, MarginPool, PoolAction};
 use jet_program_common::Number128;
-use jet_solana_client::{rpc::SolanaRpcExtra, NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use crate::{
     bail,
@@ -316,13 +316,13 @@ impl MarginAccountClient {
     }
 
     /// Initialize a lookup table registry account
-    pub async fn init_lookup_registry(&self) -> ClientResult<I, ()> {
+    pub async fn init_lookup_registry(&self) -> ClientResult<()> {
         let ix = self.builder.init_lookup_registry();
         self.client.send(&ix).await
     }
 
     /// Update lookup tables, creating new tables and adding addresses as necessary
-    pub async fn update_lookup_tables(&self) -> ClientResult<I, ()> {
+    pub async fn update_lookup_tables(&self) -> ClientResult<()> {
         // Check if a lookup registry exists, it should be created separately
         let registry_address =
             Pubkey::find_program_address(&[self.address.as_ref()], &LOOKUP_TABLE_REGISTRY_ID).0;
@@ -472,9 +472,9 @@ impl MarginAccountClient {
             .ok_or_else(|| ClientError::Unexpected(format!("no config found for token {token}")))
     }
 
-    fn instructions_for_refresh_positions(&self) -> ClientResult<Vec<TransactionBuilder>> {
+    fn instructions_for_refresh_positions(&self) -> ClientResult<Vec<Instruction>> {
         let mut included = HashSet::new();
-        let mut txns = vec![];
+        let mut ixs = vec![];
 
         for position in self.state().positions() {
             if included.contains(&position.token) || position.balance == 0 {
@@ -490,14 +490,14 @@ impl MarginAccountClient {
                         _ => bail!("deposit position should have an oracle: {}", position.token),
                     };
 
-                    txns.push(
+                    ixs.push(
                         self.builder
                             .refresh_deposit_position(position.token, &oracle, true),
                     );
                 }
 
                 id if id == jet_margin_pool::ID => {
-                    txns.push(crate::margin_pool::instruction_for_refresh(
+                    ixs.push(crate::margin_pool::instruction_for_refresh(
                         self,
                         &position.token,
                         &mut included,
@@ -505,7 +505,7 @@ impl MarginAccountClient {
                 }
 
                 id if id == jet_fixed_term::ID => {
-                    txns.push(crate::fixed_term::instruction_for_refresh(
+                    ixs.push(crate::fixed_term::instruction_for_refresh(
                         self,
                         &position.token,
                         &mut included,
@@ -523,7 +523,7 @@ impl MarginAccountClient {
             included.insert(position.token);
         }
 
-        Ok(txns)
+        Ok(ixs)
     }
 
     /// Update this local client state to reflect the current price information for held positions
