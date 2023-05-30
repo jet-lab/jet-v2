@@ -438,9 +438,11 @@ impl FixedTermIxBuilder {
         loan: Pubkey,
         rent_receiver: Pubkey,
         next_debt_seqno: u64,
+        next_unpaid_loan_seqno: u64,
     ) -> Instruction {
         ix::auto_roll_borrow_order(
             next_debt_seqno,
+            next_unpaid_loan_seqno,
             margin_account,
             loan,
             rent_receiver,

@@ -374,14 +374,13 @@ impl TestManager {
         loans.sort_by(|a, b| a.1.sequence_number.cmp(&b.1.sequence_number));
         let mut builder = Vec::<TransactionBuilder>::new();
         for (key, loan) in loans {
+            let user = self.load_margin_user(margin_account).await?;
             let roll_ix = self.ix_builder.auto_roll_borrow_order(
                 *margin_account,
                 key,
                 loan.payer,
-                self.load_margin_user(margin_account)
-                    .await?
-                    .debt()
-                    .next_new_loan_seqno(),
+                user.debt().next_new_loan_seqno(),
+                user.debt().next_term_loan_to_repay().unwrap_or_default() + 1,
             );
             let accounting_ix = margin_ix.accounting_invoke(roll_ix);
             builder.push(accounting_ix.into())

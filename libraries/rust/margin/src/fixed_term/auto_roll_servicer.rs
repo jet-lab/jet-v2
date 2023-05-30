@@ -85,6 +85,8 @@ impl AutoRollServicer {
         );
 
         let mut next_debt_seqno = user.1.debt().next_new_loan_seqno();
+        let mut next_unpaid_loan_seqno =
+            user.1.debt().next_term_loan_to_repay().unwrap_or_default() + 1;
         for (loan_key, loan) in loans {
             if loan.strike_timestamp + user.1.borrow_roll_config.as_ref().unwrap().roll_tenor as i64
                 >= current_time
@@ -95,6 +97,7 @@ impl AutoRollServicer {
                     loan_key,
                     loan.payer,
                     next_debt_seqno,
+                    next_unpaid_loan_seqno,
                 );
                 ixns.push(accounting_invoke(
                     self.ix.airspace(),
@@ -102,6 +105,7 @@ impl AutoRollServicer {
                     auto_borrow,
                 ));
                 next_debt_seqno += 1;
+                next_unpaid_loan_seqno += 1;
             }
         }
         Ok(())

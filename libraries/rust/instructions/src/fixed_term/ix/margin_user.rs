@@ -292,6 +292,7 @@ pub fn auto_roll_lend_order(
 
 pub fn auto_roll_borrow_order(
     next_debt_seqno: u64,
+    next_unpaid_loan_seqno: u64,
     margin_account: Pubkey,
     loan: Pubkey,
     rent_receiver: Pubkey,
@@ -306,6 +307,7 @@ pub fn auto_roll_borrow_order(
         margin_account,
         loan,
         new_loan: term_loan(market, &margin_user, next_debt_seqno),
+        next_unpaid_loan: term_loan(market, &margin_user, next_unpaid_loan_seqno),
         claims: user_claims(&margin_user),
         claims_mint: claims_mint(market),
         underlying_collateral: user_underlying_collateral(&margin_user),
