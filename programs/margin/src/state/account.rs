@@ -338,43 +338,6 @@ impl MarginAccount {
             .set_price(price)
     }
 
-    /// Check that the overall health of the account is acceptable, by comparing the
-    /// total value of the claims versus the available collateral. If the collateralization
-    /// ratio is above the minimum, then the account is considered healthy.
-    pub fn verify_healthy_positions(&self, timestamp: u64) -> AnchorResult<()> {
-        let info = self.valuation(timestamp)?;
-
-        if info.required_collateral > info.effective_collateral {
-            msg!("{:#?}", &info);
-            msg!(
-                "account is unhealthy: K_e = {}, K_r = {}",
-                info.effective_collateral,
-                info.required_collateral
-            );
-            return err!(ErrorCode::Unhealthy);
-        }
-
-        Ok(())
-    }
-
-    /// Check that the overall health of the account is *not* acceptable.
-    pub fn verify_unhealthy_positions(&self, timestamp: u64) -> AnchorResult<()> {
-        let info = self.valuation(timestamp)?;
-
-        if !info.stale_collateral_list.is_empty() {
-            for (position_token, error) in info.stale_collateral_list {
-                msg!("stale position {}: {}", position_token, error)
-            }
-            return Err(error!(ErrorCode::StalePositions));
-        }
-
-        match info.required_collateral > info.effective_collateral {
-            true => Ok(()),
-            false if info.past_due => Ok(()),
-            false => err!(ErrorCode::Healthy),
-        }
-    }
-
     /// Check if the given address is the current authority for this margin account
     pub fn verify_authority(&self, authority: Pubkey) -> Result<(), ErrorCode> {
         if self.is_liquidating() {
@@ -599,6 +562,39 @@ impl Valuation {
 
     pub fn past_due(&self) -> bool {
         self.past_due
+    }
+
+    /// Check that the overall health of the account is acceptable, by comparing the
+    /// total value of the claims versus the available collateral. If the collateralization
+    /// ratio is above the minimum, then the account is considered healthy.
+    pub fn verify_healthy(&self) -> AnchorResult<()> {
+        if self.required_collateral > self.effective_collateral {
+            msg!("{:#?}", &self);
+            msg!(
+                "account is unhealthy: K_e = {}, K_r = {}",
+                self.effective_collateral,
+                self.required_collateral
+            );
+            return err!(ErrorCode::Unhealthy);
+        }
+
+        Ok(())
+    }
+
+    /// Check that the overall health of the account is *not* acceptable.
+    pub fn verify_unhealthy(&self) -> AnchorResult<()> {
+        if !self.stale_collateral_list.is_empty() {
+            for (position_token, error) in self.stale_collateral_list.iter() {
+                msg!("stale position {}: {}", position_token, error)
+            }
+            return Err(error!(ErrorCode::StalePositions));
+        }
+
+        match self.required_collateral > self.effective_collateral {
+            true => Ok(()),
+            false if self.past_due => Ok(()),
+            false => err!(ErrorCode::Healthy),
+        }
     }
 }
 
@@ -1132,7 +1128,10 @@ mod tests {
         assert_healthy(&acc);
         // but when past due, the account is unhealthy
         acc.get_position_mut(&claim).require().unwrap().flags |= AdapterPositionFlags::PAST_DUE;
-        acc.verify_unhealthy_positions(ARBITRARY_TIME).unwrap();
+        acc.valuation(ARBITRARY_TIME)
+            .unwrap()
+            .verify_unhealthy()
+            .unwrap();
     }
 
     fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
@@ -1172,13 +1171,25 @@ mod tests {
     }
 
     fn assert_unhealthy(acc: &MarginAccount) {
-        acc.verify_healthy_positions(ARBITRARY_TIME).unwrap_err();
-        acc.verify_unhealthy_positions(ARBITRARY_TIME).unwrap();
+        acc.valuation(ARBITRARY_TIME)
+            .unwrap()
+            .verify_healthy()
+            .unwrap_err();
+        acc.valuation(ARBITRARY_TIME)
+            .unwrap()
+            .verify_unhealthy()
+            .unwrap();
     }
 
     fn assert_healthy(acc: &MarginAccount) {
-        acc.verify_healthy_positions(ARBITRARY_TIME).unwrap();
-        acc.verify_unhealthy_positions(ARBITRARY_TIME).unwrap_err();
+        acc.valuation(ARBITRARY_TIME)
+            .unwrap()
+            .verify_healthy()
+            .unwrap();
+        acc.valuation(ARBITRARY_TIME)
+            .unwrap()
+            .verify_unhealthy()
+            .unwrap_err();
     }
 
     fn set_price(acc: &mut MarginAccount, key: Pubkey, price: i64) {
