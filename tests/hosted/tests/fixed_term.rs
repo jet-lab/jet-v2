@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use agnostic_orderbook::state::event_queue::EventRef;
+use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use futures::{future::join_all, join};
 use hosted_tests::{
@@ -14,10 +15,11 @@ use hosted_tests::{
     test_default,
 };
 use jet_fixed_term::{
-    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig},
+    margin::state::{BorrowAutoRollConfig, LendAutoRollConfig, TermLoan},
     orderbook::state::{
         CallbackFlags, MarginCallbackInfo, OrderParams, RoundingAction, SensibleOrderSummary,
     },
+    tickets::state::TermDeposit,
 };
 use jet_margin_sdk::{
     fixed_term::{auto_roll_servicer::AutoRollServicer, settler::SETTLES_PER_TX},
@@ -36,7 +38,7 @@ use jet_program_common::{
     interest_pricing::{InterestPricer, PricerImpl},
     Fp32,
 };
-use jet_solana_client::transactions;
+use jet_solana_client::{rpc::AccountFilter, transactions};
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -526,7 +528,7 @@ async fn auto_roll_many_trades() -> Result<()> {
             &ctx,
             manager.clone(),
             vec![(collateral, 0, u64::MAX / 1_000)],
-        )
+        ),
     );
     let lend_params = OrderParams {
         auto_roll: true,
@@ -538,13 +540,13 @@ async fn auto_roll_many_trades() -> Result<()> {
     };
     lender
         .set_lend_roll_config(LendAutoRollConfig {
-            limit_price: lend_params.limit_price,
+            limit_price: OrderAmount::rate_to_price(1_000),
         })
         .await
         .unwrap();
     borrower
         .set_borrow_roll_config(BorrowAutoRollConfig {
-            limit_price: borrow_params.limit_price,
+            limit_price: OrderAmount::rate_to_price(10_000),
             roll_tenor: 1,
         })
         .await
@@ -584,8 +586,18 @@ async fn auto_roll_many_trades() -> Result<()> {
         std::thread::sleep(std::time::Duration::from_secs(1 as u64));
     }
 
+    // provide some liquidity
+    transactions! {
+        lender.proxy.refresh().await.unwrap(),
+        borrower.proxy.refresh().await.unwrap(),
+        lender.margin_lend_order(underlying(10_000, 3_000)).await.unwrap(),
+        borrower.margin_borrow_order(underlying(10_000, 2_000)).await.unwrap()
+    }
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
     let servicer = AutoRollServicer::new(manager.client.clone(), manager.ix_builder.clone());
-    servicer.service_all().await?;
+    servicer.service_all().await;
 
     #[cfg(not(feature = "localnet"))]
     {
@@ -597,7 +609,44 @@ async fn auto_roll_many_trades() -> Result<()> {
     {
         std::thread::sleep(std::time::Duration::from_secs(LEND_TENOR as u64));
     }
-    servicer.service_all().await?;
+    servicer.service_all().await;
+
+    let loans = manager
+        .client
+        .get_program_accounts(
+            &jet_fixed_term::ID,
+            vec![AccountFilter::DataSize(std::mem::size_of::<TermLoan>() + 8)],
+        )
+        .await?
+        .into_iter()
+        .filter_map(
+            |(k, a)| match TermLoan::try_deserialize(&mut a.data.as_ref()) {
+                Err(_) => None,
+                Ok(loan) => Some((k, loan)),
+            },
+        )
+        .collect::<Vec<_>>();
+
+    let deposits = manager
+        .client
+        .get_program_accounts(
+            &jet_fixed_term::ID,
+            vec![AccountFilter::DataSize(
+                std::mem::size_of::<TermDeposit>() + 8,
+            )],
+        )
+        .await?
+        .into_iter()
+        .filter_map(
+            |(k, a)| match TermDeposit::try_deserialize(&mut a.data.as_ref()) {
+                Err(_) => None,
+                Ok(deposit) => Some((k, deposit)),
+            },
+        )
+        .collect::<Vec<_>>();
+
+    dbg!(loans);
+    dbg!(deposits);
 
     Ok(())
 }

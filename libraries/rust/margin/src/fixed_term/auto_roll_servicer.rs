@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
 use anchor_lang::AccountDeserialize;
-use futures::future::try_join_all;
+use futures::future::join_all;
 use jet_fixed_term::{
     margin::state::{MarginUser, TermLoan},
     tickets::state::TermDeposit,
 };
-use jet_instructions::fixed_term::{derive, FixedTermIxBuilder};
+use jet_instructions::{
+    fixed_term::{derive, FixedTermIxBuilder},
+    margin::accounting_invoke,
+};
 use jet_simulation::SolanaRpcClient;
 use jet_solana_client::{
     rpc::AccountFilter,
@@ -29,33 +32,34 @@ impl AutoRollServicer {
         Self { ix, rpc }
     }
 
-    pub async fn service_all(&self) -> Result<()> {
-        let mut jobs = vec![];
-        for user in self.fetch_users().await? {
-            jobs.push(self.service_user(user))
-        }
-        try_join_all(jobs).await?;
-        Ok(())
-    }
+    pub async fn service_all(&self) {
+        let users = match self.fetch_users().await {
+            Ok(u) => u.into_iter().map(|u| self.service_user(u)),
+            Err(e) => {
+                tracing::warn!("encountered error fetching users: [{e}]");
+                return;
+            }
+        };
 
-    pub async fn service_forever(&self) {
-        loop {
-            let res = self.service_all().await;
+        for res in join_all(users).await {
             match res {
-                Ok(_) => continue,
-                Err(e) => {
-                    tracing::error!(
-                        "encountered error while servicing market [{}], error: {}",
-                        self.ix.market(),
-                        e
-                    );
-                    continue;
-                }
+                Err(e) => match e {
+                    _ => tracing::warn!("encountered error while servicing users: [{e}]"),
+                },
+                _ => continue,
             }
         }
     }
 
+    pub async fn service_forever(&self) {
+        loop {
+            self.service_all().await
+        }
+    }
+
     async fn service_user(&self, user: KeyAccount<MarginUser>) -> Result<()> {
+        tracing::trace!("servicing user [{}]", user.0);
+
         let mut ixns = vec![];
         self.with_service_loans(&user, &mut ixns).await?;
         self.with_service_deposits(&user, &mut ixns).await?;
@@ -68,22 +72,34 @@ impl AutoRollServicer {
         user: &KeyAccount<MarginUser>,
         ixns: &mut Vec<Instruction>,
     ) -> Result<()> {
-        if user.1.lend_roll_config.is_none() {
+        if user.1.borrow_roll_config.is_none() {
             return Ok(());
         }
         let loans = self.get_active_loans(user).await?;
-
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
+        tracing::info!(
+            "found [{}] active loans for user [{}] at timestamp [{}]",
+            loans.len(),
+            user.0,
+            current_time
+        );
+
         let mut next_debt_seqno = user.1.debt().next_new_loan_seqno();
         for (loan_key, loan) in loans {
             if loan.strike_timestamp + user.1.borrow_roll_config.as_ref().unwrap().roll_tenor as i64
                 >= current_time
             {
-                ixns.push(self.ix.auto_roll_borrow_order(
+                tracing::debug!("attempting to auto-borrow for loan [{}]", loan_key);
+                let auto_borrow = self.ix.auto_roll_borrow_order(
                     user.1.margin_account,
                     loan_key,
                     loan.payer,
                     next_debt_seqno,
+                );
+                ixns.push(accounting_invoke(
+                    self.ix.airspace(),
+                    user.1.margin_account,
+                    auto_borrow,
                 ));
                 next_debt_seqno += 1;
             }
@@ -96,19 +112,31 @@ impl AutoRollServicer {
         user: &KeyAccount<MarginUser>,
         ixns: &mut Vec<Instruction>,
     ) -> Result<()> {
-        if user.1.borrow_roll_config.is_none() {
+        if user.1.lend_roll_config.is_none() {
             return Ok(());
         }
         let deposits = self.get_active_deposits(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
+        tracing::info!(
+            "found [{}] active deposits for user [{}] at timestamp [{}]",
+            deposits.len(),
+            user.0,
+            current_time
+        );
         let mut next_deposit_seqno = user.1.assets().next_new_deposit_seqno();
         for (deposit_key, deposit) in deposits {
             if deposit.matures_at >= current_time {
-                ixns.push(self.ix.auto_roll_lend_order(
+                tracing::debug!("attempting to auto-lend for deposit [{}]", deposit_key);
+                let auto_lend = self.ix.auto_roll_lend_order(
                     user.1.margin_account,
                     deposit_key,
                     deposit.payer,
                     next_deposit_seqno,
+                );
+                ixns.push(accounting_invoke(
+                    self.ix.airspace(),
+                    user.1.margin_account,
+                    auto_lend,
                 ));
                 next_deposit_seqno += 1;
             }
@@ -136,11 +164,15 @@ impl AutoRollServicer {
                             Some((k, u))
                         }
                     }
-                    Err(_) => None,
+                    Err(_) => {
+                        tracing::warn!("failed to deserialize margin user [{k}]");
+                        None
+                    }
                 },
             )
-            .collect();
+            .collect::<Vec<_>>();
 
+        tracing::debug!("found [{}] margin users", users.len());
         Ok(users)
     }
 
@@ -182,7 +214,10 @@ impl AutoRollServicer {
             .zip(keys.iter())
             .filter_map(|(a, k)| match T::try_deserialize(&mut a?.data.as_ref()) {
                 Ok(a) => Some((*k, a)),
-                Err(_) => None,
+                Err(_) => {
+                    tracing::warn!("failed to deserialize account [{k}]");
+                    None
+                }
             })
             .collect();
         Ok(accs)

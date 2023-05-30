@@ -6,7 +6,7 @@ pub mod event_consumer;
 mod ix_builder;
 pub mod settler;
 
-use futures::future::try_join_all;
+use futures::future::{try_join_all, join_all};
 pub use ix_builder::*;
 
 use anchor_lang::AccountDeserialize;
@@ -87,7 +87,7 @@ impl Crank {
             .sync_and_consume_all(&self.market_addrs)
             .await?;
         try_join_all(self.settlers.iter().map(|s| s.process_all())).await?;
-        try_join_all(self.servicers.iter().map(|s| s.service_all())).await?;
+        join_all(self.servicers.iter().map(|s| s.service_all())).await;
         Ok(())
     }
 

@@ -1323,6 +1323,13 @@ impl OrderAmount {
             auto_roll: false,
         }
     }
+
+    pub fn rate_to_price(rate_bps: u64) -> u64 {
+        let quote = 10_000_000 / (rate_bps + 10_000);
+        let price = Fp32::from(quote) / 1_000u64;
+
+        price.downcast_u64().unwrap()
+    }
 }
 
 pub async fn generate_test_mint(client: &SolanaTestContext) -> Result<(Pubkey, Keypair)> {
