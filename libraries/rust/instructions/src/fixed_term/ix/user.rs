@@ -46,7 +46,7 @@ pub fn stake_tickets(
     ticket_source: Option<Pubkey>,
     payer: Pubkey,
 ) -> Instruction {
-    let deposit = term_deposit_bytes(&market, &ticket_holder, seed);
+    let deposit = term_deposit_user_bytes(&market, &ticket_holder, seed);
     let ticket_mint = ticket_mint(&market);
     let data = jet_fixed_term::instruction::StakeTickets {
         params: StakeTicketsParams {

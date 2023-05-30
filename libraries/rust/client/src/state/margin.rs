@@ -3,13 +3,13 @@ use solana_sdk::pubkey::Pubkey;
 use jet_instructions::margin::{derive_margin_account, derive_token_config};
 use jet_margin::{MarginAccount, TokenAdmin, TokenConfig, TokenOracle};
 use jet_margin_pool::MarginPool;
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::{fixed_term::MarketState, oracles::PriceOracleState, tokens::Mint, AccountStates};
 use crate::{client::ClientResult, state::tokens};
 
 /// Refresh state for all currently loaded margin accounts
-pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientResult<I, ()> {
+pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     sync_configs(states).await?;
     sync_margin_accounts(states).await?;
 
@@ -17,9 +17,7 @@ pub async fn sync<I: NetworkUserInterface>(states: &AccountStates<I>) -> ClientR
 }
 
 /// Reload all state for the margin configurations
-pub async fn sync_configs<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-) -> ClientResult<I, ()> {
+pub async fn sync_configs(states: &AccountStates) -> ClientResult<()> {
     let mut tokens = states
         .config
         .tokens
@@ -49,7 +47,7 @@ pub async fn sync_configs<I: NetworkUserInterface>(
 
     let accounts = states
         .network
-        .get_anchor_accounts::<TokenConfig>(&configs)
+        .try_get_anchor_accounts::<TokenConfig>(&configs)
         .await?;
 
     for (index, account) in accounts.into_iter().enumerate() {
@@ -81,21 +79,19 @@ pub async fn sync_configs<I: NetworkUserInterface>(
 }
 
 /// Sync all latest state for all previouly loaded margin accounts
-pub async fn sync_margin_accounts<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-) -> ClientResult<I, ()> {
+pub async fn sync_margin_accounts(states: &AccountStates) -> ClientResult<()> {
     load_user_margin_accounts(states).await?;
     Ok(())
 }
 
 /// Load state for the given list of margin accounts
-pub async fn load_margin_accounts<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
+pub async fn load_margin_accounts(
+    states: &AccountStates,
     addresses: &[Pubkey],
-) -> ClientResult<I, ()> {
+) -> ClientResult<()> {
     let accounts = states
         .network
-        .get_anchor_accounts::<MarginAccount>(addresses)
+        .try_get_anchor_accounts::<MarginAccount>(addresses)
         .await?;
 
     let mut positions = vec![];
@@ -116,21 +112,19 @@ pub async fn load_margin_accounts<I: NetworkUserInterface>(
 ///
 /// This is currently limited to only finding the first 32 addresses associated
 /// with the user based on the account seed value.
-pub async fn load_user_margin_accounts<I: NetworkUserInterface>(
-    states: &AccountStates<I>,
-) -> ClientResult<I, ()> {
+pub async fn load_user_margin_accounts(states: &AccountStates) -> ClientResult<()> {
     // Currently limited to check a fixed set of accounts due to performance reasons,
     // as otherwise we would need to do an expensive `getProgramAccounts` to find them all.
     const MAX_DERIVED_ACCOUNTS_TO_CHECK: u16 = 32;
 
-    let user = states.network.signer();
+    let user = states.wallet;
     let possible_accounts = (0..MAX_DERIVED_ACCOUNTS_TO_CHECK)
         .map(|seed| derive_margin_account(&states.config.airspace, &user, seed))
         .collect::<Vec<_>>();
 
     let maybe_accounts = states
         .network
-        .get_anchor_accounts::<MarginAccount>(&possible_accounts)
+        .try_get_anchor_accounts::<MarginAccount>(&possible_accounts)
         .await?;
 
     let mut positions = vec![];

@@ -68,7 +68,9 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     alice.stake_tokens(STAKE_AMOUNT, &ticket_seed).await?;
     assert_eq!(alice.tickets().await?, START_TICKETS - STAKE_AMOUNT);
 
-    let deposit = alice.load_term_deposit(&ticket_seed).await?;
+    let deposit = alice
+        .load_term_deposit(jet_fixed_term::seeds::USER.as_ref())
+        .await?;
     assert_eq!(deposit.amount, STAKE_AMOUNT);
     assert_eq!(deposit.market, manager.ix_builder.market());
     assert_eq!(deposit.owner, alice.proxy.pubkey());

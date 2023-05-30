@@ -10,9 +10,7 @@ use jet_instructions::{
         spl_swap_pool_create,
     },
 };
-use jet_solana_client::{
-    network::NetworkKind, transaction::TransactionBuilder, NetworkUserInterface,
-};
+use jet_solana_client::{network::NetworkKind, transaction::TransactionBuilder};
 
 use jet_program_common::programs::*;
 
@@ -51,8 +49,8 @@ pub fn resolve_swap_program(network: NetworkKind, name: &str) -> Result<Pubkey, 
     Err(BuilderError::UnknownSwapProgram(name.to_string()))
 }
 
-pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub async fn create_swap_pools<'a>(
+    builder: &mut Builder,
     config: &EnvironmentConfig,
 ) -> Result<(), BuilderError> {
     if builder.network == NetworkKind::Mainnet {
@@ -82,7 +80,7 @@ pub async fn create_swap_pools<'a, I: NetworkUserInterface>(
 
                 // Create bids, asks, event queue and request queue
                 let (state_accounts, create_state_acc_tx) =
-                    OpenbookStateAccounts::create(&builder.interface, &swap_program).await?;
+                    OpenbookStateAccounts::create(&builder.payer(), &swap_program).await?;
 
                 builder.setup(SetupPhase::TokenAccounts, [create_state_acc_tx]);
 
@@ -120,8 +118,8 @@ pub struct OpenbookStateAccounts {
 }
 
 impl OpenbookStateAccounts {
-    pub async fn create<I: NetworkUserInterface>(
-        client: &I,
+    pub async fn create(
+        payer: &Pubkey,
         dex_program: &Pubkey,
     ) -> Result<(Self, TransactionBuilder), BuilderError> {
         log::info!("Creating state accounts for an Openbook market");
@@ -131,14 +129,14 @@ impl OpenbookStateAccounts {
         let bids = Keypair::new();
         let asks = Keypair::new();
         let bids_ix = system_instruction::create_account(
-            &client.signer(),
+            payer,
             &bids.pubkey(),
             bid_ask_lamports,
             bid_ask_size as u64,
             dex_program,
         );
         let asks_ix = system_instruction::create_account(
-            &client.signer(),
+            payer,
             &asks.pubkey(),
             bid_ask_lamports,
             bid_ask_size as u64,
@@ -151,14 +149,14 @@ impl OpenbookStateAccounts {
         let events = Keypair::new();
         let requests = Keypair::new();
         let events_ix = system_instruction::create_account(
-            &client.signer(),
+            payer,
             &events.pubkey(),
             events_lamports,
             event_queue_size as u64,
             dex_program,
         );
         let requests_ix = system_instruction::create_account(
-            &client.signer(),
+            payer,
             &requests.pubkey(),
             requests_lamports,
             request_queue_size as u64,
@@ -181,8 +179,8 @@ impl OpenbookStateAccounts {
     }
 }
 
-async fn create_spl_swap_pool<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+async fn create_spl_swap_pool(
+    builder: &mut Builder,
     swap_program: Pubkey,
     token_a: Pubkey,
     token_b: Pubkey,
@@ -208,8 +206,8 @@ async fn create_spl_swap_pool<I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn create_saber_swap_pool<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+async fn create_saber_swap_pool(
+    builder: &mut Builder,
     swap_program: Pubkey,
     token_a: Pubkey,
     token_b: Pubkey,
@@ -235,8 +233,8 @@ async fn create_saber_swap_pool<I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn create_orca_whirlpool<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+async fn create_orca_whirlpool(
+    builder: &mut Builder,
     token_a: Pubkey,
     token_b: Pubkey,
 ) -> Result<(), BuilderError> {

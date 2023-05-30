@@ -71,6 +71,14 @@ impl From<RpcClient> for RpcConnection {
     }
 }
 
+impl std::fmt::Debug for RpcConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RpcConnection")
+            .field("url", &self.rpc.url())
+            .finish()
+    }
+}
+
 #[async_trait]
 impl SolanaRpc for RpcConnection {
     async fn get_genesis_hash(&self) -> ClientResult<Hash> {

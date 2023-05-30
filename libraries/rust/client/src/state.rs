@@ -5,12 +5,13 @@ use std::{
 };
 
 use jet_instructions::airspace::derive_airspace;
+use jet_solana_client::rpc::SolanaRpc;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
     client::ClientResult,
     config::{DexInfo, JetAppConfig, TokenInfo},
-    ClientError, NetworkUserInterface,
+    ClientError,
 };
 
 pub mod fixed_term;
@@ -22,19 +23,21 @@ pub mod tokens;
 
 /// A utility for synchronizing information about the current protocol state
 /// with an active Solana network.
-pub struct AccountStates<I> {
-    pub(crate) network: I,
+pub struct AccountStates {
+    pub(crate) network: Arc<dyn SolanaRpc>,
+    pub(crate) wallet: Pubkey,
     pub(crate) config: StateConfig,
     cache: AccountCache,
 }
 
-impl<I: NetworkUserInterface> AccountStates<I> {
+impl AccountStates {
     /// Initialize an empty local state, which can synchronize data from the given interface
     pub fn new(
-        network: I,
+        network: Arc<dyn SolanaRpc>,
+        wallet: Pubkey,
         app_config: JetAppConfig,
         airspace_seed: String,
-    ) -> ClientResult<I, Self> {
+    ) -> ClientResult<Self> {
         let airspace_config = app_config
             .airspaces
             .iter()
@@ -63,12 +66,13 @@ impl<I: NetworkUserInterface> AccountStates<I> {
 
         Ok(Self {
             config,
+            wallet,
             network,
             cache,
         })
     }
 
-    pub async fn sync_all(&self) -> ClientResult<I, ()> {
+    pub async fn sync_all(&self) -> ClientResult<()> {
         self::oracles::sync(self).await?;
         self::spl_swap::sync(self).await?;
         self::margin_pool::sync(self).await?;
@@ -79,7 +83,7 @@ impl<I: NetworkUserInterface> AccountStates<I> {
         Ok(())
     }
 
-    pub fn token_info(&self, token: &Pubkey) -> ClientResult<I, TokenInfo> {
+    pub fn token_info(&self, token: &Pubkey) -> ClientResult<TokenInfo> {
         self.config
             .tokens
             .iter()
@@ -87,9 +91,13 @@ impl<I: NetworkUserInterface> AccountStates<I> {
             .cloned()
             .ok_or_else(|| ClientError::Unexpected(format!("missing token info for {token}")))
     }
+
+    pub fn get_current_time(&self) -> i64 {
+        chrono::Utc::now().timestamp()
+    }
 }
 
-impl<I> std::ops::Deref for AccountStates<I> {
+impl std::ops::Deref for AccountStates {
     type Target = AccountCache;
 
     fn deref(&self) -> &Self::Target {

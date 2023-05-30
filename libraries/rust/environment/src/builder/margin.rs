@@ -2,12 +2,12 @@ use jet_instructions::margin::derive_token_config;
 use solana_sdk::pubkey::Pubkey;
 
 use jet_margin::{TokenConfig, TokenConfigUpdate};
-use jet_solana_client::{NetworkUserInterface, NetworkUserInterfaceExt};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use super::{Builder, BuilderError};
 
-pub async fn configure_margin_token<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub async fn configure_margin_token(
+    builder: &mut Builder,
     airspace: &Pubkey,
     mint: &Pubkey,
     config: Option<TokenConfigUpdate>,
@@ -30,11 +30,11 @@ pub async fn configure_margin_token<I: NetworkUserInterface>(
     Ok(())
 }
 
-pub async fn get_token_config<I: NetworkUserInterface>(
-    builder: &Builder<I>,
+pub async fn get_token_config(
+    builder: &Builder,
     airspace: &Pubkey,
     mint: &Pubkey,
 ) -> Result<Option<TokenConfig>, BuilderError> {
     let address = derive_token_config(airspace, mint);
-    Ok(builder.interface.get_anchor_account(&address).await?)
+    Ok(builder.interface.try_get_anchor_account(&address).await?)
 }

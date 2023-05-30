@@ -1,24 +1,22 @@
 use std::time::SystemTime;
 
+use jet_client::fixed_term::MarketInfo;
+use jet_client::margin::MarginAccountClient;
+use jet_client::JetClient;
+use jet_instructions::fixed_term::derive;
+
 use hosted_tests::environment::TestToken;
 use hosted_tests::util::assert_program_error;
-use jet_client::fixed_term::MarketInfo;
-
-use jet_client::margin::MarginAccountClient;
-use jet_client_native::{JetSimulationClient, SimulationClient};
-use jet_instructions::fixed_term::derive;
 
 use hosted_tests::actions::*;
 use hosted_tests::context::{TestContext, TestContextSetupInfo};
-
-type MarginSimulationClient = MarginAccountClient<SimulationClient>;
 
 struct TestEnv {
     ctx: TestContext,
     usdc: Token,
     tsol: Token,
-    _users: Vec<JetSimulationClient>,
-    accounts: Vec<MarginSimulationClient>,
+    _users: Vec<JetClient>,
+    accounts: Vec<MarginAccountClient>,
     market: MarketInfo,
 }
 

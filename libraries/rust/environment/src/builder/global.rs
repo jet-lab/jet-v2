@@ -9,7 +9,6 @@ use jet_instructions::{
         TokenCreateParams,
     },
 };
-use jet_solana_client::NetworkUserInterface;
 
 use super::{
     filter_initializers, fixed_term, margin::configure_margin_token, margin_pool, Builder,
@@ -17,8 +16,8 @@ use super::{
 };
 use crate::config::{AirspaceConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS};
 
-pub async fn configure_environment<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub async fn configure_environment(
+    builder: &mut Builder,
     config: &EnvironmentConfig,
 ) -> Result<(), BuilderError> {
     if builder.network != config.network {
@@ -58,8 +57,8 @@ pub async fn configure_environment<I: NetworkUserInterface>(
     Ok(())
 }
 
-pub(crate) async fn configure_airspace<I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub(crate) async fn configure_airspace(
+    builder: &mut Builder,
     oracle_authority: &Pubkey,
     config: &AirspaceConfig,
 ) -> Result<(), BuilderError> {
@@ -92,8 +91,8 @@ pub(crate) async fn configure_airspace<I: NetworkUserInterface>(
     Ok(())
 }
 
-async fn register_airspace_adapters<'a, I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+async fn register_airspace_adapters<'a>(
+    builder: &mut Builder,
     airspace: &Pubkey,
     adapters: impl IntoIterator<Item = &'a Pubkey>,
 ) -> Result<(), BuilderError> {
@@ -115,8 +114,8 @@ async fn register_airspace_adapters<'a, I: NetworkUserInterface>(
     Ok(())
 }
 
-pub async fn configure_tokens<'a, I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub async fn configure_tokens<'a>(
+    builder: &mut Builder,
     airspace: &Pubkey,
     cranks: &[Pubkey],
     oracle_authority: &Pubkey,
@@ -200,8 +199,8 @@ pub fn token_context(
     })
 }
 
-pub async fn create_test_tokens<'a, I: NetworkUserInterface>(
-    builder: &mut Builder<I>,
+pub async fn create_test_tokens<'a>(
+    builder: &mut Builder,
     oracle_authority: &Pubkey,
     tokens: impl IntoIterator<Item = &'a TokenDescription>,
 ) -> Result<(), BuilderError> {

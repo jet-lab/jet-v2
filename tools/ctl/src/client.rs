@@ -10,8 +10,7 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use dialoguer::Confirm;
 use indicatif::{MultiProgress, ProgressBar};
-use jet_client_native::SolanaClient;
-use jet_solana_client::NetworkUserInterface;
+use jet_solana_client::rpc::{native::RpcConnection, SolanaRpc};
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::{
     client_error::ClientErrorKind,
@@ -25,7 +24,6 @@ use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
     program_pack::Pack,
-    signature::Keypair,
     signer::Signer,
     transaction::Transaction,
 };
@@ -138,17 +136,15 @@ impl Client {
         &self.config.rpc_client
     }
 
-    pub fn network_interface(&self) -> impl NetworkUserInterface + std::fmt::Debug {
-        SolanaClient::new(
-            RpcClient::new_with_commitment(
-                self.config.rpc_url.clone(),
-                CommitmentConfig::processed(),
-            ),
-            self.config
-                .signer
-                .clone()
-                .unwrap_or_else(|| Arc::new(Keypair::new())),
-        )
+    pub fn network_interface(&self) -> Arc<dyn SolanaRpc> {
+        Arc::new(RpcConnection::new(&self.config.rpc_url))
+    }
+
+    pub fn signer_ref(&self) -> Result<Arc<dyn Signer>> {
+        match &self.config.signer {
+            Some(signer) => Ok(signer.clone()),
+            None => bail!("no wallet/signer configured"),
+        }
     }
 
     pub fn signer(&self) -> Result<Pubkey> {

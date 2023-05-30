@@ -87,6 +87,16 @@ pub fn term_deposit_bytes(market: &Pubkey, owner: &Pubkey, seed: &[u8]) -> Pubke
     ])
 }
 
+pub fn term_deposit_user_bytes(market: &Pubkey, owner: &Pubkey, seed: &[u8]) -> Pubkey {
+    fixed_term_address(&[
+        jet_fixed_term::seeds::TERM_DEPOSIT,
+        market.as_ref(),
+        owner.as_ref(),
+        jet_fixed_term::seeds::USER,
+        seed,
+    ])
+}
+
 pub fn crank_authorization(market: &Pubkey, crank: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[

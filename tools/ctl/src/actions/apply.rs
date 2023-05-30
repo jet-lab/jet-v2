@@ -53,9 +53,13 @@ pub async fn process_apply(
         }
     };
 
-    let mut builder = Builder::new(client.network_interface(), proposal_execution)
-        .await
-        .unwrap();
+    let mut builder = Builder::new(
+        client.network_interface(),
+        client.signer_ref()?,
+        proposal_execution,
+    )
+    .await
+    .unwrap();
 
     configure_environment(&mut builder, &config).await.unwrap();
 

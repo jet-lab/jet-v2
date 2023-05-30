@@ -3,7 +3,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use solana_sdk::hash::Hash;
 
-use crate::NetworkUserInterface;
+use crate::rpc::{ClientError, SolanaRpc};
 
 const MAINNET_HASH: &str = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
 const DEVNET_HASH: &str = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
@@ -35,7 +35,7 @@ impl NetworkKind {
     }
 
     /// Determine the network type for a given interface
-    pub async fn from_interface<I: NetworkUserInterface>(network: &I) -> Result<Self, I::Error> {
+    pub async fn from_interface(network: &dyn SolanaRpc) -> Result<Self, ClientError> {
         let network_hash = network.get_genesis_hash().await?;
         Ok(Self::from_genesis_hash(&network_hash))
     }
