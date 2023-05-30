@@ -3,7 +3,6 @@ import { IdlTypeDef } from "@project-serum/anchor/dist/cjs/idl"
 import { AccountMap, AllAccountsMap, IdlTypes, TypeDef } from "@project-serum/anchor/dist/cjs/program/namespace/types"
 import { blob, Layout, s16, s32, seq, struct, u16, u32, u8 } from "@solana/buffer-layout"
 import { i64Field, number128Field, pubkey, u64 } from "../utils"
-import { JetMargin } from "../types"
 
 /****************************
  * Anchor program type definitions.
@@ -18,26 +17,26 @@ type AllTypesMap<IDL extends Idl> = AccountMap<AllTypes<IDL>>
  * Program Accounts
  ****************************/
 
-export type LiquidationData = TypeDef<AllTypesMap<JetMargin>["Liquidation"], IdlTypes<JetMargin>>
-export type MarginAccountData = TypeDef<AllAccountsMap<JetMargin>["marginAccount"], IdlTypes<JetMargin>>
+export type LiquidationData = TypeDef<AllTypesMap<JetMarginIDL>["Liquidation"], IdlTypes<JetMarginIDL>>
+export type MarginAccountData = TypeDef<AllAccountsMap<JetMarginIDL>["marginAccount"], IdlTypes<JetMarginIDL>>
 
 /****************************
  * Program Types
  ****************************/
 
-export type AccountPositionInfo = TypeDef<AllTypesMap<JetMargin>["AccountPosition"], IdlTypes<JetMargin>>
-export type AccountPositionKey = TypeDef<AllTypesMap<JetMargin>["AccountPositionKey"], IdlTypes<JetMargin>> & {
+export type AccountPositionInfo = TypeDef<AllTypesMap<JetMarginIDL>["AccountPosition"], IdlTypes<JetMarginIDL>>
+export type AccountPositionKey = TypeDef<AllTypesMap<JetMarginIDL>["AccountPositionKey"], IdlTypes<JetMarginIDL>> & {
   index: BN
 }
-export type AccountPositionList = TypeDef<AllTypesMap<JetMargin>["AccountPositionList"], IdlTypes<JetMargin>> & {
+export type AccountPositionList = TypeDef<AllTypesMap<JetMarginIDL>["AccountPositionList"], IdlTypes<JetMarginIDL>> & {
   length: BN
   map: AccountPositionKey[]
   positions: AccountPositionInfo[]
 }
 export type PositionKindInfo = AccountPositionInfo["kind"]
-export type AdapterResult = TypeDef<AllTypesMap<JetMargin>["AdapterResult"], IdlTypes<JetMargin>>
-export type PositionChange = TypeDef<AllTypesMap<JetMargin>["PositionChange"], IdlTypes<JetMargin>>
-export type PriceInfoData = TypeDef<AllTypesMap<JetMargin>["PriceInfo"], IdlTypes<JetMargin>>
+export type AdapterResult = TypeDef<AllTypesMap<JetMarginIDL>["AdapterResult"], IdlTypes<JetMarginIDL>>
+export type PositionChange = TypeDef<AllTypesMap<JetMarginIDL>["PositionChange"], IdlTypes<JetMarginIDL>>
+export type PriceInfoData = TypeDef<AllTypesMap<JetMarginIDL>["PriceInfo"], IdlTypes<JetMarginIDL>>
 
 export enum ErrorCode {
   InvalidPrice,

@@ -1,6 +1,6 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { AccountInfo, PublicKey } from "@solana/web3.js"
-import { findDerivedAccount, Number128 } from "../utils"
+import { findDerivedAccount } from "../utils"
 import { Airspace } from "./airspace"
 import { MarginPrograms } from "./marginClient"
 import { PositionKind } from "./state"
@@ -14,7 +14,7 @@ export interface TokenConfigInfo {
   airspace: PublicKey
   admin: number[]
   tokenKind: number
-  valueModifier: BN
+  valueModifier: number
   maxStaleness: BN
 }
 
@@ -24,7 +24,7 @@ export class TokenConfig {
   address: PublicKey
   info: TokenConfigInfo | undefined
 
-  valueModifier: Number128 = Number128.ZERO
+  valueModifier: number = 0
   tokenKind: PositionKind = PositionKind.NoValue
 
   static derive(programs: MarginPrograms, airspace: Address | undefined, tokenMint: PublicKey) {
@@ -62,11 +62,11 @@ export class TokenConfig {
   decode(info: AccountInfo<Buffer> | null) {
     if (!info) {
       this.info = undefined
-      this.valueModifier = Number128.ZERO
+      this.valueModifier = 0
       return
     }
     this.info = this.programs.margin.coder.accounts.decode("TokenConfig", info.data)
-    this.valueModifier = Number128.fromDecimal(new BN(this.info!.valueModifier), -2)
+    this.valueModifier = this.info!.valueModifier / 100
     this.tokenKind = TokenConfig.decodeTokenKind(this.info!.tokenKind)
   }
 
@@ -79,23 +79,6 @@ export class TokenConfig {
       return PositionKind.Claim
     } else {
       throw new Error("Unrecognized TokenKind: " + kind.toString())
-    }
-  }
-
-  getLiability(value: Number128) {
-    return value
-  }
-
-  collateralValue(value: Number128) {
-    return this.valueModifier.mul(value)
-  }
-
-  requiredCollateralValue(value: Number128) {
-    if (this.valueModifier.eq(Number128.ZERO)) {
-      // No leverage configured for claim
-      return Number128.MAX
-    } else {
-      return value.div(this.valueModifier)
     }
   }
 }

@@ -58,7 +58,7 @@ export function SnapshotBody(): JSX.Element {
   // Renders the account's available collateral
   function renderAvailableCollateral() {
     const availableCollateral = currentAccount
-      ? currentAccount.valuation.effectiveCollateral.sub(currentAccount.valuation.requiredCollateral).toNumber()
+      ? currentAccount.valuation.availableCollateral
       : 0;
     let render = <Title>{currencyFormatter(availableCollateral, true, 0)}</Title>;
     if (initialAccountsLoad) {
@@ -70,8 +70,8 @@ export function SnapshotBody(): JSX.Element {
 
   // Renders the account's required/effective collateral
   function getCollateral(type: 'required' | 'effective') {
-    const requiredCollateral = currentAccount?.valuation.requiredCollateral.toNumber() ?? 0;
-    const effectiveCollateral = currentAccount?.valuation.effectiveCollateral.toNumber() ?? 0;
+    const requiredCollateral = currentAccount?.valuation.requiredCollateral ?? 0;
+    const effectiveCollateral = currentAccount?.valuation.effectiveCollateral ?? 0;
     let collateral = requiredCollateral;
     if (type === 'effective') {
       collateral = effectiveCollateral;

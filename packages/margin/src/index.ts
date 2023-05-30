@@ -17,7 +17,7 @@
 
 export * from "./margin"
 export * from "./token"
-export * from "./types"
+export * from "./idls"
 export * from "./utils"
 export * from "./fixed-term"
 export * from "./wasm"

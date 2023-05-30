@@ -1,4 +1,4 @@
-export interface OpenOrders {
+interface OpenOrders {
   market: string;
   authority: string;
   open_orders: OpenOrder[];
@@ -6,7 +6,7 @@ export interface OpenOrders {
   unfilled_lend: number;
 }
 
-export interface OpenOrder {
+interface OpenOrder {
   order_tag: string;
   order_id: string;
   is_lend_order: boolean;
@@ -19,7 +19,7 @@ export interface OpenOrder {
   rate: number;
 }
 
-export interface OpenPositions {
+interface OpenPositions {
   market: string;
   authority: string;
   loans: Loan[];
@@ -28,7 +28,7 @@ export interface OpenPositions {
   total_lent: number;
 }
 
-export interface Loan {
+interface Loan {
   id: number;
   address: string;
   sequence_number: number;
@@ -43,7 +43,7 @@ export interface Loan {
   rate: number;
 }
 
-export interface Deposit {
+interface Deposit {
   id: number;
   address: string;
   sequence_number: number;
@@ -56,25 +56,25 @@ export interface Deposit {
   created_timestamp: number;
 }
 
-export type Order = {
+type Order = {
   owner: any;
   order_tag: any;
   base_size: bigint;
   price: bigint;
 };
 
-export type OrderbookSnapshot = {
+type OrderbookSnapshot = {
   bids: Array<Order>;
   asks: Array<Order>;
 };
 
-export type PriceLevel = [price: number, amt: number];
-export interface SwapLiquidityTokenInfo {
+type PriceLevel = [price: number, amt: number];
+interface SwapLiquidityTokenInfo {
   mint: string;
   symbol: string;
   expo: number;
 }
-export interface SwapLiquidity {
+interface SwapLiquidity {
   base: SwapLiquidityTokenInfo;
   quote: SwapLiquidityTokenInfo;
   bids: PriceLevel[];

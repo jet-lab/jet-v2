@@ -17,6 +17,7 @@
 
 export * from "./airspace"
 export * from "./config"
+export * from "./accountPosition"
 export * from "./marginAccount"
 export * from "./marginClient"
 export * from "./metadata"

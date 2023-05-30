@@ -6,34 +6,6 @@ import { FixedTermMarketConfig, MarginAccount, Pool, PoolTokenChange } from "../
 import { AssociatedToken } from "../token"
 import { sendAndConfirmV0 } from "../utils"
 
-// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
-interface Deposit {
-  id: number
-  address: string
-  sequence_number: number
-  maturation_timestamp: number
-  principal: number
-  interest: number
-  rate: number
-  payer: string
-  created_timestamp: number
-}
-
-// TODO for now keep in sync manually with store package, later replace fully with either store package or a separate types package
-interface Loan {
-  id: number
-  address: string
-  sequence_number: number
-  maturation_timestamp: number
-  principal: number
-  interest: number
-  remaining_balance: number
-  is_marked_due: boolean
-  created_timestamp: number
-  payer: string
-  rate: number
-}
-
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedTermMarketAccount {
   market: FixedTermMarket

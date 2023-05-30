@@ -99,8 +99,8 @@ export function usePoolsSyncer() {
           token_mint: pool.tokenMint.toBase58(),
           decimals: pool.decimals,
           precision: pool.precision,
-          collateral_weight: pool.depositNoteMetadata.valueModifier.toNumber(),
-          collateral_factor: pool.loanNoteMetadata.valueModifier.toNumber(),
+          collateral_weight: pool.depositNoteMetadata.valueModifier,
+          collateral_factor: pool.loanNoteMetadata.valueModifier,
           pool_rate_config,
           lending_rate: pool.depositApy,
           borrow_rate: pool.borrowApr
