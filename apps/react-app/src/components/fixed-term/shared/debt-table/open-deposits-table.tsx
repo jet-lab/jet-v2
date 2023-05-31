@@ -6,7 +6,6 @@ import {
   TokenAmount,
   toggleAutorollPosition
 } from '@jet-lab/margin';
-import { Deposit } from '@jet-lab/store';
 import { Switch, Table } from 'antd';
 import BN from 'bn.js';
 import { formatDistanceToNowStrict } from 'date-fns';

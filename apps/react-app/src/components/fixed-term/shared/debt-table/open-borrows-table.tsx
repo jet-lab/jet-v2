@@ -6,7 +6,6 @@ import {
   TokenAmount,
   toggleAutorollPosition
 } from '@jet-lab/margin';
-import { Loan } from '@jet-lab/store';
 import { Switch, Table } from 'antd';
 import { ColumnsType } from 'antd/lib/table';
 import BN from 'bn.js';

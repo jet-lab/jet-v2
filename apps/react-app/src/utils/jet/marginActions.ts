@@ -15,7 +15,6 @@ import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-syn
 import { useJetStore } from '@jet-lab/store';
 import { useMemo } from 'react';
 import { SwapStep } from '@utils/actions/swap';
-import { LookupTable } from '@jet-lab/store/dist/slices/accounts';
 
 export enum ActionResponse {
   Success = 'SUCCESS',

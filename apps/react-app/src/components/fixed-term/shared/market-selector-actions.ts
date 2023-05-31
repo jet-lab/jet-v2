@@ -9,7 +9,6 @@ import {
   settle,
   TokenAmount
 } from '@jet-lab/margin';
-import { Deposit, Loan } from '@jet-lab/store';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';

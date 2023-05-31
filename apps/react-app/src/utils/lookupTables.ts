@@ -1,5 +1,4 @@
 import { useJetStore } from '@jet-lab/store';
-import { LookupTable } from '@jet-lab/store/dist/slices/accounts';
 import axios from 'axios';
 
 export async function getAuthorityLookupTables(authority: string): Promise<LookupTable[]> {

@@ -5,7 +5,6 @@ import { useProvider } from '@utils/jet/provider';
 import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useJetStore } from '@jet-lab/store';
-import { PoolData } from '@jet-lab/store/dist/slices/pools';
 
 // Our app's interface for interacting with margin pools
 export interface JetMarginPools {
