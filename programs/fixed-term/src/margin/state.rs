@@ -500,9 +500,11 @@ impl Assets {
 
     /// A [TermDeposit] has been redeemed
     pub fn redeem_deposit(&mut self, seqno: SequenceNumber, tickets: u64) -> Result<()> {
-        if seqno != self.next_unredeemed_deposit_seqno {
-            return Err(FixedTermErrorCode::TermDepositHasWrongSequenceNumber.into());
-        }
+        require_eq!(
+            seqno,
+            self.next_unredeemed_deposit_seqno,
+            FixedTermErrorCode::TermDepositHasWrongSequenceNumber
+        );
 
         self.next_unredeemed_deposit_seqno += 1;
         self.tickets_staked = self.tickets_staked.saturating_sub(tickets);

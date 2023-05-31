@@ -6,7 +6,7 @@ pub mod event_consumer;
 mod ix_builder;
 pub mod settler;
 
-use futures::future::{try_join_all, join_all};
+use futures::future::{join_all, try_join_all};
 pub use ix_builder::*;
 
 use anchor_lang::AccountDeserialize;

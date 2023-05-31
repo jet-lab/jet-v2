@@ -41,17 +41,22 @@ impl AutoRollServicer {
             }
         };
 
+        tracing::info!(
+            "attemtping to service [{}] users for market [{}]",
+            users.len(),
+            self.ix.market()
+        );
+
         for res in join_all(users).await {
             match res {
-                Err(e) => match e {
-                    _ => tracing::warn!("encountered error while servicing users: [{e}]"),
-                },
+                Err(e) => tracing::warn!("encountered error while servicing users: [{e}]"),
                 _ => continue,
             }
         }
     }
 
     pub async fn service_forever(&self) {
+        tracing::trace!("starting servicer loop");
         loop {
             self.service_all().await
         }
@@ -64,6 +69,11 @@ impl AutoRollServicer {
         self.with_service_loans(&user, &mut ixns).await?;
         self.with_service_deposits(&user, &mut ixns).await?;
 
+        tracing::debug!(
+            "sending [{}] instructions to service user [{}]",
+            ixns.len(),
+            user.0
+        );
         self.bundle_and_send(ixns).await
     }
 
@@ -75,6 +85,11 @@ impl AutoRollServicer {
         if user.1.borrow_roll_config.is_none() {
             return Ok(());
         }
+        tracing::trace!(
+            "fetching active loans for user [{}] in market [{}]",
+            user.0,
+            self.ix.market()
+        );
         let loans = self.get_active_loans(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
         tracing::info!(
@@ -91,7 +106,7 @@ impl AutoRollServicer {
             if loan.strike_timestamp + user.1.borrow_roll_config.as_ref().unwrap().roll_tenor as i64
                 >= current_time
             {
-                tracing::debug!("attempting to auto-borrow for loan [{}]", loan_key);
+                tracing::debug!("attempting to auto-borrow for loan [{}]", loan_key,);
                 let auto_borrow = self.ix.auto_roll_borrow_order(
                     user.1.margin_account,
                     loan_key,
@@ -119,6 +134,11 @@ impl AutoRollServicer {
         if user.1.lend_roll_config.is_none() {
             return Ok(());
         }
+        tracing::trace!(
+            "fetching active deposits for user [{}] in market [{}]",
+            user.0,
+            self.ix.market()
+        );
         let deposits = self.get_active_deposits(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
         tracing::info!(
@@ -129,7 +149,7 @@ impl AutoRollServicer {
         );
         let mut next_deposit_seqno = user.1.assets().next_new_deposit_seqno();
         for (deposit_key, deposit) in deposits {
-            if deposit.matures_at >= current_time {
+            if deposit.matures_at <= current_time {
                 tracing::debug!("attempting to auto-lend for deposit [{}]", deposit_key);
                 let auto_lend = self.ix.auto_roll_lend_order(
                     user.1.margin_account,
@@ -149,6 +169,7 @@ impl AutoRollServicer {
     }
 
     async fn fetch_users(&self) -> Result<Vec<KeyAccount<MarginUser>>> {
+        tracing::trace!("fetching users from market [{}]", self.ix.market());
         let users = self
             .rpc
             .get_program_accounts(
@@ -176,7 +197,11 @@ impl AutoRollServicer {
             )
             .collect::<Vec<_>>();
 
-        tracing::debug!("found [{}] margin users", users.len());
+        tracing::debug!(
+            "found [{}] margin users in market [{}]",
+            users.len(),
+            self.ix.market()
+        );
         Ok(users)
     }
 
@@ -201,7 +226,7 @@ impl AutoRollServicer {
             .1
             .assets()
             .active_deposits()
-            .map(|n| derive::term_deposit(&user.1.market, &user.0, n))
+            .map(|n| derive::term_deposit(&user.1.market, &user.1.margin_account, n))
             .collect::<Vec<_>>();
         self.load_accounts::<TermDeposit>(&deposit_keys).await
     }

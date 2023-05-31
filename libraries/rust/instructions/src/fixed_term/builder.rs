@@ -420,10 +420,10 @@ impl FixedTermIxBuilder {
         margin_account: Pubkey,
         deposit: Pubkey,
         rent_receiver: Pubkey,
-        deposit_seqno: u64,
+        next_deposit_seqno: u64,
     ) -> Instruction {
         ix::auto_roll_lend_order(
-            deposit_seqno,
+            next_deposit_seqno,
             margin_account,
             deposit,
             rent_receiver,
