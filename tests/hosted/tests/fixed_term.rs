@@ -611,7 +611,7 @@ async fn auto_roll_many_trades() -> Result<()> {
     }
     servicer.service_all().await;
 
-    let loans = manager
+    let mut loans = manager
         .client
         .get_program_accounts(
             &jet_fixed_term::ID,
@@ -620,14 +620,15 @@ async fn auto_roll_many_trades() -> Result<()> {
         .await?
         .into_iter()
         .filter_map(
-            |(k, a)| match TermLoan::try_deserialize(&mut a.data.as_ref()) {
+            |(_, a)| match TermLoan::try_deserialize(&mut a.data.as_ref()) {
                 Err(_) => None,
-                Ok(loan) => Some((k, loan)),
+                Ok(loan) => Some(loan),
             },
         )
         .collect::<Vec<_>>();
+    loans.sort_by(|a, b| a.sequence_number.partial_cmp(&b.sequence_number).unwrap());
 
-    let deposits = manager
+    let mut deposits = manager
         .client
         .get_program_accounts(
             &jet_fixed_term::ID,
@@ -638,16 +639,23 @@ async fn auto_roll_many_trades() -> Result<()> {
         .await?
         .into_iter()
         .filter_map(
-            |(k, a)| match TermDeposit::try_deserialize(&mut a.data.as_ref()) {
+            |(_, a)| match TermDeposit::try_deserialize(&mut a.data.as_ref()) {
                 Err(_) => None,
-                Ok(deposit) => Some((k, deposit)),
+                Ok(deposit) => Some(deposit),
             },
         )
         .collect::<Vec<_>>();
+    deposits.sort_by(|a, b| a.sequence_number.partial_cmp(&b.sequence_number).unwrap());
 
-    dbg!(loans);
-    dbg!(deposits);
+    // should fully roll, keeping total number of accounts
+    assert!(loans.len() == 3);
+    assert!(deposits.len() == 3);
 
+    // a total of 3 rolls occurred, leaving the total number of loans/deposits created at 6 per account
+    assert!(deposits.last().unwrap().sequence_number == 5);
+    assert!(loans.last().unwrap().sequence_number == 5);
+
+    // FIXME: exact numbers should be tested against W.R.T. principal and interest
     Ok(())
 }
 

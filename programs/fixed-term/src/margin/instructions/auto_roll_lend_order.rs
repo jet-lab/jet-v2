@@ -84,7 +84,7 @@ pub struct AutoRollLendOrder<'info> {
 impl<'info> AutoRollLendOrder<'info> {
     fn margin_redeem(&mut self) -> Result<()> {
         let accounts = &mut MarginRedeemDepositAccounts {
-            margin_user: &mut self.margin_user.clone(),
+            margin_user: &mut self.margin_user,
             ticket_collateral: self.ticket_collateral.as_ref().as_ref(),
             ticket_collateral_mint: self.ticket_collateral_mint.as_ref().as_ref(),
             inner: &RedeemDepositAccounts {

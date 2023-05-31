@@ -215,7 +215,13 @@ impl AutoRollServicer {
             .active_loans()
             .map(|n| derive::term_loan(&user.1.market, &user.0, n))
             .collect::<Vec<_>>();
-        self.load_accounts::<TermLoan>(&loan_keys).await
+        let mut loans = self.load_accounts::<TermLoan>(&loan_keys).await?;
+        loans.sort_by(|a, b| {
+            a.1.sequence_number
+                .partial_cmp(&b.1.sequence_number)
+                .unwrap()
+        });
+        Ok(loans)
     }
 
     async fn get_active_deposits(
@@ -228,7 +234,13 @@ impl AutoRollServicer {
             .active_deposits()
             .map(|n| derive::term_deposit(&user.1.market, &user.1.margin_account, n))
             .collect::<Vec<_>>();
-        self.load_accounts::<TermDeposit>(&deposit_keys).await
+        let mut deposits = self.load_accounts::<TermDeposit>(&deposit_keys).await?;
+        deposits.sort_by(|a, b| {
+            a.1.sequence_number
+                .partial_cmp(&b.1.sequence_number)
+                .unwrap()
+        });
+        Ok(deposits)
     }
 
     async fn load_accounts<T: AccountDeserialize>(
