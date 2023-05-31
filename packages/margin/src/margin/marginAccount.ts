@@ -1633,18 +1633,21 @@ export class MarginAccount {
     const [registryAccount] = PublicKey.findProgramAddressSync([
       this.address.toBytes()
     ], LOOKUP_REGISTRY_PROGRAM)
-    const ix = await this.programs.margin.methods
-      .initLookupRegistry()
-      .accounts({
-        marginAuthority: this.owner,
-        payer: this.provider.wallet.publicKey,
-        marginAccount: this.address,
-        registryAccount,
-        registryProgram: LOOKUP_REGISTRY_PROGRAM,
-        systemProgram: SystemProgram.programId,
-      })
-      .instruction()
-    instructions.push(ix)
+    const exists = await this.provider.connection.getAccountInfo(registryAccount);
+    if (!exists) {
+      const ix = await this.programs.margin.methods
+        .initLookupRegistry()
+        .accounts({
+          marginAuthority: this.owner,
+          payer: this.provider.wallet.publicKey,
+          marginAccount: this.address,
+          registryAccount,
+          registryProgram: LOOKUP_REGISTRY_PROGRAM,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction()
+      instructions.push(ix)
+    }
   }
 
   async createLookupTable(slot: number, discriminator: number): Promise<PublicKey> {
