@@ -1,4 +1,4 @@
-import { FixedTermMarket, JetFixedTerm, JetFixedTermIdl, MarketAndConfig, OrderbookModel } from '@jet-lab/margin';
+import { FixedTermMarket, JetFixedTermIdl, MarketAndConfig, OrderbookModel } from '@jet-lab/margin';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -82,7 +82,7 @@ export const useFixedTermSync = (): void => {
 
   const loadFixedTermMarkets = async (
     airspace: AirspaceConfig,
-    program: Program<JetFixedTerm>,
+    program: Program<JetFixedTermIDL>,
     marginProgramId: PublicKey
   ) => {
     const markets: Array<MarketAndConfig> = [];

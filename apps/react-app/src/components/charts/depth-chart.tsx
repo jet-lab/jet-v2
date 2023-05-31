@@ -7,7 +7,6 @@ import { ScaleSVG } from '@visx/responsive';
 import { Line, Bar, LinePath } from '@visx/shape';
 import { TooltipWithBounds, defaultStyles, useTooltip } from '@visx/tooltip';
 import { Threshold } from '@visx/threshold';
-import { PriceLevel } from '@jet-lab/store';
 import { localPoint } from '@visx/event';
 import { pointAtCoordinateX } from '@components/fixed-term/shared/charts/utils';
 

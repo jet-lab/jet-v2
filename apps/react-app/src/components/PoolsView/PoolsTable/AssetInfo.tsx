@@ -1,5 +1,4 @@
 import { Info } from '@components/misc/Info';
-import { PoolData } from '@jet-lab/store/dist/slices/pools';
 import { Skeleton, Typography } from 'antd';
 
 // Renders pool asset info

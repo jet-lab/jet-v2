@@ -25,8 +25,9 @@
       "@utils/*": ["utils/*"],
       "@assets/*": ["assets/*"],
       "@views/*": ["views/*"]
-    }
+    },
+    "typeRoots": ["node_modules/@types", "../../ts-types/**/*"],
   },
-  "include": ["src/**/*", "./public", "@jet-lab/margin", "@jet-lab/jet-client-web"],
+  "include": ["src/**/*", "./public", "@jet-lab/margin", "@jet-lab/jet-client-web", "../../ts-types/**/*"],
   "exclude": ["node_modules"]
 }

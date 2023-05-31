@@ -6,7 +6,6 @@ import { AirdropButton } from './AirdropButton';
 import { Info } from '@components/misc/Info';
 import { Typography } from 'antd';
 import { useJetStore } from '@jet-lab/store';
-import { PoolData } from '@jet-lab/store/dist/slices/pools';
 import { useMemo } from 'react';
 import { CopyableField } from '@components/misc/CopyableField';
 import { AvailableLiquidity } from './AvailableLiquidity';

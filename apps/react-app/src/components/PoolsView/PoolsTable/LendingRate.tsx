@@ -1,4 +1,3 @@
-import { PoolData } from '@jet-lab/store/dist/slices/pools';
 import { formatRate } from '@utils/format';
 import { Skeleton, Typography } from 'antd';
 

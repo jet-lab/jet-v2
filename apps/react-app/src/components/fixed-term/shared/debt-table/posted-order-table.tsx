@@ -8,7 +8,6 @@ import { cancelOrder, MarketAndConfig } from '@jet-lab/margin';
 import { Dispatch, SetStateAction, useMemo, useState } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
 import { getExplorerUrl } from '@utils/ui';
-import { OpenOrder } from '@jet-lab/store/dist/types';
 import { notify } from '@utils/notify';
 import { useRecoilRefresher_UNSTABLE } from 'recoil';
 import { AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
