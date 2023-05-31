@@ -41,11 +41,13 @@ impl AutoRollServicer {
             }
         };
 
-        tracing::info!(
-            "attemtping to service [{}] users for market [{}]",
-            users.len(),
-            self.ix.market()
-        );
+        if users.len() > 0 {
+            tracing::info!(
+                "attemtping to service [{}] users for market [{}]",
+                users.len(),
+                self.ix.market()
+            );
+        }
 
         for res in join_all(users).await {
             match res {
@@ -92,12 +94,15 @@ impl AutoRollServicer {
         );
         let loans = self.get_active_loans(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
-        tracing::info!(
-            "found [{}] active loans for user [{}] at timestamp [{}]",
-            loans.len(),
-            user.0,
-            current_time
-        );
+
+        if loans.len() > 0 {
+            tracing::info!(
+                "found [{}] active loans for user [{}] at timestamp [{}]",
+                loans.len(),
+                user.0,
+                current_time
+            );
+        }
 
         let mut next_debt_seqno = user.1.debt().next_new_loan_seqno();
         let mut next_unpaid_loan_seqno =
@@ -141,12 +146,14 @@ impl AutoRollServicer {
         );
         let deposits = self.get_active_deposits(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
-        tracing::info!(
-            "found [{}] active deposits for user [{}] at timestamp [{}]",
-            deposits.len(),
-            user.0,
-            current_time
-        );
+        if deposits.len() > 0 {
+            tracing::info!(
+                "found [{}] active deposits for user [{}] at timestamp [{}]",
+                deposits.len(),
+                user.0,
+                current_time
+            );
+        }
         let mut next_deposit_seqno = user.1.assets().next_new_deposit_seqno();
         for (deposit_key, deposit) in deposits {
             if deposit.matures_at <= current_time {
@@ -197,11 +204,13 @@ impl AutoRollServicer {
             )
             .collect::<Vec<_>>();
 
-        tracing::debug!(
-            "found [{}] margin users in market [{}]",
-            users.len(),
-            self.ix.market()
-        );
+        if users.len() > 0 {
+            tracing::debug!(
+                "found [{}] margin users in market [{}]",
+                users.len(),
+                self.ix.market()
+            );
+        }
         Ok(users)
     }
 

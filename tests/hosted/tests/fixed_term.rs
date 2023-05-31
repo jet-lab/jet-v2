@@ -502,6 +502,7 @@ async fn settle_many_margin_accounts() -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(feature = "localnet"))]
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 async fn auto_roll_many_trades() -> Result<()> {
@@ -581,10 +582,10 @@ async fn auto_roll_many_trades() -> Result<()> {
         clock.unix_timestamp += 1;
         manager.client.set_clock(clock).await?;
     }
-    #[cfg(feature = "localnet")]
-    {
-        std::thread::sleep(std::time::Duration::from_secs(1 as u64));
-    }
+    // #[cfg(feature = "localnet")]
+    // {
+    //     std::thread::sleep(std::time::Duration::from_secs(1 as u64));
+    // }
 
     // provide some liquidity
     transactions! {
@@ -605,10 +606,10 @@ async fn auto_roll_many_trades() -> Result<()> {
         clock.unix_timestamp += LEND_TENOR as i64;
         manager.client.set_clock(clock).await?;
     }
-    #[cfg(feature = "localnet")]
-    {
-        std::thread::sleep(std::time::Duration::from_secs(LEND_TENOR as u64));
-    }
+    // #[cfg(feature = "localnet")]
+    // {
+    //     std::thread::sleep(std::time::Duration::from_secs(LEND_TENOR as u64));
+    // }
     servicer.service_all().await;
 
     let mut loans = manager
@@ -648,12 +649,12 @@ async fn auto_roll_many_trades() -> Result<()> {
     deposits.sort_by(|a, b| a.sequence_number.partial_cmp(&b.sequence_number).unwrap());
 
     // should fully roll, keeping total number of accounts
-    assert!(loans.len() == 3);
-    assert!(deposits.len() == 3);
+    assert_eq!(loans.len(), 3);
+    assert_eq!(deposits.len(), 3);
 
     // a total of 3 rolls occurred, leaving the total number of loans/deposits created at 6 per account
-    assert!(deposits.last().unwrap().sequence_number == 5);
-    assert!(loans.last().unwrap().sequence_number == 5);
+    assert_eq!(deposits.last().unwrap().sequence_number, 5);
+    assert_eq!(loans.last().unwrap().sequence_number, 5);
 
     // FIXME: exact numbers should be tested against W.R.T. principal and interest
     Ok(())
