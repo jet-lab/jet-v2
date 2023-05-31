@@ -30,6 +30,7 @@ pub struct AutoRollLendOrder<'info> {
     /// The `TermDeposit` account to roll
     #[account(
         mut,
+        close = rent_receiver,
         constraint = deposit.owner == margin_account.key() @ FixedTermErrorCode::WrongDepositOwner,
         constraint = deposit.payer == rent_receiver.key() @ FixedTermErrorCode::WrongRentReceiver,
     )]

@@ -201,8 +201,6 @@ impl<'a, 'info> RedeemDepositAccounts<'a, 'info> {
             is_auto_roll: !is_withdrawing,
         });
 
-        self.deposit.close(self.payer.to_account_info())?;
-
         Ok(redeemed)
     }
 }
