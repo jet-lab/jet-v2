@@ -364,6 +364,7 @@ export class MarginAccount {
     owner,
     filters,
     prices,
+    doRefresh = true,
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
@@ -372,6 +373,7 @@ export class MarginAccount {
     owner: Address
     filters?: GetProgramAccountsFilter[]
     prices?: Record<string, StorePriceInfo>
+    doRefresh?: boolean
   }): Promise<MarginAccount[]> {
     const ownerFilter: MemcmpFilter = {
       memcmp: {
@@ -406,7 +408,9 @@ export class MarginAccount {
           walletTokens,
           prices,
         )
-        await marginAccount.refresh()
+        if (doRefresh) {
+          await marginAccount.refresh()
+        }
         marginAccounts.push(marginAccount)
       }
     }
@@ -844,13 +848,13 @@ export class MarginAccount {
   static async getUnusedAccountSeed({
     programs,
     provider,
-    owner
+    owner,
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
     owner: Address
   }) {
-    let accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner })
+    let accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner, doRefresh: false})
     accounts = accounts.sort((a, b) => a.seed - b.seed)
     // Return any gap found in account seeds
     for (let i = 0; i < accounts.length; i++) {
