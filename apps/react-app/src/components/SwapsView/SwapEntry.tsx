@@ -61,7 +61,6 @@ export function SwapEntry(): JSX.Element {
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
   const overallInputBalance = poolPosition ? poolPosition.depositBalance.tokens - poolPosition.loanBalance.tokens : 0;
   const depositBalanceString = poolPosition ? poolPosition.depositBalance.uiTokens : '0';
-  const maxSwapString = poolPosition ? poolPosition.maxTradeAmounts.swap.uiTokens : '0';
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
   const resetTokenInputString = useResetRecoilState(TokenInputString);
@@ -82,9 +81,7 @@ export function SwapEntry(): JSX.Element {
   const [slippageInput, setSlippageInput] = useState('');
   const [swapOutputTokens, setSwapOutputTokens] = useState(TokenAmount.zero(0));
   const [minOutAmount, setMinOutAmount] = useState(TokenAmount.zero(0));
-  const priceImpact = !selectedSwapQuote
-    ? 0.0
-    : selectedSwapQuote.price_impact;
+  const priceImpact = !selectedSwapQuote ? 0.0 : selectedSwapQuote.price_impact;
   const [swapFeeUsd, setSwapFeeUsd] = useState(0.0);
   const priceImpactStyle = priceImpact <= 0.01 ? 'success' : priceImpact <= 0.03 ? 'warning' : 'danger';
   const [repayLoanWithOutput, setRepayLoanWithOutput] = useState(false);
@@ -143,7 +140,9 @@ export function SwapEntry(): JSX.Element {
       return;
     }
     setSwapOutputTokens(new TokenAmount(new BN(selectedSwapQuote.tokens_out), outputToken.decimals));
-    setMinOutAmount(new TokenAmount(new BN(Math.round(selectedSwapQuote.tokens_out * (1 - slippage))), outputToken.decimals));
+    setMinOutAmount(
+      new TokenAmount(new BN(Math.round(selectedSwapQuote.tokens_out * (1 - slippage))), outputToken.decimals)
+    );
     let totalFee = 0.0;
     for (let fee of Object.keys(selectedSwapQuote.fees)) {
       const price = prices && prices[fee].price;
@@ -154,7 +153,7 @@ export function SwapEntry(): JSX.Element {
       let decimals = pool && -pool.decimals;
       if (price) {
         // TODO: hardcoded as a common decimal length
-        totalFee += price * swapFee * (Math.pow(10, decimals || -6));
+        totalFee += price * swapFee * Math.pow(10, decimals || -6);
       }
     }
     setSwapFeeUsd(totalFee);
@@ -315,7 +314,6 @@ export function SwapEntry(): JSX.Element {
     setSendingTransaction(false);
   }
 
-
   // Disable repayLoanWithOutput if user has no loan to repay
   useEffect(() => {
     if (!hasOutputLoan) {
@@ -348,17 +346,17 @@ export function SwapEntry(): JSX.Element {
   }, [currentPool?.symbol, outputToken?.symbol]);
 
   return (
-    <div className="order-entry swap-entry view-element flex column">
-      <div className="order-entry-head flex column">
+    <div className="order-entry swap-entry view-element column flex">
+      <div className="order-entry-head column flex">
         <ReorderArrows component="swapEntry" order={swapsRowOrder} setOrder={setSwapsRowOrder} />
         <div className="order-entry-head-top flex-centered">
           <Paragraph className="order-entry-head-top-title">{dictionary.swapsView.orderEntry.title}</Paragraph>
         </div>
       </div>
-      <div className="order-entry-body flex align-center justify-evenly column">
+      <div className="order-entry-body align-center column flex justify-evenly">
         <ConnectionFeedback />
         <div className="swap-tokens">
-          <div className="swap-section-head flex align-center justify-between">
+          <div className="swap-section-head align-center flex justify-between">
             <Text className="small-accent-text">{dictionary.common.account.toUpperCase()}</Text>
             {renderInputCollateralBalance()}
           </div>
@@ -372,7 +370,7 @@ export function SwapEntry(): JSX.Element {
             className="flex-centered quick-fill-btns"
             value={tokenInputString}
             onChange={debounce(e => {
-              setTokenInputString(e.target.value)
+              setTokenInputString(e.target.value);
             }, 300)}
             style={{ marginTop: '-5px' }}>
             <Radio.Button
@@ -381,13 +379,6 @@ export function SwapEntry(): JSX.Element {
               value={depositBalanceString !== '0' && depositBalanceString}
               disabled={depositBalanceString === '0' || sendingTransaction}>
               {dictionary.common.accountBalance}
-            </Radio.Button>
-            <Radio.Button
-              className="small-btn"
-              key="maxLeverage"
-              value={maxSwapString !== '0' && maxSwapString}
-              disabled={maxSwapString === '0' || sendingTransaction}>
-              {dictionary.actions.swap.maxLeverage}
             </Radio.Button>
           </Radio.Group>
         </div>
@@ -413,7 +404,7 @@ export function SwapEntry(): JSX.Element {
           />
         </div>
         <div className="swap-tokens">
-          <div className="swap-section-head flex align-center justify-start">
+          <div className="swap-section-head align-center flex justify-start">
             <Text className="small-accent-text">{dictionary.actions.swap.receive.toUpperCase()}</Text>
           </div>
           <TokenInput
@@ -439,7 +430,7 @@ export function SwapEntry(): JSX.Element {
             dropdownStyle={{ minWidth: 308, maxWidth: 308 }}
           />
         </div>
-        <div className="swap-slippage flex column">
+        <div className="swap-slippage column flex">
           <Info term="slippage">
             <Text className="small-accent-text info-element">{dictionary.actions.swap.slippage.toUpperCase()}</Text>
           </Info>
@@ -453,8 +444,9 @@ export function SwapEntry(): JSX.Element {
               </Radio.Button>
             ))}
             <div
-              className={`swap-slippage-input flex-centered ${(slippage * 100).toString() === slippageInput ? 'active' : ''
-                }`}
+              className={`swap-slippage-input flex-centered ${
+                (slippage * 100).toString() === slippageInput ? 'active' : ''
+              }`}
               onClick={getSlippageInput}>
               <Input
                 type="string"
@@ -489,7 +481,7 @@ export function SwapEntry(): JSX.Element {
           </div>
         )}
         <div className="order-entry-body-section-info flex-centered column">
-          <div className="order-entry-body-section-info-item flex align-center justify-between">
+          <div className="order-entry-body-section-info-item align-center flex justify-between">
             <Paragraph type="secondary">{`${currentPool?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={getTokenStyleType(overallInputBalance)}>
@@ -498,7 +490,7 @@ export function SwapEntry(): JSX.Element {
               {renderAffectedBalance('input')}
             </div>
           </div>
-          <div className="order-entry-body-section-info-item flex align-center justify-between">
+          <div className="order-entry-body-section-info-item align-center flex justify-between">
             <Paragraph type="secondary">{`${outputToken?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={getTokenStyleType(overallOutputBalance)}>
@@ -507,18 +499,18 @@ export function SwapEntry(): JSX.Element {
               {renderAffectedBalance('output')}
             </div>
           </div>
-          <div className="order-entry-body-section-info-item flex align-center justify-between">
+          <div className="order-entry-body-section-info-item align-center flex justify-between">
             <Paragraph type="secondary">{dictionary.common.riskLevel}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={riskStyle}>{formatRiskIndicator(currentAccount?.riskIndicator ?? 0)}</Paragraph>
               {renderAffectedRiskLevel()}
             </div>
           </div>
-          <div className="order-entry-body-section-info-item flex align-center justify-between">
+          <div className="order-entry-body-section-info-item align-center flex justify-between">
             <Paragraph type="secondary">{dictionary.common.priceImpact}</Paragraph>
             {renderPriceImpact()}
           </div>
-          <div className="order-entry-body-section-info-item flex align-center justify-between">
+          <div className="order-entry-body-section-info-item align-center flex justify-between">
             <Paragraph type="secondary">{dictionary.common.swapFee}</Paragraph>
             {renderSwapFee()}
           </div>
