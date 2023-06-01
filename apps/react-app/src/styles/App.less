@@ -1521,146 +1521,6 @@ html {
         fill: @secondary-5;
       }
 
-      .apexcharts {
-        &-xcrosshairs,
-        &-ycrosshairs {
-          stroke: @jet-blue;
-        }
-
-        &-zoom-rect {
-          opacity: 0;
-        }
-
-        &-yaxis-annotations {
-          rect {
-            border-radius: 50px;
-            fill: @jet-green;
-            stroke: @jet-green;
-            ry: 10;
-            rx: 10;
-
-            &:first-of-type {
-              ry: 0;
-              rx: 0;
-            }
-
-            + text {
-              fill: @primary-2;
-            }
-          }
-        }
-
-        &-tooltip {
-          &-title {
-            background: @header-bg !important;
-          }
-
-          &-marker {
-            background-color: @purple !important;
-          }
-        }
-
-        &-line-series {
-          path {
-            stroke: @jet-blue;
-            stroke-linecap: square;
-            stroke-width: 1.5px;
-            stroke-dasharray: 6px;
-          }
-        }
-
-        &-toolbar {
-          margin-top: -22px;
-
-          div {
-            svg {
-              stroke: transparent;
-            }
-
-            svg,
-            path:last-of-type {
-              fill: @secondary-5;
-              transition: fill @transition-duration ease;
-            }
-
-            &:hover {
-              svg,
-              path:last-of-type {
-                fill: @secondary-3;
-              }
-            }
-
-            &:active {
-              opacity: @subtle-opacity;
-            }
-          }
-        }
-
-        &-reset-icon {
-          path:last-of-type {
-            fill: transparent !important;
-          }
-        }
-
-        &-menu-icon {
-          margin-left: @spacing-xs;
-
-          svg,
-          path:last-of-type {
-            fill: @secondary-3 !important;
-          }
-        }
-
-        &-element-hidden {
-          display: none !important;
-        }
-
-        &-selected {
-          svg,
-          path:last-of-type {
-            fill: @secondary-3 !important;
-          }
-        }
-
-        &-menu,
-        &-tooltip {
-          color: @secondary-3;
-          padding: unset;
-          border-radius: @sm-border-radius;
-          box-shadow: @drop-shadow;
-          backdrop-filter: blur(2px);
-          background: rgba(var(--primary-3), @disabled-opacity);
-          border: unset;
-          overflow: hidden;
-
-          &-item {
-            text-align: center;
-            padding: @btn-padding;
-            transition: background-color @transition-duration-short ease;
-
-            &:hover {
-              background: @primary-3;
-            }
-          }
-        }
-
-        &-xaxistooltip,
-        &-yaxistooltip {
-          color: @secondary-3;
-          backdrop-filter: blur(2px);
-          background: rgba(var(--primary-3), @disabled-opacity);
-          border: unset;
-
-          &::before {
-            border-bottom-color: rgba(var(--primary-3), @disabled-opacity);
-          }
-
-          &::after {
-            border: unset;
-          }
-        }
-      }
-
       tspan {
         text-transform: uppercase;
       }
@@ -1694,39 +1554,6 @@ html {
         color: @secondary-3;
         border-radius: @round-radius;
       }
-    }
-
-    .apexcharts-xaxis-title + line {
-      display: none;
-    }
-
-    .apexcharts-yaxis-title-text,
-    .apexcharts-xaxis-title-text {
-      fill: @secondary-3;
-      font-weight: @semi-bold-weight;
-      font-size: calc(@base-font-size - 1px);
-      letter-spacing: 0.7px;
-    }
-
-    .apexcharts-yaxis-label,
-    .apexcharts-xaxis-label {
-      font-size: @sm-font-size;
-    }
-
-    .apexcharts-yaxis-annotations,
-    .apexcharts-xaxis-annotations {
-      line {
-        stroke-linecap: square;
-        stroke-width: 1px;
-      }
-
-      text {
-        fill: @secondary-3;
-      }
-    }
-
-    .apexcharts-annotation-text {
-      display: none;
     }
 
     .your-swap {
@@ -3028,6 +2855,7 @@ html {
   height: 100%;
   width: 100%;
   position: relative;
+  min-height: 400px;
 
   .swaps-chart-legend {
     position: absolute;

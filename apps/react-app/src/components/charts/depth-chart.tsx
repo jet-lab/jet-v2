@@ -1,14 +1,13 @@
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import { scaleLinear } from '@visx/scale';
 import { useCallback, useMemo, useRef } from 'react';
-import { useRecoilValue } from 'recoil';
-import { Dictionary } from '@state/settings/localization/localization';
 import { ScaleSVG } from '@visx/responsive';
 import { Line, Bar, LinePath } from '@visx/shape';
 import { TooltipWithBounds, defaultStyles, useTooltip } from '@visx/tooltip';
 import { Threshold } from '@visx/threshold';
 import { localPoint } from '@visx/event';
 import { pointAtCoordinateX } from '@components/fixed-term/shared/charts/utils';
+import { useCurrencyFormatting } from '@utils/currency';
 
 const tooltipStyles = {
   ...defaultStyles,
@@ -35,9 +34,13 @@ interface DepthChartProps {
   };
   bidsDescending: [price: number, amt: number][];
   asksAscending: [price: number, amt: number][];
+  asksColor: string;
+  bidsColor: string;
   midPoint?: number;
   xRange: [min: number, max: number];
   yRange: [min: number, max: number];
+  xLabel: string;
+  yLabel: string;
   base: {
     symbol: string;
     expo: number;
@@ -55,15 +58,18 @@ export const DepthChart = ({
   padding = { top: 20, left: 80, right: 32, bottom: 60 },
   bidsDescending = [],
   asksAscending = [],
+  asksColor,
+  bidsColor,
   midPoint,
   xRange = [0, 0],
   yRange = [0, 0],
+  xLabel,
+  yLabel,
   base,
   quote,
   isPct
 }: DepthChartProps) => {
-  const dictionary = useRecoilValue(Dictionary);
-
+  const formatting = useCurrencyFormatting();
   const { yMax, xMax, yMin, xMin } = useMemo(
     () => ({ xMin: xRange[0], xMax: xRange[1], yMin: yRange[0], yMax: yRange[1] }),
     [xRange, yRange]
@@ -95,24 +101,28 @@ export const DepthChart = ({
       const { x } = localPoint(event) || { x: 0, y: 0 };
       const asks = asksRef.current;
       const bids = bidsRef.current;
-      let path: SVGPathElement | null;
-      let type: 'bid' | 'ask' | 'hidden';
-      if (!asksAscending[0] && !bidsDescending[0]) {
-        hideTooltip();
-        return
+      let path: SVGPathElement | null = null;
+      let type: 'bid' | 'ask' | 'hidden' = 'hidden';
+
+      if (asksAscending.length > 1) {
+        const range = [xScale(asksAscending[0][0]), xScale(asksAscending[asksAscending.length - 1][0])];
+        if (x >= range[0] && x <= range[1]) {
+          path = asks;
+          type = 'ask';
+        }
       }
-      
-      if (asksAscending[0] && x >= xScale(asksAscending[0][0])) {
-        // asks
-        path = asks;
-        type = 'ask';
-      } else if(bidsDescending[0] && x <= xScale(bidsDescending[0][0])) {
-        path = bids;
-        type = 'bid';
+
+      if (bidsDescending.length > 1) {
+        const range = [xScale(bidsDescending[0][0]), xScale(bidsDescending[bidsDescending.length - 1][0])];
+        if (x >= range[0] && x <= range[1]) {
+          path = bids;
+          type = 'bid';
+        }
       } else {
-        hideTooltip()
-        return
+        hideTooltip();
+        return;
       }
+
       if (path && path.getTotalLength() > 0) {
         const y = pointAtCoordinateX(path, x, 2);
 
@@ -150,14 +160,14 @@ export const DepthChart = ({
           clipAboveTo={0}
           clipBelowTo={0}
           aboveAreaProps={{
-            fill: '#e36868',
+            fill: asksColor,
             fillOpacity: 0.7
           }}
         />
         <LinePath
-          stroke="#e36868"
+          stroke={asksColor}
           innerRef={asksRef}
-          strokeWidth={1}
+          strokeWidth={asksAscending.length === 1 ? 5 : 2}
           data={asksAscending}
           x={d => xScale(d[0])}
           y={d => yScale(d[1])}
@@ -171,14 +181,14 @@ export const DepthChart = ({
           clipAboveTo={0}
           clipBelowTo={0}
           aboveAreaProps={{
-            fill: '#84c1ca',
+            fill: bidsColor,
             fillOpacity: 0.7
           }}
         />
         <LinePath
-          stroke="#84c1ca"
+          stroke={bidsColor}
           innerRef={bidsRef}
-          strokeWidth={1}
+          strokeWidth={bidsDescending.length === 1 ? 5 : 2}
           data={bidsDescending}
           x={d => xScale(d[0])}
           y={d => yScale(d[1])}
@@ -193,8 +203,8 @@ export const DepthChart = ({
           />
         )}
         <AxisLeft
-          key={dictionary.actions.swap.sellQuantity}
-          label={dictionary.actions.swap.sellQuantity}
+          key={yLabel}
+          label={yLabel}
           left={padding.left}
           scale={yScale}
           numTicks={10}
@@ -209,7 +219,7 @@ export const DepthChart = ({
           })}
         />
         <AxisBottom
-          label={`${base.symbol} / ${quote.symbol}`}
+          label={xLabel}
           scale={xScale}
           top={height - padding.bottom - padding.top}
           labelProps={{ fill: 'rgb(199, 199, 199)', fontSize: 12, dy: 15, textAnchor: 'middle' }}
@@ -228,7 +238,7 @@ export const DepthChart = ({
             cx={tooltipData.x}
             cy={tooltipData.y}
             r={3}
-            fill={tooltipData.type === 'ask' ? '#e36868' : '#84c1ca'}
+            fill={tooltipData.type === 'ask' ? asksColor : bidsColor}
           />
         )}
 
@@ -249,10 +259,21 @@ export const DepthChart = ({
       {tooltipData && (
         <TooltipWithBounds top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
           <span>
-            QTY: {tooltipData.qty.toFixed(-base.expo)} {base.symbol}
+            QTY:{' '}
+            {formatting.currencyAbbrev(
+              tooltipData.qty,
+              -base.expo,
+              false,
+              undefined,
+              undefined,
+              undefined,
+              'thousands'
+            )}{' '}
+            {base.symbol}
           </span>
           <span>
-            {isPct ? 'Rate: ' : 'Price: '} {tooltipData.price.toFixed(-quote.expo)} {isPct ? '%' : quote.symbol}
+            {isPct ? 'Rate: ' : 'Price: '} {tooltipData.price.toFixed(isPct ? 2 : -quote.expo)}{' '}
+            {isPct ? '%' : quote.symbol}
           </span>
         </TooltipWithBounds>
       )}
