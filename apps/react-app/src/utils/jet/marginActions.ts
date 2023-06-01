@@ -1,7 +1,7 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { MarginAccount, Pool, PoolTokenChange, TokenAmount, TokenFaucet } from '@jet-lab/margin';
+import { Airspace, MarginAccount, Pool, PoolTokenChange, TokenAmount, TokenFaucet } from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
 import { Pools } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
@@ -42,7 +42,12 @@ export function useMarginActions() {
   const accountPoolPosition = currentPool?.symbol && currentAccount?.poolPositions[currentPool.symbol];
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
-  const swapEndpoint: string = (cluster === "mainnet-beta" ? "" : cluster === "devnet" ? process.env.REACT_APP_DEV_SWAP_API : process.env.REACT_APP_LOCAL_SWAP_API) || "";
+  const swapEndpoint: string =
+    (cluster === 'mainnet-beta'
+      ? ''
+      : cluster === 'devnet'
+      ? process.env.REACT_APP_DEV_SWAP_API
+      : process.env.REACT_APP_LOCAL_SWAP_API) || '';
 
   // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
@@ -97,22 +102,34 @@ export function useMarginActions() {
 
     try {
       // Create new account
-      const seed = await MarginAccount.getUnusedAccountSeed({ programs, provider, owner: wallet.publicKey });
+      const seed = await MarginAccount.getUnusedAccountSeed({
+        programs,
+        provider,
+        owner: wallet.publicKey
+      });
+
+      const airspaceAddress = Airspace.deriveAddress(
+        programs.airspace.programId,
+        programs.config.airspaces[0].name
+      ).toString();
+
       const newMarginAccount = new MarginAccount(
         programs,
         provider,
         wallet.publicKey,
         seed,
-        undefined, // airspace
+        airspaceAddress, // airspace
         pools.tokenPools,
         walletTokens,
-        prices,
+        prices
       );
 
-      const instructions: TransactionInstruction[] = []
+      const instructions: TransactionInstruction[] = [];
       await newMarginAccount.withCreateAccount(instructions);
+
       // Add a lookup registry account
       await newMarginAccount.withInitLookupRegistry(instructions);
+
       // const slot = await provider.connection.getSlot()
       // const marginLookup = await newMarginAccount.withCreateLookupTable({
       //   instructions,
@@ -149,7 +166,7 @@ export function useMarginActions() {
       //   accounts.push(await market.market.deriveTicketCollateral(newMarginAccount.address))
       // }
 
-      const splitInstructions = [instructions]
+      const splitInstructions = [instructions];
 
       // chunks(20, accounts).forEach(addresses => {
       //   const ix: TransactionInstruction[] = []
