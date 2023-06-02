@@ -12,8 +12,7 @@ import { RiskMeter } from '../RiskMeter';
 import axios from 'axios';
 import { USDConversionRates } from '@state/settings/settings';
 import { useEffect, useMemo } from 'react';
-import { useShim } from '@jet-lab/store/dist/api';
-import { useJetStore } from '@jet-lab/store';
+import { useFixedTermAccountingShim, useJetStore } from '@jet-lab/store';
 
 // Body of the Account Snapshot, where users can see data for the currently selected margin account
 export function SnapshotBody(): JSX.Element {
@@ -40,7 +39,7 @@ export function SnapshotBody(): JSX.Element {
     [cluster]
   );
 
-  const shim = useShim(String(apiEndpoint), currentAccount?.address.toBase58());
+  const shim = useFixedTermAccountingShim(String(apiEndpoint), currentAccount?.address.toBase58());
 
   useEffect(() => {
     axios
@@ -66,7 +65,7 @@ export function SnapshotBody(): JSX.Element {
 
     let assetValueShim: number;
     if (shim.data) {
-      assetValueShim = shim.data?.asset_value
+      assetValueShim = shim.data.asset_value
     } else {
       assetValueShim = 0
     }
@@ -123,7 +122,7 @@ export function SnapshotBody(): JSX.Element {
 
     let assetValueShim: number;
     if (shim.data) {
-      assetValueShim = shim.data?.asset_value
+      assetValueShim = shim.data.asset_value
     } else {
       assetValueShim = 0
     }

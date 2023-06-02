@@ -82,3 +82,7 @@ interface SwapLiquidity {
   liquidity_range: [min: number, max: number];
   price_range: [min: number, max: number];
 }
+
+interface FixedTermAccountingShim {
+  asset_value: number;
+}
