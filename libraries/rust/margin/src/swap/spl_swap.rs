@@ -72,8 +72,7 @@ impl SplSwapPool {
         let size = SwapV1::LEN + 1;
         let accounts = rpc
             .get_program_accounts(&swap_program, vec![AccountFilter::DataSize(size)])
-            .await
-            .unwrap();
+            .await?;
 
         let mut pool_sizes = HashMap::with_capacity(accounts.len());
         for (swap_address, pool_account) in accounts {
@@ -96,7 +95,7 @@ impl SplSwapPool {
             let Ok(pool_mint) = find_mint(rpc, &pool_mint).await else {
                 continue;
             };
-            let swap = SwapV1::unpack(&pool_account.data[1..]).unwrap();
+            let swap = SwapV1::unpack(&pool_account.data[1..])?;
             let total_supply = pool_mint.supply;
 
             // Check if there is a pool, insert if none, replace if smaller
