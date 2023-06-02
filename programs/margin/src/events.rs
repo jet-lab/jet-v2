@@ -34,32 +34,27 @@ pub struct VerifiedUnealthy {
     pub margin_account: Pubkey,
 }
 
-// #[event]
 pub struct PositionRegistered {
     pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub position: AccountPosition,
 }
 
-// #[event]
 pub struct PositionClosed {
     pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub token: Pubkey,
 }
 
-// #[event]
 pub struct PositionMetadataRefreshed {
     pub margin_account: Pubkey,
     pub position: AccountPosition,
 }
 
-// #[event]
 pub struct PositionBalanceUpdated {
     pub position: AccountPosition,
 }
 
-// #[event]
 pub struct PositionTouched {
     pub position: AccountPosition,
 }
