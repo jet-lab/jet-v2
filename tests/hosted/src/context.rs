@@ -152,16 +152,8 @@ impl TestContext {
         )?)
     }
 
-    pub async fn create_lookup_registry(
-        &self,
-        addresses: &[Pubkey],
-        wait_until_usable: bool,
-    ) -> Result<Pubkey, Error> {
-        let registry = self.inner.create_lookup_registry(addresses).await?;
-        if wait_until_usable {
-            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-        }
-        Ok(registry)
+    pub async fn create_lookup_registry(&self, addresses: &[Pubkey]) -> Result<Pubkey, Error> {
+        Ok(self.inner.create_lookup_registry(addresses).await?)
     }
 }
 

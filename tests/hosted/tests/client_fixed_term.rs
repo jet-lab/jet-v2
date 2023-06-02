@@ -127,10 +127,9 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
         .into_iter()
         .collect::<Vec<_>>();
 
-    let _lookup_authority = ctx
-        .create_lookup_registry(&lookup_addresses, true)
-        .await
-        .unwrap();
+    let _lookup_authority = ctx.create_lookup_registry(&lookup_addresses).await.unwrap();
+
+    ctx.rpc().wait_for_next_block().await.unwrap();
 
     // sync the lookup tables
     for user in &users {
