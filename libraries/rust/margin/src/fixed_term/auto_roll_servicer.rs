@@ -40,11 +40,11 @@ impl AutoRollServicer {
                 return;
             }
         };
-
-        if users.len() > 0 {
-            tracing::info!(
+        let num_users = users.len();
+        if num_users > 0 {
+            tracing::trace!(
                 "attemtping to service [{}] users for market [{}]",
-                users.len(),
+                num_users,
                 self.ix.market()
             );
         }
@@ -52,7 +52,10 @@ impl AutoRollServicer {
         for res in join_all(users).await {
             match res {
                 Err(e) => tracing::warn!("encountered error while servicing users: [{e}]"),
-                _ => continue,
+                Ok(_) => {
+                    tracing::trace!("successfully serviced [{num_users}] users");
+                    continue;
+                }
             }
         }
     }
@@ -97,7 +100,7 @@ impl AutoRollServicer {
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
 
         if !loans.is_empty() {
-            tracing::info!(
+            tracing::trace!(
                 "found [{}] active loans for user [{}] at timestamp [{}]",
                 loans.len(),
                 user.0,
@@ -148,7 +151,7 @@ impl AutoRollServicer {
         let deposits = self.get_active_deposits(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
         if !deposits.is_empty() {
-            tracing::info!(
+            tracing::trace!(
                 "found [{}] active deposits for user [{}] at timestamp [{}]",
                 deposits.len(),
                 user.0,
