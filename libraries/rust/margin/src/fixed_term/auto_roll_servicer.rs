@@ -70,12 +70,13 @@ impl AutoRollServicer {
         let mut ixns = vec![];
         self.with_service_loans(&user, &mut ixns).await?;
         self.with_service_deposits(&user, &mut ixns).await?;
-
-        tracing::debug!(
-            "sending [{}] instructions to service user [{}]",
-            ixns.len(),
-            user.0
-        );
+        if !ixns.is_empty() {
+            tracing::debug!(
+                "sending [{}] instructions to service user [{}]",
+                ixns.len(),
+                user.0
+            );
+        }
         self.bundle_and_send(ixns).await
     }
 
@@ -95,7 +96,7 @@ impl AutoRollServicer {
         let loans = self.get_active_loans(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
 
-        if loans.len() > 0 {
+        if !loans.is_empty() {
             tracing::info!(
                 "found [{}] active loans for user [{}] at timestamp [{}]",
                 loans.len(),
@@ -146,7 +147,7 @@ impl AutoRollServicer {
         );
         let deposits = self.get_active_deposits(user).await?;
         let current_time = self.rpc.get_clock().await?.unix_timestamp;
-        if deposits.len() > 0 {
+        if !deposits.is_empty() {
             tracing::info!(
                 "found [{}] active deposits for user [{}] at timestamp [{}]",
                 deposits.len(),
@@ -204,7 +205,7 @@ impl AutoRollServicer {
             )
             .collect::<Vec<_>>();
 
-        if users.len() > 0 {
+        if !users.is_empty() {
             tracing::debug!(
                 "found [{}] margin users in market [{}]",
                 users.len(),
