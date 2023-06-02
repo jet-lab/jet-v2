@@ -85,11 +85,31 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
 
     // Update market lookup tables
     for market in &users[0].fixed_term().markets() {
+        let market_state = ctx
+            .rpc()
+            .get_account(&market.address)
+            .await
+            .unwrap()
+            .unwrap();
+        let market_state = bytemuck::from_bytes::<
+            jet_margin_sdk::jet_fixed_term::control::state::Market,
+        >(&market_state.data[8..]);
         lookup_addresses.extend_from_slice(&[
-            market.address,
-            market.airspace,
-            market.token,
-            market.ticket,
+            market_state.airspace,
+            market_state.orderbook_market_state,
+            market_state.event_queue,
+            market_state.asks,
+            market_state.bids,
+            market_state.underlying_token_mint,
+            market_state.underlying_token_vault,
+            market_state.ticket_mint,
+            market_state.claims_mint,
+            market_state.ticket_collateral_mint,
+            market_state.underlying_collateral_mint,
+            market_state.underlying_oracle,
+            market_state.ticket_oracle,
+            market_state.fee_vault,
+            market_state.fee_destination,
         ]);
     }
     for user in &users {
