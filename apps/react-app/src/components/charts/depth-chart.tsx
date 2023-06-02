@@ -55,7 +55,7 @@ interface DepthChartProps {
 export const DepthChart = ({
   height,
   width,
-  padding = { top: 20, left: 80, right: 32, bottom: 60 },
+  padding = { top: 50, left: 80, right: 32, bottom: 60 },
   bidsDescending = [],
   asksAscending = [],
   asksColor,
