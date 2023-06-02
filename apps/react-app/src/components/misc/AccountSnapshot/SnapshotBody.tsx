@@ -11,7 +11,9 @@ import { Info } from '../Info';
 import { RiskMeter } from '../RiskMeter';
 import axios from 'axios';
 import { USDConversionRates } from '@state/settings/settings';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useShim } from '@jet-lab/store/dist/api';
+import { useJetStore } from '@jet-lab/store';
 
 // Body of the Account Snapshot, where users can see data for the currently selected margin account
 export function SnapshotBody(): JSX.Element {
@@ -24,6 +26,21 @@ export function SnapshotBody(): JSX.Element {
   const currentAccount = useRecoilValue(CurrentAccount);
   const riskStyle = useRiskStyle();
   const { Title, Text } = Typography;
+
+  const { cluster } = useJetStore(state => state.settings);
+  const apiEndpoint = useMemo(
+    () =>
+      cluster === 'mainnet-beta'
+        ? process.env.REACT_APP_DATA_API
+        : cluster === 'devnet'
+        ? process.env.REACT_APP_DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.REACT_APP_LOCAL_DATA_API
+        : '',
+    [cluster]
+  );
+
+  const shim = useShim(String(apiEndpoint), currentAccount?.address.toBase58());
 
   useEffect(() => {
     axios
@@ -47,7 +64,14 @@ export function SnapshotBody(): JSX.Element {
       accountBalance = depositedValue - borrowedValue;
     }
 
-    let render = <Title>{currencyFormatter(accountBalance, true, 0)}</Title>;
+    let assetValueShim: number;
+    if (shim.data) {
+      assetValueShim = shim.data?.asset_value
+    } else {
+      assetValueShim = 0
+    }
+
+    let render = <Title>{currencyFormatter(accountBalance + assetValueShim, true, 0)}</Title>;
     if (initialAccountsLoad) {
       render = <Skeleton className="align-center" paragraph={false} active />;
     }
@@ -97,7 +121,14 @@ export function SnapshotBody(): JSX.Element {
       accountAssets = currentAccount.summary.depositedValue;
     }
 
-    return accountAssets;
+    let assetValueShim: number;
+    if (shim.data) {
+      assetValueShim = shim.data?.asset_value
+    } else {
+      assetValueShim = 0
+    }
+
+    return accountAssets + assetValueShim;
   }
 
   // Returns the account's liabilities (if there are any)
