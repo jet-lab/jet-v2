@@ -15,6 +15,7 @@ event_groups! {
 pub struct AccountCreated {
     pub margin_account: Pubkey,
     pub owner: Pubkey,
+    pub airspace: Pubkey,
     pub seed: u16,
 }
 
