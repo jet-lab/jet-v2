@@ -138,10 +138,10 @@ impl PriceChangeInfo {
     }
 }
 
-impl TryFrom<pyth_sdk_solana::PriceFeed> for PriceChangeInfo {
+impl TryFrom<pyth_sdk::PriceFeed> for PriceChangeInfo {
     type Error = ErrorCode;
 
-    fn try_from(oracle: pyth_sdk_solana::PriceFeed) -> std::result::Result<Self, Self::Error> {
+    fn try_from(oracle: pyth_sdk::PriceFeed) -> std::result::Result<Self, Self::Error> {
         let price = oracle.get_price_unchecked();
         let ema_price = oracle.get_ema_price_unchecked();
         Ok(PriceChangeInfo {

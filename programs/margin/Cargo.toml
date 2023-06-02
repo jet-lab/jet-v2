@@ -32,7 +32,8 @@ anchor-lang = { version = "0.27", features = [
 anchor-spl = "0.27"
 solana-program = "1.14"
 
-pyth-sdk-solana = "0.7"
+pyth-sdk = "0.7"
+pyth-sdk-solana = "0.7.2"
 
 jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
 jet-program-common = { path = "../../libraries/rust/program-common" }

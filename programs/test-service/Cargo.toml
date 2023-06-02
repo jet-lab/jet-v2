@@ -22,7 +22,7 @@ anchor-lang = "0.27"
 anchor-spl = { version = "0.27", features = ["dex"] }
 openbook = { package = "serum_dex", git = "https://github.com/openbook-dex/program", branch = "master", features = ["no-entrypoint"] }
 
-pyth-sdk-solana = "0.7"
+pyth-sdk-solana = "0.7.2"
 bytemuck = "1.7"
 
 saber-stable-swap = { package = "stable-swap-anchor", git = "https://github.com/jet-lab/stable-swap", branch = "master" }

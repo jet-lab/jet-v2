@@ -30,7 +30,8 @@ bs58 = "0.4"
 bytemuck = {version = "1.7.2", features = ["derive"]}
 num-derive = "0.3.3"
 num-traits = "0.2"
-pyth-sdk-solana = "0.7"
+pyth-sdk = "0.7"
+pyth-sdk-solana = "0.7.2"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
