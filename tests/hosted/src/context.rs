@@ -151,6 +151,18 @@ impl TestContext {
             &self.config.airspaces[0].name,
         )?)
     }
+
+    pub async fn create_lookup_registry(
+        &self,
+        addresses: &[Pubkey],
+        wait_until_usable: bool,
+    ) -> Result<Pubkey, Error> {
+        let registry = self.inner.create_lookup_registry(addresses).await?;
+        if wait_until_usable {
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+        }
+        Ok(registry)
+    }
 }
 
 #[derive(Default, Clone)]
@@ -179,7 +191,13 @@ struct SetupOutput {
 }
 
 impl TestContextSetupInfo {
-    fn to_config(&self, airspace_name: &str, payer: Pubkey, crank: Pubkey) -> SetupOutput {
+    fn to_config(
+        &self,
+        airspace_name: &str,
+        payer: Pubkey,
+        crank: Pubkey,
+        airspace_authority: Pubkey,
+    ) -> SetupOutput {
         let airspace = derive_airspace(airspace_name);
         let tokens = self
             .tokens
@@ -229,7 +247,7 @@ impl TestContextSetupInfo {
                             .map(move |m| market_from_tenor(&airspace, &token, m.borrow_tenor))
                     })
                     .collect(),
-                lookup_registry_authority: None,
+                lookup_registry_authority: Some(airspace_authority),
             }],
             exchanges: dexes
                 .iter()

@@ -1,6 +1,6 @@
 use anchor_lang::AccountDeserialize;
 use lookup_table_registry::RegistryAccount;
-use lookup_table_registry_client::{Entry, Registry, LOOKUP_TABLE_REGISTRY_ID};
+use lookup_table_registry_client::{Entry, LOOKUP_TABLE_REGISTRY_ID};
 use solana_address_lookup_table_program::state::AddressLookupTable;
 use std::{collections::HashSet, sync::Arc};
 use wasm_bindgen::prelude::*;
@@ -361,46 +361,45 @@ impl MarginAccountClient {
 
         let mut new_accounts = vec![];
         let registry_account = RegistryAccount::try_deserialize(&mut registry_account.data())?;
-
         let mut tables = Vec::with_capacity(registry_account.tables.len());
-        for table in &registry_account.tables {
-            if table.discriminator <= 1 {
-                // Deactivated or deleted
-                continue;
-            }
-            let lookup_table_account = self
-                .client()
-                .client
-                .network
-                .get_account(&table.table)
-                .await?;
-            let Some(lookup_table_account) = lookup_table_account else {
-                continue;
-            };
 
-            let lookup_table = AddressLookupTable::deserialize(&lookup_table_account.data)?;
-
-            let entry = lookup_table_registry_client::Entry {
-                discriminator: table.discriminator,
-                lookup_address: table.table,
-                addresses: lookup_table.addresses.to_vec(),
-            };
-
-            // Check if there are new accounts
-            for address in &entry.addresses {
-                if !accounts.contains(address) {
-                    new_accounts.push(*address);
+        // If the registry has no tables, add all accounts
+        if registry_account.tables.is_empty() {
+            new_accounts.extend(accounts);
+        } else {
+            for table in &registry_account.tables {
+                if table.discriminator <= 1 {
+                    // Deactivated or deleted
+                    continue;
                 }
+                let lookup_table_account = self
+                    .client()
+                    .client
+                    .network
+                    .get_account(&table.table)
+                    .await?;
+                let Some(lookup_table_account) = lookup_table_account else {
+                    continue;
+                };
+
+                let lookup_table = AddressLookupTable::deserialize(&lookup_table_account.data)?;
+
+                let entry = lookup_table_registry_client::Entry {
+                    discriminator: table.discriminator,
+                    lookup_address: table.table,
+                    addresses: lookup_table.addresses.to_vec(),
+                };
+
+                // Check if there are new accounts
+                for address in &entry.addresses {
+                    if !accounts.contains(address) {
+                        new_accounts.push(*address);
+                    }
+                }
+
+                tables.push(entry);
             }
-
-            tables.push(entry);
         }
-
-        let mut registry = Registry {
-            authority: registry_account.authority,
-            version: registry_account.version,
-            tables,
-        };
 
         if new_accounts.is_empty() {
             return Ok(());
@@ -411,8 +410,8 @@ impl MarginAccountClient {
         let mut append_instructions = vec![];
         let mut registry_index = 0;
         while !new_accounts.is_empty() {
-            if registry.tables.len() > registry_index {
-                let entry = &registry.tables[registry_index];
+            if tables.len() > registry_index {
+                let entry = &tables[registry_index];
                 registry_index += 1;
                 let entry_capacity = 256usize.saturating_sub(entry.addresses.len());
                 // Can fit in 25 addresses in a transaction
@@ -427,7 +426,7 @@ impl MarginAccountClient {
                 let (table_ix, lookup_address) = self.builder.create_lookup_table(slot);
                 append_instructions.push(table_ix);
                 // Add the table to the registry, don't increment index
-                registry.tables.push(Entry {
+                tables.push(Entry {
                     discriminator: 2,
                     lookup_address,
                     addresses: vec![],

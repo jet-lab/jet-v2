@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::time::SystemTime;
 
 use jet_client::fixed_term::MarketInfo;
@@ -41,6 +42,16 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
     let usdc = Token::from_context(&ctx, "USDC");
     let tsol = Token::from_context(&ctx, "TSOL");
 
+    let mut lookup_addresses = vec![
+        jet_margin_sdk::jet_airspace::ID,
+        jet_margin_sdk::jet_margin::ID,
+        jet_margin_sdk::jet_margin_pool::ID,
+        jet_margin_sdk::jet_fixed_term::ID,
+        spl_token::ID,
+        usdc.mint,
+        tsol.mint,
+    ];
+
     // create users
     let users = vec![
         ctx.create_user().await.unwrap(),
@@ -71,6 +82,40 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
         mint: market.ticket,
         decimals: 6,
     };
+
+    // Update market lookup tables
+    for market in &users[0].fixed_term().markets() {
+        lookup_addresses.extend_from_slice(&[
+            market.address,
+            market.airspace,
+            market.token,
+            market.ticket,
+        ]);
+    }
+    for user in &users {
+        for margin_account in user.margin().accounts() {
+            margin_account.init_lookup_registry().await.unwrap();
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            margin_account.update_lookup_tables().await.unwrap();
+        }
+    }
+
+    // Remove duplicates
+    let lookup_addresses = lookup_addresses
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    let _lookup_authority = ctx
+        .create_lookup_registry(&lookup_addresses, true)
+        .await
+        .unwrap();
+
+    // sync the lookup tables
+    for user in &users {
+        user.state().sync_lookup_tables().await.unwrap();
+    }
 
     // set token prices
     set_price(&ctx, &usdc, 1.0, 0.01).await;

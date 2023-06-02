@@ -21,6 +21,13 @@ pub async fn sync(states: &AccountStates) -> ClientResult<()> {
         }
     }
 
+    // Get the margin account registries
+    for margin_account in states.addresses_of::<MarginAccount>() {
+        if let Some(lookup_tables) = get_lookup_tables(states, &margin_account).await? {
+            states.lookup_tables.set(&margin_account, lookup_tables);
+        }
+    }
+
     // Iterate through margin accounts and update their lookup accounts
     let margin_accounts = states.addresses_of::<MarginAccount>();
     for margin_account in margin_accounts {

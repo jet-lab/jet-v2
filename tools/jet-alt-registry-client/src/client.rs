@@ -105,7 +105,7 @@ impl ClientConfig {
             .as_ref()
             .map(|signer| signer.pubkey())
             .unwrap_or(self.authority);
-        InstructionBuilder::new(self.rpc_client.clone(), self.authority, signer)
+        InstructionBuilder::new(self.authority, signer)
     }
 }
 

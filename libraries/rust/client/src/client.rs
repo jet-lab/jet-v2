@@ -175,7 +175,8 @@ impl ClientState {
             lookup_tables,
         )
         .map_err(|e| ClientError::Unexpected(format!("compile error: {e:?}")))?;
-        let signature = self.network.send_transaction(&tx).await?;
+        let tx = &self.wallet.sign_transactions(&[tx]).await.unwrap()[0];
+        let signature = self.network.send_transaction(tx).await?;
         log::info!("tx result success: {signature}");
         let mut tx_log = self.tx_log.lock().unwrap();
         tx_log.push_back(signature);

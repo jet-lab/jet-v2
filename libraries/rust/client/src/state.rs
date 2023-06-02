@@ -89,6 +89,11 @@ impl AccountStates {
         Ok(())
     }
 
+    /// Sync only lookup tables
+    pub async fn sync_lookup_tables(&self) -> ClientResult<()> {
+        self::lookup_tables::sync(self).await
+    }
+
     pub fn token_info(&self, token: &Pubkey) -> ClientResult<TokenInfo> {
         self.config
             .tokens

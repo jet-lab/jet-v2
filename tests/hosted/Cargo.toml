@@ -82,6 +82,10 @@ git = "https://github.com/jet-lab/lookup-table-registry"
 branch = "main"
 features = ["program"]
 
+[dependencies.lookup-table-registry-client]
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+
 [dependencies.orca-whirlpool]
 package = "whirlpool"
 git = "https://github.com/jet-lab/whirlpools"

@@ -9,6 +9,7 @@ use jet_environment::builder::{
 };
 use jet_instructions::fixed_term::FixedTermIxBuilder;
 use jet_instructions::test_service::derive_token_mint;
+use lookup_table_registry_client::instructions::InstructionBuilder;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
@@ -22,7 +23,7 @@ use jet_solana_client::transaction::WithSigner;
 
 use super::{MarginTestContext, TestContextSetupInfo};
 
-/// general margin or airspace administration
+/// General margin or airspace administration
 impl MarginTestContext {
     /// Create the airspace plus all tokens, pools, swaps, and markets.
     ///
@@ -34,6 +35,7 @@ impl MarginTestContext {
             &self.airspace_name,
             self.solana.rpc.payer().pubkey(),
             self.crank.pubkey(),
+            self.airspace_authority.pubkey(),
         );
         let mut builder = self.env_builder();
         configure_environment(&mut builder, &setup_config.env_config)
@@ -123,6 +125,51 @@ impl MarginTestContext {
         self.execute_plan(builder.build()).await?;
 
         Ok(ix_builder)
+    }
+}
+
+/// Lookup tables
+impl MarginTestContext {
+    pub async fn create_lookup_registry(&self, addresses: &[Pubkey]) -> Result<Pubkey> {
+        // As a convenience, take advantage of addresses < 256.
+        assert!(
+            addresses.len() < 256,
+            "Expecting addresses to all fit a single lookup table"
+        );
+
+        let authority = self.airspace_authority.pubkey();
+        let payer = self.payer().pubkey();
+        let builder = InstructionBuilder::new(authority, payer);
+        let registry_address = builder.registry_address();
+        // Create the registry
+        let init_registry_ix = builder.init_registry();
+        let tx = self
+            .rpc()
+            .create_transaction(&[&self.airspace_authority], &[init_registry_ix])
+            .await?;
+        self.rpc().send_transaction(&tx).await?;
+
+        // Create a lookup table and add addresses to it
+        // First wait for a few slots
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        let recent_slot = self.solana.rpc.get_slot(None).await?;
+        let (create_lookup_table_ix, lookup_table) = builder.create_lookup_table(recent_slot, 0);
+        let tx = self
+            .rpc()
+            .create_transaction(&[&self.airspace_authority], &[create_lookup_table_ix])
+            .await?;
+        self.rpc().send_transaction(&tx).await?;
+
+        for chunk in addresses.chunks(20) {
+            let ix = builder.append_to_lookup_table(lookup_table, chunk, 0);
+            let tx = self
+                .rpc()
+                .create_transaction(&[&self.airspace_authority], &[ix])
+                .await?;
+            self.rpc().send_transaction(&tx).await?;
+        }
+
+        Ok(registry_address)
     }
 }
 

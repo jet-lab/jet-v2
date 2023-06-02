@@ -5,7 +5,7 @@ use anyhow::{bail, Context, Result};
 use jet_margin_sdk::jet_fixed_term::ID as FIXED_TERM_ID;
 use jet_margin_sdk::jet_margin_pool::ID as MARGIN_POOL_ID;
 use jet_solana_client::rpc::native::RpcConnection;
-use lookup_table_registry_client::{instructions::InstructionBuilder, Entry, Registry};
+use lookup_table_registry_client::{common::Registry, instructions::InstructionBuilder, Entry};
 use solana_sdk::transaction::Transaction;
 
 use crate::{
@@ -21,7 +21,7 @@ pub async fn create_registry(client: &Client, builder: &InstructionBuilder) -> R
         bail!("Registry already exists, cannot create it");
     }
     // Create a registry account
-    let create_registry_ix = builder.init_registry().await?;
+    let create_registry_ix = builder.init_registry();
     let mut plan = Plan {
         entries: vec![],
         unordered: false,
@@ -95,7 +95,7 @@ pub async fn update_registry(
         FIXED_TERM_ID,
         airspace,
     )
-    .await;
+    .await?;
     add_to_registry(
         client,
         builder,
@@ -105,7 +105,7 @@ pub async fn update_registry(
         MARGIN_POOL_ID,
         airspace,
     )
-    .await;
+    .await?;
 
     Ok(plan)
 }
@@ -121,7 +121,7 @@ pub async fn remove_lookup_table(
         .iter()
         .find(|entry| entry.lookup_address == address)
         .context("Lookup table does not exist or does not belong to authority")?;
-    let ix = builder.remove_lookup_table(address).await;
+    let ix = builder.remove_lookup_table(address);
 
     let plan = Plan {
         entries: vec![TransactionEntry {
@@ -147,7 +147,7 @@ async fn add_to_registry(
     registry: &mut Registry,
     program: Pubkey,
     airspace: Pubkey,
-) {
+) -> Result<()> {
     // With the remaining addresses from both programs, find or create a lookup table
     while !program_addresses.is_empty() {
         // Find an address that has the fixed term program + airspace, append to it
@@ -190,7 +190,8 @@ async fn add_to_registry(
                 // introduce a small delay to prevent multiple lookup accounts
                 // with the same slot being created.
                 tokio::time::sleep(Duration::from_secs(3)).await;
-                let (new_ix, new_lookup, _) = builder.create_lookup_table(0).await;
+                let recent_slot = client.rpc().get_slot().await?;
+                let (new_ix, new_lookup) = builder.create_lookup_table(recent_slot, 0);
                 let append_ix = builder.append_to_lookup_table(new_lookup, &[program, airspace], 0);
                 plan.entries.push(TransactionEntry {
                     steps: vec![format!("Add a new lookup address {new_lookup}")],
@@ -208,4 +209,6 @@ async fn add_to_registry(
             }
         }
     }
+
+    Ok(())
 }

@@ -50,7 +50,7 @@ jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
 
-lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }
+lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main", default-features = false }
 lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }
 
 [dev-dependencies]
