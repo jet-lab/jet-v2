@@ -207,7 +207,7 @@ impl TokenManager {
         let mut product_account = pyth_sdk_solana::state::ProductAccount {
             ver: pyth_sdk_solana::state::VERSION,
             magic: pyth_sdk_solana::state::MAGIC,
-            size: std::mem::size_of::<pyth_sdk_solana::Price>() as u32,
+            size: std::mem::size_of::<pyth_sdk::Price>() as u32,
             atype: pyth_sdk_solana::state::AccountType::Product as u32,
             px_acc: price_address,
             attr: [0u8; pyth_sdk_solana::state::PROD_ATTR_SIZE],

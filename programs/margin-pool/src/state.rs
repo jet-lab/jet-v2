@@ -20,7 +20,7 @@ use std::convert::TryFrom;
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use jet_program_common::{Number, BPS_EXPONENT};
-use pyth_sdk_solana::PriceFeed;
+use pyth_sdk::PriceFeed;
 
 #[cfg(any(test, feature = "no-entrypoint"))]
 use serde::{
