@@ -54,11 +54,11 @@ pub struct CliOpts {
     pub no_confirm: bool,
 
     /// The path to the signer to use (i.e. keypair or ledger-wallet)
-    #[clap(global = true, long, short = 'k')]
+    #[clap(global = true, long, short = 'k', env = "SIGNER_PATH")]
     pub signer_path: Option<String>,
 
     /// The network endpoint to use
-    #[clap(global = true, long, short = 'u')]
+    #[clap(global = true, long, short = 'u', env = "RPC_URL")]
     pub rpc_endpoint: Option<String>,
 
     #[clap(subcommand)]

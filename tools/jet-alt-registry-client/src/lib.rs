@@ -30,15 +30,15 @@ pub struct CliOpts {
     pub no_confirm: bool,
 
     /// The path to the lookup registry authority keypair
-    #[clap(global = true, long, short = 'a')]
+    #[clap(global = true, long, short = 'a', env = "AUTHORITY_SIGNER_PATH")]
     pub authority_path: Option<PathBuf>,
 
     /// The path to the signer to use (i.e. keypair or ledger-wallet)
-    #[clap(global = true, long, short = 'k')]
+    #[clap(global = true, long, short = 'k', env = "SIGNER_PATH")]
     pub signer_path: Option<String>,
 
     /// The network endpoint to use
-    #[clap(global = true, long, short = 'u')]
+    #[clap(global = true, long, short = 'u', env = "RPC_URL")]
     pub rpc_endpoint: Option<String>,
 
     #[clap(subcommand)]
@@ -55,7 +55,7 @@ pub enum Command {
     /// Update registry by adding any program accounts that do not exist.
     /// Useful when new pools or markets are added to an airspace.
     UpdateRegistry {
-        #[clap(long)]
+        #[clap(long, env = "JET_AIRSPACE")]
         airspace_name: String,
     },
 
