@@ -115,13 +115,13 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         if !opts.no_pool_sync {
             sync_pool_balances(&target_client, &signer, &spl_pool_list, &spl_swap_program).await?;
             sync_pool_balances(&target_client, &signer, &saber_pool_list, &SABER).await?;
-        replace_openbook_orders(
-            &target_client,
-            &signer,
-            &openbook_market_list,
-            &openbook_program,
-        )
-        .await?;
+            replace_openbook_orders(
+                &target_client,
+                &signer,
+                &openbook_market_list,
+                &openbook_program,
+            )
+            .await?;
         }
 
         if id_file.is_none() {
@@ -352,7 +352,7 @@ async fn sync_oracles(
     for instructions in instructions.chunks(6) {
         let tx = Transaction::new_signed_with_payer(
             // TODO: use a transaction builder in case transaction size is large
-            &instructions,
+            instructions,
             Some(&signer.pubkey()),
             &[signer],
             recent_blockhash,
