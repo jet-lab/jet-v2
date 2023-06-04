@@ -1,5 +1,7 @@
 use anchor_lang::prelude::Pubkey;
-use solana_sdk::{instruction::Instruction, signature::Keypair};
+use solana_sdk::{
+    instruction::Instruction, signature::Keypair, signer::Signer, transaction::VersionedTransaction,
+};
 
 use crate::util::keypair::KeypairExt;
 
@@ -34,4 +36,21 @@ impl Clone for Authorization {
             authority: self.authority.clone(),
         }
     }
+}
+
+/// Utility for partially signing versioned transactions directly with a keypair
+pub fn sign_versioned_transaction(keypair: &Keypair, tx: &mut VersionedTransaction) {
+    let signature = keypair.sign_message(tx.message.serialize().as_slice());
+    let index = tx
+        .message
+        .static_account_keys()
+        .iter()
+        .position(|key| *key == keypair.pubkey())
+        .expect("given transaction has no matching pubkey for the signer");
+
+    tx.signatures.resize(
+        tx.message.header().num_required_signatures.into(),
+        Default::default(),
+    );
+    tx.signatures[index] = signature;
 }

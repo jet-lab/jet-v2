@@ -28,7 +28,12 @@ use jet_environment::builder::resolve_swap_program;
 use jet_margin_sdk::swap::openbook_swap::OpenBookMarket;
 use jet_program_common::programs::SABER;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use jet_solana_client::{network::NetworkKind, rpc::native::RpcConnection};
+use jet_solana_client::{
+    network::NetworkKind,
+    rpc::native::RpcConnection,
+    signature::sign_versioned_transaction,
+    transaction::{condense, ToTransaction, TransactionBuilder},
+};
 
 const PYTH_DEVNET_PROGRAM: Pubkey = pubkey!("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s");
 const PYTH_MAINNET_PROGRAM: Pubkey = pubkey!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH");
@@ -327,7 +332,7 @@ async fn sync_oracles(
     let oracle_addresses = oracles.iter().map(|o| o.source_oracle).collect::<Vec<_>>();
     let source_accounts = source.get_multiple_accounts(&oracle_addresses).await?;
 
-    let instructions = oracles
+    let txs = oracles
         .iter()
         .zip(source_accounts)
         .filter_map(|(oracle, account)| {
@@ -344,19 +349,17 @@ async fn sync_oracles(
                     source_price.expo,
                 );
 
-            Some(update_target_ix)
+            Some(TransactionBuilder::from(vec![update_target_ix]))
         })
         .collect::<Vec<_>>();
 
-    let recent_blockhash = target.get_latest_blockhash().await?;
-    for instructions in instructions.chunks(6) {
-        let tx = Transaction::new_signed_with_payer(
-            // TODO: use a transaction builder in case transaction size is large
-            instructions,
-            Some(&signer.pubkey()),
-            &[signer],
-            recent_blockhash,
-        );
+    let txs = condense(&txs, &signer.pubkey())?;
+
+    for txb in txs {
+        let recent_blockhash = target.get_latest_blockhash().await?;
+        let mut tx = txb.to_transaction(&signer.pubkey(), recent_blockhash);
+        sign_versioned_transaction(signer, &mut tx);
+
         if let Err(e) = target.send_transaction(&tx).await {
             eprintln!("{e}");
 
