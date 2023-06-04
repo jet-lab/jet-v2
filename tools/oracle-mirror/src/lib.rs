@@ -36,15 +36,15 @@ const PYTH_MAINNET_PROGRAM: Pubkey = pubkey!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe
 #[derive(Parser, Debug)]
 pub struct CliOpts {
     /// The network endpoint to use for reading price oracles
-    #[clap(long, short = 's')]
+    #[clap(long, short = 's', env = "SOURCE_RPC_URL")]
     pub source_endpoint: String,
 
     /// The network endpoint to publish prices onto
-    #[clap(long, short = 't')]
+    #[clap(long, short = 't', env = "TARGET_RPC_URL")]
     pub target_endpoint: String,
 
     /// The keypair to use for signing price updates
-    #[clap(long, short = 'k')]
+    #[clap(long, short = 'k', env = "SIGNER_PATH")]
     pub keypair_path: Option<String>,
 
     /// The interval to refresh prices

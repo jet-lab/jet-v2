@@ -2798,7 +2798,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-fixed-terms-crank-service"
+name = "jet-fixed-term-crank"
 version = "0.1.0"
 dependencies = [
  "agnostic-orderbook",
