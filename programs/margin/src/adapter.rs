@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{collections::BTreeMap, convert::TryFrom};
+use std::convert::TryFrom;
 
 use anchor_lang::{
     prelude::*,
@@ -26,7 +26,6 @@ use jet_program_common::Number128;
 use solana_program::clock::UnixTimestamp;
 
 use crate::{
-    events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
     syscall::{sys, Sys},
     util::{log_on_error, Require},
     AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount,
@@ -156,7 +155,7 @@ impl TryFrom<pyth_sdk::PriceFeed> for PriceChangeInfo {
 
 /// Invoke a margin adapter with the requested data
 /// * `signed` - sign with the margin account
-pub fn invoke(ctx: &InvokeAdapter, data: Vec<u8>) -> Result<Vec<PositionEvent>> {
+pub fn invoke(ctx: &InvokeAdapter, data: Vec<u8>) -> Result<()> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
 
     let accounts = ctx
@@ -190,8 +189,8 @@ pub fn invoke(ctx: &InvokeAdapter, data: Vec<u8>) -> Result<Vec<PositionEvent>> 
     handle_adapter_result(ctx)
 }
 
-fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<Vec<PositionEvent>> {
-    let mut events = update_balances(ctx)?;
+fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
+    update_balances(ctx)?;
 
     match program::get_return_data() {
         None => (),
@@ -199,9 +198,7 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<Vec<PositionEvent>> {
         Some((_, data)) => {
             let result = AdapterResult::deserialize(&mut &data[..])?;
             for (mint, changes) in result.position_changes {
-                if let Some(event) = apply_changes(ctx, mint, changes)? {
-                    events.insert(mint, event);
-                }
+                apply_changes(ctx, mint, changes)?;
             }
         }
     };
@@ -209,12 +206,10 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<Vec<PositionEvent>> {
     // clear return data after reading it
     program::set_return_data(&[]);
 
-    Ok(events.into_values().collect())
+    Ok(())
 }
 
-fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent>> {
-    let mut touched_positions: BTreeMap<Pubkey, PositionEvent> = BTreeMap::new();
-
+fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
     let mut margin_account = ctx.margin_account.load_mut()?;
     for account_info in ctx.accounts {
         if account_info.owner == &TokenAccount::owner() {
@@ -225,9 +220,7 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent
                     account_info.key,
                     account.amount,
                 ) {
-                    Ok(position) => {
-                        touched_positions.insert(account.mint, PositionTouched { position }.into());
-                    }
+                    Ok(_) => (),
                     Err(ErrorCode::PositionNotRegistered) => (),
                     Err(err) => return Err(err.into()),
                 }
@@ -235,18 +228,13 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent
         }
     }
 
-    Ok(touched_positions)
+    Ok(())
 }
 
-fn apply_changes(
-    ctx: &InvokeAdapter,
-    mint: Pubkey,
-    changes: Vec<PositionChange>,
-) -> Result<Option<PositionEvent>> {
+fn apply_changes(ctx: &InvokeAdapter, mint: Pubkey, changes: Vec<PositionChange>) -> Result<()> {
     let mut margin_account = ctx.margin_account.load_mut()?;
     let mut key = margin_account.get_position_key(&mint);
     let mut position = key.and_then(|k| margin_account.get_position_by_key_mut(&k));
-    let mut net_registration = 0isize;
     if let Some(ref p) = position {
         if p.adapter != ctx.adapter_program.key() {
             return err!(ErrorCode::InvalidPositionAdapter);
@@ -277,7 +265,6 @@ fn apply_changes(
                         mint,
                         token_account,
                     )?);
-                    net_registration += 1;
                 }
             },
             PositionChange::Close(token_account) => {
@@ -292,34 +279,11 @@ fn apply_changes(
                         ctx.adapter_result_approvals().as_slice(),
                     )?;
                     key = None;
-                    net_registration -= 1;
                 }
             }
         }
     }
-    Ok(match net_registration {
-        0 => key
-            .and_then(|k| margin_account.get_position_by_key(&k))
-            .map(|p| PositionTouched { position: *p }.into()),
-        n if n > 0 => Some(
-            PositionRegistered {
-                margin_account: ctx.margin_account.key(),
-                position: *key
-                    .and_then(|k| margin_account.get_position_by_key(&k))
-                    .require()?,
-                authority: ctx.adapter_program.key(),
-            }
-            .into(),
-        ),
-        _ => Some(
-            PositionClosed {
-                margin_account: ctx.margin_account.key(),
-                authority: ctx.adapter_program.key(),
-                token: mint,
-            }
-            .into(),
-        ),
-    })
+    Ok(())
 }
 
 fn register_position(
@@ -391,12 +355,6 @@ mod test {
     use anchor_lang::Discriminator;
 
     use super::*;
-
-    impl std::fmt::Debug for PositionEvent {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("PositionEvent").finish()
-        }
-    }
 
     fn all_change_types() -> Vec<PositionChange> {
         vec![

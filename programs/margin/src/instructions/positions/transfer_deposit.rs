@@ -19,9 +19,11 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 use crate::{
-    events,
+    // events,
     syscall::{sys, Sys},
-    ErrorCode, MarginAccount, SignerSeeds,
+    ErrorCode,
+    MarginAccount,
+    SignerSeeds,
 };
 
 // FIXME: no transfer support for liquidators
@@ -58,7 +60,7 @@ pub fn transfer_deposit_handler(ctx: Context<TransferDeposit>, amount: u64) -> R
         Some(pos) => pos,
     };
 
-    let position = if position.address == ctx.accounts.source.key() {
+    if position.address == ctx.accounts.source.key() {
         let seeds = margin_account.signer_seeds_owned();
         drop(margin_account);
 
@@ -84,7 +86,7 @@ pub fn transfer_deposit_handler(ctx: Context<TransferDeposit>, amount: u64) -> R
             &source.key(),
             source.amount,
             sys().unix_timestamp(),
-        )?
+        )?;
     } else {
         token::transfer(
             CpiContext::new(
@@ -106,10 +108,8 @@ pub fn transfer_deposit_handler(ctx: Context<TransferDeposit>, amount: u64) -> R
             &destination.key(),
             destination.amount,
             sys().unix_timestamp(),
-        )?
+        )?;
     };
-
-    emit!(events::PositionBalanceUpdated { position });
 
     Ok(())
 }

@@ -21,9 +21,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 
-use crate::{
-    events, util::Require, Approver, ErrorCode, MarginAccount, PositionConfigUpdate, TokenConfig,
-};
+use crate::{Approver, ErrorCode, MarginAccount, PositionConfigUpdate, TokenConfig};
 
 #[derive(Accounts)]
 pub struct CreateDepositPosition<'info> {
@@ -67,7 +65,7 @@ pub fn create_deposit_position_handler(ctx: Context<CreateDepositPosition>) -> R
     let address = ctx.accounts.token_account.key();
     account.verify_authority(ctx.accounts.authority.key())?;
 
-    let key = account.register_position(
+    account.register_position(
         PositionConfigUpdate::new_from_config(
             config,
             position_token.decimals,
@@ -76,14 +74,6 @@ pub fn create_deposit_position_handler(ctx: Context<CreateDepositPosition>) -> R
         ),
         &[Approver::MarginAccountAuthority],
     )?;
-
-    let position = account.get_position_by_key(&key).require()?;
-
-    emit!(events::PositionRegistered {
-        margin_account: ctx.accounts.margin_account.key(),
-        authority: ctx.accounts.authority.key(),
-        position: *position,
-    });
 
     Ok(())
 }
