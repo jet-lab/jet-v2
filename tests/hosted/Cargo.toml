@@ -46,7 +46,8 @@ spl-token = "3.1.0"
 spl-associated-token-account = "1.0"
 saber-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
 saber-program = { package = "stable-swap", git = "https://github.com/jet-lab/stable-swap", branch = "master" }
-pyth-sdk-solana = "0.7"
+pyth-sdk = "0.7"
+pyth-sdk-solana = "0.7.2"
 
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["no-entrypoint", "testing"] }
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }

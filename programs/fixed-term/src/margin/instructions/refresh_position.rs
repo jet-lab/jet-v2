@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use anchor_spl::token::Token;
 use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange};
-use pyth_sdk_solana::PriceFeed;
+use pyth_sdk::PriceFeed;
 
 use crate::{
     control::{events::PositionRefreshed, state::Market},

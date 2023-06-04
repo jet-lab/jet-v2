@@ -61,6 +61,9 @@ pub struct AutoRollBorrowOrder<'info> {
     #[account(mut)]
     pub new_loan: AccountInfo<'info>,
 
+    /// The next `TermLoan` that is due after the repayment of the current
+    pub next_unpaid_loan: AccountInfo<'info>,
+
     /// Reciever for rent from the closing of the TermDeposit
     #[account(mut)]
     pub rent_receiver: AccountInfo<'info>,
@@ -111,7 +114,7 @@ impl<'info> AutoRollBorrowOrder<'info> {
         RepayAccounts {
             margin_user: &mut self.margin_user,
             term_loan: &mut self.loan,
-            next_term_loan: &self.new_loan,
+            next_term_loan: &self.next_unpaid_loan,
             // arbitrary here
             source: &self.margin_account,
             source_authority: &self.margin_account,
