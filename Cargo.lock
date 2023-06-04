@@ -2291,7 +2291,8 @@ dependencies = [
  "lookup-table-registry-client",
  "mock-adapter",
  "parking_lot 0.12.1",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk 0.7.0",
+ "pyth-sdk-solana 0.7.2",
  "rand 0.7.3",
  "rand_distr",
  "serde_json",
@@ -2654,7 +2655,7 @@ dependencies = [
  "log",
  "lookup-table-registry",
  "lookup-table-registry-client",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.2",
  "rand_chacha 0.3.1",
  "serde",
  "serde_json",
@@ -2732,7 +2733,7 @@ dependencies = [
  "jet-program-common",
  "jet-solana-client",
  "lazy_static",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk-solana 0.7.2",
  "serde",
  "serde_json",
  "serde_with 1.14.0",
@@ -2793,14 +2794,15 @@ dependencies = [
  "jet-program-proc-macros",
  "num-derive",
  "num-traits",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk 0.7.0",
+ "pyth-sdk-solana 0.7.2",
  "serde",
  "serde_json",
  "static_assertions",
 ]
 
 [[package]]
-name = "jet-fixed-terms-crank-service"
+name = "jet-fixed-term-crank"
 version = "0.1.0"
 dependencies = [
  "agnostic-orderbook",
@@ -2864,7 +2866,8 @@ dependencies = [
  "jet-program-common",
  "jet-program-proc-macros",
  "lookup-table-registry",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk 0.7.0",
+ "pyth-sdk-solana 0.7.2",
  "serde",
  "serde_test",
  "solana-program",
@@ -2882,7 +2885,8 @@ dependencies = [
  "jet-margin",
  "jet-metadata",
  "jet-program-common",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk 0.7.0",
+ "pyth-sdk-solana 0.7.2",
  "serde",
  "serde_test",
  "solana-program",
@@ -2918,7 +2922,7 @@ dependencies = [
  "jet-static-program-registry",
  "jet-test-service",
  "num-traits",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk 0.7.0",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -2971,7 +2975,7 @@ dependencies = [
  "jet-program-common",
  "jet-simulation",
  "jet-solana-client",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk-solana 0.7.2",
  "serde_json",
  "solana-clap-utils",
  "solana-cli-config",
@@ -3107,7 +3111,7 @@ dependencies = [
  "bytemuck",
  "jet-program-common",
  "jet-static-program-registry",
- "pyth-sdk-solana 0.7.0",
+ "pyth-sdk-solana 0.7.2",
  "serum_dex 0.5.10",
  "stable-swap-anchor",
  "stable-swap-client",
@@ -4183,9 +4187,9 @@ dependencies = [
 
 [[package]]
 name = "pyth-sdk-solana"
-version = "0.7.0"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c637b4d8e9558e596a13cd5a11e406431c80eed4fbed01e4b1ff474257b04db9"
+checksum = "e1fcd2dcd063ea85004667cf5cb07f30de7387f17249df988a295e764a47b9f5"
 dependencies = [
  "borsh 0.9.3",
  "borsh-derive 0.9.3",

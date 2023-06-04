@@ -78,11 +78,5 @@ pub fn close_position_handler(ctx: Context<ClosePosition>) -> Result<()> {
         )?;
     }
 
-    // emit!(events::PositionClosed {
-    //     margin_account: ctx.accounts.margin_account.key(),
-    //     authority: ctx.accounts.authority.key(),
-    //     token: ctx.accounts.position_token_mint.key(),
-    // });
-
     Ok(())
 }

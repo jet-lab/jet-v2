@@ -22,7 +22,7 @@
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
     "test:gui": "yarn --cwd apps/react-app e2e:gui",
     "test:ci": "yarn --cwd apps/react-app e2e:ci",
-    "crank": "cargo run --bin jet-fixed-terms-crank-service -- --config-path ./localnet.toml",
+    "crank": "cargo run --bin jet-fixed-term-crank -- --config-path ./localnet.toml",
     "data": "docker compose -f .github/e2e-docker-compose.yml pull && docker compose -f .github/e2e-docker-compose.yml up -d && yarn data:log",
     "data:clean": "docker compose -f .github/e2e-docker-compose.yml down --volumes",
     "data:log": "docker compose -f .github/e2e-docker-compose.yml logs -f --tail=20 api parser"

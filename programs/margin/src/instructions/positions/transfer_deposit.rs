@@ -111,7 +111,5 @@ pub fn transfer_deposit_handler(ctx: Context<TransferDeposit>, amount: u64) -> R
         )?;
     };
 
-    // emit!(events::PositionBalanceUpdated { position });
-
     Ok(())
 }

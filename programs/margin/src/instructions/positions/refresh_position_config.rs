@@ -47,17 +47,12 @@ pub fn refresh_position_config_handler(ctx: Context<RefreshPositionConfig>) -> R
     let config = &ctx.accounts.config;
     let mut account = ctx.accounts.margin_account.load_mut()?;
 
-    let _position = account.refresh_position_metadata(
+    account.refresh_position_metadata(
         &config.mint,
         config.token_kind,
         config.value_modifier,
         config.max_staleness,
     )?;
-
-    // emit!(events::PositionMetadataRefreshed {
-    //     margin_account: ctx.accounts.margin_account.key(),
-    //     position,
-    // });
 
     Ok(())
 }

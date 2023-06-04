@@ -26,12 +26,12 @@ pub struct CliOpts {
     pub config_path: PathBuf,
 
     /// The keypair to use for signing transactions
-    #[clap(long, short = 'k')]
+    #[clap(long, short = 'k', env = "SIGNER_PATH")]
     pub keypair_path: Option<String>,
 
     /// The rpc endpoint
     /// Defaults to localhost
-    #[clap(long, short = 'u')]
+    #[clap(long, short = 'u', env = "RPC_URL")]
     pub url: Option<String>,
 
     /// Log file

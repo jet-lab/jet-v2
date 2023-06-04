@@ -38,14 +38,12 @@ pub fn update_position_balance_handler(ctx: Context<UpdatePositionBalance>) -> R
     let mut margin_account = ctx.accounts.margin_account.load_mut()?;
     let token_account = &ctx.accounts.token_account;
 
-    let _position = margin_account.set_position_balance(
+    margin_account.set_position_balance(
         &token_account.mint,
         &token_account.key(),
         token_account.amount,
         sys().unix_timestamp(),
     )?;
-
-    // emit!(events::PositionBalanceUpdated { position });
 
     Ok(())
 }

@@ -58,6 +58,7 @@ pub fn create_account_handler(ctx: Context<CreateAccount>, seed: u16) -> Result<
     emit!(events::AccountCreated {
         margin_account: ctx.accounts.margin_account.key(),
         owner: ctx.accounts.owner.key(),
+        airspace: ctx.accounts.permit.airspace,
         seed,
     });
 

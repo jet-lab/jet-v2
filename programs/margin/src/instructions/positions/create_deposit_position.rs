@@ -65,7 +65,8 @@ pub fn create_deposit_position_handler(ctx: Context<CreateDepositPosition>) -> R
     let address = ctx.accounts.token_account.key();
     account.verify_authority(ctx.accounts.authority.key())?;
 
-    let _key = account.register_position(
+
+    account.register_position(
         PositionConfigUpdate::new_from_config(
             config,
             position_token.decimals,
@@ -74,14 +75,6 @@ pub fn create_deposit_position_handler(ctx: Context<CreateDepositPosition>) -> R
         ),
         &[Approver::MarginAccountAuthority],
     )?;
-
-    // let position = account.get_position_by_key(&key).require()?;
-
-    // emit!(events::PositionRegistered {
-    //     margin_account: ctx.accounts.margin_account.key(),
-    //     authority: ctx.accounts.authority.key(),
-    //     position: *position,
-    // });
 
     Ok(())
 }

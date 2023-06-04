@@ -108,10 +108,14 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
               midPoint={oraclePrice}
               bidsDescending={data.bids}
               asksAscending={data.asks}
+              asksColor="#e36868"
+              bidsColor="#84c1ca"
               height={height}
               width={width}
               xRange={data.price_range}
               yRange={data.liquidity_range}
+              xLabel={`${data.base.symbol} / ${data.quote.symbol}`}
+              yLabel="Sell Quantity"
               base={data.base}
               quote={data?.quote}
             />

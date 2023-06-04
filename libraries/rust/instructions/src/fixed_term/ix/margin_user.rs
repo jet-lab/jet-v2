@@ -260,7 +260,7 @@ pub fn toggle_auto_roll_loan(
 }
 
 pub fn auto_roll_lend_order(
-    deposit_seqno: u64,
+    next_deposit_seqno: u64,
     margin_account: Pubkey,
     deposit: Pubkey,
     rent_receiver: Pubkey,
@@ -272,7 +272,7 @@ pub fn auto_roll_lend_order(
     let data = jet_fixed_term::instruction::AutoRollLendOrder {}.data();
     let accounts = jet_fixed_term::accounts::AutoRollLendOrder {
         deposit,
-        new_deposit: term_deposit(market, &margin_account, deposit_seqno + 1),
+        new_deposit: term_deposit(market, &margin_account, next_deposit_seqno),
         ticket_collateral: user_ticket_collateral(&margin_user),
         ticket_collateral_mint: ticket_collateral_mint(market),
         ticket_mint: ticket_mint(market),
@@ -292,6 +292,7 @@ pub fn auto_roll_lend_order(
 
 pub fn auto_roll_borrow_order(
     next_debt_seqno: u64,
+    next_unpaid_loan_seqno: u64,
     margin_account: Pubkey,
     loan: Pubkey,
     rent_receiver: Pubkey,
@@ -306,6 +307,7 @@ pub fn auto_roll_borrow_order(
         margin_account,
         loan,
         new_loan: term_loan(market, &margin_user, next_debt_seqno),
+        next_unpaid_loan: term_loan(market, &margin_user, next_unpaid_loan_seqno),
         claims: user_claims(&margin_user),
         claims_mint: claims_mint(market),
         underlying_collateral: user_underlying_collateral(&margin_user),
