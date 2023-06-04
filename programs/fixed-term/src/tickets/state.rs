@@ -175,6 +175,7 @@ impl<'a, 'info> RedeemDepositAccounts<'a, 'info> {
             );
             return err!(FixedTermErrorCode::ImmatureTicket);
         }
+        let redeemed = self.deposit.amount;
 
         // transfer from the vault to the deposit_holder
         if is_withdrawing {
@@ -188,19 +189,19 @@ impl<'a, 'info> RedeemDepositAccounts<'a, 'info> {
                     },
                 )
                 .with_signer(&[&self.market.load()?.authority_seeds()]),
-                self.deposit.amount,
+                redeemed,
             )?;
         }
 
         emit!(DepositRedeemed {
             deposit: self.deposit.key(),
             deposit_holder: self.owner.key(),
-            redeemed_value: self.deposit.amount,
+            redeemed_value: redeemed,
             redeemed_timestamp: current_time,
             is_auto_roll: !is_withdrawing,
         });
 
-        Ok(self.deposit.amount)
+        Ok(redeemed)
     }
 }
 
@@ -219,10 +220,10 @@ pub struct MarginRedeemDepositAccounts<'a, 'info> {
 impl<'a, 'info> MarginRedeemDepositAccounts<'a, 'info> {
     /// Run TermDeposit redemption and margin accounting logic
     pub fn margin_redeem(&mut self, is_withdrawing: bool) -> Result<()> {
+        let seq_no = self.inner.deposit.sequence_number;
         let redeemed = self.inner.redeem(is_withdrawing)?;
 
-        self.margin_user
-            .redeem_deposit(self.inner.deposit.sequence_number, redeemed)?;
+        self.margin_user.redeem_deposit(seq_no, redeemed)?;
 
         // remove the collateral for the redeemed tickets
         anchor_spl::token::burn(
