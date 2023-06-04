@@ -65,7 +65,6 @@ pub fn create_deposit_position_handler(ctx: Context<CreateDepositPosition>) -> R
     let address = ctx.accounts.token_account.key();
     account.verify_authority(ctx.accounts.authority.key())?;
 
-
     account.register_position(
         PositionConfigUpdate::new_from_config(
             config,

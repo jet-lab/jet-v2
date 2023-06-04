@@ -153,7 +153,7 @@ impl TestContext {
     }
 
     pub async fn create_lookup_registry(&self, addresses: &[Pubkey]) -> Result<Pubkey, Error> {
-        Ok(self.inner.create_lookup_registry(addresses).await?)
+        self.inner.create_lookup_registry(addresses).await
     }
 }
 
