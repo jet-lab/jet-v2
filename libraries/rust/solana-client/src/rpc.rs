@@ -30,6 +30,13 @@ pub enum ClientError {
     #[error("tx error: {0}")]
     TransactionError(#[from] TransactionError),
 
+    /// The error returned while simulating a transaction
+    #[error("tx simulation error: {err:?} logs: {logs:#?}")]
+    TransactionSimulationError {
+        err: Option<TransactionError>,
+        logs: Vec<String>,
+    },
+
     /// The error returned when an expected account is missing
     #[error("account {0} not found")]
     AccountNotFound(Pubkey),

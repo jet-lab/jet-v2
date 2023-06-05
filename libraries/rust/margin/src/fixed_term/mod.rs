@@ -68,7 +68,7 @@ impl Crank {
             consumer.insert_market(market, Some(margin_accounts.clone()));
             let settler = settler(rpc.clone(), ix.clone(), margin_accounts, Default::default())?;
             settlers.push(settler);
-            servicers.push(AutoRollServicer::new(rpc.clone(), ix))
+            servicers.push(AutoRollServicer::new(rpc.clone(), ix));
         }
 
         Ok(Self {
@@ -96,12 +96,14 @@ impl Crank {
     pub async fn run_forever(self) {
         let mut jobs = vec![];
         for settler in self.settlers {
-            jobs.push(tokio::spawn(async move { settler.process_forever().await }));
+            jobs.push(tokio::spawn(async move {
+                settler.process_forever(self.consumer_delay).await
+            }));
         }
         for servicer in self.servicers {
-            jobs.push(tokio::spawn(
-                async move { servicer.service_forever().await },
-            ));
+            jobs.push(tokio::spawn(async move {
+                servicer.service_forever(self.consumer_delay).await
+            }));
         }
         self.consumer
             .sync_and_consume_forever(&self.market_addrs, self.consumer_delay)

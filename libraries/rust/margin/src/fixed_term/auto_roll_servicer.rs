@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anchor_lang::AccountDeserialize;
 use futures::future::join_all;
@@ -60,10 +60,11 @@ impl AutoRollServicer {
         }
     }
 
-    pub async fn service_forever(&self) {
+    pub async fn service_forever(&self, delay: Duration) {
         tracing::trace!("starting servicer loop");
         loop {
-            self.service_all().await
+            self.service_all().await;
+            tokio::time::sleep(delay).await;
         }
     }
 
@@ -194,7 +195,9 @@ impl AutoRollServicer {
             .filter_map(
                 |(k, a)| match MarginUser::try_deserialize(&mut a.data.as_ref()) {
                     Ok(u) => {
-                        if u.borrow_roll_config.is_none() && u.lend_roll_config.is_none() {
+                        if u.market != self.ix.market()
+                            || (u.borrow_roll_config.is_none() && u.lend_roll_config.is_none())
+                        {
                             None
                         } else {
                             Some((k, u))
