@@ -200,7 +200,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   return (
     <div className="fixed-term order-entry-body">
       <p>
-        You are borrowing as a maker. Your loan offers wil be filled at the input interest rate or better. Any part of
+        You are borrowing as a maker. Your loan request wil be filled at the input interest rate or lower. Any part of
         your borrow request that is not filled immediately will be posted to the orderbook.
       </p>
       <div className="request-loan fixed-order-entry-fields">
