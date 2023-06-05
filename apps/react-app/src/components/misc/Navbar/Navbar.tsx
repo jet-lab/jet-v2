@@ -1,4 +1,5 @@
 import { useRecoilState } from 'recoil';
+import { TpsBanner } from '../TpsBanner';
 import { WalletButton } from '../WalletButton';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
@@ -11,6 +12,7 @@ export function Navbar(): JSX.Element {
   const [drawerOpen, setDrawerOpen] = useRecoilState(NavDrawerOpen);
   return (
     <div className={`navbar-container flex-centered column ${drawerOpen ? 'drawer-open' : ''}`}>
+      <TpsBanner />
       {/* Desktop Nav */}
       <nav className="desktop flex align-center justify-between">
         <div className="nav-section flex align-center justify-start">
