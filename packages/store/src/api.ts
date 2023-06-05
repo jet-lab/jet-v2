@@ -49,3 +49,20 @@ export const getSwapLiquidity = (
   const path = `${apiEndpoint}/swap/liquidity/${from}/${to}/${amount}`;
   return useSWR<SwapLiquidity | null>(path, async () => fetch(path).then(r => r.json()), { refreshInterval: 30_000 });
 };
+
+export const useFixedTermAccountingShim = (apiEndpoint: string, account?: string): SWRResponse<FixedTermAccountingShim> => {
+  const path = `fixed/shim/${account}`;
+  return useSWR<FixedTermAccountingShim>(
+    path,
+    async () => {
+      if (account) {
+        return fetch(`${apiEndpoint}/${path}`).then(r => r.json());
+      } else {
+        return {
+          asset_value: 0
+        } as FixedTermAccountingShim;
+      }
+    },
+    { refreshInterval: 30_000 }
+  );
+}
