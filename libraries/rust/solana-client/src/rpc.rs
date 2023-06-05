@@ -334,10 +334,13 @@ pub trait SolanaRpcExtra: SolanaRpc {
         let accounts = self
             .get_program_accounts(
                 &program,
-                &[AccountFilter::Memcmp {
-                    offset: 0,
-                    bytes: T::discriminator().to_vec(),
-                }],
+                &[
+                    AccountFilter::DataSize(8 + std::mem::size_of::<T>()),
+                    AccountFilter::Memcmp {
+                        offset: 0,
+                        bytes: T::discriminator().to_vec(),
+                    },
+                ],
             )
             .await?;
 
