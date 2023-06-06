@@ -7,6 +7,9 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
 ) => ({
   wallets: {},
   selectedWallet: null,
+  marginAccounts: {},
+  selectedMarginAccount: null,
+  marginAccountLookupTables: {},
   airspaceLookupTables: [],
   connectWallet: async wallet => {
     set(
@@ -27,44 +30,21 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
       false,
       'DISCONNECT_WALLET'
     ),
-  updateLookupTables: tables => set(() => ({ airspaceLookupTables: tables }), false, 'UPDATE_LOOKUP_TABLE_ADDRESSES'),
+  updateAirspaceLookupTables: tables => set(() => ({ airspaceLookupTables: tables }), false, 'UPDATE_LOOKUP_TABLE_ADDRESSES'),
   updateMarginAccount: (update: MarginAccountData) => {
     return set(
       state => {
-        if (!state.selectedWallet) {
-          return state;
-        }
-        let wallet = state.wallets[state.selectedWallet];
-        if (!wallet) {
-          // Create a wallet container
-          state.wallets[state.selectedWallet] = {
-            pubkey: state.selectedWallet,
-            accounts: {
-              [update.address]: update
-            },
-            selectedMarginAccount: null,
-            lookupTables: {}
-          };
-          wallet = state.wallets[state.selectedWallet];
-        }
-        const account = wallet.accounts[update.address];
         return {
           ...state,
-          wallets: {
-            ...state.wallets,
-            [state.selectedWallet]: {
-              ...wallet,
-              accounts: {
-                ...wallet.accounts,
-                [update.address]: {
-                  ...account
-                }
-              }
+          marginAccounts: {
+            ...state.marginAccounts,
+            [update.address]: {
+              ...update
             }
           }
         };
       },
-      false,
+      true,
       'UPDATE_MARGIN_ACCOUNT'
     );
   },
@@ -73,22 +53,12 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
     const keys = Object.keys(update);
     return set(
       state => {
-        if (!state.selectedWallet) {
-          return state;
-        }
-        const wallet = state.wallets[state.selectedWallet];
         return {
           ...state,
-          wallets: {
-            ...state.wallets,
-            [state.selectedWallet]: {
-              ...wallet,
-              accounts: update,
-              selectedMarginAccount: keys.includes(String(wallet.selectedMarginAccount))
-                ? wallet.selectedMarginAccount
-                : keys[0]
-            }
-          }
+          marginAccounts: update,
+          selectedMarginAccount: keys.includes(String(state.selectedMarginAccount))
+            ? state.selectedMarginAccount
+            : keys[0]
         };
       },
       true,
@@ -101,21 +71,17 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
         if (!state.selectedWallet) {
           return state;
         }
-        const wallet = state.wallets[state.selectedWallet];
-        const keys = Object.keys(wallet.accounts);
+        const keys = Object.keys(state.marginAccounts);
         return {
           ...state,
-          wallets: {
-            ...state.wallets,
-            [state.selectedWallet]: {
-              ...wallet,
-              selectedMarginAccount: keys.includes(String(address)) ? address : keys[0]
-            }
-          }
+          selectedMarginAccount: keys.includes(String(address)) ? address : keys[0]
         };
       },
       false,
       'SELECT_MARGIN_ACCOUNT'
     );
+  },
+  updateMarginAccountLookupTables: (_address: string, _tables: LookupTable[]) => {
+    return set(state => state, false, 'UPDATE_MARGIN_ACCOUNT_LOOKUP_TABLES')
   }
 });

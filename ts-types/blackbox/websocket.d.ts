@@ -46,15 +46,21 @@ interface MARGIN_ACCOUNT_UPDATE {
   payload: MarginAccountData
 }
 
+interface MARGIN_ACCOUNT_LIST {
+  type: 'MARGIN-ACCOUNT-LIST';
+  payload: MarginAccountData[]
+}
+
 interface MarginAccountData {
   owner: string;
+  seed: number;
   address: string;
   airspace: string;
   liquidator: string;
-  positions: AccountPosition[]
+  positions: AccountPositionData[]
 }
 
-interface AccountPosition {
+interface AccountPositionData {
   address: string;
   token: string;
   adapter: string;
@@ -87,4 +93,4 @@ interface SUBSCRIBE {
 
 type APPLICATION_WS_EVENTS = SUBSCRIBE;
 
-type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE | MARGIN_ACCOUNT_UPDATE;
+type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE | MARGIN_ACCOUNT_UPDATE | MARGIN_ACCOUNT_LIST;

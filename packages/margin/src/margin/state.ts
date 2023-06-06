@@ -18,7 +18,7 @@ type AllTypesMap<IDL extends Idl> = AccountMap<AllTypes<IDL>>
  ****************************/
 
 export type LiquidationData = TypeDef<AllTypesMap<JetMarginIDL>["Liquidation"], IdlTypes<JetMarginIDL>>
-export type MarginAccountData = TypeDef<AllAccountsMap<JetMarginIDL>["marginAccount"], IdlTypes<JetMarginIDL>>
+export type OnChainMarginAccountData = TypeDef<AllAccountsMap<JetMarginIDL>["marginAccount"], IdlTypes<JetMarginIDL>>
 
 /****************************
  * Program Types

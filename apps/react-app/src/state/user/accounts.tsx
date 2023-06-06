@@ -91,7 +91,7 @@ export const AccountHistoryLoaded = atom({
 
 // A syncer to be called so that we can have dependent atom state
 export function useAccountsSyncer() {
-  const [cluster, prices] = useJetStore(state => [state.settings.cluster, state.prices]);
+  const [cluster, prices, marginAccounts, selectMarginAccount] = useJetStore(state => [state.settings.cluster, state.prices, state.marginAccounts, state.selectMarginAccount]);
   const marginConfig = useRecoilValue(MainConfig);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
@@ -127,22 +127,16 @@ export function useAccountsSyncer() {
       }
 
       // Load accounts, only use ones that exist
-      setAccountsLoading(true);
-      const accounts: MarginAccount[] = [];
-      const allAccounts = await MarginAccount.loadAllByOwner({
+      setAccountsLoading(true);;
+      const accounts = await MarginAccount.loadAllByOwnerFromCache({
         programs,
         provider,
         pools: pools.tokenPools,
         walletTokens,
         owner,
         prices,
+        accountData: Object.values(marginAccounts),
       });
-      for (const account of allAccounts) {
-        const exists = await account.exists();
-        if (exists) {
-          accounts.push(account);
-        }
-      }
 
       // Set up accountNames and set up histories
       accounts.sort((a, b) => (a.seed > b.seed ? 1 : -1));
@@ -150,13 +144,13 @@ export function useAccountsSyncer() {
       const sortedAccountNames: Record<string, string> = {};
       for (const account of accounts) {
         const accountKey = account.address.toString();
-        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${
-          account.seed + 1
-        }`;
+        sortedAccountNames[accountKey] = /* accountNames[accountKey] ?? */ `${dictionary.common.account} ${account.seed + 1
+          }`;
 
         // If account is currently being liquidated, switch to that account
         if (account.isBeingLiquidated) {
           setCurrentAccountAddress(accountKey);
+          selectMarginAccount(accountKey)
         }
       }
 
@@ -165,10 +159,14 @@ export function useAccountsSyncer() {
         if (currentAccountAddress) {
           const match = accounts.find(acc => acc.address.toBase58() === currentAccountAddress);
           if (!match) {
-            setCurrentAccountAddress(accounts[0].address.toBase58());
+            const selected = accounts[0].address.toBase58();
+            setCurrentAccountAddress(selected);
+            selectMarginAccount(selected);
           }
         } else {
-          setCurrentAccountAddress(accounts[0].address.toBase58());
+          const selected = accounts[0].address.toBase58();
+          setCurrentAccountAddress(selected);
+          selectMarginAccount(selected);
         }
       } else {
         setCurrentAccountAddress('');
@@ -184,7 +182,7 @@ export function useAccountsSyncer() {
     const accountsInterval = setInterval(getAccounts, ACTION_REFRESH_INTERVAL);
     return () => clearInterval(accountsInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pools, owner, provider.connection, actionRefresh, publicKey, currentAccountAddress]);
+  }, [pools, owner, provider.connection, actionRefresh, publicKey, currentAccountAddress, marginAccounts]);
 
   // Update current account history
   useEffect(() => {

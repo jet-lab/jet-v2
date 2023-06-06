@@ -65,6 +65,12 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         useJetStore.getState().updatePrices(data);
       } else if (data.type === 'MARGIN-ACCOUNT-UPDATE') {
         useJetStore.getState().updateMarginAccount(data.payload);
+      } else if (data.type === 'MARGIN-ACCOUNT-LIST') {
+        const map = {};
+        for (const el of data.payload) {
+          map[el.address] = el;
+        }
+        useJetStore.getState().initAllMarginAccounts(map);
       }
     };
 
