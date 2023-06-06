@@ -40,6 +40,10 @@ impl ProgramAddresses {
             .into_iter()
             .for_each(|(address, market)| {
                 if market.airspace == airspace {
+                    // This serves as an identifier that addresses in here are fixed term
+                    addresses
+                        .fixed_term
+                        .insert(jet_margin_sdk::jet_fixed_term::id());
                     addresses.fixed_term.insert(address);
                     addresses.fixed_term.insert(market.asks);
                     addresses.fixed_term.insert(market.bids);
@@ -60,6 +64,10 @@ impl ProgramAddresses {
         token_configs.iter().for_each(|(_, config)| {
             match config.admin {
                 TokenAdmin::Adapter(p) if p == jet_margin_sdk::jet_margin_pool::ID => {
+                    // Marker for margin pool addresses
+                    addresses
+                        .margin_pool
+                        .insert(jet_margin_sdk::jet_margin_pool::id());
                     // This is duplicative, but is convenient so it's fine
                     let ix = MarginPoolIxBuilder::new(config.underlying_mint);
                     addresses.margin_pool.insert(ix.address);
