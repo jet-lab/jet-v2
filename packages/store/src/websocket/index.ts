@@ -63,6 +63,8 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         useJetStore.getState().updatePool(update);
       } else if (data.type === 'PRICE-UPDATE') {
         useJetStore.getState().updatePrices(data);
+      } else if (data.type === 'MARGIN-ACCOUNT-UPDATE') {
+        useJetStore.getState().updateMarginAccount(data.payload);
       }
     };
 

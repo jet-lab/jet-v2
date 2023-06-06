@@ -4,32 +4,6 @@
 //   amount: number;
 // }
 
-interface MarginAccountData {
-  address: string;
-  owner: string;
-  liquidator: string;
-  positions: MarginPosition[];
-}
-
-interface MarginPosition {
-  adapter: string;
-  address: string;
-  balance: number;
-  balanceTimestamp: number;
-  exponent: number;
-  kind: 'Collateral' | 'AdapterCollateral' | 'Claim';
-  maxStaleness: number;
-  price: {
-    exponent: number;
-    isValid: number;
-    timestamp: number;
-    value: number;
-  };
-  token: string;
-  value: string; // Number192 formatted as decimal string
-  valueModifier: number;
-}
-
 interface Wallet {
   pubkey: string;
   accounts: Record<string, MarginAccountData>;

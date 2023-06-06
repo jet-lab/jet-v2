@@ -34,7 +34,19 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
         if (!state.selectedWallet) {
           return state;
         }
-        const wallet = state.wallets[state.selectedWallet];
+        let wallet = state.wallets[state.selectedWallet];
+        if (!wallet) {
+          // Create a wallet container
+          state.wallets[state.selectedWallet] = {
+            pubkey: state.selectedWallet,
+            accounts: {
+              [update.address]: update
+            },
+            selectedMarginAccount: null,
+            lookupTables: {}
+          };
+          wallet = state.wallets[state.selectedWallet];
+        }
         const account = wallet.accounts[update.address];
         return {
           ...state,
