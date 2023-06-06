@@ -551,7 +551,7 @@ export class MarginAccount {
 
     let borrow = TokenAmount.tokens(
       this.valuation.availableSetupCollateral /
-        (1 - depositNoteValueModifier + 1 / (loanNoteValueModifier * MarginAccount.SETUP_LEVERAGE_FRACTION)),
+      (1 - depositNoteValueModifier + 1 / (loanNoteValueModifier * MarginAccount.SETUP_LEVERAGE_FRACTION)),
       decimals
     )
     borrow = TokenAmount.min(borrow, effectiveVaultForBorrow)
@@ -587,7 +587,7 @@ export class MarginAccount {
     if (equity >= 0) {
       leverage = assets / equity
     } else {
-      leverage = Infinity
+      leverage = 999.9 // This is better than infinity
     }
 
     const availableCollateral = this.valuation.availableCollateral

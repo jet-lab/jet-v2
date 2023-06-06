@@ -83,6 +83,4 @@ interface SwapLiquidity {
   price_range: [min: number, max: number];
 }
 
-interface FixedTermAccountingShim {
-  asset_value: number;
-}
+type FixedTermAccountingShim = Record<string, number>;
