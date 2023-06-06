@@ -27,15 +27,16 @@ export function SnapshotBody(): JSX.Element {
   const { Title, Text } = Typography;
 
   const { cluster } = useJetStore(state => state.settings);
+  const prices = useJetStore(state => state.prices);
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-        ? process.env.REACT_APP_DEV_DATA_API
-        : cluster === 'localnet'
-        ? process.env.REACT_APP_LOCAL_DATA_API
-        : '',
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === 'localnet'
+            ? process.env.REACT_APP_LOCAL_DATA_API
+            : '',
     [cluster]
   );
 
@@ -53,6 +54,18 @@ export function SnapshotBody(): JSX.Element {
       .catch(err => err);
   }, []);
 
+  function fixedTermAssetValue(): number {
+    let assetValueShim: number = 0;
+    // Iterate through values and convert to USD
+    if (shim.data && prices) {
+      for (const record in shim.data) {
+        const price = prices[record];
+        assetValueShim += shim.data[record] * price.price;
+      }
+    }
+    return assetValueShim
+  }
+
   // Renders the account balance
   function renderAccountBalance() {
     // The account balance (deposits - liabilities)
@@ -63,14 +76,7 @@ export function SnapshotBody(): JSX.Element {
       accountBalance = depositedValue - borrowedValue;
     }
 
-    let assetValueShim: number;
-    if (shim.data) {
-      assetValueShim = shim.data.asset_value
-    } else {
-      assetValueShim = 0
-    }
-
-    let render = <Title>{currencyFormatter(accountBalance + assetValueShim, true, 0)}</Title>;
+    let render = <Title>{currencyFormatter(accountBalance + fixedTermAssetValue(), true, 0)}</Title>;
     if (initialAccountsLoad) {
       render = <Skeleton className="align-center" paragraph={false} active />;
     }
@@ -120,14 +126,7 @@ export function SnapshotBody(): JSX.Element {
       accountAssets = currentAccount.summary.depositedValue;
     }
 
-    let assetValueShim: number;
-    if (shim.data) {
-      assetValueShim = shim.data.asset_value
-    } else {
-      assetValueShim = 0
-    }
-
-    return accountAssets + assetValueShim;
+    return accountAssets + fixedTermAssetValue();
   }
 
   // Returns the account's liabilities (if there are any)

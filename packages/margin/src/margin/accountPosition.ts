@@ -35,8 +35,8 @@ export class AccountPosition {
     if (this.price) {
       return this.balance.toNumber() * 10 ** this.exponent * this.price.price
     } else {
-      return NaN
-    } 
+      return 0.0
+    }
   }
 
   /** The amount of tokens in the account */

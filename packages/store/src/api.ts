@@ -58,9 +58,7 @@ export const useFixedTermAccountingShim = (apiEndpoint: string, account?: string
       if (account) {
         return fetch(`${apiEndpoint}/${path}`).then(r => r.json());
       } else {
-        return {
-          asset_value: 0
-        } as FixedTermAccountingShim;
+        return {} as FixedTermAccountingShim;
       }
     },
     { refreshInterval: 30_000 }
