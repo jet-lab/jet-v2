@@ -265,12 +265,12 @@ pub async fn process_display_fixed_term_accounts(
             );
 
             for market in markets {
-                let mut ser = serde_json::Serializer::pretty(vec![]);
+                let mut ser = serde_json::Serializer::new(vec![]);
                 market.1.serialize(&mut ser)?;
                 let json: Value = serde_json::from_slice(ser.into_inner().as_slice())?;
 
                 println!("Market [{}]", market.0);
-                println!("{}", json.to_string());
+                println!("{:#}", json);
 
                 if display_events {
                     let buff = client.rpc().get_account_data(&market.1.event_queue).await?;
@@ -311,7 +311,6 @@ pub async fn process_display_fixed_term_accounts(
                         .1
                         .debt()
                         .active_loans()
-                        .into_iter()
                         .map(|n| term_loan(&user.1.market, &user.0, n))
                         .collect::<Vec<_>>();
                     let loans = client
@@ -339,7 +338,6 @@ pub async fn process_display_fixed_term_accounts(
                         .1
                         .assets()
                         .active_deposits()
-                        .into_iter()
                         .map(|n| term_deposit(&user.1.market, &user.1.margin_account, n))
                         .collect::<Vec<_>>();
                     let deposits = client
