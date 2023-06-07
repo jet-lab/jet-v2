@@ -48,7 +48,10 @@ interface MARGIN_ACCOUNT_UPDATE {
 
 interface MARGIN_ACCOUNT_LIST {
   type: 'MARGIN-ACCOUNT-LIST';
-  payload: MarginAccountData[]
+  payload: {
+    owner: string;
+    accounts: MarginAccountData[];
+  }
 }
 
 interface MarginAccountData {

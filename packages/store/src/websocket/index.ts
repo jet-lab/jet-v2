@@ -67,7 +67,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         useJetStore.getState().updateMarginAccount(data.payload);
       } else if (data.type === 'MARGIN-ACCOUNT-LIST') {
         const map = {};
-        for (const el of data.payload) {
+        for (const el of data.payload.accounts) {
           map[el.address] = el;
         }
         useJetStore.getState().initAllMarginAccounts(map);
