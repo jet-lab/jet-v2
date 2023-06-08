@@ -128,16 +128,15 @@ export function useAccountsSyncer() {
 
       // Load accounts, only use ones that exist
       setAccountsLoading(true);
-      const accountData = Object.values(marginAccounts)
-      console.log('accounts and prices', JSON.stringify(accountData, null, 2), !!prices)
-      const accounts = await MarginAccount.loadAllByOwnerFromCache({
+      const accounts = await MarginAccount.loadAllByOwner({
         programs,
         provider,
         pools: pools.tokenPools,
         walletTokens,
         owner,
         prices,
-        accountData
+        doRefresh: true,
+        doFilterAirspace: true
       });
 
       // Set up accountNames and set up histories
