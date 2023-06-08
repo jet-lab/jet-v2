@@ -11,8 +11,7 @@ import { Info } from '../Info';
 import { RiskMeter } from '../RiskMeter';
 import axios from 'axios';
 import { USDConversionRates } from '@state/settings/settings';
-import { useEffect, useMemo } from 'react';
-import { useFixedTermAccountingShim, useJetStore } from '@jet-lab/store';
+import { useEffect } from 'react';
 
 // Body of the Account Snapshot, where users can see data for the currently selected margin account
 export function SnapshotBody(): JSX.Element {
@@ -26,21 +25,6 @@ export function SnapshotBody(): JSX.Element {
   const riskStyle = useRiskStyle();
   const { Title, Text } = Typography;
 
-  const { cluster } = useJetStore(state => state.settings);
-  const prices = useJetStore(state => state.prices);
-  const apiEndpoint = useMemo(
-    () =>
-      cluster === 'mainnet-beta'
-        ? process.env.REACT_APP_DATA_API
-        : cluster === 'devnet'
-          ? process.env.REACT_APP_DEV_DATA_API
-          : cluster === 'localnet'
-            ? process.env.REACT_APP_LOCAL_DATA_API
-            : '',
-    [cluster]
-  );
-
-  const shim = useFixedTermAccountingShim(String(apiEndpoint), currentAccount?.address.toBase58());
 
   useEffect(() => {
     axios
@@ -54,18 +38,6 @@ export function SnapshotBody(): JSX.Element {
       .catch(err => err);
   }, []);
 
-  function fixedTermAssetValue(): number {
-    let assetValueShim: number = 0;
-    // Iterate through values and convert to USD
-    if (shim.data && prices) {
-      for (const record in shim.data) {
-        const price = prices[record];
-        assetValueShim += shim.data[record] * price.price;
-      }
-    }
-    return assetValueShim
-  }
-
   // Renders the account balance
   function renderAccountBalance() {
     // The account balance (deposits - liabilities)
@@ -76,7 +48,7 @@ export function SnapshotBody(): JSX.Element {
       accountBalance = depositedValue - borrowedValue;
     }
 
-    let render = <Title>{currencyFormatter(accountBalance + fixedTermAssetValue(), true, 0)}</Title>;
+    let render = <Title>{currencyFormatter(accountBalance, true, 0)}</Title>;
     if (initialAccountsLoad) {
       render = <Skeleton className="align-center" paragraph={false} active />;
     }
@@ -126,7 +98,7 @@ export function SnapshotBody(): JSX.Element {
       accountAssets = currentAccount.summary.depositedValue;
     }
 
-    return accountAssets + fixedTermAssetValue();
+    return accountAssets;
   }
 
   // Returns the account's liabilities (if there are any)

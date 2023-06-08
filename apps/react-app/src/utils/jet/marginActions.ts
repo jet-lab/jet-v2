@@ -23,6 +23,12 @@ export enum ActionResponse {
 }
 export function useMarginActions() {
   const selectMarginAccount = useJetStore().selectMarginAccount;
+  const { fixedTermOpenOrders, fixedTermOpenPositions } = useJetStore(state => {
+    return {
+      fixedTermOpenOrders: state.openOrders,
+      fixedTermOpenPositions: state.openPositions
+    }
+  });
   const config = useRecoilValue(MainConfig);
   const [cluster, prices] = useJetStore(state => [state.settings.cluster, state.prices]);
   const dictionary = useRecoilValue(Dictionary);
@@ -119,6 +125,8 @@ export function useMarginActions() {
         provider,
         wallet.publicKey,
         seed,
+        fixedTermOpenOrders,
+        fixedTermOpenPositions,
         airspaceAddress, // airspace
         pools.tokenPools,
         walletTokens,

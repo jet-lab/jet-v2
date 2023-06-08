@@ -71,6 +71,10 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
           map[el.address] = el;
         }
         useJetStore.getState().initAllMarginAccounts(map);
+      } else if (data.type === 'OPEN-ORDER-UPDATE') {
+        useJetStore.getState().updateOpenOrders(data.payload);
+      } else if (data.type === 'FIXED-TERM-POSITION-UPDATE') {
+        useJetStore.getState().updateOpenPositions(data.payload);
       }
     };
 

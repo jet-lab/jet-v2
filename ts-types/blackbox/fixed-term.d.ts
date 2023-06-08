@@ -1,6 +1,7 @@
 interface OpenOrders {
   market: string;
   authority: string;
+  underlying_mint: string;
   open_orders: OpenOrder[];
   unfilled_borrow: number;
   unfilled_lend: number;
@@ -22,6 +23,7 @@ interface OpenOrder {
 interface OpenPositions {
   market: string;
   authority: string;
+  underlying_mint: string;
   loans: Loan[];
   deposits: Deposit[];
   total_borrowed: number;
