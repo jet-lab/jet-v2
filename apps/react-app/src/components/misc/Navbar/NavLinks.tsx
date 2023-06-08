@@ -20,7 +20,7 @@ export function NavLinks(): JSX.Element {
   const cluster = useJetStore(state => state.settings.cluster);
   const navLinks: Link[] = [
     { title: dictionary.poolsView.title, route: '/', disabled: false, hidden: false },
-    { title: dictionary.swapsView.title, route: '/swaps', disabled: false, hidden: false },
+    { title: dictionary.swapsView.title, route: '/swaps', disabled: false, hidden: cluster !== 'localnet' },
     { title: dictionary.accountsView.title, route: '/accounts', disabled: false, hidden: false },
     { title: 'Fixed Lend', route: '/fixed-lend', disabled: false, hidden: cluster === 'mainnet-beta' },
     { title: 'Fixed Borrow', route: '/fixed-borrow', disabled: false, hidden: cluster === 'mainnet-beta' }
