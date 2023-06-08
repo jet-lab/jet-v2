@@ -92,6 +92,12 @@ export const AccountHistoryLoaded = atom({
 // A syncer to be called so that we can have dependent atom state
 export function useAccountsSyncer() {
   const [cluster, prices, marginAccounts, selectMarginAccount] = useJetStore(state => [state.settings.cluster, state.prices, state.marginAccounts, state.selectMarginAccount]);
+  const { fixedTermOpenOrders, fixedTermOpenPositions } = useJetStore(state => {
+    return {
+      fixedTermOpenOrders: state.openOrders,
+      fixedTermOpenPositions: state.openPositions
+    }
+  });
   const marginConfig = useRecoilValue(MainConfig);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
@@ -135,6 +141,8 @@ export function useAccountsSyncer() {
         walletTokens,
         owner,
         prices,
+        fixedTermOpenOrders,
+        fixedTermOpenPositions,
         doRefresh: true,
         doFilterAirspace: true
       });
