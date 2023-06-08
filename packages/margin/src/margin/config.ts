@@ -3,8 +3,10 @@ import axios from "axios"
 import { SPLSwapPool } from "./pool"
 
 export const MARGIN_CONFIG_URL_BASE = "https://storage.googleapis.com/jet-app-config/"
-export const MARGIN_CONFIG_MAINNET_URL = MARGIN_CONFIG_URL_BASE + "mainnet.legacy.json"
-export const MARGIN_CONFIG_DEVNET_URL = MARGIN_CONFIG_URL_BASE + "devnet.legacy.json"
+export const MARGIN_CONFIG_MAINNET_URL = MARGIN_CONFIG_URL_BASE + "mainnet.json"
+export const MARGIN_CONFIG_DEVNET_URL = MARGIN_CONFIG_URL_BASE + "devnet.json"
+export const MARGIN_CONFIG_LEGACY_MAINNET_URL = MARGIN_CONFIG_URL_BASE + "mainnet.legacy.json"
+export const MARGIN_CONFIG_LEGACY_DEVNET_URL = MARGIN_CONFIG_URL_BASE + "devnet.legacy.json"
 
 export type MarginCluster = "localnet" | "devnet" | "mainnet-beta" | MarginConfig
 
@@ -32,6 +34,7 @@ export interface AirspaceConfig {
   name: string
   tokens: string[]
   fixedTermMarkets: Record<string, FixedTermMarketConfig>
+  lookupRegistryAuthority: string
 }
 
 export interface FixedTermMarketConfig {
@@ -88,12 +91,18 @@ export interface MarginMarketConfig {
   feeRateBps: number
 }
 
-export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
+export async function getLatestLegacyConfig(cluster: string): Promise<MarginConfig> {
   let response =
-    cluster == "devnet" ? await axios.get(MARGIN_CONFIG_DEVNET_URL) : await axios.get(MARGIN_CONFIG_MAINNET_URL)
+    cluster == "devnet" ? await axios.get(MARGIN_CONFIG_LEGACY_DEVNET_URL) : await axios.get(MARGIN_CONFIG_LEGACY_MAINNET_URL)
   if (response.data[cluster]) {
     return response.data[cluster]
   } else {
     return response.data
   }
+}
+
+export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
+  let response =
+    cluster == "devnet" ? await axios.get(MARGIN_CONFIG_DEVNET_URL) : await axios.get(MARGIN_CONFIG_MAINNET_URL)
+  return response.data
 }

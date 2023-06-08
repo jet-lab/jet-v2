@@ -29,14 +29,19 @@ export function useMainConfigSyncer() {
       getLocalnetConfig().then(async config => {
         setMainConfig(config);
         // This is temporary until we use the new config format
-        let airspaces = (await axios.get('/localnet.config.json')).data.airspaces;
-        return getAuthorityLookupTables(airspaces[0].lookupRegistryAuthority)
-      }).then(addresses => {
+        const airspaces = (await axios.get('/localnet.config.json')).data.airspaces;
+        const addresses = await getAuthorityLookupTables(airspaces[0].lookupRegistryAuthority)
         updateAirspaceLookupTables(addresses);
       });
     } else {
-      MarginClient.getConfig(cluster).then(config => setMainConfig(config));
-      // TODO: update authority here too
+      const configs = Promise.all([MarginClient.getConfig(cluster), MarginClient.getLegacyConfig(cluster)]);
+      configs.then(async ([config, legacyConfig]) => {
+        // Merge airspaces info from new to legacy format
+        legacyConfig.airspaces = config.airspaces;
+        setMainConfig(legacyConfig);
+        const addresses = await getAuthorityLookupTables(legacyConfig.airspaces[0].lookupRegistryAuthority);
+        updateAirspaceLookupTables(addresses);
+      })
     }
   }, [cluster, setMainConfig]);
 }
