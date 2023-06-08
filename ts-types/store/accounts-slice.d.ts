@@ -4,37 +4,8 @@
 //   amount: number;
 // }
 
-interface MarginAccountData {
-  address: string;
-  owner: string;
-  liquidator: string;
-  positions: MarginPosition[];
-}
-
-interface MarginPosition {
-  adapter: string;
-  address: string;
-  balance: number;
-  balanceTimestamp: number;
-  exponent: number;
-  kind: 'Collateral' | 'AdapterCollateral' | 'Claim';
-  maxStaleness: number;
-  price: {
-    exponent: number;
-    isValid: number;
-    timestamp: number;
-    value: number;
-  };
-  token: string;
-  value: string; // Number192 formatted as decimal string
-  valueModifier: number;
-}
-
 interface Wallet {
   pubkey: string;
-  accounts: Record<string, MarginAccountData>;
-  selectedMarginAccount: string | null;
-  lookupTables: Record<string, string[]>;
   // tokens: Record<string, WalletToken>;
 }
 
@@ -49,10 +20,16 @@ interface AccountsSlice {
   selectedWallet: string | null;
   connectWallet: (wallet: string) => void;
   disconnectWallet: () => void;
-  // The lookup addresses of the airspace. Only storing here as we don't yet have an airspace slice
-  airspaceLookupTables: LookupTable[];
-  updateLookupTables: (tables: LookupTable[]) => void;
+  // Margin accounts
+  marginAccounts: Record<string, MarginAccountData>;
+  selectedMarginAccount: string | null;
   updateMarginAccount: (update: MarginAccountData) => void;
   initAllMarginAccounts: (update: Record<string, MarginAccountData>) => void;
   selectMarginAccount: (address: string) => void;
+  // The lookup addresses of margin accounts.
+  marginAccountLookupTables: Record<string, LookupTable[]>;
+  updateMarginAccountLookupTables: (address: string, tables: LookupTable[]) => void;
+  // The lookup addresses of the airspace. Only storing here as we don't yet have an airspace slice
+  airspaceLookupTables: LookupTable[];
+  updateAirspaceLookupTables: (tables: LookupTable[]) => void;
 }

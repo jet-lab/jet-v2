@@ -249,7 +249,7 @@ async fn replace_openbook_orders(
     program: &Pubkey,
 ) -> Result<()> {
     for ((token_a, token_b), market) in markets {
-        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(1_200_000)];
+        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(800_000)];
 
         let scratch_a = get_scratch_address(&signer.pubkey(), token_a);
         let scratch_b = get_scratch_address(&signer.pubkey(), token_b);
@@ -296,7 +296,10 @@ async fn replace_openbook_orders(
         );
 
         let balance_tx = Transaction::new_signed_with_payer(
-            &[balance_ix],
+            &[
+                ComputeBudgetInstruction::set_compute_unit_limit(800_000),
+                balance_ix,
+            ],
             Some(&signer.pubkey()),
             &[signer],
             target.get_latest_blockhash().await?,

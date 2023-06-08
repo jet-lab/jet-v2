@@ -15,10 +15,9 @@ import {
 } from "@solana/web3.js"
 import { feesBuffer, Pool, PoolAction } from "./pool/pool"
 import {
-  AccountPositionList,
   AccountPositionListLayout,
   LiquidationData,
-  MarginAccountData,
+  OnChainMarginAccountData,
   PositionKind
 } from "./state"
 import { MarginTokenConfig } from "./config"
@@ -113,12 +112,10 @@ export class MarginAccount {
 
   /** The raw accounts associated with the margin account. */
   info?: {
-    /** The decoded [[MarginAccountData]]. */
-    marginAccount: MarginAccountData
     /** The decoded [[LiquidationData]]. This may only be present during liquidation. */
     liquidationData?: LiquidationData
     /** The decoded position data in the margin account. */
-    positions: AccountPositionList
+    positions: AccountPosition[]
   }
 
   /** The address of the [[MarginAccount]] */
@@ -127,6 +124,9 @@ export class MarginAccount {
   owner: PublicKey
   /** The address of the airspace this account is part of */
   airspace: PublicKey
+
+  /** The address of the current liquidator. Default if nonw */
+  liquidator: PublicKey
   /** The parsed [[AccountPosition]] array of the margin account. */
   positions: AccountPosition[]
   /** The summarized [[PoolPosition]] array of pool deposits and borrows. */
@@ -136,15 +136,12 @@ export class MarginAccount {
   summary: AccountSummary
   prices?: Record<string, StorePriceInfo>
 
-  get liquidator() {
-    return this.info?.marginAccount.liquidator
-  }
   /**
    * Returns true if a liquidator address is associated with the [[MarginAccount]].
    * Certain actions are not allowed while liquidation is in progress.
    */
   get isBeingLiquidated() {
-    return this.info && !this.info.marginAccount.liquidator.equals(PublicKey.default)
+    return !this.liquidator.equals(PublicKey.default)
   }
 
   /** A qualitative measure of the the health of a margin account.
@@ -203,6 +200,7 @@ export class MarginAccount {
     this.airspace = airspaceAddress
       ? translateAddress(airspaceAddress)
       : Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name)
+    this.liquidator = PublicKey.default
     this.pools = pools
     this.walletTokens = walletTokens
     this.prices = prices
@@ -397,7 +395,7 @@ export class MarginAccount {
     filters ??= []
     filters.push(ownerFilter)
     if (doFilterAirspace) filters.push(airspaceFilter)
-    const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
+    const infos: ProgramAccount<OnChainMarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
     const marginAccounts: MarginAccount[] = []
     for (let i = 0; i < infos.length; i++) {
       if (infos[i]) {
@@ -422,6 +420,92 @@ export class MarginAccount {
     return marginAccounts
   }
 
+  /**
+   * Load all margin accounts for a wallet from a data cache.
+   *
+   * @static
+   * @param {({
+  *     programs: MarginPrograms
+  *     provider: AnchorProvider
+  *     pools?: Record<string, Pool>
+  *     walletTokens?: MarginWalletTokens
+  *     filters?: GetProgramAccountsFilter[] | Buffer
+  *   })} {
+  *     programs,
+  *     provider,
+  *     pools,
+  *     walletTokens,
+  *     filters
+  *   }
+  * @return {Promise<MarginAccount[]>}
+  * @memberof MarginAccount
+  */
+  static async loadAllByOwnerFromCache({
+    programs,
+    provider,
+    pools,
+    walletTokens,
+    owner,
+    prices,
+    accountData,
+    doFilterAirspace = true
+  }: {
+    programs: MarginPrograms
+    provider: AnchorProvider
+    pools?: Record<string, Pool>
+    walletTokens?: MarginWalletTokens
+    owner: Address
+    prices?: Record<string, StorePriceInfo>
+    accountData: MarginAccountData[]
+    doFilterAirspace?: boolean
+  }): Promise<MarginAccount[]> {
+
+    const marginAccounts: MarginAccount[] = []
+    const airspace = Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name).toBase58()
+    accountData.filter(data => {
+      if (doFilterAirspace) {
+        return data.airspace === airspace && data.owner === owner.toString()
+      } else {
+        return data.owner === owner.toString()
+      }
+    }).forEach(account => {
+      const marginAccount = new MarginAccount(
+        programs,
+        provider,
+        account.owner,
+        account.seed,
+        account.airspace,
+        pools,
+        walletTokens,
+        prices
+      )
+      marginAccount.liquidator = new PublicKey(account.liquidator)
+      marginAccount.setPositions(account)
+      marginAccount.recalculate()
+      marginAccounts.push(marginAccount)
+    })
+    return marginAccounts
+  }
+
+  setPositions(data: MarginAccountData) {
+    this.info = this.info ?? {
+      positions: data.positions.map(data => {
+        const price = this.getPositionPrice(new PublicKey(data.token))
+        return AccountPosition.fromCache({
+          data, price
+        })
+      })
+    }
+  }
+
+  /** Recalculate margin account information using the cache as far as possible */
+  async recalculate() {
+    this.positions = this.getPositions()
+    this.valuation = this.getValuation()
+    this.poolPositions = this.getAllPoolPositions()
+    this.summary = this.getSummary()
+  }
+
   async refresh() {
     const marginAccount = await this.programs.margin.account.marginAccount.fetchNullable(this.address)
     const positions = marginAccount ? AccountPositionListLayout.decode(new Uint8Array(marginAccount.positions)) : null
@@ -429,6 +513,7 @@ export class MarginAccount {
       this.info = undefined
     } else {
       // Account is being liquidated
+      this.liquidator = marginAccount.liquidator
       let liquidationData: LiquidationData | undefined = undefined
       if (!marginAccount.liquidator.equals(PublicKey.default)) {
         liquidationData =
@@ -436,9 +521,11 @@ export class MarginAccount {
             ?.state ?? undefined
       }
       this.info = {
-        marginAccount,
         liquidationData,
-        positions
+        positions: !positions ? [] : positions.positions.map(info => {
+          const price = this.getPositionPrice(new PublicKey(info.token))
+          return new AccountPosition({ info, price })
+        })
       }
     }
     this.positions = this.getPositions()
@@ -608,12 +695,8 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   getPositions(): AccountPosition[] {
-    return (this.info?.positions.positions ?? [])
+    return (this.info?.positions ?? [])
       .filter(position => !position.address.equals(PublicKey.default))
-      .map(info => {
-        const price = this.getPositionPrice(info.token)
-        return new AccountPosition({ info, price })
-      })
   }
   /**
    * Get the registerd [[AccountPosition]] associated with the position mint.

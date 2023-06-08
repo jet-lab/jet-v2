@@ -39,6 +39,51 @@ interface MARGIN_POOL_UPDATE {
 
 // *** END MARGIN POOL UPDATE EVENT ***
 
+// *** MARGIN ACCOUNT UPDATE EVENT ***
+
+interface MARGIN_ACCOUNT_UPDATE {
+  type: 'MARGIN-ACCOUNT-UPDATE';
+  payload: MarginAccountData
+}
+
+interface MARGIN_ACCOUNT_LIST {
+  type: 'MARGIN-ACCOUNT-LIST';
+  payload: {
+    owner: string;
+    accounts: MarginAccountData[];
+  }
+}
+
+interface MarginAccountData {
+  owner: string;
+  seed: number;
+  address: string;
+  airspace: string;
+  liquidator: string;
+  positions: AccountPositionData[]
+}
+
+interface AccountPositionData {
+  address: string;
+  token: string;
+  adapter: string;
+  value: string;
+  balance: number;
+  balanceTimestamp: number;
+  price: {
+    value: number;
+    timestamp: number;
+    exponent: number;
+    isValid: number;
+  }
+  kind: 'Collateral' | 'AdapterCollateral' | 'Claim';
+  exponent: number;
+  valueModifier: number;
+  maxStaleness: number;
+}
+
+// *** END MARGIN ACCOUNT UPDATE EVENT ***
+
 // *** SUBSCRIBE EVENT ***
 interface SUBSCRIBE {
   type: 'SUBSCRIBE';
@@ -51,4 +96,4 @@ interface SUBSCRIBE {
 
 type APPLICATION_WS_EVENTS = SUBSCRIBE;
 
-type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE;
+type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE | MARGIN_ACCOUNT_UPDATE | MARGIN_ACCOUNT_LIST;
