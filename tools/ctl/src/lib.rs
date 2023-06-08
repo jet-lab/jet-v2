@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use actions::{fixed_term::MarketParameters, margin_pool::ConfigurePoolCliOptions};
+use actions::{
+    fixed_term::{FixedTermDisplayCmd, MarketParameters},
+    margin_pool::ConfigurePoolCliOptions,
+};
 use anchor_lang::prelude::Pubkey;
 use anyhow::{bail, Result};
 use clap::{AppSettings, Parser, Subcommand};
@@ -253,6 +256,10 @@ pub enum FixedTermCommand {
 
     /// Recover unintialized account rent
     RecoverUninitialized { recipient: Pubkey },
+
+    /// Fetch, deserialize and display FixedTerm related accounts
+    #[clap(subcommand)]
+    Display(FixedTermDisplayCmd),
 }
 
 #[serde_as]
@@ -522,6 +529,12 @@ async fn run_fixed_command(client: &Client, command: FixedTermCommand) -> Result
 
         FixedTermCommand::RecoverUninitialized { recipient } => {
             actions::fixed_term::process_recover_uninitialized(client, recipient).await
+        }
+
+        FixedTermCommand::Display(cmd) => {
+            actions::fixed_term::process_display_fixed_term_accounts(client, cmd).await?;
+
+            Ok(Plan::default())
         }
     }
 }

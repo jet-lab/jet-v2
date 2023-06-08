@@ -1,13 +1,28 @@
+use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use clap::Parser;
+use clap::{Parser, Subcommand};
+use jet_fixed_term::{
+    control::state::Market as FixedTermMarket,
+    margin::state::{MarginUser, TermLoan},
+    tickets::state::TermDeposit,
+};
 use jet_margin_sdk::fixed_term::{
-    ix::recover_uninitialized, FixedTermIxBuilder, InitializeMarketParams, OrderbookAddresses,
+    derive::{term_deposit, term_loan},
+    ix::recover_uninitialized,
+    FixedTermIxBuilder, InitializeMarketParams, OrderbookAddresses, OwnedEventQueue,
     FIXED_TERM_PROGRAM,
 };
 use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use serde_with::serde_as;
+use solana_account_decoder::UiAccountEncoding;
 use solana_clap_utils::keypair::signer_from_path;
-use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use solana_client::{
+    rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
+    rpc_filter::RpcFilterType,
+};
+use solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signer::Signer};
 
 use crate::{
     client::{Client, NetworkKind, Plan},
@@ -50,6 +65,41 @@ pub struct MarketParameters {
 
     #[clap(long)]
     pub asks: String,
+}
+
+#[serde_as]
+#[derive(Debug, Subcommand, Deserialize)]
+#[serde(tag = "fixed-term-display")]
+pub enum FixedTermDisplayCmd {
+    /// Display Fixed Term markets
+    Markets {
+        /// optional, fetch a specific market by key
+        #[clap(long)]
+        pubkey: Option<Pubkey>,
+
+        /// also deserialize and display events waiting in the event queue
+        #[clap(long)]
+        display_events: bool,
+    },
+
+    /// Display Fixed Term Margin Users
+    Users {
+        /// optional, fetch a specific MarginUser by pubkey
+        #[clap(long)]
+        pubkey: Option<Pubkey>,
+
+        /// optional, only fetch users from a particular market
+        #[clap(long)]
+        market: Option<Pubkey>,
+
+        /// display term loans assosciated with user
+        #[clap(long)]
+        loans: bool,
+
+        /// display term deposits assosciated with user
+        #[clap(long)]
+        deposits: bool,
+    },
 }
 
 fn map_seed(seed: Vec<u8>) -> [u8; 32] {
@@ -190,4 +240,158 @@ pub async fn process_create_fixed_term_market<'a>(
         .plan()?
         .instructions(signers, steps, instructions)
         .build())
+}
+
+pub async fn process_display_fixed_term_accounts(
+    client: &Client,
+    cmd: FixedTermDisplayCmd,
+) -> Result<()> {
+    use FixedTermDisplayCmd::*;
+    match cmd {
+        Markets {
+            pubkey,
+            display_events,
+        } => {
+            let markets = if let Some(key) = pubkey {
+                let market: FixedTermMarket = client.read_anchor_account(&key).await?;
+                vec![(key, market)]
+            } else {
+                get_fixed_term_accounts(client).await?
+            };
+
+            println!(
+                "Displaying information for {} fixed term markets",
+                markets.len()
+            );
+
+            for market in markets {
+                let mut ser = serde_json::Serializer::new(vec![]);
+                market.1.serialize(&mut ser)?;
+                let json: Value = serde_json::from_slice(ser.into_inner().as_slice())?;
+
+                println!("Market [{}]", market.0);
+                println!("{:#}", json);
+
+                if display_events {
+                    let buff = client.rpc().get_account_data(&market.1.event_queue).await?;
+                    let mut eq = OwnedEventQueue::from(buff);
+                    println!("Pending events: ");
+                    for event in eq.inner()?.iter() {
+                        println!("{event:?}");
+                    }
+                }
+            }
+        }
+        Users {
+            pubkey,
+            market,
+            loans,
+            deposits,
+        } => {
+            let users = if let Some(key) = pubkey {
+                let user = client.read_anchor_account::<MarginUser>(&key).await?;
+                vec![(key, user)]
+            } else if let Some(key) = market {
+                get_fixed_term_accounts::<MarginUser>(client)
+                    .await?
+                    .into_iter()
+                    .filter(|(_, u)| u.market == key)
+                    .collect()
+            } else {
+                get_fixed_term_accounts(client).await?
+            };
+
+            println!("Displaying users: ");
+            for user in users {
+                println!("User: [{}]", user.0);
+                println!("{:?}", user.1);
+
+                if loans {
+                    let keys = user
+                        .1
+                        .debt()
+                        .active_loans()
+                        .map(|n| term_loan(&user.1.market, &user.0, n))
+                        .collect::<Vec<_>>();
+                    let loans = client
+                        .rpc()
+                        .get_multiple_accounts(keys.as_slice())
+                        .await?
+                        .into_iter()
+                        .zip(keys.into_iter())
+                        .filter_map(|(a, k)| {
+                            match TermLoan::try_deserialize(&mut a?.data.as_ref()) {
+                                Ok(loan) => Some((k, loan)),
+                                _ => None,
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    println!("Displaying loans for user [{}]", user.0);
+                    for loan in loans {
+                        println!("Loan: [{}]", loan.0);
+                        println!("{:#?}", loan.1);
+                    }
+                }
+
+                if deposits {
+                    let keys = user
+                        .1
+                        .assets()
+                        .active_deposits()
+                        .map(|n| term_deposit(&user.1.market, &user.1.margin_account, n))
+                        .collect::<Vec<_>>();
+                    let deposits = client
+                        .rpc()
+                        .get_multiple_accounts(keys.as_slice())
+                        .await?
+                        .into_iter()
+                        .zip(keys.into_iter())
+                        .filter_map(|(a, k)| {
+                            match TermDeposit::try_deserialize(&mut a?.data.as_ref()) {
+                                Ok(deposit) => Some((k, deposit)),
+                                _ => None,
+                            }
+                        })
+                        .collect::<Vec<_>>();
+
+                    println!("Displaying deposits for user [{}]", user.0);
+                    for deposit in deposits {
+                        println!("Deposit: [{}]", deposit.0);
+                        println!("{:#?}", deposit.1);
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn get_fixed_term_accounts<T: AccountDeserialize>(
+    client: &Client,
+) -> Result<Vec<(Pubkey, T)>> {
+    Ok(client
+        .rpc()
+        .get_program_accounts_with_config(
+            &jet_fixed_term::ID,
+            RpcProgramAccountsConfig {
+                filters: Some(vec![RpcFilterType::DataSize(
+                    std::mem::size_of::<T>() as u64 + 8,
+                )]),
+                account_config: RpcAccountInfoConfig {
+                    encoding: Some(UiAccountEncoding::Base64),
+                    data_slice: None,
+                    commitment: Some(CommitmentConfig::processed()),
+                    min_context_slot: None,
+                },
+                with_context: None,
+            },
+        )
+        .await?
+        .into_iter()
+        .filter_map(|(k, a)| match T::try_deserialize(&mut a.data.as_ref()) {
+            Ok(market) => Some((k, market)),
+            _ => None,
+        })
+        .collect())
 }
