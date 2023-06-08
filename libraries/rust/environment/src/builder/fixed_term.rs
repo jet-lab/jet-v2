@@ -25,8 +25,8 @@ use super::{
     margin::configure_margin_token, Builder, BuilderError, NetworkKind, SetupPhase, TokenContext,
 };
 
-const EVENT_QUEUE_CAPACITY: usize = 8192;
-const ORDERBOOK_CAPACITY: usize = 16384;
+const EVENT_QUEUE_CAPACITY: usize = 1024;
+const ORDERBOOK_CAPACITY: usize = 8192;
 
 pub async fn configure_market_for_token(
     builder: &mut Builder,
