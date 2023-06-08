@@ -31,7 +31,7 @@ use jet_margin_pool::{
     ChangeKind,
 };
 
-declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");
+declare_id!("JPMA1DMMkDK9vHLM22a6izMRWk5wvgPno774K7cG9zX");
 
 mod instructions;
 use instructions::*;

@@ -32,7 +32,7 @@ services:
   poller:
     image: gcr.io/kubernetes-608504/jet-data-v2-eventpoller:development
     environment:
-      - POLLER_PROGRAMS=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8,JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ,JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG,JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN,JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp,JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi,JPTermEg2DwrV39xb1Fs7z1VUxcvdPT7mE7cyGsQ4xt
+      - POLLER_PROGRAMS=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8,JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ,JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG,JPMA1DMMkDK9vHLM22a6izMRWk5wvgPno774K7cG9zX,JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp,JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi,JPTermEg2DwrV39xb1Fs7z1VUxcvdPT7mE7cyGsQ4xt
       - SOLANA_ENDPOINT=http://host.docker.internal:8899
       - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
     extra_hosts:
