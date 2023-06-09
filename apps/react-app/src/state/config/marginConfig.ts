@@ -35,11 +35,11 @@ export function useMainConfigSyncer() {
       });
     } else {
       const configs = Promise.all([MarginClient.getConfig(cluster), MarginClient.getLegacyConfig(cluster)]);
+      // Get the new config as it has airspace authority addresses
       configs.then(async ([config, legacyConfig]) => {
-        // Merge airspaces info from new to legacy format
-        legacyConfig.airspaces = config.airspaces;
         setMainConfig(legacyConfig);
-        const addresses = await getAuthorityLookupTables(legacyConfig.airspaces[0].lookupRegistryAuthority);
+        return getAuthorityLookupTables(config.airspaces[0].lookupRegistryAuthority);
+      }).then(addresses => {
         updateAirspaceLookupTables(addresses);
       })
     }
