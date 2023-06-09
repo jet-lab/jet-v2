@@ -656,7 +656,7 @@ export class MarginAccount {
 
     const token = pool.tokenMint.toBase58()
     const decimals = pool.decimals
-    const tokenPrice = this.prices![token].price
+    const tokenPrice = this.prices![token]?.price ?? 0.0
 
     // Max deposit
     const deposit = walletAmount
