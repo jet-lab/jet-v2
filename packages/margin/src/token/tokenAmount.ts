@@ -161,7 +161,8 @@ export class TokenAmount {
     }
 
     // Return BN value in lamports
-    return new BN(lamports)
+    // TODO: temporary fix until we are able to load all token configs
+    return new BN(lamports.replace('NaN', '0').replace('∞', '0'))
   }
 
   public add(b: TokenAmount): TokenAmount {
