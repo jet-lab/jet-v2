@@ -143,11 +143,22 @@ pub enum MarginCommand {
         liquidator: Pubkey,
     },
 
-    /// Update the metadata for existing positions
-    RefreshPositionMd {
-        /// The token that had its config updated
-        token: Pubkey,
+    /// Add refresher permissions
+    AddRefresher {
+        /// The liquidator's address
+        #[serde_as(as = "DisplayFromStr")]
+        account: Pubkey,
     },
+
+    /// Remove refresher permissions
+    RemoveRefresher {
+        /// The liquidator's address
+        #[serde_as(as = "DisplayFromStr")]
+        account: Pubkey,
+    },
+
+    /// Update the metadata for existing positions after an update to the global token config
+    RefreshPositionMd,
 
     /// Update all the balances for positions on an account
     UpdateBalances {
@@ -466,8 +477,15 @@ async fn run_margin_command(
         MarginCommand::RemoveLiquidator { liquidator } => {
             actions::margin::process_set_liquidator(client, airspace, liquidator, false).await
         }
-        MarginCommand::RefreshPositionMd { token } => {
-            actions::margin::process_refresh_metadata(client, airspace, token).await
+        MarginCommand::AddRefresher { account } => {
+            actions::margin::process_set_refresher_permission(client, airspace, account, true).await
+        }
+        MarginCommand::RemoveRefresher { account } => {
+            actions::margin::process_set_refresher_permission(client, airspace, account, false)
+                .await
+        }
+        MarginCommand::RefreshPositionMd => {
+            actions::margin::process_refresh_metadata(client, airspace).await
         }
         MarginCommand::UpdateBalances { account } => {
             actions::margin::process_update_balances(client, account).await
