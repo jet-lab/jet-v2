@@ -39,13 +39,14 @@ pub struct RefreshPositionConfig<'info> {
 
 /// Refresh the metadata for a position
 pub fn refresh_position_config_handler(ctx: Context<RefreshPositionConfig>) -> Result<()> {
+    let mut account = ctx.accounts.margin_account.load_mut()?;
+
     ctx.accounts.permit.validate(
-        Pubkey::default(), // FIXME: airspace must come from the margin account once they are airspace-scoped
+        account.airspace,
         ctx.accounts.refresher.key(),
         Permissions::REFRESH_POSITION_CONFIG,
     )?;
     let config = &ctx.accounts.config;
-    let mut account = ctx.accounts.margin_account.load_mut()?;
 
     account.refresh_position_metadata(
         &config.mint,
