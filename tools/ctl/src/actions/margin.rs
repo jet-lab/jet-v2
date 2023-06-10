@@ -263,7 +263,7 @@ pub async fn process_update_balances(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Default::default(), // FIXME: read airspace from margin account
+        account.airspace,
         account.owner,
         u16::from_le_bytes(account.user_seed),
     )
@@ -295,7 +295,7 @@ pub async fn process_transfer_position(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Default::default(), // FIXME: read airspace from margin account
+        source.airspace,
         source.owner,
         u16::from_le_bytes(source.user_seed),
     )
