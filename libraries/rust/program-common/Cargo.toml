@@ -15,6 +15,7 @@ debug-msg = []
 [dependencies]
 uint = "0.9"
 thiserror = "1.0.20"
+bitflags = { version = "2", features = ["bytemuck"] }
 bytemuck = { version = "1.7", features = ["derive"] }
 static_assertions = "1.1.0"
 borsh = "0.9.1"

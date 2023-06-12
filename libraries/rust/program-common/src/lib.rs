@@ -11,6 +11,7 @@ pub mod pod;
 pub mod programs;
 pub mod serialization;
 pub mod traits;
+pub mod map;
 
 #[doc(inline)]
 pub use functions::*;
