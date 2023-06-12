@@ -100,6 +100,20 @@ pub enum FixedTermDisplayCmd {
         #[clap(long)]
         deposits: bool,
     },
+
+    Accounts {
+        /// filter by market
+        #[clap(long)]
+        market: Option<Pubkey>,
+
+        /// display all term deposits
+        #[clap(long)]
+        deposits: bool,
+
+        /// display all term loans
+        #[clap(long)]
+        loans: bool,
+    },
 }
 
 fn map_seed(seed: Vec<u8>) -> [u8; 32] {
@@ -304,7 +318,7 @@ pub async fn process_display_fixed_term_accounts(
             println!("Displaying users: ");
             for user in users {
                 println!("User: [{}]", user.0);
-                println!("{:?}", user.1);
+                println!("{}", user.1);
 
                 if loans {
                     let keys = user
@@ -359,6 +373,33 @@ pub async fn process_display_fixed_term_accounts(
                         println!("Deposit: [{}]", deposit.0);
                         println!("{:#?}", deposit.1);
                     }
+                }
+            }
+        }
+        Accounts {
+            market,
+            deposits,
+            loans,
+        } => {
+            if deposits {
+                let mut deposits = get_fixed_term_accounts::<TermDeposit>(client).await?;
+                if let Some(market) = market {
+                    deposits = deposits
+                        .into_iter()
+                        .filter(|d| d.1.market == market)
+                        .collect();
+                }
+                for deposit in deposits {
+                    println!("TermDeposit: [{}]\n{:#?}", deposit.0, deposit.1);
+                }
+            }
+            if loans {
+                let mut loans = get_fixed_term_accounts::<TermLoan>(client).await?;
+                if let Some(market) = market {
+                    loans = loans.into_iter().filter(|l| l.1.market == market).collect();
+                }
+                for loan in loans {
+                    println!("TermLoan: [{}]\n{:#?}", loan.0, loan.1);
                 }
             }
         }
