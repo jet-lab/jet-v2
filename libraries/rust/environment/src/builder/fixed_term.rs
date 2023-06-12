@@ -183,21 +183,21 @@ async fn configure_margin_for_market(
         },
     };
 
-    configure_margin_token(
-        builder,
-        &token.airspace,
-        &ticket_mint,
-        Some(TokenConfigUpdate {
-            underlying_mint: ticket_mint,
-            admin: TokenAdmin::Margin {
-                oracle: ticket_oracle.unwrap(),
-            },
-            token_kind: TokenKind::Collateral,
-            value_modifier: config.ticket_collateral_weight,
-            max_staleness: 0,
-        }),
-    )
-    .await?;
+    if let Some(oracle) = ticket_oracle {
+        configure_margin_token(
+            builder,
+            &token.airspace,
+            &ticket_mint,
+            Some(TokenConfigUpdate {
+                underlying_mint: ticket_mint,
+                admin: TokenAdmin::Margin { oracle },
+                token_kind: TokenKind::Collateral,
+                value_modifier: config.ticket_collateral_weight,
+                max_staleness: 0,
+            }),
+        )
+        .await?;
+    }
 
     // ticket collateral
     configure_margin_token(
