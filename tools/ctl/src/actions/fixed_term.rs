@@ -384,10 +384,7 @@ pub async fn process_display_fixed_term_accounts(
             if deposits {
                 let mut deposits = get_fixed_term_accounts::<TermDeposit>(client).await?;
                 if let Some(market) = market {
-                    deposits = deposits
-                        .into_iter()
-                        .filter(|d| d.1.market == market)
-                        .collect();
+                    deposits.retain(|d| d.1.market == market);
                 }
                 for deposit in deposits {
                     println!("TermDeposit: [{}]\n{:#?}", deposit.0, deposit.1);
@@ -396,7 +393,7 @@ pub async fn process_display_fixed_term_accounts(
             if loans {
                 let mut loans = get_fixed_term_accounts::<TermLoan>(client).await?;
                 if let Some(market) = market {
-                    loans = loans.into_iter().filter(|l| l.1.market == market).collect();
+                    loans.retain(|l| l.1.market == market);
                 }
                 for loan in loans {
                     println!("TermLoan: [{}]\n{:#?}", loan.0, loan.1);
