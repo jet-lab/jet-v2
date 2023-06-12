@@ -7,7 +7,10 @@ export let ws: WebSocket;
 export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
   console.log('Connecting WS: ', cluster, wallet);
   if (ws) {
-    ws.close();
+    // We use a private code to indicate the reason why the socket is being closed.
+    // If the socket is closed due to this code, we don't reconnect.
+    // See https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code#value for more info.
+    ws.close(4321);
   }
 
   if (cluster !== pendingTimeoutType) {
@@ -77,6 +80,18 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         useJetStore.getState().updateOpenPositions(data.payload);
       }
     };
+
+    ws.onclose = (e: CloseEvent) => {
+      // 1006 = Abnormal closure, the browser closes the connection during negotiation
+      // 4321 = Our custom code to signal that we don't want to recreate the ws 
+      if (e.code === 4321 || e.code === 1006) {
+        return;
+      }
+      connectionRetryTimeout = setTimeout(() => {
+        pendingTimeoutType = cluster;
+        initWebsocket(cluster, wallet);
+      }, 1000);
+    }
 
     ws.onerror = (_: Event) => {
       connectionRetryTimeout = setTimeout(() => {
