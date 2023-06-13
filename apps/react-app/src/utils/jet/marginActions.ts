@@ -178,6 +178,15 @@ export function useMarginActions() {
       const selected = newMarginAccount.address.toString();
       setCurrentAccountAddress(selected);
       selectMarginAccount(selected);
+      useJetStore().updateMarginAccount({
+        address: selected,
+        airspace: airspaceAddress,
+        liquidator: PublicKey.default.toBase58(),
+        owner: newMarginAccount.owner.toBase58(),
+        positions: [],
+        seed: newMarginAccount.seed,
+      });
+      useJetStore().selectMarginAccount(selected);
 
       await actionRefresh();
       return [undefined, ActionResponse.Success];
