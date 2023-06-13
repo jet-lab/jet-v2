@@ -90,7 +90,7 @@ export const useFixedTermSync = (): void => {
       Object.entries(airspace.fixedTermMarkets).map(async ([name, marketConfig]) => {
         try {
           const market = await FixedTermMarket.load(program, marketConfig.market, marginProgramId);
-          const token = config?.tokens[marketConfig.symbol];
+          const token = Object.values(config?.tokens || {}).find(token => token.symbol === marketConfig.symbol);
           if (token) {
             markets.push({ market, config: marketConfig, name, token });
           }
