@@ -116,7 +116,7 @@ export const offerLoan = async ({
     instructions: orderInstructions,
     adapterInstruction: loanOffer
   })
-  return sendAndConfirmV0(provider, [instructions.concat(orderInstructions)], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [instructions, orderInstructions], airspaceLookupTables, [])
 }
 
 interface ICreateBorrowOrder {
@@ -196,7 +196,7 @@ export const requestLoan = async ({
     instructions: orderInstructions,
     adapterInstruction: borrowOffer
   })
-  return sendAndConfirmV0(provider, [setupInstructions.concat(orderInstructions)], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
 }
 
 interface ICancelOrder {
@@ -221,6 +221,7 @@ export const cancelOrder = async ({
   airspaceLookupTables
 }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
+  let cancelInstructions: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions,
     pools,
@@ -236,16 +237,16 @@ export const cancelOrder = async ({
 
   const cancelLoan = await market.market.cancelOrderIx(marginAccount, orderId)
   await marginAccount.withAdapterInvoke({
-    instructions,
+    instructions: cancelInstructions,
     adapterInstruction: cancelLoan
   })
   await marginAccount.withPrioritisedPositionRefresh({
-    instructions,
+    instructions: cancelInstructions,
     pools,
     markets,
     marketAddress: market.market.address
   })
-  return sendAndConfirmV0(provider, [instructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [instructions, cancelInstructions], airspaceLookupTables, [])
 }
 
 // MARKET TAKER ORDERS
@@ -336,7 +337,7 @@ export const borrowNow = async ({
     instructions: orderInstructions,
     adapterInstruction: depositIx
   })
-  return sendAndConfirmV0(provider, [setupInstructions.concat(orderInstructions)], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
 }
 
 interface ILendNow {
@@ -408,7 +409,7 @@ export const lendNow = async ({
 
   await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
 
-  return sendAndConfirmV0(provider, [setupInstructions.concat(orderInstructions)], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
 }
 
 interface ISettle {
@@ -465,7 +466,7 @@ export const settle = async ({
     adapterInstruction: depositIx
   })
   await marginAccount.withUpdatePositionBalance({ instructions: settleInstructions, position })
-  return sendAndConfirmV0(provider, [refreshInstructions.concat(settleInstructions)], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [refreshInstructions, settleInstructions], airspaceLookupTables, [])
 }
 
 interface IRepay {
@@ -564,7 +565,7 @@ export const repay = async ({
     marketAddress: market.market.address
   })
   instructions = instructions.concat(refreshIxs)
-  return sendAndConfirmV0(provider, [refreshInstructions.concat(instructions)], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [refreshInstructions, instructions], airspaceLookupTables, [])
 }
 
 interface IRedeem {
