@@ -46,21 +46,17 @@ export function DisclaimerModal(): JSX.Element {
         <div className="modal-content flex-centered column">
           <img src="img/jet/jet_logo.png" width="100px" height="auto" alt="Jet Protocol" />
           <div className="disclaimer-modal-bullets flex align-start justify-center column">
-            <ul>
-              <li>{dictionary.modals.alerts.disclaimer.lendAndBorrow}</li>
-              <li>{dictionary.modals.alerts.disclaimer.tradeWithSize}</li>
-              <li>{dictionary.modals.alerts.disclaimer.swapFavoriteCoins}</li>
-              <li>{dictionary.modals.alerts.disclaimer.manageAllAssets}</li>
-            </ul>
+            <Text>{disclaimer}</Text>
+            <Text>
+              WARNING if you have liabilities on your margin account, the health can change as prices change. There is NO
+              warning system, so the only place you can see these fluctuations in your account health is in the app itself.{' '}
+            </Text>
           </div>
-          <Text>{disclaimer}</Text>
-          <Text>
-            WARNING if you have liabilities on your margin account, the health can change as prices change. There is NO
-            warning system, so the only place you can see these fluctuations in your account health is in the app itself.{' '}
-          </Text>
+          <br/>
           <Checkbox onChange={e => setDisclaimerChecked(e.target.checked)}>
             {dictionary.modals.alerts.disclaimer.acceptRisks}
           </Checkbox>
+          <br/>
           <Button
             block
             size="small"
@@ -68,6 +64,7 @@ export function DisclaimerModal(): JSX.Element {
             onClick={() => setDisclaimersAccepted({ ...disclaimersAccepted, [publicKey.toBase58()]: true })}>
             {dictionary.modals.alerts.disclaimer.agreeToEnter}
           </Button>
+          <br/>
         </div>
       </Modal>
     );
