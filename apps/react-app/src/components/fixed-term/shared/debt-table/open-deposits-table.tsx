@@ -15,6 +15,8 @@ import { ColumnsType } from 'antd/lib/table';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import { LoadingOutlined } from '@ant-design/icons';
+import { AutoRollChecks } from '../autoroll-checks';
+import { AutoRollModal } from '../autoroll-modal';
 
 const getDepositsColumns = (
   market: MarketAndConfig,
@@ -25,7 +27,9 @@ const getDepositsColumns = (
   pools: Record<string, Pool>,
   markets: FixedTermMarket[],
   setPendingPositions: Dispatch<SetStateAction<string[]>>,
-  pendingPositions: string[]
+  pendingPositions: string[],
+  setShowAutorollModal: Dispatch<SetStateAction<boolean>>,
+  showAutorollModal: boolean
 ): ColumnsType<Deposit> => [
   {
     title: 'Created',
@@ -69,24 +73,45 @@ const getDepositsColumns = (
       return pendingPositions.includes(position.address) ? (
         <LoadingOutlined />
       ) : (
-        <Switch
-          className="debt-table-switch"
-          checked={position.is_auto_roll}
-          onClick={() => {
-            togglePosition(
-              marginAccount,
-              market,
-              provider,
-              position,
-              pools,
-              markets,
-              cluster,
-              explorer,
-              pendingPositions,
-              setPendingPositions
-            );
-          }}
-        />
+        <AutoRollChecks market={market.market} marginAccount={marginAccount}>
+          {({ hasConfig, refresh, borrowRate, lendRate }) => (
+            <div className="auto-roll-controls">
+              <AutoRollModal
+                onClose={() => {
+                  setShowAutorollModal(false);
+                }}
+                open={showAutorollModal}
+                marketAndConfig={market}
+                marginAccount={marginAccount}
+                refresh={refresh}
+                borrowRate={borrowRate}
+                lendRate={lendRate}
+              />
+              <Switch
+                className="debt-table-switch"
+                checked={position.is_auto_roll}
+                onClick={() => {
+                  if (hasConfig) {
+                    togglePosition(
+                      marginAccount,
+                      market,
+                      provider,
+                      position,
+                      pools,
+                      markets,
+                      cluster,
+                      explorer,
+                      pendingPositions,
+                      setPendingPositions
+                    );
+                  } else {
+                    setShowAutorollModal(true);
+                  }
+                }}
+              />
+            </div>
+          )}
+        </AutoRollChecks>
       );
     },
     sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
@@ -158,6 +183,7 @@ export const OpenDepositsTable = ({
   markets: FixedTermMarket[];
 }) => {
   const [pendingPositions, setPendingPositions] = useState<string[]>([]);
+  const [showAutorollModal, setShowAutorollModal] = useState(false);
 
   const columns = useMemo(
     () =>
@@ -170,9 +196,11 @@ export const OpenDepositsTable = ({
         pools,
         markets,
         setPendingPositions,
-        pendingPositions
+        pendingPositions,
+        setShowAutorollModal,
+        showAutorollModal
       ),
-    [market, marginAccount, provider, cluster, explorer, pendingPositions, setPendingPositions]
+    [market, marginAccount, provider, cluster, explorer, pendingPositions, setPendingPositions, showAutorollModal]
   );
 
   return (

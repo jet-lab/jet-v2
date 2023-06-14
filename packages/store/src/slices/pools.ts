@@ -1,4 +1,4 @@
-import { Number192 } from '@jet-lab/margin';
+import { Number192 } from '../utils/Number192';
 import { StateCreator } from 'zustand';
 
 const interpolate = (x: number, x0: number, x1: number, y0: number, y1: number): number => {
