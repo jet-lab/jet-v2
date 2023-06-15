@@ -57,9 +57,10 @@ function SwapsView(): JSX.Element {
   if (networkState !== 'connected' || geoBanned === undefined)
     return <WaitingForNetworkView networkState={networkState} />;
 
-  if (geoBanned) {
-    return <GeobannedComponent />;
+  if (geoBanned.banned) {
+    return <GeobannedComponent countryCode={geoBanned.countryCode} />;
   }
+
   return accountView();
 }
 
