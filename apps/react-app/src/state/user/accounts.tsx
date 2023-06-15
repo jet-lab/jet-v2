@@ -12,6 +12,7 @@ import { Pools } from '../pools/pools';
 import { useProvider } from '@utils/jet/provider';
 import { MainConfig } from '@state/config/marginConfig';
 import { useJetStore } from '@jet-lab/store';
+import { getAuthorityLookupTables } from '@utils/lookupTables';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {
@@ -91,7 +92,7 @@ export const AccountHistoryLoaded = atom({
 
 // A syncer to be called so that we can have dependent atom state
 export function useAccountsSyncer() {
-  const [cluster, prices, marginAccounts, selectMarginAccount] = useJetStore(state => [state.settings.cluster, state.prices, state.marginAccounts, state.selectMarginAccount]);
+  const [cluster, prices, marginAccounts, selectMarginAccount, updateMarginAccountLookupTables] = useJetStore(state => [state.settings.cluster, state.prices, state.marginAccounts, state.selectMarginAccount, state.updateMarginAccountLookupTables]);
   const { fixedTermOpenOrders, fixedTermOpenPositions } = useJetStore(state => {
     return {
       fixedTermOpenOrders: state.openOrders,
@@ -192,6 +193,18 @@ export function useAccountsSyncer() {
     return () => clearInterval(accountsInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pools, owner, provider.connection, actionRefresh, publicKey, currentAccountAddress, marginAccounts]);
+
+  useEffect(() => {
+    if (currentAccountAddress === '') {
+      return;
+    }
+    getAuthorityLookupTables(currentAccountAddress).then(lookupTables => {
+      if (lookupTables.length) {
+        updateMarginAccountLookupTables(currentAccountAddress, lookupTables);
+      }
+    })
+
+  }, [currentAccountAddress])
 
   // Update current account history
   useEffect(() => {
