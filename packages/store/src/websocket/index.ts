@@ -3,11 +3,30 @@ import { useJetStore } from '../store';
 let connectionRetryTimeout: NodeJS.Timeout;
 let pendingTimeoutType: string | undefined;
 
-export let ws: WebSocket;
+export let ws: WebSocket | undefined;
 export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
-  console.log('Connecting WS: ', cluster, wallet);
-  if (ws) {
-    ws.close();
+  let endpoint: string | undefined;
+  switch (cluster) {
+    case 'devnet':
+      endpoint = process.env.REACT_APP_DEV_WS_API;
+      break;
+    case 'localnet':
+      endpoint = process.env.REACT_APP_LOCAL_WS_API;
+      break;
+    case 'mainnet-beta':
+      endpoint = process.env.REACT_APP_WS_API;
+      break;
+  }
+  console.log('init websocket', ws, cluster, wallet);
+  if (ws && ws.url === endpoint) {
+    // We terminate this connection as it's likely a duplicate
+    return;
+  } else if (ws && ws.url !== endpoint) {
+    // We use a private code to indicate the reason why the socket is being closed.
+    // If the socket is closed due to this code, we don't reconnect.
+    // See https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code#value for more info.
+    ws!.close(4321);
+    // ws = undefined;
   }
 
   if (cluster !== pendingTimeoutType) {
@@ -16,23 +35,17 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
   }
 
   try {
-    let endpoint: string | undefined;
-    switch (cluster) {
-      case 'devnet':
-        endpoint = process.env.REACT_APP_DEV_WS_API;
-        break;
-      case 'localnet':
-        endpoint = process.env.REACT_APP_LOCAL_WS_API;
-        break;
-      case 'mainnet-beta':
-        endpoint = process.env.REACT_APP_WS_API;
-        break;
-    }
-
-    console.log('initialising websocket for ', cluster, endpoint);
+    // console.log('initialising websocket for ', cluster, endpoint);
     if (!endpoint) throw `No websocket environment variable set up.`;
 
     ws = new WebSocket(endpoint);
+    setTimeout(() => {
+      // Check if the socket is still conneecting
+      if (ws && ws.readyState === 0) {
+        ws.close(4322);
+        ws = undefined;
+      }
+    }, 2000)
 
     ws.onopen = () => {
       if (!wallet) {
@@ -45,7 +58,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
           margin_accounts: []
         }
       };
-      ws.send(JSON.stringify(subscriptionEvent));
+      ws?.send(JSON.stringify(subscriptionEvent));
     };
 
     ws.onmessage = (msg: MessageEvent<string>) => {
@@ -78,7 +91,27 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
       }
     };
 
+    ws.onclose = (e: CloseEvent) => {
+      // 1006 = Abnormal closure, the browser closes the connection during negotiation
+      // 4321 = Our custom code to signal that we don't want to recreate the ws 
+      // 4322 = Our custom code to signal a change in ws.url
+      if (e.code === 4321 || e.code === 4322) {
+        return;
+      }
+      if (ws?.url !== endpoint) {
+        // If a socket exists but is pointing to the wrong endpoint, don't continue.
+        // There is another connection attempt in progress (due to racy conditions).
+        return;
+      }
+      ws = undefined;
+      connectionRetryTimeout = setTimeout(() => {
+        pendingTimeoutType = cluster;
+        initWebsocket(cluster, wallet);
+      }, 1000);
+    }
+
     ws.onerror = (_: Event) => {
+      ws = undefined;;
       connectionRetryTimeout = setTimeout(() => {
         pendingTimeoutType = cluster;
         initWebsocket(cluster, wallet);
