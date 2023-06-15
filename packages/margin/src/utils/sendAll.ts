@@ -103,7 +103,6 @@ export async function sendAndConfirmV0(
       instructions: ix
     }).compileToV0Message(tables);
     const transaction = new VersionedTransaction(message)
-    console.log(transaction)
     if (signers?.length) {
       transaction.sign(signers)
     }

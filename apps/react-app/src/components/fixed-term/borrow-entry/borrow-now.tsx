@@ -21,7 +21,6 @@ import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
-import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
 import { EditOutlined, LoadingOutlined } from '@ant-design/icons';
@@ -205,13 +204,13 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
           <InputNumber
             className="input-amount"
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
-            onChange={debounce(e => {
+            onChange={e => {
               if (!e) {
                 setAmount(undefined);
               } else {
                 setAmount(new BN(e * 10 ** decimals));
               }
-            }, 300)}
+            }}
             placeholder={'10,000'}
             min={0}
             formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}

@@ -170,10 +170,7 @@ impl Permit {
         owner: Pubkey,
         permissions: Permissions,
     ) -> Result<()> {
-        // FIXME: pubkey default is not acceptable once airspaces are in use
-        if airspace != self.airspace
-            && !(cfg!(feature = "testing") && airspace == Pubkey::default())
-        {
+        if airspace != self.airspace {
             msg!(
                 "provided airspace: {airspace} - permit's airspace: {}",
                 self.airspace
