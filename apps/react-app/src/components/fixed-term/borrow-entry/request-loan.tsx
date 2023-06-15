@@ -19,11 +19,10 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { Pools } from '@state/pools/pools';
 import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
-import debounce from 'lodash.debounce';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
 import { EditOutlined, LoadingOutlined } from '@ant-design/icons';
@@ -57,7 +56,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     return {
       selectedPoolKey: state.selectedPoolKey,
       airspaceLookupTables: state.airspaceLookupTables
-    }
+    };
   });
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
@@ -67,12 +66,14 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   );
   const wallet = useWallet();
   const [amount, setAmount] = useState<BN | undefined>();
-  const [basisPoints, setBasisPoints] = useState<BN | undefined>();
+  const [basisPoints, setBasisPoints] = useState<number>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
+
+  const preprocessInput = useCallback((e: number) => Math.round(e * 100) / 100, []);
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
@@ -83,7 +84,6 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     !wallet.publicKey ||
     !currentPool ||
     !pools ||
-    basisPoints?.lte(new BN(0)) ||
     amount?.lte(new BN(0)) ||
     forecast?.selfMatch ||
     !forecast?.hasEnoughCollateral;
@@ -91,6 +91,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   const createBorrowOrder = async () => {
     if (!amount || !basisPoints) return;
     setPending(true);
+    const rateBPS = new BN(Math.round(basisPoints * 100));
     let signature: string;
     try {
       if (disabled || !wallet.publicKey) return;
@@ -101,7 +102,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
         amount: amount,
-        basisPoints: basisPoints,
+        basisPoints: rateBPS,
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
         autorollEnabled,
@@ -114,9 +115,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           `Your borrow offer for ${amount
             .div(new BN(10 ** decimals))
             .toNumber()
-            .toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(
-              2
-            )}% was created successfully`,
+            .toFixed(token.precision)} ${token.name} at ${(rateBPS.toNumber() / 100).toFixed(
+            2
+          )}% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -128,7 +129,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         `Your borrow offer for ${amount
           .div(new BN(10 ** decimals))
           .toNumber()
-          .toFixed(token.precision)} ${token.name} at ${(basisPoints.toNumber() / 100).toFixed(2)}% failed`,
+          .toFixed(token.precision)} ${token.name} at ${(rateBPS.toNumber() / 100).toFixed(2)}% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, explorer)
       );
@@ -182,13 +183,13 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   }
 
   useEffect(() => {
-    if (!amount || !basisPoints || amount.eqn(0) || basisPoints.eqn(0)) {
+    if (!amount || !basisPoints || amount.eqn(0) || basisPoints === 0) {
       setForecast(undefined);
       return;
     }
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(bnToBigInt(basisPoints), BigInt(marketAndConfig.config.borrowTenor))
+      rate_to_price(bnToBigInt(Math.round(basisPoints * 100)), BigInt(marketAndConfig.config.borrowTenor))
     );
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
@@ -209,13 +210,13 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           <InputNumber
             className="input-amount"
             value={amount ? new TokenAmount(amount, decimals).tokens : ''}
-            onChange={debounce(e => {
+            onChange={e => {
               if (!e) {
                 setAmount(undefined);
               } else {
                 setAmount(new BN(e * 10 ** decimals));
               }
-            }, 300)}
+            }}
             placeholder={'10,000'}
             min={0}
             formatter={formatWithCommas}
@@ -227,14 +228,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           Interest Rate
           <InputNumber
             className="input-rate"
-            value={basisPoints && !basisPoints.isZero() ? basisPoints.toNumber() / 100 : ''}
-            onChange={debounce(e => {
-              if (!e) {
-                setBasisPoints(undefined);
-              } else {
-                setBasisPoints(bigIntToBn(BigInt(Math.floor(e * 100)))); // Ensure we submit basis points
-              }
-            }, 300)}
+            value={basisPoints && basisPoints > 0 ? basisPoints : undefined}
+            onChange={e => setBasisPoints(preprocessInput(e || 0))}
             placeholder={'6.50'}
             type="number"
             step={0.01}
@@ -350,7 +345,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       {forecast?.selfMatch && (
         <div className="fixed-term-warning">The offer would match with your own requests in this market.</div>
       )}
-      {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && basisPoints && !basisPoints.isZero() && (
+      {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && basisPoints && basisPoints != 0 && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
       )}
     </div>
