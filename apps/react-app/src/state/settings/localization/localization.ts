@@ -67,12 +67,17 @@ interface GeoLocation {
   };
 }
 
+interface GeobanOutput {
+  banned: boolean;
+  countryCode?: string;
+}
+
 // Whether user is geobanned
-export const Geobanned = selector<boolean>({
+export const Geobanned = selector<GeobanOutput>({
   key: 'geobanned',
   get: async () => {
     if (process.env.REACT_APP_REQUIRE_GEOBLOCKING === 'false') {
-      return false;
+      return { banned: false };
     }
     const data = await axios
       .get<GeoLocation>(`https://api.ipregistry.co/?key=${process.env.REACT_APP_IP_REGISTRY}`)
@@ -83,20 +88,20 @@ export const Geobanned = selector<boolean>({
 
     if (geoBannedCountries.map(country => country.code).includes(countryCode)) {
       // Is in a geobanned country
-      return true;
+      return { banned: true, countryCode };
     }
 
     if (Object.values(data.security).some(v => v)) {
       // is masking traffic
-      return true;
+      return { banned: true, countryCode };
     }
 
     if (tz !== Intl.DateTimeFormat().resolvedOptions().timeZone) {
       // Timezone is different from that of the IP resolved one
-      return true;
+      return { banned: true, countryCode };
     }
 
-    return false;
+    return { banned: false, countryCode };
   }
 });
 
