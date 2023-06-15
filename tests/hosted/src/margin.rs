@@ -509,8 +509,10 @@ impl MarginUser {
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<(), Error> {
+        // todo use the new way, this requires some changes to the tests to get
+        // them to use ATA positions instead of the old style positions.
         self.tx
-            .pool_deposit(
+            .pool_deposit_deprecated(
                 mint,
                 Some(*source),
                 change,
@@ -588,7 +590,7 @@ impl MarginUser {
             (&swap_pool.token_b, &swap_pool.token_a)
         };
         self.rpc
-            .send_and_confirm(
+            .send_and_confirm_condensed_in_order(
                 self.tx
                     .swap(
                         source_mint,

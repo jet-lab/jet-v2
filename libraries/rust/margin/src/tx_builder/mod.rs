@@ -16,9 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod airspace;
+/// invoke adapters through margin with minimal dependencies.
+/// lighter-weight and more versatile alternative to MarginTxBuilder.
 mod invoke_context;
+/// invoke margin-pool through a margin account.
+mod invoke_pool;
+/// invoke margin-swap through a margin account.
+mod invoke_swap;
 mod user;
 
 pub use airspace::*;
 pub use invoke_context::*;
+pub use invoke_pool::*;
+pub use invoke_swap::*;
 pub use user::*;

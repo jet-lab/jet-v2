@@ -31,7 +31,7 @@ use jet_margin_sdk::{
             WithSigner,
         },
     },
-    tx_builder::MarginInvoke,
+    tx_builder::invoke_into::{InvokeEachInto, InvokeInto},
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, refresh::canonical_position_refresher};
 use jet_program_common::{
@@ -1173,15 +1173,15 @@ async fn fixed_term_borrow_becomes_unhealthy_without_collateral() -> Result<(), 
         vec![
             mkt.initialize_margin_user(*lender.address()),
             mkt.margin_lend_order(*lender.address(), None, params, 0),
-        ].invoke_each(&lender.ctx()),
+        ].invoke_each_into::<TransactionBuilder>(&lender.ctx()),
 
         // borrow with fill
         ctx.refresh_deposit(tsol.mint, *borrower.address()),
-        mkt.initialize_margin_user(*borrower.address()).invoke(&borrower.ctx()),
+        mkt.initialize_margin_user(*borrower.address()).invoke_into(&borrower.ctx()),
         vec![
             mkt.refresh_position(*borrower.address(), true),
             mkt.margin_borrow_order(*borrower.address(), params, 0)
-        ].invoke(&borrower.ctx()),
+        ].invoke_into(&borrower.ctx()),
 
         // make user unhealthy
         ctx.set_price(tsol.mint, 0.01),

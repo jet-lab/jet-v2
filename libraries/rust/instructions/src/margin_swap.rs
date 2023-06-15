@@ -19,29 +19,35 @@ use crate::{control::get_control_authority_address, margin_pool::MarginPoolIxBui
 pub use jet_margin_swap::ID as MARGIN_SWAP_PROGRAM;
 
 /// Instruction for using an SPL swap with tokens in a margin pool
+///
+/// By default, source and target accounts are ATAs of the margin account.
 #[allow(clippy::too_many_arguments)]
 pub fn pool_spl_swap(
     swap_info: &SplSwap,
     _airspace: &Pubkey,
     margin_account: &Pubkey,
-    source_token: &Pubkey,
-    target_token: &Pubkey,
+    source_mint: &Pubkey,
+    target_mint: &Pubkey,
+    source_account: Option<Pubkey>,
+    target_account: Option<Pubkey>,
     withdrawal_change_kind: ChangeKind,
     withdrawal_amount: u64,
     minimum_amount_out: u64,
 ) -> Instruction {
-    let pool_source = MarginPoolIxBuilder::new(*source_token);
-    let pool_target = MarginPoolIxBuilder::new(*target_token);
+    let pool_source = MarginPoolIxBuilder::new(*source_mint);
+    let pool_target = MarginPoolIxBuilder::new(*target_mint);
 
-    let transit_source_account = get_associated_token_address(margin_account, source_token);
-    let transit_destination_account = get_associated_token_address(margin_account, target_token);
+    let transit_source_account = get_associated_token_address(margin_account, source_mint);
+    let transit_destination_account = get_associated_token_address(margin_account, target_mint);
 
-    let source_account =
-        derive_position_token_account(margin_account, &pool_source.deposit_note_mint);
-    let destination_account =
-        derive_position_token_account(margin_account, &pool_target.deposit_note_mint);
+    let source_account = source_account.unwrap_or_else(|| {
+        get_associated_token_address(margin_account, &pool_source.deposit_note_mint)
+    });
+    let target_account = target_account.unwrap_or_else(|| {
+        get_associated_token_address(margin_account, &pool_target.deposit_note_mint)
+    });
 
-    let (vault_into, vault_from) = if *source_token == swap_info.token_a {
+    let (vault_into, vault_from) = if *source_mint == swap_info.token_a {
         (swap_info.token_a_vault, swap_info.token_b_vault)
     } else {
         (swap_info.token_b_vault, swap_info.token_a_vault)
@@ -50,7 +56,7 @@ pub fn pool_spl_swap(
     let accounts = jet_margin_swap::accounts::MarginSplSwap {
         margin_account: *margin_account,
         source_account,
-        destination_account,
+        destination_account: target_account,
         transit_source_account,
         transit_destination_account,
         swap_info: jet_margin_swap::accounts::SwapInfo {

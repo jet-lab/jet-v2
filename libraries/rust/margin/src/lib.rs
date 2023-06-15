@@ -55,6 +55,8 @@
 pub mod get_state;
 /// Instruction builders for programs and adapters supported by the SDK
 pub mod ix_builder;
+/// ease of use for reading a MarginAccount
+pub mod margin_account_ext;
 /// generic code to integrate adapters with margin
 pub mod margin_integrator;
 /// generically refreshing positions in a margin account
