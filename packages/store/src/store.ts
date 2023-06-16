@@ -7,6 +7,7 @@ import { createSettingsSlice } from './slices/settings';
 import { createAccountsSlice } from './slices/accounts';
 import { initWebsocket } from './websocket';
 import { createFixedTermSlice } from './slices/fixedterm';
+import { createOrderBookSlice } from './slices/orderbooks';
 
 export const useJetStore = create<JetStore, [['zustand/devtools', never], ['zustand/persist', JetStore]]>(
   devtools(
@@ -16,7 +17,8 @@ export const useJetStore = create<JetStore, [['zustand/devtools', never], ['zust
         ...createPricesSlice(...a),
         ...createSettingsSlice(...a),
         ...createAccountsSlice(...a),
-        ...createFixedTermSlice(...a)
+        ...createFixedTermSlice(...a),
+        ...createOrderBookSlice(...a)
       }),
       {
         name: 'jet-state',

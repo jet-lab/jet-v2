@@ -43,7 +43,7 @@ interface MARGIN_POOL_UPDATE {
 
 interface MARGIN_ACCOUNT_UPDATE {
   type: 'MARGIN-ACCOUNT-UPDATE';
-  payload: MarginAccountData
+  payload: MarginAccountData;
 }
 
 interface MARGIN_ACCOUNT_LIST {
@@ -51,7 +51,7 @@ interface MARGIN_ACCOUNT_LIST {
   payload: {
     owner: string;
     accounts: MarginAccountData[];
-  }
+  };
 }
 
 interface MarginAccountData {
@@ -60,7 +60,7 @@ interface MarginAccountData {
   address: string;
   airspace: string;
   liquidator: string;
-  positions: AccountPositionData[]
+  positions: AccountPositionData[];
 }
 
 interface AccountPositionData {
@@ -75,7 +75,7 @@ interface AccountPositionData {
     timestamp: number;
     exponent: number;
     isValid: number;
-  }
+  };
   kind: 'Collateral' | 'AdapterCollateral' | 'Claim';
   exponent: number;
   valueModifier: number;
@@ -106,6 +106,30 @@ interface SUBSCRIBE {
 }
 // *** END SUBSCRIBE EVENT ***
 
+interface OrderBookOrder {
+  owner: number[];
+  order_tag: number[];
+  base_size: number;
+  price: number;
+}
+
+interface OrderBook {
+  market: string;
+  bids: OrderBookOrder[];
+  asks: OrderBookOrder[];
+}
+interface ORDER_BOOK_SNAPSHOT {
+  type: 'ORDERBOOK-SNAPSHOT';
+  payload: OrderBook;
+}
+
 type APPLICATION_WS_EVENTS = SUBSCRIBE;
 
-type JET_WS_EVENTS = PRICE_UPDATE | MARGIN_POOL_UPDATE | MARGIN_ACCOUNT_UPDATE | MARGIN_ACCOUNT_LIST | OPEN_ORDER_UPDATE | FIXED_TERM_POSITION_UPDATE;
+type JET_WS_EVENTS =
+  | PRICE_UPDATE
+  | MARGIN_POOL_UPDATE
+  | MARGIN_ACCOUNT_UPDATE
+  | MARGIN_ACCOUNT_LIST
+  | OPEN_ORDER_UPDATE
+  | FIXED_TERM_POSITION_UPDATE
+  | ORDER_BOOK_SNAPSHOT;

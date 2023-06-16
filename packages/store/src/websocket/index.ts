@@ -45,7 +45,7 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         ws.close(4322);
         ws = undefined;
       }
-    }, 2000)
+    }, 2000);
 
     ws.onopen = () => {
       if (!wallet) {
@@ -88,12 +88,14 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         useJetStore.getState().updateOpenOrders(data.payload);
       } else if (data.type === 'FIXED-TERM-POSITION-UPDATE') {
         useJetStore.getState().updateOpenPositions(data.payload);
+      } else if (data.type === 'ORDERBOOK-SNAPSHOT') {
+        useJetStore.getState().updateOrderBook(data);
       }
     };
 
     ws.onclose = (e: CloseEvent) => {
       // 1006 = Abnormal closure, the browser closes the connection during negotiation
-      // 4321 = Our custom code to signal that we don't want to recreate the ws 
+      // 4321 = Our custom code to signal that we don't want to recreate the ws
       // 4322 = Our custom code to signal a change in ws.url
       if (e.code === 4321 || e.code === 4322) {
         return;
@@ -108,10 +110,10 @@ export const initWebsocket = (cluster?: Cluster, wallet?: string | null) => {
         pendingTimeoutType = cluster;
         initWebsocket(cluster, wallet);
       }, 1000);
-    }
+    };
 
     ws.onerror = (_: Event) => {
-      ws = undefined;;
+      ws = undefined;
       connectionRetryTimeout = setTimeout(() => {
         pendingTimeoutType = cluster;
         initWebsocket(cluster, wallet);
