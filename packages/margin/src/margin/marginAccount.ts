@@ -15,10 +15,9 @@ import {
 } from "@solana/web3.js"
 import { feesBuffer, Pool, PoolAction } from "./pool/pool"
 import {
-  AccountPositionList,
   AccountPositionListLayout,
   LiquidationData,
-  MarginAccountData,
+  OnChainMarginAccountData,
   PositionKind
 } from "./state"
 import { MarginTokenConfig } from "./config"
@@ -113,12 +112,10 @@ export class MarginAccount {
 
   /** The raw accounts associated with the margin account. */
   info?: {
-    /** The decoded [[MarginAccountData]]. */
-    marginAccount: MarginAccountData
     /** The decoded [[LiquidationData]]. This may only be present during liquidation. */
     liquidationData?: LiquidationData
     /** The decoded position data in the margin account. */
-    positions: AccountPositionList
+    positions: AccountPosition[]
   }
 
   /** The address of the [[MarginAccount]] */
@@ -127,6 +124,9 @@ export class MarginAccount {
   owner: PublicKey
   /** The address of the airspace this account is part of */
   airspace: PublicKey
+
+  /** The address of the current liquidator. Default if nonw */
+  liquidator: PublicKey
   /** The parsed [[AccountPosition]] array of the margin account. */
   positions: AccountPosition[]
   /** The summarized [[PoolPosition]] array of pool deposits and borrows. */
@@ -136,15 +136,12 @@ export class MarginAccount {
   summary: AccountSummary
   prices?: Record<string, StorePriceInfo>
 
-  get liquidator() {
-    return this.info?.marginAccount.liquidator
-  }
   /**
    * Returns true if a liquidator address is associated with the [[MarginAccount]].
    * Certain actions are not allowed while liquidation is in progress.
    */
   get isBeingLiquidated() {
-    return this.info && !this.info.marginAccount.liquidator.equals(PublicKey.default)
+    return !this.liquidator.equals(PublicKey.default)
   }
 
   /** A qualitative measure of the the health of a margin account.
@@ -193,6 +190,8 @@ export class MarginAccount {
     public provider: AnchorProvider,
     owner: Address,
     public seed: number,
+    fixedTermOpenOrders: Record<string, OpenOrders>,
+    fixedTermOpenPositions: Record<string, OpenPositions>,
     public airspaceAddress?: Address,
     public pools?: Record<string, Pool>,
     public walletTokens?: MarginWalletTokens,
@@ -203,11 +202,15 @@ export class MarginAccount {
     this.airspace = airspaceAddress
       ? translateAddress(airspaceAddress)
       : Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name)
+    this.liquidator = PublicKey.default
     this.pools = pools
     this.walletTokens = walletTokens
     this.prices = prices
     this.positions = this.getPositions()
-    this.valuation = this.getValuation()
+    this.valuation = this.getValuation({
+      openPositions: this.extractFixedTermPositions(fixedTermOpenPositions),
+      openOrders: this.extractFixedTermOrders(fixedTermOpenOrders)
+    })
     this.poolPositions = this.getAllPoolPositions()
     this.summary = this.getSummary()
   }
@@ -314,7 +317,9 @@ export class MarginAccount {
     walletTokens,
     owner,
     seed,
-    prices
+    prices,
+    fixedTermOpenOrders,
+    fixedTermOpenPositions
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
@@ -323,19 +328,28 @@ export class MarginAccount {
     walletTokens?: MarginWalletTokens
     owner: Address
     seed: number
-    prices: Record<string, StorePriceInfo>
+    prices: Record<string, StorePriceInfo>,
+    fixedTermOpenOrders: Record<string, OpenOrders>,
+    fixedTermOpenPositions: Record<string, OpenPositions>,
   }): Promise<MarginAccount> {
     const marginAccount = new MarginAccount(
       programs,
       provider,
       owner,
       seed,
+      fixedTermOpenOrders,
+      fixedTermOpenPositions,
       airspaceAddress,
       pools,
       walletTokens,
       prices
     )
-    await marginAccount.refresh()
+    // Get orders and positions of the margin account
+
+    await marginAccount.refresh({
+      openPositions: marginAccount.extractFixedTermPositions(fixedTermOpenPositions),
+      openOrders: marginAccount.extractFixedTermOrders(fixedTermOpenOrders)
+    })
     return marginAccount
   }
 
@@ -367,6 +381,8 @@ export class MarginAccount {
     owner,
     filters,
     prices,
+    fixedTermOpenOrders,
+    fixedTermOpenPositions,
     doRefresh = true,
     doFilterAirspace = true
   }: {
@@ -377,6 +393,8 @@ export class MarginAccount {
     owner: Address
     filters?: GetProgramAccountsFilter[]
     prices?: Record<string, StorePriceInfo>
+    fixedTermOpenOrders: Record<string, OpenOrders>
+    fixedTermOpenPositions: Record<string, OpenPositions>
     doRefresh?: boolean
     doFilterAirspace?: boolean
   }): Promise<MarginAccount[]> {
@@ -397,7 +415,7 @@ export class MarginAccount {
     filters ??= []
     filters.push(ownerFilter)
     if (doFilterAirspace) filters.push(airspaceFilter)
-    const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
+    const infos: ProgramAccount<OnChainMarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
     const marginAccounts: MarginAccount[] = []
     for (let i = 0; i < infos.length; i++) {
       if (infos[i]) {
@@ -408,13 +426,18 @@ export class MarginAccount {
           provider,
           account.owner,
           seed,
+          fixedTermOpenOrders,
+          fixedTermOpenPositions,
           account.airspace,
           pools,
           walletTokens,
           prices
         )
         if (doRefresh) {
-          await marginAccount.refresh()
+          await marginAccount.refresh({
+            openPositions: marginAccount.extractFixedTermPositions(fixedTermOpenPositions),
+            openOrders: marginAccount.extractFixedTermOrders(fixedTermOpenOrders)
+          })
         }
         marginAccounts.push(marginAccount)
       }
@@ -422,13 +445,118 @@ export class MarginAccount {
     return marginAccounts
   }
 
-  async refresh() {
+  /**
+   * Load all margin accounts for a wallet from a data cache.
+   *
+   * @static
+   * @param {({
+  *     programs: MarginPrograms
+  *     provider: AnchorProvider
+  *     pools?: Record<string, Pool>
+  *     walletTokens?: MarginWalletTokens
+  *     filters?: GetProgramAccountsFilter[] | Buffer
+  *   })} {
+  *     programs,
+  *     provider,
+  *     pools,
+  *     walletTokens,
+  *     filters
+  *   }
+  * @return {Promise<MarginAccount[]>}
+  * @memberof MarginAccount
+  */
+  static async loadAllByOwnerFromCache({
+    programs,
+    provider,
+    pools,
+    walletTokens,
+    owner,
+    prices,
+    fixedTermOpenOrders,
+    fixedTermOpenPositions,
+    accountData,
+    doFilterAirspace = true
+  }: {
+    programs: MarginPrograms
+    provider: AnchorProvider
+    pools?: Record<string, Pool>
+    walletTokens?: MarginWalletTokens
+    owner: Address
+    prices?: Record<string, StorePriceInfo>
+    fixedTermOpenOrders: Record<string, OpenOrders>
+    fixedTermOpenPositions: Record<string, OpenPositions>
+    accountData: MarginAccountData[]
+    doFilterAirspace?: boolean
+  }): Promise<MarginAccount[]> {
+
+    const marginAccounts: MarginAccount[] = []
+    const airspace = Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name).toBase58()
+    accountData.filter(data => {
+      if (doFilterAirspace) {
+        return data.airspace === airspace && data.owner === owner.toString()
+      } else {
+        return data.owner === owner.toString()
+      }
+    }).forEach(account => {
+      const marginAccount = new MarginAccount(
+        programs,
+        provider,
+        account.owner,
+        account.seed,
+        fixedTermOpenOrders,
+        fixedTermOpenPositions,
+        account.airspace,
+        pools,
+        walletTokens,
+        prices
+      )
+      marginAccount.liquidator = new PublicKey(account.liquidator)
+      marginAccount.setPositions(account)
+      marginAccount.recalculate({
+        openOrders: marginAccount.extractFixedTermOrders(fixedTermOpenOrders),
+        openPositions: marginAccount.extractFixedTermPositions(fixedTermOpenPositions)
+      })
+      marginAccounts.push(marginAccount)
+    })
+    return marginAccounts
+  }
+
+  setPositions(data: MarginAccountData) {
+    this.info = this.info ?? {
+      positions: data.positions.map(data => {
+        const price = this.getPositionPrice(new PublicKey(data.token))
+        return AccountPosition.fromCache({
+          data, price
+        })
+      })
+    }
+  }
+
+  /** Recalculate margin account information using the cache as far as possible */
+  async recalculate(fixedTerm: {
+    openPositions: OpenPositions[],
+    openOrders: OpenOrders[]
+  }) {
+    this.positions = this.getPositions()
+    this.valuation = this.getValuation(fixedTerm)
+    this.poolPositions = this.getAllPoolPositions()
+    this.summary = this.getSummary()
+  }
+
+  async refresh({
+    openPositions,
+    openOrders
+  }: {
+    openPositions: OpenPositions[],
+    openOrders: OpenOrders[]
+  }) {
     const marginAccount = await this.programs.margin.account.marginAccount.fetchNullable(this.address)
     const positions = marginAccount ? AccountPositionListLayout.decode(new Uint8Array(marginAccount.positions)) : null
     if (!marginAccount || !positions) {
       this.info = undefined
     } else {
       // Account is being liquidated
+      this.liquidator = marginAccount.liquidator
       let liquidationData: LiquidationData | undefined = undefined
       if (!marginAccount.liquidator.equals(PublicKey.default)) {
         liquidationData =
@@ -436,13 +564,17 @@ export class MarginAccount {
             ?.state ?? undefined
       }
       this.info = {
-        marginAccount,
         liquidationData,
-        positions
+        positions: !positions ? [] : positions.positions.map(info => {
+          const price = this.getPositionPrice(new PublicKey(info.token))
+          return new AccountPosition({ info, price })
+        })
       }
     }
     this.positions = this.getPositions()
-    this.valuation = this.getValuation()
+    this.valuation = this.getValuation({
+      openPositions, openOrders
+    })
     this.poolPositions = this.getAllPoolPositions()
     this.summary = this.getSummary()
   }
@@ -524,7 +656,7 @@ export class MarginAccount {
 
     const token = pool.tokenMint.toBase58()
     const decimals = pool.decimals
-    const tokenPrice = this.prices![token].price
+    const tokenPrice = this.prices![token]?.price ?? 0.0
 
     // Max deposit
     const deposit = walletAmount
@@ -551,7 +683,7 @@ export class MarginAccount {
 
     let borrow = TokenAmount.tokens(
       this.valuation.availableSetupCollateral /
-        (1 - depositNoteValueModifier + 1 / (loanNoteValueModifier * MarginAccount.SETUP_LEVERAGE_FRACTION)),
+      (1 - depositNoteValueModifier + 1 / (loanNoteValueModifier * MarginAccount.SETUP_LEVERAGE_FRACTION)),
       decimals
     )
     borrow = TokenAmount.min(borrow, effectiveVaultForBorrow)
@@ -587,7 +719,7 @@ export class MarginAccount {
     if (equity >= 0) {
       leverage = assets / equity
     } else {
-      leverage = Infinity
+      leverage = 999.9 // This is better than infinity
     }
 
     const availableCollateral = this.valuation.availableCollateral
@@ -608,12 +740,8 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   getPositions(): AccountPosition[] {
-    return (this.info?.positions.positions ?? [])
+    return (this.info?.positions ?? [])
       .filter(position => !position.address.equals(PublicKey.default))
-      .map(info => {
-        const price = this.getPositionPrice(info.token)
-        return new AccountPosition({ info, price })
-      })
   }
   /**
    * Get the registerd [[AccountPosition]] associated with the position mint.
@@ -664,7 +792,9 @@ export class MarginAccount {
     return authority.equals(this.owner) || this.liquidator?.equals(authority)
   }
 
-  private getValuation(): Valuation {
+  private getValuation({
+    openPositions, openOrders
+  }: { openPositions: OpenPositions[], openOrders: OpenOrders[] }): Valuation {
     let liabilities = 0
     let requiredCollateral = 0
     let requiredSetupCollateral = 0
@@ -679,12 +809,36 @@ export class MarginAccount {
 
         requiredCollateral += position.requiredCollateralValue()
         requiredSetupCollateral += position.requiredSetupCollateralValue()
-      } else if (kind === PositionKind.Deposit || kind === PositionKind.AdapterCollateral) {
+      } else if (kind === PositionKind.Deposit) {
         assets += position.value
 
         weightedCollateral += position.collateralValue()
       }
     }
+
+    // The above does not include adapter positions, so we add the individual positions
+    // making up the fixed term positions and orders
+    openOrders.forEach(orders => {
+      const price = this.getPositionPrice(new PublicKey(orders.underlying_mint));
+      if (price && this.pools) {
+        const decimals = Object.values(this.pools).find(pool => pool.addresses.tokenMint.toBase58() === orders.underlying_mint)?.decimals ?? 6;
+        assets += orders.unfilled_lend * price.price * Math.pow(10, -decimals);
+        assets += orders.unfilled_borrow * price.price * Math.pow(10, -decimals);
+      }
+    })
+    const now = Date.now();
+    openPositions.forEach(positions => {
+      const price = this.getPositionPrice(new PublicKey(positions.underlying_mint));
+      if (price && this.pools) {
+        const decimals = Object.values(this.pools).find(pool => pool.addresses.tokenMint.toBase58() === positions.underlying_mint)?.decimals ?? 6;
+        // Sum each term deposits, factoring in accrued interest
+        positions.deposits.forEach(deposit => {
+          const accrual = Math.min(Math.abs((now - deposit.created_timestamp) / (deposit.maturation_timestamp - deposit.created_timestamp)), 1.0);
+          const value = deposit.principal + (deposit.interest * accrual);
+          assets += value * price.price * Math.pow(10, -decimals)
+        })
+      }
+    })
 
     const effectiveCollateral = weightedCollateral - liabilities
     const availableCollateral = weightedCollateral - liabilities - requiredCollateral
@@ -698,7 +852,7 @@ export class MarginAccount {
       effectiveCollateral,
       availableCollateral,
       availableSetupCollateral,
-      assets
+      assets,
     }
   }
 
@@ -811,7 +965,9 @@ export class MarginAccount {
     seed,
     airspaceAddress,
     pools,
-    walletTokens
+    walletTokens,
+    fixedTermOpenOrders,
+    fixedTermOpenPositions
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
@@ -820,11 +976,23 @@ export class MarginAccount {
     airspaceAddress?: Address
     pools?: Record<string, Pool>
     walletTokens?: MarginWalletTokens
+    fixedTermOpenOrders: Record<string, OpenOrders>
+    fixedTermOpenPositions: Record<string, OpenPositions>
   }): Promise<MarginAccount> {
     if (seed === undefined) {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
     }
-    const marginAccount = new MarginAccount(programs, provider, owner, seed, airspaceAddress, pools, walletTokens)
+    const marginAccount = new MarginAccount(
+      programs,
+      provider,
+      owner,
+      seed,
+      fixedTermOpenOrders,
+      fixedTermOpenPositions,
+      airspaceAddress,
+      pools,
+      walletTokens
+    )
     const instructions: TransactionInstruction[] = []
     await marginAccount.withCreateAccount(instructions)
     // Add a lookup registry account
@@ -864,6 +1032,9 @@ export class MarginAccount {
       programs,
       provider,
       owner,
+      // Safe to use defaults, looking for unused accounts
+      fixedTermOpenOrders: {},
+      fixedTermOpenPositions: {},
       doRefresh: false,
       doFilterAirspace: false
     })
@@ -1106,7 +1277,12 @@ export class MarginAccount {
       }
     }
     await this.registerPosition(tokenMintAddress)
-    await this.refresh()
+    // Indirectly relying on new values if the position gets created,
+    // so safe to use empty values
+    await this.refresh({
+      openPositions: [],
+      openOrders: []
+    })
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
@@ -1853,4 +2029,19 @@ export class MarginAccount {
       .instruction()
     instructions.push(ix)
   }
+
+  // Helper to extract fixed term orders for a margin account
+  extractFixedTermOrders(
+    orders: Record<string, OpenOrders>
+  ): OpenOrders[] {
+    return Object.values(orders).filter(order => order.authority === this.address.toBase58())
+  }
+
+  // Helper to extract fixed term positions for a margin account
+  extractFixedTermPositions(
+    positions: Record<string, OpenPositions>
+  ): OpenPositions[] {
+    return Object.values(positions).filter(position => position.authority === this.address.toBase58())
+  }
 }
+

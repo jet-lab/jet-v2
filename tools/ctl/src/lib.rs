@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use actions::{fixed_term::MarketParameters, margin_pool::ConfigurePoolCliOptions};
+use actions::{
+    fixed_term::{FixedTermDisplayCmd, MarketParameters},
+    margin_pool::ConfigurePoolCliOptions,
+};
 use anchor_lang::prelude::Pubkey;
 use anyhow::{bail, Result};
 use clap::{AppSettings, Parser, Subcommand};
@@ -140,11 +143,22 @@ pub enum MarginCommand {
         liquidator: Pubkey,
     },
 
-    /// Update the metadata for existing positions
-    RefreshPositionMd {
-        /// The token that had its config updated
-        token: Pubkey,
+    /// Add refresher permissions
+    AddRefresher {
+        /// The liquidator's address
+        #[serde_as(as = "DisplayFromStr")]
+        account: Pubkey,
     },
+
+    /// Remove refresher permissions
+    RemoveRefresher {
+        /// The liquidator's address
+        #[serde_as(as = "DisplayFromStr")]
+        account: Pubkey,
+    },
+
+    /// Update the metadata for existing positions after an update to the global token config
+    RefreshPositionMd,
 
     /// Update all the balances for positions on an account
     UpdateBalances {
@@ -253,6 +267,10 @@ pub enum FixedTermCommand {
 
     /// Recover unintialized account rent
     RecoverUninitialized { recipient: Pubkey },
+
+    /// Fetch, deserialize and display FixedTerm related accounts
+    #[clap(subcommand)]
+    Display(FixedTermDisplayCmd),
 }
 
 #[serde_as]
@@ -459,8 +477,15 @@ async fn run_margin_command(
         MarginCommand::RemoveLiquidator { liquidator } => {
             actions::margin::process_set_liquidator(client, airspace, liquidator, false).await
         }
-        MarginCommand::RefreshPositionMd { token } => {
-            actions::margin::process_refresh_metadata(client, airspace, token).await
+        MarginCommand::AddRefresher { account } => {
+            actions::margin::process_set_refresher_permission(client, airspace, account, true).await
+        }
+        MarginCommand::RemoveRefresher { account } => {
+            actions::margin::process_set_refresher_permission(client, airspace, account, false)
+                .await
+        }
+        MarginCommand::RefreshPositionMd => {
+            actions::margin::process_refresh_metadata(client, airspace).await
         }
         MarginCommand::UpdateBalances { account } => {
             actions::margin::process_update_balances(client, account).await
@@ -522,6 +547,12 @@ async fn run_fixed_command(client: &Client, command: FixedTermCommand) -> Result
 
         FixedTermCommand::RecoverUninitialized { recipient } => {
             actions::fixed_term::process_recover_uninitialized(client, recipient).await
+        }
+
+        FixedTermCommand::Display(cmd) => {
+            actions::fixed_term::process_display_fixed_term_accounts(client, cmd).await?;
+
+            Ok(Plan::default())
         }
     }
 }

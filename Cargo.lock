@@ -2729,6 +2729,7 @@ dependencies = [
  "heck 0.4.0",
  "indicatif",
  "jet-environment",
+ "jet-fixed-term",
  "jet-margin-sdk",
  "jet-program-common",
  "jet-solana-client",

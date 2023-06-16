@@ -9,7 +9,7 @@ use solana_client::{
         RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSendTransactionConfig,
         RpcTokenAccountsFilter,
     },
-    rpc_request::RpcRequest,
+    rpc_request::{RpcError, RpcRequest, RpcResponseErrorData},
     rpc_response::{Response, RpcKeyedAccount},
 };
 use solana_sdk::{
@@ -269,6 +269,13 @@ fn convert_err(e: solana_client::client_error::ClientError) -> ClientError {
         solana_client::client_error::ClientErrorKind::TransactionError(e) => {
             ClientError::TransactionError(e)
         }
+        solana_client::client_error::ClientErrorKind::RpcError(RpcError::RpcResponseError {
+            data: RpcResponseErrorData::SendTransactionPreflightFailure(failure),
+            ..
+        }) => ClientError::TransactionSimulationError {
+            err: failure.err,
+            logs: failure.logs.unwrap_or_default(),
+        },
         _ => ClientError::Other(e.to_string()),
     }
 }

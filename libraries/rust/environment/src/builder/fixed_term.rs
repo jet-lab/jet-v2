@@ -25,8 +25,8 @@ use super::{
     margin::configure_margin_token, Builder, BuilderError, NetworkKind, SetupPhase, TokenContext,
 };
 
-const EVENT_QUEUE_CAPACITY: usize = 8192;
-const ORDERBOOK_CAPACITY: usize = 16384;
+const EVENT_QUEUE_CAPACITY: usize = 1024;
+const ORDERBOOK_CAPACITY: usize = 8192;
 
 pub async fn configure_market_for_token(
     builder: &mut Builder,
@@ -183,21 +183,21 @@ async fn configure_margin_for_market(
         },
     };
 
-    configure_margin_token(
-        builder,
-        &token.airspace,
-        &ticket_mint,
-        Some(TokenConfigUpdate {
-            underlying_mint: ticket_mint,
-            admin: TokenAdmin::Margin {
-                oracle: ticket_oracle.unwrap(),
-            },
-            token_kind: TokenKind::Collateral,
-            value_modifier: config.ticket_collateral_weight,
-            max_staleness: 0,
-        }),
-    )
-    .await?;
+    if let Some(oracle) = ticket_oracle {
+        configure_margin_token(
+            builder,
+            &token.airspace,
+            &ticket_mint,
+            Some(TokenConfigUpdate {
+                underlying_mint: ticket_mint,
+                admin: TokenAdmin::Margin { oracle },
+                token_kind: TokenKind::Collateral,
+                value_modifier: config.ticket_collateral_weight,
+                max_staleness: 0,
+            }),
+        )
+        .await?;
+    }
 
     // ticket collateral
     configure_margin_token(

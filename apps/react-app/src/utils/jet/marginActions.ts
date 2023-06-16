@@ -22,6 +22,13 @@ export enum ActionResponse {
   Cancelled = 'CANCELLED'
 }
 export function useMarginActions() {
+  const selectMarginAccount = useJetStore().selectMarginAccount;
+  const { fixedTermOpenOrders, fixedTermOpenPositions } = useJetStore(state => {
+    return {
+      fixedTermOpenOrders: state.openOrders,
+      fixedTermOpenPositions: state.openPositions
+    }
+  });
   const config = useRecoilValue(MainConfig);
   const [cluster, prices] = useJetStore(state => [state.settings.cluster, state.prices]);
   const dictionary = useRecoilValue(Dictionary);
@@ -46,8 +53,8 @@ export function useMarginActions() {
     (cluster === 'mainnet-beta'
       ? ''
       : cluster === 'devnet'
-      ? process.env.REACT_APP_DEV_SWAP_API
-      : process.env.REACT_APP_LOCAL_SWAP_API) || '';
+        ? process.env.REACT_APP_DEV_SWAP_API
+        : process.env.REACT_APP_LOCAL_SWAP_API) || '';
 
   // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
@@ -118,6 +125,8 @@ export function useMarginActions() {
         provider,
         wallet.publicKey,
         seed,
+        fixedTermOpenOrders,
+        fixedTermOpenPositions,
         airspaceAddress, // airspace
         pools.tokenPools,
         walletTokens,
@@ -199,7 +208,9 @@ export function useMarginActions() {
       newWalletFavorites.add(newMarginAccount.address.toString());
       favoriteAccountsClone[wallet.publicKey.toString()] = Array.from(newWalletFavorites);
       setFavoriteAccounts(favoriteAccountsClone);
-      setCurrentAccountAddress(newMarginAccount.address.toString());
+      const selected = newMarginAccount.address.toString();
+      setCurrentAccountAddress(selected);
+      selectMarginAccount(selected);
 
       await actionRefresh();
       return [undefined, ActionResponse.Success];

@@ -1,1 +1,1 @@
-type JetStore = PoolsSlice & PricesSlice & SettingsSlice & AccountsSlice;
+type JetStore = PoolsSlice & PricesSlice & SettingsSlice & AccountsSlice & FixedTermSlice;

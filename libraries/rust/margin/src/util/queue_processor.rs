@@ -72,9 +72,12 @@ impl<T: Processable, C: ChunkProcessor<T>> StaticQueueProcessor<T, C> {
     }
 
     /// see QueueProcessor::process_forever
-    pub async fn process_forever(&self) {
+    pub async fn process_forever(&self, delay: Duration) {
         self.queue_processor
-            .process_forever(clone_to_async! { (p = self.chunk_processor) |x| p.process(x).await  })
+            .process_forever(clone_to_async! { (p = self.chunk_processor) |x| {
+                tokio::time::sleep(delay).await;
+                p.process(x).await
+            }})
             .await
     }
 

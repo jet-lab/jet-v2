@@ -16,6 +16,7 @@ export function TpsBanner(): JSX.Element {
   const unusuallySlow = (tps && tps < 1500) || ping > 750;
   const criticallySlow = (tps && tps < 1000) || ping > 1500;
   const [networkStatus, setNetworkStatus] = useRecoilState(NetworkStateAtom);
+  const isMainnet = cluster === 'mainnet-beta';
 
   // Returns the conditional TPS warning message
   function getTpsMessage() {
@@ -52,7 +53,7 @@ export function TpsBanner(): JSX.Element {
   }, [provider.connection]);
 
   // Render the TPS banner (if TPS is slow enough)
-  if (unusuallySlow) {
+  if (isMainnet && unusuallySlow) {
     return (
       <Alert closable className="tps-banner" type={criticallySlow ? 'error' : 'warning'} message={getTpsMessage()} />
     );

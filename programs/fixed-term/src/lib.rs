@@ -135,7 +135,7 @@ use anchor_lang::prelude::*;
 use margin::state::{AutoRollConfig, BorrowAutoRollConfig, LendAutoRollConfig};
 use orderbook::state::OrderParams;
 
-declare_id!("JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc");
+declare_id!("JPTermEg2DwrV39xb1Fs7z1VUxcvdPT7mE7cyGsQ4xt");
 
 #[program]
 pub mod jet_fixed_term {

@@ -12,15 +12,16 @@ use comfy_table::{presets::UTF8_FULL, Table};
 use futures::FutureExt;
 use jet_margin_sdk::{
     ix_builder::{
-        derive_token_config, get_metadata_address, MarginConfigIxBuilder, MarginIxBuilder,
-        MarginPoolIxBuilder,
+        derive_margin_permit, derive_token_config, get_metadata_address, MarginConfigIxBuilder,
+        MarginIxBuilder, MarginPoolIxBuilder,
     },
     jet_airspace::state::Airspace,
     jet_margin::{self, MarginAccount, PriceInfo, Valuation},
     jet_margin_pool::{self, MarginPool},
-    jet_metadata::{self, PositionTokenMetadata},
+    jet_metadata::{self},
 };
 use jet_program_common::DEFAULT_AIRSPACE;
+use jet_solana_client::rpc::SolanaRpcExtra;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use solana_sdk::{pubkey, pubkey::Pubkey};
@@ -131,56 +132,96 @@ pub async fn process_register_adapter(
         .build())
 }
 
-pub async fn process_refresh_metadata(
-    client: &Client,
-    airspace: Pubkey,
-    token: Pubkey,
-) -> Result<Plan> {
-    let margin_accounts = get_all_accounts(client, &airspace).await?;
+pub async fn process_refresh_metadata(client: &Client, airspace: Pubkey) -> Result<Plan> {
     let mut plan = client.plan()?;
-    let deposit_token = MarginPoolIxBuilder::new(token).deposit_note_mint;
-    let config = client
-        .read_anchor_account::<PositionTokenMetadata>(&get_metadata_address(&deposit_token))
-        .await?;
+    let rpc = client.network_interface();
+    let margin_accounts = get_all_accounts(client, &airspace)
+        .await?
+        .into_iter()
+        .filter(|(_, account)| account.airspace == airspace)
+        .collect::<Vec<_>>();
+    let configs = rpc
+        .find_anchor_accounts::<jet_margin::TokenConfig>()
+        .await?
+        .into_iter()
+        .filter(|(_, config)| config.airspace == airspace)
+        .collect::<Vec<_>>();
 
     let mut position_count = 0;
     let mut fix_count = 0;
 
-    println!("current config: {config:#?}");
+    println!("found {} configs", configs.len());
     println!("found {} margin accounts", margin_accounts.len());
 
     for (address, account) in margin_accounts {
-        if account.airspace != airspace {
-            continue;
-        }
-
         let ix = MarginIxBuilder::new(
-            Default::default(), // FIXME: read airspace from margin account
+            account.airspace,
             account.owner,
             u16::from_le_bytes(account.user_seed),
         )
         .with_authority(client.signer()?);
 
-        if let Some(position) = account.get_position(&deposit_token) {
-            position_count += 1;
+        for (_, config) in &configs {
+            if let Some(position) = account.get_position(&config.mint) {
+                position_count += 1;
 
-            if position.kind() != config.token_kind.into()
-                || position.value_modifier != config.value_modifier
-                || position.max_staleness != config.max_staleness
-            {
-                fix_count += 1;
-                plan = plan.instructions(
-                    [],
-                    [format!("refresh-position-md {token} for {address}")],
-                    [ix.refresh_position_config(&deposit_token)],
-                );
+                if position.kind() != config.token_kind
+                    || position.value_modifier != config.value_modifier
+                    || position.max_staleness != config.max_staleness
+                {
+                    fix_count += 1;
+                    plan = plan.instructions(
+                        [],
+                        [format!(
+                            "refresh-position-md {} for account {address}",
+                            config.mint
+                        )],
+                        [ix.refresh_position_config(&config.mint)],
+                    );
+                }
             }
         }
     }
 
-    println!("accounts to fix: {fix_count} / {position_count}");
+    println!("positions to fix: {fix_count} / {position_count}");
 
     Ok(plan.build())
+}
+
+pub async fn process_set_refresher_permission(
+    client: &Client,
+    airspace: Pubkey,
+    account: Pubkey,
+    allow_refresh: bool,
+) -> Result<Plan> {
+    let permit_address = derive_margin_permit(&airspace, &account);
+    let airspace_authority = client
+        .read_anchor_account::<Airspace>(&airspace)
+        .await?
+        .authority;
+    let ix = MarginConfigIxBuilder::new(airspace, resolve_payer(client)?, Some(airspace_authority));
+
+    if let Ok(permit) = client
+        .read_anchor_account::<jet_margin::Permit>(&permit_address)
+        .await
+    {
+        if permit
+            .permissions
+            .contains(jet_margin::Permissions::REFRESH_POSITION_CONFIG)
+        {
+            println!("address {account} already has refresh permission");
+            return Ok(Plan::default());
+        }
+    }
+
+    Ok(client
+        .plan()?
+        .instructions(
+            [],
+            [format!("set-refresher {account} = {allow_refresh}")],
+            [ix.configure_position_config_refresher(account, allow_refresh)],
+        )
+        .build())
 }
 
 pub async fn process_set_liquidator(
@@ -222,7 +263,7 @@ pub async fn process_update_balances(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Default::default(), // FIXME: read airspace from margin account
+        account.airspace,
         account.owner,
         u16::from_le_bytes(account.user_seed),
     )
@@ -254,7 +295,7 @@ pub async fn process_transfer_position(
         .await?;
 
     let ix = MarginIxBuilder::new(
-        Default::default(), // FIXME: read airspace from margin account
+        source.airspace,
         source.owner,
         u16::from_le_bytes(source.user_seed),
     )

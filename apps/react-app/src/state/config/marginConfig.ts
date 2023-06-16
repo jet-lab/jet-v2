@@ -13,9 +13,9 @@ export const MainConfig = atom<MarginConfig | undefined>({
 
 // A syncer to be called so that we can have dependent atom state
 export function useMainConfigSyncer() {
-  const { cluster, updateLookupTables } = useJetStore(state => ({
+  const { cluster, updateAirspaceLookupTables } = useJetStore(state => ({
     cluster: state.settings.cluster,
-    updateLookupTables: state.updateLookupTables
+    updateAirspaceLookupTables: state.updateAirspaceLookupTables
   }));
   const setMainConfig = useSetRecoilState(MainConfig);
 
@@ -29,14 +29,19 @@ export function useMainConfigSyncer() {
       getLocalnetConfig().then(async config => {
         setMainConfig(config);
         // This is temporary until we use the new config format
-        let airspaces = (await axios.get('/localnet.config.json')).data.airspaces;
-        return getAuthorityLookupTables(airspaces[0].lookupRegistryAuthority)
-      }).then(addresses => {
-        updateLookupTables(addresses);
+        const airspaces = (await axios.get('/localnet.config.json')).data.airspaces;
+        const addresses = await getAuthorityLookupTables(airspaces[0].lookupRegistryAuthority)
+        updateAirspaceLookupTables(addresses);
       });
     } else {
-      MarginClient.getConfig(cluster).then(config => setMainConfig(config));
-      // TODO: update authority here too
+      const configs = Promise.all([MarginClient.getConfig(cluster), MarginClient.getLegacyConfig(cluster)]);
+      // Get the new config as it has airspace authority addresses
+      configs.then(async ([config, legacyConfig]) => {
+        setMainConfig(legacyConfig);
+        return getAuthorityLookupTables(config.airspaces[0].lookupRegistryAuthority);
+      }).then(addresses => {
+        updateAirspaceLookupTables(addresses);
+      })
     }
   }, [cluster, setMainConfig]);
 }

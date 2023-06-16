@@ -8,9 +8,11 @@ import { Typography, Button, Dropdown, Tabs } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { CopyableField } from '../CopyableField';
+import { useJetStore } from '@jet-lab/store';
 
 // Head of the Account Snapshot, where user can select/edit/create their margin accounts
 export function SnapshotHead(): JSX.Element {
+  const selectMarginAccount = useJetStore().selectMarginAccount;
   const dictionary = useRecoilValue(Dictionary);
   const { publicKey } = useWallet();
   const walletTokens = useRecoilValue(WalletTokens);
@@ -51,6 +53,7 @@ export function SnapshotHead(): JSX.Element {
         } else if (!newFavorites.includes(accountKey)) {
           newFavorites.push(accountKey);
           setCurrentAccountAddress(accountKey);
+          selectMarginAccount(accountKey);
         }
         favoriteAccountsClone[publicKey.toString()] = newFavorites;
         setFavoriteAccounts(favoriteAccountsClone);
@@ -67,7 +70,10 @@ export function SnapshotHead(): JSX.Element {
       render = (
         <Tabs
           activeKey={currentAccountAddress}
-          onChange={(key: string) => setCurrentAccountAddress(key)}
+          onChange={(key: string) => {
+            setCurrentAccountAddress(key)
+            selectMarginAccount(key);
+          }}
           className={
             !currentAccountAddress || !walletFavoriteAccounts.includes(currentAccountAddress) ? 'no-active-tabs' : ''
           }
@@ -107,7 +113,10 @@ export function SnapshotHead(): JSX.Element {
                 key,
                 label: (
                   <div
-                    onClick={() => setCurrentAccountAddress(key)}
+                    onClick={() => {
+                      setCurrentAccountAddress(key)
+                      selectMarginAccount(key);
+                    }}
                     className="all-accounts-menu-name flex align-center justify-start">
                     {walletFavoriteAccounts.includes(key) ? (
                       <StarFilled style={{ opacity: 1 }} onClick={() => updateFavoriteAccounts(key, true)} />

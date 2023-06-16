@@ -25,6 +25,7 @@ export function SnapshotBody(): JSX.Element {
   const riskStyle = useRiskStyle();
   const { Title, Text } = Typography;
 
+
   useEffect(() => {
     axios
       .get('https://api.jetprotocol.io/v1/rates')

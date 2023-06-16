@@ -8,7 +8,7 @@ import {
   JetMarginSwapIdl,
   JetMetadataIdl
 } from "../idls"
-import { MarginCluster, MarginConfig, getLatestConfig } from "./config"
+import { MarginCluster, MarginConfig, getLatestConfig, getLatestLegacyConfig } from "./config"
 import { Connection, ParsedTransactionWithMeta, PublicKey } from "@solana/web3.js"
 import axios from "axios"
 import { Pool } from "./pool"
@@ -71,6 +71,14 @@ export class MarginClient {
     return programs
   }
 
+  static async getLegacyConfig(cluster: MarginCluster): Promise<MarginConfig> {
+    if (typeof cluster === "string") {
+      return await getLatestLegacyConfig(cluster)
+    } else {
+      return cluster
+    }
+  }
+
   static async getConfig(cluster: MarginCluster): Promise<MarginConfig> {
     if (typeof cluster === "string") {
       return await getLatestConfig(cluster)
@@ -116,10 +124,10 @@ export class MarginClient {
       cluster === "mainnet-beta"
         ? process.env.REACT_APP_DATA_API
         : cluster === "devnet"
-        ? process.env.REACT_APP_DEV_DATA_API
-        : cluster === "localnet"
-        ? process.env.REACT_APP_LOCAL_DATA_API
-        : ""
+          ? process.env.REACT_APP_DEV_DATA_API
+          : cluster === "localnet"
+            ? process.env.REACT_APP_LOCAL_DATA_API
+            : ""
     const flightLogURL = `${url}/margin/accounts/activity/${pubKey}`
 
     const response = await axios.get(flightLogURL)

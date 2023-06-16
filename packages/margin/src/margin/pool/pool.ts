@@ -822,7 +822,12 @@ export class Pool {
       throw new Error("Use ShiftBy for all borrow instructions")
     }
 
-    await marginAccount.refresh()
+    // Unnecessary to supply accounts, refresh is only to get latest positions.
+    // We should remove this when we are confident with websockets as this is wasteful.
+    await marginAccount.refresh({
+      openPositions: [],
+      openOrders: []
+    })
     const refreshInstructions: TransactionInstruction[] = []
     const registerinstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
@@ -943,7 +948,10 @@ export class Pool {
     closeLoan?: boolean
     signer?: Address
   }): Promise<string> {
-    await marginAccount.refresh()
+    await marginAccount.refresh({
+      openPositions: [],
+      openOrders: []
+    })
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
     const depositPosition = await this.withGetOrRegisterDepositPosition({
@@ -1467,7 +1475,10 @@ export class Pool {
     marginAccount: MarginAccount
     destination: Address
   }) {
-    await marginAccount.refresh()
+    await marginAccount.refresh({
+      openPositions: [],
+      openOrders: []
+    })
 
     const position = marginAccount.getPositionNullable(this.addresses.depositNoteMint)
 
@@ -1504,7 +1515,10 @@ export class Pool {
       await this.withCloseDepositPosition({ instructions, marginAccount })
 
       await marginAccount.sendAll([instructions])
-      await marginAccount.refresh()
+      await marginAccount.refresh({
+        openPositions: [],
+        openOrders: []
+      })
     }
   }
 

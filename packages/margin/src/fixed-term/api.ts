@@ -221,6 +221,7 @@ export const cancelOrder = async ({
   airspaceLookupTables
 }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
+  let cancelInstructions: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions,
     pools,
@@ -236,16 +237,16 @@ export const cancelOrder = async ({
 
   const cancelLoan = await market.market.cancelOrderIx(marginAccount, orderId)
   await marginAccount.withAdapterInvoke({
-    instructions,
+    instructions: cancelInstructions,
     adapterInstruction: cancelLoan
   })
   await marginAccount.withPrioritisedPositionRefresh({
-    instructions,
+    instructions: cancelInstructions,
     pools,
     markets,
     marketAddress: market.market.address
   })
-  return sendAndConfirmV0(provider, [instructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [instructions, cancelInstructions], airspaceLookupTables, [])
 }
 
 // MARKET TAKER ORDERS

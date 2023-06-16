@@ -28,7 +28,12 @@ use jet_environment::builder::resolve_swap_program;
 use jet_margin_sdk::swap::openbook_swap::OpenBookMarket;
 use jet_program_common::programs::SABER;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use jet_solana_client::{network::NetworkKind, rpc::native::RpcConnection};
+use jet_solana_client::{
+    network::NetworkKind,
+    rpc::native::RpcConnection,
+    signature::sign_versioned_transaction,
+    transaction::{condense, ToTransaction, TransactionBuilder},
+};
 
 const PYTH_DEVNET_PROGRAM: Pubkey = pubkey!("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s");
 const PYTH_MAINNET_PROGRAM: Pubkey = pubkey!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH");
@@ -58,6 +63,10 @@ pub struct CliOpts {
     /// Don't try to sync the oracles
     #[clap(long)]
     pub no_oracle_sync: bool,
+
+    /// Don't try to rebalance swap pools
+    #[clap(long)]
+    pub no_pool_sync: bool,
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
@@ -108,15 +117,17 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         if !opts.no_oracle_sync {
             sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
         }
-        sync_pool_balances(&target_client, &signer, &spl_pool_list, &spl_swap_program).await?;
-        sync_pool_balances(&target_client, &signer, &saber_pool_list, &SABER).await?;
-        replace_openbook_orders(
-            &target_client,
-            &signer,
-            &openbook_market_list,
-            &openbook_program,
-        )
-        .await?;
+        if !opts.no_pool_sync {
+            sync_pool_balances(&target_client, &signer, &spl_pool_list, &spl_swap_program).await?;
+            sync_pool_balances(&target_client, &signer, &saber_pool_list, &SABER).await?;
+            replace_openbook_orders(
+                &target_client,
+                &signer,
+                &openbook_market_list,
+                &openbook_program,
+            )
+            .await?;
+        }
 
         if id_file.is_none() {
             id_file = Some(RunningProcessIdFile::new());
@@ -238,7 +249,7 @@ async fn replace_openbook_orders(
     program: &Pubkey,
 ) -> Result<()> {
     for ((token_a, token_b), market) in markets {
-        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(1_200_000)];
+        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(800_000)];
 
         let scratch_a = get_scratch_address(&signer.pubkey(), token_a);
         let scratch_b = get_scratch_address(&signer.pubkey(), token_b);
@@ -285,7 +296,10 @@ async fn replace_openbook_orders(
         );
 
         let balance_tx = Transaction::new_signed_with_payer(
-            &[balance_ix],
+            &[
+                ComputeBudgetInstruction::set_compute_unit_limit(800_000),
+                balance_ix,
+            ],
             Some(&signer.pubkey()),
             &[signer],
             target.get_latest_blockhash().await?,
@@ -321,7 +335,7 @@ async fn sync_oracles(
     let oracle_addresses = oracles.iter().map(|o| o.source_oracle).collect::<Vec<_>>();
     let source_accounts = source.get_multiple_accounts(&oracle_addresses).await?;
 
-    let instructions = oracles
+    let txs = oracles
         .iter()
         .zip(source_accounts)
         .filter_map(|(oracle, account)| {
@@ -338,22 +352,18 @@ async fn sync_oracles(
                     source_price.expo,
                 );
 
-            Some(update_target_ix)
+            Some(TransactionBuilder::from(vec![update_target_ix]))
         })
         .collect::<Vec<_>>();
 
-    let recent_blockhash = target.get_latest_blockhash().await?;
-    let update_price_tx = Transaction::new_signed_with_payer(
-        // TODO: use a transaction builder in case transaction size is large
-        &instructions,
-        Some(&signer.pubkey()),
-        &[signer],
-        recent_blockhash,
-    );
+    let txs = condense(&txs, &signer.pubkey())?;
 
-    match target.send_and_confirm_transaction(&update_price_tx).await {
-        Ok(_) => (),
-        Err(e) => {
+    for txb in txs {
+        let recent_blockhash = target.get_latest_blockhash().await?;
+        let mut tx = txb.to_transaction(&signer.pubkey(), recent_blockhash);
+        sign_versioned_transaction(signer, &mut tx);
+
+        if let Err(e) = target.send_transaction(&tx).await {
             eprintln!("{e}");
 
             if let ClientErrorKind::RpcError(RpcError::RpcResponseError {

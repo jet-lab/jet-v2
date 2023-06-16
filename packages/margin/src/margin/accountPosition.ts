@@ -19,8 +19,6 @@ export interface StorePriceInfo {
 }
 
 export class AccountPosition {
-  /** The raw account position deserialized by anchor */
-  info: AccountPositionInfo
 
   /** The address of the token/mint of the asset */
   token: PublicKey
@@ -35,8 +33,8 @@ export class AccountPosition {
     if (this.price) {
       return this.balance.toNumber() * 10 ** this.exponent * this.price.price
     } else {
-      return NaN
-    } 
+      return 0.0
+    }
   }
 
   /** The amount of tokens in the account */
@@ -64,7 +62,6 @@ export class AccountPosition {
   flags: AdapterPositionFlags
 
   constructor({ info, price }: { info: AccountPositionInfo; price?: StorePriceInfo }) {
-    this.info = info
     this.token = info.token
     this.address = info.address
     this.adapter = info.adapter
@@ -76,6 +73,34 @@ export class AccountPosition {
     this.valueModifier = info.valueModifier / 100
     this.maxStaleness = info.maxStaleness
     this.flags = info.flags.flags
+  }
+
+  static fromCache({ data, price }: { data: AccountPositionData; price?: StorePriceInfo }): AccountPosition {
+    const info: AccountPositionInfo = {
+      token: new PublicKey(data.token),
+      address: new PublicKey(data.address),
+      adapter: new PublicKey(data.adapter),
+      balance: new BN(data.balance),
+      balanceTimestamp: new BN(data.balanceTimestamp),
+      exponent: data.exponent,
+      valueModifier: data.valueModifier, // the modifier is already a fraction
+      maxStaleness: new BN(data.maxStaleness),
+      value: [],
+      price: {
+        value: new BN(data.price.value),
+        timestamp: new BN(data.price.timestamp),
+        exponent: data.price.exponent,
+        isValid: data.price.isValid,
+        reserved: [],
+      },
+      kind: data.kind === 'Collateral' ? 1 : data.kind === 'Claim' ? 2 : 3,
+      flags: {
+        flags: 0
+      },
+      reserved: []
+
+    }
+    return new AccountPosition({ info, price })
   }
 
   collateralValue(): number {
