@@ -286,7 +286,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && (
+          {forecast?.riskIndicator && (
             <span>
               {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
             </span>
