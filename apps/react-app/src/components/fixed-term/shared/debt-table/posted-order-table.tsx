@@ -9,8 +9,6 @@ import { Dispatch, SetStateAction, useMemo, useState } from 'react';
 import { AnchorProvider } from '@project-serum/anchor';
 import { getExplorerUrl } from '@utils/ui';
 import { notify } from '@utils/notify';
-import { useRecoilRefresher_UNSTABLE } from 'recoil';
-import { AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
 
 type UpdateOrders = Dispatch<SetStateAction<string[]>>;
 
@@ -24,7 +22,6 @@ interface GetPostOrderColumnes {
   markets: FixedTermMarket[];
   ordersPendingDeletion: string[];
   setOrdersPendingDeletion: UpdateOrders;
-  refreshOrderBooks: () => void;
 }
 const getPostOrderColumns = ({
   market,
@@ -34,85 +31,84 @@ const getPostOrderColumns = ({
   explorer,
   pools,
   markets,
-  refreshOrderBooks,
   ordersPendingDeletion,
   setOrdersPendingDeletion
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
-    {
-      title: 'Issue date',
-      dataIndex: 'created_timestamp',
-      key: 'created_timestamp',
-      render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
-      sorter: (a, b) => a.created_timestamp - b.created_timestamp,
-      sortDirections: ['descend']
+  {
+    title: 'Issue date',
+    dataIndex: 'created_timestamp',
+    key: 'created_timestamp',
+    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
+    sorter: (a, b) => a.created_timestamp - b.created_timestamp,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Total QTY',
+    dataIndex: 'total_quote_qty',
+    key: 'total_quote_qty',
+    render: (value: number) =>
+      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
+    sorter: (a, b) => a.total_quote_qty - b.total_quote_qty,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Filled QTY',
+    dataIndex: 'filled_quote_qty',
+    key: 'filled_quote_qty',
+    render: (filled: number) => {
+      return `${market.token.symbol} ${new TokenAmount(new BN(filled), market.token.decimals).tokens.toFixed(2)}`;
     },
-    {
-      title: 'Total QTY',
-      dataIndex: 'total_quote_qty',
-      key: 'total_quote_qty',
-      render: (value: number) => `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
-      sorter: (a, b) => a.total_quote_qty - b.total_quote_qty,
-      sortDirections: ['descend']
+    sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Rate',
+    dataIndex: 'rate',
+    key: 'rate',
+    render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
+    sorter: (a, b) => a.rate - b.rate,
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Autoroll',
+    dataIndex: 'is_auto_roll',
+    key: 'is_auto_roll',
+    align: 'center',
+    render: (is_auto_roll: boolean) => {
+      return is_auto_roll ? <CheckOutlined /> : null;
     },
-    {
-      title: 'Filled QTY',
-      dataIndex: 'filled_quote_qty',
-      key: 'filled_quote_qty',
-      render: (filled: number) => {
-        return `${market.token.symbol} ${new TokenAmount(new BN(filled), market.token.decimals).tokens.toFixed(2)}`;
-      },
-      sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
-      sortDirections: ['descend']
-    },
-    {
-      title: 'Rate',
-      dataIndex: 'rate',
-      key: 'rate',
-      render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
-      sorter: (a, b) => a.rate - b.rate,
-      sortDirections: ['descend']
-    },
-    {
-      title: 'Autoroll',
-      dataIndex: 'is_auto_roll',
-      key: 'is_auto_roll',
-      align: 'center',
-      render: (is_auto_roll: boolean) => {
-        return is_auto_roll ? <CheckOutlined /> : null;
-      },
-      sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
-      sortDirections: ['descend']
-    },
-    {
-      title: 'Cancel',
-      key: 'cancel',
-      align: 'center',
-      render: (order: OpenOrder) => {
-        return ordersPendingDeletion.includes(order.order_id) ? (
-          <LoadingOutlined />
-        ) : (
-          <CloseOutlined
-            style={{ color: '#e36868' }}
-            onClick={() => {
-              cancel(
-                market,
-                marginAccount,
-                provider,
-                order,
-                cluster,
-                explorer,
-                pools,
-                markets,
-                refreshOrderBooks,
-                ordersPendingDeletion,
-                setOrdersPendingDeletion
-              );
-            }}
-          />
-        );
-      }
+    sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
+    sortDirections: ['descend']
+  },
+  {
+    title: 'Cancel',
+    key: 'cancel',
+    align: 'center',
+    render: (order: OpenOrder) => {
+      return ordersPendingDeletion.includes(order.order_id) ? (
+        <LoadingOutlined />
+      ) : (
+        <CloseOutlined
+          style={{ color: '#e36868' }}
+          onClick={() => {
+            cancel(
+              market,
+              marginAccount,
+              provider,
+              order,
+              cluster,
+              explorer,
+              pools,
+              markets,
+              ordersPendingDeletion,
+              setOrdersPendingDeletion
+            );
+          }}
+        />
+      );
     }
-  ];
+  }
+];
 
 const cancel = async (
   market: MarketAndConfig,
@@ -123,7 +119,6 @@ const cancel = async (
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
   pools: Record<string, Pool>,
   markets: FixedTermMarket[],
-  refreshOrderBooks: () => void,
   ordersPendingDeletion: string[],
   setOrdersPendingDeletion: UpdateOrders
 ) => {
@@ -139,7 +134,6 @@ const cancel = async (
     });
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
     setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
-    refreshOrderBooks();
   } catch (e: any) {
     notify(
       'Cancel order failed',
@@ -170,7 +164,6 @@ export const PostedOrdersTable = ({
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
 }) => {
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [ordersPendingDeletion, setOrdersPendingDeletion] = useState<string[]>([]);
 
   const columns = useMemo(
@@ -183,7 +176,6 @@ export const PostedOrdersTable = ({
         explorer,
         pools,
         markets,
-        refreshOrderBooks,
         ordersPendingDeletion,
         setOrdersPendingDeletion
       }),
