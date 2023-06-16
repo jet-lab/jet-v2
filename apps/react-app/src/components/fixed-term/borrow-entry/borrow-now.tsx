@@ -17,10 +17,10 @@ import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { Pools } from '@state/pools/pools';
-import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
 import { EditOutlined, LoadingOutlined } from '@ant-design/icons';
@@ -62,7 +62,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const wallet = useWallet();
   const [amount, setAmount] = useState<BN | undefined>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
@@ -158,7 +157,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
-        refreshOrderBooks();
         notify(
           'Borrow Successful',
           `Your borrow order for ${amount

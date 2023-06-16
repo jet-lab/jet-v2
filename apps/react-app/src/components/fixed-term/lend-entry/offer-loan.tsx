@@ -18,10 +18,10 @@ import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { Pools } from '@state/pools/pools';
-import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
@@ -67,7 +67,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [amount, setAmount] = useState<BN | undefined>();
   const [basisPoints, setBasisPoints] = useState<number>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
@@ -113,7 +112,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         airspaceLookupTables: airspaceLookupTables
       });
       setTimeout(() => {
-        refreshOrderBooks();
         notify(
           'Lend Offer Created',
           `Your lend offer for ${amount
