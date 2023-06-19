@@ -43,7 +43,13 @@ const getDepositsColumns = (
     title: 'Maturity',
     dataIndex: 'maturation_timestamp',
     key: 'maturation_timestamp',
-    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} from now`,
+    render: (date: number) => {
+      if(Date.now() > date) {
+        return `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} from now`;
+      } else {
+        return `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} from now`;
+      }
+    },
     sorter: (a, b) => a.maturation_timestamp - b.maturation_timestamp,
     sortDirections: ['descend']
   },
