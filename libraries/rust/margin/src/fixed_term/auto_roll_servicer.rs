@@ -3,8 +3,8 @@ use std::{sync::Arc, time::Duration};
 use anchor_lang::AccountDeserialize;
 use futures::future::join_all;
 use jet_fixed_term::{
-    margin::state::{MarginUser, TermLoan},
-    tickets::state::TermDeposit,
+    margin::state::{MarginUser, TermLoan, TermLoanFlags},
+    tickets::state::{TermDeposit, TermDepositFlags},
 };
 use jet_instructions::{
     fixed_term::{derive, FixedTermIxBuilder},
@@ -113,6 +113,10 @@ impl AutoRollServicer {
         let mut next_unpaid_loan_seqno =
             user.1.debt().next_term_loan_to_repay().unwrap_or_default() + 1;
         for (loan_key, loan) in loans {
+            if !loan.flags.contains(TermLoanFlags::AUTO_ROLL) {
+                continue;
+            }
+
             if loan.strike_timestamp + user.1.borrow_roll_config.as_ref().unwrap().roll_tenor as i64
                 >= current_time
             {
@@ -161,6 +165,9 @@ impl AutoRollServicer {
         }
         let mut next_deposit_seqno = user.1.assets().next_new_deposit_seqno();
         for (deposit_key, deposit) in deposits {
+            if !deposit.flags.contains(TermDepositFlags::AUTO_ROLL) {
+                continue;
+            }
             if deposit.matures_at <= current_time {
                 tracing::debug!("attempting to auto-lend for deposit [{}]", deposit_key);
                 let auto_lend = self.ix.auto_roll_lend_order(
