@@ -51,12 +51,25 @@ interface Forecast {
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
-    return {
-      selectedPoolKey: state.selectedPoolKey,
-      airspaceLookupTables: state.airspaceLookupTables
-    };
-  });
+  const { selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(
+    state => {
+      return {
+        selectedPoolKey: state.selectedPoolKey,
+        airspaceLookupTables: state.airspaceLookupTables,
+        marginAccountLookupTables: state.marginAccountLookupTables,
+        selectedMarginAccount: state.selectedMarginAccount
+      };
+    }
+  );
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -91,7 +104,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !forecast?.hasEnoughCollateral;
 
   const createLendOrder = async () => {
-    if (!amount || !basisPoints) return;
+    if (!amount || !basisPoints || !marginAccount) return;
     setPending(true);
     let signature: string;
     const rateBPS = new BN(Math.round(basisPoints * 100));
@@ -109,7 +122,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTables
+        lookupTables
       });
       setTimeout(() => {
         notify(
@@ -187,7 +200,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     }
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(bnToBigInt(Math.round(basisPoints * 100)), BigInt(marketAndConfig.config.borrowTenor))
+      rate_to_price(bnToBigInt(new BN(Math.round(basisPoints * 100))), BigInt(marketAndConfig.config.borrowTenor))
     );
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic

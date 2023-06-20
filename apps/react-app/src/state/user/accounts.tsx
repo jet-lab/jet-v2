@@ -199,6 +199,7 @@ export function useAccountsSyncer() {
       return;
     }
     getAuthorityLookupTables(currentAccountAddress).then(lookupTables => {
+      console.log(lookupTables)
       if (lookupTables.length) {
         updateMarginAccountLookupTables(currentAccountAddress, lookupTables);
       }

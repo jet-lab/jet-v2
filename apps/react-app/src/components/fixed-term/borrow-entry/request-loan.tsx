@@ -52,12 +52,14 @@ interface Forecast {
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
-    return {
+  const { selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(
+    state => ({
       selectedPoolKey: state.selectedPoolKey,
-      airspaceLookupTables: state.airspaceLookupTables
-    };
-  });
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    })
+  );
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -77,6 +79,16 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   const { cluster, explorer } = useJetStore(state => state.settings);
 
   const [pending, setPending] = useState(false);
+
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
 
   const disabled =
     !marginAccount ||
@@ -105,7 +117,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTables
+        lookupTables
       });
       setTimeout(() => {
         notify(
@@ -187,7 +199,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     }
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(bnToBigInt(Math.round(basisPoints * 100)), BigInt(marketAndConfig.config.borrowTenor))
+      rate_to_price(bnToBigInt(new BN(Math.round(basisPoints * 100))), BigInt(marketAndConfig.config.borrowTenor))
     );
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
