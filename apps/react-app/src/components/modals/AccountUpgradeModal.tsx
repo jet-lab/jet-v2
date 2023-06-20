@@ -6,24 +6,13 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
 import { AccountUpgradeModal as AccountUpgradeModalState } from '@state/modals/modals';
 import { CurrentAccount, CurrentAccountAddress } from '@state/user/accounts';
-import { WalletTokens } from '@state/user/walletTokens';
 import { notify } from '@utils/notify';
 import { useProvider } from '@utils/jet/provider';
 import { getExplorerUrl } from '@utils/ui';
-import { List, Modal, Tooltip, Typography } from 'antd';
+import { Modal, Typography } from 'antd';
 import { useJetStore } from '@jet-lab/store';
 import { checkUpgradeLookupRegistry } from '@utils/lookupTables';
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
-
-/*
-We want to create a user's registry and populate it.
-We need the config to do so.
-We need their existing registry account so we can determine if it needs upgrading.
-    We should check all the addresses against existing ones, or we could do this 
-    on the server, which would be better and cacheable.
-    Even if we don't send actual instructions and allow the UI to construct it,
-    we can still send a list of addresses to add to lookup tables.
- */
 
 // Modal for user to create a new margin account
 export function AccountUpgradeModal(): JSX.Element {
@@ -35,15 +24,12 @@ export function AccountUpgradeModal(): JSX.Element {
   const resetAccountUpgradeModal = useResetRecoilState(AccountUpgradeModalState);
   const currentAccountAddress = useRecoilValue(CurrentAccountAddress);
   const currentAccount = useRecoilValue(CurrentAccount);
-  const walletTokens = useRecoilValue(WalletTokens);
   const [disabled, _setDisabled] = useState(false);
   const [inputError] = useState<string | undefined>();
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
 
   const { Title, Paragraph, Text } = Typography;
-  const [upgradeInstructions, setUpgradeInstructions] = useState<any[]>([]);
-  const actions = [...new Set(upgradeInstructions.map(ix => ix.summary))];
 
   const airspace = !programs ? "" : Airspace.deriveAddress(programs.airspace.programId, programs.config.airspaces[0].name).toString();
 
@@ -57,7 +43,6 @@ export function AccountUpgradeModal(): JSX.Element {
     checkUpgradeLookupRegistry(airspace, currentAccountAddress, publicKey.toString()).then(response => {
       // If there are instructions, we should request the user to upgrade their account
       if (response.instructions.length) {
-        setUpgradeInstructions(response.instructions);
         setAccountUpgradeModalOpen(true);
       }
     })
@@ -116,17 +101,6 @@ export function AccountUpgradeModal(): JSX.Element {
     });
   }
 
-  // Renders the wallet balance for SOL
-  function renderSolBalance() {
-    let render = <></>;
-    if (walletTokens) {
-      const balance = walletTokens.map.SOL.amount.tokens;
-      render = <Paragraph type="secondary" italic>{`${balance} SOL`}</Paragraph>;
-    }
-
-    return render;
-  }
-
   // Renders disabled message for modal
   function renderDisabledMessage() {
     let render = <></>;
@@ -159,32 +133,29 @@ export function AccountUpgradeModal(): JSX.Element {
         <div className="modal-header flex-centered">
           <Title className="modal-header-title green-text">{dictionary.accountUpgradeModal.title}</Title>
         </div>
-        <div className="flex align-center justify-between">
-          <Text className="small-accent-text">{dictionary.common.walletBalance.toUpperCase()}</Text>
-          {renderSolBalance()}
-        </div>
+
         <Text type="danger">{inputError ?? ''}</Text>
         <div className="rent-fee-info flex-centered column">
           {renderDisabledMessage()}
           <Paragraph type="secondary">
-            {' '}
-            <Tooltip
-              overlayStyle={{ minWidth: '400px' }}
-              title="We may require upgrading your margin account from time to time. Examples include closing unused positions, upgrading on-chain structures, or other maintenance changes. Depending on the nature of changes, you may incur a minimal amount of SOL for rent, or recover some rent for closed accounts.">
-              <span className="underlined">Your margin account requires upgrading before you continue.</span>
-            </Tooltip>{' '}
+            <strong>Your margin account requires upgrading before you continue.</strong>
+          </Paragraph>
+          <p></p>
+          <Paragraph type="secondary">
+            We may require upgrading your margin account from time to time.
+
           </Paragraph>
           <Paragraph type="secondary">
-            The following actions will be performed on your account.
+
           </Paragraph>
-          <List
-            dataSource={actions}
-            renderItem={(item) => (
-              <List.Item>
-                {item}
-              </List.Item>
-            )}
-          ></List>
+          <Paragraph type="secondary">
+            Examples include closing unused positions, upgrading on-chain structures, or other maintenance changes.
+          </Paragraph>
+          <p></p>
+          <Paragraph type="secondary">
+            Depending on the nature of changes, you may incur a minimal amount of SOL for rent, or recover some rent for closed accounts.
+          </Paragraph>
+
         </div>
       </Modal>
     );
