@@ -15,6 +15,9 @@ interface IMarketSelectorButtonProps {
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
   const { cluster, explorer } = useJetStore(state => state.settings);
+  const { airspaceLookupTables } = useJetStore(state => ({
+    airspaceLookupTables: state.airspaceLookupTables
+  }));
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
@@ -78,7 +81,8 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         markets.map(m => m.market),
         selectedMarket,
         cluster,
-        explorer
+        explorer,
+        airspaceLookupTables
       );
       if (totalBorrowed.sub(tokenAmount).lte(new TokenAmount(new BN(0), token.decimals))) {
         setTotalBorrowed(undefined);
@@ -107,7 +111,8 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                   cluster,
                   explorer,
                   pools.tokenPools,
-                  markets.map(m => m.market)
+                  markets.map(m => m.market),
+                  airspaceLookupTables
                 );
               }}>
               Claim
@@ -128,7 +133,8 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                 cluster,
                 explorer,
                 pools,
-                owedTokens
+                owedTokens,
+                airspaceLookupTables
               )
             }>
             Settle Now

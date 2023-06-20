@@ -25,7 +25,8 @@ export const submitRepay = async (
   markets: FixedTermMarket[],
   market: MarketAndConfig,
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
-  explorer: 'solscan' | 'solanaExplorer' | 'solanaBeach'
+  explorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
+  airspaceLookupTables: LookupTable[]
 ) => {
   let tx = 'failed_before_tx';
   try {
@@ -37,7 +38,7 @@ export const submitRepay = async (
       pools,
       markets,
       market,
-      airspaceLookupTables: []
+      airspaceLookupTables
     });
     notify(
       'Repay Successful',
@@ -84,7 +85,8 @@ export const settleNow = async (
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
   explorer: 'solscan' | 'solanaExplorer' | 'solanaBeach',
   pools: JetMarginPools,
-  amount: TokenAmount
+  amount: TokenAmount,
+  airspaceLookupTables: LookupTable[]
 ) => {
   const token = selectedMarket.token;
   if (!marginAccount || !token) return;
@@ -97,7 +99,7 @@ export const settleNow = async (
       provider,
       pools: pools.tokenPools,
       amount: amount.lamports,
-      airspaceLookupTables: []
+      airspaceLookupTables
     });
     notify(
       'Settle Successful',
@@ -124,7 +126,8 @@ export const redeemDeposits = async (
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
   pools: Record<string, Pool>,
-  markets: FixedTermMarket[]
+  markets: FixedTermMarket[],
+  airspaceLookupTables: LookupTable[]
 ) => {
   try {
     await redeem({
@@ -134,7 +137,7 @@ export const redeemDeposits = async (
       pools,
       markets,
       deposits,
-      airspaceLookupTables: []
+      airspaceLookupTables
     });
     notify('Deposit Redeemed', 'Your deposit was successfully redeemed.', 'success');
   } catch (e: any) {

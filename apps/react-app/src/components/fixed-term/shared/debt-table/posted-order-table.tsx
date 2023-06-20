@@ -22,6 +22,7 @@ interface GetPostOrderColumnes {
   markets: FixedTermMarket[];
   ordersPendingDeletion: string[];
   setOrdersPendingDeletion: UpdateOrders;
+  airspaceLookupTables: LookupTable[];
 }
 const getPostOrderColumns = ({
   market,
@@ -32,83 +33,85 @@ const getPostOrderColumns = ({
   pools,
   markets,
   ordersPendingDeletion,
-  setOrdersPendingDeletion
+  setOrdersPendingDeletion,
+  airspaceLookupTables
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
-  {
-    title: 'Issue date',
-    dataIndex: 'created_timestamp',
-    key: 'created_timestamp',
-    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
-    sorter: (a, b) => a.created_timestamp - b.created_timestamp,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Total QTY',
-    dataIndex: 'total_quote_qty',
-    key: 'total_quote_qty',
-    render: (value: number) =>
-      `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
-    sorter: (a, b) => a.total_quote_qty - b.total_quote_qty,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Filled QTY',
-    dataIndex: 'filled_quote_qty',
-    key: 'filled_quote_qty',
-    render: (filled: number) => {
-      return `${market.token.symbol} ${new TokenAmount(new BN(filled), market.token.decimals).tokens.toFixed(2)}`;
+    {
+      title: 'Issue date',
+      dataIndex: 'created_timestamp',
+      key: 'created_timestamp',
+      render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
+      sorter: (a, b) => a.created_timestamp - b.created_timestamp,
+      sortDirections: ['descend']
     },
-    sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Rate',
-    dataIndex: 'rate',
-    key: 'rate',
-    render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
-    sorter: (a, b) => a.rate - b.rate,
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Autoroll',
-    dataIndex: 'is_auto_roll',
-    key: 'is_auto_roll',
-    align: 'center',
-    render: (is_auto_roll: boolean) => {
-      return is_auto_roll ? <CheckOutlined /> : null;
+    {
+      title: 'Total QTY',
+      dataIndex: 'total_quote_qty',
+      key: 'total_quote_qty',
+      render: (value: number) =>
+        `${market.token.symbol} ${new TokenAmount(new BN(value), market.token.decimals).tokens.toFixed(2)}`,
+      sorter: (a, b) => a.total_quote_qty - b.total_quote_qty,
+      sortDirections: ['descend']
     },
-    sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
-    sortDirections: ['descend']
-  },
-  {
-    title: 'Cancel',
-    key: 'cancel',
-    align: 'center',
-    render: (order: OpenOrder) => {
-      return ordersPendingDeletion.includes(order.order_id) ? (
-        <LoadingOutlined />
-      ) : (
-        <CloseOutlined
-          style={{ color: '#e36868' }}
-          onClick={() => {
-            cancel(
-              market,
-              marginAccount,
-              provider,
-              order,
-              cluster,
-              explorer,
-              pools,
-              markets,
-              ordersPendingDeletion,
-              setOrdersPendingDeletion
-            );
-          }}
-        />
-      );
+    {
+      title: 'Filled QTY',
+      dataIndex: 'filled_quote_qty',
+      key: 'filled_quote_qty',
+      render: (filled: number) => {
+        return `${market.token.symbol} ${new TokenAmount(new BN(filled), market.token.decimals).tokens.toFixed(2)}`;
+      },
+      sorter: (a, b) => a.filled_quote_qty - b.filled_quote_qty,
+      sortDirections: ['descend']
+    },
+    {
+      title: 'Rate',
+      dataIndex: 'rate',
+      key: 'rate',
+      render: (rate: number) => `${(100 * rate).toFixed(3)}%`,
+      sorter: (a, b) => a.rate - b.rate,
+      sortDirections: ['descend']
+    },
+    {
+      title: 'Autoroll',
+      dataIndex: 'is_auto_roll',
+      key: 'is_auto_roll',
+      align: 'center',
+      render: (is_auto_roll: boolean) => {
+        return is_auto_roll ? <CheckOutlined /> : null;
+      },
+      sorter: (a, b) => Number(a.is_auto_roll) - Number(b.is_auto_roll),
+      sortDirections: ['descend']
+    },
+    {
+      title: 'Cancel',
+      key: 'cancel',
+      align: 'center',
+      render: (order: OpenOrder) => {
+        return ordersPendingDeletion.includes(order.order_id) ? (
+          <LoadingOutlined />
+        ) : (
+          <CloseOutlined
+            style={{ color: '#e36868' }}
+            onClick={() => {
+              cancel(
+                market,
+                marginAccount,
+                provider,
+                order,
+                cluster,
+                explorer,
+                pools,
+                markets,
+                ordersPendingDeletion,
+                setOrdersPendingDeletion,
+                airspaceLookupTables
+              );
+            }}
+          />
+        );
+      }
     }
-  }
-];
+  ];
 
 const cancel = async (
   market: MarketAndConfig,
@@ -120,7 +123,8 @@ const cancel = async (
   pools: Record<string, Pool>,
   markets: FixedTermMarket[],
   ordersPendingDeletion: string[],
-  setOrdersPendingDeletion: UpdateOrders
+  setOrdersPendingDeletion: UpdateOrders,
+  airspaceLookupTables: LookupTable[]
 ) => {
   try {
     await cancelOrder({
@@ -130,7 +134,7 @@ const cancel = async (
       orderId: new BN(order.order_id),
       pools,
       markets,
-      airspaceLookupTables: []
+      airspaceLookupTables
     });
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
     setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
@@ -153,7 +157,8 @@ export const PostedOrdersTable = ({
   cluster,
   explorer,
   pools,
-  markets
+  markets,
+  airspaceLookupTables
 }: {
   data: OpenOrder[];
   market: MarketAndConfig;
@@ -163,6 +168,7 @@ export const PostedOrdersTable = ({
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
+  airspaceLookupTables: LookupTable[];
 }) => {
   const [ordersPendingDeletion, setOrdersPendingDeletion] = useState<string[]>([]);
 
@@ -177,7 +183,8 @@ export const PostedOrdersTable = ({
         pools,
         markets,
         ordersPendingDeletion,
-        setOrdersPendingDeletion
+        setOrdersPendingDeletion,
+        airspaceLookupTables
       }),
     [market, marginAccount, provider, cluster, explorer, ordersPendingDeletion]
   );
