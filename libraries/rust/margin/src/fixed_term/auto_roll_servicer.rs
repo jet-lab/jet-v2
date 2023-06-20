@@ -25,11 +25,16 @@ type KeyAccount<T> = (Pubkey, T);
 pub struct AutoRollServicer {
     ix: FixedTermIxBuilder,
     rpc: Arc<dyn SolanaRpcClient>,
+    min_order_size: u64,
 }
 
 impl AutoRollServicer {
-    pub fn new(rpc: Arc<dyn SolanaRpcClient>, ix: FixedTermIxBuilder) -> Self {
-        Self { ix, rpc }
+    pub fn new(rpc: Arc<dyn SolanaRpcClient>, ix: FixedTermIxBuilder, min_order_size: u64) -> Self {
+        Self {
+            ix,
+            rpc,
+            min_order_size,
+        }
     }
 
     pub async fn service_all(&self) {
@@ -116,7 +121,9 @@ impl AutoRollServicer {
             if !loan.flags.contains(TermLoanFlags::AUTO_ROLL) {
                 continue;
             }
-
+            if loan.balance < self.min_order_size {
+                continue;
+            }
             if loan.strike_timestamp + user.1.borrow_roll_config.as_ref().unwrap().roll_tenor as i64
                 >= current_time
             {
@@ -166,6 +173,9 @@ impl AutoRollServicer {
         let mut next_deposit_seqno = user.1.assets().next_new_deposit_seqno();
         for (deposit_key, deposit) in deposits {
             if !deposit.flags.contains(TermDepositFlags::AUTO_ROLL) {
+                continue;
+            }
+            if deposit.amount < self.min_order_size {
                 continue;
             }
             if deposit.matures_at <= current_time {
