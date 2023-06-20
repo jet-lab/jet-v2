@@ -8,7 +8,7 @@ use hosted_tests::{
     context::MarginTestContext,
     fixed_term::{
         create_and_fund_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
-        TestManager as FixedTermTestManager, LEND_TENOR, STARTING_TOKENS,
+        TestManager as FixedTermTestManager, LEND_TENOR, MIN_ORDER_SIZE, STARTING_TOKENS,
     },
     margin_test_context,
     setup_helper::{setup_user, tokens},
@@ -597,7 +597,11 @@ async fn auto_roll_many_trades() -> Result<()> {
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
-    let servicer = AutoRollServicer::new(manager.client.clone(), manager.ix_builder.clone());
+    let servicer = AutoRollServicer::new(
+        manager.client.clone(),
+        manager.ix_builder.clone(),
+        MIN_ORDER_SIZE,
+    );
     servicer.service_all().await;
 
     #[cfg(not(feature = "localnet"))]
