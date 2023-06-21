@@ -44,34 +44,6 @@ export interface ExtendedOrderBook {
   orderbook: OrderbookModel;
 }
 
-export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
-  key: 'allFixedTermMarketOrderBooks',
-  get: async ({ get }) => {
-    const { cluster } = useJetStore.getState().settings;
-    const apiEndpoint =
-      cluster === 'mainnet-beta'
-        ? process.env.REACT_APP_DATA_API
-        : cluster === 'devnet'
-          ? process.env.REACT_APP_DEV_DATA_API
-          : cluster === 'localnet'
-            ? process.env.REACT_APP_LOCAL_DATA_API
-            : undefined;
-    const list = get(AllFixedTermMarketsAtom);
-    const markets = await Promise.all(
-      list.map(async market => {
-        const tenor = BigInt(market.config.borrowTenor);
-        const snapshot = await getOrderbookSnapshot(apiEndpoint || 'http://localhost:3002', market.market.address.toBase58());
-        const model = market.market.getOrderbookModel(tenor, snapshot);
-        return {
-          name: market.name,
-          orderbook: model
-        };
-      })
-    );
-    return markets.sort((a, b) => b.name.localeCompare(a.name));
-  }
-});
-
 export const useFixedTermSync = (): void => {
   const { provider } = useProvider();
   const setMarkets = useSetRecoilState(AllFixedTermMarketsAtom);

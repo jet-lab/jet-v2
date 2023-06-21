@@ -107,8 +107,20 @@ export const AutoRollModal = ({
 
   return (
     <Modal open={open} onClose={onClose} title={`Configure ${marketName} market`}>
-      <div className="flex flex-col autoroll-modal">
-        <div className="flex mx-2 my-4">
+      <div className="autoroll-modal flex flex-col">
+        <p className="my-2 w-96 text-sm">
+          Configure autoroll by setting the minimum rate that you are willing to lend at, and the maximum rate that you
+          are willing to borrow at.
+        </p>
+        <p className="my-2 w-96 text-sm">
+          After configuring the threshold values, you may enable autoroll in the order panel to continuously roll over
+          your lends and borrows.
+        </p>
+        <p className="my-2 w-96 text-sm">
+          The collateral value of your account must be sufficiently high for the borrow or lend to continue, or else the
+          autorolling of the debt will not occur. Autoroll does not provide any protection against liquidation.
+        </p>
+        <div className="mx-2 my-4 flex">
           <label>
             Minimum lend rate
             <InputNumber

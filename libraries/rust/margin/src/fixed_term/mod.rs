@@ -9,6 +9,7 @@ pub mod settler;
 use futures::future::{join_all, try_join_all};
 pub use ix_builder::*;
 
+use agnostic_orderbook::state::{market_state::MarketState, AccountTag};
 use anchor_lang::AccountDeserialize;
 use jet_simulation::SolanaRpcClient;
 use jet_solana_client::rpc::AccountFilter;
@@ -68,7 +69,19 @@ impl Crank {
             consumer.insert_market(market, Some(margin_accounts.clone()));
             let settler = settler(rpc.clone(), ix.clone(), margin_accounts, Default::default())?;
             settlers.push(settler);
-            servicers.push(AutoRollServicer::new(rpc.clone(), ix));
+
+            let mut orderbook_state_account = rpc
+                .get_account(&market.orderbook_market_state)
+                .await?
+                .unwrap();
+            let orderbook_state =
+                MarketState::from_buffer(&mut orderbook_state_account.data, AccountTag::Market)
+                    .unwrap();
+            servicers.push(AutoRollServicer::new(
+                rpc.clone(),
+                ix,
+                orderbook_state.min_base_order_size,
+            ));
         }
 
         Ok(Self {

@@ -827,11 +827,11 @@ export class FixedTermProductModel {
       const equity = assets - liabilities
       const availableCollateral = weightedCollateral - (liabilities + requiredCollateral)
 
-      let riskIndicator = NaN
+      let riskIndicator
       if (requiredCollateral >= 0 && weightedCollateral >= 0 && liabilities >= 0) {
         riskIndicator = account.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
       } else {
-        console.error("Unexpected state in forecast accounting")
+        console.warn("Unexpected state in forecast accounting")
       }
 
       return {
