@@ -39,9 +39,7 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
           ...state,
           marginAccounts: {
             ...state.marginAccounts,
-            [update.address]: {
-              ...update
-            }
+            [update.address]: update
           }
         };
       },
