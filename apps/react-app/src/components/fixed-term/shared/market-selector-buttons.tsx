@@ -15,9 +15,13 @@ interface IMarketSelectorButtonProps {
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
   const { cluster, explorer } = useJetStore(state => state.settings);
-  const { airspaceLookupTables } = useJetStore(state => ({
-    airspaceLookupTables: state.airspaceLookupTables
-  }));
+  const { airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(state => {
+    return {
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    };
+  });
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
@@ -29,7 +33,20 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
             : '',
     [cluster]
   );
-  const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market.address.toBase58(), marginAccount?.address.toBase58());
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
+  const { data } = useOpenPositions(
+    String(apiEndpoint),
+    selectedMarket?.market.address.toBase58(),
+    marginAccount?.address.toBase58()
+  );
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
 
@@ -82,7 +99,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         selectedMarket,
         cluster,
         explorer,
-        airspaceLookupTables
+        lookupTables
       );
       if (totalBorrowed.sub(tokenAmount).lte(new TokenAmount(new BN(0), token.decimals))) {
         setTotalBorrowed(undefined);
@@ -112,7 +129,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                   explorer,
                   pools.tokenPools,
                   markets.map(m => m.market),
-                  airspaceLookupTables
+                  lookupTables
                 );
               }}>
               Claim
@@ -134,7 +151,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                 explorer,
                 pools,
                 owedTokens,
-                airspaceLookupTables
+                lookupTables
               )
             }>
             Settle Now

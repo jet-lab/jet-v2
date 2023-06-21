@@ -49,12 +49,24 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
-  const { cluster, explorer, selectedPoolKey, airspaceLookupTables } = useJetStore(state => ({
-    cluster: state.settings.cluster,
-    explorer: state.settings.explorer,
-    selectedPoolKey: state.selectedPoolKey,
-    airspaceLookupTables: state.airspaceLookupTables
-  }));
+  const { cluster, explorer, selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } =
+    useJetStore(state => ({
+      cluster: state.settings.cluster,
+      explorer: state.settings.explorer,
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    }));
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const currentPool = useMemo(
     () =>
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
@@ -66,6 +78,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const [forecast, setForecast] = useState<Forecast>();
 
   const [pending, setPending] = useState(false);
+
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
 
@@ -144,7 +157,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         amount,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTables
+        lookupTables
       });
       setTimeout(() => {
         notify(
