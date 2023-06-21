@@ -13,6 +13,7 @@ use jet_instructions::{
 use jet_simulation::SolanaRpcClient;
 use jet_solana_client::{
     rpc::AccountFilter,
+    signature::StandardizeSigner,
     transaction::{TransactionBuilder, WithSigner},
 };
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
@@ -283,7 +284,7 @@ impl AutoRollServicer {
     async fn bundle_and_send(&self, ix: Vec<Instruction>) -> Result<()> {
         self.rpc
             .send_and_confirm_condensed_in_order(vec![
-                TransactionBuilder::from(ix).with_signers(&[self.clone_payer()])
+                TransactionBuilder::from(ix).with_signer(self.clone_payer().standardize())
             ])
             .await?;
         Ok(())

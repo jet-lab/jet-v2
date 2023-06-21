@@ -4,7 +4,7 @@ use jet_instructions::{
     test_service::derive_pyth_price,
 };
 use jet_solana_client::{
-    signature::Authorization,
+    signature::{Authorization, StandardizeSigner},
     transaction::{TransactionBuilder, WithSigner},
 };
 use solana_sdk::signer::Signer;
@@ -43,7 +43,7 @@ pub(super) fn register_deposit_position(
         .with_authority(margin_account.authority.pubkey());
     let register = builder
         .create_deposit_position(mint)
-        .with_signer(margin_account.authority);
+        .with_signer(margin_account.authority.standardize());
 
     vec![create_ata.into(), register]
 }

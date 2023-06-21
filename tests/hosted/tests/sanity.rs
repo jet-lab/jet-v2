@@ -7,15 +7,13 @@ use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_margin_sdk::{
     ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder},
-    solana::{
-        keypair::clone,
-        transaction::{TransactionBuilderExt, WithSigner},
-    },
+    solana::transaction::{TransactionBuilderExt, WithSigner},
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
 use jet_simulation::assert_custom_program_error;
 
+use jet_solana_client::signature::StandardizeSigner;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -103,7 +101,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     let refresher = ctx.generate_key();
     ctx.margin_config_ix()
         .configure_position_config_refresher(refresher.pubkey(), true)
-        .with_signers(&[clone(&ctx.airspace_authority)])
+        .with_signer(ctx.airspace_authority.standardize())
         .send_and_confirm(&ctx.rpc())
         .await?;
 

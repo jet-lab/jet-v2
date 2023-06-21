@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use jet_instructions::margin::accounting_invoke;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_solana_client::signature::StandardSigner;
 use solana_sdk::pubkey::Pubkey;
 
 use super::FixedTermIxBuilder;
@@ -48,7 +49,7 @@ async fn try_settle(
                 *margin_account,
                 builder.settle(*margin_account),
             )]
-            .with_signers(&[])
+            .with_signers(Vec::<StandardSigner>::new())
         })
         .collect::<Vec<_>>()
         .send_and_confirm_condensed(&rpc)

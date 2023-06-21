@@ -5,13 +5,14 @@ use anyhow::{Error, Result};
 
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
-use jet_margin_sdk::solana::keypair::clone;
+
 use jet_margin_sdk::solana::transaction::{
     SendTransactionBuilder, TransactionBuilderExt, WithSigner,
 };
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::tx_builder::TokenDepositsConfig;
 use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_solana_client::signature::StandardizeSigners;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
@@ -225,7 +226,7 @@ pub async fn register_deposit(
                 max_staleness: 0,
             }),
         )
-        .with_signers(&[clone(airspace_authority)])
+        .with_signers([airspace_authority].standardize())
         .send_and_confirm(rpc)
         .await
 }

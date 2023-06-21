@@ -3,34 +3,32 @@ use anyhow::Result;
 use futures::Future;
 use jet_margin::MarginAccount;
 use jet_margin_pool::TokenChange;
-use jet_solana_client::util::Key;
+use jet_solana_client::{transaction::InstructionBundle, util::Key};
 use solana_sdk::pubkey::Pubkey;
 
 use crate::ix_builder::*;
 use crate::solana::pubkey::OrAta;
 
-use super::{CanInvokeTo, Invoke, MarginInvokeContext};
+use super::MarginInvokeContext;
 
 /// Use MarginInvokeContext to invoke instructions to the margin-pool program
-impl<K: Key> MarginInvokeContext<K> {
+impl<K: Key + Clone> MarginInvokeContext<K> {
     /// Deposit into a margin pool from the specified source account, creating
     /// the target position in the margin account if necessary.
-    pub fn pool_deposit<IxTx>(
+    pub fn pool_deposit(
         &self,
         underlying_mint: Pubkey,
         source: Option<Pubkey>,
+        source_authority: Option<Pubkey>,
         target: PoolTargetPosition,
         change: TokenChange,
-    ) -> Vec<IxTx>
-    where
-        Self: CanInvokeTo<IxTx>,
-    {
+    ) -> Vec<InstructionBundle<K>> {
         let pool = MarginPoolIxBuilder::new(underlying_mint);
-        let auth = self.authority.address();
+        let source_authority = source_authority.unwrap_or(self.margin_account);
         let (target, mut instructions) = self.get_or_create_pool_deposit(underlying_mint, target);
         instructions.push(self.invoke(pool.deposit(
-            self.margin_account,
-            source.or_ata(&auth, &underlying_mint),
+            source_authority,
+            source.or_ata(&source_authority, &underlying_mint),
             target,
             change,
         )));
@@ -39,14 +37,11 @@ impl<K: Key> MarginInvokeContext<K> {
 
     /// Return the address to a pool deposit for this user, including
     /// instructions to create and refresh the position if necessary.
-    pub fn get_or_create_pool_deposit<IxTx>(
+    pub fn get_or_create_pool_deposit(
         &self,
         underlying_mint: Pubkey,
         position: PoolTargetPosition,
-    ) -> (Pubkey, Vec<IxTx>)
-    where
-        Self: CanInvokeTo<IxTx>,
-    {
+    ) -> (Pubkey, Vec<InstructionBundle<K>>) {
         let pool = MarginPoolIxBuilder::new(underlying_mint);
         let mut instructions = vec![];
         let target = match position {
@@ -60,19 +55,16 @@ impl<K: Key> MarginInvokeContext<K> {
     }
 
     /// Create and refresh a pool deposit position
-    pub fn create_pool_deposit<IxTx>(
+    pub fn create_pool_deposit(
         &self,
         payer: Pubkey,
         underlying_mint: Pubkey,
         pool_oracle: Pubkey,
-    ) -> Vec<IxTx>
-    where
-        Self: CanInvokeTo<IxTx>,
-    {
+    ) -> Vec<InstructionBundle<K>> {
         let pool = MarginPoolIxBuilder::new(underlying_mint);
         let auth = self.authority.address();
         let mut instructions = vec![];
-        instructions.extend(self.dont_wrap_any(create_deposit_account_and_position(
+        instructions.extend(self.direct_each(create_deposit_account_and_position(
             self.margin_account,
             self.airspace,
             auth,

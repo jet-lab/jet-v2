@@ -24,12 +24,8 @@ use jet_fixed_term::{
 use jet_margin_sdk::{
     fixed_term::{auto_roll_servicer::AutoRollServicer, settler::SETTLES_PER_TX},
     margin_integrator::{NoProxy, Proxy},
-    solana::{
-        keypair::KeypairExt,
-        transaction::{
-            InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilderExt,
-            WithSigner,
-        },
+    solana::transaction::{
+        InverseSendTransactionBuilder, SendTransactionBuilder, TransactionBuilderExt, WithSigner,
     },
     tx_builder::invoke_into::{InvokeEachInto, InvokeInto},
 };
@@ -38,7 +34,7 @@ use jet_program_common::{
     interest_pricing::{InterestPricer, PricerImpl},
     Fp32,
 };
-use jet_solana_client::{rpc::AccountFilter, transactions};
+use jet_solana_client::{rpc::AccountFilter, signature::StandardizeSigner, transactions};
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -809,7 +805,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         .proxy
         .proxy
         .create_deposit_position(mint)
-        .with_signers(&[borrower.owner.clone()])
+        .with_signer(borrower.owner.standardize())
         .send_and_confirm(&ctx.rpc())
         .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;
@@ -1173,7 +1169,7 @@ async fn fixed_term_borrow_becomes_unhealthy_without_collateral() -> Result<(), 
         vec![
             mkt.initialize_margin_user(*lender.address()),
             mkt.margin_lend_order(*lender.address(), None, params, 0),
-        ].invoke_each_into::<TransactionBuilder>(&lender.ctx()),
+        ].invoke_each_into(&lender.ctx()),
 
         // borrow with fill
         ctx.refresh_deposit(tsol.mint, *borrower.address()),

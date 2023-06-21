@@ -24,7 +24,7 @@ use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
-use jet_solana_client::util::keypair::KeypairExt;
+use jet_solana_client::signature::{StandardSigner, StandardizeSigner, StandardizeSigners};
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
@@ -169,9 +169,9 @@ impl MarginTxBuilder {
     }
 
     /// returns None if there is no signer.
-    pub fn invoke_ctx(&self) -> Option<MarginInvokeContext<Keypair>> {
+    pub fn invoke_ctx(&self) -> Option<MarginInvokeContext<StandardSigner>> {
         Some(MarginInvokeContext {
-            authority: self.signer.as_ref()?.clone(),
+            authority: self.signer.as_ref()?.standardize(),
             airspace: self.airspace(),
             margin_account: *self.address(),
             is_liquidator: self.is_liquidator,
@@ -226,7 +226,7 @@ impl MarginTxBuilder {
         let signers = self
             .signer
             .as_ref()
-            .map(|s| vec![clone(s)])
+            .map(|s| [s].standardize())
             .unwrap_or_default();
 
         TransactionBuilder {
@@ -395,11 +395,20 @@ impl MarginTxBuilder {
         change: TokenChange,
         authority: MarginActionAuthority,
     ) -> Result<TransactionBuilder> {
-        let ctx = self.invoke_ctx_unsigned(authority);
+        let ctx = self
+            .invoke_ctx()
+            .context("margin tx builder is missing a signer")?;
         let target = self.pool_deposit_target(underlying_mint).await?;
-        let instructions = ctx.pool_deposit(*underlying_mint, source, target, change);
+        let source_authority = authority.resolve(&self.ix);
+        let instructions = ctx.pool_deposit(
+            *underlying_mint,
+            source,
+            Some(source_authority),
+            target,
+            change,
+        );
 
-        Ok(self.create_transaction_builder(&instructions))
+        Ok(instructions.ijoin())
     }
 
     async fn pool_deposit_target(&self, underlying_mint: &Pubkey) -> Result<PoolTargetPosition> {
@@ -705,7 +714,12 @@ impl MarginTxBuilder {
 
         // Add liquidation instruction
         txs.instructions.push(self.ix.liquidate_begin());
-        txs.signers.push(clone(self.signer.as_ref().unwrap()));
+        txs.signers.push(
+            self.signer
+                .as_ref()
+                .context("missing signer")?
+                .standardize(),
+        );
 
         Ok(txs)
     }
@@ -756,7 +770,7 @@ impl MarginTxBuilder {
             .map(|position| {
                 self.ix
                     .refresh_position_config(&position.token)
-                    .with_signers(&self.signers())
+                    .with_signers(self.signers().standardize())
             })
             .collect::<Vec<_>>();
 

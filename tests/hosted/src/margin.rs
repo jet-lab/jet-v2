@@ -45,7 +45,8 @@ use jet_margin_sdk::solana::transaction::{
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use jet_solana_client::rpc::AccountFilter;
-use jet_solana_client::signature::Authorization;
+use jet_solana_client::signature::{Authorization, StandardSigner, StandardizeSigner};
+use jet_solana_client::transaction::InstructionBundle;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::system_program;
@@ -183,9 +184,8 @@ impl MarginClient {
     }
 
     pub async fn create_airspace(&self, is_restricted: bool) -> Result<(), Error> {
-        self.rpc
-            .send_and_confirm(vec![self.create_airspace_ix(is_restricted)].into())
-            .await?;
+        let tx: TransactionBuilder = self.create_airspace_ix(is_restricted).into();
+        self.rpc.send_and_confirm(tx).await?;
         Ok(())
     }
 
@@ -233,7 +233,7 @@ impl MarginClient {
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
         self.tx_admin
             .configure_margin_adapter(*adapter, true)
-            .with_signer(clone(&self.airspace_authority))
+            .with_signer(self.airspace_authority.standardize())
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
@@ -247,7 +247,7 @@ impl MarginClient {
     ) -> Result<(), Error> {
         self.tx_admin
             .configure_margin_token_deposits(*underlying_mint, config.cloned())
-            .with_signer(clone(&self.airspace_authority))
+            .with_signer(self.airspace_authority.standardize())
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
@@ -260,7 +260,7 @@ impl MarginClient {
     ) -> Result<(), Error> {
         self.tx_admin
             .configure_margin_pool(*token, config)
-            .with_signer(clone(&self.airspace_authority))
+            .with_signer(self.airspace_authority.standardize())
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
@@ -270,7 +270,7 @@ impl MarginClient {
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
         self.tx_admin
             .create_margin_pool(setup_info.token)
-            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
+            .with_signer(self.airspace_authority.standardize())
             .send_and_confirm(&self.rpc)
             .await?;
 
@@ -288,7 +288,7 @@ impl MarginClient {
                     parameters: Some(setup_info.config),
                 },
             )
-            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
+            .with_signer(self.airspace_authority.standardize())
             .send_and_confirm(&self.rpc)
             .await?;
 
@@ -395,10 +395,10 @@ impl MarginUser {
         }
     }
 
-    pub fn ctx(&self) -> MarginInvokeContext<Keypair> {
+    pub fn ctx(&self) -> MarginInvokeContext<Arc<Keypair>> {
         MarginInvokeContext {
             margin_account: *self.address(),
-            authority: self.signer.clone(),
+            authority: self.signer.standardize(),
             airspace: self.tx.airspace(),
             is_liquidator: self.tx.is_liquidator(),
         }
@@ -469,7 +469,7 @@ impl MarginUser {
         self.tx
             .refresh_pool_position(token_mint)
             .await?
-            .with_signers(&[])
+            .with_signers(Vec::<StandardSigner>::new())
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
