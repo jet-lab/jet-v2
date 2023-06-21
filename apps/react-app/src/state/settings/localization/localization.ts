@@ -84,7 +84,6 @@ export const Geobanned = selector<GeobanOutput>({
       .then(({ data }) => data);
 
     const countryCode = data.location.country.code;
-    const tz = data.time_zone.id;
 
     if (geoBannedCountries.map(country => country.code).includes(countryCode)) {
       // Is in a geobanned country
@@ -93,11 +92,6 @@ export const Geobanned = selector<GeobanOutput>({
 
     if (Object.values(data.security).some(v => v)) {
       // is masking traffic
-      return { banned: true, countryCode };
-    }
-
-    if (tz !== Intl.DateTimeFormat().resolvedOptions().timeZone) {
-      // Timezone is different from that of the IP resolved one
       return { banned: true, countryCode };
     }
 
