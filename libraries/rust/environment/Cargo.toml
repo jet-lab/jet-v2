@@ -18,6 +18,8 @@ spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
 
 spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
 
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
+
 jet-program-common = { path = "../program-common" }
 jet-solana-client = { path = "../solana-client" }
 jet-instructions = { path = "../instructions" }
