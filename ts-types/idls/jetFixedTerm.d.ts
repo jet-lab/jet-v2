@@ -1100,79 +1100,49 @@ type JetFixedTermIDL = {
           isSigner: false
         },
         {
+          isMut: false,
+          isSigner: true,
+          name: "marginAccount"
+        },
+        {
           name: "ticketCollateral"
           isMut: true
           isSigner: false
-          docs: [
-            "Token account used by the margin program to track the collateral value of assets custodied by fixed-term market"
-          ]
         },
         {
           name: "ticketCollateralMint"
           isMut: true
           isSigner: false
-          docs: [
-            "Token mint used by the margin program to track the collateral value of assets custodied by fixed-term market"
-          ]
         },
         {
-          name: "inner"
-          accounts: [
-            {
-              name: "permit"
-              isMut: false
-              isSigner: false
-              docs: ["The airspace metadata permit"]
-            },
-            {
-              name: "deposit"
-              isMut: true
-              isSigner: false
-              docs: ["The tracking account for the deposit"]
-            },
-            {
-              name: "owner"
-              isMut: true
-              isSigner: false
-              docs: ["The account that owns the deposit"]
-            },
-            {
-              name: "authority"
-              isMut: false
-              isSigner: true
-              docs: ["The authority that must sign to redeem the deposit"]
-            },
-            {
-              name: "payer"
-              isMut: true
-              isSigner: false
-              docs: ["Receiver for the rent used to track the deposit"]
-            },
-            {
-              name: "tokenAccount"
-              isMut: true
-              isSigner: false
-              docs: ["The token account designated to receive the assets underlying the claim"]
-            },
-            {
-              name: "market"
-              isMut: false
-              isSigner: false
-              docs: ["The Market responsible for the asset"]
-            },
-            {
-              name: "underlyingTokenVault"
-              isMut: true
-              isSigner: false
-              docs: ["The vault stores the tokens of the underlying asset managed by the Market"]
-            },
-            {
-              name: "tokenProgram"
-              isMut: false
-              isSigner: false
-              docs: ["SPL token program"]
-            }
-          ]
+          isMut: true
+          isSigner: false
+          name: "deposit"
+        },
+        {
+          isMut: true
+          isSigner: false
+          name: "payer"
+        },
+        {
+          isMut: true
+          isSigner: false
+          name: "tokenAccount"
+        },
+        {
+          isMut: false
+          isSigner: false
+          name: "market"
+        },
+        {
+          isMut: true
+          isSigner: false
+          name: "underlyingTokenVault"
+        },
+        {
+          isMut: false
+          isSigner: false
+          name: "tokenProgram"
         }
       ]
       args: []

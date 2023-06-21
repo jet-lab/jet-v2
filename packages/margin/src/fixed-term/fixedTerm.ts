@@ -588,19 +588,15 @@ export class FixedTermMarket {
       .marginRedeemDeposit()
       .accounts({
         marginUser,
+        marginAccount: marginAccount.address,
         ticketCollateral,
         ticketCollateralMint,
-        inner: {
-          permit: marginAccount.findAirspacePermitAddress(),
-          deposit: deposit.address,
-          owner: marginUser,
-          authority: marginAccount.address,
-          payer: deposit.payer,
-          tokenAccount,
-          market: market.address,
-          underlyingTokenVault: market.addresses.underlyingTokenVault,
-          tokenProgram: TOKEN_PROGRAM_ID
-        }
+        deposit: deposit.address,
+        payer: deposit.payer,
+        tokenAccount,
+        market: market.address,
+        underlyingTokenVault: market.addresses.underlyingTokenVault,
+        tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
   }
