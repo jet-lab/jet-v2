@@ -2752,6 +2752,7 @@ dependencies = [
 name = "jet-environment"
 version = "0.1.0"
 dependencies = [
+ "agnostic-orderbook",
  "jet-fixed-term",
  "jet-instructions",
  "jet-margin",
