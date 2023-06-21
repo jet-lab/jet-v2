@@ -240,12 +240,12 @@ export const cancelOrder = async ({
     instructions: cancelInstructions,
     adapterInstruction: cancelLoan
   })
-  await marginAccount.withPrioritisedPositionRefresh({
-    instructions: cancelInstructions,
-    pools,
-    markets,
-    marketAddress: market.market.address
-  })
+  // await marginAccount.withPrioritisedPositionRefresh({
+  //   instructions: cancelInstructions,
+  //   pools,
+  //   markets,
+  //   marketAddress: market.market.address
+  // })
   return sendAndConfirmV0(provider, [instructions, cancelInstructions], lookupTables, [])
 }
 
@@ -407,7 +407,7 @@ export const lendNow = async ({
     adapterInstruction: lendNow
   })
 
-  await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
+  // await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
 
   return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], lookupTables, [])
 }
@@ -465,7 +465,7 @@ export const settle = async ({
     instructions: settleInstructions,
     adapterInstruction: depositIx
   })
-  await marginAccount.withUpdatePositionBalance({ instructions: settleInstructions, position })
+  // await marginAccount.withUpdatePositionBalance({ instructions: settleInstructions, position })
   return sendAndConfirmV0(provider, [refreshInstructions, settleInstructions], lookupTables, [])
 }
 
@@ -557,14 +557,13 @@ export const repay = async ({
       sortedTermLoans.shift()
     }
   }
-  const refreshIxs: TransactionInstruction[] = []
-  await marginAccount.withPrioritisedPositionRefresh({
-    instructions: instructions,
-    pools,
-    markets,
-    marketAddress: market.market.address
-  })
-  instructions = instructions.concat(refreshIxs)
+  // const refreshIxs: TransactionInstruction[] = []
+  // await marginAccount.withPrioritisedPositionRefresh({
+  //   instructions: refreshIxs,
+  //   pools,
+  //   markets,
+  //   marketAddress: market.market.address
+  // })
   return sendAndConfirmV0(provider, [refreshInstructions, instructions], lookupTables, [])
 }
 
@@ -603,8 +602,7 @@ export const redeem = async ({ marginAccount, pools, markets, market, provider, 
     })
   }
 
-  instructions = instructions.concat(redeemIxs)
-  return sendAndConfirmV0(provider, [instructions], lookupTables, [])
+  return sendAndConfirmV0(provider, [instructions, redeemIxs], lookupTables, [])
 }
 
 interface IConfigureAutoRoll {
