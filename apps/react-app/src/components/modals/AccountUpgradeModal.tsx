@@ -13,6 +13,7 @@ import { Modal, Typography } from 'antd';
 import { useJetStore } from '@jet-lab/store';
 import { checkUpgradeLookupRegistry } from '@utils/lookupTables';
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
+import { DisclaimersAccepted } from '@state/settings/settings';
 
 // Modal for user to create a new margin account
 export function AccountUpgradeModal(): JSX.Element {
@@ -28,6 +29,8 @@ export function AccountUpgradeModal(): JSX.Element {
   const [inputError] = useState<string | undefined>();
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
+  const disclaimersAccepted = useRecoilValue(DisclaimersAccepted);
+  const disclaimerNotAccepted = publicKey && cluster === 'mainnet-beta' && !disclaimersAccepted[publicKey.toBase58()];
 
   const { Title, Paragraph, Text } = Typography;
 
@@ -38,6 +41,8 @@ export function AccountUpgradeModal(): JSX.Element {
   }, [accountUpgradeModalOpen]);
 
   useEffect(() => {
+    // Don't show modal as long as the user hasn't accepted the mainnet disclaimers
+    if (disclaimerNotAccepted) { return; }
     if (currentAccountAddress === '' || !publicKey || !programs || airspace === "") { return; }
     // Check if user should upgrade their account
     checkUpgradeLookupRegistry(airspace, currentAccountAddress, publicKey.toString()).then(response => {
@@ -46,7 +51,7 @@ export function AccountUpgradeModal(): JSX.Element {
         setAccountUpgradeModalOpen(true);
       }
     })
-  }, [currentAccountAddress, programs, publicKey])
+  }, [currentAccountAddress, programs, publicKey, disclaimerNotAccepted])
 
   // Create a new account with a deposit
   async function upgradeAccount() {
