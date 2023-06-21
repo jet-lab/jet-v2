@@ -7,7 +7,7 @@ import { RequestLoan } from './request-loan';
 import { BorrowNow } from './borrow-now';
 import { WalletTokens } from '@state/user/walletTokens';
 import { Accounts } from '@state/user/accounts';
-import { UserGuide } from '../shared/user-guide'
+import { UserGuide } from '../shared/user-guide';
 import { CopyableField } from '@components/misc/CopyableField';
 
 export const FixedBorrowOrderEntry = () => {
@@ -34,9 +34,9 @@ export const FixedBorrowOrderEntry = () => {
   if (!decimals || noAccount || !marketAndConfig || !token || !marginConfig) return null;
 
   return (
-    <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
+    <div className="order-entry fixed-lend-entry view-element view-element-hidden column flex">
       <UserGuide />
-      <div className="order-entry-head view-element-item view-element-item-hidden flex column">
+      <div className="order-entry-head view-element-item view-element-item-hidden column flex">
         <div className="order-entry-head-top flex-centered">
           <CopyableField content={marketAndConfig.market.address.toBase58()} />
         </div>
