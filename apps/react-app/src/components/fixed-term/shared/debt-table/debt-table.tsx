@@ -170,7 +170,7 @@ export function DebtTable() {
             {
               label: (
                 <TabLink
-                  name="Loan Requests"
+                  name="Borrow Requests"
                   amount={ordersData.unfilled_borrow}
                   decimals={markets[selectedMarket].token.decimals}
                 />
