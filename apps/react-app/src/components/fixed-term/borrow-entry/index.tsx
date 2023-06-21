@@ -47,7 +47,7 @@ export const FixedBorrowOrderEntry = () => {
         onChange={(type: string) => setCurrentTab(type as CurrentOrderTab)}
         items={[
           {
-            label: 'request loan',
+            label: 'borrow request',
             key: 'request-loan'
           },
           {

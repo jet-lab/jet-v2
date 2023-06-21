@@ -20,7 +20,7 @@ import { scaleOrdinal } from '@visx/scale';
 import { useJetStore } from '@jet-lab/store';
 
 const ordinalColorScale = scaleOrdinal({
-  domain: ['Loan requests', 'Loan offers'],
+  domain: ['Borrow requests', 'Loan offers'],
   range: ['#e36868', '#84c1ca']
 });
 
