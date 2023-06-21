@@ -182,23 +182,24 @@ export function useTokenInputErrorMessage(account?: MarginAccount | undefined, p
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const projectedRiskIndicator =
     currentPool &&
-    currentAccount &&
-    currentAction &&
-    !(currentAction === 'swap' || currentAction === 'transfer') &&
-    !tokenInputAmount.isZero()
+      currentAccount &&
+      currentAction &&
+      !(currentAction === 'swap' || currentAction === 'transfer') &&
+      !tokenInputAmount.isZero()
       ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
       : currentAccount?.riskIndicator ?? 0;
   const risk = projectedRisk ?? projectedRiskIndicator;
+  console.log(risk);
 
   let errorMessage = '';
   if (marginAccount && !tokenInputAmount.isZero() && walletTokens) {
     // User's new Risk Level would be above our maximum
-    if (risk >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
-      errorMessage = dictionary.actions.errorMessages.maxRiskLevel.replaceAll(
-        '{{NEW_RISK}}',
-        formatRiskIndicator(risk)
-      );
-    }
+    // if (risk >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
+    //   errorMessage = dictionary.actions.errorMessages.maxRiskLevel.replaceAll(
+    //     '{{NEW_RISK}}',
+    //     formatRiskIndicator(risk)
+    //   );
+    // }
   }
   return errorMessage;
 }

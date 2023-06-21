@@ -246,7 +246,7 @@ export function BorrowRepayModal(): JSX.Element {
         </div>
         <Button
           block
-          disabled={disabled || tokenInputAmount.isZero() || projectedRiskIndicator > 1}
+          disabled={disabled || tokenInputAmount.isZero() || projectedRiskIndicator > 2} // TODO: change back to 1
           loading={sendingTransaction}
           onClick={borrowRepay}>
           {getSubmitText()}

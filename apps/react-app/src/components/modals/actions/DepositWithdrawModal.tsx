@@ -279,7 +279,7 @@ export function DepositWithdrawModal(): JSX.Element {
         <Button
           block
           disabled={
-            disabled || tokenInputAmount.isZero() || (projectedRiskIndicator > 1 && currentAction !== 'deposit')
+            disabled || tokenInputAmount.isZero() || (projectedRiskIndicator > 2 && currentAction !== 'deposit')
           }
           loading={sendingTransaction}
           onClick={depositWithdraw}>
