@@ -465,6 +465,12 @@ export const settle = async ({
     instructions: settleInstructions,
     adapterInstruction: depositIx
   })
+
+  const fixedTermSettleIx = await market.settle(marginAccount)
+  await marginAccount.withAdapterInvoke({
+    instructions: settleInstructions,
+    adapterInstruction: fixedTermSettleIx
+  })
   // await marginAccount.withUpdatePositionBalance({ instructions: settleInstructions, position })
   return sendAndConfirmV0(provider, [refreshInstructions, settleInstructions], lookupTables, [])
 }
