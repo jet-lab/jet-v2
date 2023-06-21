@@ -76,6 +76,7 @@ interface GeobanOutput {
 export const Geobanned = selector<GeobanOutput>({
   key: 'geobanned',
   get: async () => {
+    return { banned: false };
     if (process.env.REACT_APP_REQUIRE_GEOBLOCKING === 'false') {
       return { banned: false };
     }
