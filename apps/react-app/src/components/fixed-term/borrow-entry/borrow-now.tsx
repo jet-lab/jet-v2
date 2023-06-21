@@ -57,6 +57,15 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       selectedMarginAccount: state.selectedMarginAccount
     })
   );
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -73,16 +82,6 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const { cluster, explorer } = useJetStore(state => state.settings);
 
   const [pending, setPending] = useState(false);
-
-  const lookupTables = useMemo(() => {
-    if (!selectedMarginAccount) {
-      return airspaceLookupTables;
-    } else {
-      return marginAccountLookupTables[selectedMarginAccount]?.length
-        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
-        : airspaceLookupTables;
-    }
-  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
 
   useEffect(() => {
     if (amount) {
