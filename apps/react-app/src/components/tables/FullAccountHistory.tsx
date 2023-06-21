@@ -92,7 +92,7 @@ export function FullAccountHistory(): JSX.Element {
         case "OfferLoan":
           action = "offer-loan"
           break;
-        case "RequestLoand":
+        case "RequestLoan":
           action = "request-loan"
           break;
       }
