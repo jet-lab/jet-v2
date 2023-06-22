@@ -230,7 +230,7 @@ export class FixedTermMarket {
     const marginUser = await this.deriveMarginUserAddress(user)
     const termLoan = await this.deriveTermLoanAddress(marginUser, seed)
     const claims = await this.deriveMarginUserClaims(marginUser)
-    const tokenCollateral = await this.deriveTokenCollateral(marginUser)
+    const tokenCollateral = await this.deriveUnderlyingCollateral(marginUser)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
 
     return this.program.methods
@@ -335,19 +335,25 @@ export class FixedTermMarket {
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const marketUser = await this.deriveMarginUserAddress(user)
     const ticketCollateral = await this.deriveTicketCollateral(marketUser)
-    const tokenCollateral = await this.deriveTokenCollateral(marketUser)
+    const underlyingCollateral = await this.deriveUnderlyingCollateral(marketUser)
     const claims = await this.deriveMarginUserClaims(marketUser)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     return this.program.methods
       .settle()
       .accounts({
-        ...this.addresses,
+        // ...this.addresses,
         marginUser: marketUser,
         marginAccount: user.address,
-        ticketCollateral,
-        tokenCollateral,
+        market: this.addresses.market,
         tokenProgram: TOKEN_PROGRAM_ID,
         claims,
+        claimsMint: this.addresses.claimsMint,
+        ticketCollateral,
+        ticketCollateralMint: this.addresses.ticketCollateralMint,
+        underlyingCollateral: underlyingCollateral,
+        underlyingCollateralMint: this.addresses.underlyingCollateralMint,
+        underlyingTokenVault: this.addresses.underlyingTokenVault,
+        ticketMint: this.addresses.ticketMint,
         underlyingSettlement,
         ticketSettlement
       })
@@ -491,7 +497,7 @@ export class FixedTermMarket {
     return await findFixedTermDerivedAccount(["ticket_collateral_notes", marginUser], this.program.programId)
   }
 
-  async deriveTokenCollateral(marginUser: Address): Promise<PublicKey> {
+  async deriveUnderlyingCollateral(marginUser: Address): Promise<PublicKey> {
     return await findFixedTermDerivedAccount(["underlying_collateral_notes", marginUser], this.program.programId)
   }
 
