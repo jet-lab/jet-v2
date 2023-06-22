@@ -73,7 +73,7 @@ export const DismissModal = ({ children, storageKey, title, className }: Dismiss
   }, [storageKey]);
 
   return (
-    <Modal open={open} title={title} className={className} onClose={() => setOpen(false)}>
+    <Modal open={open} title={title} className={className} onClose={dismiss}>
       {children({
         dismiss
       })}

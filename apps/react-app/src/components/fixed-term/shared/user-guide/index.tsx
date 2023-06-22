@@ -41,7 +41,7 @@ const UserGuidePage = ({
         href="https://docs.jetprotocol.io/jet-protocol/protocol/jet-products/fixed-rate"
         target="_blank"
         rel="noopener noreferrer">
-        Read Fixed Rate Docs
+        Read the Docs
       </a>
       {!isFirstPage && (
         <button className="flex-1" onClick={previousPage}>
@@ -143,25 +143,6 @@ const Page4Sidebar = () => {
   const navigate = useNavigate()
   return <div className='flex flex-col flex-1 items-center justify-center'>
     <Title classNameOverride='my-2'>Explore more on the Protocol</Title>
-    <div onClick={() => navigate('/fixed-lend')} className='my-2 relative cursor-pointer'>
-      <div className='absolute top-0 left-0 right-0 bottom-0 h-full w-full flex flex-col rounded-lg p-4 bg-opacity-0 hover:bg-opacity-60 bg-slate-900 transition-colors'>
-        <div className='flex items-center justify-between'>
-          <SubTitle>Swaps</SubTitle>
-          <span>Explore &#8594;</span>
-        </div>
-        <div className='h-full flex items-center'>
-          <Paragraph>Trade on margin with Jet’s integrated swap routing service.</Paragraph>
-        </div>
-      </div>
-      <img className='object-contain' srcSet="img/guide/page_4_sidebar/swaps@1x.png 480w,
-           img/guide/page_4_sidebar/swaps@2x.png 800w,
-           img/guide/page_4_sidebar/swaps@3x.png 2000w"
-        sizes="(max-width: 600px) 480px,
-          (max-width: 1000px) 800px,
-          1000px"
-        src="img/guide/page_4_sidebar/swaps@1x.png"
-      />
-    </div>
     <div onClick={() => navigate('/')} className='my-2 relative cursor-pointer'>
       <div className='absolute top-0 left-0 right-0 bottom-0 h-full w-full flex flex-col rounded-lg p-4 bg-opacity-0 hover:bg-opacity-60 bg-slate-900 transition-colors'>
         <div className='flex items-center justify-between'>
