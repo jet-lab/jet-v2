@@ -91,7 +91,7 @@ export const offerLoan = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
   instructions = instructions.concat(postfreshIXS)
 
@@ -155,7 +155,6 @@ export const requestLoan = async ({
     pools,
     markets: markets.filter(m => m.address != market.market.address)
   })
-  // instructions = instructions.concat(prefreshIXS)
 
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
@@ -166,12 +165,11 @@ export const requestLoan = async ({
   })
   setupInstructions = setupInstructions.concat(marketIXS)
 
-  // const postfreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: setupInstructions,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
 
   const orderInstructions: TransactionInstruction[] = []
@@ -240,12 +238,7 @@ export const cancelOrder = async ({
     instructions: cancelInstructions,
     adapterInstruction: cancelLoan
   })
-  await marginAccount.withPrioritisedPositionRefresh({
-    instructions: cancelInstructions,
-    pools,
-    markets,
-    marketAddress: market.market.address
-  })
+
   return sendAndConfirmV0(provider, [instructions, cancelInstructions], lookupTables, [])
 }
 
@@ -299,7 +292,7 @@ export const borrowNow = async ({
     instructions: setupInstructions,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
 
   await marginAccount.withRefreshDepositPosition({
@@ -384,12 +377,11 @@ export const lendNow = async ({
   })
   setupInstructions = setupInstructions.concat(marketIXS)
 
-  // TODO: why do we refresh twice?
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: setupInstructions,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
 
   const orderInstructions: TransactionInstruction[] = []
@@ -406,8 +398,6 @@ export const lendNow = async ({
     instructions: orderInstructions,
     adapterInstruction: lendNow
   })
-
-  await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
 
   return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], lookupTables, [])
 }
@@ -471,7 +461,7 @@ export const settle = async ({
     instructions: settleInstructions,
     adapterInstruction: fixedTermSettleIx
   })
-  // await marginAccount.withUpdatePositionBalance({ instructions: settleInstructions, position })
+
   return sendAndConfirmV0(provider, [refreshInstructions, settleInstructions], lookupTables, [])
 }
 
@@ -563,14 +553,7 @@ export const repay = async ({
       sortedTermLoans.shift()
     }
   }
-  const refreshIxs: TransactionInstruction[] = []
-  await marginAccount.withPrioritisedPositionRefresh({
-    instructions: instructions,
-    pools,
-    markets,
-    marketAddress: market.market.address
-  })
-  instructions = instructions.concat(refreshIxs)
+
   return sendAndConfirmV0(provider, [refreshInstructions, instructions], lookupTables, [])
 }
 
@@ -609,8 +592,7 @@ export const redeem = async ({ marginAccount, pools, markets, market, provider, 
     })
   }
 
-  instructions = instructions.concat(redeemIxs)
-  return sendAndConfirmV0(provider, [instructions], lookupTables, [])
+  return sendAndConfirmV0(provider, [instructions, redeemIxs], lookupTables, [])
 }
 
 interface IConfigureAutoRoll {
