@@ -38,10 +38,10 @@ const UserGuidePage = ({
     <div className="flex font-normal items-center text-2xl my-2 pt-8">
       <a
         className="flex-1 pr-6 font-normal text-sm"
-        href="https://uploads-ssl.webflow.com/620e4761998cce492a7c9c8d/62ebf0ff41fac7359bfb2964_litepaper-v0.0.1.pdf"
+        href="https://docs.jetprotocol.io/jet-protocol/protocol/jet-products/fixed-rate"
         target="_blank"
         rel="noopener noreferrer">
-        Read the Litepaper
+        Read Fixed Rate Docs
       </a>
       {!isFirstPage && (
         <button className="flex-1" onClick={previousPage}>
@@ -143,7 +143,7 @@ const Page4Sidebar = () => {
   const navigate = useNavigate()
   return <div className='flex flex-col flex-1 items-center justify-center'>
     <Title classNameOverride='my-2'>Explore more on the Protocol</Title>
-    <div onClick={() => navigate('/swaps')} className='my-2 relative cursor-pointer'>
+    <div onClick={() => navigate('/fixed-lend')} className='my-2 relative cursor-pointer'>
       <div className='absolute top-0 left-0 right-0 bottom-0 h-full w-full flex flex-col rounded-lg p-4 bg-opacity-0 hover:bg-opacity-60 bg-slate-900 transition-colors'>
         <div className='flex items-center justify-between'>
           <SubTitle>Swaps</SubTitle>
