@@ -413,11 +413,13 @@ impl<'a, T: Into<&'a UserCallbackInfo>> From<T> for CallbackInfo {
     }
 }
 
+/// Binary flags for the `CallbackInfo`
+#[derive(Zeroable, Pod, Debug, Default, Eq, PartialEq, Clone, Copy)]
+#[repr(C)]
+pub struct CallbackFlags(u8);
+
 bitflags! {
-    /// Binary flags for the `CallbackInfo`
-    #[derive(Zeroable, Pod, Default)]
-    #[repr(C)]
-    pub struct CallbackFlags: u8 {
+    impl CallbackFlags: u8 {
         /// any tickets purchased in this order should be automatically staked
         const AUTO_STAKE = 1;
 
