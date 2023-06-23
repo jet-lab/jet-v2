@@ -48,7 +48,7 @@ interface ICreateLendOrder {
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
@@ -64,7 +64,7 @@ export const offerLoan = async ({
   marketConfig,
   markets,
   autorollEnabled,
-  airspaceLookupTables
+  lookupTables
 }: ICreateLendOrder) => {
   const pool = pools[market.config.symbol]
   let instructions: TransactionInstruction[] = []
@@ -91,7 +91,7 @@ export const offerLoan = async ({
     instructions: postfreshIXS,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
   instructions = instructions.concat(postfreshIXS)
 
@@ -116,7 +116,7 @@ export const offerLoan = async ({
     instructions: orderInstructions,
     adapterInstruction: loanOffer
   })
-  return sendAndConfirmV0(provider, [instructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [instructions, orderInstructions], lookupTables, [])
 }
 
 interface ICreateBorrowOrder {
@@ -130,7 +130,7 @@ interface ICreateBorrowOrder {
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
@@ -147,7 +147,7 @@ export const requestLoan = async ({
   marketConfig,
   markets,
   autorollEnabled,
-  airspaceLookupTables
+  lookupTables
 }: ICreateBorrowOrder): Promise<string> => {
   let setupInstructions: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -155,7 +155,6 @@ export const requestLoan = async ({
     pools,
     markets: markets.filter(m => m.address != market.market.address)
   })
-  // instructions = instructions.concat(prefreshIXS)
 
   // Create relevant accounts if they do not exist
   const { marketIXS } = await withCreateFixedTermMarketAccounts({
@@ -166,12 +165,11 @@ export const requestLoan = async ({
   })
   setupInstructions = setupInstructions.concat(marketIXS)
 
-  // const postfreshIXS: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: setupInstructions,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
 
   const orderInstructions: TransactionInstruction[] = []
@@ -196,7 +194,7 @@ export const requestLoan = async ({
     instructions: orderInstructions,
     adapterInstruction: borrowOffer
   })
-  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], lookupTables, [])
 }
 
 interface ICancelOrder {
@@ -206,7 +204,7 @@ interface ICancelOrder {
   orderId: BN
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
@@ -218,7 +216,7 @@ export const cancelOrder = async ({
   orderId,
   pools,
   markets,
-  airspaceLookupTables
+  lookupTables
 }: ICancelOrder): Promise<string> => {
   let instructions: TransactionInstruction[] = []
   let cancelInstructions: TransactionInstruction[] = []
@@ -240,13 +238,8 @@ export const cancelOrder = async ({
     instructions: cancelInstructions,
     adapterInstruction: cancelLoan
   })
-  await marginAccount.withPrioritisedPositionRefresh({
-    instructions: cancelInstructions,
-    pools,
-    markets,
-    marketAddress: market.market.address
-  })
-  return sendAndConfirmV0(provider, [instructions, cancelInstructions], airspaceLookupTables, [])
+
+  return sendAndConfirmV0(provider, [instructions, cancelInstructions], lookupTables, [])
 }
 
 // MARKET TAKER ORDERS
@@ -260,7 +253,7 @@ interface IBorrowNow {
   amount: BN
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
@@ -275,7 +268,7 @@ export const borrowNow = async ({
   amount,
   markets,
   autorollEnabled,
-  airspaceLookupTables
+  lookupTables
 }: IBorrowNow): Promise<string> => {
   const pool = pools[market.config.symbol]
 
@@ -299,7 +292,7 @@ export const borrowNow = async ({
     instructions: setupInstructions,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
 
   await marginAccount.withRefreshDepositPosition({
@@ -337,7 +330,7 @@ export const borrowNow = async ({
     instructions: orderInstructions,
     adapterInstruction: depositIx
   })
-  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], lookupTables, [])
 }
 
 interface ILendNow {
@@ -349,7 +342,7 @@ interface ILendNow {
   amount: BN
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
@@ -364,7 +357,7 @@ export const lendNow = async ({
   amount,
   markets,
   autorollEnabled,
-  airspaceLookupTables
+  lookupTables
 }: ILendNow): Promise<string> => {
   const pool = pools[market.config.symbol]
 
@@ -384,12 +377,11 @@ export const lendNow = async ({
   })
   setupInstructions = setupInstructions.concat(marketIXS)
 
-  // TODO: why do we refresh twice?
   await marginAccount.withPrioritisedPositionRefresh({
     instructions: setupInstructions,
     pools: [],
     markets: [market.market],
-    marketAddress: market.market.address // TODO Why this in addition to `markets`?
+    marketAddress: market.market.address
   })
 
   const orderInstructions: TransactionInstruction[] = []
@@ -407,9 +399,7 @@ export const lendNow = async ({
     adapterInstruction: lendNow
   })
 
-  await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
-
-  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], lookupTables, [])
 }
 
 interface ISettle {
@@ -419,7 +409,7 @@ interface ISettle {
   provider: AnchorProvider
   pools: Record<string, Pool>
   amount: BN
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
@@ -432,7 +422,7 @@ export const settle = async ({
   provider,
   pools,
   amount,
-  airspaceLookupTables
+  lookupTables
 }: ISettle) => {
   const { market, token } = selectedMarket
   const pool = pools[token.symbol]
@@ -465,8 +455,14 @@ export const settle = async ({
     instructions: settleInstructions,
     adapterInstruction: depositIx
   })
-  await marginAccount.withUpdatePositionBalance({ instructions: settleInstructions, position })
-  return sendAndConfirmV0(provider, [refreshInstructions, settleInstructions], airspaceLookupTables, [])
+
+  const fixedTermSettleIx = await market.settle(marginAccount)
+  await marginAccount.withAdapterInvoke({
+    instructions: settleInstructions,
+    adapterInstruction: fixedTermSettleIx
+  })
+
+  return sendAndConfirmV0(provider, [refreshInstructions, settleInstructions], lookupTables, [])
 }
 
 interface IRepay {
@@ -477,7 +473,7 @@ interface IRepay {
   termLoans: Array<Loan>
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
@@ -491,7 +487,7 @@ export const repay = async ({
   termLoans,
   pools,
   markets,
-  airspaceLookupTables
+  lookupTables
 }: IRepay) => {
   let instructions: TransactionInstruction[] = []
   let refreshInstructions: TransactionInstruction[] = []
@@ -557,15 +553,8 @@ export const repay = async ({
       sortedTermLoans.shift()
     }
   }
-  const refreshIxs: TransactionInstruction[] = []
-  await marginAccount.withPrioritisedPositionRefresh({
-    instructions: instructions,
-    pools,
-    markets,
-    marketAddress: market.market.address
-  })
-  instructions = instructions.concat(refreshIxs)
-  return sendAndConfirmV0(provider, [refreshInstructions, instructions], airspaceLookupTables, [])
+
+  return sendAndConfirmV0(provider, [refreshInstructions, instructions], lookupTables, [])
 }
 
 interface IRedeem {
@@ -575,20 +564,12 @@ interface IRedeem {
   market: MarketAndConfig
   provider: AnchorProvider
   deposits: Array<Deposit>
-  airspaceLookupTables: {
+  lookupTables: {
     address: string
     data: Uint8Array
   }[]
 }
-export const redeem = async ({
-  marginAccount,
-  pools,
-  markets,
-  market,
-  provider,
-  deposits,
-  airspaceLookupTables
-}: IRedeem) => {
+export const redeem = async ({ marginAccount, pools, markets, market, provider, deposits, lookupTables }: IRedeem) => {
   let instructions: TransactionInstruction[] = []
   const refreshIxs: TransactionInstruction[] = []
   await marginAccount.withPrioritisedPositionRefresh({
@@ -611,8 +592,7 @@ export const redeem = async ({
     })
   }
 
-  instructions = instructions.concat(redeemIxs)
-  return sendAndConfirmV0(provider, [instructions], airspaceLookupTables, [])
+  return sendAndConfirmV0(provider, [instructions, redeemIxs], lookupTables, [])
 }
 
 interface IConfigureAutoRoll {

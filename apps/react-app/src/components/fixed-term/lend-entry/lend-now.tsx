@@ -49,12 +49,24 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
-  const { cluster, explorer, selectedPoolKey, airspaceLookupTables } = useJetStore(state => ({
-    cluster: state.settings.cluster,
-    explorer: state.settings.explorer,
-    selectedPoolKey: state.selectedPoolKey,
-    airspaceLookupTables: state.airspaceLookupTables
-  }));
+  const { cluster, explorer, selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } =
+    useJetStore(state => ({
+      cluster: state.settings.cluster,
+      explorer: state.settings.explorer,
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    }));
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const currentPool = useMemo(
     () =>
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
@@ -66,8 +78,10 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   const [forecast, setForecast] = useState<Forecast>();
 
   const [pending, setPending] = useState(false);
+
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
+  const [orderTooSmall, setOrderTooSmall] = useState(false);
 
   const tokenBalance = marginAccount?.poolPositions[token.symbol].depositBalance;
   const hasEnoughTokens = tokenBalance?.gte(new TokenAmount(amount || new BN(0), token.decimals));
@@ -144,7 +158,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
         amount,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTables
+        lookupTables
       });
       setTimeout(() => {
         notify(
@@ -187,6 +201,14 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
   useEffect(() => {
     setAutorollEnabled(false);
   }, [marketAndConfig]);
+
+  useEffect(() => {
+    if (!amount || !marketAndConfig) {
+      setOrderTooSmall(false);
+      return;
+    }
+    setOrderTooSmall(amount.toNumber() < marketAndConfig.config.minBaseOrderSize);
+  }, [marketAndConfig, amount]);
 
   return (
     <div className="fixed-term order-entry-body">
@@ -287,7 +309,7 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
           )}
         </div>
       </div>
-      <Button className="submit-button" disabled={disabled || pending} onClick={marketLendOrder}>
+      <Button className="submit-button" disabled={disabled || pending || orderTooSmall} onClick={marketLendOrder}>
         {pending ? (
           <>
             <LoadingOutlined />
@@ -311,6 +333,9 @@ export const LendNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) 
       )}
       {forecast && forecast.effectiveRate === 0 && (
         <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing lend amount.</div>
+      )}
+      {orderTooSmall && (
+        <div className="fixed-term-warning">The minimum order size for this market is <strong>{marketAndConfig.config.minBaseOrderSize / Math.pow(10, token.decimals)} {marketAndConfig.config.symbol}</strong>.</div>
       )}
     </div>
   );

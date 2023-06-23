@@ -15,18 +15,38 @@ interface IMarketSelectorButtonProps {
 }
 export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }: IMarketSelectorButtonProps) => {
   const { cluster, explorer } = useJetStore(state => state.settings);
+  const { airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(state => {
+    return {
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    };
+  });
   const apiEndpoint = useMemo(
     () =>
       cluster === 'mainnet-beta'
         ? process.env.REACT_APP_DATA_API
         : cluster === 'devnet'
-          ? process.env.REACT_APP_DEV_DATA_API
-          : cluster === 'localnet'
-            ? process.env.REACT_APP_LOCAL_DATA_API
-            : '',
+        ? process.env.REACT_APP_DEV_DATA_API
+        : cluster === 'localnet'
+        ? process.env.REACT_APP_LOCAL_DATA_API
+        : '',
     [cluster]
   );
-  const { data } = useOpenPositions(String(apiEndpoint), selectedMarket?.market.address.toBase58(), marginAccount?.address.toBase58());
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
+  const { data } = useOpenPositions(
+    String(apiEndpoint),
+    selectedMarket?.market.address.toBase58(),
+    marginAccount?.address.toBase58()
+  );
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
 
@@ -78,7 +98,8 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
         markets.map(m => m.market),
         selectedMarket,
         cluster,
-        explorer
+        explorer,
+        lookupTables
       );
       if (totalBorrowed.sub(tokenAmount).lte(new TokenAmount(new BN(0), token.decimals))) {
         setTotalBorrowed(undefined);
@@ -107,7 +128,8 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                   cluster,
                   explorer,
                   pools.tokenPools,
-                  markets.map(m => m.market)
+                  markets.map(m => m.market),
+                  lookupTables
                 );
               }}>
               Claim
@@ -128,7 +150,8 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
                 cluster,
                 explorer,
                 pools,
-                owedTokens
+                owedTokens,
+                lookupTables
               )
             }>
             Settle Now

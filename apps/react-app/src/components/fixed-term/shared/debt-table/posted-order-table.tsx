@@ -22,6 +22,7 @@ interface GetPostOrderColumnes {
   markets: FixedTermMarket[];
   ordersPendingDeletion: string[];
   setOrdersPendingDeletion: UpdateOrders;
+  lookupTables: LookupTable[];
 }
 const getPostOrderColumns = ({
   market,
@@ -32,7 +33,8 @@ const getPostOrderColumns = ({
   pools,
   markets,
   ordersPendingDeletion,
-  setOrdersPendingDeletion
+  setOrdersPendingDeletion,
+  lookupTables
 }: GetPostOrderColumnes): ColumnsType<OpenOrder> => [
   {
     title: 'Issue date',
@@ -101,7 +103,8 @@ const getPostOrderColumns = ({
               pools,
               markets,
               ordersPendingDeletion,
-              setOrdersPendingDeletion
+              setOrdersPendingDeletion,
+              lookupTables
             );
           }}
         />
@@ -120,7 +123,8 @@ const cancel = async (
   pools: Record<string, Pool>,
   markets: FixedTermMarket[],
   ordersPendingDeletion: string[],
-  setOrdersPendingDeletion: UpdateOrders
+  setOrdersPendingDeletion: UpdateOrders,
+  lookupTables: LookupTable[]
 ) => {
   try {
     await cancelOrder({
@@ -130,7 +134,7 @@ const cancel = async (
       orderId: new BN(order.order_id),
       pools,
       markets,
-      airspaceLookupTables: []
+      lookupTables
     });
     notify('Order Cancelled', 'Your order was cancelled successfully', 'success');
     setOrdersPendingDeletion([...ordersPendingDeletion, order.order_id]);
@@ -153,7 +157,8 @@ export const PostedOrdersTable = ({
   cluster,
   explorer,
   pools,
-  markets
+  markets,
+  lookupTables
 }: {
   data: OpenOrder[];
   market: MarketAndConfig;
@@ -163,6 +168,7 @@ export const PostedOrdersTable = ({
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
   pools: Record<string, Pool>;
   markets: FixedTermMarket[];
+  lookupTables: LookupTable[];
 }) => {
   const [ordersPendingDeletion, setOrdersPendingDeletion] = useState<string[]>([]);
 
@@ -177,7 +183,8 @@ export const PostedOrdersTable = ({
         pools,
         markets,
         ordersPendingDeletion,
-        setOrdersPendingDeletion
+        setOrdersPendingDeletion,
+        lookupTables
       }),
     [market, marginAccount, provider, cluster, explorer, ordersPendingDeletion]
   );

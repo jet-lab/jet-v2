@@ -93,6 +93,7 @@ const getDepositsColumns = (
               <Switch
                 className="debt-table-switch"
                 checked={position.is_auto_roll}
+                disabled={position.principal + position.interest < market.config.minBaseOrderSize}
                 onClick={() => {
                   if (hasConfig) {
                     togglePosition(

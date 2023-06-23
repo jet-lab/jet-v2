@@ -4,7 +4,8 @@ import {
   WalletModal as WalletModalState,
   NewAccountModal as NewAccountModalState,
   SettingsModal as SettingsModalState,
-  NotificationsModal as NotificationsModalState
+  NotificationsModal as NotificationsModalState,
+  AccountUpgradeModal as AccountUpgradeModalState
 } from '@state/modals/modals';
 import { CurrentAction } from '@state/actions/actions';
 import { DisclaimerModal } from './DisclaimerModal';
@@ -15,6 +16,7 @@ import { TransferModal } from './actions/TransferModal';
 import { NewAccountModal } from './NewAccountModal';
 import { SettingsModal } from './SettingsModal';
 import { NotificationsModal } from './NotificationsModal';
+import { AccountUpgradeModal } from './AccountUpgradeModal';
 
 // Wrapper component to include all app modals
 export function Modals(): JSX.Element {
@@ -23,15 +25,16 @@ export function Modals(): JSX.Element {
   const newAccountModalOpen = useRecoilValue(NewAccountModalState);
   const settingsModalOpen = useRecoilValue(SettingsModalState);
   const notificationsModalOpen = useRecoilValue(NotificationsModalState);
+  const accountUpgradeModalOpen = useRecoilValue(AccountUpgradeModalState);
 
   // Disable scroll when these modals are open
   useEffect(() => {
-    if (WalletModalOpen || currentAction || newAccountModalOpen || settingsModalOpen || notificationsModalOpen) {
+    if (WalletModalOpen || currentAction || newAccountModalOpen || settingsModalOpen || notificationsModalOpen || accountUpgradeModalOpen) {
       document.body.style.overflowY = 'hidden';
     } else {
       document.body.style.overflowY = 'unset';
     }
-  }, [WalletModalOpen, currentAction, newAccountModalOpen, settingsModalOpen, notificationsModalOpen]);
+  }, [WalletModalOpen, currentAction, newAccountModalOpen, settingsModalOpen, notificationsModalOpen, accountUpgradeModalOpen]);
 
   return (
     <>
@@ -43,6 +46,7 @@ export function Modals(): JSX.Element {
       <NewAccountModal />
       <SettingsModal />
       <NotificationsModal />
+      <AccountUpgradeModal />
     </>
   );
 }

@@ -52,12 +52,14 @@ interface Forecast {
 export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
-    return {
+  const { selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(
+    state => ({
       selectedPoolKey: state.selectedPoolKey,
-      airspaceLookupTables: state.airspaceLookupTables
-    };
-  });
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    })
+  );
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -71,12 +73,23 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
   const [forecast, setForecast] = useState<Forecast>();
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
+  const [orderTooSmall, setOrderTooSmall] = useState(false);
 
   const preprocessInput = useCallback((e: number) => Math.round(e * 100) / 100, []);
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
   const [pending, setPending] = useState(false);
+
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
 
   const disabled =
     !marginAccount ||
@@ -105,7 +118,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTables
+        lookupTables
       });
       setTimeout(() => {
         notify(
@@ -114,8 +127,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
             .div(new BN(10 ** decimals))
             .toNumber()
             .toFixed(token.precision)} ${token.name} at ${(rateBPS.toNumber() / 100).toFixed(
-            2
-          )}% was created successfully`,
+              2
+            )}% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -187,7 +200,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     }
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(bnToBigInt(Math.round(basisPoints * 100)), BigInt(marketAndConfig.config.borrowTenor))
+      rate_to_price(bnToBigInt(new BN(Math.round(basisPoints * 100))), BigInt(marketAndConfig.config.borrowTenor))
     );
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
@@ -196,10 +209,18 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
     setAutorollEnabled(false);
   }, [marketAndConfig]);
 
+  useEffect(() => {
+    if (!amount || !marketAndConfig) {
+      setOrderTooSmall(false);
+      return;
+    }
+    setOrderTooSmall(amount.toNumber() < marketAndConfig.config.minBaseOrderSize);
+  }, [marketAndConfig, amount]);
+
   return (
     <div className="fixed-term order-entry-body">
       <p>
-        You are borrowing as a maker. Your loan request wil be filled at the input interest rate or lower. Any part of
+        You are borrowing as a maker. Your borrow request wil be filled at the input interest rate or lower. Any part of
         your borrow request that is not filled immediately will be posted to the orderbook.
       </p>
       <div className="request-loan fixed-order-entry-fields">
@@ -330,7 +351,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
           )}
         </div>
       </div>
-      <Button className="submit-button" disabled={disabled || pending} onClick={() => createBorrowOrder()}>
+      <Button className="submit-button" disabled={disabled || pending || orderTooSmall} onClick={() => createBorrowOrder()}>
         {pending ? (
           <>
             <LoadingOutlined />
@@ -345,6 +366,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig }: RequestLoanPro
       )}
       {!forecast?.hasEnoughCollateral && amount && !amount.isZero() && basisPoints && basisPoints != 0 && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
+      )}
+      {orderTooSmall && (
+        <div className="fixed-term-warning">The minimum order size for this market is <strong>{marketAndConfig.config.minBaseOrderSize / Math.pow(10, token.decimals)} {marketAndConfig.config.symbol}</strong>.</div>
       )}
     </div>
   );

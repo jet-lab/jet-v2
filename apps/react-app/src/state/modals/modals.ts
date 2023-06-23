@@ -23,3 +23,9 @@ export const NotificationsModal = atom({
   key: 'notificationsModal',
   default: false as boolean
 });
+
+// Lookup registry modal
+export const AccountUpgradeModal = atom({
+  key: 'accountUpgradeModal',
+  default: false as boolean
+});

@@ -1,4 +1,5 @@
 use hosted_tests::margin_test_context;
+use jet_simulation::{Keygen, RandomKeygen};
 
 /// Tests for lookup table, to check that it behaves fine on simulator and test envs
 #[cfg_attr(not(feature = "localnet"), ignore = "only run on localnet")]
@@ -50,31 +51,23 @@ async fn margin_lookup_table_registry() -> anyhow::Result<()> {
 
     user.init_lookup_registry().await?;
 
-    // Creating lookup tables and entries not yet supported on the sim
-    #[cfg(feature = "localnet")]
-    {
-        use std::time::Duration;
+    let keygen = RandomKeygen;
+    // Sleep for some time to meet recent_slot constraints
+    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+    // Create a lookup table in a registry
+    let lookup_table = user.create_lookup_table().await?;
 
-        use jet_simulation::{Keygen, RandomKeygen};
+    // Trying to use the lookup table immediately doesn't work
+    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 
-        let keygen = RandomKeygen;
-        // Sleep for some time to meet recent_slot constraints
-        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-        // Create a lookup table in a registry
-        let lookup_table = user.create_lookup_table().await?;
-
-        // Trying to use the lookup table immediately doesn't work
-        tokio::time::sleep(Duration::from_secs(10)).await;
-
-        // Add accounts to the lookup table
-        // TODO: The library should have control over accounts to prevent
-        // a free-for-all
-        let addresses = (0..12)
-            .map(|_| keygen.generate_key().pubkey())
-            .collect::<Vec<_>>();
-        user.append_to_lookup_table(lookup_table, &addresses[..])
-            .await?;
-    }
+    // Add accounts to the lookup table
+    // TODO: The library should have control over accounts to prevent
+    // a free-for-all
+    let addresses = (0..12)
+        .map(|_| keygen.generate_key().pubkey())
+        .collect::<Vec<_>>();
+    user.append_to_lookup_table(lookup_table, &addresses[..])
+        .await?;
 
     Ok(())
 }

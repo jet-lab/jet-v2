@@ -230,7 +230,7 @@ pub async fn process_set_liquidator(
     liquidator: Pubkey,
     is_liquidator: bool,
 ) -> Result<Plan> {
-    let liquidator_md_address = get_metadata_address(&liquidator);
+    let liquidator_md_address = derive_margin_permit(&airspace, &liquidator);
     let airspace_authority = client
         .read_anchor_account::<Airspace>(&airspace)
         .await?

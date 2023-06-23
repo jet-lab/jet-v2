@@ -46,12 +46,30 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const { prices, selectedPoolKey, selectPool, airspaceLookupTables } = useJetStore(state => ({
+  const {
+    prices,
+    selectedPoolKey,
+    selectPool,
+    airspaceLookupTables,
+    marginAccountLookupTables,
+    selectedMarginAccount
+  } = useJetStore(state => ({
     prices: state.prices,
     selectedPoolKey: state.selectedPoolKey,
     selectPool: state.selectPool,
-    airspaceLookupTables: state.airspaceLookupTables
+    airspaceLookupTables: state.airspaceLookupTables,
+    marginAccountLookupTables: state.marginAccountLookupTables,
+    selectedMarginAccount: state.selectedMarginAccount
   }));
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const currentPool = useMemo(
     () =>
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
@@ -277,7 +295,7 @@ export function SwapEntry(): JSX.Element {
       tokenInputAmount,
       minOutAmount,
       hasOutputLoan && repayLoanWithOutput,
-      airspaceLookupTables
+      lookupTables
     );
     if (resp === ActionResponse.Success) {
       notify(

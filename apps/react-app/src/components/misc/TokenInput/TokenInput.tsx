@@ -154,6 +154,13 @@ export function TokenInput(props: {
           maxInput = maxInput.subb(feesBuffer);
         }
         // Otherwise reference their margin account
+      } else if (tokenAction === 'repay') {
+        // If the deposit balance > loan, constrain to loan, else deposit
+        if (poolPosition.depositBalance.gt(poolPosition.loanBalance)) {
+          maxInput = poolPosition.loanBalance;
+        } else {
+          maxInput = poolPosition.depositBalance;
+        }
       } else {
         maxInput = maxTradeAmounts[tokenAction] ?? maxInputTradeAmounts[tokenAction];
       }

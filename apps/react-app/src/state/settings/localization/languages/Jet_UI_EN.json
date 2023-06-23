@@ -511,6 +511,10 @@
       "riskLimit": "Risk Limit"
     }
   },
+  "accountUpgradeModal": {
+    "title": "Upgrade Account",
+    "upgradeAccount": "Upgrade Account"
+  },
   "settingsModal": {
     "title": "Settings",
     "save": "Save",

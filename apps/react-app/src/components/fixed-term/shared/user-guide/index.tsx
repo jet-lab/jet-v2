@@ -90,7 +90,7 @@ const Page2Content = () => (
     <br />
     Borrowers seeking immediate liquidity may choose to <b className="font-bold">borrow now</b> by accepting loans on
     offer which will determine in advance the interest rate for a loan of whatever size they choose. Lenders may choose
-    to <b className="font-bold">lend now</b> by satisfying loan requests on the book. The interest rate will be
+    to <b className="font-bold">lend now</b> by satisfying borrow requests on the book. The interest rate will be
     determined in advance by the rate associated with the requests that are filled.
   </Paragraph>
 );
