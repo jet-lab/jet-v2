@@ -18,6 +18,7 @@ import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { ActionIcon, FixedTermAction } from '@components/misc/ActionIcon';
 import debounce from 'lodash.debounce';
 import { useJetStore } from '@jet-lab/store';
+import { Pools } from '@state/pools/pools';
 
 // Table to show margin account's transaction history
 export function FullAccountHistory(): JSX.Element {
@@ -36,6 +37,7 @@ export function FullAccountHistory(): JSX.Element {
   const actionRefresh = useRecoilValue(ActionRefresh);
   const [currentTable, setCurrentTable] = useState('transactions');
   const [pageSize, setPageSize] = useState(5);
+  const pools = useRecoilValue(Pools);
   const [downloadCsv, setDownloadCsv] = useState(false);
   const transactionsRef = useRef<any>();
   const loadingAccounts = walletTokens && !filteredTxHistory?.length;
@@ -128,10 +130,12 @@ export function FullAccountHistory(): JSX.Element {
   function renderAmountColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && transaction.activity_value) {
+      let token1_decimals = pools?.tokenPools[transaction.token1_symbol]?.decimals ?? 2;
+      let token2_decimals = transaction.token2_symbol ? (pools?.tokenPools[transaction.token2_symbol]?.decimals ?? 2) : 2;
       render = (
         <Text>
-          {transaction.token1_amount}
-          {transaction.token2_amount !== 0.0 && ` → ${transaction.token2_amount}`}
+          {transaction.token1_amount.toFixed(token1_decimals)}
+          {transaction.token2_amount !== 0.0 && ` → ${transaction.token2_amount.toFixed(token2_decimals)}`}
         </Text>
       );
     }
