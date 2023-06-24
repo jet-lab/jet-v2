@@ -3,7 +3,7 @@ import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY, AccountMeta } from "@solana/web3.js"
 import assert from "assert"
-import { AssociatedToken, bigIntToBn, TokenAddress, TokenFormat } from "../../token"
+import { AssociatedToken, bigIntToBn, numberToBigInt, TokenAddress, TokenFormat } from "../../token"
 import { TokenAmount } from "../../token/tokenAmount"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
@@ -18,6 +18,8 @@ import { base64 } from "@project-serum/anchor/dist/cjs/utils/bytes"
 import { TokenConfig, TokenConfigInfo } from "../tokenConfig"
 import { Airspace } from "../airspace"
 import axios from "axios"
+import { MarginPosition } from "../../../dist/wasm"
+import { PositionKind } from "../../../dist"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
@@ -1642,16 +1644,18 @@ export class Pool {
     const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
-    // TODO the actual position may have a different modifier
-    const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    const underlyingPrice = marginAccount.prices[this.info.tokenMint.address.toBase58()].price
-    const amountValue = amount * underlyingPrice
+    const positionChanges: MarginPosition[] = [
+      // Deposit increases
+      this.depositPositionChange(marginAccount, amount),
+    ];
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral
-    const weightedCollateral = marginAccount.valuation.weightedCollateral + amountValue * depositNoteValueModifer
-    const liabilities = marginAccount.valuation.liabilities
+    const marginValuation = marginAccount.projectValuation(positionChanges, marginAccount.prices);
 
-    const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
+    const riskIndicator = marginAccount.computeRiskIndicator(
+      marginValuation.requiredCollateral,
+      marginValuation.weightedCollateral,
+      marginValuation.liabilities
+    )
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1673,18 +1677,17 @@ export class Pool {
     const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
-    // TODO the actual position may have a different modifier
-    const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    const amountValue = amount * marginAccount.prices![this.tokenMint.toBase58()].price
+    const positionChanges: MarginPosition[] = [
+      // Deposit decreases
+      this.depositPositionChange(marginAccount, -amount),
+    ];
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral
-    const weightedCollateral = marginAccount.valuation.weightedCollateral - amountValue * depositNoteValueModifer
-    const liabilities = marginAccount.valuation.liabilities
+    const marginValuation = marginAccount.projectValuation(positionChanges, marginAccount.prices);
 
     const riskIndicator = marginAccount.computeRiskIndicator(
-      requiredCollateral,
-      weightedCollateral > 0 ? weightedCollateral : 0,
-      liabilities
+      marginValuation.requiredCollateral,
+      marginValuation.weightedCollateral > 0 ? marginValuation.weightedCollateral : 0,
+      marginValuation.liabilities
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1706,15 +1709,15 @@ export class Pool {
     const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
-    // TODO the actual position may have a different modifier
-    const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = amount * marginAccount.prices![this.tokenMint.toBase58()].price
+    const positionChanges: MarginPosition[] = [
+      // Loan increases, the amount is withdrawn to the wallet
+      // TODO: Is this correct even for fixed term?
+      this.loanPositionChange(marginAccount, amount)
+    ];
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral + amountValue / loanNoteValueModifer
-    const weightedCollateral = marginAccount.valuation.weightedCollateral
-    const liabilities = marginAccount.valuation.liabilities + amountValue
+    const marginValuation = marginAccount.projectValuation(positionChanges, marginAccount.prices);
 
-    const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
+    const riskIndicator = marginAccount.computeRiskIndicator(marginValuation.requiredCollateral, marginValuation.weightedCollateral, marginValuation.liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1736,18 +1739,17 @@ export class Pool {
     const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
-    // TODO the actual position may have a different modifier
-    const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = amount * marginAccount.prices![this.tokenMint.toBase58()].price
+    const positionChanges: MarginPosition[] = [
+      // Loan decreases, the repayment is from the wallet
+      this.loanPositionChange(marginAccount, -amount)
+    ];
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral - amountValue / loanNoteValueModifer
-    const weightedCollateral = marginAccount.valuation.weightedCollateral
-    const liabilities = marginAccount.valuation.liabilities + amountValue
+    const marginValuation = marginAccount.projectValuation(positionChanges, marginAccount.prices);
 
     const riskIndicator = marginAccount.computeRiskIndicator(
-      requiredCollateral >= 0 ? requiredCollateral : 0,
-      weightedCollateral,
-      liabilities >= 0 ? liabilities : 0
+      marginValuation.requiredCollateral >= 0 ? marginValuation.requiredCollateral : 0,
+      marginValuation.weightedCollateral,
+      marginValuation.liabilities >= 0 ? marginValuation.liabilities : 0
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1775,20 +1777,19 @@ export class Pool {
     const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
-    // TODO the actual position may have a different modifier
-    const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    // TODO the actual position may have a different modifier
-    const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = amount * marginAccount.prices![this.tokenMint.toBase58()].price
+    const positionChanges: MarginPosition[] = [
+      // Deposit decreases
+      this.depositPositionChange(marginAccount, -amount),
+      // Loan decreases
+      this.loanPositionChange(marginAccount, -amount)
+    ];
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral - amountValue / loanNoteValueModifer
-    const weightedCollateral = marginAccount.valuation.weightedCollateral - amountValue * depositNoteValueModifer
-    const liabilities = marginAccount.valuation.liabilities + amountValue
+    const marginValuation = marginAccount.projectValuation(positionChanges, marginAccount.prices);
 
     const riskIndicator = marginAccount.computeRiskIndicator(
-      requiredCollateral > 0 ? requiredCollateral : 0,
-      weightedCollateral > 0 ? weightedCollateral : 0,
-      liabilities > 0 ? liabilities : 0
+      marginValuation.requiredCollateral > 0 ? marginValuation.requiredCollateral : 0,
+      marginValuation.weightedCollateral > 0 ? marginValuation.weightedCollateral : 0,
+      marginValuation.liabilities > 0 ? marginValuation.liabilities : 0
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1810,17 +1811,16 @@ export class Pool {
     const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
-    // TODO the actual position may have a different modifier
-    const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    // TODO the actual position may have a different modifier
-    const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = amount * marginAccount.prices![this.tokenMint.toBase58()].price
+    const positionChanges: MarginPosition[] = [
+      // Deposit increases
+      this.depositPositionChange(marginAccount, amount),
+      // Loan increases
+      this.loanPositionChange(marginAccount, amount)
+    ];
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral + amountValue / loanNoteValueModifer
-    const weightedCollateral = marginAccount.valuation.weightedCollateral + amountValue * depositNoteValueModifer
-    const liabilities = marginAccount.valuation.liabilities + amountValue
+    const marginValuation = marginAccount.projectValuation(positionChanges, marginAccount.prices);
 
-    const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
+    const riskIndicator = marginAccount.computeRiskIndicator(marginValuation.requiredCollateral, marginValuation.weightedCollateral, marginValuation.liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1832,73 +1832,45 @@ export class Pool {
     minAmountOut: number | undefined,
     outputToken: Pool | undefined,
     repayWithProceeds: boolean,
-    setupCheck?: boolean
+    _setupCheck?: boolean
   ): PoolProjection {
     const defaults = this.getDefaultPoolProjection(marginAccount)
     if (!minAmountOut || !outputToken) {
       return defaults
     }
 
-    // TODO Value modifiers of position in the margin account may differ
-    //      from the global program configuration
+    // TODO(Neville): This is legacy, for route swaps we'll consider whether 
+    // the swap is from a margin pool or directly from a margin account.
 
-    // Prices
-    const inputTokenPrice = this.prices.priceValue.toNumber()
-    const outputTokenPrice = outputToken.prices.priceValue.toNumber()
+    const positionChanges: MarginPosition[] = [
+      // Deposit from this pool decreases
+      this.depositPositionChange(marginAccount, -amount),
+      // Deposit in the output pool increases by minAmountOut
+      outputToken.depositPositionChange(marginAccount, minAmountOut)
+    ];
 
-    // Swap values
-    const inputSwapValue = amount * inputTokenPrice
-    const minAmountOutValue = minAmountOut * outputTokenPrice
-
-    // Total Liabilities
-    const totalLiabilities = marginAccount.valuation.liabilities
-
-    // Position-specific valuations
-    const inputTokenPosition = marginAccount.poolPositions[this.symbol]
-    const inputDepositBalance = inputTokenPosition ? inputTokenPosition.depositBalance.tokens : 0
-    const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol]
-    const outputLoanBalance = outputTokenPosition ? outputTokenPosition.loanBalance.tokens : 0
-
-    const inputRequiredCollateralFactor =
-      this.loanNoteMetadata.valueModifier *
-      (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION : 1)
-    const inputTokenAssetValue = inputDepositBalance * inputTokenPrice
-    const outputRequiredCollateralFactor =
-      outputToken.loanNoteMetadata.valueModifier *
-      (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION : 1)
-    const outputTokenLiabilityValue = outputLoanBalance * outputTokenPrice
-
-    // Collateral values
-    const requiredCollateral =
-      marginAccount.valuation[setupCheck ? "requiredSetupCollateral" : "requiredCollateral"]
-    const weightedCollateral = marginAccount.valuation.weightedCollateral
-    const inputTokenWeight = this.depositNoteMetadata.valueModifier
-    const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier
-
-    let riskIndicator: number
-
-    // Projected risk equation
     if (repayWithProceeds) {
-      riskIndicator =
-        (totalLiabilities +
-          requiredCollateral -
-          ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
-          (outputTokenLiabilityValue - Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) +
-          ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
-          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
-        (weightedCollateral +
-          outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0) -
-          inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))
-    } else {
-      riskIndicator =
-        (totalLiabilities +
-          requiredCollateral +
-          ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
-          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
-        (weightedCollateral +
-          outputTokenWeight * minAmountOutValue -
-          inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))
+      // Determine how much is repayable in tokens
+      const repayableAmount = Math.min(
+        marginAccount.poolPositions[outputToken.symbol].depositBalance.tokens / outputToken.depositNoteExchangeRate().toNumber() + minAmountOut,
+        marginAccount.poolPositions[outputToken.symbol].loanBalance.tokens / outputToken.loanNoteExchangeRate().toNumber()
+      );
+      // Deposit in the output pool decreases by the repayable amount
+      positionChanges.push(outputToken.depositPositionChange(marginAccount, -repayableAmount))
+      // Loan in the output pool decreases by the repayable amount
+      positionChanges.push(outputToken.loanPositionChange(marginAccount, -repayableAmount))
     }
+
+    const marginValuation = marginAccount.projectValuation(positionChanges, marginAccount.prices);
+
+    // TODO: this doesn't consider setup collateral requirements.
+    // They are unnecessary as this is technically dead code, keeping it for reference
+    // until we complete route swaps.
+    const riskIndicator = marginAccount.computeRiskIndicator(
+      marginValuation.requiredCollateral,
+      marginValuation.weightedCollateral,
+      marginValuation.liabilities
+    )
 
     // TODO: add pool projections for rates
     return {
@@ -1915,5 +1887,31 @@ export class Pool {
       depositRate: this.depositApy,
       borrowRate: this.borrowApr
     }
+  }
+
+  private depositPositionChange(marginAccount: MarginAccount, amount: number): MarginPosition {
+    const position = marginAccount.poolPositions[this.symbol]
+    return new MarginPosition(
+      marginAccount.findPositionTokenAddress(this.addresses.depositNoteMint).toBase58(),
+      this.addresses.depositNoteMint.toString(),
+      numberToBigInt(amount * Math.pow(10, this.decimals) / this.depositNoteExchangeRate().toNumber()),
+      -this.decimals,
+      position.depositPosition?.kind ?? this.depositNoteMetadata.tokenKind,
+      // Use an existing position's modifier or the default
+      position.depositPosition?.valueModifier ?? this.depositNoteMetadata.valueModifier
+    )
+  }
+
+  private loanPositionChange(marginAccount: MarginAccount, amount: number): MarginPosition {
+    const position = marginAccount.poolPositions[this.symbol]
+    return new MarginPosition(
+      this.findLoanPositionAddress(marginAccount).toBase58(),
+      this.addresses.loanNoteMint.toString(),
+      numberToBigInt(amount * Math.pow(10, this.decimals) / this.loanNoteExchangeRate().toNumber()),
+      -this.decimals,
+      PositionKind.Claim,
+      // Use an existing position's modifier or the default
+      position.loanPosition?.valueModifier ?? this.loanNoteMetadata.valueModifier
+    )
   }
 }
