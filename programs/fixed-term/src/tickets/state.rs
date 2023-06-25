@@ -112,9 +112,11 @@ impl TermDepositWriter {
     }
 }
 
+#[derive(Debug, Default, AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy)]
+pub struct TermDepositFlags(u8);
+
 bitflags! {
-    #[derive(Default, AnchorSerialize, AnchorDeserialize)]
-    pub struct TermDepositFlags: u8 {
+    impl TermDepositFlags: u8 {
         /// Can this term deposit be redeemed and replaced on the orderbook
         const AUTO_ROLL = 1;
 
