@@ -48,10 +48,7 @@ interface ICreateLendOrder {
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 export const offerLoan = async ({
   market,
@@ -130,10 +127,7 @@ interface ICreateBorrowOrder {
   marketConfig: FixedTermMarketConfig
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 
 export const requestLoan = async ({
@@ -204,10 +198,7 @@ interface ICancelOrder {
   orderId: BN
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 export const cancelOrder = async ({
   market,
@@ -253,10 +244,7 @@ interface IBorrowNow {
   amount: BN
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 
 export const borrowNow = async ({
@@ -342,10 +330,7 @@ interface ILendNow {
   amount: BN
   markets: FixedTermMarket[]
   autorollEnabled: boolean
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 
 export const lendNow = async ({
@@ -409,10 +394,7 @@ interface ISettle {
   provider: AnchorProvider
   pools: Record<string, Pool>
   amount: BN
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 
 export const settle = async ({
@@ -473,10 +455,7 @@ interface IRepay {
   termLoans: Array<Loan>
   pools: Record<string, Pool>
   markets: FixedTermMarket[]
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 
 export const repay = async ({
@@ -564,10 +543,7 @@ interface IRedeem {
   market: MarketAndConfig
   provider: AnchorProvider
   deposits: Array<Deposit>
-  lookupTables: {
-    address: string
-    data: Uint8Array
-  }[]
+  lookupTables: LookupTable[]
 }
 export const redeem = async ({ marginAccount, pools, markets, market, provider, deposits, lookupTables }: IRedeem) => {
   let instructions: TransactionInstruction[] = []
@@ -638,7 +614,8 @@ interface IToggleAutorollPosition {
   marginAccount: MarginAccount
   market: FixedTermMarket
   pools: Record<string, Pool>
-  markets: FixedTermMarket[]
+  markets: FixedTermMarket[],
+  lookupTables: LookupTable[]
 }
 
 export const toggleAutorollPosition = async ({
@@ -647,7 +624,8 @@ export const toggleAutorollPosition = async ({
   market,
   provider,
   pools,
-  markets
+  markets,
+  lookupTables
 }: IToggleAutorollPosition) => {
   let ix: TransactionInstruction
   let tx: TransactionInstruction[] = []
@@ -669,5 +647,5 @@ export const toggleAutorollPosition = async ({
     instructions: tx,
     adapterInstruction: ix
   })
-  return sendAndConfirmV0(provider, [tx], [], [])
+  return sendAndConfirmV0(provider, [tx], lookupTables, [])
 }
