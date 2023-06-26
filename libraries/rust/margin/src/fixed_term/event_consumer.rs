@@ -464,7 +464,7 @@ impl MarketState {
                     .to_le_bytes()
                     .to_vec();
 
-                let loan_account = Some(self.builder.term_loan_key(&info.margin_account, seed));
+                let loan_account = Some(self.builder.term_loan_key(&info.margin_user, seed));
 
                 tracing::debug!(
                     owner = ?info.margin_account,
