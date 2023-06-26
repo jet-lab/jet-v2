@@ -78,7 +78,7 @@ export async function sendAndConfirm(
 export async function sendAndConfirmV0(
   provider: AnchorProvider,
   instructions: TransactionInstruction[][],
-  lookupTables: { address: string; data: Uint8Array }[],
+  lookupTables: LookupTable[],
   signers?: Signer[],
   opts?: ConfirmOptions
 ): Promise<TransactionSignature> {
