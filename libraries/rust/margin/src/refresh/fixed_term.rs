@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use jet_instructions::margin::derive_margin_account_from_state;
 use jet_margin::MarginAccount;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::signer::Signer;
@@ -9,6 +8,7 @@ use solana_sdk::signer::Signer;
 use crate::{
     fixed_term::{find_markets, FixedTermIxBuilder},
     ix_builder::accounting_invoke,
+    margin_account_ext::MarginAccountExt,
     solana::transaction::TransactionBuilder,
 };
 
@@ -23,7 +23,7 @@ pub async fn refresh_fixed_term_positions(
 ) -> Result<Vec<TransactionBuilder>> {
     let mut ret = vec![];
     let markets = find_markets(rpc).await?;
-    let address = derive_margin_account_from_state(margin_account);
+    let address = margin_account.address();
     for market in markets.values() {
         let bldr = FixedTermIxBuilder::new_from_state(rpc.payer().pubkey(), market);
         for position in margin_account
