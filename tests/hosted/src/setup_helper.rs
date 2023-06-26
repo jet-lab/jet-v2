@@ -10,7 +10,7 @@ use jet_margin_sdk::solana::transaction::{
     SendTransactionBuilder, TransactionBuilderExt, WithSigner,
 };
 use jet_margin_sdk::tokens::TokenPrice;
-use jet_margin_sdk::tx_builder::TokenDepositsConfig;
+use jet_margin_sdk::tx_builder::{MarginActionAuthority, TokenDepositsConfig};
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use jet_solana_client::signature::StandardizeSigners;
 use solana_sdk::pubkey::Pubkey;
@@ -165,8 +165,13 @@ pub async fn setup_user(
 
         if in_pool > 0 {
             // Deposit user funds into their margin accounts
-            user.deposit(&mint, &token_account, TokenChange::shift(in_pool))
-                .await?;
+            user.pool_deposit(
+                &mint,
+                Some(token_account),
+                TokenChange::shift(in_pool),
+                MarginActionAuthority::AccountAuthority,
+            )
+            .await?;
         }
 
         // Verify user tokens have been deposited

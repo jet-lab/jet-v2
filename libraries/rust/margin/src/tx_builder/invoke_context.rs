@@ -19,9 +19,6 @@ use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 /// - margin account seed
 /// - margin account owner
 /// - payer
-///
-/// If K cannot sign, then it won't actually sign transactions, but it can still
-/// wrap instructions.
 pub struct MarginInvokeContext<K> {
     /// The airspace where the margin account is authorized.
     pub airspace: Pubkey,
@@ -36,7 +33,7 @@ pub struct MarginInvokeContext<K> {
 impl<K: Key> MarginInvokeContext<K> {
     /// Invoke a margin adapter through a margin account using whatever wrapper
     /// is needed: adapter_invoke, accounting_invoke, or liquidator_invoke.  
-    /// bool indicates if a signature is needed.
+    /// bool indicates if a signature is needed from the account authority.
     fn invoke_ix(&self, inner: Instruction) -> (Instruction, bool) {
         let MarginInvokeContext {
             airspace,
@@ -44,19 +41,18 @@ impl<K: Key> MarginInvokeContext<K> {
             authority,
             is_liquidator,
         } = self;
-        let needs_signature = inner.needs_signature(*margin_account);
-        (
-            if inner.needs_signature(*margin_account) {
-                if *is_liquidator {
-                    liquidator_invoke(*airspace, authority.address(), *margin_account, inner)
-                } else {
-                    adapter_invoke(*airspace, authority.address(), *margin_account, inner)
-                }
+        let ix = if inner.needs_signature(*margin_account) {
+            if *is_liquidator {
+                liquidator_invoke(*airspace, authority.address(), *margin_account, inner)
             } else {
-                accounting_invoke(*airspace, *margin_account, inner)
-            },
-            needs_signature,
-        )
+                adapter_invoke(*airspace, authority.address(), *margin_account, inner)
+            }
+        } else {
+            accounting_invoke(*airspace, *margin_account, inner)
+        };
+        let wrapped_needs_signature = ix.needs_signature(self.authority.address());
+
+        (ix, wrapped_needs_signature)
     }
 }
 

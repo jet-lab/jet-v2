@@ -9,7 +9,7 @@ use jet_margin_sdk::{
     ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder},
     solana::transaction::{TransactionBuilderExt, WithSigner},
     tokens::TokenPrice,
-    tx_builder::TokenDepositsConfig,
+    tx_builder::{MarginActionAuthority, TokenDepositsConfig},
 };
 use jet_simulation::assert_custom_program_error;
 
@@ -91,6 +91,8 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 /// margin system. This particular test will create two users which execute
 /// a series of deposit/borrow/repay/withdraw actions onto the margin pools
 /// via their margin accounts.
+// #[tokio::main(flavor = "multi_thread")]
+// #[test]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn sanity_test() -> Result<(), anyhow::Error> {
@@ -161,17 +163,19 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     let tsol_deposit_amount = 1_000 * ONE_TSOL;
 
     user_a
-        .deposit(
+        .pool_deposit(
             &env.usdc,
-            &user_a_usdc_account,
+            Some(user_a_usdc_account),
             TokenChange::shift(usdc_deposit_amount),
+            MarginActionAuthority::AccountAuthority,
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit(
             &env.tsol,
-            &user_b_tsol_account,
+            Some(user_b_tsol_account),
             TokenChange::shift(tsol_deposit_amount),
+            MarginActionAuthority::AccountAuthority,
         )
         .await?;
 

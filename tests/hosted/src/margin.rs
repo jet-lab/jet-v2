@@ -500,17 +500,30 @@ impl MarginUser {
             .map(|_| ())
     }
 
-    // todo this is a leaky abstraction because it allows a source to be
-    // specified without allowing the caller to specify the authority. may be
-    // better to expose the authority as well.
-    pub async fn deposit(
+    pub async fn pool_deposit(
+        &self,
+        underlying_mint: &Pubkey,
+        source: Option<Pubkey>,
+        change: TokenChange,
+        source_authority: MarginActionAuthority,
+    ) -> Result<(), Error> {
+        self.tx
+            .pool_deposit(underlying_mint, source, change, source_authority)
+            .await?
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// do not add any new usages of this function.  
+    /// todo: replace existing usages with `pool_deposit`
+    pub async fn pool_deposit_deprecated(
         &self,
         mint: &Pubkey,
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<(), Error> {
-        // todo use the new way, this requires some changes to the tests to get
-        // them to use ATA positions instead of the old style positions.
         self.tx
             .pool_deposit_deprecated(
                 mint,

@@ -385,7 +385,8 @@ impl MarginTxBuilder {
     /// # Params
     ///
     /// `underlying_mint` - The address of the mint for the tokens being deposited
-    /// `source` - The token account that the deposit will be transfered from
+    /// `source` - The token account that the deposit will be transfered from,
+    ///            defaults to ata of source authority.
     /// `change` - The amount of tokens to deposit
     /// `authority` - The owner of the source account
     pub async fn pool_deposit(
@@ -395,20 +396,13 @@ impl MarginTxBuilder {
         change: TokenChange,
         authority: MarginActionAuthority,
     ) -> Result<TransactionBuilder> {
-        let ctx = self
-            .invoke_ctx()
-            .context("margin tx builder is missing a signer")?;
         let target = self.pool_deposit_target(underlying_mint).await?;
-        let source_authority = authority.resolve(&self.ix);
-        let instructions = ctx.pool_deposit(
-            *underlying_mint,
-            source,
-            Some(source_authority),
-            target,
-            change,
-        );
-
-        Ok(instructions.ijoin())
+        let source_authority = Some(authority.resolve(&self.ix));
+        Ok(self
+            .invoke_ctx()
+            .context("margin tx builder is missing a signer")?
+            .pool_deposit(*underlying_mint, source, source_authority, target, change)
+            .ijoin())
     }
 
     async fn pool_deposit_target(&self, underlying_mint: &Pubkey) -> Result<PoolTargetPosition> {

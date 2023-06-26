@@ -1,6 +1,6 @@
 use anyhow::{Error, Result};
 
-use jet_margin_sdk::tokens::TokenPrice;
+use jet_margin_sdk::{tokens::TokenPrice, tx_builder::MarginActionAuthority};
 use solana_sdk::clock::Clock;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -128,18 +128,20 @@ async fn rounding_poc() -> Result<()> {
         .unwrap();
 
     user_a
-        .deposit(
+        .pool_deposit(
             &env.usdc,
-            &user_a_usdc_account,
+            Some(user_a_usdc_account),
             TokenChange::shift(5_000_000 * ONE_USDC),
+            MarginActionAuthority::AccountAuthority,
         )
         .await
         .unwrap();
     user_b
-        .deposit(
+        .pool_deposit(
             &env.tsol,
-            &user_b_tsol_account,
+            Some(user_b_tsol_account),
             TokenChange::shift(10_000 * ONE_TSOL),
+            MarginActionAuthority::AccountAuthority,
         )
         .await
         .unwrap();
