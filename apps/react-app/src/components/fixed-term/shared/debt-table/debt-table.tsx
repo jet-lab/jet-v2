@@ -40,6 +40,20 @@ const TabLink = ({ name, amount, decimals }: ITabLink) => {
 };
 
 export function DebtTable() {
+  const { airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(state => ({
+    airspaceLookupTables: state.airspaceLookupTables,
+    marginAccountLookupTables: state.marginAccountLookupTables,
+    selectedMarginAccount: state.selectedMarginAccount
+  }));
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
   const account = useRecoilValue(CurrentAccount);
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
@@ -122,6 +136,7 @@ export function DebtTable() {
                     explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
+                    lookupTables={lookupTables}
                   />
                 )
             },
@@ -147,13 +162,14 @@ export function DebtTable() {
                     explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
+                    lookupTables={lookupTables}
                   />
                 )
             },
             {
               label: (
                 <TabLink
-                  name="Loan Requests"
+                  name="Borrow Requests"
                   amount={ordersData.unfilled_borrow}
                   decimals={markets[selectedMarket].token.decimals}
                 />
@@ -172,6 +188,7 @@ export function DebtTable() {
                     explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
+                    lookupTables={lookupTables}
                   />
                 )
             },
@@ -197,6 +214,7 @@ export function DebtTable() {
                     explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
+                    lookupTables={lookupTables}
                   />
                 )
             }

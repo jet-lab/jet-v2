@@ -1100,79 +1100,49 @@ type JetFixedTermIDL = {
           isSigner: false
         },
         {
+          isMut: false,
+          isSigner: true,
+          name: "marginAccount"
+        },
+        {
           name: "ticketCollateral"
           isMut: true
           isSigner: false
-          docs: [
-            "Token account used by the margin program to track the collateral value of assets custodied by fixed-term market"
-          ]
         },
         {
           name: "ticketCollateralMint"
           isMut: true
           isSigner: false
-          docs: [
-            "Token mint used by the margin program to track the collateral value of assets custodied by fixed-term market"
-          ]
         },
         {
-          name: "inner"
-          accounts: [
-            {
-              name: "permit"
-              isMut: false
-              isSigner: false
-              docs: ["The airspace metadata permit"]
-            },
-            {
-              name: "deposit"
-              isMut: true
-              isSigner: false
-              docs: ["The tracking account for the deposit"]
-            },
-            {
-              name: "owner"
-              isMut: true
-              isSigner: false
-              docs: ["The account that owns the deposit"]
-            },
-            {
-              name: "authority"
-              isMut: false
-              isSigner: true
-              docs: ["The authority that must sign to redeem the deposit"]
-            },
-            {
-              name: "payer"
-              isMut: true
-              isSigner: false
-              docs: ["Receiver for the rent used to track the deposit"]
-            },
-            {
-              name: "tokenAccount"
-              isMut: true
-              isSigner: false
-              docs: ["The token account designated to receive the assets underlying the claim"]
-            },
-            {
-              name: "market"
-              isMut: false
-              isSigner: false
-              docs: ["The Market responsible for the asset"]
-            },
-            {
-              name: "underlyingTokenVault"
-              isMut: true
-              isSigner: false
-              docs: ["The vault stores the tokens of the underlying asset managed by the Market"]
-            },
-            {
-              name: "tokenProgram"
-              isMut: false
-              isSigner: false
-              docs: ["SPL token program"]
-            }
-          ]
+          isMut: true
+          isSigner: false
+          name: "deposit"
+        },
+        {
+          isMut: true
+          isSigner: false
+          name: "payer"
+        },
+        {
+          isMut: true
+          isSigner: false
+          name: "tokenAccount"
+        },
+        {
+          isMut: false
+          isSigner: false
+          name: "market"
+        },
+        {
+          isMut: true
+          isSigner: false
+          name: "underlyingTokenVault"
+        },
+        {
+          isMut: false
+          isSigner: false
+          name: "tokenProgram"
         }
       ]
       args: []
@@ -1419,84 +1389,100 @@ type JetFixedTermIDL = {
     {
       name: "settle"
       docs: ["Settle payments to a margin account"]
-      accounts: [
+      "accounts": [
         {
-          name: "marginUser"
-          isMut: true
-          isSigner: false
-          docs: ["The account tracking information related to this particular user"]
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
-          name: "marginAccount"
-          isMut: false
-          isSigner: false
-          docs: ["use accounting_invoke"]
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "use accounting_invoke"
+          ]
         },
         {
-          name: "market"
-          isMut: false
-          isSigner: false
-          docs: ["The `Market` account tracks global information related to this particular fixed term market"]
+          "name": "market",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The `Market` account tracks global information related to this particular fixed term market"
+          ]
         },
         {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
-          docs: ["SPL token program"]
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         },
         {
-          name: "claims"
-          isMut: true
-          isSigner: false
-          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+          "name": "claims",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
-          name: "claimsMint"
-          isMut: true
-          isSigner: false
-          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+          "name": "claimsMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
-          name: "ticketCollateral"
-          isMut: true
-          isSigner: false
+          "name": "ticketCollateral",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "ticketCollateralMint"
-          isMut: true
-          isSigner: false
+          "name": "ticketCollateralMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenCollateral"
-          isMut: true
-          isSigner: false
+          "name": "underlyingCollateral",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenCollateralMint"
-          isMut: true
-          isSigner: false
+          "name": "underlyingCollateralMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "underlyingTokenVault"
-          isMut: true
-          isSigner: false
+          "name": "underlyingTokenVault",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "ticketMint"
-          isMut: true
-          isSigner: false
+          "name": "ticketMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "underlyingSettlement"
-          isMut: true
-          isSigner: false
-          docs: ["Where to receive owed tokens"]
+          "name": "underlyingSettlement",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Where to receive owed tokens"
+          ]
         },
         {
-          name: "ticketSettlement"
-          isMut: true
-          isSigner: false
-          docs: ["Where to receive owed tickets"]
+          "name": "ticketSettlement",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Where to receive owed tickets"
+          ]
         }
       ]
       args: []

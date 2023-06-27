@@ -38,9 +38,7 @@ export const createFixedTermSlice: StateCreator<JetStore, [['zustand/devtools', 
       ...state,
       openOrders: {
         ...state.openOrders,
-        [key]: {
-          ...update,
-        }
+        [key]: update
       }
     }
   }, true, 'UPDATE_OPEN_ORDERS'),
@@ -50,9 +48,7 @@ export const createFixedTermSlice: StateCreator<JetStore, [['zustand/devtools', 
       ...state,
       openPositions: {
         ...state.openPositions,
-        [key]: {
-          ...update,
-        }
+        [key]: update
       }
     }
   }, true, 'UPDATE_OPEN_POSITIONS')

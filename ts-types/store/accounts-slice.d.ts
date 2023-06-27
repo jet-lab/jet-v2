@@ -15,6 +15,22 @@ interface LookupTable {
   data: Uint8Array;
 }
 
+interface LookupRegistryInstructions {
+  authority: string;
+  instructions: {
+    summary: string;
+    instruction: {
+      programId: string;
+      accounts: {
+        pubkey: string;
+        isSigner: boolean;
+        isWritable: boolean;
+      }[];
+      data: string;
+    }
+  }[]
+}
+
 interface AccountsSlice {
   wallets: Record<string, Wallet>;
   selectedWallet: string | null;

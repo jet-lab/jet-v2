@@ -18,10 +18,10 @@ import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { Pools } from '@state/pools/pools';
-import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
@@ -51,12 +51,25 @@ interface Forecast {
 export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => {
-    return {
-      selectedPoolKey: state.selectedPoolKey,
-      airspaceLookupTables: state.airspaceLookupTables
-    };
-  });
+  const { selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(
+    state => {
+      return {
+        selectedPoolKey: state.selectedPoolKey,
+        airspaceLookupTables: state.airspaceLookupTables,
+        marginAccountLookupTables: state.marginAccountLookupTables,
+        selectedMarginAccount: state.selectedMarginAccount
+      };
+    }
+  );
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -67,10 +80,10 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const [amount, setAmount] = useState<BN | undefined>();
   const [basisPoints, setBasisPoints] = useState<number>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
+  const [orderTooSmall, setOrderTooSmall] = useState(false);
 
   const preprocessInput = useCallback((e: number) => Math.round(e * 100) / 100, []);
 
@@ -92,7 +105,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     !forecast?.hasEnoughCollateral;
 
   const createLendOrder = async () => {
-    if (!amount || !basisPoints) return;
+    if (!amount || !basisPoints || !marginAccount) return;
     setPending(true);
     let signature: string;
     const rateBPS = new BN(Math.round(basisPoints * 100));
@@ -110,18 +123,17 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTables
+        lookupTables
       });
       setTimeout(() => {
-        refreshOrderBooks();
         notify(
           'Lend Offer Created',
           `Your lend offer for ${amount
             .div(new BN(10 ** decimals))
             .toNumber()
             .toFixed(token.precision)} ${token.name} at ${(rateBPS.toNumber() / 100).toFixed(
-            2
-          )}% was created successfully`,
+              2
+            )}% was created successfully`,
           'success',
           getExplorerUrl(signature, cluster, explorer)
         );
@@ -189,7 +201,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
     }
     orderbookModelLogic(
       bnToBigInt(amount),
-      rate_to_price(bnToBigInt(Math.round(basisPoints * 100)), BigInt(marketAndConfig.config.borrowTenor))
+      rate_to_price(bnToBigInt(new BN(Math.round(basisPoints * 100))), BigInt(marketAndConfig.config.borrowTenor))
     );
   }, [amount, basisPoints, marginAccount?.address, marketAndConfig]);
   // End simulation demo logic
@@ -197,6 +209,14 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
   useEffect(() => {
     setAutorollEnabled(false);
   }, [marketAndConfig]);
+
+  useEffect(() => {
+    if (!amount || !marketAndConfig) {
+      setOrderTooSmall(false);
+      return;
+    }
+    setOrderTooSmall(amount.toNumber() < marketAndConfig.config.minBaseOrderSize);
+  }, [marketAndConfig, amount]);
 
   return (
     <div className="fixed-term order-entry-body">
@@ -322,14 +342,14 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && (
+          {forecast?.riskIndicator && (
             <span>
               {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
             </span>
           )}
         </div>
       </div>
-      <Button className="submit-button" disabled={disabled || pending} onClick={() => createLendOrder()}>
+      <Button className="submit-button" disabled={disabled || pending || orderTooSmall} onClick={() => createLendOrder()}>
         {pending ? (
           <>
             <LoadingOutlined />
@@ -347,6 +367,9 @@ export const OfferLoan = ({ token, decimals, marketAndConfig }: RequestLoanProps
       )}
       {!forecast?.hasEnoughCollateral && amount && basisPoints && !amount.isZero() && basisPoints !== 0 && (
         <div className="fixed-term-warning">Not enough collateral to submit this request</div>
+      )}
+      {orderTooSmall && (
+        <div className="fixed-term-warning">The minimum order size for this market is <strong>{marketAndConfig.config.minBaseOrderSize / Math.pow(10, token.decimals)} {marketAndConfig.config.symbol}</strong>.</div>
       )}
     </div>
   );

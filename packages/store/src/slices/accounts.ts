@@ -30,7 +30,8 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
       false,
       'DISCONNECT_WALLET'
     ),
-  updateAirspaceLookupTables: tables => set(() => ({ airspaceLookupTables: tables }), false, 'UPDATE_LOOKUP_TABLE_ADDRESSES'),
+  updateAirspaceLookupTables: tables =>
+    set(() => ({ airspaceLookupTables: tables }), false, 'UPDATE_LOOKUP_TABLE_ADDRESSES'),
   updateMarginAccount: (update: MarginAccountData) => {
     return set(
       state => {
@@ -38,9 +39,7 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
           ...state,
           marginAccounts: {
             ...state.marginAccounts,
-            [update.address]: {
-              ...update
-            }
+            [update.address]: update
           }
         };
       },
@@ -81,7 +80,19 @@ export const createAccountsSlice: StateCreator<JetStore, [['zustand/devtools', n
       'SELECT_MARGIN_ACCOUNT'
     );
   },
-  updateMarginAccountLookupTables: (_address: string, _tables: LookupTable[]) => {
-    return set(state => state, false, 'UPDATE_MARGIN_ACCOUNT_LOOKUP_TABLES')
+  updateMarginAccountLookupTables: (address: string, tables: LookupTable[]) => {
+    return set(
+      state => {
+        return {
+          ...state,
+          marginAccountLookupTables: {
+            ...state.marginAccountLookupTables,
+            [address]: tables
+          }
+        };
+      },
+      false,
+      'UPDATE_MARGIN_ACCOUNT_LOOKUP_TABLES'
+    );
   }
 });

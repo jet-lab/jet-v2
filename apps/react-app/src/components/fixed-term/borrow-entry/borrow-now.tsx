@@ -17,10 +17,10 @@ import { CurrentAccount } from '@state/user/accounts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { Pools } from '@state/pools/pools';
-import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { AllFixedTermMarketsAtom, AllFixedTermMarketsOrderBooksAtom } from '@state/fixed-term/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { RateDisplay } from '../shared/rate-display';
 import { useJetStore } from '@jet-lab/store';
 import { EditOutlined, LoadingOutlined } from '@ant-design/icons';
@@ -49,10 +49,23 @@ interface Forecast {
 export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps) => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const { selectedPoolKey, airspaceLookupTables } = useJetStore(state => ({
-    selectedPoolKey: state.selectedPoolKey,
-    airspaceLookupTables: state.airspaceLookupTables
-  }));
+  const { selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(
+    state => ({
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    })
+  );
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -62,10 +75,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   const wallet = useWallet();
   const [amount, setAmount] = useState<BN | undefined>();
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
   const [forecast, setForecast] = useState<Forecast>();
   const [showAutorollModal, setShowAutorollModal] = useState(false);
   const [autorollEnabled, setAutorollEnabled] = useState(false);
+  const [orderTooSmall, setOrderTooSmall] = useState(false);
 
   const { cluster, explorer } = useJetStore(state => state.settings);
 
@@ -155,10 +168,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         amount,
         markets: markets.map(m => m.market),
         autorollEnabled,
-        airspaceLookupTables: airspaceLookupTables
+        lookupTables
       });
       setTimeout(() => {
-        refreshOrderBooks();
         notify(
           'Borrow Successful',
           `Your borrow order for ${amount
@@ -191,6 +203,14 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
   useEffect(() => {
     setAutorollEnabled(false);
   }, [marketAndConfig]);
+
+  useEffect(() => {
+    if (!amount || !marketAndConfig) {
+      setOrderTooSmall(false);
+      return;
+    }
+    setOrderTooSmall(amount.toNumber() < marketAndConfig.config.minBaseOrderSize);
+  }, [marketAndConfig, amount]);
 
   return (
     <div className="fixed-term order-entry-body">
@@ -286,14 +306,14 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
         </div>
         <div className="stat-line">
           <span>Risk Indicator</span>
-          {forecast && (
+          {forecast?.riskIndicator && (
             <span>
               {marginAccount?.riskIndicator.toFixed(3)} → {forecast.riskIndicator?.toFixed(3)}
             </span>
           )}
         </div>
       </div>
-      <Button className="submit-button" disabled={disabled || pending} onClick={createBorrowOrder}>
+      <Button className="submit-button" disabled={disabled || pending || orderTooSmall} onClick={createBorrowOrder}>
         {pending ? (
           <>
             <LoadingOutlined />
@@ -314,6 +334,9 @@ export const BorrowNow = ({ token, decimals, marketAndConfig }: RequestLoanProps
       )}
       {forecast && forecast.effectiveRate === 0 && (
         <div className="fixed-term-warning">Zero rate loans are not supported. Try increasing the borrow amount.</div>
+      )}
+      {orderTooSmall && (
+        <div className="fixed-term-warning">The minimum order size for this market is <strong>{marketAndConfig.config.minBaseOrderSize / Math.pow(10, token.decimals)} {marketAndConfig.config.symbol}</strong>.</div>
       )}
     </div>
   );

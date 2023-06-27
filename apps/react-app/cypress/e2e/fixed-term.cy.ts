@@ -91,7 +91,7 @@ describe('Fixed Term Market', () => {
       cy.get('@borrowerAccount').click();
     });
 
-    it('selects the request loan tab', () => {
+    it('selects the request borrow tab', () => {
       const borrowLink = cy.contains('.nav-link', 'Borrow');
       borrowLink.click();
       cy.get('.close-modal-button').click()

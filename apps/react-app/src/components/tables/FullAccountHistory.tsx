@@ -18,6 +18,7 @@ import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { ActionIcon, FixedTermAction } from '@components/misc/ActionIcon';
 import debounce from 'lodash.debounce';
 import { useJetStore } from '@jet-lab/store';
+import { Pools } from '@state/pools/pools';
 
 // Table to show margin account's transaction history
 export function FullAccountHistory(): JSX.Element {
@@ -36,6 +37,7 @@ export function FullAccountHistory(): JSX.Element {
   const actionRefresh = useRecoilValue(ActionRefresh);
   const [currentTable, setCurrentTable] = useState('transactions');
   const [pageSize, setPageSize] = useState(5);
+  const pools = useRecoilValue(Pools);
   const [downloadCsv, setDownloadCsv] = useState(false);
   const transactionsRef = useRef<any>();
   const loadingAccounts = walletTokens && !filteredTxHistory?.length;
@@ -53,6 +55,32 @@ export function FullAccountHistory(): JSX.Element {
     }
 
     return render;
+  }
+
+  function renderAdapterColumn(transaction: FlightLog) {
+    let adapter: string;
+    switch (transaction.adapter) {
+      case 'JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ':
+        adapter = 'Variable Markets';
+        break;
+      case 'JPTermEg2DwrV39xb1Fs7z1VUxcvdPT7mE7cyGsQ4xt':
+        adapter = 'Fixed Markets';
+        break;
+      case 'JPMA1DMMkDK9vHLM22a6izMRWk5wvgPno774K7cG9zX':
+        adapter = 'Margin Swap';
+        break;
+      case 'JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN':
+        adapter = 'Margin Swap';
+        break;
+      default:
+        adapter = '-';
+        break;
+    }
+    return (
+      <div className={`account-table-adapter-${adapter} flex-centered`}>
+        {adapter}
+      </div>
+    )
   }
 
   // Renders the activity column for table
@@ -92,7 +120,7 @@ export function FullAccountHistory(): JSX.Element {
         case "OfferLoan":
           action = "offer-loan"
           break;
-        case "RequestLoand":
+        case "RequestLoan":
           action = "request-loan"
           break;
       }
@@ -128,10 +156,12 @@ export function FullAccountHistory(): JSX.Element {
   function renderAmountColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && transaction.activity_value) {
+      let token1_decimals = pools?.tokenPools[transaction.token1_symbol]?.decimals ?? 2;
+      let token2_decimals = transaction.token2_symbol ? (pools?.tokenPools[transaction.token2_symbol]?.decimals ?? 2) : 2;
       render = (
         <Text>
-          {transaction.token1_amount}
-          {transaction.token2_amount !== 0.0 && ` → ${transaction.token2_amount}`}
+          {transaction.token1_amount.toFixed(token1_decimals)}
+          {transaction.token2_amount !== 0.0 && ` → ${transaction.token2_amount.toFixed(token2_decimals)}`}
         </Text>
       );
     }
@@ -164,6 +194,12 @@ export function FullAccountHistory(): JSX.Element {
       align: 'left' as any,
       width: 200,
       render: (_: string, transaction: FlightLog) => renderDateColumn(transaction)
+    },
+    {
+      title: dictionary.accountsView.adapter,
+      key: 'adapter',
+      align: 'center' as any,
+      render: (_: string, transaction: FlightLog) => renderAdapterColumn(transaction)
     },
     {
       title: dictionary.accountsView.activity,

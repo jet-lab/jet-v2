@@ -223,6 +223,9 @@ pub struct DexInfo {
 pub mod legacy {
     use std::collections::HashMap;
 
+    use agnostic_orderbook::state::{
+        market_state::MarketState as OrderbookMarketState, AccountTag,
+    };
     use jet_instructions::{fixed_term::Market, margin_swap::derive_spl_swap_authority};
     use jet_solana_client::rpc::SolanaRpcExtra;
     use jet_static_program_registry::orca_swap_v2;
@@ -254,6 +257,15 @@ pub mod legacy {
                     return Err(ConfigError::MissingMarket(*market_address));
                 };
 
+                let mut orderbook_market_state_account = network
+                    .get_account(&market_info.orderbook_market_state)
+                    .await?
+                    .unwrap();
+                let Ok(orderbook_market_state) = OrderbookMarketState::from_buffer(&mut orderbook_market_state_account.data, AccountTag::Market) else {
+                    log::error!("failed to load agnostic orderbook market state from {} for market {market_address}", market_info.orderbook_market_state);
+                    return Err(ConfigError::UnpackError(ProgramError::InvalidAccountData));
+                };
+
                 let token = config
                     .tokens
                     .iter()
@@ -271,6 +283,7 @@ pub mod legacy {
                     FixedTermMarketInfo {
                         symbol: token.symbol.clone(),
                         market: *market_address,
+                        min_base_order_size: orderbook_market_state.min_base_order_size,
                         market_info,
                     },
                 );
@@ -445,6 +458,8 @@ pub mod legacy {
 
         #[serde(flatten)]
         pub market_info: Market,
+
+        pub min_base_order_size: u64,
     }
 
     #[serde_as]

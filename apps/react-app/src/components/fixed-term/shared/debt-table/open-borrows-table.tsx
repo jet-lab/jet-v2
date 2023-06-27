@@ -29,7 +29,8 @@ const getBorrowColumns = (
   setPendingPositions: Dispatch<SetStateAction<string[]>>,
   pendingPositions: string[],
   setShowAutorollModal: Dispatch<SetStateAction<boolean>>,
-  showAutorollModal: boolean
+  showAutorollModal: boolean,
+  lookupTables: LookupTable[]
 ): ColumnsType<Loan> => [
   {
     title: 'Created',
@@ -43,7 +44,10 @@ const getBorrowColumns = (
     title: 'Maturity',
     dataIndex: 'maturation_timestamp',
     key: 'maturation_timestamp',
-    render: (date: number) => `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
+    render: (date: number) =>
+      Date.now() < date
+        ? `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} from now`
+        : `${formatDistanceToNowStrict(date.toString().length === 10 ? date * 1000 : date)} ago`,
     sorter: (a, b) => a.maturation_timestamp - b.maturation_timestamp,
     sortDirections: ['descend']
   },
@@ -99,6 +103,7 @@ const getBorrowColumns = (
               <Switch
                 className="debt-table-switch"
                 checked={position.is_auto_roll}
+                disabled={position.principal + position.interest < market.config.minBaseOrderSize}
                 onClick={() => {
                   if (hasConfig) {
                     togglePosition(
@@ -111,7 +116,8 @@ const getBorrowColumns = (
                       cluster,
                       explorer,
                       pendingPositions,
-                      setPendingPositions
+                      setPendingPositions,
+                      lookupTables
                     );
                   } else {
                     setShowAutorollModal(true);
@@ -146,7 +152,8 @@ const togglePosition = async (
   cluster: 'mainnet-beta' | 'localnet' | 'devnet',
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach',
   pendingPositions: string[],
-  setPendingPositions: Dispatch<SetStateAction<string[]>>
+  setPendingPositions: Dispatch<SetStateAction<string[]>>,
+  lookupTables: LookupTable[]
 ) => {
   try {
     setPendingPositions([...pendingPositions, position.address]);
@@ -156,7 +163,8 @@ const togglePosition = async (
       provider,
       position,
       pools,
-      markets
+      markets,
+      lookupTables
     });
     notify('Autoroll toggled', 'Your term loan autoroll settings have been succsesfully toggled', 'success');
   } catch (e: any) {
@@ -181,6 +189,7 @@ interface IOpenBorrowsTable {
   markets: FixedTermMarket[];
   cluster: 'mainnet-beta' | 'localnet' | 'devnet';
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach';
+  lookupTables: LookupTable[];
 }
 
 export const OpenBorrowsTable = ({
@@ -191,7 +200,8 @@ export const OpenBorrowsTable = ({
   cluster,
   explorer,
   pools,
-  markets
+  markets,
+  lookupTables
 }: IOpenBorrowsTable) => {
   const [pendingPositions, setPendingPositions] = useState<string[]>([]);
   const [showAutorollModal, setShowAutorollModal] = useState(false);
@@ -208,7 +218,8 @@ export const OpenBorrowsTable = ({
         setPendingPositions,
         pendingPositions,
         setShowAutorollModal,
-        showAutorollModal
+        showAutorollModal,
+        lookupTables
       ),
     [market, marginAccount, provider, cluster, explorer, pendingPositions, setPendingPositions, showAutorollModal]
   );

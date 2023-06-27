@@ -40,7 +40,7 @@ export interface AirspaceConfig {
 export interface FixedTermMarketConfig {
   symbol: string
   market: Address
-  version: number
+  versionTag: number
   airspace: Address
   orderbookMarketState: Address
   eventQueue: Address
@@ -51,13 +51,18 @@ export interface FixedTermMarketConfig {
   ticketMint: Address
   claimsMint: Address
   ticketCollateralMint: Address
+  underlyingCollateralMint: Address
   underlyingOracle: Address
   ticketOracle: Address
+  feeVault: Address
+  feeDestination: Address
   seed: Address
   orderbookPause: boolean
   ticketsPaused: boolean
   borrowTenor: number
   lendTenor: number
+  originationFee: number
+  minBaseOrderSize: number
 }
 
 export interface MarginTokenConfig {

@@ -4,7 +4,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
 import { DepthChart } from '@components/charts/depth-chart';
 import {
-  AllFixedTermMarketsOrderBooksAtom,
+  AllFixedTermMarketsAtom,
   CurrentOrderTabAtom,
   FixedTermMarketAtom,
   SelectedFixedTermMarketAtom
@@ -17,9 +17,10 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ParentSizeModern } from '@visx/responsive';
 import { LegendItem, LegendLabel, LegendOrdinal } from '@visx/legend';
 import { scaleOrdinal } from '@visx/scale';
+import { useJetStore } from '@jet-lab/store';
 
 const ordinalColorScale = scaleOrdinal({
-  domain: ['Loan requests', 'Loan offers'],
+  domain: ['Borrow requests', 'Loan offers'],
   range: ['#e36868', '#84c1ca']
 });
 
@@ -29,10 +30,17 @@ interface FixedChart {
 
 const FixedTermChart = ({ currentTab, token }: { currentTab: string; token: MarginTokenConfig }) => {
   const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
-  const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
+  const markets = useRecoilValue(AllFixedTermMarketsAtom);
+  const market = markets[selectedMarketIndex];
+  const orderbookData = useJetStore(state => state.orderbooks[market.market.address.toBase58()]);
 
   const { asksAscending, bidsDescending, xRange, yRange } = useMemo(() => {
-    const marketData = openOrders[selectedMarketIndex];
+    const tenor = BigInt(market.config.borrowTenor);
+    const model = market.market.getOrderbookModel(tenor, orderbookData);
+    const marketData = {
+      orderbook: model,
+      market: market.name
+    };
     const liquidity = marketData.orderbook.sampleLiquidity(1000000000000000n);
     const bids = liquidity.asks.map(x => [x[0], new TokenAmount(bigIntToBn(x[1]), token.decimals).tokens]) as [
       price: number,
@@ -60,7 +68,7 @@ const FixedTermChart = ({ currentTab, token }: { currentTab: string; token: Marg
         max: number
       ]
     };
-  }, [openOrders, currentTab, selectedMarketIndex]);
+  }, [orderbookData, currentTab, selectedMarketIndex]);
 
   if (!token) return <LoadingOutlined />;
 

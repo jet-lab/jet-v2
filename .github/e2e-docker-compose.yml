@@ -10,7 +10,7 @@ services:
     ports:
       - 27017:27017
   postgres:
-    image: gcr.io/kubernetes-608504/jet-data-postgres:development
+    image: gcr.io/kubernetes-608504/jet-data-postgres:latest
     environment:
       - POSTGRES_PASSWORD=password123
       - POSTGRES_DB=flightlogs
@@ -18,7 +18,7 @@ services:
     ports:
       - 5432:5432
   api:
-    image: gcr.io/kubernetes-608504/jet-data-v2-black-box:development
+    image: gcr.io/kubernetes-608504/jet-data-v2-black-box:latest
     environment:
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
       - MONGODB_CLIENT=mongodb://admin:password123@mongodb:27017
@@ -30,7 +30,7 @@ services:
       - 3002:3002
     restart: always
   poller:
-    image: gcr.io/kubernetes-608504/jet-data-v2-eventpoller:development
+    image: gcr.io/kubernetes-608504/jet-data-v2-eventpoller:latest
     environment:
       - POLLER_PROGRAMS=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8,JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ,JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG,JPMA1DMMkDK9vHLM22a6izMRWk5wvgPno774K7cG9zX,JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp,JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi,JPTermEg2DwrV39xb1Fs7z1VUxcvdPT7mE7cyGsQ4xt
       - SOLANA_ENDPOINT=http://host.docker.internal:8899
@@ -39,7 +39,7 @@ services:
       - "host.docker.internal:host-gateway"
     restart: always
   parser:
-    image: gcr.io/kubernetes-608504/jet-data-v2-eventparser:development
+    image: gcr.io/kubernetes-608504/jet-data-v2-eventparser:latest
     environment:
       - SOLANA_ENDPOINT=http://host.docker.internal:8899
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
@@ -48,7 +48,7 @@ services:
       - "host.docker.internal:host-gateway"
     restart: always
   pricefeeds:
-    image: gcr.io/kubernetes-608504/jet-data-v2-pricefeeds:development
+    image: gcr.io/kubernetes-608504/jet-data-v2-pricefeeds:latest
     environment:
       - SOLANA_ENDPOINT=http://host.docker.internal:8899
       - DATABASE_URL=postgres://postgres:password123@postgres:5432/flightlogs
