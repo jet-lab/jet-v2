@@ -24,7 +24,6 @@ use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
-use jet_solana_client::signature::{StandardSigner, StandardizeSigner, StandardizeSigners};
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
@@ -54,7 +53,7 @@ use crate::util::data::Join;
 use crate::{
     ix_builder::*,
     solana::{
-        keypair::clone,
+        keypair::{clone, KeypairExt},
         transaction::{SendTransactionBuilder, TransactionBuilder},
     },
 };
@@ -169,24 +168,11 @@ impl MarginTxBuilder {
     }
 
     /// returns None if there is no signer.
-    pub fn invoke_ctx(&self) -> Option<MarginInvokeContext<StandardSigner>> {
-        Some(MarginInvokeContext {
-            authority: self.signer.as_ref()?.standardize(),
-            airspace: self.airspace(),
-            margin_account: *self.address(),
-            is_liquidator: self.is_liquidator,
-        })
-    }
-
-    /// Uses ix_builder's authority if there is no signer
-    pub fn invoke_ctx_unsigned(
-        &self,
-        authority: MarginActionAuthority,
-    ) -> MarginInvokeContext<Pubkey> {
+    pub fn invoke_ctx(&self) -> MarginInvokeContext {
         MarginInvokeContext {
             airspace: self.airspace(),
             margin_account: *self.address(),
-            authority: authority.resolve(&self.ix),
+            authority: MarginActionAuthority::AccountAuthority.resolve(&self.ix),
             is_liquidator: self.is_liquidator,
         }
     }
@@ -226,7 +212,7 @@ impl MarginTxBuilder {
         let signers = self
             .signer
             .as_ref()
-            .map(|s| [s].standardize())
+            .map(|s| vec![s.clone()])
             .unwrap_or_default();
 
         TransactionBuilder {
@@ -398,11 +384,11 @@ impl MarginTxBuilder {
     ) -> Result<TransactionBuilder> {
         let target = self.pool_deposit_target(underlying_mint).await?;
         let source_authority = Some(authority.resolve(&self.ix));
-        Ok(self
+        let tx = self
             .invoke_ctx()
-            .context("margin tx builder is missing a signer")?
             .pool_deposit(*underlying_mint, source, source_authority, target, change)
-            .ijoin())
+            .ijoin();
+        Ok(self.sign(tx))
     }
 
     async fn pool_deposit_target(&self, underlying_mint: &Pubkey) -> Result<PoolTargetPosition> {
@@ -585,25 +571,30 @@ impl MarginTxBuilder {
             .await?
             .position_address(&source_pool.deposit_note_mint)?;
         let target = self.pool_deposit_target(target_token_mint).await?;
-        Ok(self
-            .invoke_ctx()
-            .context("tx builder missing keypair")?
-            .swap(
-                SplSwap {
-                    program: *swap_program,
-                    address: *swap_pool,
-                    pool_mint: *pool_mint,
-                    token_a: *source_token_mint,
-                    token_b: *target_token_mint,
-                    token_a_vault: *source_token_account,
-                    token_b_vault: *destination_token_account,
-                    fee_account: *fee_account,
-                },
-                Some(source),
-                target,
-                change,
-                minimum_amount_out,
-            ))
+        let tx = self.invoke_ctx().swap(
+            SplSwap {
+                program: *swap_program,
+                address: *swap_pool,
+                pool_mint: *pool_mint,
+                token_a: *source_token_mint,
+                token_b: *target_token_mint,
+                token_a_vault: *source_token_account,
+                token_b_vault: *destination_token_account,
+                fee_account: *fee_account,
+            },
+            Some(source),
+            target,
+            change,
+            minimum_amount_out,
+        );
+        Ok(self.sign(tx))
+    }
+
+    fn sign<Tx: WithSigner>(&self, tx: Tx) -> Tx::Output {
+        match self.signer.as_ref() {
+            Some(signer) => tx.with_signer(signer.clone()),
+            None => tx.without_signer(),
+        }
     }
 
     /// Transaction to swap tokens in a chain of up to 3 legs.
@@ -708,12 +699,8 @@ impl MarginTxBuilder {
 
         // Add liquidation instruction
         txs.instructions.push(self.ix.liquidate_begin());
-        txs.signers.push(
-            self.signer
-                .as_ref()
-                .context("missing signer")?
-                .standardize(),
-        );
+        txs.signers
+            .push(self.signer.as_ref().context("missing signer")?.clone());
 
         Ok(txs)
     }
@@ -764,7 +751,7 @@ impl MarginTxBuilder {
             .map(|position| {
                 self.ix
                     .refresh_position_config(&position.token)
-                    .with_signers(self.signers().standardize())
+                    .with_signers(self.signers())
             })
             .collect::<Vec<_>>();
 

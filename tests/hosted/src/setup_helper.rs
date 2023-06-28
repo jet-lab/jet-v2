@@ -12,7 +12,6 @@ use jet_margin_sdk::solana::transaction::{
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::tx_builder::{MarginActionAuthority, TokenDepositsConfig};
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use jet_solana_client::signature::StandardizeSigners;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
@@ -231,7 +230,7 @@ pub async fn register_deposit(
                 max_staleness: 0,
             }),
         )
-        .with_signers([airspace_authority].standardize())
+        .with_signer(airspace_authority)
         .send_and_confirm(rpc)
         .await
 }

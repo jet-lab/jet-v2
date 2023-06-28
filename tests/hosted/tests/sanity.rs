@@ -13,7 +13,6 @@ use jet_margin_sdk::{
 };
 use jet_simulation::assert_custom_program_error;
 
-use jet_solana_client::signature::StandardizeSigner;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -103,7 +102,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     let refresher = ctx.generate_key();
     ctx.margin_config_ix()
         .configure_position_config_refresher(refresher.pubkey(), true)
-        .with_signer(ctx.airspace_authority.standardize())
+        .with_signer(&ctx.airspace_authority)
         .send_and_confirm(&ctx.rpc())
         .await?;
 

@@ -3,6 +3,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_solana_client::util::keypair::ToKeypairs;
 use solana_sdk::{
     instruction::Instruction, signature::Signature, signer::Signer, transaction::Transaction,
 };
@@ -14,28 +15,27 @@ pub use jet_solana_client::transaction::*; // TODO: remove
 
 /// Implementers are expected to send a TransactionBuilder to a real or simulated solana network as a transaction
 #[async_trait]
-pub trait SendTransactionBuilder<K> {
+pub trait SendTransactionBuilder {
     /// Converts a TransactionBuilder to a Transaction,
     /// finalizing its set of instructions as the selection for the actual Transaction
-    async fn compile(&self, tx: InstructionBundle<K>) -> Result<Transaction>;
+    async fn compile(&self, tx: TransactionBuilder) -> Result<Transaction>;
 
     /// Sends the transaction unchanged
-    async fn send_and_confirm(&self, transaction: InstructionBundle<K>) -> Result<Signature>;
+    async fn send_and_confirm(&self, transaction: TransactionBuilder) -> Result<Signature>;
 
     /// simple ad hoc transaction sender. use `flexify` if necessary to get a good
     /// input type.
-    async fn send_and_confirm_1tx(
+    async fn send_and_confirm_1tx<K: ToKeypairs + Send + Sync>(
         &self,
         instructions: &[Instruction],
-        signers: Vec<K>,
+        signers: K,
     ) -> Result<Signature>
     where
-        K: Send + Sync + 'static,
-        Self: SendTransactionBuilder<K>,
+        Self: SendTransactionBuilder,
     {
-        self.send_and_confirm(InstructionBundle {
+        self.send_and_confirm(TransactionBuilder {
             instructions: instructions.to_vec(),
-            signers,
+            signers: signers.to_keypairs(),
         })
         .await
     }
@@ -45,36 +45,32 @@ pub trait SendTransactionBuilder<K> {
     /// TODO: rename this to indicate that it's not ordered
     async fn send_and_confirm_condensed(
         &self,
-        transactions: Vec<InstructionBundle<K>>,
+        transactions: Vec<TransactionBuilder>,
     ) -> Result<Vec<Signature>>;
 
     /// Send, minimizing number of transactions - see `condense` doc
     /// sends transactions one at a time after confirming the last
     async fn send_and_confirm_condensed_in_order(
         &self,
-        transactions: Vec<InstructionBundle<K>>,
+        transactions: Vec<TransactionBuilder>,
     ) -> Result<Vec<Signature>>;
 }
 
 #[async_trait]
-impl<K, S> SendTransactionBuilder<K> for Arc<dyn SolanaRpcClient>
-where
-    K: FlexKey<Inner = S> + 'static,
-    S: ?Sized + Signer,
-{
-    async fn compile(&self, tx: InstructionBundle<K>) -> Result<Transaction> {
+impl SendTransactionBuilder for Arc<dyn SolanaRpcClient> {
+    async fn compile(&self, tx: TransactionBuilder) -> Result<Transaction> {
         let blockhash = self.get_latest_blockhash().await?;
-        Ok(tx.compile(self.payer(), blockhash)?)
+        Ok(tx.compile(Some(&self.payer().pubkey()), &[self.payer()], blockhash)?)
     }
 
-    async fn send_and_confirm(&self, tx: InstructionBundle<K>) -> Result<Signature> {
+    async fn send_and_confirm(&self, tx: TransactionBuilder) -> Result<Signature> {
         self.send_and_confirm_transaction(&self.compile(tx).await?)
             .await
     }
 
     async fn send_and_confirm_condensed(
         &self,
-        transactions: Vec<InstructionBundle<K>>,
+        transactions: Vec<TransactionBuilder>,
     ) -> Result<Vec<Signature>> {
         condense(&transactions, &self.payer().pubkey())?
             .into_iter()
@@ -84,7 +80,7 @@ where
 
     async fn send_and_confirm_condensed_in_order(
         &self,
-        transactions: Vec<InstructionBundle<K>>,
+        transactions: Vec<TransactionBuilder>,
     ) -> Result<Vec<Signature>> {
         condense(&transactions, &self.payer().pubkey())?
             .into_iter()
@@ -97,28 +93,24 @@ where
 /// TransactionBuilder as the receiver when it would enable a cleaner
 /// method-chaining syntax.
 #[async_trait]
-pub trait TransactionBuilderExt<K> {
+pub trait TransactionBuilderExt {
     /// SendTransactionBuilder::compile
-    async fn compile<C: SendTransactionBuilder<K> + Send + Sync>(
+    async fn compile<C: SendTransactionBuilder + Send + Sync>(
         self,
         client: &C,
     ) -> Result<Transaction>;
 
     /// SendTransactionBuilder::send_and_confirm
-    async fn send_and_confirm<C: SendTransactionBuilder<K> + Send + Sync>(
+    async fn send_and_confirm<C: SendTransactionBuilder + Send + Sync>(
         self,
         client: &C,
     ) -> Result<Signature>;
 }
 
 #[async_trait]
-impl<K, S> TransactionBuilderExt<K> for InstructionBundle<K>
-where
-    K: FlexKey<Inner = S>,
-    S: ?Sized + Signer,
-{
+impl TransactionBuilderExt for TransactionBuilder {
     /// SendTransactionBuilder::compile
-    async fn compile<C: SendTransactionBuilder<K> + Send + Sync>(
+    async fn compile<C: SendTransactionBuilder + Send + Sync>(
         self,
         client: &C,
     ) -> Result<Transaction> {
@@ -126,7 +118,7 @@ where
     }
 
     /// SendTransactionBuilder::send_and_confirm
-    async fn send_and_confirm<C: SendTransactionBuilder<K> + Send + Sync>(
+    async fn send_and_confirm<C: SendTransactionBuilder + Send + Sync>(
         self,
         client: &C,
     ) -> Result<Signature> {
@@ -138,35 +130,31 @@ where
 /// Vec<TransactionBuilder> as the receiver when it would enable a cleaner
 /// method-chaining syntax.
 #[async_trait]
-pub trait InverseSendTransactionBuilder<K> {
+pub trait InverseSendTransactionBuilder {
     /// SendTransactionBuilder::send_and_confirm_condensed
     /// TODO: rename this to indicate that it's not ordered
-    async fn send_and_confirm_condensed<C: SendTransactionBuilder<K> + Sync>(
+    async fn send_and_confirm_condensed<C: SendTransactionBuilder + Sync>(
         self,
         client: &C,
     ) -> Result<Vec<Signature>>;
 
     /// SendTransactionBuilder::send_and_confirm_condensed_in_order
-    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder<K> + Sync>(
+    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder + Sync>(
         self,
         client: &C,
     ) -> Result<Vec<Signature>>;
 }
 
 #[async_trait]
-impl<K, S> InverseSendTransactionBuilder<K> for Vec<InstructionBundle<K>>
-where
-    K: FlexKey<Inner = S>,
-    S: ?Sized + Signer,
-{
-    async fn send_and_confirm_condensed<C: SendTransactionBuilder<K> + Sync>(
+impl InverseSendTransactionBuilder for Vec<TransactionBuilder> {
+    async fn send_and_confirm_condensed<C: SendTransactionBuilder + Sync>(
         self,
         client: &C,
     ) -> Result<Vec<Signature>> {
         client.send_and_confirm_condensed(self).await
     }
 
-    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder<K> + Sync>(
+    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder + Sync>(
         self,
         client: &C,
     ) -> Result<Vec<Signature>> {

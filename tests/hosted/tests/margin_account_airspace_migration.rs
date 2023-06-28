@@ -12,8 +12,8 @@ use jet_instructions::margin::MarginIxBuilder;
 use jet_program_common::DEFAULT_AIRSPACE;
 use jet_simulation::SolanaRpcClient;
 
-#[cfg(not(feature = "localnet"))]
 #[tokio::test]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 async fn can_migrate() {
     use jet_margin::MarginAccount;
 

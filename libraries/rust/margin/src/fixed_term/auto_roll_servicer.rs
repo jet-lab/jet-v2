@@ -11,12 +11,8 @@ use jet_instructions::{
     margin::accounting_invoke,
 };
 use jet_simulation::SolanaRpcClient;
-use jet_solana_client::{
-    rpc::AccountFilter,
-    signature::StandardizeSigner,
-    transaction::{TransactionBuilder, WithSigner},
-};
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
+use jet_solana_client::rpc::AccountFilter;
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use thiserror::Error;
 
 use crate::solana::transaction::SendTransactionBuilder;
@@ -299,16 +295,8 @@ impl AutoRollServicer {
     }
 
     async fn bundle_and_send(&self, ix: Vec<Instruction>) -> Result<()> {
-        self.rpc
-            .send_and_confirm_condensed_in_order(vec![
-                TransactionBuilder::from(ix).with_signer(self.clone_payer().standardize())
-            ])
-            .await?;
+        self.rpc.send_and_confirm(ix.into()).await?;
         Ok(())
-    }
-
-    fn clone_payer(&self) -> Keypair {
-        Keypair::from_base58_string(&self.rpc.payer().to_base58_string())
     }
 }
 

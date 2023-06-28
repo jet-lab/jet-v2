@@ -10,9 +10,7 @@ use jet_instructions::{
         spl_swap_pool_create,
     },
 };
-use jet_solana_client::{
-    network::NetworkKind, signature::StandardizeSigners, transaction::TransactionBuilder,
-};
+use jet_solana_client::{network::NetworkKind, transaction::TransactionBuilder};
 
 use jet_program_common::programs::*;
 
@@ -174,7 +172,7 @@ impl OpenbookStateAccounts {
 
         let transaction = TransactionBuilder {
             instructions: vec![bids_ix, asks_ix, events_ix, requests_ix],
-            signers: [bids, asks, events, requests].standardize(),
+            signers: vec![bids, asks, events, requests],
         };
 
         Ok((accounts, transaction))
@@ -299,7 +297,7 @@ async fn create_orca_whirlpool(
         SetupPhase::Swaps,
         [TransactionBuilder {
             instructions: vec![ix_builder.initialize_pool(1 << 64)],
-            signers: [vault_a, vault_b].standardize(),
+            signers: vec![vault_a, vault_b],
         }],
     );
 

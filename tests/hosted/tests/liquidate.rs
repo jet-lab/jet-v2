@@ -327,7 +327,7 @@ async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
     let (ctx, scen) = scenario1!().unwrap();
 

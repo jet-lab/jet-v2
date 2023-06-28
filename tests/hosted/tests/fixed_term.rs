@@ -8,7 +8,7 @@ use hosted_tests::{
     context::MarginTestContext,
     fixed_term::{
         create_and_fund_fixed_term_market_margin_user, FixedTermUser, GenerateProxy, OrderAmount,
-        TestManager as FixedTermTestManager, LEND_TENOR, MIN_ORDER_SIZE, STARTING_TOKENS,
+        TestManager as FixedTermTestManager, MIN_ORDER_SIZE, STARTING_TOKENS,
     },
     margin_test_context,
     setup_helper::{setup_user, tokens},
@@ -34,7 +34,7 @@ use jet_program_common::{
     interest_pricing::{InterestPricer, PricerImpl},
     Fp32,
 };
-use jet_solana_client::{rpc::AccountFilter, signature::StandardizeSigner, transactions};
+use jet_solana_client::{rpc::AccountFilter, transactions, util::keypair::KeypairExt};
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -498,7 +498,7 @@ async fn settle_many_margin_accounts() -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(feature = "localnet"))]
+#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 async fn auto_roll_many_trades() -> Result<()> {
@@ -603,12 +603,12 @@ async fn auto_roll_many_trades() -> Result<()> {
     #[cfg(not(feature = "localnet"))]
     {
         let mut clock = manager.client.get_clock().await?;
-        clock.unix_timestamp += LEND_TENOR as i64;
+        clock.unix_timestamp += hosted_tests::fixed_term::LEND_TENOR as i64;
         manager.client.set_clock(clock).await?;
     }
     // #[cfg(feature = "localnet")]
     // {
-    //     std::thread::sleep(std::time::Duration::from_secs(LEND_TENOR as u64));
+    //     std::thread::sleep(std::time::Duration::from_secs(hosted_tests::fixed_term::LEND_TENOR as u64));
     // }
     servicer.service_all().await;
 
@@ -809,7 +809,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         .proxy
         .proxy
         .create_deposit_position(mint)
-        .with_signer(borrower.owner.standardize())
+        .with_signer(&borrower.owner)
         .send_and_confirm(&ctx.rpc())
         .await?;
     manager.expect_and_execute_settlement(&[&borrower]).await?;
@@ -1173,15 +1173,19 @@ async fn fixed_term_borrow_becomes_unhealthy_without_collateral() -> Result<(), 
         vec![
             mkt.initialize_margin_user(*lender.address()),
             mkt.margin_lend_order(*lender.address(), None, params, 0),
-        ].invoke_each_into(&lender.ctx()),
+        ].invoke_each_into(&lender.ctx())
+         .with_signer(lender.signer.clone()),
 
         // borrow with fill
         ctx.refresh_deposit(tsol.mint, *borrower.address()),
-        mkt.initialize_margin_user(*borrower.address()).invoke_into(&borrower.ctx()),
+        mkt.initialize_margin_user(*borrower.address())
+            .invoke_into(&borrower.ctx())
+            .with_signer(borrower.signer.clone()),
         vec![
             mkt.refresh_position(*borrower.address(), true),
             mkt.margin_borrow_order(*borrower.address(), params, 0)
-        ].invoke_into(&borrower.ctx()),
+        ].invoke_into(&borrower.ctx())
+         .with_signer(borrower.signer.clone()),
 
         // make user unhealthy
         ctx.set_price(tsol.mint, 0.01),

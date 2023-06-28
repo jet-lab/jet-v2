@@ -17,9 +17,7 @@ use jet_instructions::{
     },
 };
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
-use jet_solana_client::{
-    rpc::SolanaRpcExtra, signature::StandardizeSigner, transaction::TransactionBuilder,
-};
+use jet_solana_client::{rpc::SolanaRpcExtra, transaction::TransactionBuilder};
 
 use crate::config::FixedTermMarketConfig;
 
@@ -305,7 +303,7 @@ async fn create_market_for_token(
                     len_eq as u64,
                     &jet_fixed_term::ID,
                 )],
-                signers: vec![key_eq.standardize()],
+                signers: vec![key_eq],
             },
             TransactionBuilder {
                 instructions: vec![system_instruction::create_account(
@@ -315,7 +313,7 @@ async fn create_market_for_token(
                     len_orders as u64,
                     &jet_fixed_term::ID,
                 )],
-                signers: vec![key_bids.standardize()],
+                signers: vec![key_bids],
             },
             TransactionBuilder {
                 instructions: vec![system_instruction::create_account(
@@ -325,7 +323,7 @@ async fn create_market_for_token(
                     len_orders as u64,
                     &jet_fixed_term::ID,
                 )],
-                signers: vec![key_asks.standardize()],
+                signers: vec![key_asks],
             },
         ],
     );

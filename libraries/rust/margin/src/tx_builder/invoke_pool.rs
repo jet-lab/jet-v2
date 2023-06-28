@@ -3,7 +3,9 @@ use anyhow::Result;
 use futures::Future;
 use jet_margin::MarginAccount;
 use jet_margin_pool::TokenChange;
-use jet_solana_client::{transaction::InstructionBundle, util::Key};
+use jet_solana_client::transaction::TransactionBuilder;
+use jet_solana_client::transactions;
+use jet_solana_client::util::Key;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::ix_builder::*;
@@ -12,7 +14,7 @@ use crate::solana::pubkey::OrAta;
 use super::MarginInvokeContext;
 
 /// Use MarginInvokeContext to invoke instructions to the margin-pool program
-impl<K: Key + Clone> MarginInvokeContext<K> {
+impl MarginInvokeContext {
     /// Deposit into a margin pool from the specified source account, creating
     /// the target position in the margin account if necessary.
     pub fn pool_deposit(
@@ -22,7 +24,7 @@ impl<K: Key + Clone> MarginInvokeContext<K> {
         source_authority: Option<Pubkey>,
         target: PoolTargetPosition,
         change: TokenChange,
-    ) -> Vec<InstructionBundle<K>> {
+    ) -> Vec<TransactionBuilder> {
         let pool = MarginPoolIxBuilder::new(underlying_mint);
         let source_authority = source_authority.unwrap_or(self.margin_account);
         let (target, mut instructions) = self.get_or_create_pool_deposit(underlying_mint, target);
@@ -41,7 +43,7 @@ impl<K: Key + Clone> MarginInvokeContext<K> {
         &self,
         underlying_mint: Pubkey,
         position: PoolTargetPosition,
-    ) -> (Pubkey, Vec<InstructionBundle<K>>) {
+    ) -> (Pubkey, Vec<TransactionBuilder>) {
         let pool = MarginPoolIxBuilder::new(underlying_mint);
         let mut instructions = vec![];
         let target = match position {
@@ -60,20 +62,20 @@ impl<K: Key + Clone> MarginInvokeContext<K> {
         payer: Pubkey,
         underlying_mint: Pubkey,
         pool_oracle: Pubkey,
-    ) -> Vec<InstructionBundle<K>> {
+    ) -> Vec<TransactionBuilder> {
         let pool = MarginPoolIxBuilder::new(underlying_mint);
         let auth = self.authority.address();
-        let mut instructions = vec![];
-        instructions.extend(self.direct_each(create_deposit_account_and_position(
-            self.margin_account,
-            self.airspace,
-            auth,
-            payer,
-            pool.deposit_note_mint,
-        )));
-        instructions
-            .push(self.invoke(pool.margin_refresh_position(self.margin_account, pool_oracle)));
-        instructions
+
+        transactions![
+            create_deposit_account_and_position(
+                self.margin_account,
+                self.airspace,
+                auth,
+                payer,
+                pool.deposit_note_mint,
+            ),
+            self.invoke(pool.margin_refresh_position(self.margin_account, pool_oracle)),
+        ]
     }
 }
 

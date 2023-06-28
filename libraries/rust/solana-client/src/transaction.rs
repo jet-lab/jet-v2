@@ -1,62 +1,59 @@
 use anchor_lang::prelude::Pubkey;
 use solana_sdk::hash::Hash;
 use solana_sdk::message::Message;
+use solana_sdk::signature::Keypair;
 use solana_sdk::signer::{Signer, SignerError};
 use solana_sdk::signers::Signers;
 use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{instruction::Instruction, signature::Signature, transaction::Transaction};
 use std::cmp::{max, min};
-use std::ops::Deref;
+use std::collections::HashSet;
 
-use crate::signature::FlexSigners;
-use crate::signature::StandardSigner;
+use crate::signature::NeedsSignature;
 use crate::util::data::{Concat, DeepReverse, Join};
-
-pub type TransactionBuilder = InstructionBundle<StandardSigner>;
+use crate::util::keypair::clone_vec;
+use crate::util::keypair::{KeypairExt, ToKeypair};
 
 /// A group of instructions that are expected to execute in the same
-/// transaction. Can be merged with other InstructionBundle instances:
+/// transaction. Can be merged with other TransactionBuilder instances:
 /// ```rust ignore
-/// let bundle = cat![bundle1, bundle2, bundle3];
-/// let bundle = bundle_vec.ijoin();
-/// let bundle = bundle1.concat(bundle2);
-/// let bundle_vec = condense(bundle_vec);
+/// let builder = cat![builder1, builder2, builder3];
+/// let builder = builder_vec.ijoin();
+/// let builder = builder1.concat(builder2);
+/// let builder_vec = condense(builder_vec);
 /// ```
-#[derive(Debug)]
-pub struct InstructionBundle<K> {
+#[derive(Debug, Default)]
+pub struct TransactionBuilder {
     /// see above
     pub instructions: Vec<Instruction>,
-    /// The signers that are required for the included instructions.
-    /// May not include the transaction fee payer.
-    pub signers: Vec<K>,
+    /// Generated keypairs that will be used for the for the included
+    /// instructions. Typically, this is used when an account needs to be
+    /// initialized for this instruction.
+    ///
+    /// This usually does not include the payer or the user's wallet. Additional
+    /// signatures should be provided by the application when needed. However,
+    /// sometimes it may be convenient (e.g. in tests) to actually add the
+    /// user's wallet into this struct before converting it to a transaction.
+    pub signers: Vec<Keypair>,
 }
 
-impl<K> Default for InstructionBundle<K> {
-    fn default() -> Self {
-        Self {
-            instructions: vec![],
-            signers: vec![],
-        }
-    }
-}
-
-impl<K> DeepReverse for InstructionBundle<K> {
+impl DeepReverse for TransactionBuilder {
     fn deep_reverse(mut self) -> Self {
         self.instructions.reverse();
         self
     }
 }
 
-impl<K: Clone> Clone for InstructionBundle<K> {
+impl Clone for TransactionBuilder {
     fn clone(&self) -> Self {
         Self {
             instructions: self.instructions.clone(),
-            signers: self.signers.clone(),
+            signers: self.signers.iter().map(|k| k.clone()).collect(),
         }
     }
 }
 
-impl<K> From<Vec<Instruction>> for InstructionBundle<K> {
+impl From<Vec<Instruction>> for TransactionBuilder {
     fn from(instructions: Vec<Instruction>) -> Self {
         Self {
             instructions,
@@ -65,7 +62,7 @@ impl<K> From<Vec<Instruction>> for InstructionBundle<K> {
     }
 }
 
-impl<K> From<Instruction> for InstructionBundle<K> {
+impl From<Instruction> for TransactionBuilder {
     fn from(ix: Instruction) -> Self {
         Self {
             instructions: vec![ix],
@@ -74,98 +71,44 @@ impl<K> From<Instruction> for InstructionBundle<K> {
     }
 }
 
-impl<K> InstructionBundle<K> {
-    /// Convert the InstructionBundle into a solana Transaction, as long as the
-    /// signers implement Signer. Returns error if any required signers are not
-    /// provided.
+impl TransactionBuilder {
+    /// Cleans up any duplicate or unneeded signers.
+    pub fn prune(&mut self) {
+        let mut signer_pubkeys = HashSet::new();
+        for signer in std::mem::take(&mut self.signers) {
+            let pubkey = signer.pubkey();
+            if !signer_pubkeys.contains(&pubkey) && self.instructions.needs_signature(pubkey) {
+                signer_pubkeys.insert(pubkey);
+                self.signers.push(signer);
+            }
+        }
+    }
+
+    /// Convert the TransactionBuilder into a solana Transaction.
     ///
-    /// Ideally, this function would be generic over either any Deref<Signer>
-    /// type OR any *direct* Signer type. Unfortunately, this is not possible
-    /// without specialization or negative trait bounds. Instead, you'll just
-    /// need to wrap direct Signer types in something like Box to make them
-    /// compatible. `InstructionBundle::signers_into` can help with this.
-    pub fn compile<Payer, KSigner, PSigner>(
+    /// Returns error if any required signers are not provided.
+    pub fn compile<S: Signers>(
         self,
-        payer: Payer,
+        payer: Option<&Pubkey>,
+        signers: &S,
         recent_blockhash: Hash,
-    ) -> Result<Transaction, SignerError>
-    where
-        K: Deref<Target = KSigner>,
-        Payer: Deref<Target = PSigner>,
-        KSigner: ?Sized + Signer,
-        PSigner: ?Sized + Signer,
-    {
-        let payer_pubkey = payer.pubkey();
-        let signers = FlexSigners {
-            signers: FlexSigners::from_non_signers(self.signers),
-            signer_vec: vec![payer],
-        };
-        try_new_tx(
-            &self.instructions,
-            Some(&payer_pubkey),
-            &signers,
-            recent_blockhash,
-        )
+    ) -> Result<Transaction, SignerError> {
+        let mut tx = self.compile_partial(payer, recent_blockhash);
+        tx.try_sign(signers, recent_blockhash)?;
+        Ok(tx)
     }
 
     /// Like compile, except that it will not fail if signers are missing.
-    /// Intended to accept the payer as a signer later.
-    pub fn compile_partial<KSigner>(
-        self,
+    /// Intended to have other signatures, such as the payer's, added later.
+    pub fn compile_partial(
+        mut self,
         payer: Option<&Pubkey>,
         recent_blockhash: Hash,
-    ) -> Transaction
-    where
-        K: Deref<Target = KSigner>,
-        KSigner: ?Sized + Signer,
-    {
-        new_tx_partial(
-            &self.instructions,
-            payer,
-            &FlexSigners::from_non_signers(self.signers),
-            recent_blockhash,
-        )
-    }
-
-    /// Like compile, except that it assumes the payer is already included in
-    /// the signers, so only a pubkey is needed.
-    pub fn compile_with_included_payer<KSigner>(
-        self,
-        payer: Option<&Pubkey>,
-        recent_blockhash: Hash,
-    ) -> Result<Transaction, SignerError>
-    where
-        K: Deref<Target = KSigner>,
-        KSigner: ?Sized + Signer,
-    {
-        try_new_tx(
-            &self.instructions,
-            payer,
-            &FlexSigners::from_non_signers(self.signers),
-            recent_blockhash,
-        )
-    }
-
-    pub fn signers_into<NewK: From<K>>(self) -> InstructionBundle<NewK> {
-        self.map_signers(|s| NewK::from(s))
-    }
-
-    pub fn map_signers<NewK, F: FnMut(K) -> NewK>(self, f: F) -> InstructionBundle<NewK> {
-        InstructionBundle {
-            signers: self.signers.into_iter().map(f).collect(),
-            instructions: self.instructions,
-        }
-    }
-
-    /// Removes all the signers so you can convert this into any arbitrary type.
-    /// Useful when converting from Pubkey to an actual signer type. You'll need
-    /// to manually ensure all the required signers do eventually sign the
-    /// transaction
-    pub fn without_signers<NewK>(self) -> InstructionBundle<NewK> {
-        InstructionBundle {
-            signers: vec![],
-            instructions: self.instructions,
-        }
+    ) -> Transaction {
+        self.prune();
+        let mut tx = Transaction::new_unsigned(Message::new(&self.instructions, payer));
+        tx.partial_sign(&self.signers.iter().collect::<Vec<_>>(), recent_blockhash);
+        tx
     }
 
     /// convert transaction to a base64 string similar to one that would be
@@ -183,33 +126,7 @@ impl<K> InstructionBundle<K> {
     }
 }
 
-/// Like Transaction::new_signed_with_payer, except that it returns an error
-/// instead of panicking when a required signer is missing.
-pub fn try_new_tx<T: Signers>(
-    instructions: &[Instruction],
-    payer: Option<&Pubkey>,
-    signers: &T,
-    recent_blockhash: Hash,
-) -> Result<Transaction, SignerError> {
-    let mut tx = Transaction::new_unsigned(Message::new(instructions, payer));
-    tx.try_sign(signers, recent_blockhash)?;
-    Ok(tx)
-}
-
-/// Like Transaction::new_signed_with_payer, except that it will successfully
-/// create a Transaction even if some required signers are missing.
-pub fn new_tx_partial<T: Signers>(
-    instructions: &[Instruction],
-    payer: Option<&Pubkey>,
-    signers: &T,
-    recent_blockhash: Hash,
-) -> Transaction {
-    let mut tx = Transaction::new_unsigned(Message::new(instructions, payer));
-    tx.partial_sign(signers, recent_blockhash);
-    tx
-}
-
-impl<K: Clone> Concat for InstructionBundle<K> {
+impl Concat for TransactionBuilder {
     fn cat(mut self, other: Self) -> Self {
         self.instructions.extend(other.instructions.into_iter());
         self.signers.extend(other.signers.into_iter());
@@ -220,7 +137,7 @@ impl<K: Clone> Concat for InstructionBundle<K> {
     fn cat_ref(mut self, other: &Self) -> Self {
         self.instructions
             .extend(other.instructions.clone().into_iter());
-        self.signers.extend(other.signers.clone().into_iter());
+        self.signers.extend(other.signers.iter().map(|k| k.clone()));
 
         Self { ..self }
     }
@@ -229,37 +146,65 @@ impl<K: Clone> Concat for InstructionBundle<K> {
 /// Convert types to a TransactionBuilder while including signers. Serves a
 /// similar purpose to From<Instruction>, but it's used when you also need to
 /// add signers.
-pub trait WithSigner<K>: Sized {
+pub trait WithSigner: Sized {
+    type Output;
+
     /// convert to a TransactionBuilder that includes this signer
-    fn with_signer(self, signer: K) -> InstructionBundle<K> {
-        self.with_signers(vec![signer])
+    fn with_signer<K: ToKeypair>(self, signer: K) -> Self::Output {
+        self.with_signers([signer])
     }
-    /// convert to a InstructionBundle<PreferredSigner> that includes these signers
-    fn with_signers(self, signers: Vec<K>) -> InstructionBundle<K>;
+
+    fn without_signer(self) -> Self::Output {
+        self.with_signers(Vec::<Keypair>::new())
+    }
+
+    /// convert to a TransactionBuilder<PreferredSigner> that includes these signers
+    /// //todo slice
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output;
 }
 
-impl<K> WithSigner<K> for Instruction {
-    fn with_signers(self, signers: Vec<K>) -> InstructionBundle<K> {
+impl WithSigner for Instruction {
+    type Output = TransactionBuilder;
+
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output {
         vec![self].with_signers(signers)
     }
 }
 
-impl<K> WithSigner<K> for &[Instruction] {
-    fn with_signers(self, signers: Vec<K>) -> InstructionBundle<K> {
-        InstructionBundle {
+impl WithSigner for &[Instruction] {
+    type Output = TransactionBuilder;
+
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output {
+        TransactionBuilder {
             instructions: self.to_vec(),
-            signers,
+            signers: clone_vec(signers),
         }
     }
 }
 
-impl<K> WithSigner<K> for InstructionBundle<K> {
-    fn with_signers(mut self, signers: Vec<K>) -> InstructionBundle<K> {
-        self.signers.extend(signers.into_iter().collect::<Vec<_>>());
-        InstructionBundle {
+impl WithSigner for TransactionBuilder {
+    type Output = TransactionBuilder;
+
+    fn with_signers<K: ToKeypair>(mut self, signers: impl IntoIterator<Item = K>) -> Self::Output {
+        self.signers.extend(clone_vec(signers));
+        TransactionBuilder {
             instructions: self.instructions,
             signers: self.signers,
         }
+    }
+}
+
+impl WithSigner for Vec<TransactionBuilder> {
+    type Output = Vec<TransactionBuilder>;
+
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output {
+        let signers = signers
+            .into_iter()
+            .map(ToKeypair::to_keypair)
+            .collect::<Vec<_>>();
+        self.into_iter()
+            .map(|tx| tx.with_signers(clone_vec(&signers)))
+            .collect()
     }
 }
 
@@ -282,40 +227,40 @@ const MAX_TX_SIZE: usize = 1232;
 /// go in the same transaction with the user action. Once any get separated from
 /// the user action, it doesn't really matter how they are grouped any more. But
 /// you still want as many as possible with the user action.
-pub fn condense<K: Clone>(
-    txs: &[InstructionBundle<K>],
+pub fn condense(
+    txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<InstructionBundle<K>>, bincode::Error> {
+) -> Result<Vec<TransactionBuilder>, bincode::Error> {
     condense_right(txs, payer)
 }
 
 /// Use this when you don't care how transactions bundled, and just want all the
 /// transactions delivered as fast as possible in the smallest number of
 /// transactions.
-pub fn condense_fast<K: Clone>(
-    txs: &[InstructionBundle<K>],
+pub fn condense_fast(
+    txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<InstructionBundle<K>>, bincode::Error> {
+) -> Result<Vec<TransactionBuilder>, bincode::Error> {
     condense_left(txs, payer)
 }
 
 /// The last transaction is maximized in size, the first is not.
 /// - Use when it's more important to bundle as much as possible with the
 ///   instructions in the final transaction than those in the first transaction.
-pub fn condense_right<K: Clone>(
-    txs: &[InstructionBundle<K>],
+pub fn condense_right(
+    txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<InstructionBundle<K>>, bincode::Error> {
+) -> Result<Vec<TransactionBuilder>, bincode::Error> {
     Ok(condense_left(&txs.to_vec().deep_reverse(), payer)?.deep_reverse())
 }
 
 /// The first transaction is maximized in size, the last is not.
 /// - Use when it's more important to bundle as much as possible with the
 ///   instructions in the first transaction than those in the final transaction.
-pub fn condense_left<K: Clone>(
-    txs: &[InstructionBundle<K>],
+pub fn condense_left(
+    txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<InstructionBundle<K>>, bincode::Error> {
+) -> Result<Vec<TransactionBuilder>, bincode::Error> {
     let mut shrink_me = txs.to_vec();
     let mut condensed = vec![];
     loop {
@@ -338,8 +283,8 @@ pub fn condense_left<K: Clone>(
 /// TODO: this could be modified to search from the end instead of the
 /// beginning, so it would serve condense_right instead of condense_left. Then
 /// condense and condense_fast could be consolidated.
-fn find_first_condensed<K: Clone>(
-    txs: &[InstructionBundle<K>],
+fn find_first_condensed(
+    txs: &[TransactionBuilder],
     payer: &Pubkey,
 ) -> Result<usize, bincode::Error> {
     let mut try_len = txs.len();
@@ -398,11 +343,7 @@ impl ToTransaction for Vec<Instruction> {
     }
 }
 
-impl<K, KSigner> ToTransaction for InstructionBundle<K>
-where
-    K: Deref<Target = KSigner> + Clone,
-    KSigner: ?Sized + Signer,
-{
+impl ToTransaction for TransactionBuilder {
     fn to_transaction(&self, payer: &Pubkey, recent_blockhash: Hash) -> VersionedTransaction {
         self.clone()
             .compile_partial(Some(payer), recent_blockhash)
@@ -434,6 +375,11 @@ impl<T: ToTransaction> ToTransaction for &T {
     }
 }
 
+/// ```pseudo-code
+/// fn transactions!(varargs...: impl ToTransactionBuilderVec) -> Vec<TransactionBuilder>
+/// ```
+/// Converts each input into a Vec<TransactionBuilder>,  
+/// then concatenates the vecs into a unified Vec<TransactionBuilder>.
 #[macro_export]
 macro_rules! transactions {
     ($($item:expr),*$(,)?) => {{
@@ -442,6 +388,23 @@ macro_rules! transactions {
         let x: Vec<TransactionBuilder> = $crate::cat![$(
             $item.to_tx_builder_vec(),
         )*];
+        x
+    }};
+}
+
+/// ```pseudo-code
+/// fn tx!(varargs...: impl ToTransactionBuilderVec) -> TransactionBuilder
+/// ```
+/// Combines all enclosed items into a single TransactionBuilder.
+#[macro_export]
+macro_rules! tx {
+    ($($item:expr),*$(,)?) => {{
+        use jet_solana_client::transaction::TransactionBuilder;
+        use jet_solana_client::transaction::ToTransactionBuilderVec;
+        use jet_solana_client::util::data::Join;
+        let x: TransactionBuilder = $crate::cat![$(
+            $item.to_tx_builder_vec(),
+        )*].ijoin();
         x
     }};
 }
@@ -469,53 +432,4 @@ impl ToTransactionBuilderVec for Vec<TransactionBuilder> {
     fn to_tx_builder_vec(self) -> Vec<TransactionBuilder> {
         self
     }
-}
-
-/// The main goal here is to ensure that the *code* compiles without error. Any
-/// changes to the compile function should not break its compatibility with any
-/// of these types.
-///
-/// It's also nice to see that the *transaction* compiles without error, so this
-/// runs as a test instead of just being an uncalled function.
-#[test]
-fn instruction_bundle_compile_is_sufficiently_generic() -> Result<(), SignerError> {
-    use solana_sdk::signature::Keypair;
-    use std::sync::Arc;
-
-    let hash = Hash::default();
-    let k = Keypair::new();
-
-    InstructionBundle::<Keypair>::default()
-        .signers_into::<Box<Keypair>>()
-        .compile(&k, hash)?;
-    InstructionBundle::<Keypair>::default()
-        .signers_into::<Box<dyn Signer>>()
-        .compile(&k, hash)?;
-    InstructionBundle::<&Keypair>::default().compile(&k, hash)?;
-    InstructionBundle::<Arc<Keypair>>::default().compile(&k, hash)?;
-    InstructionBundle::<Box<dyn Signer>>::default().compile(&k, hash)?;
-
-    let k = Box::new(Keypair::new());
-    InstructionBundle::<Keypair>::default()
-        .signers_into::<Arc<Keypair>>()
-        .compile(&*k, hash)?;
-    InstructionBundle::<Keypair>::default()
-        .signers_into::<Box<dyn Signer>>()
-        .compile(&*k, hash)?;
-    InstructionBundle::<&Keypair>::default().compile(&*k, hash)?;
-    InstructionBundle::<Arc<Keypair>>::default().compile(&*k, hash)?;
-    InstructionBundle::<Box<dyn Signer>>::default().compile(&*k, hash)?;
-
-    let k: Box<dyn Signer> = Box::new(Keypair::new());
-    InstructionBundle::<Keypair>::default()
-        .signers_into::<Box<Keypair>>()
-        .compile(&*k, hash)?;
-    InstructionBundle::<Keypair>::default()
-        .signers_into::<Box<dyn Signer>>()
-        .compile(&*k, hash)?;
-    InstructionBundle::<&Keypair>::default().compile(&*k, hash)?;
-    InstructionBundle::<Arc<Keypair>>::default().compile(&*k, hash)?;
-    InstructionBundle::<Box<dyn Signer>>::default().compile(&*k, hash)?;
-
-    Ok(())
 }

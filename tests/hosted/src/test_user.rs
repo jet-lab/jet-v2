@@ -9,7 +9,6 @@ use jet_margin_sdk::ix_builder::MarginSwapRouteIxBuilder;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::tx_builder::MarginActionAuthority;
 use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
-use jet_solana_client::signature::StandardizeSigners;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
@@ -329,7 +328,7 @@ impl TestLiquidator {
             );
             self.ctx
                 .rpc()
-                .send_and_confirm_1tx(&[create_ata_ix], [&self.wallet].standardize())
+                .send_and_confirm_1tx(&[create_ata_ix], [&self.wallet])
                 .await?;
         }
         liq.swap(swaps, collateral, loan, change, true).await?;

@@ -7,7 +7,7 @@ use jet_instructions::test_service::{token_request, token_update_pyth_price};
 use jet_margin_sdk::cat;
 use jet_margin_sdk::solana::keypair::KeypairExt;
 use jet_margin_sdk::solana::transaction::TransactionBuilderExt;
-use jet_solana_client::signature::{Authorization, StandardizeSigner};
+use jet_solana_client::signature::Authorization;
 use jet_solana_client::transaction::{TransactionBuilder, WithSigner};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
@@ -131,7 +131,7 @@ fn airdrop_token(mint: Authorization, destination: Pubkey, amount: u64) -> Trans
         &destination,
         amount,
     )
-    .with_signer(mint.authority.standardize())
+    .with_signer(&mint.authority)
 }
 
 /// This manages oracles with the test service. Some other code uses the
@@ -144,7 +144,7 @@ fn update_price(mint: Authorization, update: &PriceUpdate) -> TransactionBuilder
         update.confidence,
         update.exponent,
     )
-    .with_signer(mint.authority.standardize())
+    .with_signer(&mint.authority)
 }
 
 pub struct PriceUpdate {

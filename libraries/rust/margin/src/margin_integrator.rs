@@ -4,7 +4,6 @@ use anyhow::Result;
 use async_trait::async_trait;
 use jet_instructions::margin::derive_margin_account;
 use jet_simulation::SolanaRpcClient;
-use jet_solana_client::signature::StandardizeSigner;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer};
 
 use crate::{
@@ -67,11 +66,7 @@ impl<P: Proxy> Proxy for RefreshingProxy<P> {
         signer: Keypair,
     ) -> Result<Vec<TransactionBuilder>> {
         let mut refresh = self.refresh().await?;
-        refresh.push(
-            self.proxy
-                .invoke_signed(ix)
-                .with_signer(signer.standardize()),
-        );
+        refresh.push(self.proxy.invoke_signed(ix).with_signer(signer));
 
         Ok(refresh)
     }
@@ -108,11 +103,9 @@ pub trait Proxy {
     async fn refresh_and_invoke_signed(
         &self,
         ix: Instruction,
-        signer: Keypair, //todo Signer
+        signer: Keypair,
     ) -> Result<Vec<TransactionBuilder>> {
-        Ok(vec![self
-            .invoke_signed(ix)
-            .with_signer(signer.standardize())])
+        Ok(vec![self.invoke_signed(ix).with_signer(signer)])
     }
     /// attempt to refresh any positions where the refresh method is understood
     /// by the proxy implementation.
