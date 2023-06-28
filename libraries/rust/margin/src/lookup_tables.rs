@@ -88,9 +88,10 @@ impl LookupTable {
     /// account already exists, and excludes it if it does, as lookup tables can
     /// have duplicate accounts and waste space.
     ///
-    /// After this finishes, you may not be able use the lookup table until the
-    /// next block. Blocks last about 12 seconds, so you may need to add a delay
-    /// in your code if you intend on using the table immediately.
+    /// After this finishes, you will not be able use the lookup table until the
+    /// next block. While blocks only last about 400 ms, they take about 12
+    /// seconds to finalize, so you may need to add a delay in your code if you
+    /// intend on using the table immediately.
     pub async fn extend_lookup_table(
         rpc: &Arc<dyn SolanaRpcClient>,
         table_address: Pubkey,
