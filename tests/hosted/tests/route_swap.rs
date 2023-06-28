@@ -366,9 +366,7 @@ async fn route_swap() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    // todo: make this faster. also, wait_for_next_block should be sufficient on
-    // its own, but that function actually doesn't do anything. the sleep can be
-    // removed after that function is fixed.
+    // todo: remove the sleep after wait_for_next_block is implemented for localnet.
     join!(
         async {
             if cfg!(feature = "localnet") {
