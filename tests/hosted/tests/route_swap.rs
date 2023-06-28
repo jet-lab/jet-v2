@@ -372,7 +372,7 @@ async fn route_swap() -> anyhow::Result<()> {
     join!(
         async {
             if cfg!(feature = "localnet") {
-                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
         },
         async { ctx.rpc().wait_for_next_block().await.unwrap() },

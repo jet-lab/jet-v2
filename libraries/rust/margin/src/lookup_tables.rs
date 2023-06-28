@@ -89,8 +89,8 @@ impl LookupTable {
     /// have duplicate accounts and waste space.
     ///
     /// After this finishes, you will not be able use the lookup table until the
-    /// next block. While blocks only last about 400 ms, they take about 12
-    /// seconds to finalize, so you may need to add a delay in your code if you
+    /// next block. Each block lasts about 400 ms, and they take about 12
+    /// seconds to finalize. You may need to add a delay in your code if you
     /// intend on using the table immediately.
     pub async fn extend_lookup_table(
         rpc: &Arc<dyn SolanaRpcClient>,
