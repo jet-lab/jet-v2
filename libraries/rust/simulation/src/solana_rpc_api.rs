@@ -215,6 +215,7 @@ where
 
     async fn wait_for_next_block(&self) -> Result<()> {
         if let Some(rpc) = self.as_any().downcast_ref::<TestRuntimeRpcClient>() {
+            // fixme: this will never work because (Rpc, Keypair) is never TestRuntimeRpcClient
             rpc.next_block();
         }
 

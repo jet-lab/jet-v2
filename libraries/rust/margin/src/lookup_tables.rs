@@ -84,9 +84,13 @@ impl LookupTable {
         Ok(table_address)
     }
 
-    /// Extend a lookup table by adding more accounts.
-    /// First checks if an account already exists, and excludes it if it does,
-    /// as lookup tables can have duplicate accounts and waste space.
+    /// Extend a lookup table by adding more accounts. First checks if an
+    /// account already exists, and excludes it if it does, as lookup tables can
+    /// have duplicate accounts and waste space.
+    ///
+    /// After this finishes, you may not be able use the lookup table until the
+    /// next block. Blocks last about 12 seconds, so you may need to add a delay
+    /// in your code if you intend on using the table immediately.
     pub async fn extend_lookup_table(
         rpc: &Arc<dyn SolanaRpcClient>,
         table_address: Pubkey,
@@ -125,9 +129,6 @@ impl LookupTable {
 
             signature = rpc.send_and_confirm_transaction(&tx).await?;
         }
-
-        // Trying to use the lookup table immediately doesn't work
-        tokio::time::sleep(Duration::from_secs(10)).await;
 
         Ok(())
     }
