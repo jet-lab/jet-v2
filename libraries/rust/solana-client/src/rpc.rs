@@ -129,7 +129,8 @@ pub trait SolanaRpcExtra: SolanaRpc {
         &self,
         signatures: &[Signature],
     ) -> Result<Vec<TransactionStatus>, ClientError> {
-        for _ in 0..9 {
+        // timeout = 30s == 120 * 250ms
+        for _ in 0..120 {
             let statuses = self.get_signature_statuses(signatures).await?;
 
             if statuses.iter().all(|s| s.is_some()) {
