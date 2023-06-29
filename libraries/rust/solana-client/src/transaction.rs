@@ -86,8 +86,23 @@ impl TransactionBuilder {
 
     /// Convert the TransactionBuilder into a solana Transaction.
     ///
+    /// Handles the typical situation where the payer is the only additional
+    /// signer needed. For arbitrary additional signers, use compile_custom or
+    /// compile_partial.
+    ///
     /// Returns error if any required signers are not provided.
-    pub fn compile<S: Signers>(
+    pub fn compile<S: Signer>(
+        self,
+        payer: &S,
+        recent_blockhash: Hash,
+    ) -> Result<Transaction, SignerError> {
+        self.compile_custom(Some(&payer.pubkey()), &[payer], recent_blockhash)
+    }
+
+    /// Convert the TransactionBuilder into a solana Transaction.
+    ///
+    /// Returns error if any required signers are not provided.
+    pub fn compile_custom<S: Signers>(
         self,
         payer: Option<&Pubkey>,
         signers: &S,

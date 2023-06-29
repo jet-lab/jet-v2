@@ -60,7 +60,7 @@ pub trait SendTransactionBuilder {
 impl SendTransactionBuilder for Arc<dyn SolanaRpcClient> {
     async fn compile(&self, tx: TransactionBuilder) -> Result<Transaction> {
         let blockhash = self.get_latest_blockhash().await?;
-        Ok(tx.compile(Some(&self.payer().pubkey()), &[self.payer()], blockhash)?)
+        Ok(tx.compile(self.payer(), blockhash)?)
     }
 
     async fn send_and_confirm(&self, tx: TransactionBuilder) -> Result<Signature> {
