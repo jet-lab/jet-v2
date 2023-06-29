@@ -16,23 +16,19 @@ use crate::{state::AccountStates, ClientResult};
 pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     // Get the airspace authority registry
     if let Some(airspace_authority) = states.config.airspace_lookup_registry_authority {
-        if let Some(lookup_tables) = get_lookup_tables(states, &airspace_authority).await? {
-            states.lookup_tables.set(&airspace_authority, lookup_tables);
+        match get_lookup_tables(states, &airspace_authority).await? {
+            None => {
+                log::debug!("missing lookup tables for airspace authority {airspace_authority}")
+            }
+            Some(lookup_tables) => states.lookup_tables.set(&airspace_authority, lookup_tables),
         }
     }
 
     // Get the margin account registries
     for margin_account in states.addresses_of::<MarginAccount>() {
-        if let Some(lookup_tables) = get_lookup_tables(states, &margin_account).await? {
-            states.lookup_tables.set(&margin_account, lookup_tables);
-        }
-    }
-
-    // Iterate through margin accounts and update their lookup accounts
-    let margin_accounts = states.addresses_of::<MarginAccount>();
-    for margin_account in margin_accounts {
-        if let Some(lookup_tables) = get_lookup_tables(states, &margin_account).await? {
-            states.lookup_tables.set(&margin_account, lookup_tables);
+        match get_lookup_tables(states, &margin_account).await? {
+            None => log::debug!("missing lookup tables for margin account {margin_account}"),
+            Some(lookup_tables) => states.lookup_tables.set(&margin_account, lookup_tables),
         }
     }
 

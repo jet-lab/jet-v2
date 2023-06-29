@@ -179,6 +179,8 @@ impl ClientState {
         let tx = &self.wallet.sign_transactions(&[tx]).await.unwrap()[0];
         let signature = self.network.send_transaction(tx).await?;
 
+        self.network.confirm_transaction_result(signature).await?;
+
         log::info!("tx result success: {signature}");
 
         let mut tx_log = self.tx_log.lock().unwrap();

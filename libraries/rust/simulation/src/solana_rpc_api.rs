@@ -216,8 +216,10 @@ where
     async fn wait_for_next_block(&self) -> Result<()> {
         if let Some(rpc) = self.as_any().downcast_ref::<TestRuntimeRpcClient>() {
             rpc.next_block();
+            return Ok(());
         }
 
+        tokio::time::sleep(Duration::from_millis(400)).await;
         Ok(())
     }
 

@@ -24,6 +24,7 @@ use solana_sdk::{
     genesis_config::GenesisConfig,
     hash::Hash,
     instruction::InstructionError,
+    packet::PACKET_DATA_SIZE,
     program_error::{ProgramError, UNSUPPORTED_SYSVAR},
     program_pack::Pack,
     program_stubs::SyscallStubs,
@@ -33,7 +34,7 @@ use solana_sdk::{
     sysvar::Sysvar,
     transaction::{
         MessageHash, SanitizedTransaction, Transaction, TransactionError, VersionedTransaction,
-    }, packet::PACKET_DATA_SIZE,
+    },
 };
 use solana_transaction_status::{TransactionConfirmationStatus, TransactionStatus};
 use spl_token::state::Account as TokenAccount;
