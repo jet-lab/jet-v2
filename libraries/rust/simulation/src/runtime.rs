@@ -33,7 +33,7 @@ use solana_sdk::{
     sysvar::Sysvar,
     transaction::{
         MessageHash, SanitizedTransaction, Transaction, TransactionError, VersionedTransaction,
-    },
+    }, packet::PACKET_DATA_SIZE,
 };
 use solana_transaction_status::{TransactionConfirmationStatus, TransactionStatus};
 use spl_token::state::Account as TokenAccount;
@@ -485,6 +485,8 @@ fn send_legacy_transaction(
     bank: &Arc<Bank>,
     transaction: &Transaction,
 ) -> Result<Signature, TransactionError> {
+    assert!(transaction.message.serialize().len() < PACKET_DATA_SIZE);
+
     let signature = transaction.signatures[0];
     let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
 
@@ -514,6 +516,8 @@ fn send_transaction(
     bank: &Arc<Bank>,
     transaction: &VersionedTransaction,
 ) -> Result<Signature, TransactionError> {
+    assert!(transaction.message.serialize().len() < PACKET_DATA_SIZE);
+
     let signature = transaction.signatures[0];
     let tx = SanitizedTransaction::try_create(
         transaction.clone(),

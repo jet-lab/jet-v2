@@ -171,13 +171,16 @@ impl ClientState {
         let tx = compile_versioned_transaction(
             instructions,
             &self.signer(),
-            recent_blockhash,
             lookup_tables,
+            recent_blockhash,
         )
         .map_err(|e| ClientError::Unexpected(format!("compile error: {e:?}")))?;
+
         let tx = &self.wallet.sign_transactions(&[tx]).await.unwrap()[0];
         let signature = self.network.send_transaction(tx).await?;
+
         log::info!("tx result success: {signature}");
+
         let mut tx_log = self.tx_log.lock().unwrap();
         tx_log.push_back(signature);
 

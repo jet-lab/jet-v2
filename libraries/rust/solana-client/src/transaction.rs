@@ -203,9 +203,11 @@ pub fn condense_left(
 pub fn compile_versioned_transaction(
     instructions: &[Instruction],
     payer: &Pubkey,
-    recent_blockhash: Hash,
     lookup_tables: &[AddressLookupTableAccount],
+    recent_blockhash: Hash,
 ) -> Result<VersionedTransaction, TransactionBuildError> {
+    log::trace!("input lookup tables: {lookup_tables:?}");
+
     let message = VersionedMessage::V0(v0::Message::try_compile(
         payer,
         instructions,
@@ -216,6 +218,13 @@ pub fn compile_versioned_transaction(
         signatures: vec![],
         message,
     };
+
+    if let Some(lookups) = tx.message.address_table_lookups() {
+        log::trace!("resolved address lookups: {lookups:?}");
+    }
+
+    log::trace!("static keys: {:?}", tx.message.static_account_keys());
+
     Ok(tx)
 }
 
