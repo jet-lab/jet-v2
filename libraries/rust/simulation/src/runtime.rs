@@ -486,7 +486,13 @@ fn send_legacy_transaction(
     bank: &Arc<Bank>,
     transaction: &Transaction,
 ) -> Result<Signature, TransactionError> {
-    assert!(transaction.message.serialize().len() < PACKET_DATA_SIZE);
+    let serialized_len = transaction.message.serialize().len();
+    assert!(
+        serialized_len < PACKET_DATA_SIZE,
+        "tx size too large: {} (limit {})",
+        serialized_len,
+        PACKET_DATA_SIZE
+    );
 
     let signature = transaction.signatures[0];
     let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
@@ -517,7 +523,13 @@ fn send_transaction(
     bank: &Arc<Bank>,
     transaction: &VersionedTransaction,
 ) -> Result<Signature, TransactionError> {
-    assert!(transaction.message.serialize().len() < PACKET_DATA_SIZE);
+    let serialized_len = transaction.message.serialize().len();
+    assert!(
+        serialized_len < PACKET_DATA_SIZE,
+        "tx size too large: {} (limit {})",
+        serialized_len,
+        PACKET_DATA_SIZE
+    );
 
     let signature = transaction.signatures[0];
     let tx = SanitizedTransaction::try_create(
