@@ -56,6 +56,24 @@ impl MarginAccountValuation {
         MARGIN_ACCOUNT_SETUP_LEVERAGE_FRACTION
     }
 
+    #[wasm_bindgen]
+    pub fn risk_indicator(&self) -> f64 {
+        if self.required_collateral < 0.0
+            || self.weighted_collateral < 0.0
+            || self.liabilities < 0.0
+        {
+            // Invalid input, return infinity
+            return f64::INFINITY;
+        }
+        if self.weighted_collateral > 0.0 {
+            (self.required_collateral + self.liabilities) / self.weighted_collateral
+        } else if self.required_collateral + self.liabilities > 0.0 {
+            f64::INFINITY
+        } else {
+            0.0
+        }
+    }
+
     fn value(
         positions: HashMap<String, MarginPosition>,
         changes: Vec<MarginPosition>,
@@ -131,7 +149,7 @@ pub struct OraclePrice {
     pub price: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct MarginPosition {
     pub address: String,
@@ -162,5 +180,94 @@ impl MarginPosition {
             position_kind,
             value_modifier,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_valuation() {
+        let positions = HashMap::from_iter([(
+            "USDC-deposit".to_string(),
+            MarginPosition::new(
+                "USDC-deposit".to_string(),
+                "USDC".to_string(),
+                10_000_000,
+                -6,
+                1,
+                1.0,
+            ),
+        )]);
+        let prices = HashMap::from_iter([("USDC".to_string(), OraclePrice { price: 1.0 })]);
+        let valuation = MarginAccountValuation::value(positions.clone(), vec![], &prices);
+
+        assert_eq!(valuation.assets, 10.0);
+        assert_eq!(valuation.liabilities, 0.0);
+        assert_eq!(valuation.required_collateral, 0.0);
+        assert_eq!(valuation.weighted_collateral, 10.0);
+        assert_eq!(valuation.effective_collateral, 10.0);
+        assert_eq!(valuation.available_collateral, 10.0);
+        assert_eq!(valuation.total_positions, 1);
+        assert_eq!(valuation.risk_indicator(), 0.0);
+
+        // User borrows 100 USDC and deposits all of it
+        let add_loan = MarginPosition::new(
+            "USDC-loan".to_string(),
+            "USDC".to_string(),
+            100_000_000,
+            -6,
+            2,
+            10.0,
+        );
+        let add_deposit = MarginPosition::new(
+            "USDC-deposit".to_string(),
+            "USDC".to_string(),
+            100_000_000,
+            -6,
+            1,
+            1.0,
+        );
+        let valuation = MarginAccountValuation::value(
+            positions.clone(),
+            vec![add_deposit.clone(), add_loan.clone()],
+            &prices,
+        );
+
+        assert_eq!(valuation.assets, 110.0);
+        assert_eq!(valuation.liabilities, 100.0);
+        assert_eq!(valuation.total_positions, 2);
+        // The account should be fully levered
+        assert_eq!(valuation.risk_indicator(), 1.0);
+
+        // When the account is repaid, the risk indicator should decrease
+        let reduce_loan = MarginPosition::new(
+            "USDC-loan".to_string(),
+            "USDC".to_string(),
+            -20_000_000,
+            -6,
+            2,
+            10.0,
+        );
+        let reduce_deposit = MarginPosition::new(
+            // give it a different name to test that a new position is added
+            "USDC-deposit-3".to_string(),
+            "USDC".to_string(),
+            -20_000_000,
+            -6,
+            1,
+            1.0,
+        );
+        let valuation = MarginAccountValuation::value(
+            positions,
+            vec![add_deposit, add_loan, reduce_deposit, reduce_loan],
+            &prices,
+        );
+
+        assert_eq!(valuation.assets, 90.0);
+        assert_eq!(valuation.liabilities, 80.0);
+        assert_eq!(valuation.total_positions, 3);
+        assert!(valuation.risk_indicator() < 1.0);
     }
 }
