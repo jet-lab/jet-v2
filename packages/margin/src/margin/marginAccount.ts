@@ -26,7 +26,7 @@ import { Number192, findDerivedAccount, sendAll, sendAndConfirm, sendAndConfirmV
 import { MarginPrograms } from "./marginClient"
 import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
 import { Airspace } from "./airspace"
-import { MarginAccountValuation, MarginPosition } from '@jet-lab/margin'
+import { MarginAccountValuation, MarginPosition } from '../wasm'
 
 const LOOKUP_REGISTRY_PROGRAM = new PublicKey("LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru")
 

@@ -18,8 +18,8 @@ import { base64 } from "@project-serum/anchor/dist/cjs/utils/bytes"
 import { TokenConfig, TokenConfigInfo } from "../tokenConfig"
 import { Airspace } from "../airspace"
 import axios from "axios"
-import { MarginPosition } from "../../../dist/wasm"
-import { PositionKind } from "../../../dist"
+import { MarginPosition } from '../../wasm'
+import { PositionKind } from "../state"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
