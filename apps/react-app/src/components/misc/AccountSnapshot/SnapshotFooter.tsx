@@ -39,7 +39,7 @@ export function SnapshotFooter(): JSX.Element {
     <div className="account-snapshot-footer flex-centered">
       {actionOptions.map(action => {
         // We won't use 'swap', because it has its own view
-        if (action !== 'swap' && action !== 'repayFromDeposit') {
+        if (action !== 'swap' && action !== 'repay') {
           return (
             <Button
               key={action}
