@@ -15,9 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::time::Duration;
-
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 
 use solana_sdk::account::Account;
@@ -33,7 +31,7 @@ use solana_sdk::slot_history::Slot;
 use solana_sdk::transaction::{Transaction, VersionedTransaction};
 use solana_transaction_status::TransactionStatus;
 
-use jet_solana_client::rpc::{AccountFilter, SolanaRpc};
+use jet_solana_client::rpc::{AccountFilter, SolanaRpc, SolanaRpcExtra};
 
 use crate::runtime::TestRuntimeRpcClient;
 
@@ -79,20 +77,7 @@ pub trait SolanaRpcClient: Send + Sync {
     async fn confirm_transactions(
         &self,
         signatures: &[Signature],
-    ) -> Result<Vec<TransactionStatus>> {
-        for _ in 0..9 {
-            let statuses = self.get_signature_statuses(signatures).await?;
-
-            if statuses.iter().all(|s| s.is_some()) {
-                return Ok(statuses.into_iter().map(|s| s.unwrap()).collect());
-            }
-
-            // come back later
-            tokio::time::sleep(Duration::from_millis(70)).await;
-        }
-
-        bail!("failed to confirm signatures: {:?}", signatures);
-    }
+    ) -> Result<Vec<TransactionStatus>>;
 
     async fn create_transaction(
         &self,
@@ -155,6 +140,13 @@ where
         Ok(())
     }
 
+    async fn confirm_transactions(
+        &self,
+        signatures: &[Signature],
+    ) -> Result<Vec<TransactionStatus>> {
+        Ok(self.0.confirm_transactions(signatures).await?)
+    }
+
     async fn get_genesis_hash(&self) -> Result<Hash> {
         let hash = self.0.get_genesis_hash().await?;
 
@@ -214,6 +206,7 @@ where
     }
 
     async fn wait_for_next_block(&self) -> Result<()> {
+        // todo implement for real rpc client
         if let Some(rpc) = self.as_any().downcast_ref::<TestRuntimeRpcClient>() {
             rpc.next_block();
         }

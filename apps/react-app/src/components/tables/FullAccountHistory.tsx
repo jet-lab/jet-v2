@@ -57,6 +57,32 @@ export function FullAccountHistory(): JSX.Element {
     return render;
   }
 
+  function renderAdapterColumn(transaction: FlightLog) {
+    let adapter: string;
+    switch (transaction.adapter) {
+      case 'JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ':
+        adapter = 'Variable Markets';
+        break;
+      case 'JPTermEg2DwrV39xb1Fs7z1VUxcvdPT7mE7cyGsQ4xt':
+        adapter = 'Fixed Markets';
+        break;
+      case 'JPMA1DMMkDK9vHLM22a6izMRWk5wvgPno774K7cG9zX':
+        adapter = 'Margin Swap';
+        break;
+      case 'JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN':
+        adapter = 'Margin Swap';
+        break;
+      default:
+        adapter = '-';
+        break;
+    }
+    return (
+      <div className={`account-table-adapter-${adapter} flex-centered`}>
+        {adapter}
+      </div>
+    )
+  }
+
   // Renders the activity column for table
   function renderActivityColumn(transaction: FlightLog) {
     let render = <Skeleton className="align-center" paragraph={false} active={loadingAccounts} />;
@@ -168,6 +194,12 @@ export function FullAccountHistory(): JSX.Element {
       align: 'left' as any,
       width: 200,
       render: (_: string, transaction: FlightLog) => renderDateColumn(transaction)
+    },
+    {
+      title: dictionary.accountsView.adapter,
+      key: 'adapter',
+      align: 'center' as any,
+      render: (_: string, transaction: FlightLog) => renderAdapterColumn(transaction)
     },
     {
       title: dictionary.accountsView.activity,
