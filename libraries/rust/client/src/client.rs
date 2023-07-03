@@ -16,7 +16,7 @@ use spl_associated_token_account::{
 
 use jet_solana_client::{
     rpc::{SolanaRpc, SolanaRpcExtra},
-    transaction::{compile_versioned_transaction, ToTransaction},
+    transaction::{create_unsigned_transaction, ToTransaction},
 };
 
 use crate::{config::JetAppConfig, state::AccountStates, Wallet};
@@ -168,7 +168,7 @@ impl ClientState {
         lookup_tables: &[AddressLookupTableAccount],
     ) -> ClientResult<()> {
         let recent_blockhash = self.get_latest_blockhash().await?;
-        let tx = compile_versioned_transaction(
+        let tx = create_unsigned_transaction(
             instructions,
             &self.signer(),
             lookup_tables,

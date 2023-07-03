@@ -1,13 +1,12 @@
-use anchor_lang::AccountDeserialize;
 use lookup_table_registry::RegistryAccount;
-use lookup_table_registry_client::{Entry, LOOKUP_TABLE_REGISTRY_ID};
+use lookup_table_registry_client::{Entry};
 use solana_address_lookup_table_program::state::AddressLookupTable;
 use std::{collections::HashSet, sync::Arc};
 use wasm_bindgen::prelude::*;
 
 use bytemuck::Zeroable;
 
-use solana_sdk::{account::ReadableAccount, instruction::Instruction, pubkey::Pubkey};
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
@@ -215,19 +214,9 @@ impl MarginAccountClient {
 
         ixs.extend(instructions.iter().cloned());
 
-        let lookup_authorities = &[
-            self.address(),
-            self.airspace_lookup_registry_authority()
-                .unwrap_or_default(),
-        ];
-        let lookup_tables = self
-            .client
-            .state()
-            .lookup_tables
-            .get_authority_tables(lookup_authorities);
+        let lookup_tables = self.client.state().lookup_tables.get();
 
         self.client
-            // .send_ordered(condense(&txns, &self.client.signer())?) // TODO:Neville
             .send_with_lookup_tables(&ixs, &lookup_tables)
             .await
     }
@@ -315,26 +304,15 @@ impl MarginAccountClient {
         self.state().positions().any(|p| p.token == *token)
     }
 
-    /// Initialize a lookup table registry account
-    pub async fn init_lookup_registry(&self) -> ClientResult<()> {
-        let ix = self.builder.init_lookup_registry();
-        self.client.send(&ix).await
-    }
-
     /// Update lookup tables, creating new tables and adding addresses as necessary
     pub async fn update_lookup_tables(&self) -> ClientResult<()> {
-        // Check if a lookup registry exists, it should be created separately
-        let registry_address =
-            Pubkey::find_program_address(&[self.address.as_ref()], &LOOKUP_TABLE_REGISTRY_ID).0;
-        let registry = self
-            .client()
-            .client
-            .network
-            .get_account(&registry_address)
-            .await?;
-        let Some(registry_account) = registry else {
-            return Err(ClientError::Unexpected("Lookup registry does not exist".to_string()));
-        };
+        let just_created = self.init_lookup_registry().await?;
+
+        if just_created {
+            let slot = self.client.get_slot().await?;
+            self.client.network.wait_for_slot(slot + 1).await?;
+        }
+
         // Update existing tables, adding any new tables as necessary
         let mut accounts = HashSet::new();
         let state = self.client.state();
@@ -360,7 +338,11 @@ impl MarginAccountClient {
         }
 
         let mut new_accounts = vec![];
-        let registry_account = RegistryAccount::try_deserialize(&mut registry_account.data())?;
+        let registry_account = self
+            .client
+            .network
+            .get_anchor_account::<RegistryAccount>(&self.builder.lookup_table_registry_address())
+            .await?;
         let mut tables = Vec::with_capacity(registry_account.tables.len());
 
         // If the registry has no tables, add all accounts
@@ -670,6 +652,23 @@ impl MarginAccountClient {
                     .map(|config| ((*config).clone(), *position))
             })
             .collect()
+    }
+
+    async fn init_lookup_registry(&self) -> ClientResult<bool> {
+        let address = self.builder.lookup_table_registry_address();
+
+        if self.client.account_exists(&address).await? {
+            log::debug!(
+                "Lookup registry {address} already exists for account {}",
+                self.address
+            );
+            return Ok(false);
+        }
+
+        let ix = self.builder.init_lookup_registry();
+        self.client.send(&ix).await?;
+
+        Ok(true)
     }
 }
 

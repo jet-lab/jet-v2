@@ -24,7 +24,7 @@ use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
-use jet_solana_client::transaction::sign_versioned_transaction;
+use jet_solana_client::transaction::create_signed_transaction;
 use jet_solana_client::util::keypair::KeypairExt;
 use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
@@ -611,11 +611,11 @@ impl MarginTxBuilder {
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
 
         let recent_blockhash = self.rpc.get_latest_blockhash().await?;
-        let tx = sign_versioned_transaction(
+        let tx = create_signed_transaction(
             &instructions,
             self.signer.as_ref().unwrap_or(self.rpc().payer()),
-            recent_blockhash,
             lookup_tables,
+            recent_blockhash,
         )?;
 
         Ok(tx)

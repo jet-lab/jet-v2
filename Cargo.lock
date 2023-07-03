@@ -2292,6 +2292,7 @@ dependencies = [
  "jet-static-program-registry",
  "jet-test-service",
  "jet-testing",
+ "jet-tools",
  "lazy_static",
  "lookup-table-registry",
  "lookup-table-registry-client",
@@ -2772,9 +2773,11 @@ dependencies = [
  "jet-solana-client",
  "jet-static-program-registry",
  "log",
+ "lookup-table-registry",
  "serde",
  "serde_json",
  "serde_with 1.14.0",
+ "solana-address-lookup-table-program",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-governance",
@@ -3130,6 +3133,9 @@ dependencies = [
 name = "jet-testing"
 version = "0.1.0"
 dependencies = [
+ "anchor-spl",
+ "bytemuck",
+ "jet-environment",
  "jet-instructions",
  "jet-program-common",
  "jet-solana-client",
@@ -3143,6 +3149,21 @@ dependencies = [
  "spl-token 3.5.0",
  "thiserror",
  "whirlpool",
+]
+
+[[package]]
+name = "jet-tools"
+version = "0.1.0"
+dependencies = [
+ "jet-environment",
+ "jet-instructions",
+ "jet-solana-client",
+ "log",
+ "lookup-table-registry",
+ "lookup-table-registry-client",
+ "solana-address-lookup-table-program",
+ "solana-sdk",
+ "thiserror",
 ]
 
 [[package]]

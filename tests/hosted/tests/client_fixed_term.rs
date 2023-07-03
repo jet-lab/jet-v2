@@ -114,8 +114,6 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
     }
     for user in &users {
         for margin_account in user.margin().accounts() {
-            margin_account.init_lookup_registry().await.unwrap();
-            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             margin_account.update_lookup_tables().await.unwrap();
         }
     }
@@ -133,7 +131,7 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
 
     // sync the lookup tables
     for user in &users {
-        user.state().sync_lookup_tables().await.unwrap();
+        user.state().sync_all().await.unwrap();
     }
 
     // set token prices

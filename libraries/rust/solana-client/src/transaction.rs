@@ -200,7 +200,7 @@ pub fn condense_left(
 }
 
 /// Compile the instructions into a versioned transaction
-pub fn compile_versioned_transaction(
+pub fn create_unsigned_transaction(
     instructions: &[Instruction],
     payer: &Pubkey,
     lookup_tables: &[AddressLookupTableAccount],
@@ -228,20 +228,45 @@ pub fn compile_versioned_transaction(
     Ok(tx)
 }
 
+/// Sign a transaction with a keypair
+pub fn sign_transaction(
+    signer: &Keypair,
+    tx: &mut VersionedTransaction,
+) -> Result<(), TransactionBuildError> {
+    let index = tx
+        .message
+        .static_account_keys()
+        .iter()
+        .position(|key| *key == signer.pubkey())
+        .ok_or(SignerError::KeypairPubkeyMismatch)?;
+
+    let to_sign = tx.message.serialize();
+    let signature = signer.sign_message(&to_sign);
+
+    tx.signatures.resize(
+        tx.message.header().num_required_signatures.into(),
+        Default::default(),
+    );
+    tx.signatures[index] = signature;
+
+    Ok(())
+}
+
 /// Compile and sign the instructions into a versioned transaction
-pub fn sign_versioned_transaction(
+pub fn create_signed_transaction(
     instructions: &[Instruction],
     signer: &Keypair,
-    recent_blockhash: Hash,
     lookup_tables: &[AddressLookupTableAccount],
+    recent_blockhash: Hash,
 ) -> Result<VersionedTransaction, TransactionBuildError> {
-    let message = VersionedMessage::V0(v0::Message::try_compile(
-        &signer.pubkey(),
+    let mut tx = create_unsigned_transaction(
         instructions,
+        &signer.pubkey(),
         lookup_tables,
         recent_blockhash,
-    )?);
-    let tx = VersionedTransaction::try_new(message, &[signer])?;
+    )?;
+
+    sign_transaction(signer, &mut tx)?;
     Ok(tx)
 }
 

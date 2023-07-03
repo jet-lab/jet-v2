@@ -4,7 +4,7 @@ use solana_sdk::pubkey::Pubkey;
 use jet_margin::{TokenConfig, TokenConfigUpdate};
 use jet_solana_client::rpc::SolanaRpcExtra;
 
-use super::{Builder, BuilderError};
+use super::{Builder, BuilderError, LookupScope};
 
 pub async fn configure_margin_token(
     builder: &mut Builder,
@@ -26,6 +26,11 @@ pub async fn configure_margin_token(
         let ix_builder = builder.margin_config_ix(airspace);
         builder.propose([ix_builder.configure_token(*mint, config)])
     }
+
+    builder.register_lookups(LookupScope::Airspace, [
+        *mint,
+        derive_token_config(airspace, mint)
+    ]);
 
     Ok(())
 }

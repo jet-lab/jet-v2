@@ -9,6 +9,7 @@ use jet_environment::builder::{
 };
 use jet_instructions::fixed_term::FixedTermIxBuilder;
 use jet_instructions::test_service::derive_token_mint;
+use jet_tools::lookup_tables::create_lookup_tables;
 use lookup_table_registry_client::instructions::InstructionBuilder;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
@@ -50,16 +51,21 @@ impl MarginTestContext {
         for setup in plan.setup {
             setup.send_and_confirm_condensed(&self.solana.rpc).await?;
         }
+
         plan.propose
             .into_iter()
             .map(|tx| tx.with_signer(self.airspace_authority.clone()))
             .collect::<Vec<_>>()
             .send_and_confirm_condensed_in_order(&self.solana.rpc)
             .await?;
-        // cannot use `interface` here to send the propose transactions since
-        // the SimulationClient does not properly handle signatures other than
-        // the payer. My guess is that existing signatures don't translate when
-        // converting from VersionedTransaction to legacy transactions.
+
+        create_lookup_tables(
+            &self.solana.rpc2,
+            self.payer(),
+            self.payer(),
+            &plan.lookup_setup,
+        )
+        .await?;
 
         Ok(())
     }

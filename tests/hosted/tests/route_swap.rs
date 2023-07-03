@@ -10,7 +10,6 @@ use anchor_spl::dex::{
 };
 use anyhow::Error;
 
-use futures::join;
 use jet_margin_sdk::{
     ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts, SwapContext},
     lookup_tables::LookupTable,
@@ -366,15 +365,7 @@ async fn route_swap() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    // todo: remove the sleep after wait_for_next_block is implemented for localnet.
-    join!(
-        async {
-            if cfg!(feature = "localnet") {
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            }
-        },
-        async { ctx.rpc().wait_for_next_block().await.unwrap() },
-    );
+    ctx.rpc().wait_for_next_block().await.unwrap();
 
     // Create a swap route and execute it
     let mut swap_builder = MarginSwapRouteIxBuilder::try_new(

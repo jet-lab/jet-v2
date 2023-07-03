@@ -1,6 +1,6 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
 };
 
@@ -87,11 +87,6 @@ impl AccountStates {
         self::lookup_tables::sync(self).await?;
 
         Ok(())
-    }
-
-    /// Sync only lookup tables
-    pub async fn sync_lookup_tables(&self) -> ClientResult<()> {
-        self::lookup_tables::sync(self).await
     }
 
     pub fn token_info(&self, token: &Pubkey) -> ClientResult<TokenInfo> {
@@ -264,31 +259,27 @@ impl AccountCache {
 }
 
 #[derive(Default)]
-pub struct LookupTableCache {
-    states: Mutex<HashMap<Pubkey, HashMap<Pubkey, AddressLookupTableAccount>>>,
+pub(crate) struct LookupTableCache {
+    tables: Mutex<BTreeMap<u32, Vec<AddressLookupTableAccount>>>,
 }
 
 impl LookupTableCache {
-    pub fn get(&self, authority: &Pubkey) -> Option<HashMap<Pubkey, AddressLookupTableAccount>> {
-        let states = self.states.lock().unwrap();
+    pub const DEFAULT_PRIORITY: u32 = 100;
 
-        states.get(authority).cloned()
+    pub fn get(&self) -> Vec<AddressLookupTableAccount> {
+        let tables = self.tables.lock().unwrap();
+
+        tables.iter().flat_map(|(_, t)| t).cloned().collect()
     }
 
-    pub fn set(&self, authority: &Pubkey, data: HashMap<Pubkey, AddressLookupTableAccount>) {
-        let mut states = self.states.lock().unwrap();
+    pub fn set(&self, priority: u32, data: impl IntoIterator<Item = AddressLookupTableAccount>) {
+        let mut tables = self.tables.lock().unwrap();
 
-        states.insert(*authority, data);
-    }
-
-    pub fn get_authority_tables(&self, authorities: &[Pubkey]) -> Vec<AddressLookupTableAccount> {
-        let states = self.states.lock().unwrap();
-
-        authorities
-            .iter()
-            .filter_map(|authority| states.get(authority))
-            .flat_map(|tables| tables.values())
-            .cloned()
-            .collect()
+        match tables.get_mut(&priority) {
+            Some(t) => t.extend(data),
+            None => {
+                tables.insert(priority, data.into_iter().collect());
+            }
+        }
     }
 }

@@ -14,7 +14,10 @@ use jet_solana_client::{network::NetworkKind, transaction::TransactionBuilder};
 
 use jet_program_common::programs::*;
 
-use crate::{builder::SetupPhase, config::EnvironmentConfig};
+use crate::{
+    builder::{LookupScope, SetupPhase},
+    config::EnvironmentConfig,
+};
 
 use super::{resolve_token_mint, Builder, BuilderError};
 
@@ -69,35 +72,7 @@ pub async fn create_swap_pools<'a>(
                 create_saber_swap_pool(builder, swap_program, token_a, token_b).await?
             }
             p if p == "openbook" => {
-                log::info!("Create Openbook market for {}/{}", pool.base, pool.quote);
-
-                let market_info =
-                    derive_openbook_market(&swap_program, &token_a, &token_b, &builder.payer());
-
-                if builder.account_exists(&market_info.state).await? {
-                    continue;
-                }
-
-                // Create bids, asks, event queue and request queue
-                let (state_accounts, create_state_acc_tx) =
-                    OpenbookStateAccounts::create(&builder.payer(), &swap_program).await?;
-
-                builder.setup(SetupPhase::TokenAccounts, [create_state_acc_tx]);
-
-                builder.setup(
-                    SetupPhase::Swaps,
-                    [openbook_market_create(
-                        &swap_program,
-                        &builder.payer(),
-                        &token_a,
-                        &token_b,
-                        &state_accounts.bids,
-                        &state_accounts.asks,
-                        &state_accounts.event_queue,
-                        &state_accounts.request_queue,
-                        1000,
-                    )],
-                )
+                create_openbook_market(builder, swap_program, token_a, token_b).await?;
             }
             p if p == "orca-whirlpool" => create_orca_whirlpool(builder, token_a, token_b).await?,
             p => {
@@ -179,6 +154,57 @@ impl OpenbookStateAccounts {
     }
 }
 
+async fn create_openbook_market(
+    builder: &mut Builder,
+    swap_program: Pubkey,
+    token_a: Pubkey,
+    token_b: Pubkey,
+) -> Result<(), BuilderError> {
+    log::info!("Create Openbook market for {}/{}", token_a, token_b);
+
+    let market_info = derive_openbook_market(&swap_program, &token_a, &token_b, &builder.payer());
+
+    if builder.account_exists(&market_info.state).await? {
+        return Ok(());
+    }
+
+    // Create bids, asks, event queue and request queue
+    let (state_accounts, create_state_acc_tx) =
+        OpenbookStateAccounts::create(&builder.payer(), &swap_program).await?;
+
+    builder.register_lookups(
+        LookupScope::Swaps,
+        [
+            market_info.state,
+            market_info.vault_base,
+            market_info.vault_quote,
+            market_info.vault_signer,
+            state_accounts.asks,
+            state_accounts.bids,
+            state_accounts.event_queue,
+            state_accounts.request_queue,
+        ],
+    );
+
+    builder.setup(SetupPhase::TokenAccounts, [create_state_acc_tx]);
+
+    builder.setup(
+        SetupPhase::Swaps,
+        [openbook_market_create(
+            &swap_program,
+            &builder.payer(),
+            &token_a,
+            &token_b,
+            &state_accounts.bids,
+            &state_accounts.asks,
+            &state_accounts.event_queue,
+            &state_accounts.request_queue,
+            1000,
+        )],
+    );
+    Ok(())
+}
+
 async fn create_spl_swap_pool(
     builder: &mut Builder,
     swap_program: Pubkey,
@@ -190,6 +216,15 @@ async fn create_spl_swap_pool(
     if builder.account_exists(&swap_info.state).await? {
         return Ok(());
     }
+
+    builder.register_lookups(LookupScope::Swaps, [
+        swap_info.info,
+        swap_info.state,
+        swap_info.mint,
+        swap_info.authority,
+        swap_info.token_a_account,
+        swap_info.token_b_account
+    ]);
 
     builder.setup(
         SetupPhase::Swaps,
@@ -217,6 +252,15 @@ async fn create_saber_swap_pool(
     if builder.account_exists(&swap_info.state).await? {
         return Ok(());
     }
+
+    builder.register_lookups(LookupScope::Swaps, [
+        swap_info.info,
+        swap_info.state,
+        swap_info.mint,
+        swap_info.authority,
+        swap_info.token_a_account,
+        swap_info.token_b_account
+    ]);
 
     builder.setup(
         SetupPhase::Swaps,
@@ -292,6 +336,13 @@ async fn create_orca_whirlpool(
         vault_b.pubkey(),
         DEFAULT_TICK_SPACING,
     );
+
+    builder.register_lookups(LookupScope::Swaps, [
+        ix_builder.whirlpool,
+        ix_builder.token_a_vault,
+        ix_builder.token_b_vault,
+        ix_builder.config,
+    ]);
 
     builder.setup(
         SetupPhase::Swaps,
