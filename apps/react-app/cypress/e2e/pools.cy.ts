@@ -30,6 +30,11 @@ describe('Error Flows', () => {
   });
 
   it('All deposits should be disabled, because SOL in wallet is under fees buffer amount', () => {
+    // There are multiple transactions issued to create a margin account.
+    // By the time this test runs, the wallet's SOL balance is still before
+    // these transactions, so the amount deposited is incorrect, causing a failure.
+    // The delay addresses this issue.
+    cy.wait(5000);
     cy.get('.SOL-pools-table-row').click();
     cy.contains('button', 'Deposit').should('not.be.disabled').click();
     cy.contains('Max').click();
