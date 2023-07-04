@@ -163,21 +163,21 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(
+        .pool_deposit_deprecated(
             &env.usdc,
             &user_a_usdc_account,
             TokenChange::shift(1_000_000 * ONE_USDC),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.tsol,
             &user_b_tsol_account,
             TokenChange::shift(1_000 * ONE_TSOL),
         )
         .await?;
     user_c
-        .deposit(
+        .pool_deposit_deprecated(
             &env.usdt,
             &user_c_usdt_account,
             TokenChange::shift(1_000_000 * ONE_USDT),
@@ -185,7 +185,7 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .await?;
     // User deposits TSOL which they will use to over-pay
     user_c
-        .deposit(
+        .pool_deposit_deprecated(
             &env.tsol,
             &user_c_tsol_account,
             TokenChange::shift(500 * ONE_TSOL),

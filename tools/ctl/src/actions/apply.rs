@@ -6,6 +6,7 @@ use jet_environment::builder::{
     configure_environment, Builder, ProposalContext, ProposalExecution,
 };
 use jet_program_common::{GOVERNOR_DEVNET, GOVERNOR_MAINNET};
+use jet_solana_client::util::keypair::clone;
 use solana_sdk::signer::Signer;
 
 use crate::{
@@ -71,7 +72,7 @@ pub async fn process_apply(
             let signers = setup_tx
                 .signers
                 .into_iter()
-                .map(|k| Box::new(k) as Box<dyn Signer>);
+                .map(|k| Box::new(clone(&k)) as Box<dyn Signer>);
 
             plan = plan.instructions(signers, [""], setup_tx.instructions);
         }

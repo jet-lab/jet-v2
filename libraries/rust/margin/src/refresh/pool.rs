@@ -2,17 +2,17 @@
 
 use anyhow::Result;
 
-use jet_instructions::{
-    margin::{accounting_invoke, derive_margin_account_from_state},
-    margin_pool::MarginPoolIxBuilder,
-};
+use jet_instructions::{margin::accounting_invoke, margin_pool::MarginPoolIxBuilder};
 use jet_margin::MarginAccount;
 use jet_simulation::SolanaRpcClient;
 use jet_solana_client::transaction::TransactionBuilder;
 use solana_sdk::pubkey::Pubkey;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::get_state::{get_position_metadata, get_token_metadata};
+use crate::{
+    get_state::{get_position_metadata, get_token_metadata},
+    margin_account_ext::MarginAccountExt,
+};
 
 use super::position_refresher::define_refresher;
 
@@ -36,7 +36,7 @@ pub async fn refresh_all_pool_positions_underlying_to_tx(
     state: &MarginAccount,
 ) -> Result<HashMap<Pubkey, TransactionBuilder>> {
     let mut txns = HashMap::new();
-    let address = derive_margin_account_from_state(state);
+    let address = state.address();
     for position in state.positions() {
         if position.adapter != jet_margin_pool::ID {
             continue;

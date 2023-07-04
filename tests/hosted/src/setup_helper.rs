@@ -5,12 +5,12 @@ use anyhow::{Error, Result};
 
 use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 use jet_margin_sdk::ix_builder::MarginConfigIxBuilder;
-use jet_margin_sdk::solana::keypair::clone;
+
 use jet_margin_sdk::solana::transaction::{
     SendTransactionBuilder, TransactionBuilderExt, WithSigner,
 };
 use jet_margin_sdk::tokens::TokenPrice;
-use jet_margin_sdk::tx_builder::TokenDepositsConfig;
+use jet_margin_sdk::tx_builder::{MarginActionAuthority, TokenDepositsConfig};
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
@@ -164,8 +164,13 @@ pub async fn setup_user(
 
         if in_pool > 0 {
             // Deposit user funds into their margin accounts
-            user.deposit(&mint, &token_account, TokenChange::shift(in_pool))
-                .await?;
+            user.pool_deposit(
+                &mint,
+                Some(token_account),
+                TokenChange::shift(in_pool),
+                MarginActionAuthority::AccountAuthority,
+            )
+            .await?;
         }
 
         // Verify user tokens have been deposited
@@ -225,7 +230,7 @@ pub async fn register_deposit(
                 max_staleness: 0,
             }),
         )
-        .with_signers(&[clone(airspace_authority)])
+        .with_signer(airspace_authority)
         .send_and_confirm(rpc)
         .await
 }

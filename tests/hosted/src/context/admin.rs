@@ -15,7 +15,7 @@ use solana_sdk::signature::{Keypair, Signature, Signer};
 use crate::actions::Token;
 use crate::margin::MarginUser;
 use jet_environment::config::{FixedTermMarketConfig, TokenDescription};
-use jet_margin_sdk::solana::keypair::KeypairExt;
+
 use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, TransactionBuilderExt};
 use jet_simulation::Keygen;
 use jet_solana_client::transaction::WithSigner;
@@ -50,7 +50,7 @@ impl MarginTestContext {
         }
         plan.propose
             .into_iter()
-            .map(|tx| tx.with_signer(self.airspace_authority.clone()))
+            .map(|tx| tx.with_signer(&self.airspace_authority))
             .collect::<Vec<_>>()
             .send_and_confirm_condensed_in_order(&self.solana.rpc)
             .await?;
@@ -73,7 +73,7 @@ impl MarginTestContext {
     pub async fn issue_permit(&self, user: Pubkey) -> Result<Signature> {
         self.airspace_ix()
             .permit_create(user)
-            .with_signer(self.airspace_authority.clone())
+            .with_signer(&self.airspace_authority)
             .send_and_confirm(&self.solana.rpc)
             .await
     }
