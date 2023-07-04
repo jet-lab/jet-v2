@@ -17,8 +17,7 @@ import { feesBuffer, Pool, PoolAction } from "./pool/pool"
 import {
   AccountPositionListLayout,
   LiquidationData,
-  OnChainMarginAccountData,
-  PositionKind
+  OnChainMarginAccountData
 } from "./state"
 import { MarginTokenConfig } from "./config"
 import { AccountPosition, StorePriceInfo } from "./accountPosition"
@@ -27,6 +26,7 @@ import { Number192, findDerivedAccount, sendAll, sendAndConfirm, sendAndConfirmV
 import { MarginPrograms } from "./marginClient"
 import { FixedTermMarket, refreshAllMarkets } from "../fixed-term"
 import { Airspace } from "./airspace"
+import { MarginAccountValuation, MarginPosition } from '../wasm'
 
 const LOOKUP_REGISTRY_PROGRAM = new PublicKey("LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru")
 
@@ -132,7 +132,7 @@ export class MarginAccount {
   /** The summarized [[PoolPosition]] array of pool deposits and borrows. */
   poolPositions: Record<string, PoolPosition>
   /** The [[Valuation]] of the margin account. */
-  valuation: Valuation
+  valuation: MarginAccountValuation
   summary: AccountSummary
   prices?: Record<string, StorePriceInfo>
 
@@ -792,68 +792,58 @@ export class MarginAccount {
     return authority.equals(this.owner) || this.liquidator?.equals(authority)
   }
 
-  private getValuation({
-    openPositions, openOrders
-  }: { openPositions: OpenPositions[], openOrders: OpenOrders[] }): Valuation {
-    let liabilities = 0
-    let requiredCollateral = 0
-    let requiredSetupCollateral = 0
-    let weightedCollateral = 0
-    let assets = 0
-
-    for (const position of this.positions) {
-      const kind = position.kind
-
-      if (kind === PositionKind.Claim) {
-        liabilities += position.value
-
-        requiredCollateral += position.requiredCollateralValue()
-        requiredSetupCollateral += position.requiredSetupCollateralValue()
-      } else if (kind === PositionKind.Deposit) {
-        assets += position.value
-
-        weightedCollateral += position.collateralValue()
-      }
+  /**
+   * Project the valuation of the margin account based on provided changes
+   */
+  projectValuation(changes: MarginPosition[], prices?: Record<string, StorePriceInfo>): MarginAccountValuation {
+    const priceEntries = Object.entries((prices ?? {}));
+    const input = {
+      positions: new Map<string, any>(this.positions.map(position => [position.address.toBase58(), {
+        address: position.address.toBase58(),
+        token: position.token.toBase58(),
+        balance: position.balance.toNumber(),
+        exponent: position.exponent,
+        position_kind: position.kind,
+        value_modifier: position.valueModifier
+      }])),
+      changes,
+      prices: new Map(priceEntries.map(([key, value]) => [key, {
+        price: value.price,
+      }])),
     }
+    return new MarginAccountValuation(input)
+  }
 
-    // The above does not include adapter positions, so we add the individual positions
-    // making up the fixed term positions and orders
-    openOrders.forEach(orders => {
-      const price = this.getPositionPrice(new PublicKey(orders.underlying_mint));
-      if (price && this.pools) {
-        const decimals = Object.values(this.pools).find(pool => pool.addresses.tokenMint.toBase58() === orders.underlying_mint)?.decimals ?? 6;
-        assets += orders.unfilled_lend * price.price * Math.pow(10, -decimals);
-        assets += orders.unfilled_borrow * price.price * Math.pow(10, -decimals);
-      }
-    })
-    const now = Date.now();
-    openPositions.forEach(positions => {
-      const price = this.getPositionPrice(new PublicKey(positions.underlying_mint));
-      if (price && this.pools) {
-        const decimals = Object.values(this.pools).find(pool => pool.addresses.tokenMint.toBase58() === positions.underlying_mint)?.decimals ?? 6;
-        // Sum each term deposits, factoring in accrued interest
-        positions.deposits.forEach(deposit => {
-          const accrual = Math.min(Math.abs((now - deposit.created_timestamp) / (deposit.maturation_timestamp - deposit.created_timestamp)), 1.0);
-          const value = deposit.principal + (deposit.interest * accrual);
-          assets += value * price.price * Math.pow(10, -decimals)
-        })
-      }
-    })
+  private getValuation(_fixedTerm: { openPositions: OpenPositions[], openOrders: OpenOrders[] }): MarginAccountValuation {
+    return this.projectValuation([], this.prices ?? {})
 
-    const effectiveCollateral = weightedCollateral - liabilities
-    const availableCollateral = weightedCollateral - liabilities - requiredCollateral
-    const availableSetupCollateral = weightedCollateral - liabilities - requiredSetupCollateral
+    // // The above does not include adapter positions, so we add the individual positions
+    // // making up the fixed term positions and orders
+    // openOrders.forEach(orders => {
+    //   const price = this.getPositionPrice(new PublicKey(orders.underlying_mint));
+    //   if (price && this.pools) {
+    //     const decimals = Object.values(this.pools).find(pool => pool.addresses.tokenMint.toBase58() === orders.underlying_mint)?.decimals ?? 6;
+    //     assets += orders.unfilled_lend * price.price * Math.pow(10, -decimals);
+    //     assets += orders.unfilled_borrow * price.price * Math.pow(10, -decimals);
+    //   }
+    // })
+    // const now = Date.now();
+    // openPositions.forEach(positions => {
+    //   const price = this.getPositionPrice(new PublicKey(positions.underlying_mint));
+    //   if (price && this.pools) {
+    //     const decimals = Object.values(this.pools).find(pool => pool.addresses.tokenMint.toBase58() === positions.underlying_mint)?.decimals ?? 6;
+    //     // Sum each term deposits, factoring in accrued interest
+    //     positions.deposits.forEach(deposit => {
+    //       const accrual = Math.min(Math.abs((now - deposit.created_timestamp) / (deposit.maturation_timestamp - deposit.created_timestamp)), 1.0);
+    //       const value = deposit.principal + (deposit.interest * accrual);
+    //       assets += value * price.price * Math.pow(10, -decimals)
+    //     })
+    //   }
+    // })
 
-    return {
-      liabilities,
-      requiredCollateral,
-      requiredSetupCollateral,
-      weightedCollateral,
-      effectiveCollateral,
-      availableCollateral,
-      availableSetupCollateral,
-      assets,
-    }
+    // const effectiveCollateral = weightedCollateral - liabilities
+    // const availableCollateral = weightedCollateral - liabilities - requiredCollateral
+    // const availableSetupCollateral = weightedCollateral - liabilities - requiredSetupCollateral
   }
 
   /**
@@ -998,13 +988,12 @@ export class MarginAccount {
     // Add a lookup registry account
     await marginAccount.withInitLookupRegistry(instructions)
     const slot = await provider.connection.getSlot()
-    const marginLookup = await marginAccount.withCreateLookupTable({
+    await marginAccount.withCreateLookupTable({
       instructions,
       slot,
-      discriminator: 10 // TODO
+      discriminator: 10
     })
     await marginAccount.sendAndConfirm(instructions)
-    console.log("Lookup address is ", marginLookup.toBase58())
     return marginAccount
   }
 

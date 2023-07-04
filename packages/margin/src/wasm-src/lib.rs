@@ -2,6 +2,7 @@ pub mod bindings;
 mod core;
 
 pub mod orderbook; // TODO remove
+pub mod valuation;
 
 use wasm_bindgen::prelude::*;
 

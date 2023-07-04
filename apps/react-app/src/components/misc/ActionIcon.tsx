@@ -32,6 +32,7 @@ export function ActionIcon(props: {
     case 'withdraw':
       return <WithdrawIcon className={`jet-icon ${props.className ?? ''}`} style={props.style} />;
     case 'repay':
+    case 'repayFromDeposit':
       return <RepayIcon className={`jet-icon ${props.className ?? ''}`} style={props.style} />;
     case 'swap':
       return <SwapIcon className={`jet-icon ${props.className ?? ''}`} style={props.style} />;

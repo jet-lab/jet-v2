@@ -22,8 +22,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_with = "2"
 js-sys = "0.3.59"
 
-wasm-bindgen = "0.2.83"
-serde-wasm-bindgen = "0.4"
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.5"
 console_error_panic_hook = "0.1.7"
 
 solana-program = "1.14"
