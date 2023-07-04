@@ -7,6 +7,7 @@ use jet_instructions::control::get_control_authority_address;
 use jet_margin_sdk::cat;
 use jet_margin_sdk::ix_builder::MarginSwapRouteIxBuilder;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
+use jet_margin_sdk::tx_builder::MarginActionAuthority;
 use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
@@ -70,7 +71,20 @@ impl TestUser {
     pub async fn deposit(&self, mint: &Pubkey, amount: u64) -> Result<()> {
         let token_account = self.ephemeral_token_account(mint, amount).await?;
         self.user
-            .deposit(mint, &token_account, TokenChange::shift(amount))
+            .pool_deposit(
+                mint,
+                Some(token_account),
+                TokenChange::shift(amount),
+                MarginActionAuthority::AccountAuthority,
+            )
+            .await?;
+        self.ctx.tokens().refresh_to_same_price(mint).await
+    }
+
+    pub async fn deposit_deprecated(&self, mint: &Pubkey, amount: u64) -> Result<()> {
+        let token_account = self.ephemeral_token_account(mint, amount).await?;
+        self.user
+            .pool_deposit_deprecated(mint, &token_account, TokenChange::shift(amount))
             .await?;
         self.ctx.tokens().refresh_to_same_price(mint).await
     }
@@ -78,7 +92,12 @@ impl TestUser {
     pub async fn deposit_from_wallet(&mut self, mint: &Pubkey, amount: u64) -> Result<()> {
         let token_account = self.token_account(mint).await?;
         self.user
-            .deposit(mint, &token_account, TokenChange::shift(amount))
+            .pool_deposit(
+                mint,
+                Some(token_account),
+                TokenChange::shift(amount),
+                MarginActionAuthority::AccountAuthority,
+            )
             .await
     }
 
@@ -309,7 +328,7 @@ impl TestLiquidator {
             );
             self.ctx
                 .rpc()
-                .send_and_confirm_1tx(&[create_ata_ix], &[&self.wallet])
+                .send_and_confirm_1tx(&[create_ata_ix], [&self.wallet])
                 .await?;
         }
         liq.swap(swaps, collateral, loan, change, true).await?;

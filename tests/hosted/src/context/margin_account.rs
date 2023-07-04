@@ -43,7 +43,7 @@ pub(super) fn register_deposit_position(
         .with_authority(margin_account.authority.pubkey());
     let register = builder
         .create_deposit_position(mint)
-        .with_signer(margin_account.authority);
+        .with_signer(&margin_account.authority);
 
     vec![create_ata.into(), register]
 }
