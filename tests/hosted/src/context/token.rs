@@ -131,7 +131,7 @@ fn airdrop_token(mint: Authorization, destination: Pubkey, amount: u64) -> Trans
         &destination,
         amount,
     )
-    .with_signer(mint.authority)
+    .with_signer(&mint.authority)
 }
 
 /// This manages oracles with the test service. Some other code uses the
@@ -144,7 +144,7 @@ fn update_price(mint: Authorization, update: &PriceUpdate) -> TransactionBuilder
         update.confidence,
         update.exponent,
     )
-    .with_signer(mint.authority)
+    .with_signer(&mint.authority)
 }
 
 pub struct PriceUpdate {

@@ -1,27 +1,40 @@
 use anchor_lang::prelude::Pubkey;
 use solana_sdk::hash::Hash;
 use solana_sdk::message::Message;
+use solana_sdk::signature::Keypair;
+use solana_sdk::signer::{Signer, SignerError};
+use solana_sdk::signers::Signers;
 use solana_sdk::transaction::VersionedTransaction;
-use solana_sdk::{
-    instruction::Instruction,
-    signature::{Keypair, Signature},
-    transaction::Transaction,
-};
+use solana_sdk::{instruction::Instruction, signature::Signature, transaction::Transaction};
 use std::cmp::{max, min};
+use std::collections::HashSet;
 
-use crate::util::{
-    data::{Concat, DeepReverse, Join},
-    keypair::clone_vec,
-};
+use crate::signature::NeedsSignature;
+use crate::util::data::{Concat, DeepReverse, Join};
+use crate::util::keypair::clone_vec;
+use crate::util::keypair::{KeypairExt, ToKeypair};
 
-/// A group of instructions that are expected to be executed in the same transaction
-/// Can be merged with other TransactionBuilder instances with `cat`, `concat`, or `ijoin`
+/// A group of instructions that are expected to execute in the same
+/// transaction. Can be merged with other TransactionBuilder instances:
+/// ```rust ignore
+/// let builder = cat![builder1, builder2, builder3];
+/// let builder = builder_vec.ijoin();
+/// let builder = builder1.concat(builder2);
+/// let builder_vec = condense(builder_vec);
+/// ```
 #[derive(Debug, Default)]
 pub struct TransactionBuilder {
     /// see above
     pub instructions: Vec<Instruction>,
-    /// required for the included instructions, does not include a payer
-    pub signers: Vec<Keypair>, //todo Arc<dyn Signer>
+    /// Generated keypairs that will be used for the for the included
+    /// instructions. Typically, this is used when an account needs to be
+    /// initialized for this instruction.
+    ///
+    /// This usually does not include the payer or the user's wallet. Additional
+    /// signatures should be provided by the application when needed. However,
+    /// sometimes it may be convenient (e.g. in tests) to actually add the
+    /// user's wallet into this struct before converting it to a transaction.
+    pub signers: Vec<Keypair>,
 }
 
 impl DeepReverse for TransactionBuilder {
@@ -35,14 +48,14 @@ impl Clone for TransactionBuilder {
     fn clone(&self) -> Self {
         Self {
             instructions: self.instructions.clone(),
-            signers: clone_vec(&self.signers),
+            signers: self.signers.iter().map(|k| k.clone()).collect(),
         }
     }
 }
 
 impl From<Vec<Instruction>> for TransactionBuilder {
     fn from(instructions: Vec<Instruction>) -> Self {
-        TransactionBuilder {
+        Self {
             instructions,
             signers: vec![],
         }
@@ -51,7 +64,7 @@ impl From<Vec<Instruction>> for TransactionBuilder {
 
 impl From<Instruction> for TransactionBuilder {
     fn from(ix: Instruction) -> Self {
-        TransactionBuilder {
+        Self {
             instructions: vec![ix],
             signers: vec![],
         }
@@ -59,6 +72,60 @@ impl From<Instruction> for TransactionBuilder {
 }
 
 impl TransactionBuilder {
+    /// Cleans up any duplicate or unneeded signers.
+    pub fn prune(&mut self) {
+        let mut signer_pubkeys = HashSet::new();
+        for signer in std::mem::take(&mut self.signers) {
+            let pubkey = signer.pubkey();
+            if !signer_pubkeys.contains(&pubkey) && self.instructions.needs_signature(pubkey) {
+                signer_pubkeys.insert(pubkey);
+                self.signers.push(signer);
+            }
+        }
+    }
+
+    /// Convert the TransactionBuilder into a solana Transaction.
+    ///
+    /// Handles the typical situation where the payer is the only additional
+    /// signer needed. For arbitrary additional signers, use compile_custom or
+    /// compile_partial.
+    ///
+    /// Returns error if any required signers are not provided.
+    pub fn compile<S: Signer>(
+        self,
+        payer: &S,
+        recent_blockhash: Hash,
+    ) -> Result<Transaction, SignerError> {
+        self.compile_custom(Some(&payer.pubkey()), &[payer], recent_blockhash)
+    }
+
+    /// Convert the TransactionBuilder into a solana Transaction.
+    ///
+    /// Returns error if any required signers are not provided.
+    pub fn compile_custom<S: Signers>(
+        self,
+        payer: Option<&Pubkey>,
+        signers: &S,
+        recent_blockhash: Hash,
+    ) -> Result<Transaction, SignerError> {
+        let mut tx = self.compile_partial(payer, recent_blockhash);
+        tx.try_sign(signers, recent_blockhash)?;
+        Ok(tx)
+    }
+
+    /// Like compile, except that it will not fail if signers are missing.
+    /// Intended to have other signatures, such as the payer's, added later.
+    pub fn compile_partial(
+        mut self,
+        payer: Option<&Pubkey>,
+        recent_blockhash: Hash,
+    ) -> Transaction {
+        self.prune();
+        let mut tx = Transaction::new_unsigned(Message::new(&self.instructions, payer));
+        tx.partial_sign(&self.signers.iter().collect::<Vec<_>>(), recent_blockhash);
+        tx
+    }
+
     /// convert transaction to a base64 string similar to one that would be
     /// submitted to rpc node. It uses fake signatures so it's not the real
     /// transaction, but it should have the same size.
@@ -85,7 +152,7 @@ impl Concat for TransactionBuilder {
     fn cat_ref(mut self, other: &Self) -> Self {
         self.instructions
             .extend(other.instructions.clone().into_iter());
-        self.signers.extend(clone_vec(&other.signers).into_iter());
+        self.signers.extend(other.signers.iter().map(|k| k.clone()));
 
         Self { ..self }
     }
@@ -95,22 +162,34 @@ impl Concat for TransactionBuilder {
 /// similar purpose to From<Instruction>, but it's used when you also need to
 /// add signers.
 pub trait WithSigner: Sized {
+    type Output;
+
     /// convert to a TransactionBuilder that includes this signer
-    fn with_signer(self, signer: Keypair) -> TransactionBuilder {
-        self.with_signers(&[signer])
+    fn with_signer<K: ToKeypair>(self, signer: K) -> Self::Output {
+        self.with_signers([signer])
     }
-    /// convert to a TransactionBuilder that includes these signers
-    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder;
+
+    fn without_signer(self) -> Self::Output {
+        self.with_signers(Vec::<Keypair>::new())
+    }
+
+    /// convert to a TransactionBuilder<PreferredSigner> that includes these signers
+    /// //todo slice
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output;
 }
 
 impl WithSigner for Instruction {
-    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder {
+    type Output = TransactionBuilder;
+
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output {
         vec![self].with_signers(signers)
     }
 }
 
 impl WithSigner for &[Instruction] {
-    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder {
+    type Output = TransactionBuilder;
+
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output {
         TransactionBuilder {
             instructions: self.to_vec(),
             signers: clone_vec(signers),
@@ -119,12 +198,28 @@ impl WithSigner for &[Instruction] {
 }
 
 impl WithSigner for TransactionBuilder {
-    fn with_signers(mut self, signers: &[Keypair]) -> TransactionBuilder {
+    type Output = TransactionBuilder;
+
+    fn with_signers<K: ToKeypair>(mut self, signers: impl IntoIterator<Item = K>) -> Self::Output {
         self.signers.extend(clone_vec(signers));
         TransactionBuilder {
             instructions: self.instructions,
             signers: self.signers,
         }
+    }
+}
+
+impl WithSigner for Vec<TransactionBuilder> {
+    type Output = Vec<TransactionBuilder>;
+
+    fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output {
+        let signers = signers
+            .into_iter()
+            .map(ToKeypair::to_keypair)
+            .collect::<Vec<_>>();
+        self.into_iter()
+            .map(|tx| tx.with_signers(clone_vec(&signers)))
+            .collect()
     }
 }
 
@@ -265,10 +360,9 @@ impl ToTransaction for Vec<Instruction> {
 
 impl ToTransaction for TransactionBuilder {
     fn to_transaction(&self, payer: &Pubkey, recent_blockhash: Hash) -> VersionedTransaction {
-        let mut tx = Transaction::new_unsigned(Message::new(&self.instructions, Some(payer)));
-        tx.partial_sign(&self.signers.iter().collect::<Vec<_>>(), recent_blockhash);
-
-        tx.into()
+        self.clone()
+            .compile_partial(Some(payer), recent_blockhash)
+            .into()
     }
 }
 
@@ -296,6 +390,11 @@ impl<T: ToTransaction> ToTransaction for &T {
     }
 }
 
+/// ```pseudo-code
+/// fn transactions!(varargs...: impl ToTransactionBuilderVec) -> Vec<TransactionBuilder>
+/// ```
+/// Converts each input into a Vec<TransactionBuilder>,  
+/// then concatenates the vecs into a unified Vec<TransactionBuilder>.
 #[macro_export]
 macro_rules! transactions {
     ($($item:expr),*$(,)?) => {{
@@ -304,6 +403,23 @@ macro_rules! transactions {
         let x: Vec<TransactionBuilder> = $crate::cat![$(
             $item.to_tx_builder_vec(),
         )*];
+        x
+    }};
+}
+
+/// ```pseudo-code
+/// fn tx!(varargs...: impl ToTransactionBuilderVec) -> TransactionBuilder
+/// ```
+/// Combines all enclosed items into a single TransactionBuilder.
+#[macro_export]
+macro_rules! tx {
+    ($($item:expr),*$(,)?) => {{
+        use jet_solana_client::transaction::TransactionBuilder;
+        use jet_solana_client::transaction::ToTransactionBuilderVec;
+        use jet_solana_client::util::data::Join;
+        let x: TransactionBuilder = $crate::cat![$(
+            $item.to_tx_builder_vec(),
+        )*].ijoin();
         x
     }};
 }

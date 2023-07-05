@@ -483,11 +483,11 @@ pub async fn init_market(
     let init_orderbook = ix_builder.initialize_orderbook(payer, MIN_ORDER_SIZE);
 
     vec![init_eq, init_bids, init_asks, init_fee_destination]
-        .with_signers(&[ob.event_queue, ob.bids, ob.asks])
+        .with_signers([ob.event_queue, ob.bids, ob.asks])
         .send_and_confirm(rpc)
         .await?;
     vec![init_manager, init_orderbook]
-        .with_signers(&[])
+        .without_signer()
         .send_and_confirm(rpc)
         .await?;
 
@@ -952,7 +952,7 @@ impl<P: Proxy> FixedTermUser<P> {
             .ix_builder
             .initialize_margin_user(self.proxy.pubkey());
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], [&self.owner])
             .await
     }
 
@@ -962,7 +962,7 @@ impl<P: Proxy> FixedTermUser<P> {
             .ix_builder
             .convert_tokens(self.proxy.pubkey(), None, None, amount);
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], [&self.owner])
             .await
     }
 
@@ -973,7 +973,7 @@ impl<P: Proxy> FixedTermUser<P> {
             .stake_tickets(self.proxy.pubkey(), None, amount, seed);
 
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], [&self.owner])
             .await
     }
 
@@ -984,7 +984,7 @@ impl<P: Proxy> FixedTermUser<P> {
             .ix_builder
             .redeem_deposit(self.proxy.pubkey(), ticket, None);
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], [&self.owner])
             .await
     }
 
@@ -994,7 +994,7 @@ impl<P: Proxy> FixedTermUser<P> {
                 .ix_builder
                 .sell_tickets_order(self.proxy.pubkey(), None, None, params);
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(borrow)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(borrow)], [&self.owner])
             .await
     }
 
@@ -1029,10 +1029,7 @@ impl<P: Proxy> FixedTermUser<P> {
             self.manager
                 .ix_builder
                 .margin_borrow_order(self.proxy.pubkey(), params, debt_seqno);
-        Ok(self
-            .proxy
-            .invoke_signed(borrow)
-            .with_signers(&[clone(&self.owner)]))
+        Ok(self.proxy.invoke_signed(borrow).with_signer(&self.owner))
     }
 
     pub async fn refresh_and_margin_lend_order(
@@ -1057,10 +1054,7 @@ impl<P: Proxy> FixedTermUser<P> {
             params,
             deposit_seqno,
         );
-        Ok(self
-            .proxy
-            .invoke_signed(ix)
-            .with_signers(&[clone(&self.owner)]))
+        Ok(self.proxy.invoke_signed(ix).with_signer(&self.owner))
     }
 
     pub async fn lend_order(&self, params: OrderParams, seed: &[u8]) -> Result<Signature> {
@@ -1069,7 +1063,7 @@ impl<P: Proxy> FixedTermUser<P> {
                 .ix_builder
                 .lend_order(self.proxy.pubkey(), None, None, params, seed);
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(lend)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(lend)], [&self.owner])
             .await
     }
 
@@ -1079,13 +1073,15 @@ impl<P: Proxy> FixedTermUser<P> {
             .ix_builder
             .cancel_order(self.proxy.pubkey(), order_id);
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(cancel)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(cancel)], [&self.owner])
             .await
     }
 
     pub async fn settle(&self) -> Result<Signature> {
         let settle = self.manager.ix_builder.settle(self.proxy.pubkey());
-        self.client.send_and_confirm_1tx(&[settle], &[]).await
+        self.client
+            .send_and_confirm_1tx(&[settle], Vec::<Keypair>::new())
+            .await
     }
 
     pub async fn set_lend_roll_config(&self, config: LendAutoRollConfig) -> Result<Signature> {
@@ -1095,7 +1091,7 @@ impl<P: Proxy> FixedTermUser<P> {
             AutoRollConfig::Lend(config),
         );
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], [&self.owner])
             .await
     }
 
@@ -1106,7 +1102,7 @@ impl<P: Proxy> FixedTermUser<P> {
             AutoRollConfig::Borrow(config),
         );
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(set_config)], [&self.owner])
             .await
     }
 
@@ -1132,7 +1128,7 @@ impl<P: Proxy> FixedTermUser<P> {
         );
 
         self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(repay)], &[&self.owner])
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(repay)], [&self.owner])
             .await
     }
 

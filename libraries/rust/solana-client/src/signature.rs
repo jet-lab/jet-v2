@@ -3,7 +3,7 @@ use solana_sdk::{
     instruction::Instruction, signature::Keypair, signer::Signer, transaction::VersionedTransaction,
 };
 
-use crate::util::keypair::KeypairExt;
+use crate::{transaction::TransactionBuilder, util::keypair::KeypairExt};
 
 pub trait NeedsSignature {
     fn needs_signature(&self, potential_signer: Pubkey) -> bool;
@@ -20,6 +20,12 @@ impl NeedsSignature for Instruction {
 impl NeedsSignature for Vec<Instruction> {
     fn needs_signature(&self, potential_signer: Pubkey) -> bool {
         self.iter().any(|ix| ix.needs_signature(potential_signer))
+    }
+}
+
+impl NeedsSignature for TransactionBuilder {
+    fn needs_signature(&self, potential_signer: Pubkey) -> bool {
+        self.instructions.needs_signature(potential_signer)
     }
 }
 
