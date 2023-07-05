@@ -194,7 +194,7 @@ impl SolanaRpc for RpcConnection {
                     .collect(),
             ),
             account_config: RpcAccountInfoConfig {
-                encoding: Some(UiAccountEncoding::Base64),
+                encoding: Some(UiAccountEncoding::Base64Zstd),
                 data_slice: None,
                 commitment: Some(CommitmentConfig::processed()),
                 min_context_slot: None,
@@ -215,7 +215,7 @@ impl SolanaRpc for RpcConnection {
         let token_account_filter = RpcTokenAccountsFilter::ProgramId(spl_token::ID.to_string());
 
         let config = RpcAccountInfoConfig {
-            encoding: Some(UiAccountEncoding::Base64),
+            encoding: Some(UiAccountEncoding::Base64Zstd),
             commitment: Some(CommitmentConfig::processed()),
             data_slice: None,
             min_context_slot: None,
