@@ -23,11 +23,12 @@ export enum ActionResponse {
   Cancelled = 'CANCELLED'
 }
 export function useMarginActions() {
-  const selectMarginAccount = useJetStore().selectMarginAccount;
-  const { fixedTermOpenOrders, fixedTermOpenPositions } = useJetStore(state => {
+  const { fixedTermOpenOrders, fixedTermOpenPositions, updateMarginAccount, selectMarginAccount } = useJetStore(state => {
     return {
       fixedTermOpenOrders: state.openOrders,
-      fixedTermOpenPositions: state.openPositions
+      fixedTermOpenPositions: state.openPositions,
+      updateMarginAccount: state.updateMarginAccount,
+      selectMarginAccount: state.selectMarginAccount
     }
   });
   const config = useRecoilValue(MainConfig);
@@ -178,6 +179,14 @@ export function useMarginActions() {
       const selected = newMarginAccount.address.toString();
       setCurrentAccountAddress(selected);
       selectMarginAccount(selected);
+      updateMarginAccount({
+        address: selected,
+        airspace: airspaceAddress,
+        liquidator: PublicKey.default.toBase58(),
+        owner: newMarginAccount.owner.toBase58(),
+        positions: [],
+        seed: newMarginAccount.seed,
+      });
 
       await actionRefresh();
       return [undefined, ActionResponse.Success];
