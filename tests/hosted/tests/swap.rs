@@ -3,7 +3,9 @@ use std::collections::HashSet;
 use anyhow::Error;
 
 use jet_margin_sdk::{
-    swap::spl_swap::SplSwapPool, tokens::TokenPrice, tx_builder::TokenDepositsConfig,
+    swap::spl_swap::SplSwapPool,
+    tokens::TokenPrice,
+    tx_builder::{MarginActionAuthority, TokenDepositsConfig},
 };
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -195,24 +197,27 @@ async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), 
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(
+        .pool_deposit(
             &env.usdc,
-            &user_a_usdc_account,
+            Some(user_a_usdc_account),
             TokenChange::shift(1_000 * ONE_USDC),
+            MarginActionAuthority::AccountAuthority,
         )
         .await?;
     user_a
-        .deposit(
+        .pool_deposit(
             &env.tsol,
-            &user_a_tsol_account,
+            Some(user_a_tsol_account),
             TokenChange::shift(10 * ONE_TSOL),
+            MarginActionAuthority::AccountAuthority,
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit(
             &env.tsol,
-            &user_b_tsol_account,
+            Some(user_b_tsol_account),
             TokenChange::shift(10 * ONE_TSOL),
+            MarginActionAuthority::AccountAuthority,
         )
         .await?;
 

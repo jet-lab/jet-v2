@@ -127,9 +127,12 @@ pub struct AccountPosition {
     pub _reserved: [u8; 23],
 }
 
+#[repr(transparent)]
+#[derive(Zeroable, AnchorSerialize, AnchorDeserialize, Default, Clone, Copy)]
+pub struct AdapterPositionFlags(u8);
+
 bitflags::bitflags! {
-    #[derive(Zeroable, AnchorSerialize, AnchorDeserialize, Default)]
-    pub struct AdapterPositionFlags: u8 {
+    impl AdapterPositionFlags: u8 {
         /// The position may never be removed by the user, even if the balance remains at zero,
         /// until the adapter explicitly unsets this flag.
         const REQUIRED = 1 << 0;

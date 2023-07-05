@@ -190,13 +190,15 @@ impl Permit {
     }
 }
 
+/// Actions in the margin program that require special approval from an
+/// airspace authority before an address is authorized to sign for the
+/// instruction performing this action.
+#[derive(Debug, Eq, PartialEq, Default, AnchorSerialize, AnchorDeserialize, Clone, Copy)]
+#[repr(transparent)]
+pub struct Permissions(u32);
+
 bitflags! {
-    /// Actions in the margin program that require special approval from an
-    /// airspace authority before an address is authorized to sign for the
-    /// instruction performing this action.
-    #[derive(Default, AnchorSerialize, AnchorDeserialize)]
-    #[repr(transparent)]
-    pub struct Permissions: u32 {
+    impl Permissions: u32 {
         /// Liquidate margin accounts in this airspace.
         const LIQUIDATE                 = 1 << 0;
 

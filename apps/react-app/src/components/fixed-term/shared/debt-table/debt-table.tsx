@@ -40,13 +40,11 @@ const TabLink = ({ name, amount, decimals }: ITabLink) => {
 };
 
 export function DebtTable() {
-  const { airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(
-    state => ({
-      airspaceLookupTables: state.airspaceLookupTables,
-      marginAccountLookupTables: state.marginAccountLookupTables,
-      selectedMarginAccount: state.selectedMarginAccount
-    })
-  );
+  const { airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(state => ({
+    airspaceLookupTables: state.airspaceLookupTables,
+    marginAccountLookupTables: state.marginAccountLookupTables,
+    selectedMarginAccount: state.selectedMarginAccount
+  }));
   const lookupTables = useMemo(() => {
     if (!selectedMarginAccount) {
       return airspaceLookupTables;
@@ -164,6 +162,7 @@ export function DebtTable() {
                     explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
+                    lookupTables={lookupTables}
                   />
                 )
             },
@@ -215,6 +214,7 @@ export function DebtTable() {
                     explorer={explorer}
                     pools={pools.tokenPools}
                     markets={markets.map(m => m.market)}
+                    lookupTables={lookupTables}
                   />
                 )
             }

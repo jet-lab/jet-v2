@@ -25,8 +25,8 @@ async fn liquidate_with_swap() -> Result<()> {
     let ([usdc, sol], swaps, pricer) = tokens(&ctx).await.unwrap();
     let [liquidator] = liquidators(&ctx).await.unwrap();
     let [user0, user1] = users(&ctx).await.unwrap();
-    user0.deposit(&usdc, 1_000).await.unwrap();
-    user1.deposit(&sol, 1_000).await.unwrap();
+    user0.deposit_deprecated(&usdc, 1_000).await.unwrap();
+    user1.deposit_deprecated(&sol, 1_000).await.unwrap();
     user1.borrow_to_wallet(&usdc, 800).await.unwrap();
     pricer.set_price(&sol, 0.9).await.unwrap();
     liquidator

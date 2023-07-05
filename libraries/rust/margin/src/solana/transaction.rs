@@ -3,19 +3,15 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_solana_client::util::keypair::ToKeypairs;
 use solana_sdk::{
-    instruction::Instruction,
-    signature::{Keypair, Signature},
-    signer::Signer,
-    transaction::Transaction,
+    instruction::Instruction, signature::Signature, signer::Signer, transaction::Transaction,
 };
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use crate::util::asynchronous::MapAsync;
 
 pub use jet_solana_client::transaction::*; // TODO: remove
-
-use super::keypair::clone_refs;
 
 /// Implementers are expected to send a TransactionBuilder to a real or simulated solana network as a transaction
 #[async_trait]
@@ -27,15 +23,19 @@ pub trait SendTransactionBuilder {
     /// Sends the transaction unchanged
     async fn send_and_confirm(&self, transaction: TransactionBuilder) -> Result<Signature>;
 
-    /// simple ad hoc transaction sender
-    async fn send_and_confirm_1tx(
+    /// simple ad hoc transaction sender. use `flexify` if necessary to get a good
+    /// input type.
+    async fn send_and_confirm_1tx<K: ToKeypairs + Send + Sync>(
         &self,
         instructions: &[Instruction],
-        signers: &[&Keypair],
-    ) -> Result<Signature> {
+        signers: K,
+    ) -> Result<Signature>
+    where
+        Self: SendTransactionBuilder,
+    {
         self.send_and_confirm(TransactionBuilder {
             instructions: instructions.to_vec(),
-            signers: clone_refs(signers),
+            signers: signers.to_keypairs(),
         })
         .await
     }
@@ -59,8 +59,8 @@ pub trait SendTransactionBuilder {
 #[async_trait]
 impl SendTransactionBuilder for Arc<dyn SolanaRpcClient> {
     async fn compile(&self, tx: TransactionBuilder) -> Result<Transaction> {
-        let signers = tx.signers.iter().collect::<Vec<&Keypair>>();
-        self.create_transaction(&signers, &tx.instructions).await
+        let blockhash = self.get_latest_blockhash().await?;
+        Ok(tx.compile(self.payer(), blockhash)?)
     }
 
     async fn send_and_confirm(&self, tx: TransactionBuilder) -> Result<Signature> {
@@ -160,4 +160,26 @@ impl InverseSendTransactionBuilder for Vec<TransactionBuilder> {
     ) -> Result<Vec<Signature>> {
         client.send_and_confirm_condensed_in_order(self).await
     }
+}
+
+/// This trait is used to simplify repetitive trait bounds. It encapsulates a
+/// common collection of traits that are required for the trait implementations
+/// in this file. Do not expand this trait to have additional trait bounds
+/// unless you are certain that the additional trait bound is required in *all*
+/// places where this is used as a trait bound.
+///
+/// A FlexSigner is a signer that...
+///
+/// has extra versatility to make it more useful:
+/// - can be cloned
+/// - is thread safe
+///
+/// is easier to construct:
+/// - only needs to deref to a Signer, doesn't need to actually implement Signer
+pub trait FlexKey: Deref<Target = Self::Inner> + Clone + Send + Sync {
+    /// The Signer type that this Derefs to
+    type Inner;
+}
+impl<S: Signer, F: Deref<Target = S> + Clone + Send + Sync> FlexKey for F {
+    type Inner = S;
 }

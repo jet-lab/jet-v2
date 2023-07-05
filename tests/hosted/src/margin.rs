@@ -183,9 +183,8 @@ impl MarginClient {
     }
 
     pub async fn create_airspace(&self, is_restricted: bool) -> Result<(), Error> {
-        self.rpc
-            .send_and_confirm(vec![self.create_airspace_ix(is_restricted)].into())
-            .await?;
+        let tx: TransactionBuilder = self.create_airspace_ix(is_restricted).into();
+        self.rpc.send_and_confirm(tx).await?;
         Ok(())
     }
 
@@ -233,7 +232,7 @@ impl MarginClient {
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
         self.tx_admin
             .configure_margin_adapter(*adapter, true)
-            .with_signer(clone(&self.airspace_authority))
+            .with_signer(&self.airspace_authority)
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
@@ -247,7 +246,7 @@ impl MarginClient {
     ) -> Result<(), Error> {
         self.tx_admin
             .configure_margin_token_deposits(*underlying_mint, config.cloned())
-            .with_signer(clone(&self.airspace_authority))
+            .with_signer(&self.airspace_authority)
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
@@ -260,7 +259,7 @@ impl MarginClient {
     ) -> Result<(), Error> {
         self.tx_admin
             .configure_margin_pool(*token, config)
-            .with_signer(clone(&self.airspace_authority))
+            .with_signer(&self.airspace_authority)
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
@@ -270,7 +269,7 @@ impl MarginClient {
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
         self.tx_admin
             .create_margin_pool(setup_info.token)
-            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
+            .with_signer(&self.airspace_authority)
             .send_and_confirm(&self.rpc)
             .await?;
 
@@ -288,7 +287,7 @@ impl MarginClient {
                     parameters: Some(setup_info.config),
                 },
             )
-            .with_signer(Keypair::from_bytes(&self.airspace_authority.to_bytes())?)
+            .with_signer(&self.airspace_authority)
             .send_and_confirm(&self.rpc)
             .await?;
 
@@ -395,10 +394,10 @@ impl MarginUser {
         }
     }
 
-    pub fn ctx(&self) -> MarginInvokeContext<Keypair> {
+    pub fn ctx(&self) -> MarginInvokeContext {
         MarginInvokeContext {
             margin_account: *self.address(),
-            authority: self.signer.clone(),
+            authority: self.signer.pubkey(),
             airspace: self.tx.airspace(),
             is_liquidator: self.tx.is_liquidator(),
         }
@@ -469,7 +468,7 @@ impl MarginUser {
         self.tx
             .refresh_pool_position(token_mint)
             .await?
-            .with_signers(&[])
+            .without_signer()
             .send_and_confirm(&self.rpc)
             .await?;
         Ok(())
@@ -500,17 +499,32 @@ impl MarginUser {
             .map(|_| ())
     }
 
-    // todo this is a leaky abstraction because it allows a source to be
-    // specified without allowing the caller to specify the authority. may be
-    // better to expose the authority as well.
-    pub async fn deposit(
+    pub async fn pool_deposit(
+        &self,
+        underlying_mint: &Pubkey,
+        source: Option<Pubkey>,
+        change: TokenChange,
+        source_authority: MarginActionAuthority,
+    ) -> Result<(), Error> {
+        self.tx
+            .pool_deposit(underlying_mint, source, change, source_authority)
+            .await?
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// do not add any new usages of this function.  
+    /// todo: replace existing usages with `pool_deposit`
+    pub async fn pool_deposit_deprecated(
         &self,
         mint: &Pubkey,
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<(), Error> {
         self.tx
-            .pool_deposit(
+            .pool_deposit_deprecated(
                 mint,
                 Some(*source),
                 change,
@@ -588,7 +602,7 @@ impl MarginUser {
             (&swap_pool.token_b, &swap_pool.token_a)
         };
         self.rpc
-            .send_and_confirm(
+            .send_and_confirm_condensed_in_order(
                 self.tx
                     .swap(
                         source_mint,

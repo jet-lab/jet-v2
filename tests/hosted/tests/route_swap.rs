@@ -10,6 +10,7 @@ use anchor_spl::dex::{
 };
 use anyhow::Error;
 
+use futures::join;
 use jet_margin_sdk::{
     ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts, SwapContext},
     lookup_tables::LookupTable,
@@ -276,28 +277,28 @@ async fn route_swap() -> anyhow::Result<()> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(
+        .pool_deposit_deprecated(
             &env.usdc,
             &user_a_usdc_account,
             TokenChange::shift(1_000 * ONE_USDC),
         )
         .await?;
     user_a
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_a_msol_account,
             TokenChange::shift(ONE_MSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.tsol,
             &user_b_tsol_account,
             TokenChange::shift(10 * ONE_TSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_b_msol_account,
             TokenChange::shift(10 * ONE_MSOL),
@@ -365,8 +366,15 @@ async fn route_swap() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    // Wait a bit before starting to use lookup table
-    ctx.rpc().wait_for_next_block().await.unwrap();
+    // todo: remove the sleep after wait_for_next_block is implemented for localnet.
+    join!(
+        async {
+            if cfg!(feature = "localnet") {
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        },
+        async { ctx.rpc().wait_for_next_block().await.unwrap() },
+    );
 
     // Create a swap route and execute it
     let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
@@ -458,21 +466,21 @@ async fn single_leg_swap_margin(
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_a_msol_account,
             TokenChange::shift(ONE_MSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.tsol,
             &user_b_tsol_account,
             TokenChange::shift(10 * ONE_TSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_b_msol_account,
             TokenChange::shift(10 * ONE_MSOL),
