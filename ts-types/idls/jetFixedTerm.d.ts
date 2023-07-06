@@ -1389,84 +1389,100 @@ type JetFixedTermIDL = {
     {
       name: "settle"
       docs: ["Settle payments to a margin account"]
-      accounts: [
+      "accounts": [
         {
-          name: "marginUser"
-          isMut: true
-          isSigner: false
-          docs: ["The account tracking information related to this particular user"]
+          "name": "marginUser",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
-          name: "marginAccount"
-          isMut: false
-          isSigner: false
-          docs: ["use accounting_invoke"]
+          "name": "marginAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "use accounting_invoke"
+          ]
         },
         {
-          name: "market"
-          isMut: false
-          isSigner: false
-          docs: ["The `Market` account tracks global information related to this particular fixed term market"]
+          "name": "market",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The `Market` account tracks global information related to this particular fixed term market"
+          ]
         },
         {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
-          docs: ["SPL token program"]
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         },
         {
-          name: "claims"
-          isMut: true
-          isSigner: false
-          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
+          "name": "claims",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
-          name: "claimsMint"
-          isMut: true
-          isSigner: false
-          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+          "name": "claimsMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
-          name: "ticketCollateral"
-          isMut: true
-          isSigner: false
+          "name": "ticketCollateral",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "ticketCollateralMint"
-          isMut: true
-          isSigner: false
+          "name": "ticketCollateralMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenCollateral"
-          isMut: true
-          isSigner: false
+          "name": "underlyingCollateral",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenCollateralMint"
-          isMut: true
-          isSigner: false
+          "name": "underlyingCollateralMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "underlyingTokenVault"
-          isMut: true
-          isSigner: false
+          "name": "underlyingTokenVault",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "ticketMint"
-          isMut: true
-          isSigner: false
+          "name": "ticketMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "underlyingSettlement"
-          isMut: true
-          isSigner: false
-          docs: ["Where to receive owed tokens"]
+          "name": "underlyingSettlement",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Where to receive owed tokens"
+          ]
         },
         {
-          name: "ticketSettlement"
-          isMut: true
-          isSigner: false
-          docs: ["Where to receive owed tickets"]
+          "name": "ticketSettlement",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Where to receive owed tickets"
+          ]
         }
       ]
       args: []

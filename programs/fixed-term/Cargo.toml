@@ -24,7 +24,7 @@ overflow-checks = true
 
 [dependencies]
 arrayref = "0.3.6"
-bitflags = "1.0.3"
+bitflags = "2.3"
 borsh = "0.9.1"
 bs58 = "0.4"
 bytemuck = {version = "1.7.2", features = ["derive"]}

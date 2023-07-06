@@ -94,12 +94,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     Some(TermAccount::Loan(self.accounts.init_next::<TermLoan>(
                         self.payer.to_account_info(),
                         self.system_program.to_account_info(),
-                        &[
-                            crate::seeds::TERM_LOAN,
-                            self.market.as_ref(),
-                            info.margin_account.as_ref(),
-                            &seed,
-                        ],
+                        &TermLoan::seeds(self.market.as_ref(), info.margin_user.as_ref(), &seed),
                     )?))
                 } else {
                     None

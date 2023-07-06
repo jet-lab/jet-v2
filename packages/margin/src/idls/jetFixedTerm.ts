@@ -1439,12 +1439,12 @@ export const IDL: JetFixedTermIDL = {
           isSigner: false
         },
         {
-          name: "tokenCollateral",
+          name: "underlyingCollateral",
           isMut: true,
           isSigner: false
         },
         {
-          name: "tokenCollateralMint",
+          name: "underlyingCollateralMint",
           isMut: true,
           isSigner: false
         },

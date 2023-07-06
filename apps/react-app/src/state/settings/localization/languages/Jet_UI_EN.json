@@ -464,6 +464,7 @@
     "netBalance": "Net Balance",
     "inOrders": "In Orders",
     "activity": "Activity",
+    "adapter": "Adapter",
     "order": "Order",
     "orderHistory": "Order History",
     "noOrderHistory": "No order history",

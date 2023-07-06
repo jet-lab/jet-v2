@@ -749,9 +749,11 @@ impl TermLoanBuilder {
     }
 }
 
+#[derive(Debug, Default, AnchorSerialize, AnchorDeserialize, PartialEq, Eq, Clone, Copy)]
+pub struct TermLoanFlags(u8);
+
 bitflags! {
-    #[derive(Default, AnchorSerialize, AnchorDeserialize)]
-    pub struct TermLoanFlags: u8 {
+    impl TermLoanFlags: u8 {
         /// This term loan has already been marked as due.
         const MARKED_DUE = 1 << 0;
 
