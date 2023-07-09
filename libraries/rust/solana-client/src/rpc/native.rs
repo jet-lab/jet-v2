@@ -109,13 +109,11 @@ impl SolanaRpc for RpcConnection {
         &self,
         pubkeys: &[Pubkey],
     ) -> ClientResult<Vec<Option<Account>>> {
-        let slot = self.get_slot().await?;
-
         self.rpc
             .get_multiple_accounts_with_config(
                 pubkeys,
                 RpcAccountInfoConfig {
-                    min_context_slot: Some(slot),
+                    min_context_slot: None,
                     commitment: Some(CommitmentConfig::processed()),
                     ..Default::default()
                 },
@@ -196,7 +194,7 @@ impl SolanaRpc for RpcConnection {
                     .collect(),
             ),
             account_config: RpcAccountInfoConfig {
-                encoding: Some(UiAccountEncoding::Base64),
+                encoding: Some(UiAccountEncoding::Base64Zstd),
                 data_slice: None,
                 commitment: Some(CommitmentConfig::processed()),
                 min_context_slot: None,
@@ -217,7 +215,7 @@ impl SolanaRpc for RpcConnection {
         let token_account_filter = RpcTokenAccountsFilter::ProgramId(spl_token::ID.to_string());
 
         let config = RpcAccountInfoConfig {
-            encoding: Some(UiAccountEncoding::Base64),
+            encoding: Some(UiAccountEncoding::Base64Zstd),
             commitment: Some(CommitmentConfig::processed()),
             data_slice: None,
             min_context_slot: None,

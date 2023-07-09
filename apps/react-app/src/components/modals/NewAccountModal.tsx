@@ -16,7 +16,7 @@ import { getExplorerUrl } from '@utils/ui';
 import { Input, Modal, Tooltip, Typography } from 'antd';
 import { NetworkStateAtom } from '../../state/network/network-state';
 import debounce from 'lodash.debounce';
-import { useJetStore } from '@jet-lab/store';
+import { useJetStore, ws } from '@jet-lab/store';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
@@ -65,6 +65,20 @@ export function NewAccountModal(): JSX.Element {
     } else {
       // Default to "Account 1" style name
       accountName = `${dictionary.common.account} ${latestSeed + 1}`;
+    }
+
+    // Subscribe to websocket if this is the first account.
+    // It can happen if a user connects quickly tbat tbeir subscription
+    // is not registered. Subscribing on a new account ensures that it is registered.
+    if (latestSeed === 0) {
+      const subscriptionEvent: APPLICATION_WS_EVENTS = {
+        type: 'SUBSCRIBE',
+        payload: {
+          wallet: publicKey.toBase58(),
+          margin_accounts: []
+        }
+      };
+      ws?.send(JSON.stringify(subscriptionEvent));
     }
 
     setSendingTransaction(true);

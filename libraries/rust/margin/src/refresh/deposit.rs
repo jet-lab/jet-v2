@@ -1,13 +1,13 @@
 //! Refresh margin deposits and pool positions.
 
 use anyhow::Result;
-use jet_instructions::margin::{derive_margin_account_from_state, refresh_deposit_position};
+use jet_instructions::margin::refresh_deposit_position;
 use jet_margin::{MarginAccount, TokenOracle};
 use jet_simulation::SolanaRpcClient;
 use jet_solana_client::transaction::TransactionBuilder;
 use std::sync::Arc;
 
-use crate::get_state::get_position_config;
+use crate::{get_state::get_position_config, margin_account_ext::MarginAccountExt};
 
 use super::position_refresher::define_refresher;
 
@@ -19,7 +19,7 @@ pub async fn refresh_deposit_positions(
     state: &MarginAccount,
 ) -> Result<Vec<TransactionBuilder>> {
     let mut instructions = vec![];
-    let address = derive_margin_account_from_state(state);
+    let address = state.address();
     for position in state.positions() {
         let (_, p_config) = match get_position_config(rpc, &state.airspace, &position.token).await?
         {

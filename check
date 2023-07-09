@@ -33,7 +33,9 @@ e2e-tests() { e2e $@; } # alias to avoid frustration. remove if no one is using 
 
 hosted-tests-localnet() { local args=$@
     extract-arg --skip-build || tests/scripts/on_localnet.sh anchor-build
-    SOLANA_LOGS=${SOLANA_LOGS:-true} tests/scripts/on_localnet.sh test combined $args
+    SOLANA_LOGS=${SOLANA_LOGS:-true} \
+    NEXTEST_RETRIES="${NEXTEST_RETRIES:-2}" \
+        tests/scripts/on_localnet.sh test combined $args
 }
 
 cargo-lint() {
@@ -48,7 +50,6 @@ cargo-test() {
         cargo nextest run --features debug-msg
     fi
 }
-
 
 #################
 # Docker

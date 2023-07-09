@@ -60,7 +60,8 @@ const FixedTermChart = ({ currentTab, token }: { currentTab: string; token: Marg
         amt: number
       ][],
       xRange: [
-        isNaN(liquidity.price_range[0]) ? liquidity.price_range[1] : liquidity.price_range[0], // this is a quick and dirty patch to accomodate for sampleLiquidity returning NaN when only 1 order present
+        // this is a quick and dirty patch to accomodate for sampleLiquidity returning NaN when only 1 order present
+        isNaN(liquidity.price_range[0]) ? Math.min(...liquidity.bids.concat(liquidity.asks).map(order => order[0])) : liquidity.price_range[0],
         liquidity.price_range[1]
       ] as [min: number, max: number],
       yRange: [0, new TokenAmount(bigIntToBn(liquidity.liquidity_range[1]), token.decimals).tokens] as [

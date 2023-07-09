@@ -196,7 +196,7 @@
       "notEnoughLiquidity": "Not enough liquidity"
     },
     "warningMessages": {
-      "nearMaxRisk": "This transaction brings your Risk Level to {{NEW_RISK}}, our maximum before liquidation is {{MAX_RISK}}."
+      "nearMaxRisk": "This transaction brings your Risk Level to {{NEW_RISK}}. Accounts are liquidateable when risk level crosses {{MAX_RISK}}."
     },
     "errorMessages": {
       "maxRiskLevel": "This transaction brings your Risk Level to {{NEW_RISK}}, and into liquidation territory."
@@ -595,6 +595,7 @@
   "termsPrivacy": {
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
-    "glossary": "Glossary"
+    "glossary": "Product Glossary",
+    "audits": "Audit Reports"
   }
 }

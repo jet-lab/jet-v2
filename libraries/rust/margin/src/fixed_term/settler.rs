@@ -48,7 +48,7 @@ async fn try_settle(
                 *margin_account,
                 builder.settle(*margin_account),
             )]
-            .with_signers(&[])
+            .without_signer()
         })
         .collect::<Vec<_>>()
         .send_and_confirm_condensed(&rpc)

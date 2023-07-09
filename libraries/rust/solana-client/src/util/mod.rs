@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anchor_lang::prelude::Pubkey;
 use solana_sdk::{signature::Keypair, signer::Signer};
 
@@ -60,6 +62,12 @@ impl Key for Pubkey {
 }
 
 impl Key for Keypair {
+    fn address(&self) -> Pubkey {
+        self.pubkey()
+    }
+}
+
+impl Key for Arc<Keypair> {
     fn address(&self) -> Pubkey {
         self.pubkey()
     }

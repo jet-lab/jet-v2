@@ -103,7 +103,7 @@ pub trait Proxy {
     async fn refresh_and_invoke_signed(
         &self,
         ix: Instruction,
-        signer: Keypair, //todo Signer
+        signer: Keypair,
     ) -> Result<Vec<TransactionBuilder>> {
         Ok(vec![self.invoke_signed(ix).with_signer(signer)])
     }

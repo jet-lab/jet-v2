@@ -25,7 +25,6 @@ use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
 use jet_solana_client::transaction::create_signed_transaction;
-use jet_solana_client::util::keypair::KeypairExt;
 use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
@@ -43,6 +42,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
 use crate::get_state::{get_margin_account, get_token_metadata};
+use crate::lookup_tables::LookupTable;
 use crate::refresh::deposit::refresh_deposit_positions;
 use crate::refresh::pool::{
     refresh_all_pool_positions, refresh_all_pool_positions_underlying_to_tx,
@@ -54,11 +54,12 @@ use crate::util::data::Join;
 use crate::{
     ix_builder::*,
     solana::{
-        keypair::clone,
+        keypair::{clone, KeypairExt},
         transaction::{SendTransactionBuilder, TransactionBuilder},
     },
 };
 
+use super::invoke_pool::PoolTargetPosition;
 use super::MarginInvokeContext;
 
 /// [Transaction] builder for a margin account, which supports invoking adapter
@@ -168,25 +169,11 @@ impl MarginTxBuilder {
     }
 
     /// returns None if there is no signer.
-    pub fn invoke_ctx(&self) -> Option<MarginInvokeContext<Keypair>> {
-        Some(MarginInvokeContext {
-            authority: self.signer.as_ref()?.clone(),
-            airspace: self.airspace(),
-            margin_account: *self.address(),
-            is_liquidator: self.is_liquidator,
-        })
-    }
-
-    /// Uses ix_builder's authority if there is no signer
-    pub fn invoke_ctx_unsigned(&self) -> MarginInvokeContext<Pubkey> {
+    pub fn invoke_ctx(&self) -> MarginInvokeContext {
         MarginInvokeContext {
             airspace: self.airspace(),
             margin_account: *self.address(),
-            authority: self
-                .signer
-                .as_ref()
-                .map(|k| k.pubkey())
-                .unwrap_or_else(|| self.ix.authority()),
+            authority: MarginActionAuthority::AccountAuthority.resolve(&self.ix),
             is_liquidator: self.is_liquidator,
         }
     }
@@ -226,7 +213,7 @@ impl MarginTxBuilder {
         let signers = self
             .signer
             .as_ref()
-            .map(|s| vec![clone(s)])
+            .map(|s| vec![s.clone()])
             .unwrap_or_default();
 
         TransactionBuilder {
@@ -374,7 +361,8 @@ impl MarginTxBuilder {
         Ok(self.create_transaction_builder(&to_close))
     }
 
-    /// Deposit tokens into a lending pool position owned by a margin account.
+    /// Deposit tokens into a lending pool position owned by a margin account in
+    /// an ATA position.
     ///
     /// Figures out if needed, and uses if so:
     /// - adapter vs accounting invoke
@@ -383,10 +371,47 @@ impl MarginTxBuilder {
     ///
     /// # Params
     ///
-    /// `token_mint` - The address of the mint for the tokens being deposited
-    /// `source` - The token account that the deposit will be transfered from
-    /// `amount` - The amount of tokens to deposit
+    /// `underlying_mint` - The address of the mint for the tokens being deposited
+    /// `source` - The token account that the deposit will be transfered from,
+    ///            defaults to ata of source authority.
+    /// `change` - The amount of tokens to deposit
+    /// `authority` - The owner of the source account
     pub async fn pool_deposit(
+        &self,
+        underlying_mint: &Pubkey,
+        source: Option<Pubkey>,
+        change: TokenChange,
+        authority: MarginActionAuthority,
+    ) -> Result<TransactionBuilder> {
+        let target = self.pool_deposit_target(underlying_mint).await?;
+        let source_authority = Some(authority.resolve(&self.ix));
+        let tx = self
+            .invoke_ctx()
+            .pool_deposit(*underlying_mint, source, source_authority, target, change)
+            .ijoin();
+        Ok(self.sign(tx))
+    }
+
+    async fn pool_deposit_target(&self, underlying_mint: &Pubkey) -> Result<PoolTargetPosition> {
+        let state = self.get_account_state().await?;
+        PoolTargetPosition::new(
+            &state,
+            &MarginPoolIxBuilder::new(*underlying_mint).deposit_note_mint,
+            &self.rpc.payer().pubkey(),
+            async {
+                self.get_pool(underlying_mint)
+                    .await
+                    .map(|p| p.token_price_oracle)
+            },
+        )
+        .await
+    }
+
+    /// DEPRECATED: use pool_deposit instead
+    ///
+    /// this uses the old style of registering positions (non-ata) which will
+    /// stop being supported.
+    pub async fn pool_deposit_deprecated(
         &self,
         token_mint: &Pubkey,
         source: Option<Pubkey>,
@@ -530,7 +555,7 @@ impl MarginTxBuilder {
     pub async fn swap(
         &self,
         source_token_mint: &Pubkey,
-        destination_token_mint: &Pubkey,
+        target_token_mint: &Pubkey,
         swap_pool: &Pubkey,
         pool_mint: &Pubkey,
         fee_account: &Pubkey,
@@ -540,59 +565,37 @@ impl MarginTxBuilder {
         // for levswap
         change: TokenChange,
         minimum_amount_out: u64,
-    ) -> Result<TransactionBuilder> {
-        let mut instructions = vec![];
+    ) -> Result<Vec<TransactionBuilder>> {
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
-        let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
-
-        let source_position = self
-            .get_or_push_create_position(&mut instructions, &source_pool.deposit_note_mint)
-            .await?;
-        let destination_position = self
-            .get_or_push_create_position(&mut instructions, &destination_pool.deposit_note_mint)
-            .await?;
-
-        let destination_metadata = get_token_metadata(&self.rpc, destination_token_mint).await?;
-
-        // Only refreshing the destination due to transaction size.
-        // The most common scenario would be that a new margin position is created
-        // for the destination of the swap. If its position price is not set before
-        // the swap, a liquidator would be accused of extracting too much value
-        // as the destination becomes immediately stale after creation.
-        instructions.push(
-            self.ix.accounting_invoke(
-                destination_pool
-                    .margin_refresh_position(*self.address(), destination_metadata.pyth_price),
-            ),
-        );
-
-        let swap_info = SplSwap {
-            program: *swap_program,
-            address: *swap_pool,
-            pool_mint: *pool_mint,
-            token_a: *source_token_mint,
-            token_b: *destination_token_mint,
-            token_a_vault: *source_token_account,
-            token_b_vault: *destination_token_account,
-            fee_account: *fee_account,
-        };
-        let inner_swap_ix = pool_spl_swap(
-            &swap_info,
-            &self.airspace(),
-            &self.ix.address,
-            source_token_mint,
-            destination_token_mint,
-            change.kind,
-            change.tokens,
+        let source = self
+            .get_account_state()
+            .await?
+            .position_address(&source_pool.deposit_note_mint)?;
+        let target = self.pool_deposit_target(target_token_mint).await?;
+        let tx = self.invoke_ctx().swap(
+            SplSwap {
+                program: *swap_program,
+                address: *swap_pool,
+                pool_mint: *pool_mint,
+                token_a: *source_token_mint,
+                token_b: *target_token_mint,
+                token_a_vault: *source_token_account,
+                token_b_vault: *destination_token_account,
+                fee_account: *fee_account,
+            },
+            Some(source),
+            target,
+            change,
             minimum_amount_out,
         );
+        Ok(self.sign(tx))
+    }
 
-        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
-
-        instructions.push(self.ix.update_position_balance(source_position));
-        instructions.push(self.ix.update_position_balance(destination_position));
-
-        Ok(self.create_transaction_builder(&instructions))
+    fn sign<Tx: WithSigner>(&self, tx: Tx) -> Tx::Output {
+        match self.signer.as_ref() {
+            Some(signer) => tx.with_signer(signer.clone()),
+            None => tx.without_signer(),
+        }
     }
 
     /// Transaction to swap tokens in a chain of up to 3 legs.
@@ -697,7 +700,8 @@ impl MarginTxBuilder {
 
         // Add liquidation instruction
         txs.instructions.push(self.ix.liquidate_begin());
-        txs.signers.push(clone(self.signer.as_ref().unwrap()));
+        txs.signers
+            .push(self.signer.as_ref().context("missing signer")?.clone());
 
         Ok(txs)
     }
@@ -748,7 +752,7 @@ impl MarginTxBuilder {
             .map(|position| {
                 self.ix
                     .refresh_position_config(&position.token)
-                    .with_signers(&self.signers())
+                    .with_signers(self.signers())
             })
             .collect::<Vec<_>>();
 

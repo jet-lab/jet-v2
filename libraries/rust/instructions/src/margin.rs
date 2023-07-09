@@ -34,6 +34,7 @@ use jet_program_common::ADDRESS_LOOKUP_REGISTRY_ID;
 
 pub use jet_margin::ID as MARGIN_PROGRAM;
 pub use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
+use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 
 use crate::airspace::derive_permit;
 
@@ -244,16 +245,7 @@ impl MarginIxBuilder {
     ///
     /// `account` - The account address that has had a balance change
     pub fn update_position_balance(&self, account: Pubkey) -> Instruction {
-        let accounts = ix_account::UpdatePositionBalance {
-            margin_account: self.address,
-            token_account: account,
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            data: ix_data::UpdatePositionBalance.data(),
-            accounts: accounts.to_account_metas(None),
-        }
+        update_position_balance(self.address, account)
     }
 
     /// Get instruction to register new position
@@ -425,26 +417,13 @@ impl MarginIxBuilder {
     ///
     /// `token_mint` - The mint for the token to be deposited
     pub fn create_deposit_position(&self, token_mint: Pubkey) -> Instruction {
-        let config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer(), None);
-        let token_account = get_associated_token_address(&self.address, &token_mint);
-        let accounts = ix_account::CreateDepositPosition {
-            margin_account: self.address,
-            authority: self.authority(),
-            payer: self.payer(),
-            mint: token_mint,
-            config: config_ix.derive_token_config(&token_mint),
-            token_account,
-            associated_token_program: spl_associated_token_account::ID,
-            token_program: spl_token::ID,
-            system_program: system_program::ID,
-            rent: Rent::id(),
-        };
-
-        Instruction {
-            program_id: jet_margin::ID,
-            accounts: accounts.to_account_metas(None),
-            data: ix_data::CreateDepositPosition.data(),
-        }
+        create_deposit_position(
+            self.address,
+            self.airspace,
+            self.authority(),
+            self.payer(),
+            token_mint,
+        )
     }
 
     /// Transfer tokens into or out of a deposit account associated with the margin account
@@ -546,6 +525,66 @@ impl MarginIxBuilder {
     /// Address of the lookup table registry for this account
     pub fn lookup_table_registry_address(&self) -> Pubkey {
         Pubkey::find_program_address(&[self.address.as_ref()], &ADDRESS_LOOKUP_REGISTRY_ID).0
+    }
+}
+
+/// Get instruction to update the accounting for assets in
+/// the custody of the margin account.
+///
+/// # Params
+///
+/// `account` - The account address that has had a balance change
+pub fn update_position_balance(margin_account: Pubkey, token_account: Pubkey) -> Instruction {
+    let accounts = ix_account::UpdatePositionBalance {
+        margin_account,
+        token_account,
+    };
+    Instruction {
+        program_id: JetMargin::id(),
+        data: ix_data::UpdatePositionBalance.data(),
+        accounts: accounts.to_account_metas(None),
+    }
+}
+
+pub fn create_deposit_account_and_position(
+    margin_account: Pubkey,
+    airspace: Pubkey,
+    authority: Pubkey,
+    payer: Pubkey,
+    mint: Pubkey,
+) -> Vec<Instruction> {
+    vec![
+        create_associated_token_account_idempotent(&payer, &margin_account, &mint, &spl_token::ID),
+        create_deposit_position(margin_account, airspace, authority, payer, mint),
+    ]
+}
+
+/// Construct a CreateDepositPosition instruction
+pub fn create_deposit_position(
+    margin_account: Pubkey,
+    airspace: Pubkey,
+    authority: Pubkey,
+    payer: Pubkey,
+    mint: Pubkey,
+) -> Instruction {
+    let config_ix = MarginConfigIxBuilder::new(airspace, payer, None);
+    let token_account = get_associated_token_address(&margin_account, &mint);
+    let accounts = ix_account::CreateDepositPosition {
+        margin_account,
+        authority,
+        payer,
+        mint,
+        config: config_ix.derive_token_config(&mint),
+        token_account,
+        associated_token_program: spl_associated_token_account::ID,
+        token_program: spl_token::ID,
+        system_program: system_program::ID,
+        rent: Rent::id(),
+    };
+    Instruction {
+        program_id: jet_margin::ID,
+        accounts: accounts.to_account_metas(None),
+        data: ix_data::CreateDepositPosition.data(),
     }
 }
 

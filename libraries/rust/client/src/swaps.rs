@@ -3,7 +3,10 @@ use std::sync::Arc;
 use solana_sdk::pubkey::Pubkey;
 use spl_token_swap::state::SwapV1;
 
-use jet_instructions::margin_swap::{pool_spl_swap, SplSwap};
+use jet_instructions::{
+    margin::derive_position_token_account,
+    margin_swap::{pool_spl_swap, SplSwap},
+};
 use jet_margin_pool::ChangeKind;
 use jet_program_common::programs::ORCA_V2;
 
@@ -61,6 +64,7 @@ impl MarginAccountSwapsClient {
         let target_deposit_note = self.account.pool(target_token).builder.deposit_note_mint;
 
         instructions.extend(
+            //todo use ata
             (!self.account.has_position(&target_deposit_note))
                 .then(|| self.account.builder.register_position(target_deposit_note)),
         );
@@ -71,12 +75,33 @@ impl MarginAccountSwapsClient {
             None => (ChangeKind::SetTo, 0),
         };
 
+        let account = self.account.state();
         instructions.push(pool_spl_swap(
             &swap_info,
             &self.account.airspace(),
             &self.account.address,
             source_token,
             target_token,
+            Some(
+                account
+                    .get_position(source_token)
+                    .map(|x| x.address)
+                    .unwrap_or(derive_position_token_account(
+                        //todo use ata
+                        &self.account.address,
+                        source_token,
+                    )),
+            ),
+            Some(
+                account
+                    .get_position(target_token)
+                    .map(|x| x.address)
+                    .unwrap_or(derive_position_token_account(
+                        //todo use ata
+                        &self.account.address,
+                        target_token,
+                    )),
+            ),
             withdrawal_change_kind,
             withdrawal_amount,
             minimum_amount_out,

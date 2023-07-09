@@ -276,28 +276,28 @@ async fn route_swap() -> anyhow::Result<()> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(
+        .pool_deposit_deprecated(
             &env.usdc,
             &user_a_usdc_account,
             TokenChange::shift(1_000 * ONE_USDC),
         )
         .await?;
     user_a
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_a_msol_account,
             TokenChange::shift(ONE_MSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.tsol,
             &user_b_tsol_account,
             TokenChange::shift(10 * ONE_TSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_b_msol_account,
             TokenChange::shift(10 * ONE_MSOL),
@@ -462,21 +462,21 @@ async fn single_leg_swap_margin(
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_a_msol_account,
             TokenChange::shift(ONE_MSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.tsol,
             &user_b_tsol_account,
             TokenChange::shift(10 * ONE_TSOL),
         )
         .await?;
     user_b
-        .deposit(
+        .pool_deposit_deprecated(
             &env.msol,
             &user_b_msol_account,
             TokenChange::shift(10 * ONE_MSOL),
