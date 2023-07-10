@@ -1,5 +1,5 @@
 use lookup_table_registry::RegistryAccount;
-use lookup_table_registry_client::{Entry};
+use lookup_table_registry_client::Entry;
 use solana_address_lookup_table_program::state::AddressLookupTable;
 use std::{collections::HashSet, sync::Arc};
 use wasm_bindgen::prelude::*;
@@ -163,10 +163,6 @@ impl MarginAccountClient {
     /// the airspace the margin account is a part of
     pub fn airspace(&self) -> Pubkey {
         self.client.airspace()
-    }
-
-    pub fn airspace_lookup_registry_authority(&self) -> Option<Pubkey> {
-        self.client.airspace_lookup_registry_authority()
     }
 
     /// The positions currently held by this account

@@ -27,10 +27,16 @@ pub type ClientResult<T> = std::result::Result<T, ClientError>;
 pub enum ClientError {
     #[error("rpc client error")]
     Rpc(#[from] jet_solana_client::rpc::ClientError),
+
+    #[error("ix build error: {0}")]
+    IxBuild(#[from] jet_instructions::JetIxError),
+
     #[error("decode error: {0}")]
     Deserialize(Box<dyn StdError + Send + Sync>),
+
     #[error("wallet is not connected")]
     MissingWallet,
+
     #[error("error: {0}")]
     Unexpected(String),
 }
@@ -89,10 +95,6 @@ impl ClientState {
 
     pub fn airspace(&self) -> Pubkey {
         self.state.config.airspace
-    }
-
-    pub fn airspace_lookup_registry_authority(&self) -> Option<Pubkey> {
-        self.state.config.airspace_lookup_registry_authority
     }
 
     pub fn state(&self) -> &AccountStates {
@@ -178,7 +180,6 @@ impl ClientState {
 
         let tx = &self.wallet.sign_transactions(&[tx]).await.unwrap()[0];
         let signature = self.network.send_transaction(tx).await?;
-
         self.network.confirm_transaction_result(signature).await?;
 
         log::info!("tx result success: {signature}");

@@ -3,21 +3,15 @@ use std::sync::Arc;
 
 use anyhow::Error;
 
-use jet_environment::builder::resolve_swap_program;
-use jet_instructions::fixed_term::derive::market_from_tenor;
 use solana_sdk::pubkey::Pubkey;
 
-use jet_client::config::{AirspaceInfo, DexInfo, JetAppConfig, TokenInfo};
+use jet_client::config::JetAppConfig;
 use jet_client::{JetClient, NetworkKind};
 use jet_environment::config::{
     AirspaceConfig, DexConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS,
 };
-use jet_instructions::airspace::derive_airspace;
-use jet_instructions::test_service::{derive_pyth_price, derive_token_mint};
 use jet_margin_pool::MarginPoolConfig;
-use jet_margin_sdk::ix_builder::test_service::derive_spl_swap_pool;
 use jet_metadata::TokenKind;
-use jet_program_common::programs::ORCA_V2;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::environment::TestToken;
@@ -177,20 +171,8 @@ impl TestDefault for TestContextSetupInfo {
     }
 }
 
-struct SetupOutput {
-    app_config: JetAppConfig,
-    env_config: EnvironmentConfig,
-}
-
 impl TestContextSetupInfo {
-    fn to_config(
-        &self,
-        airspace_name: &str,
-        payer: Pubkey,
-        crank: Pubkey,
-        airspace_authority: Pubkey,
-    ) -> SetupOutput {
-        let airspace = derive_airspace(airspace_name);
+    fn to_config(&self, airspace_name: &str, payer: Pubkey, crank: Pubkey) -> EnvironmentConfig {
         let tokens = self
             .tokens
             .iter()
@@ -211,52 +193,6 @@ impl TestContextSetupInfo {
                 (program, (token_a_name, token_b_name))
             })
             .collect::<Vec<_>>();
-
-        let app_config = JetAppConfig {
-            tokens: tokens
-                .iter()
-                .map(|t| {
-                    let mint = derive_token_mint(&t.name);
-                    TokenInfo {
-                        symbol: t.name.clone(),
-                        name: t.name.clone(),
-                        precision: t.decimals.unwrap(),
-                        decimals: t.decimals.unwrap(),
-                        oracle: derive_pyth_price(&mint),
-                        mint,
-                    }
-                })
-                .collect(),
-            airspaces: vec![AirspaceInfo {
-                name: airspace_name.to_string(),
-                tokens: tokens.iter().map(|t| t.name.clone()).collect(),
-                fixed_term_markets: tokens
-                    .iter()
-                    .flat_map(|t| {
-                        let token = derive_token_mint(&t.name);
-                        t.fixed_term_markets
-                            .iter()
-                            .map(move |m| market_from_tenor(&airspace, &token, m.borrow_tenor))
-                    })
-                    .collect(),
-                lookup_registry_authority: Some(airspace_authority),
-            }],
-            exchanges: dexes
-                .iter()
-                .map(|(program, (name_a, name_b))| {
-                    let token_a = derive_token_mint(name_a);
-                    let token_b = derive_token_mint(name_b);
-
-                    DexInfo {
-                        program: resolve_swap_program(NetworkKind::Localnet, program).unwrap(),
-                        description: format!("{}/{}", token_a, token_b),
-                        address: derive_spl_swap_pool(&ORCA_V2, &token_a, &token_b).state,
-                        base: token_a,
-                        quote: token_b,
-                    }
-                })
-                .collect(),
-        };
 
         let env_config = EnvironmentConfig {
             network: NetworkKind::Localnet,
@@ -281,9 +217,6 @@ impl TestContextSetupInfo {
             }],
         };
 
-        SetupOutput {
-            app_config,
-            env_config,
-        }
+        env_config
     }
 }

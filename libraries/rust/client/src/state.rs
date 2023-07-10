@@ -14,6 +14,7 @@ use crate::{
     ClientError,
 };
 
+pub mod dexes;
 pub mod fixed_term;
 pub mod lookup_tables;
 pub mod margin;
@@ -21,6 +22,7 @@ pub mod margin_pool;
 pub mod oracles;
 pub mod spl_swap;
 pub mod tokens;
+
 /// A utility for synchronizing information about the current protocol state
 /// with an active Solana network.
 pub struct AccountStates {
@@ -79,6 +81,7 @@ impl AccountStates {
     pub async fn sync_all(&self) -> ClientResult<()> {
         self::oracles::sync(self).await?;
         self::spl_swap::sync(self).await?;
+        self::dexes::sync(self).await?;
         self::margin_pool::sync(self).await?;
         self::fixed_term::sync(self).await?;
         self::margin::sync(self).await?;

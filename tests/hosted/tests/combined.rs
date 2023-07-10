@@ -18,6 +18,7 @@ feature_groups! {
         mod pools;
         mod client_fixed_term;
         mod whirlpool;
+        mod client_swap;
     }
 }
 

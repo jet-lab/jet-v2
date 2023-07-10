@@ -118,19 +118,22 @@ pub async fn configure_market_for_token(
         }
     }
 
-    builder.register_lookups(LookupScope::FixedTerm, [
-        ix_builder.market(),
-        ix_builder.vault(),
-        ix_builder.ticket_mint(),
-        ix_builder.underlying_collateral(),
-        ix_builder.collateral(),
-        ix_builder.claims(),
-        ix_builder.orderbook_state(),
-        ix_builder.asks(),
-        ix_builder.bids(),
-        ix_builder.event_queue(),
-        ix_builder.fee_vault()
-    ]);
+    builder.register_lookups(
+        LookupScope::FixedTerm,
+        [
+            ix_builder.market(),
+            ix_builder.vault(),
+            ix_builder.ticket_mint(),
+            ix_builder.underlying_collateral(),
+            ix_builder.collateral(),
+            ix_builder.claims(),
+            ix_builder.orderbook_state(),
+            ix_builder.asks(),
+            ix_builder.bids(),
+            ix_builder.event_queue(),
+            ix_builder.fee_vault(),
+        ],
+    );
 
     // TODO: support pausing
 

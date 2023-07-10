@@ -27,10 +27,10 @@ pub async fn configure_margin_token(
         builder.propose([ix_builder.configure_token(*mint, config)])
     }
 
-    builder.register_lookups(LookupScope::Airspace, [
-        *mint,
-        derive_token_config(airspace, mint)
-    ]);
+    builder.register_lookups(
+        LookupScope::Airspace,
+        [*mint, derive_token_config(airspace, mint)],
+    );
 
     Ok(())
 }

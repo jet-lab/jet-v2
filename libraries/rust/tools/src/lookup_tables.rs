@@ -118,9 +118,7 @@ impl<'a> LookupTableManager<'a> {
                         self.send_transaction(&[ix]).await?;
 
                         let to_drain = std::cmp::min(LOOKUP_TABLE_MAX_ADDRESSES, to_insert.len());
-                        let insertable = to_insert
-                            .drain(..to_drain)
-                            .collect::<Vec<_>>();
+                        let insertable = to_insert.drain(..to_drain).collect::<Vec<_>>();
 
                         self.send_transaction(&[self.ix.append_to_lookup_table(
                             key,
@@ -184,7 +182,7 @@ impl<'a> LookupTableManager<'a> {
 
                             Some(AddressLookupTableAccount {
                                 key: tables[i],
-                                addresses: state.addresses.into_iter().map(|a| *a).collect(),
+                                addresses: state.addresses.iter().copied().collect(),
                             })
                         })
                     })

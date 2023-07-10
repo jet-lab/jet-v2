@@ -2,12 +2,16 @@ use jet_environment::lookup_tables::resolve_lookup_tables;
 use jet_instructions::test_service::{openbook_market_cancel_orders, openbook_market_make};
 use solana_sdk::{account_info::AccountInfo, pubkey::Pubkey, signature::Keypair, signer::Signer};
 
-use jet_solana_client::{rpc::{ClientError, SolanaRpc, SolanaRpcExtra}, transaction::create_signed_transaction};
+use jet_solana_client::{
+    rpc::{ClientError, SolanaRpc, SolanaRpcExtra},
+    transaction::create_signed_transaction,
+};
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account_idempotent,
 };
 
 /// Add maker liquidity to an openbook market
+#[allow(clippy::await_holding_refcell_ref)]
 pub async fn market_make(
     wallet: &Keypair,
     client: &(dyn SolanaRpc + 'static),
@@ -20,7 +24,7 @@ pub async fn market_make(
     };
 
     let account_info = AccountInfo::from((&market_address, &mut market_account));
-    let Ok(market_info) = anchor_spl::dex::serum_dex::state::MarketStateV2::load(&account_info, &dex_program) else {
+    let Ok(market_info) = anchor_spl::dex::serum_dex::state::MarketState::load(&account_info, &dex_program) else {
         return Err(ClientError::Other(format!("failed to deserialize market state at {market_address}")));
     };
 
@@ -34,6 +38,8 @@ pub async fn market_make(
     let request_queue = Pubkey::new_from_array(bytemuck::cast(market_info.req_q));
     let scratch_base = get_associated_token_address(&wallet.pubkey(), &token_base);
     let scratch_quote = get_associated_token_address(&wallet.pubkey(), &token_quote);
+
+    drop(market_info);
 
     if !client.account_exists(&scratch_base).await? {
         instructions.push(create_associated_token_account_idempotent(
@@ -80,7 +86,8 @@ pub async fn market_make(
 
     let lookup_tables = resolve_lookup_tables(client, &lookup_authority).await?;
     let recent_blockhash = client.get_latest_blockhash().await?;
-    let tx = create_signed_transaction(&instructions, wallet, &lookup_tables, recent_blockhash).unwrap();
+    let tx =
+        create_signed_transaction(&instructions, wallet, &lookup_tables, recent_blockhash).unwrap();
 
     client.send_and_confirm_transaction(&tx).await?;
 

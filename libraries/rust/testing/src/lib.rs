@@ -1,2 +1,2 @@
-pub mod whirlpool;
 pub mod openbook;
+pub mod whirlpool;

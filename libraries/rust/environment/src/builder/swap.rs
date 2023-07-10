@@ -3,7 +3,10 @@ use std::str::FromStr;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction};
 
 use jet_instructions::{
-    orca::{derive_whirlpool, whirlpool_initialize_fee_tier, WhirlpoolIxBuilder},
+    orca::{
+        derive_whirlpool, derive_whirlpool_oracle, whirlpool_initialize_fee_tier,
+        WhirlpoolIxBuilder,
+    },
     test_service::{
         derive_openbook_market, derive_spl_swap_pool, derive_whirlpool_config,
         openbook_market_create, orca_whirlpool_create_config, saber_swap_pool_create,
@@ -12,7 +15,8 @@ use jet_instructions::{
 };
 use jet_solana_client::{network::NetworkKind, transaction::TransactionBuilder};
 
-use jet_program_common::programs::*;
+use jet_program_common::{programs::*, CONTROL_AUTHORITY};
+use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 
 use crate::{
     builder::{LookupScope, SetupPhase},
@@ -50,6 +54,28 @@ pub fn resolve_swap_program(network: NetworkKind, name: &str) -> Result<Pubkey, 
     }
 
     Err(BuilderError::UnknownSwapProgram(name.to_string()))
+}
+
+pub fn resolve_swap_address(program: &Pubkey, base: &Pubkey, quote: &Pubkey) -> Option<Pubkey> {
+    if *program == ORCA_WHIRLPOOL {
+        let (base_real, quote_real) = (std::cmp::min(base, quote), std::cmp::max(base, quote));
+
+        Some(
+            derive_whirlpool(
+                &derive_whirlpool_config(),
+                base_real,
+                quote_real,
+                DEFAULT_TICK_SPACING,
+            )
+            .0,
+        )
+    } else if *program == OPENBOOK {
+        Some(derive_openbook_market(program, base, quote, &Pubkey::default()).state)
+    } else if *program == ORCA_V2 {
+        Some(derive_spl_swap_pool(program, base, quote).state)
+    } else {
+        None
+    }
 }
 
 pub async fn create_swap_pools<'a>(
@@ -186,7 +212,27 @@ async fn create_openbook_market(
         ],
     );
 
-    builder.setup(SetupPhase::TokenAccounts, [create_state_acc_tx]);
+    let create_authority_token_acc_a = create_associated_token_account_idempotent(
+        &builder.payer(),
+        &CONTROL_AUTHORITY,
+        &token_a,
+        &spl_token::ID,
+    );
+    let create_authority_token_acc_b = create_associated_token_account_idempotent(
+        &builder.payer(),
+        &CONTROL_AUTHORITY,
+        &token_b,
+        &spl_token::ID,
+    );
+
+    builder.setup(
+        SetupPhase::TokenAccounts,
+        [
+            create_state_acc_tx,
+            create_authority_token_acc_a.into(),
+            create_authority_token_acc_b.into(),
+        ],
+    );
 
     builder.setup(
         SetupPhase::Swaps,
@@ -217,14 +263,17 @@ async fn create_spl_swap_pool(
         return Ok(());
     }
 
-    builder.register_lookups(LookupScope::Swaps, [
-        swap_info.info,
-        swap_info.state,
-        swap_info.mint,
-        swap_info.authority,
-        swap_info.token_a_account,
-        swap_info.token_b_account
-    ]);
+    builder.register_lookups(
+        LookupScope::Swaps,
+        [
+            swap_info.info,
+            swap_info.state,
+            swap_info.mint,
+            swap_info.authority,
+            swap_info.token_a_account,
+            swap_info.token_b_account,
+        ],
+    );
 
     builder.setup(
         SetupPhase::Swaps,
@@ -253,14 +302,17 @@ async fn create_saber_swap_pool(
         return Ok(());
     }
 
-    builder.register_lookups(LookupScope::Swaps, [
-        swap_info.info,
-        swap_info.state,
-        swap_info.mint,
-        swap_info.authority,
-        swap_info.token_a_account,
-        swap_info.token_b_account
-    ]);
+    builder.register_lookups(
+        LookupScope::Swaps,
+        [
+            swap_info.info,
+            swap_info.state,
+            swap_info.mint,
+            swap_info.authority,
+            swap_info.token_a_account,
+            swap_info.token_b_account,
+        ],
+    );
 
     builder.setup(
         SetupPhase::Swaps,
@@ -324,6 +376,13 @@ async fn create_orca_whirlpool(
         return Ok(());
     }
 
+    log::info!(
+        "create whirlpool {} for {}/{}",
+        whirlpool_addr,
+        token_a,
+        token_b
+    );
+
     let vault_a = Keypair::new();
     let vault_b = Keypair::new();
 
@@ -337,12 +396,16 @@ async fn create_orca_whirlpool(
         DEFAULT_TICK_SPACING,
     );
 
-    builder.register_lookups(LookupScope::Swaps, [
-        ix_builder.whirlpool,
-        ix_builder.token_a_vault,
-        ix_builder.token_b_vault,
-        ix_builder.config,
-    ]);
+    builder.register_lookups(
+        LookupScope::Swaps,
+        [
+            ix_builder.whirlpool,
+            derive_whirlpool_oracle(&ix_builder.whirlpool),
+            ix_builder.token_a_vault,
+            ix_builder.token_b_vault,
+            ix_builder.config,
+        ],
+    );
 
     builder.setup(
         SetupPhase::Swaps,

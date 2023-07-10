@@ -32,19 +32,26 @@ impl MarginTestContext {
     /// - Default::default(): a blank airspace
     /// - TestDefault::test_default(): airspace with two tokens and their pools
     pub async fn init_environment(&self, setup: &TestContextSetupInfo) -> Result<JetAppConfig> {
-        let setup_config = setup.to_config(
+        let env_config = setup.to_config(
             &self.airspace_name,
             self.solana.rpc.payer().pubkey(),
             self.crank.pubkey(),
-            self.airspace_authority.pubkey(),
         );
         let mut builder = self.env_builder();
-        configure_environment(&mut builder, &setup_config.env_config)
+        configure_environment(&mut builder, &env_config)
             .await
             .unwrap();
         self.execute_plan(builder.build()).await?;
 
-        Ok(setup_config.app_config)
+        let app_config = JetAppConfig::from_env_config(
+            env_config,
+            self.solana.rpc2.as_ref(),
+            Some(self.payer().pubkey()),
+        )
+        .await
+        .unwrap();
+
+        Ok(app_config)
     }
 
     pub(super) async fn execute_plan(&self, plan: PlanInstructions) -> Result<()> {

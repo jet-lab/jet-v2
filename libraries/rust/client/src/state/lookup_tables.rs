@@ -11,7 +11,7 @@ pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     if let Some(airspace_authority) = states.config.airspace_lookup_registry_authority {
         let tables = resolve_lookup_tables(states.network.as_ref(), &airspace_authority).await?;
 
-        if tables.len() == 0 {
+        if tables.is_empty() {
             log::debug!("missing lookup tables for airspace authority {airspace_authority}")
         } else {
             states
@@ -24,7 +24,7 @@ pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     for margin_account in states.addresses_of::<MarginAccount>() {
         let tables = resolve_lookup_tables(states.network.as_ref(), &margin_account).await?;
 
-        if tables.len() == 0 {
+        if tables.is_empty() {
             log::debug!("missing lookup tables for margin account {margin_account}");
         } else {
             states

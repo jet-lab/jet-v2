@@ -170,7 +170,7 @@ impl Builder {
         PlanInstructions {
             setup: self.setup_tx.into_values().collect::<Vec<_>>(),
             propose: self.propose_tx,
-            lookup_setup: self.addr_lookup_scopes
+            lookup_setup: self.addr_lookup_scopes,
         }
     }
 

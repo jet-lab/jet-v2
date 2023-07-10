@@ -42,7 +42,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
 use crate::get_state::{get_margin_account, get_token_metadata};
-use crate::lookup_tables::LookupTable;
+use crate::margin_account_ext::MarginAccountExt;
 use crate::refresh::deposit::refresh_deposit_positions;
 use crate::refresh::pool::{
     refresh_all_pool_positions, refresh_all_pool_positions_underlying_to_tx,
