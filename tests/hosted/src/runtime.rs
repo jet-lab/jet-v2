@@ -81,6 +81,8 @@ impl SolanaTestContext {
 }
 
 fn init_runtime(payer: Keypair) -> (Arc<dyn SolanaRpcClient>, Arc<dyn SolanaRpc>) {
+    let _ = env_logger::builder().is_test(false).try_init();
+
     if cfg!(feature = "localnet") {
         let rpc = RpcConnection::new_optimistic("http://127.0.0.1:8899");
 
@@ -93,8 +95,6 @@ fn init_runtime(payer: Keypair) -> (Arc<dyn SolanaRpcClient>, Arc<dyn SolanaRpc>
 }
 
 fn simulation_runtime() -> TestRuntimeRpcClient {
-    let _ = env_logger::builder().is_test(false).try_init();
-
     jet_simulation::create_test_runtime![
         jet_test_service,
         jet_fixed_term,

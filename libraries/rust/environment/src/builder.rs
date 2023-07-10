@@ -1,4 +1,9 @@
-use std::{collections::BTreeMap, fmt::Debug, str::FromStr, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    fmt::Debug,
+    str::FromStr,
+    sync::Arc,
+};
 
 use spl_governance::state::{
     native_treasury::get_native_treasury_address,
@@ -33,9 +38,6 @@ pub use global::{configure_environment, configure_tokens, create_test_tokens, to
 pub use swap::{resolve_swap_program, DEFAULT_TICK_SPACING as WHIRLPOOL_TICK_SPACING};
 
 /// Descriptions for errors while building the configuration instructions
-/// - TODO: It would be great to find a way to make this Sync + Send, but it's
-///   not straightforward due to the wasm error not being Sync or Send, which
-///   needs to go into InterfaceError.
 #[derive(Error, Debug)]
 pub enum BuilderError {
     #[error("error using network interface: {0:?}")]
@@ -66,10 +68,6 @@ pub enum BuilderError {
         expected: NetworkKind,
         actual: NetworkKind,
     },
-}
-
-pub trait AccountsRetriever {
-    fn exists(&self, address: &Pubkey) -> bool;
 }
 
 /// How will the proposed instructions be executed?
@@ -109,6 +107,7 @@ pub struct TokenContext {
 
 pub struct PlanInstructions {
     pub setup: Vec<Vec<TransactionBuilder>>,
+    pub lookup_setup: HashMap<LookupScope, HashSet<Pubkey>>,
     pub propose: Vec<TransactionBuilder>,
 }
 
@@ -126,6 +125,7 @@ pub struct Builder {
     pub(crate) proposal_execution: ProposalExecution,
     setup_tx: BTreeMap<SetupPhase, Vec<TransactionBuilder>>,
     propose_tx: Vec<TransactionBuilder>,
+    addr_lookup_scopes: HashMap<LookupScope, HashSet<Pubkey>>,
 }
 
 impl Builder {
@@ -140,6 +140,7 @@ impl Builder {
             proposal_execution,
             setup_tx: BTreeMap::new(),
             propose_tx: vec![],
+            addr_lookup_scopes: HashMap::new(),
             signer,
         })
     }
@@ -160,14 +161,16 @@ impl Builder {
             proposal_execution,
             setup_tx: BTreeMap::new(),
             propose_tx: vec![],
+            addr_lookup_scopes: HashMap::new(),
             signer,
         }
     }
 
     pub fn build(self) -> PlanInstructions {
         PlanInstructions {
-            setup: self.setup_tx.into_values().collect(),
+            setup: self.setup_tx.into_values().collect::<Vec<_>>(),
             propose: self.propose_tx,
+            lookup_setup: self.addr_lookup_scopes,
         }
     }
 
@@ -271,6 +274,21 @@ impl Builder {
         self.propose_tx.extend(instructions);
     }
 
+    pub fn register_lookups(
+        &mut self,
+        scope: LookupScope,
+        address: impl IntoIterator<Item = Pubkey>,
+    ) {
+        match self.addr_lookup_scopes.get_mut(&scope) {
+            Some(addresses) => addresses.extend(address),
+            None => {
+                _ = self
+                    .addr_lookup_scopes
+                    .insert(scope, address.into_iter().collect())
+            }
+        }
+    }
+
     pub(crate) fn margin_config_ix(&self, airspace: &Pubkey) -> MarginConfigIxBuilder {
         MarginConfigIxBuilder::new(
             *airspace,
@@ -328,4 +346,13 @@ pub(crate) fn resolve_token_mint(
     }
 
     Err(BuilderError::UnknownToken(name.to_owned()))
+}
+
+/// Specifies the scopes that lookup tables are organized into
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LookupScope {
+    Airspace,
+    Pools,
+    FixedTerm,
+    Swaps,
 }

@@ -150,14 +150,14 @@ impl TestUser {
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
 
-        let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+        let mut swap_builder = MarginSwapRouteIxBuilder::new(
             jet_margin_sdk::ix_builder::SwapContext::MarginPool,
             *self.user.address(),
             *src,
             *dst,
             change,
             1, // at least 1 token back
-        )?;
+        );
         swap_builder.add_swap_leg(pool, 0)?;
         swap_builder.finalize()?;
         self.user.route_swap(&swap_builder, &[]).await?;
@@ -178,14 +178,14 @@ impl TestUser {
         self.create_deposit_position(src).await?;
         self.create_deposit_position(dst).await?;
 
-        let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+        let mut swap_builder = MarginSwapRouteIxBuilder::new(
             jet_instructions::margin_swap::SwapContext::MarginPool,
             *self.user.address(),
             *src,
             *dst,
             change,
             1,
-        )?;
+        );
         if is_liquidation {
             swap_builder.set_liquidation()?;
         }

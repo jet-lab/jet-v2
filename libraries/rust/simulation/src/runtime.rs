@@ -24,6 +24,7 @@ use solana_sdk::{
     genesis_config::GenesisConfig,
     hash::Hash,
     instruction::InstructionError,
+    packet::PACKET_DATA_SIZE,
     program_error::{ProgramError, UNSUPPORTED_SYSVAR},
     program_pack::Pack,
     program_stubs::SyscallStubs,
@@ -69,6 +70,7 @@ declare_logging! {
         instruction     = "ixhndlr";
         transaction     = "txhndlr";
         rpc             = "rpc";
+        bank            = "bank";
         custom          = "_custom"; // for logs that are specific to the
                                      // simulated runtime, that you wouldn't
                                      // normally expect from a real validator.
@@ -115,6 +117,10 @@ impl TestRuntime {
         let programs = native_programs.into_iter().collect::<Vec<_>>();
         let program_ids = programs.iter().map(|(k, _)| *k).collect::<Vec<_>>();
 
+        for (program, _) in &programs {
+            log::bank::info!("loading program {program}");
+        }
+
         GLOBAL_PROGRAM_MAP.insert(features, HashMap::from_iter(programs.into_iter()));
 
         bank.add_builtin("compute_budget", &compute_budget::ID, noop_handler);
@@ -131,6 +137,7 @@ impl TestRuntime {
         ]));
 
         bank.set_compute_budget(Some(ComputeBudget::default()));
+        bank.set_rent_burn_percentage(100);
         bank.set_capitalization();
 
         let mut features = FeatureSet::clone(&bank.feature_set);
@@ -485,6 +492,14 @@ fn send_legacy_transaction(
     bank: &Arc<Bank>,
     transaction: &Transaction,
 ) -> Result<Signature, TransactionError> {
+    let serialized_len = transaction.message.serialize().len();
+    assert!(
+        serialized_len < PACKET_DATA_SIZE,
+        "tx size too large: {} (limit {})",
+        serialized_len,
+        PACKET_DATA_SIZE
+    );
+
     let signature = transaction.signatures[0];
     let tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
 
@@ -514,6 +529,14 @@ fn send_transaction(
     bank: &Arc<Bank>,
     transaction: &VersionedTransaction,
 ) -> Result<Signature, TransactionError> {
+    let serialized_len = transaction.message.serialize().len();
+    assert!(
+        serialized_len < PACKET_DATA_SIZE,
+        "tx size too large: {} (limit {})",
+        serialized_len,
+        PACKET_DATA_SIZE
+    );
+
     let signature = transaction.signatures[0];
     let tx = SanitizedTransaction::try_create(
         transaction.clone(),
@@ -568,6 +591,8 @@ impl BankManager {
             &Pubkey::new_unique(),
             bank.slot() + 1,
         ));
+
+        log::bank::info!("new bank at slot {}", bank.slot());
     }
 }
 
@@ -673,6 +698,7 @@ impl SolanaRpc for TestRuntimeRpcClient {
     }
 
     async fn send_transaction_legacy(&self, transaction: &Transaction) -> ClientResult<Signature> {
+        self.next_block();
         Ok(send_legacy_transaction(&self.bank(), transaction)?)
     }
 
@@ -680,6 +706,7 @@ impl SolanaRpc for TestRuntimeRpcClient {
         &self,
         transaction: &VersionedTransaction,
     ) -> ClientResult<Signature> {
+        self.next_block();
         Ok(send_transaction(&self.bank(), transaction)?)
     }
 
@@ -737,6 +764,14 @@ impl SolanaRpc for TestRuntimeRpcClient {
 
         log::rpc::trace!("get_token_accounts_by_owner({}) = {:#?}", owner, accounts);
         Ok(accounts)
+    }
+
+    async fn wait_for_slot(&self, slot: u64) -> ClientResult<()> {
+        while self.bank().slot() < slot {
+            self.next_block();
+        }
+
+        Ok(())
     }
 }
 

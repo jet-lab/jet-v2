@@ -119,6 +119,14 @@ pub trait SolanaRpc: Send + Sync {
             .await
             .map(|mut statuses| statuses.pop().unwrap())
     }
+
+    async fn wait_for_slot(&self, slot: u64) -> ClientResult<()> {
+        while self.get_slot().await? < slot {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+
+        Ok(())
+    }
 }
 
 /// Extra helper functions for using the Solana RPC API

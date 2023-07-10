@@ -1,14 +1,13 @@
-use std::collections::HashSet;
 use std::ops::Deref;
 use std::rc::Rc;
 
+use jet_client::state::dexes::DexState;
+use jet_client::swaps::SwapStep;
 use jet_client::JetClient;
 use jet_environment::builder::WHIRLPOOL_TICK_SPACING;
-use jet_instructions::margin_swap::{MarginSwapRouteIxBuilder, SwapContext};
 use jet_instructions::orca::derive_whirlpool;
 use jet_instructions::test_service::derive_whirlpool_config;
-use jet_margin_pool::TokenChange;
-use jet_margin_sdk::swap::whirlpool::WhirlpoolSwap;
+use jet_program_common::programs::ORCA_WHIRLPOOL;
 use jet_solana_client::util::keypair;
 
 use hosted_tests::actions::*;
@@ -84,39 +83,26 @@ async fn whirlpool_swap_workflow() -> anyhow::Result<()> {
     deposit(&user_account, &tsol, 1).await.unwrap();
 
     // Swap USDC for TSOL
-    let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
-        SwapContext::MarginPositions,
-        user_account.address(),
-        usdc.mint,
-        tsol.mint,
-        TokenChange::shift(deposit_amount),
-        1, // Get at least 1 token back
-    )
-    .unwrap();
+    let whirlpool_address = user_client
+        .state()
+        .addresses_of::<DexState>()
+        .first()
+        .cloned()
+        .unwrap();
 
-    let mut supported_mints = HashSet::new();
-    supported_mints.insert(usdc.mint);
-    supported_mints.insert(tsol.mint);
+    let swap_steps = [SwapStep {
+        from_token: usdc.mint,
+        to_token: tsol.mint,
+        program: ORCA_WHIRLPOOL,
+        swap_pool: whirlpool_address,
+    }];
 
-    let whirlpool_swaps = WhirlpoolSwap::get_pools(rpc.deref(), &supported_mints)
+    user_account.update_lookup_tables().await.unwrap();
+    user_account
+        .swaps()
+        .route_swap(&swap_steps, deposit_amount, 1)
         .await
         .unwrap();
-    let (_, whirlpool_swap) = whirlpool_swaps.into_iter().next().unwrap();
-
-    if base_real == tsol.mint {
-        swap_builder
-            .add_swap_leg(&whirlpool_swap.swap_b_to_a(), 0)
-            .unwrap();
-    } else {
-        swap_builder
-            .add_swap_leg(&whirlpool_swap.swap_a_to_b(), 0)
-            .unwrap();
-    };
-
-    swap_builder.finalize().unwrap();
-
-    margin_user.route_swap(&swap_builder, &[]).await.unwrap();
-
     user_account.sync().await.unwrap();
     let balance = position_balance(&user_account, &tsol);
 

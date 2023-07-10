@@ -1,3 +1,6 @@
+use lookup_table_registry::RegistryAccount;
+use lookup_table_registry_client::Entry;
+use solana_address_lookup_table_program::state::AddressLookupTable;
 use std::{collections::HashSet, sync::Arc};
 use wasm_bindgen::prelude::*;
 
@@ -9,16 +12,16 @@ use spl_associated_token_account::{
 };
 
 use jet_instructions::{
-    margin::{derive_margin_account, derive_token_config, MarginIxBuilder},
-    margin_pool::derive_margin_pool,
+    fixed_term::derive as derive_fixed_term,
+    margin::{
+        derive_margin_account, derive_position_token_account, derive_token_config, MarginIxBuilder,
+    },
+    margin_pool::{derive_loan_account, derive_margin_pool, MarginPoolIxBuilder},
 };
 use jet_margin::{AccountPosition, MarginAccount, TokenAdmin, TokenConfig, TokenKind, TokenOracle};
 use jet_margin_pool::{Amount, MarginPool, PoolAction};
 use jet_program_common::Number128;
-use jet_solana_client::{
-    rpc::SolanaRpcExtra,
-    transaction::{condense, TransactionBuilder},
-};
+use jet_solana_client::rpc::SolanaRpcExtra;
 
 use crate::{
     bail,
@@ -203,12 +206,14 @@ impl MarginAccountClient {
 
     /// Send a transaction prefixed with refresh instructions for all positions
     pub async fn send_with_refresh(&self, instructions: &[Instruction]) -> ClientResult<()> {
-        let mut txns = self.instructions_for_refresh_positions()?;
+        let mut ixs = self.instructions_for_refresh_positions()?;
 
-        txns.extend(instructions.iter().map(|ix| ix.clone().into()));
+        ixs.extend(instructions.iter().cloned());
+
+        let lookup_tables = self.client.state().lookup_tables.get();
 
         self.client
-            .send_ordered(condense(&txns, &self.client.signer())?)
+            .send_with_lookup_tables(&ixs, &lookup_tables)
             .await
     }
 
@@ -295,6 +300,122 @@ impl MarginAccountClient {
         self.state().positions().any(|p| p.token == *token)
     }
 
+    /// Update lookup tables, creating new tables and adding addresses as necessary
+    pub async fn update_lookup_tables(&self) -> ClientResult<()> {
+        let just_created = self.init_lookup_registry().await?;
+
+        if just_created {
+            let slot = self.client.get_slot().await?;
+            self.client.network.wait_for_slot(slot + 1).await?;
+        }
+
+        // Update existing tables, adding any new tables as necessary
+        let mut accounts = HashSet::new();
+        let state = self.client.state();
+        for token in &state.config.tokens {
+            let ata = get_associated_token_address(&self.address, &token.mint);
+            accounts.insert(ata);
+            let pool = MarginPoolIxBuilder::new(token.mint);
+            accounts.insert(derive_position_token_account(
+                &self.address,
+                &pool.deposit_note_mint,
+            ));
+            accounts.insert(derive_loan_account(&self.address, &pool.loan_note_mint));
+        }
+
+        for market in self.client().fixed_term().markets() {
+            // Term deposits and loans are ephemeral as they're based on a sequence number
+            // Adding them would waste space
+            let margin_user = derive_fixed_term::margin_user(&market.address, &self.address);
+            accounts.insert(margin_user);
+            accounts.insert(derive_fixed_term::user_claims(&margin_user));
+            accounts.insert(derive_fixed_term::user_ticket_collateral(&margin_user));
+            accounts.insert(derive_fixed_term::user_underlying_collateral(&margin_user));
+        }
+
+        let mut new_accounts = vec![];
+        let registry_account = self
+            .client
+            .network
+            .get_anchor_account::<RegistryAccount>(&self.builder.lookup_table_registry_address())
+            .await?;
+        let mut tables = Vec::with_capacity(registry_account.tables.len());
+
+        // If the registry has no tables, add all accounts
+        if registry_account.tables.is_empty() {
+            new_accounts.extend(accounts);
+        } else {
+            for table in &registry_account.tables {
+                if table.discriminator <= 1 {
+                    // Deactivated or deleted
+                    continue;
+                }
+                let lookup_table_account = self
+                    .client()
+                    .client
+                    .network
+                    .get_account(&table.table)
+                    .await?;
+                let Some(lookup_table_account) = lookup_table_account else {
+                    continue;
+                };
+
+                let lookup_table = AddressLookupTable::deserialize(&lookup_table_account.data)?;
+
+                let entry = lookup_table_registry_client::Entry {
+                    discriminator: table.discriminator,
+                    lookup_address: table.table,
+                    addresses: lookup_table.addresses.to_vec(),
+                };
+
+                // Check if there are new accounts
+                for address in &entry.addresses {
+                    if !accounts.contains(address) {
+                        new_accounts.push(*address);
+                    }
+                }
+
+                tables.push(entry);
+            }
+        }
+
+        if new_accounts.is_empty() {
+            return Ok(());
+        }
+
+        // For now we are not picky about where addresses are stored, we use
+        // lookup tables that have capacity.
+        let mut append_instructions = vec![];
+        let mut registry_index = 0;
+        while !new_accounts.is_empty() {
+            if tables.len() > registry_index {
+                let entry = &tables[registry_index];
+                registry_index += 1;
+                let entry_capacity = 256usize.saturating_sub(entry.addresses.len());
+                // Can fit in 25 addresses in a transaction
+                let max_addresses = entry_capacity.min(25).min(new_accounts.len());
+                let to_add = new_accounts.drain(..max_addresses).collect::<Vec<_>>();
+                append_instructions.push(
+                    self.builder
+                        .append_to_lookup_table(entry.lookup_address, &to_add),
+                );
+            } else {
+                let slot = self.client().client.get_slot().await?;
+                let (table_ix, lookup_address) = self.builder.create_lookup_table(slot);
+                append_instructions.push(table_ix);
+                // Add the table to the registry, don't increment index
+                tables.push(Entry {
+                    discriminator: 2,
+                    lookup_address,
+                    addresses: vec![],
+                });
+            }
+        }
+
+        // Submit all instructions
+        self.client.send_ordered(append_instructions).await
+    }
+
     pub(crate) async fn with_deposit_position(
         &self,
         token: &Pubkey,
@@ -328,9 +449,9 @@ impl MarginAccountClient {
             .ok_or_else(|| ClientError::Unexpected(format!("no config found for token {token}")))
     }
 
-    fn instructions_for_refresh_positions(&self) -> ClientResult<Vec<TransactionBuilder>> {
+    fn instructions_for_refresh_positions(&self) -> ClientResult<Vec<Instruction>> {
         let mut included = HashSet::new();
-        let mut txns = vec![];
+        let mut ixs = vec![];
 
         for position in self.state().positions() {
             if included.contains(&position.token) || position.balance == 0 {
@@ -346,33 +467,26 @@ impl MarginAccountClient {
                         _ => bail!("deposit position should have an oracle: {}", position.token),
                     };
 
-                    txns.push(
+                    ixs.push(
                         self.builder
-                            .refresh_deposit_position(position.token, &oracle, true)
-                            .into(),
+                            .refresh_deposit_position(position.token, &oracle, true),
                     );
                 }
 
                 id if id == jet_margin_pool::ID => {
-                    txns.push(
-                        crate::margin_pool::instruction_for_refresh(
-                            self,
-                            &position.token,
-                            &mut included,
-                        )?
-                        .into(),
-                    );
+                    ixs.push(crate::margin_pool::instruction_for_refresh(
+                        self,
+                        &position.token,
+                        &mut included,
+                    )?);
                 }
 
                 id if id == jet_fixed_term::ID => {
-                    txns.push(
-                        crate::fixed_term::instruction_for_refresh(
-                            self,
-                            &position.token,
-                            &mut included,
-                        )?
-                        .into(),
-                    );
+                    ixs.push(crate::fixed_term::instruction_for_refresh(
+                        self,
+                        &position.token,
+                        &mut included,
+                    )?);
                 }
 
                 address => {
@@ -386,7 +500,7 @@ impl MarginAccountClient {
             included.insert(position.token);
         }
 
-        Ok(txns)
+        Ok(ixs)
     }
 
     /// Update this local client state to reflect the current price information for held positions
@@ -534,6 +648,23 @@ impl MarginAccountClient {
                     .map(|config| ((*config).clone(), *position))
             })
             .collect()
+    }
+
+    async fn init_lookup_registry(&self) -> ClientResult<bool> {
+        let address = self.builder.lookup_table_registry_address();
+
+        if self.client.account_exists(&address).await? {
+            log::debug!(
+                "Lookup registry {address} already exists for account {}",
+                self.address
+            );
+            return Ok(false);
+        }
+
+        let ix = self.builder.init_lookup_registry();
+        self.client.send(&ix).await?;
+
+        Ok(true)
     }
 }
 

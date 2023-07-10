@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::time::Duration;
+
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 
@@ -206,11 +208,12 @@ where
     }
 
     async fn wait_for_next_block(&self) -> Result<()> {
-        // todo implement for real rpc client
         if let Some(rpc) = self.as_any().downcast_ref::<TestRuntimeRpcClient>() {
             rpc.next_block();
+            return Ok(());
         }
 
+        tokio::time::sleep(Duration::from_millis(400)).await;
         Ok(())
     }
 

@@ -133,6 +133,9 @@ impl FixedTermIxBuilder {
     pub fn asks(&self) -> Pubkey {
         self.orderbook.asks
     }
+    pub fn fee_vault(&self) -> Pubkey {
+        derive::fee_vault(&self.market)
+    }
 }
 
 /// Instructions - simply delegate to `ix` module

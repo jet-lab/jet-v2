@@ -9,6 +9,8 @@ use jet_environment::builder::{
 };
 use jet_instructions::fixed_term::FixedTermIxBuilder;
 use jet_instructions::test_service::derive_token_mint;
+use jet_tools::lookup_tables::create_lookup_tables;
+use lookup_table_registry_client::instructions::InstructionBuilder;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 
@@ -22,7 +24,7 @@ use jet_solana_client::transaction::WithSigner;
 
 use super::{MarginTestContext, TestContextSetupInfo};
 
-/// general margin or airspace administration
+/// General margin or airspace administration
 impl MarginTestContext {
     /// Create the airspace plus all tokens, pools, swaps, and markets.
     ///
@@ -30,34 +32,47 @@ impl MarginTestContext {
     /// - Default::default(): a blank airspace
     /// - TestDefault::test_default(): airspace with two tokens and their pools
     pub async fn init_environment(&self, setup: &TestContextSetupInfo) -> Result<JetAppConfig> {
-        let setup_config = setup.to_config(
+        let env_config = setup.to_config(
             &self.airspace_name,
             self.solana.rpc.payer().pubkey(),
             self.crank.pubkey(),
         );
         let mut builder = self.env_builder();
-        configure_environment(&mut builder, &setup_config.env_config)
+        configure_environment(&mut builder, &env_config)
             .await
             .unwrap();
         self.execute_plan(builder.build()).await?;
 
-        Ok(setup_config.app_config)
+        let app_config = JetAppConfig::from_env_config(
+            env_config,
+            self.solana.rpc2.as_ref(),
+            Some(self.payer().pubkey()),
+        )
+        .await
+        .unwrap();
+
+        Ok(app_config)
     }
 
     pub(super) async fn execute_plan(&self, plan: PlanInstructions) -> Result<()> {
         for setup in plan.setup {
             setup.send_and_confirm_condensed(&self.solana.rpc).await?;
         }
+
         plan.propose
             .into_iter()
             .map(|tx| tx.with_signer(&self.airspace_authority))
             .collect::<Vec<_>>()
             .send_and_confirm_condensed_in_order(&self.solana.rpc)
             .await?;
-        // cannot use `interface` here to send the propose transactions since
-        // the SimulationClient does not properly handle signatures other than
-        // the payer. My guess is that existing signatures don't translate when
-        // converting from VersionedTransaction to legacy transactions.
+
+        create_lookup_tables(
+            &self.solana.rpc2,
+            self.payer(),
+            self.payer(),
+            &plan.lookup_setup,
+        )
+        .await?;
 
         Ok(())
     }
@@ -123,6 +138,51 @@ impl MarginTestContext {
         self.execute_plan(builder.build()).await?;
 
         Ok(ix_builder)
+    }
+}
+
+/// Lookup tables
+impl MarginTestContext {
+    pub async fn create_lookup_registry(&self, addresses: &[Pubkey]) -> Result<Pubkey> {
+        // As a convenience, take advantage of addresses < 256.
+        assert!(
+            addresses.len() < 256,
+            "Expecting addresses to all fit a single lookup table"
+        );
+
+        let authority = self.airspace_authority.pubkey();
+        let payer = self.payer().pubkey();
+        let builder = InstructionBuilder::new(authority, payer);
+        let registry_address = builder.registry_address();
+        // Create the registry
+        let init_registry_ix = builder.init_registry();
+        let tx = self
+            .rpc()
+            .create_transaction(&[&self.airspace_authority], &[init_registry_ix])
+            .await?;
+        self.rpc().send_transaction(&tx).await?;
+
+        // Create a lookup table and add addresses to it
+        // First wait for a few slots
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        let recent_slot = self.solana.rpc.get_slot(None).await?;
+        let (create_lookup_table_ix, lookup_table) = builder.create_lookup_table(recent_slot, 0);
+        let tx = self
+            .rpc()
+            .create_transaction(&[&self.airspace_authority], &[create_lookup_table_ix])
+            .await?;
+        self.rpc().send_transaction(&tx).await?;
+
+        for chunk in addresses.chunks(20) {
+            let ix = builder.append_to_lookup_table(lookup_table, chunk, 0);
+            let tx = self
+                .rpc()
+                .create_transaction(&[&self.airspace_authority], &[ix])
+                .await?;
+            self.rpc().send_transaction(&tx).await?;
+        }
+
+        Ok(registry_address)
     }
 }
 

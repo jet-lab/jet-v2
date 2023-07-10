@@ -1,13 +1,17 @@
+use std::cmp::{max, min};
+use std::collections::HashSet;
+
+use thiserror::Error;
+
 use anchor_lang::prelude::Pubkey;
+use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::hash::Hash;
-use solana_sdk::message::Message;
+use solana_sdk::message::{v0, CompileError, Message, VersionedMessage};
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::{Signer, SignerError};
 use solana_sdk::signers::Signers;
 use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{instruction::Instruction, signature::Signature, transaction::Transaction};
-use std::cmp::{max, min};
-use std::collections::HashSet;
 
 use crate::signature::NeedsSignature;
 use crate::util::data::{Concat, DeepReverse, Join};
@@ -291,6 +295,77 @@ pub fn condense_left(
     }
 }
 
+/// Compile the instructions into a versioned transaction
+pub fn create_unsigned_transaction(
+    instructions: &[Instruction],
+    payer: &Pubkey,
+    lookup_tables: &[AddressLookupTableAccount],
+    recent_blockhash: Hash,
+) -> Result<VersionedTransaction, TransactionBuildError> {
+    log::trace!("input lookup tables: {lookup_tables:?}");
+
+    let message = VersionedMessage::V0(v0::Message::try_compile(
+        payer,
+        instructions,
+        lookup_tables,
+        recent_blockhash,
+    )?);
+    let tx = VersionedTransaction {
+        signatures: vec![],
+        message,
+    };
+
+    if let Some(lookups) = tx.message.address_table_lookups() {
+        log::trace!("resolved address lookups: {lookups:?}");
+    }
+
+    log::trace!("static keys: {:?}", tx.message.static_account_keys());
+
+    Ok(tx)
+}
+
+/// Sign a transaction with a keypair
+pub fn sign_transaction(
+    signer: &Keypair,
+    tx: &mut VersionedTransaction,
+) -> Result<(), TransactionBuildError> {
+    let index = tx
+        .message
+        .static_account_keys()
+        .iter()
+        .position(|key| *key == signer.pubkey())
+        .ok_or(SignerError::KeypairPubkeyMismatch)?;
+
+    let to_sign = tx.message.serialize();
+    let signature = signer.sign_message(&to_sign);
+
+    tx.signatures.resize(
+        tx.message.header().num_required_signatures.into(),
+        Default::default(),
+    );
+    tx.signatures[index] = signature;
+
+    Ok(())
+}
+
+/// Compile and sign the instructions into a versioned transaction
+pub fn create_signed_transaction(
+    instructions: &[Instruction],
+    signer: &Keypair,
+    lookup_tables: &[AddressLookupTableAccount],
+    recent_blockhash: Hash,
+) -> Result<VersionedTransaction, TransactionBuildError> {
+    let mut tx = create_unsigned_transaction(
+        instructions,
+        &signer.pubkey(),
+        lookup_tables,
+        recent_blockhash,
+    )?;
+
+    sign_transaction(signer, &mut tx)?;
+    Ok(tx)
+}
+
 /// Searches efficiently for the largest continuous group of TransactionBuilders
 /// starting from index 0 that can be merged into a single transaction without
 /// exceeding the transaction size limit.
@@ -447,4 +522,12 @@ impl ToTransactionBuilderVec for Vec<TransactionBuilder> {
     fn to_tx_builder_vec(self) -> Vec<TransactionBuilder> {
         self
     }
+}
+
+#[derive(Error, Debug)]
+pub enum TransactionBuildError {
+    #[error("Error compiling versioned transaction")]
+    CompileError(#[from] CompileError),
+    #[error("Error signing transaction")]
+    SigningError(#[from] SignerError),
 }

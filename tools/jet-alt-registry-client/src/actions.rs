@@ -95,7 +95,7 @@ pub async fn update_registry(
         FIXED_TERM_ID,
         airspace,
     )
-    .await;
+    .await?;
     add_to_registry(
         client,
         builder,
@@ -105,7 +105,7 @@ pub async fn update_registry(
         MARGIN_POOL_ID,
         airspace,
     )
-    .await;
+    .await?;
 
     Ok(plan)
 }
@@ -147,7 +147,7 @@ async fn add_to_registry(
     registry: &mut Registry,
     program: Pubkey,
     airspace: Pubkey,
-) {
+) -> Result<()> {
     // With the remaining addresses from both programs, find or create a lookup table
     while !program_addresses.is_empty() {
         // Find an address that has the fixed term program + airspace, append to it
@@ -190,7 +190,7 @@ async fn add_to_registry(
                 // introduce a small delay to prevent multiple lookup accounts
                 // with the same slot being created.
                 tokio::time::sleep(Duration::from_secs(3)).await;
-                let recent_slot = client.rpc().get_slot().await.unwrap();
+                let recent_slot = client.rpc().get_slot().await?;
                 let (new_ix, new_lookup) = builder.create_lookup_table(recent_slot, 0);
                 let append_ix = builder.append_to_lookup_table(new_lookup, &[program, airspace], 0);
                 plan.entries.push(TransactionEntry {
@@ -209,4 +209,6 @@ async fn add_to_registry(
             }
         }
     }
+
+    Ok(())
 }

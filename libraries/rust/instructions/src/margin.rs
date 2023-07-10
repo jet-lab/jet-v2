@@ -153,7 +153,7 @@ impl MarginIxBuilder {
 
     /// Get instruction to create address lookup registry account
     pub fn init_lookup_registry(&self) -> Instruction {
-        let registry_account = self.registry_address();
+        let registry_account = self.lookup_table_registry_address();
         let accounts = ix_account::InitLookupRegistry {
             authority: self.authority(),
             payer: self.payer(),
@@ -182,7 +182,7 @@ impl MarginIxBuilder {
             authority: self.authority(),
             payer: self.payer(),
             margin_account: self.address,
-            registry_account: self.registry_address(),
+            registry_account: self.lookup_table_registry_address(),
             registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
             system_program: SYSTEM_PROGAM_ID,
             lookup_table,
@@ -214,7 +214,7 @@ impl MarginIxBuilder {
             authority: self.authority(),
             payer: self.payer(),
             margin_account: self.address,
-            registry_account: self.registry_address(),
+            registry_account: self.lookup_table_registry_address(),
             registry_program: ADDRESS_LOOKUP_REGISTRY_ID,
             system_program: SYSTEM_PROGAM_ID,
             lookup_table,
@@ -522,7 +522,8 @@ impl MarginIxBuilder {
         derive_position_token_account(&self.address, position_token_mint)
     }
 
-    fn registry_address(&self) -> Pubkey {
+    /// Address of the lookup table registry for this account
+    pub fn lookup_table_registry_address(&self) -> Pubkey {
         Pubkey::find_program_address(&[self.address.as_ref()], &ADDRESS_LOOKUP_REGISTRY_ID).0
     }
 }

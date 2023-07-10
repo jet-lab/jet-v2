@@ -9,12 +9,16 @@ use solana_sdk::{program_error::ProgramError, pubkey::Pubkey};
 use jet_instructions::{
     airspace::derive_airspace,
     fixed_term,
-    test_service::{derive_pyth_price, derive_spl_swap_pool, derive_token_mint},
+    test_service::{derive_pyth_price, derive_token_mint},
 };
 use jet_solana_client::rpc::{ClientError, SolanaRpc, SolanaRpcExtra};
 
 use crate::{
-    builder::{resolve_token_mint, swap::resolve_swap_program, BuilderError},
+    builder::{
+        resolve_token_mint,
+        swap::{resolve_swap_address, resolve_swap_program},
+        BuilderError,
+    },
     config::{AirspaceConfig, EnvironmentConfig, TokenDescription},
 };
 
@@ -89,7 +93,8 @@ impl JetAppConfig {
 
                 let address = dex
                     .state
-                    .unwrap_or_else(|| derive_spl_swap_pool(&program, &base, &quote).state);
+                    .or(resolve_swap_address(&program, &base, &quote))
+                    .unwrap_or_default();
 
                 let description = dex
                     .description

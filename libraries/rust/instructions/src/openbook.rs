@@ -65,3 +65,11 @@ pub fn close_open_orders(
         data: ix_data::CloseOpenbookOpenOrders {}.data(),
     }
 }
+
+pub fn derive_open_orders(market: &Pubkey, authority: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[OPENBOOK_OPEN_ORDERS, authority.as_ref(), market.as_ref()],
+        &jet_margin_swap::id(),
+    )
+    .0
+}

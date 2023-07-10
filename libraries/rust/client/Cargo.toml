@@ -25,7 +25,8 @@ serde = { version = "1.0", features = ["derive"] }
 
 tokio = "1"
 
-solana-sdk = "1.10"
+solana-sdk = "1.14"
+solana-address-lookup-table-program = "1.14"
 
 spl-token = "3"
 spl-associated-token-account = "1"
@@ -33,6 +34,7 @@ spl-token-swap = { version = "3", features = ["no-entrypoint"] }
 pyth-sdk-solana = "0.7.2"
 
 anchor-lang = "0.27"
+anchor-spl = { version = "0.27", features = ["dex"] }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 
@@ -48,6 +50,15 @@ jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+
+lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main", default-features = false }
+lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }
+
+[dependencies.orca-whirlpool]
+package = "whirlpool"
+git = "https://github.com/jet-lab/whirlpools"
+branch = "anchor-27"
+features = ["no-entrypoint"]
 
 [dev-dependencies]
 rand_chacha = "0.3.1"

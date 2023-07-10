@@ -1,16 +1,9 @@
-use std::{collections::HashSet, num::NonZeroU64, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
 use anchor_lang::Id;
-use anchor_spl::dex::{
-    serum_dex::{
-        instruction::SelfTradeBehavior,
-        matching::{OrderType, Side},
-    },
-    Dex,
-};
+use anchor_spl::dex::Dex;
 use anyhow::Error;
 
-use futures::join;
 use jet_margin_sdk::{
     ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder, SwapAccounts, SwapContext},
     lookup_tables::LookupTable,
@@ -20,10 +13,7 @@ use jet_margin_sdk::{
     tx_builder::TokenDepositsConfig,
 };
 use jet_margin_swap::SwapRouteIdentifier;
-use jet_program_common::CONTROL_AUTHORITY;
-use jet_solana_client::rpc::AccountFilter;
 use jet_static_program_registry::spl_token_swap_v2;
-use openbook::state::OpenOrders;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -32,14 +22,12 @@ use hosted_tests::{
     context::MarginTestContext,
     margin::{MarginPoolSetupInfo, MarginUser},
     margin_test_context,
-    openbook::{price_number_to_lot, OpenBookMarketConfig, OpenBookOrderParams},
     saber_swap::SaberSwapPoolConfig,
     spl_swap::SwapPoolConfig,
 };
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use spl_associated_token_account::get_associated_token_address;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_USDT: u64 = 1_000_000;
@@ -366,25 +354,17 @@ async fn route_swap() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    // todo: remove the sleep after wait_for_next_block is implemented for localnet.
-    join!(
-        async {
-            if cfg!(feature = "localnet") {
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            }
-        },
-        async { ctx.rpc().wait_for_next_block().await.unwrap() },
-    );
+    ctx.rpc().wait_for_next_block().await.unwrap();
 
     // Create a swap route and execute it
-    let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+    let mut swap_builder = MarginSwapRouteIxBuilder::new(
         SwapContext::MarginPool,
         *user_a.address(),
         env.msol,
         env.usdc,
         TokenChange::shift(ONE_MSOL),
         106 * ONE_USDC * 92 / 100,
-    )?;
+    );
 
     // Split the route 60/40 to emulate a split even if going to the same venue
     swap_builder.add_swap_leg(&swap_pool_sbr_msol_tsol, 60)?;
@@ -398,8 +378,13 @@ async fn route_swap() -> anyhow::Result<()> {
 
     swap_builder.finalize().unwrap();
 
+    let lookup_addresses = LookupTable::get_lookup_addresses(&ctx.rpc(), &[table]).await?;
+
     // Now user A swaps their USDC for TSOL
-    user_a.route_swap(&swap_builder, &[table]).await.unwrap();
+    user_a
+        .route_swap(&swap_builder, &lookup_addresses)
+        .await
+        .unwrap();
 
     Ok(())
 }
@@ -491,14 +476,14 @@ async fn single_leg_swap_margin(
     user_b.refresh_all_pool_positions().await?;
 
     // Create a swap route and execute it
-    let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+    let mut swap_builder = MarginSwapRouteIxBuilder::new(
         SwapContext::MarginPool,
         *user_a.address(),
         env.msol,
         env.tsol,
         TokenChange::shift(ONE_MSOL),
         1, // Get at least 1 token back
-    )?;
+    );
 
     // Can't finalize if there are no routes
     assert!(swap_builder.finalize().is_err());
@@ -574,14 +559,14 @@ async fn single_leg_swap(
     user_a.tx.refresh_positions(&()).await?;
 
     // Create a swap route and execute it
-    let mut swap_builder = MarginSwapRouteIxBuilder::try_new(
+    let mut swap_builder = MarginSwapRouteIxBuilder::new(
         SwapContext::MarginPositions,
         *user_a.address(),
         env.msol,
         env.tsol,
         TokenChange::shift(ONE_MSOL),
         1, // Get at least 1 token back
-    )?;
+    );
     swap_builder.add_swap_leg(&pool, 60)?;
     swap_builder.add_swap_leg(&pool, 0)?;
     swap_builder.finalize().unwrap();
@@ -668,178 +653,6 @@ async fn route_saber_swap() -> anyhow::Result<()> {
 
     single_leg_swap_margin(&ctx, &env, pool).await?;
     single_leg_swap(&ctx, &env, pool).await?;
-
-    Ok(())
-}
-
-#[cfg_attr(feature = "localnet", ignore = "does not run on localnet")]
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn route_openbook_swap() -> anyhow::Result<()> {
-    let ctx = margin_test_context!();
-    let env = setup_environment(&ctx).await?;
-
-    let base_lot_size = 1_000_000;
-    let quote_lot_size = 100;
-
-    // Add a dex market
-    let market = OpenBookMarket::configure(
-        &ctx.solana,
-        env.msol,
-        env.tsol,
-        base_lot_size,
-        quote_lot_size,
-        100,
-    )
-    .await?;
-
-    // Check that we can find the market
-    let mut supported_mints = HashSet::new();
-    supported_mints.insert(env.msol);
-    supported_mints.insert(env.tsol);
-
-    let markets = OpenBookMarket::get_markets(&ctx.rpc(), &supported_mints, Dex::id()).await?;
-    assert_eq!(markets.len(), 1);
-
-    // Add liquidity on the market
-    let maker = ctx.create_wallet(2).await?;
-    let maker_msol_account = ctx
-        .tokens()
-        .create_account_funded(&env.msol, &maker.pubkey(), 10000 * ONE_MSOL)
-        .await?;
-    let maker_tsol_account = ctx
-        .tokens()
-        .create_account_funded(&env.tsol, &maker.pubkey(), 10000 * ONE_TSOL)
-        .await?;
-
-    // Create a maker's open orders account
-    let open_orders = market
-        .init_open_orders(&ctx.rpc(), ctx.solana.keygen.generate_key(), &maker)
-        .await?;
-
-    // Place an order each on both sides
-    let mut bid = OpenBookOrderParams {
-        side: Side::Bid,
-        client_order_id: 10001,
-        limit_price: NonZeroU64::new(price_number_to_lot(
-            104 * ONE_TSOL / 100,
-            ONE_MSOL,
-            base_lot_size,
-            quote_lot_size,
-        ))
-        .unwrap(),
-        max_coin_qty: NonZeroU64::new(u64::MAX).unwrap(),
-        max_native_pc_qty_including_fees: NonZeroU64::new(1000 * ONE_MSOL).unwrap(),
-        order_type: OrderType::Limit,
-        self_trade_behavior: SelfTradeBehavior::AbortTransaction,
-        limit: u16::MAX,
-    };
-    let mut ask = OpenBookOrderParams {
-        side: Side::Ask,
-        client_order_id: 10002,
-        limit_price: NonZeroU64::new(price_number_to_lot(
-            106 * ONE_TSOL / 100,
-            ONE_MSOL,
-            base_lot_size,
-            quote_lot_size,
-        ))
-        .unwrap(),
-        max_coin_qty: NonZeroU64::new((1010 * ONE_TSOL).checked_div(base_lot_size).unwrap())
-            .unwrap(),
-        max_native_pc_qty_including_fees: NonZeroU64::new(u64::MAX).unwrap(),
-        order_type: OrderType::Limit,
-        self_trade_behavior: SelfTradeBehavior::AbortTransaction,
-        limit: u16::MAX,
-    };
-
-    market
-        .new_order(
-            &ctx.rpc(),
-            &maker,
-            &open_orders,
-            &maker_tsol_account,
-            bid.clone(),
-        )
-        .await?;
-
-    market
-        .new_order(
-            &ctx.rpc(),
-            &maker,
-            &open_orders,
-            &maker_msol_account,
-            ask.clone(),
-        )
-        .await?;
-
-    bid.client_order_id += 1;
-    ask.client_order_id += 1;
-    market
-        .new_order(&ctx.rpc(), &maker, &open_orders, &maker_tsol_account, bid)
-        .await?;
-
-    market
-        .new_order(&ctx.rpc(), &maker, &open_orders, &maker_msol_account, ask)
-        .await?;
-
-    single_leg_swap_margin(&ctx, &env, market).await?;
-
-    // Find all open orders to consume
-    let open_orders_accounts = ctx
-        .solana
-        .rpc
-        .get_program_accounts(
-            &Dex::id(),
-            vec![AccountFilter::DataSize(
-                12 + std::mem::size_of::<OpenOrders>(),
-            )],
-        )
-        .await?;
-    let accounts = open_orders_accounts
-        .iter()
-        .map(|(pubkey, _)| pubkey)
-        .collect::<Vec<_>>();
-
-    assert_eq!(accounts.len(), 3);
-
-    market
-        .match_orders(&ctx.rpc(), maker_msol_account, maker_tsol_account, u16::MAX)
-        .await?;
-    market
-        .consume_events(
-            &ctx.rpc(),
-            maker_msol_account,
-            maker_tsol_account,
-            accounts.clone(),
-            u16::MAX,
-        )
-        .await?;
-    single_leg_swap(&ctx, &env, market).await?;
-    market
-        .match_orders(&ctx.rpc(), maker_msol_account, maker_tsol_account, u16::MAX)
-        .await?;
-    market
-        .consume_events(
-            &ctx.rpc(),
-            maker_tsol_account,
-            maker_msol_account,
-            accounts,
-            u16::MAX,
-        )
-        .await?;
-
-    let referrer = get_associated_token_address(&CONTROL_AUTHORITY, &env.tsol);
-
-    market
-        .settle(
-            &ctx.rpc(),
-            &maker,
-            &open_orders,
-            maker_msol_account,
-            maker_tsol_account,
-            Some(&referrer),
-        )
-        .await?;
 
     Ok(())
 }

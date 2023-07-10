@@ -1,12 +1,12 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
 };
 
 use jet_instructions::airspace::derive_airspace;
 use jet_solana_client::rpc::SolanaRpc;
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{address_lookup_table_account::AddressLookupTableAccount, pubkey::Pubkey};
 
 use crate::{
     client::ClientResult,
@@ -14,7 +14,9 @@ use crate::{
     ClientError,
 };
 
+pub mod dexes;
 pub mod fixed_term;
+pub mod lookup_tables;
 pub mod margin;
 pub mod margin_pool;
 pub mod oracles;
@@ -27,6 +29,7 @@ pub struct AccountStates {
     pub(crate) network: Arc<dyn SolanaRpc>,
     pub(crate) wallet: Pubkey,
     pub(crate) config: StateConfig,
+    pub(crate) lookup_tables: LookupTableCache,
     cache: AccountCache,
 }
 
@@ -49,6 +52,7 @@ impl AccountStates {
         let config = StateConfig {
             airspace: derive_airspace(&airspace_seed),
             airspace_seed,
+            airspace_lookup_registry_authority: airspace_config.lookup_registry_authority,
             tokens: airspace_config
                 .tokens
                 .clone()
@@ -63,22 +67,27 @@ impl AccountStates {
         log::debug!("loaded state config: {config:#?}");
 
         let cache = AccountCache::default();
+        let lookup_tables = LookupTableCache::default();
 
         Ok(Self {
             config,
             wallet,
             network,
             cache,
+            lookup_tables,
         })
     }
 
     pub async fn sync_all(&self) -> ClientResult<()> {
         self::oracles::sync(self).await?;
         self::spl_swap::sync(self).await?;
+        self::dexes::sync(self).await?;
         self::margin_pool::sync(self).await?;
         self::fixed_term::sync(self).await?;
         self::margin::sync(self).await?;
         self::tokens::sync(self).await?;
+
+        self::lookup_tables::sync(self).await?;
 
         Ok(())
     }
@@ -109,6 +118,7 @@ impl std::ops::Deref for AccountStates {
 pub struct StateConfig {
     pub airspace_seed: String,
     pub airspace: Pubkey,
+    pub airspace_lookup_registry_authority: Option<Pubkey>,
     pub tokens: Vec<TokenInfo>,
     pub fixed_term_markets: Vec<Pubkey>,
     pub exchanges: Vec<DexInfo>,
@@ -247,6 +257,32 @@ impl AccountCache {
 
         if !accounts.contains_key(address) {
             accounts.insert(*address, None);
+        }
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct LookupTableCache {
+    tables: Mutex<BTreeMap<u32, Vec<AddressLookupTableAccount>>>,
+}
+
+impl LookupTableCache {
+    pub const DEFAULT_PRIORITY: u32 = 100;
+
+    pub fn get(&self) -> Vec<AddressLookupTableAccount> {
+        let tables = self.tables.lock().unwrap();
+
+        tables.iter().flat_map(|(_, t)| t).cloned().collect()
+    }
+
+    pub fn set(&self, priority: u32, data: impl IntoIterator<Item = AddressLookupTableAccount>) {
+        let mut tables = self.tables.lock().unwrap();
+
+        match tables.get_mut(&priority) {
+            Some(t) => t.extend(data),
+            None => {
+                tables.insert(priority, data.into_iter().collect());
+            }
         }
     }
 }

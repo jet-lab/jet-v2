@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::time::SystemTime;
 
 use jet_client::fixed_term::MarketInfo;
@@ -41,6 +42,16 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
     let usdc = Token::from_context(&ctx, "USDC");
     let tsol = Token::from_context(&ctx, "TSOL");
 
+    let mut lookup_addresses = vec![
+        jet_margin_sdk::jet_airspace::ID,
+        jet_margin_sdk::jet_margin::ID,
+        jet_margin_sdk::jet_margin_pool::ID,
+        jet_margin_sdk::jet_fixed_term::ID,
+        spl_token::ID,
+        usdc.mint,
+        tsol.mint,
+    ];
+
     // create users
     let users = vec![
         ctx.create_user().await.unwrap(),
@@ -71,6 +82,57 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
         mint: market.ticket,
         decimals: 6,
     };
+
+    // Update market lookup tables
+    for market in &users[0].fixed_term().markets() {
+        let market_state = ctx
+            .rpc()
+            .get_account(&market.address)
+            .await
+            .unwrap()
+            .unwrap();
+        let market_state = bytemuck::from_bytes::<
+            jet_margin_sdk::jet_fixed_term::control::state::Market,
+        >(&market_state.data[8..]);
+        lookup_addresses.extend_from_slice(&[
+            market_state.airspace,
+            market_state.orderbook_market_state,
+            market_state.event_queue,
+            market_state.asks,
+            market_state.bids,
+            market_state.underlying_token_mint,
+            market_state.underlying_token_vault,
+            market_state.ticket_mint,
+            market_state.claims_mint,
+            market_state.ticket_collateral_mint,
+            market_state.underlying_collateral_mint,
+            market_state.underlying_oracle,
+            market_state.ticket_oracle,
+            market_state.fee_vault,
+            market_state.fee_destination,
+        ]);
+    }
+    for user in &users {
+        for margin_account in user.margin().accounts() {
+            margin_account.update_lookup_tables().await.unwrap();
+        }
+    }
+
+    // Remove duplicates
+    let lookup_addresses = lookup_addresses
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    let _lookup_authority = ctx.create_lookup_registry(&lookup_addresses).await.unwrap();
+
+    ctx.rpc().wait_for_next_block().await.unwrap();
+
+    // sync the lookup tables
+    for user in &users {
+        user.state().sync_all().await.unwrap();
+    }
 
     // set token prices
     set_price(&ctx, &usdc, 1.0, 0.01).await;

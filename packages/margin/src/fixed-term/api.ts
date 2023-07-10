@@ -384,6 +384,8 @@ export const lendNow = async ({
     adapterInstruction: lendNow
   })
 
+  await marginAccount.withUpdateAllPositionBalances({ instructions: orderInstructions })
+
   return sendAndConfirmV0(provider, [setupInstructions, orderInstructions], lookupTables, [])
 }
 

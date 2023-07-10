@@ -10,12 +10,16 @@ rust_decimal = { version = "1.29", features = ["maths"] }
 num-traits = "0.2"
 thiserror = "1"
 log = "0.4"
+bytemuck = "1.7"
 solana-sdk = "1.14"
 solana-client = "1.14"
 
 spl-associated-token-account = "1"
 
+anchor-spl = { version = "0.27", features = ["dex"] }
+
 jet-program-common = { path = "../program-common" }
+jet-environment = { path = "../environment" }
 jet-instructions = { path = "../instructions" }
 jet-solana-client = { path = "../solana-client" }
 

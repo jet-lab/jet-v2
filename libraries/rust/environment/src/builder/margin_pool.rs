@@ -1,12 +1,12 @@
 use jet_instructions::{
     control::{MarginPoolConfiguration, TokenMetadataParams},
-    margin::{TokenAdmin, TokenConfigUpdate, TokenKind},
+    margin::{derive_token_config, TokenAdmin, TokenConfigUpdate, TokenKind},
     margin_pool::{derive_margin_pool, MarginPoolIxBuilder, MARGIN_POOL_PROGRAM},
 };
 use jet_margin_pool::MarginPool;
 use jet_solana_client::rpc::SolanaRpcExtra;
 
-use super::{Builder, BuilderError, TokenContext};
+use super::{Builder, BuilderError, LookupScope, TokenContext};
 
 pub(crate) async fn configure_for_token(
     builder: &mut Builder,
@@ -108,6 +108,18 @@ pub(crate) async fn configure_for_token(
             }),
         )]);
     }
+
+    builder.register_lookups(
+        LookupScope::Pools,
+        [
+            pool_ix.address,
+            pool_ix.vault,
+            pool_ix.deposit_note_mint,
+            pool_ix.loan_note_mint,
+            derive_token_config(&token.airspace, &pool_ix.deposit_note_mint),
+            derive_token_config(&token.airspace, &pool_ix.loan_note_mint),
+        ],
+    );
 
     Ok(())
 }

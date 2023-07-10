@@ -24,6 +24,8 @@ use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 
 use anyhow::{Context, Result};
+use jet_solana_client::transaction::create_signed_transaction;
+use solana_sdk::address_lookup_table_account::AddressLookupTableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
@@ -40,7 +42,6 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
 use crate::get_state::{get_margin_account, get_token_metadata};
-use crate::lookup_tables::LookupTable;
 use crate::margin_account_ext::MarginAccountExt;
 use crate::refresh::deposit::refresh_deposit_positions;
 use crate::refresh::pool::{
@@ -603,8 +604,7 @@ impl MarginTxBuilder {
     pub async fn route_swap_with_lookup(
         &self,
         builder: &MarginSwapRouteIxBuilder,
-        account_lookup_tables: &[Pubkey],
-        signer: &Keypair,
+        lookup_tables: &[AddressLookupTableAccount],
     ) -> Result<VersionedTransaction> {
         // We can't get the instruction if not finalized, get it to check.
         let inner_swap_ix = builder.get_instruction()?;
@@ -613,13 +613,14 @@ impl MarginTxBuilder {
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
 
-        let tx = LookupTable::use_lookup_tables(
-            &self.rpc,
-            account_lookup_tables,
+        let recent_blockhash = self.rpc.get_latest_blockhash().await?;
+        let tx = create_signed_transaction(
             &instructions,
-            &[signer],
-        )
-        .await?;
+            self.signer.as_ref().unwrap_or(self.rpc().payer()),
+            lookup_tables,
+            recent_blockhash,
+        )?;
+
         Ok(tx)
     }
 

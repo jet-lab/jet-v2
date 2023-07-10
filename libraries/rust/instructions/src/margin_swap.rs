@@ -175,14 +175,14 @@ impl MarginSwapRouteIxBuilder {
     /// The swap can have up to 3 steps, e.g. JET > USDC > SOL > mSOL, where each step is a leg.
     ///
     /// To get a transaction, call `finalize()`, then get the instruction via `get_instruction()`.
-    pub fn try_new(
+    pub fn new(
         swap_context: SwapContext,
         margin_account: Pubkey,
         src_token: Pubkey,
         dst_token: Pubkey,
         withdrawal_change: TokenChange,
         minimum_amount_out: u64,
-    ) -> IxResult<Self> {
+    ) -> Self {
         let mut spl_token_accounts = HashSet::with_capacity(4);
         spl_token_accounts.insert(src_token);
         spl_token_accounts.insert(dst_token);
@@ -227,7 +227,8 @@ impl MarginSwapRouteIxBuilder {
             }
             .to_account_metas(None),
         };
-        Ok(Self {
+
+        Self {
             margin_account,
             src_token,
             dst_token,
@@ -243,7 +244,7 @@ impl MarginSwapRouteIxBuilder {
             pool_note_mints,
             swap_context,
             is_liquidation: false,
-        })
+        }
     }
 
     /// Whether this builder is for a liquidation
@@ -281,7 +282,11 @@ impl MarginSwapRouteIxBuilder {
     }
 
     /// Add a swap leg to the route
-    pub fn add_swap_leg<T: SwapAccounts>(&mut self, pool: &T, swap_split: u8) -> IxResult<()> {
+    pub fn add_swap_leg<T: SwapAccounts + ?Sized>(
+        &mut self,
+        pool: &T,
+        swap_split: u8,
+    ) -> IxResult<()> {
         // Check the swap split early
         if swap_split > ROUTE_SWAP_MAX_SPLIT
             || (swap_split > 0 && swap_split < ROUTE_SWAP_MIN_SPLIT)
@@ -423,7 +428,7 @@ impl MarginSwapRouteIxBuilder {
     }
 
     /// Determine the source and destination pool mints
-    fn src_dst_tokens<T: SwapAccounts>(&self, pool: &T) -> IxResult<(Pubkey, Pubkey)> {
+    fn src_dst_tokens<T: SwapAccounts + ?Sized>(&self, pool: &T) -> IxResult<(Pubkey, Pubkey)> {
         let (mint_a, mint_b) = pool.pool_tokens();
         let next_src_token = self
             .current_route_tokens

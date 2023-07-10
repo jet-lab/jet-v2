@@ -1,19 +1,23 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use solana_sdk::pubkey::Pubkey;
 use spl_token_swap::state::SwapV1;
 
 use jet_instructions::{
     margin::derive_position_token_account,
-    margin_swap::{pool_spl_swap, SplSwap},
+    margin_swap::{pool_spl_swap, MarginSwapRouteIxBuilder, SplSwap, SwapContext},
+    openbook::create_open_orders,
 };
-use jet_margin_pool::ChangeKind;
-use jet_program_common::programs::ORCA_V2;
+use jet_margin_pool::{ChangeKind, TokenChange};
+use jet_program_common::programs::{OPENBOOK, ORCA_V2};
 
 use crate::{
     bail,
     client::{ClientResult, ClientState},
     margin::MarginAccountClient,
+    state::dexes::DexState,
 };
 
 /// Client for interacting with swap protocols, from the perspective of a margin account
@@ -28,6 +32,68 @@ impl MarginAccountSwapsClient {
             client: account.client.clone(),
             account,
         }
+    }
+
+    /// Swap tokens with a given path
+    pub async fn route_swap(
+        &self,
+        path: &[SwapStep],
+        in_amount: u64,
+        minimum_amount_out: u64,
+    ) -> ClientResult<()> {
+        let mut instructions = vec![];
+
+        let source_token = path[0].from_token;
+        let dest_token = path[path.len() - 1].to_token;
+        let mut builder = MarginSwapRouteIxBuilder::new(
+            SwapContext::MarginPositions,
+            self.account.address(),
+            source_token,
+            dest_token,
+            TokenChange::shift(in_amount),
+            minimum_amount_out,
+        );
+
+        for step in path {
+            self.account
+                .with_deposit_position(&step.to_token, &mut instructions)
+                .await?;
+
+            let Some(dex_state) = self.client.state().get::<DexState>(&step.swap_pool) else {
+                bail!("unknown swap pool {}", step.swap_pool);
+            };
+
+            if step.program == OPENBOOK {
+                let (create_open_orders_ix, open_orders_address) = create_open_orders(
+                    self.account.address(),
+                    step.swap_pool,
+                    self.client.signer(),
+                    &OPENBOOK,
+                );
+
+                if !self.client.account_exists(&open_orders_address).await? {
+                    instructions.push(self.account.builder.adapter_invoke(create_open_orders_ix));
+                }
+            }
+
+            let swap_accounts = if dex_state.token_a == step.from_token {
+                &dex_state.swap_a_to_b_accounts
+            } else {
+                &dex_state.swap_b_to_a_accounts
+            };
+
+            builder.add_swap_leg(swap_accounts.as_ref(), 0)?;
+        }
+
+        builder.finalize()?;
+
+        instructions.push(
+            self.account
+                .builder
+                .adapter_invoke(builder.get_instruction()?),
+        );
+
+        self.account.send_with_refresh(&instructions).await
     }
 
     /// Swap tokens in a margin pool, using Orca V2
@@ -127,4 +193,20 @@ impl MarginAccountSwapsClient {
             fee_account: swap.pool_fee_account,
         })
     }
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SwapStep {
+    #[serde_as(as = "DisplayFromStr")]
+    pub from_token: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub to_token: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub program: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub swap_pool: Pubkey,
 }

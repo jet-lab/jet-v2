@@ -12,6 +12,7 @@ use jet_instructions::{
         event_queue_len, orderbook_slab_len, FixedTermIxBuilder, InitializeMarketParams, Market,
         OrderbookAddresses, FIXED_TERM_PROGRAM,
     },
+    margin::derive_token_config,
     test_service::{
         self, derive_pyth_price, derive_pyth_product, derive_token_info, TokenCreateParams,
     },
@@ -22,7 +23,8 @@ use jet_solana_client::{rpc::SolanaRpcExtra, transaction::TransactionBuilder};
 use crate::config::FixedTermMarketConfig;
 
 use super::{
-    margin::configure_margin_token, Builder, BuilderError, NetworkKind, SetupPhase, TokenContext,
+    margin::configure_margin_token, Builder, BuilderError, LookupScope, NetworkKind, SetupPhase,
+    TokenContext,
 };
 
 const EVENT_QUEUE_CAPACITY: usize = 1024;
@@ -115,6 +117,23 @@ pub async fn configure_market_for_token(
             );
         }
     }
+
+    builder.register_lookups(
+        LookupScope::FixedTerm,
+        [
+            ix_builder.market(),
+            ix_builder.vault(),
+            ix_builder.ticket_mint(),
+            ix_builder.underlying_collateral(),
+            ix_builder.collateral(),
+            ix_builder.claims(),
+            ix_builder.orderbook_state(),
+            ix_builder.asks(),
+            ix_builder.bids(),
+            ix_builder.event_queue(),
+            ix_builder.fee_vault(),
+        ],
+    );
 
     // TODO: support pausing
 
@@ -242,6 +261,16 @@ async fn configure_margin_for_market(
         }),
     )
     .await?;
+
+    builder.register_lookups(
+        LookupScope::FixedTerm,
+        [
+            derive_token_config(&token.airspace, &claims_mint),
+            derive_token_config(&token.airspace, &ticket_collateral_mint),
+            derive_token_config(&token.airspace, &underlying_collateral_mint),
+            derive_token_config(&token.airspace, &ticket_mint),
+        ],
+    );
 
     Ok(())
 }

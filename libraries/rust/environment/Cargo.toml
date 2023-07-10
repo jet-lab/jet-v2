@@ -13,12 +13,14 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 
 solana-sdk = "1.14"
+solana-address-lookup-table-program = "1.14"
 spl-token = { version = "3", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
 
 spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
+lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main", features = ["no-entrypoint"] }
 
 jet-program-common = { path = "../program-common" }
 jet-solana-client = { path = "../solana-client" }
