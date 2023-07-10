@@ -38,7 +38,7 @@ const UserGuidePage = ({
     <div className="flex font-normal items-center text-2xl my-2 pt-8">
       <a
         className="flex-1 pr-6 font-normal text-sm"
-        href="https://uploads-ssl.webflow.com/620e4761998cce492a7c9c8d/62ebf0ff41fac7359bfb2964_litepaper-v0.0.1.pdf"
+        href="https://docs.jetprotocol.io/jet-protocol/protocol/jet-products/fixed-rate"
         target="_blank"
         rel="noopener noreferrer">
         Read the Litepaper
