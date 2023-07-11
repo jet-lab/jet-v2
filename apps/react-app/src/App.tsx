@@ -6,7 +6,8 @@ import {
   SolflareWalletAdapter,
   SolongWalletAdapter,
   BraveWalletAdapter,
-  UnsafeBurnerWalletAdapter
+  UnsafeBurnerWalletAdapter,
+
 } from '@solana/wallet-adapter-wallets';
 import { lazy, Suspense, useMemo } from 'react';
 import './styles/App.less';
@@ -14,6 +15,7 @@ import { Navbar } from '@components/misc/Navbar/Navbar';
 import { Modals } from '@components/modals/Modals';
 import { TermsPrivacy } from '@components/misc/TermsPrivacy';
 import '@styles/App.less';
+import { OKXWalletAdapter } from './wallets';
 
 const AccountsView = lazy(() => import('@views/AccountsView'));
 const PoolsView = lazy(() => import('@views/PoolsView'));
@@ -28,6 +30,7 @@ export const isDebug = window.location.href.includes('localhost');
 export const App = (): JSX.Element => {
   const wallets = useMemo(
     () => [
+      new OKXWalletAdapter(),
       new BraveWalletAdapter(),
       new SolflareWalletAdapter(),
       new SolongWalletAdapter(),
