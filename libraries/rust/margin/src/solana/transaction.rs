@@ -36,6 +36,7 @@ pub trait SendTransactionBuilder {
         self.send_and_confirm(TransactionBuilder {
             instructions: instructions.to_vec(),
             signers: signers.to_keypairs(),
+            compute_budget: 0, // TODO: estimate compute budget. allow callers to provide it, maybe split this into two methods.
         })
         .await
     }

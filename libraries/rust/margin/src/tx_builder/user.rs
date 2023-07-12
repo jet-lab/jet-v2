@@ -218,6 +218,7 @@ impl MarginTxBuilder {
         TransactionBuilder {
             signers,
             instructions: instructions.to_vec(),
+            compute_budget: 0, // TODO: estimate compute budget
         }
     }
 

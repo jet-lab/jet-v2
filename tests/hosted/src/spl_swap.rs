@@ -285,6 +285,7 @@ impl SwapPoolConfig for SplSwapPool {
         Ok(TransactionBuilder {
             instructions: vec![swap_ix],
             signers: vec![],
+            compute_budget: 0, // TODO: estimate compute budget
         })
     }
 

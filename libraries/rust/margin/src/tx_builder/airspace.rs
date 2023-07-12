@@ -225,6 +225,7 @@ impl AirspaceAdmin {
         TransactionBuilder {
             instructions: vec![claims_update_ix, collateral_update_ix, ticket_update_ix],
             signers: vec![],
+            compute_budget: 0, // TODO: estimate compute budget
         }
     }
 }

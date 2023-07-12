@@ -304,6 +304,7 @@ async fn create_market_for_token(
                     &jet_fixed_term::ID,
                 )],
                 signers: vec![key_eq],
+                compute_budget: 0, // TODO: estimate compute budget
             },
             TransactionBuilder {
                 instructions: vec![system_instruction::create_account(
@@ -314,6 +315,7 @@ async fn create_market_for_token(
                     &jet_fixed_term::ID,
                 )],
                 signers: vec![key_bids],
+                compute_budget: 0, // TODO: estimate compute budget
             },
             TransactionBuilder {
                 instructions: vec![system_instruction::create_account(
@@ -324,6 +326,7 @@ async fn create_market_for_token(
                     &jet_fixed_term::ID,
                 )],
                 signers: vec![key_asks],
+                compute_budget: 0, // TODO: estimate compute budget
             },
         ],
     );

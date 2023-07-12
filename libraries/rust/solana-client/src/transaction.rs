@@ -35,6 +35,19 @@ pub struct TransactionBuilder {
     /// sometimes it may be convenient (e.g. in tests) to actually add the
     /// user's wallet into this struct before converting it to a transaction.
     pub signers: Vec<Keypair>,
+
+    pub compute_budget: usize,
+}
+
+impl TransactionBuilder {
+    pub fn add_compute(&mut self, compute: usize) {
+        self.compute_budget += compute;
+    }
+    
+    pub fn plus_compute(mut self, compute: usize) -> Self {
+        self.compute_budget += compute;
+        self
+    }
 }
 
 impl DeepReverse for TransactionBuilder {
@@ -49,6 +62,7 @@ impl Clone for TransactionBuilder {
         Self {
             instructions: self.instructions.clone(),
             signers: self.signers.iter().map(|k| k.clone()).collect(),
+            compute_budget: self.compute_budget,
         }
     }
 }
@@ -58,6 +72,7 @@ impl From<Vec<Instruction>> for TransactionBuilder {
         Self {
             instructions,
             signers: vec![],
+            compute_budget: 0,
         }
     }
 }
@@ -67,6 +82,7 @@ impl From<Instruction> for TransactionBuilder {
         Self {
             instructions: vec![ix],
             signers: vec![],
+            compute_budget: 0,
         }
     }
 }
@@ -193,6 +209,7 @@ impl WithSigner for &[Instruction] {
         TransactionBuilder {
             instructions: self.to_vec(),
             signers: clone_vec(signers),
+            compute_budget: 0, // TODO: estimate compute budget. maybe offer a separate method for this?
         }
     }
 }
@@ -205,6 +222,7 @@ impl WithSigner for TransactionBuilder {
         TransactionBuilder {
             instructions: self.instructions,
             signers: self.signers,
+            compute_budget: self.compute_budget,
         }
     }
 }

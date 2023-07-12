@@ -466,6 +466,7 @@ impl TokenManager {
         Ok(TransactionBuilder {
             instructions: vec![ix_write],
             signers: vec![],
+            compute_budget: 0, // TODO: estimate compute budget
         })
     }
 

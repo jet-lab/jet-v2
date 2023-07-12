@@ -173,6 +173,7 @@ impl OpenbookStateAccounts {
         let transaction = TransactionBuilder {
             instructions: vec![bids_ix, asks_ix, events_ix, requests_ix],
             signers: vec![bids, asks, events, requests],
+            compute_budget: 0, // TODO: estimate compute budget
         };
 
         Ok((accounts, transaction))
@@ -298,6 +299,7 @@ async fn create_orca_whirlpool(
         [TransactionBuilder {
             instructions: vec![ix_builder.initialize_pool(1 << 64)],
             signers: vec![vault_a, vault_b],
+            compute_budget: 0, // TODO: estimate compute budget
         }],
     );
 
