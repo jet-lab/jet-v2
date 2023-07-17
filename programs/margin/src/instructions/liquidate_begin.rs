@@ -22,8 +22,8 @@ use jet_program_common::Number128;
 use crate::{
     events,
     syscall::{sys, Sys},
-    ErrorCode, Liquidation, LiquidationState, MarginAccount, Permissions, Permit,
-    LIQUIDATION_MAX_EQUITY_LOSS_CONSTANT, LIQUIDATION_MAX_EQUITY_LOSS_PROPORTION_BPS, Valuation,
+    ErrorCode, Liquidation, LiquidationState, MarginAccount, Permissions, Permit, Valuation,
+    LIQUIDATION_MAX_EQUITY_LOSS_CONSTANT, LIQUIDATION_MAX_EQUITY_LOSS_PROPORTION_BPS,
 };
 
 #[derive(Accounts)]
@@ -113,7 +113,8 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
 }
 
 pub fn max_equity_loss(valuation: &Valuation) -> Number128 {
-    const M: Number128 = Number128::const_from_bps(LIQUIDATION_MAX_EQUITY_LOSS_PROPORTION_BPS as i128);
+    const M: Number128 =
+        Number128::const_from_bps(LIQUIDATION_MAX_EQUITY_LOSS_PROPORTION_BPS as i128);
     const B: Number128 =
         Number128::const_from_decimal(LIQUIDATION_MAX_EQUITY_LOSS_CONSTANT as i128, 0);
     M * valuation.liabilities + B
