@@ -58,9 +58,18 @@ pub const MAX_ORACLE_STALENESS: i64 = 30;
 #[constant]
 pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
-/// The maximum amount of equity that can be deducted from an account during liquidation
-/// as a fraction of the account's entire liabilities value
-pub const LIQUIDATION_MAX_TOTAL_EQUITY_LOSS_BPS: u16 = 4_00;
+/// The maximum amount of equity that can be deducted from an account during
+/// liquidation as a proportion of the account's entire liabilities value. This
+/// is the degree-1 coefficient (slope) in the linear equation defining max
+/// equity loss.
+#[constant]
+pub const LIQUIDATION_MAX_EQUITY_LOSS_PROPORTION_BPS: u16 = 4_00;
+
+/// The constant dollar value that is always allowed to be lost during
+/// liquidation. This is the constant term in the linear equation defining max
+/// equity loss.
+#[constant]
+pub const LIQUIDATION_MAX_EQUITY_LOSS_CONSTANT: u64 = 1;
 
 /// The maximum duration in seconds of a liquidation before another user may cancel it
 #[constant]

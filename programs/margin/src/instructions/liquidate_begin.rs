@@ -23,7 +23,7 @@ use crate::{
     events,
     syscall::{sys, Sys},
     ErrorCode, Liquidation, LiquidationState, MarginAccount, Permissions, Permit,
-    LIQUIDATION_MAX_TOTAL_EQUITY_LOSS_BPS,
+    LIQUIDATION_MAX_EQUITY_LOSS_CONSTANT, LIQUIDATION_MAX_EQUITY_LOSS_PROPORTION_BPS, Valuation,
 };
 
 #[derive(Accounts)]
@@ -92,9 +92,7 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
     }
 
     let valuation = account.valuation(timestamp)?;
-
-    let max_equity_loss =
-        valuation.liabilities * Number128::from_bps(LIQUIDATION_MAX_TOTAL_EQUITY_LOSS_BPS);
+    let max_equity_loss = max_equity_loss(&valuation);
 
     let liquidation_state = LiquidationState {
         liquidator,
@@ -112,4 +110,11 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
     });
 
     Ok(())
+}
+
+pub fn max_equity_loss(valuation: &Valuation) -> Number128 {
+    const M: Number128 = Number128::const_from_bps(LIQUIDATION_MAX_EQUITY_LOSS_PROPORTION_BPS as i128);
+    const B: Number128 =
+        Number128::const_from_decimal(LIQUIDATION_MAX_EQUITY_LOSS_CONSTANT as i128, 0);
+    M * valuation.liabilities + B
 }
