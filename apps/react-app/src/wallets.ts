@@ -125,7 +125,7 @@ export class OKXWalletAdapter extends BaseMessageSignerWalletAdapter {
             if (!window.okxwallet) {
                 const shouldOpen = window.confirm("It looks like you do not have the OKX Wallet installed. Would you like to install it?");
                 if (shouldOpen) {
-                    window.open('https://okx.com/download', '_blank');
+                    window.open('https://okx.com/web3', '_blank');
                     return;
                 }
                 return;
