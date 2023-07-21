@@ -350,6 +350,41 @@ pub fn condense_left(
     }
 }
 
+/// Searches efficiently for the largest continuous group of TransactionBuilders
+/// starting from index 0 that can be merged into a single transaction without
+/// exceeding the transaction size limit.
+///
+/// TODO: this could be modified to search from the end instead of the
+/// beginning, so it would serve condense_right instead of condense_left. Then
+/// condense and condense_fast could be consolidated.
+fn find_first_condensed(
+    txs: &[TransactionBuilder],
+    payer: &Pubkey,
+) -> Result<usize, bincode::Error> {
+    let mut try_len = txs.len();
+    let mut bounds = (min(txs.len(), 1), try_len);
+    loop {
+        if bounds.1 == bounds.0 {
+            return Ok(bounds.0);
+        }
+        let size = txs[0..try_len].ijoin().fake_encode(payer)?.len();
+        if size > MAX_TX_SIZE {
+            bounds = (bounds.0, try_len - 1);
+        } else {
+            bounds = (try_len, bounds.1);
+        }
+        let ratio = MAX_TX_SIZE as f64 / size as f64;
+        let mut maybe_try = (ratio * try_len as f64).round() as usize;
+        maybe_try = min(bounds.1, max(bounds.0, maybe_try));
+        if maybe_try == try_len {
+            // if the approximated search leads to an infinite loop, fall back to a binary search.
+            try_len = ((bounds.0 + bounds.1) as f64 / 2.0).round() as usize;
+        } else {
+            try_len = maybe_try;
+        }
+    }
+}
+
 /// Compile the instructions into a versioned transaction
 pub fn create_unsigned_transaction(
     instructions: &[Instruction],
@@ -462,41 +497,6 @@ pub fn create_signed_transaction(
 
     sign_transaction([signer], &mut tx)?;
     Ok(tx)
-}
-
-/// Searches efficiently for the largest continuous group of TransactionBuilders
-/// starting from index 0 that can be merged into a single transaction without
-/// exceeding the transaction size limit.
-///
-/// TODO: this could be modified to search from the end instead of the
-/// beginning, so it would serve condense_right instead of condense_left. Then
-/// condense and condense_fast could be consolidated.
-fn find_first_condensed(
-    txs: &[TransactionBuilder],
-    payer: &Pubkey,
-) -> Result<usize, bincode::Error> {
-    let mut try_len = txs.len();
-    let mut bounds = (min(txs.len(), 1), try_len);
-    loop {
-        if bounds.1 == bounds.0 {
-            return Ok(bounds.0);
-        }
-        let size = txs[0..try_len].ijoin().fake_encode(payer)?.len();
-        if size > MAX_TX_SIZE {
-            bounds = (bounds.0, try_len - 1);
-        } else {
-            bounds = (try_len, bounds.1);
-        }
-        let ratio = MAX_TX_SIZE as f64 / size as f64;
-        let mut maybe_try = (ratio * try_len as f64).round() as usize;
-        maybe_try = min(bounds.1, max(bounds.0, maybe_try));
-        if maybe_try == try_len {
-            // if the approximated search leads to an infinite loop, fall back to a binary search.
-            try_len = ((bounds.0 + bounds.1) as f64 / 2.0).round() as usize;
-        } else {
-            try_len = maybe_try;
-        }
-    }
 }
 
 /// A type convertible to a solana transaction
