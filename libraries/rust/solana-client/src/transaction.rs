@@ -130,6 +130,59 @@ impl TransactionBuilder {
         tx
     }
 
+    /// Convert the TransactionBuilder into a VersionedTransaction using the
+    /// provided lookup tables.
+    ///
+    /// Handles the typical situation where the payer is the only additional
+    /// signer needed. For arbitrary additional signers, use compile_custom or
+    /// compile_partial.
+    ///
+    /// Returns error if any required signers are not provided.
+    pub fn compile_with_lookup<'a>(
+        self,
+        payer: &'a (impl Signer + 'a),
+        lookup_tables: &[AddressLookupTableAccount],
+        recent_blockhash: Hash,
+    ) -> Result<VersionedTransaction, TransactionBuildError> {
+        self.compile_custom_with_lookup(&payer.pubkey(), [payer], lookup_tables, recent_blockhash)
+    }
+
+    /// Convert the TransactionBuilder into a VersionedTransaction using the
+    /// provided lookup tables.
+    ///
+    /// Returns error if any required signers are not provided.
+    pub fn compile_custom_with_lookup<'a>(
+        self,
+        payer: &Pubkey,
+        signers: impl IntoIterator<Item = &'a (impl Signer + 'a)>,
+        lookup_tables: &[AddressLookupTableAccount],
+        recent_blockhash: Hash,
+    ) -> Result<VersionedTransaction, TransactionBuildError> {
+        let mut tx = self.compile_partial_with_lookup(payer, lookup_tables, recent_blockhash)?;
+        sign_transaction(signers, &mut tx)?;
+        verify_signatures(&tx)?;
+        Ok(tx)
+    }
+
+    /// Like compile, except that it will not fail if signers are missing.
+    /// Intended to have other signatures, such as the payer's, added later.
+    pub fn compile_partial_with_lookup(
+        mut self,
+        payer: &Pubkey,
+        lookup_tables: &[AddressLookupTableAccount],
+        recent_blockhash: Hash,
+    ) -> Result<VersionedTransaction, TransactionBuildError> {
+        self.prune();
+        let mut tx = create_unsigned_transaction(
+            &self.instructions,
+            payer,
+            lookup_tables,
+            recent_blockhash,
+        )?;
+        sign_transaction(&self.signers, &mut tx)?;
+        Ok(tx)
+    }
+
     /// convert transaction to a base64 string similar to one that would be
     /// submitted to rpc node. It uses fake signatures so it's not the real
     /// transaction, but it should have the same size.
@@ -246,6 +299,8 @@ const MAX_TX_SIZE: usize = 1232;
 /// go in the same transaction with the user action. Once any get separated from
 /// the user action, it doesn't really matter how they are grouped any more. But
 /// you still want as many as possible with the user action.
+///
+/// TODO: lookup tables
 pub fn condense(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
@@ -324,28 +379,71 @@ pub fn create_unsigned_transaction(
     Ok(tx)
 }
 
-/// Sign a transaction with a keypair
-pub fn sign_transaction(
-    signer: &Keypair,
+/// Sign a versioned transaction with keypairs
+pub fn sign_transaction<'a>(
+    signers: impl IntoIterator<Item = &'a (impl Signer + 'a)>,
     tx: &mut VersionedTransaction,
 ) -> Result<(), TransactionBuildError> {
-    let index = tx
-        .message
-        .static_account_keys()
-        .iter()
-        .position(|key| *key == signer.pubkey())
-        .ok_or(SignerError::KeypairPubkeyMismatch)?;
-
     let to_sign = tx.message.serialize();
-    let signature = signer.sign_message(&to_sign);
-
     tx.signatures.resize(
         tx.message.header().num_required_signatures.into(),
         Default::default(),
     );
-    tx.signatures[index] = signature;
+
+    for signer in signers {
+        let index = tx
+            .message
+            .static_account_keys()
+            .iter()
+            .position(|key| *key == signer.pubkey())
+            .ok_or(SignerError::KeypairPubkeyMismatch)?;
+        let signature = signer.sign_message(&to_sign);
+        tx.signatures[index] = signature;
+    }
 
     Ok(())
+}
+
+/// if there are any required signers that have not signed, returns an error
+/// with a detailed message explaining the problem.
+pub fn verify_signatures(tx: &VersionedTransaction) -> Result<(), SignerError> {
+    use std::fmt::Write;
+    let mut error_message = String::new();
+
+    // check total
+    let not_enough = tx.signatures.len() < tx.message.header().num_required_signatures.into();
+    if not_enough {
+        write!(
+            error_message,
+            "Not enough signatures. expected {} but got {}. ",
+            tx.message.header().num_required_signatures,
+            tx.signatures.len()
+        )
+        .expect("string formatting should never fail");
+    }
+
+    // check each
+    let mut fail_pubkeys = vec![];
+    let keys = tx.message.static_account_keys();
+    for (index, verified) in tx.verify_with_results().into_iter().enumerate() {
+        if !verified {
+            fail_pubkeys.push((index, keys.get(index)));
+        }
+    }
+    if !fail_pubkeys.is_empty() {
+        write!(
+            error_message,
+            "Signatures failed verification for unknown reasons: {fail_pubkeys:#?}"
+        )
+        .expect("string formatting should never fail");
+    }
+
+    // aggregate checks
+    if !not_enough && fail_pubkeys.is_empty() && error_message.is_empty() {
+        Ok(())
+    } else {
+        Err(SignerError::Custom(error_message))
+    }
 }
 
 /// Compile and sign the instructions into a versioned transaction
@@ -362,7 +460,7 @@ pub fn create_signed_transaction(
         recent_blockhash,
     )?;
 
-    sign_transaction(signer, &mut tx)?;
+    sign_transaction([signer], &mut tx)?;
     Ok(tx)
 }
 

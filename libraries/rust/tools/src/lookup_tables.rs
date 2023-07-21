@@ -196,8 +196,7 @@ impl<'a> LookupTableManager<'a> {
         let mut tx =
             create_unsigned_transaction(instructions, &self.payer.pubkey(), &[], recent_blockhash)?;
 
-        sign_transaction(self.payer, &mut tx)?;
-        sign_transaction(self.signer, &mut tx)?;
+        sign_transaction([self.payer, self.signer], &mut tx)?;
 
         self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())

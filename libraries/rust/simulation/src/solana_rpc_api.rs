@@ -76,6 +76,20 @@ pub trait SolanaRpcClient: Send + Sync {
         Ok(signature)
     }
 
+    async fn send_and_confirm_versioned_transaction(
+        &self,
+        transaction: &VersionedTransaction,
+    ) -> Result<Signature> {
+        let signature = self.send_versioned_transaction(transaction).await?;
+        let mut statuses = self.confirm_transactions(&[signature]).await?;
+
+        if let Some(err) = statuses.pop().unwrap().status.err() {
+            return Err(err).context(format!("Transaction error for {signature}"));
+        }
+
+        Ok(signature)
+    }
+
     async fn confirm_transactions(
         &self,
         signatures: &[Signature],
