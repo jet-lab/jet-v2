@@ -62,7 +62,7 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
   const { cluster, prices } = useJetStore(state => ({ cluster: state.settings.cluster, prices: state.prices }));
   const swapEndpoint: string =
     cluster === 'mainnet-beta'
-      ? ''
+      ? String(process.env.REACT_APP_SWAP_API)
       : cluster === 'devnet'
       ? String(process.env.REACT_APP_DEV_SWAP_API)
       : String(process.env.REACT_APP_LOCAL_SWAP_API);

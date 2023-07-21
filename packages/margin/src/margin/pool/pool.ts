@@ -1088,12 +1088,14 @@ export class Pool {
     pools,
     markets,
     change,
+    lookupTables,
     destination = TokenFormat.unwrappedSol
   }: {
     marginAccount: MarginAccount
     pools: Record<string, Pool> | Pool[]
     markets: FixedTermMarket[]
     change: PoolTokenChange
+    lookupTables: LookupTable[],
     destination?: TokenAddress
   }) {
     const refreshInstructions: TransactionInstruction[] = []
@@ -1111,7 +1113,7 @@ export class Pool {
       destination,
       change
     })
-    return await marginAccount.sendAll([chunks(11, refreshInstructions), instructions])
+    return await marginAccount.sendAndConfirmV0([refreshInstructions, instructions], lookupTables)
   }
 
   async withWithdraw({
@@ -1233,7 +1235,8 @@ export class Pool {
         is_writable: boolean
         pubkey: string
       }[]
-      data: string
+      data: string,
+      program: string
     }
 
     const setupInstructions: TransactionInstruction[] = []
@@ -1315,8 +1318,9 @@ export class Pool {
       })
     }
 
-    const swapInstruction = await axios.post<RouteAccounts>(`${endpoint}/swap/instruction`, {
+    const swapDirections = await axios.post<RouteAccounts[]>(`${endpoint}/swap/instruction`, {
       margin_account: marginAccount.address.toBase58(),
+      payer: marginAccount.owner.toBase58(),
       from: this.tokenMint.toBase58(),
       to: outputToken.tokenMint.toBase58(),
       path: swapPaths,
@@ -1325,20 +1329,46 @@ export class Pool {
       minimum_out: minAmountOut.lamports.toNumber()
     })
 
-    const swapAccounts = swapInstruction.data.accounts.map(a => {
+    // If there are > 1 instructions, the first ones are setup instructions
+    const len = swapDirections.data.length;
+    if (len > 1) {
+      for (let i = 0; i < len - 1; i++) {
+        const setupInstruction = swapDirections.data[i];
+        const setupAccounts = setupInstruction.accounts.map(a => {
+          return {
+            pubkey: new PublicKey(a.pubkey),
+            isSigner: a.is_signer,
+            isWritable: a.is_writable
+          }
+        })
+        const setupData = base64.decode(setupInstruction.data)
+        await marginAccount.withAdapterInvoke({
+          instructions: setupInstructions,
+          adapterInstruction: new TransactionInstruction({
+            keys: setupAccounts,
+            programId: new PublicKey(setupInstruction.program),
+            data: setupData
+          })
+        })
+      }
+    }
+    const swapInstruction = swapDirections.data[len - 1];
+
+    const swapAccounts = swapInstruction.accounts.map(a => {
       return {
         pubkey: new PublicKey(a.pubkey),
         isSigner: a.is_signer,
         isWritable: a.is_writable
       }
     })
-    const swapData = base64.decode(swapInstruction.data.data)
+    const swapData = base64.decode(swapInstruction.data)
 
     await this.withRouteSwap({
       instructions: swapInstructions,
       marginAccount,
       swapAccounts,
-      swapData
+      swapData,
+      pools
     })
 
     // If they have a debt of the output token, automatically repay as much as possible
@@ -1366,14 +1396,16 @@ export class Pool {
     // sourceAccount,
     // destinationAccount,
     swapAccounts,
-    swapData
+    swapData,
+    pools
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     // sourceAccount: Address
     // destinationAccount: Address
     swapAccounts: AccountMeta[]
-    swapData: Buffer
+    swapData: Buffer,
+    pools: Pool[]
   }): Promise<void> {
     // Create instructions for the swap route based on chosen path
 
@@ -1388,7 +1420,7 @@ export class Pool {
     })
 
     // Update account positions
-    // await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
+    await marginAccount.withPrioritisedPositionRefresh({ instructions, pools, markets: [] })
     // await marginAccount.withUpdatePositionBalance({ instructions, position: destinationAccount })
 
     // TODO: there might be dust in intermediate accounts, refresh those too

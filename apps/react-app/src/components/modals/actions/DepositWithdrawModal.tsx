@@ -24,7 +24,24 @@ import { LoadingOutlined } from '@ant-design/icons';
 // Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
   const { cluster, explorer } = useJetStore(state => state.settings);
-  const selectedPoolKey = useJetStore(state => state.selectedPoolKey);
+  const { selectedPoolKey, airspaceLookupTables, marginAccountLookupTables, selectedMarginAccount } = useJetStore(
+    state => ({
+      selectedPoolKey: state.selectedPoolKey,
+      airspaceLookupTables: state.airspaceLookupTables,
+      marginAccountLookupTables: state.marginAccountLookupTables,
+      selectedMarginAccount: state.selectedMarginAccount
+    })
+  );
+  const lookupTables = useMemo(() => {
+    if (!selectedMarginAccount) {
+      return airspaceLookupTables;
+    } else {
+      return marginAccountLookupTables[selectedMarginAccount]?.length
+        ? airspaceLookupTables.concat(marginAccountLookupTables[selectedMarginAccount])
+        : airspaceLookupTables;
+    }
+  }, [selectedMarginAccount, airspaceLookupTables, marginAccountLookupTables]);
+
   const pools = useRecoilValue(Pools);
   const currentPool = useMemo(
     () =>
@@ -67,7 +84,7 @@ export function DepositWithdrawModal(): JSX.Element {
   // Deposit / Withdraw
   async function depositWithdraw() {
     setSendingTransaction(true);
-    const [txId, resp] = currentAction === 'deposit' ? await deposit() : await withdraw();
+    const [txId, resp] = currentAction === 'deposit' ? await deposit() : await withdraw(lookupTables);
 
     if (resp === ActionResponse.Success) {
       notify(

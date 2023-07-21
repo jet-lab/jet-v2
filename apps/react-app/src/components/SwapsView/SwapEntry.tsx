@@ -6,6 +6,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { CurrentAccount } from '@state/user/accounts';
 import { Pools, PoolOptions } from '@state/pools/pools';
 import {
+  ActionRefresh,
   CurrentAction,
   CurrentSwapOutput,
   SendingTransaction,
@@ -17,7 +18,7 @@ import { formatPriceImpact, formatRiskIndicator } from '@utils/format';
 import { notify } from '@utils/notify';
 import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
 import { DEFAULT_DECIMALS, useCurrencyFormatting } from '@utils/currency';
-import { SwapStep, useSwapReviewMessage } from '@utils/actions/swap';
+import { SwapQuote, SwapStep, getSwapRoutes } from '@utils/actions/swap';
 import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
 import { Info } from '@components/misc/Info';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
@@ -26,7 +27,6 @@ import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/Connecti
 import { ArrowRight } from '@components/modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import SwapIcon from '@assets/icons/function-swap.svg';
-import { SelectedSwapQuote, SwapFees, SwapPoolTokenAmounts, SwapQuotes } from '@state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
 import debounce from 'lodash.debounce';
 import { useJetStore } from '@jet-lab/store';
@@ -75,6 +75,14 @@ export function SwapEntry(): JSX.Element {
       pools?.tokenPools && Object.values(pools?.tokenPools).find(pool => pool.address.toBase58() === selectedPoolKey),
     [selectedPoolKey, pools]
   );
+
+  const swapEndpoint =
+    cluster === 'mainnet-beta'
+      ? process.env.REACT_APP_SWAP_API
+      : cluster === 'devnet'
+        ? process.env.REACT_APP_DEV_SWAP_API
+        : process.env.REACT_APP_LOCAL_SWAP_API;
+
   const poolPrecision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
   const overallInputBalance = poolPosition ? poolPosition.depositBalance.tokens - poolPosition.loanBalance.tokens : 0;
@@ -91,10 +99,9 @@ export function SwapEntry(): JSX.Element {
     ? outputPoolPosition.depositBalance.tokens - outputPoolPosition.loanBalance.tokens
     : 0;
   const hasOutputLoan = outputPoolPosition ? !outputPoolPosition.loanBalance.isZero() : false;
-  const swapPoolTokenAmounts = useRecoilValue(SwapPoolTokenAmounts);
-  const swapQuotes = useRecoilValue(SwapQuotes);
-  const [selectedSwapQuote, setSelectedSwapQuote] = useRecoilState(SelectedSwapQuote);
-  const swapFees = useRecoilValue(SwapFees);
+  const actionRefresh = useRecoilValue(ActionRefresh);
+  const [swapQuotes, setSwapQuotes] = useState<SwapQuote[]>([]);
+  const [selectedSwapQuote, setSelectedSwapQuote] = useState<SwapQuote | undefined>(undefined);
   const [slippage, setSlippage] = useState(0.001);
   const [slippageInput, setSlippageInput] = useState('');
   const [swapOutputTokens, setSwapOutputTokens] = useState(TokenAmount.zero(0));
@@ -115,15 +122,6 @@ export function SwapEntry(): JSX.Element {
     repayLoanWithOutput
   );
   const projectedRiskStyle = useRiskStyle(projectedRiskIndicator);
-  const swapReviewMessage = useSwapReviewMessage(
-    currentAccount,
-    currentPool,
-    outputToken,
-    swapPoolTokenAmounts?.source,
-    swapPoolTokenAmounts?.destination,
-    'constantProduct',
-    swapFees
-  );
   const errorMessage = useTokenInputErrorMessage(undefined, projectedRiskIndicator);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const [switchingAssets, setSwitchingAssets] = useState(false);
@@ -140,42 +138,76 @@ export function SwapEntry(): JSX.Element {
   }
   useEffect(getSlippageInput, [setSlippage, slippageInput]);
 
-  // Changes in routes and slippage
+  // Get swap quote when token inputs change or on a timer
   useEffect(() => {
-    if (!outputToken || !pools) {
+    if (!currentPool || !outputToken) {
       return;
     }
-    if (!swapQuotes.length) {
-      setSwapOutputTokens(TokenAmount.zero(0));
-      setMinOutAmount(TokenAmount.zero(0));
-      setSwapFeeUsd(0.0);
+    // If the token input is 0, don't send a request
+    if (tokenInputAmount.isZero()) {
       return;
     }
-    // TODO: assume that the user will take the cheapest route always
-    setSelectedSwapQuote(swapQuotes[0]);
-    if (!selectedSwapQuote) {
-      // provide a hint that this isn't null at this point
-      return;
-    }
-    setSwapOutputTokens(new TokenAmount(new BN(selectedSwapQuote.tokens_out), outputToken.decimals));
-    setMinOutAmount(
-      new TokenAmount(new BN(Math.round(selectedSwapQuote.tokens_out * (1 - slippage))), outputToken.decimals)
-    );
-    let totalFee = 0.0;
-    for (let fee of Object.keys(selectedSwapQuote.fees)) {
-      const price = prices && prices[fee].price;
-      const swapFee = selectedSwapQuote.fees[fee];
-      const pool = Object.values(pools.tokenPools).find(p => {
-        return p.tokenMint.toBase58() === fee;
-      });
-      let decimals = pool && -pool.decimals;
-      if (price) {
-        // TODO: hardcoded as a common decimal length
-        totalFee += price * swapFee * Math.pow(10, decimals || -6);
+    async function getSwapTokenPrices() {
+      if (!currentPool || !outputToken || !pools) {
+        return;
+      }
+      try {
+        const routes = await getSwapRoutes(
+          swapEndpoint || '',
+          currentPool.tokenMint,
+          outputToken.tokenMint,
+          tokenInputAmount
+        );
+        if (!routes) {
+          return;
+        }
+        setSwapQuotes(routes);
+        if (!routes.length) {
+          setSwapOutputTokens(TokenAmount.zero(0));
+          setMinOutAmount(TokenAmount.zero(0));
+          setSwapFeeUsd(0.0);
+          return;
+        }
+        // TODO: assume that the user will take the cheapest route always
+        setSelectedSwapQuote(swapQuotes[0]);
+        const selectedQuote = swapQuotes[0];
+        console.log((selectedQuote.swaps[0][0] as any)?.program)
+        console.log(selectedQuote.tokens_out, outputToken.decimals)
+        setSwapOutputTokens(new TokenAmount(new BN(selectedQuote.tokens_out), outputToken.decimals));
+        setMinOutAmount(
+          new TokenAmount(new BN(Math.round(selectedQuote.tokens_out * (1 - slippage))), outputToken.decimals)
+        );
+        let totalFee = 0.0;
+        for (let fee of Object.keys(selectedQuote.fees)) {
+          const price = prices && prices[fee].price;
+          const swapFee = selectedQuote.fees[fee];
+          const pool = Object.values(pools.tokenPools).find(p => {
+            return p.tokenMint.toBase58() === fee;
+          });
+          let decimals = pool && -pool.decimals;
+          if (price) {
+            // TODO: hardcoded as a common decimal length
+            totalFee += price * swapFee * Math.pow(10, decimals || -6);
+          }
+        }
+        console.log('swap fee', totalFee);
+        setSwapFeeUsd(totalFee);
+      } catch (err) {
+        console.error(err);
       }
     }
-    setSwapFeeUsd(totalFee);
-  }, [swapQuotes, slippage, outputToken?.decimals, pools]);
+
+    getSwapTokenPrices();
+
+  }, [
+    actionRefresh,
+    currentPool?.symbol,
+    outputToken?.symbol,
+    tokenInputAmount,
+    swapEndpoint,
+    pools,
+    slippage,
+  ])
 
   // Renders the user's collateral balance for input token
   function renderInputCollateralBalance() {
@@ -462,9 +494,8 @@ export function SwapEntry(): JSX.Element {
               </Radio.Button>
             ))}
             <div
-              className={`swap-slippage-input flex-centered ${
-                (slippage * 100).toString() === slippageInput ? 'active' : ''
-              }`}
+              className={`swap-slippage-input flex-centered ${(slippage * 100).toString() === slippageInput ? 'active' : ''
+                }`}
               onClick={getSlippageInput}>
               <Input
                 type="string"
@@ -533,13 +564,13 @@ export function SwapEntry(): JSX.Element {
             {renderSwapFee()}
           </div>
         </div>
-        {errorMessage || swapReviewMessage.length ? (
+        {errorMessage ? (
           <div className="order-entry-body-section flex-centered">
             <Paragraph
               italic
               type={errorMessage.length ? 'danger' : undefined}
-              className={`order-review ${errorMessage.length || swapReviewMessage.length ? '' : 'no-opacity'}`}>
-              {errorMessage.length ? errorMessage : swapReviewMessage}
+              className={`order-review ${errorMessage.length ? '' : 'no-opacity'}`}>
+              {errorMessage}
             </Paragraph>
           </div>
         ) : (
