@@ -17,3 +17,8 @@ quote = "USDC"
 program = "openbook"
 base = "BTC"
 quote = "USDC"
+
+[[dex]]
+program = "orca-whirlpool"
+base = "BTC"
+quote = "USDC"

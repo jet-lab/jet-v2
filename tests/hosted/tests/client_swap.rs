@@ -32,6 +32,7 @@ async fn setup_context(
             TestToken::new("TBTC").into(),
         ],
         dexes: dexes.into_iter().collect(),
+        whirlpools: vec![],
     };
 
     let ctx = TestContext::new(name, &setup_config).await.unwrap();

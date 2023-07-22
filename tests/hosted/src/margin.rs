@@ -17,7 +17,7 @@
 
 #![allow(unused)]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use anchor_lang::{
@@ -26,6 +26,9 @@ use anchor_lang::{
 use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::{bail, Error};
 
+use jet_instructions::margin_orca::{
+    MarginOrcaIxBuilder, WhirlpoolPositionSummary, WhirlpoolSummary,
+};
 use jet_instructions::margin_swap::MarginSwapRouteIxBuilder;
 use jet_margin::{AccountPosition, MarginAccount, TokenConfigUpdate, TokenKind};
 use jet_margin_sdk::ix_builder::test_service::if_not_initialized;
@@ -755,6 +758,138 @@ impl MarginUser {
         self.tx
             .transfer_deposit(*mint, *source_owner, *source, *destination, amount)
             .await?
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Register a new margin account to interact with whirlpools of a token pair
+    pub async fn orca_register_position_meta(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+    ) -> Result<(), Error> {
+        self.tx
+            .orca_register_position_meta(builder)
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Close a margin account associated with whirlpools of a token pair
+    pub async fn orca_close_position_meta(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+    ) -> Result<(), Error> {
+        self.tx
+            .orca_close_position_meta(builder)
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Open a new whirlpool position
+    pub async fn orca_open_position(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpool: Pubkey,
+        tick_lower_index: i32,
+        tick_upper_index: i32,
+    ) -> Result<Pubkey, Error> {
+        let (builder, position_mint, position) =
+            self.tx
+                .orca_open_position(builder, whirlpool, tick_lower_index, tick_upper_index);
+
+        builder.send_and_confirm(&self.rpc).await?;
+
+        Ok(position_mint)
+    }
+
+    /// Close a whirlpool position
+    pub async fn orca_close_position(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        mint: Pubkey,
+    ) -> Result<(), Error> {
+        self.tx
+            .orca_close_position(builder, mint)
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Add liquidity to a whirlpool position
+    #[allow(clippy::too_many_arguments)]
+    pub async fn orca_add_liquidity(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpool_summary: &WhirlpoolSummary,
+        position_summary: &WhirlpoolPositionSummary,
+        whirlpools: &HashSet<Pubkey>,
+        positions: &HashSet<Pubkey>,
+        liquidity_amount: u128,
+        token_max_a: u64,
+        token_max_b: u64,
+    ) -> Result<(), Error> {
+        self.tx
+            .orca_add_liquidity(
+                builder,
+                whirlpool_summary,
+                position_summary,
+                whirlpools,
+                positions,
+                liquidity_amount,
+                token_max_a,
+                token_max_b,
+            )
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Remove liquidity from a whirlpool position
+    #[allow(clippy::too_many_arguments)]
+    pub async fn orca_remove_liquidity(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpool_summary: &WhirlpoolSummary,
+        position_summary: &WhirlpoolPositionSummary,
+        whirlpools: &HashSet<Pubkey>,
+        positions: &HashSet<Pubkey>,
+        liquidity_amount: u128,
+        token_max_a: u64,
+        token_max_b: u64,
+    ) -> Result<(), Error> {
+        self.tx
+            .orca_remove_liquidity(
+                builder,
+                whirlpool_summary,
+                position_summary,
+                whirlpools,
+                positions,
+                liquidity_amount,
+                token_max_a,
+                token_max_b,
+            )
+            .send_and_confirm(&self.rpc)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Refresh a margin position that can have multiple whirlpool positions
+    pub async fn orca_refresh_position(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpools: &HashSet<Pubkey>,
+        positions: &HashSet<Pubkey>,
+    ) -> Result<(), Error> {
+        self.tx
+            .orca_refresh_position(builder, whirlpools, positions)
             .send_and_confirm(&self.rpc)
             .await?;
 

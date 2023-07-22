@@ -20,6 +20,7 @@ jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
 jet_margin_pool = "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ"
 jet_margin_swap = "JPMA1DMMkDK9vHLM22a6izMRWk5wvgPno774K7cG9zX"
 jet_metadata = "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp"
+jet_margin_orca = "6FfgwPxT7WSWLwPk4U4axXmnCgpehpahMcFMVoQgZ2dA"
 
 [programs.localnet]
 jet_test_service = "JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy"
@@ -30,6 +31,7 @@ jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
 jet_margin_pool = "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ"
 jet_margin_swap = "JPMA1DMMkDK9vHLM22a6izMRWk5wvgPno774K7cG9zX"
 jet_metadata = "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp"
+jet_margin_orca = "6FfgwPxT7WSWLwPk4U4axXmnCgpehpahMcFMVoQgZ2dA"
 pyth = "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL"
 
 [[test.genesis]]

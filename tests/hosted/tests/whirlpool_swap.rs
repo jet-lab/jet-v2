@@ -25,6 +25,7 @@ async fn whirlpool_swap_workflow() -> anyhow::Result<()> {
                 TestToken::with_pool("USDC").into(),
             ],
             dexes: vec![("orca-whirlpool", "TSOL/USDC")],
+            whirlpools: vec![],
         }
     };
 

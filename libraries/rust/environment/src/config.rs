@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use jet_instructions::test_service::derive_token_mint;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use thiserror::Error;
@@ -13,6 +14,7 @@ pub static DEFAULT_MARGIN_ADAPTERS: &[Pubkey] = &[
     jet_instructions::margin_swap::MARGIN_SWAP_PROGRAM,
     jet_instructions::margin_pool::MARGIN_POOL_PROGRAM,
     jet_instructions::fixed_term::FIXED_TERM_PROGRAM,
+    jet_instructions::margin_orca::MARGIN_ORCA_PROGRAM,
 ];
 
 /// Description of errors that occur when reading configuration
@@ -68,6 +70,38 @@ pub struct AirspaceConfig {
 
     /// The lookup registry authority
     pub lookup_registry_authority: Option<Pubkey>,
+
+    /// The Orca pools that are allowed as collateral
+    pub whirlpools: Vec<AirspaceWhirlpool>,
+}
+
+/// A description of a Whirlpool that is to be allowed as collateral
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct AirspaceWhirlpool {
+    /// Base token mint
+    pub base: Pubkey,
+    /// Quote token mint
+    pub quote: Pubkey,
+    // TODO: flags
+}
+
+impl AirspaceWhirlpool {
+    pub fn from_pair(pair: &str, token_descriptions: &[TokenDescription]) -> Self {
+        let (base, quote) = pair.split_once('/').unwrap();
+        // Find the names of the base and quote symbols
+        let base = token_descriptions
+            .iter()
+            .find(|token| token.symbol == base)
+            .unwrap();
+        let quote = token_descriptions
+            .iter()
+            .find(|token| token.symbol == quote)
+            .unwrap();
+        Self {
+            base: derive_token_mint(&base.name),
+            quote: derive_token_mint(&quote.name),
+        }
+    }
 }
 
 /// A description for a token to be created
@@ -197,6 +231,15 @@ struct EnvRootAirspaceConfig {
     cranks: Vec<Pubkey>,
     #[serde_as(as = "Option<DisplayFromStr>")]
     lookup_registry_authority: Option<Pubkey>,
+    #[serde(default)]
+    whirlpools: Vec<AirspaceWhirlpoolConfig>,
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+struct AirspaceWhirlpoolConfig {
+    pair: String,
+    // TODO flags
 }
 
 #[serde_as]
@@ -212,10 +255,9 @@ struct EnvRootConfigFile {
     #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(default)]
     oracle_authority: Option<Pubkey>,
-
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(default)]
-    lookup_registry_authority: Option<Pubkey>,
+    // #[serde_as(as = "Option<DisplayFromStr>")]
+    // #[serde(default)]
+    // lookup_registry_authority: Option<Pubkey>,
 }
 
 pub fn read_env_config_dir(path: &Path) -> Result<EnvironmentConfig, ConfigError> {
@@ -294,6 +336,17 @@ fn read_airspace_dir(
         cranks: config.cranks,
         is_restricted: config.is_restricted,
         lookup_registry_authority: config.lookup_registry_authority,
+        whirlpools: config
+            .whirlpools
+            .iter()
+            .map(|config| {
+                let (base, quote) = config.pair.split_once('/').unwrap();
+                AirspaceWhirlpool {
+                    base: derive_token_mint(base),
+                    quote: derive_token_mint(quote),
+                }
+            })
+            .collect(),
     })
 }
 

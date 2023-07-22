@@ -16,6 +16,7 @@ mod client;
 pub mod config;
 pub mod fixed_term;
 pub mod margin;
+pub mod margin_orca;
 pub mod margin_pool;
 pub mod state;
 pub mod swaps;

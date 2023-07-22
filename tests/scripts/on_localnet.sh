@@ -20,6 +20,7 @@ WHIRLPOOL_PID=whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc
 SBR_PID=SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ
 OPNBK_PID=srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX
 LKPRG_PID=LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru
+MGNORCA_PID=6FfgwPxT7WSWLwPk4U4axXmnCgpehpahMcFMVoQgZ2dA
 
 CTRL_SO=target/deploy/jet_control.so
 MRGN_SO=target/deploy/jet_margin.so
@@ -29,6 +30,7 @@ MRKT_SO=target/deploy/jet_fixed_term.so
 ASM_SO=target/deploy/jet_airspace.so
 JTS_SO=target/deploy/jet_test_service.so
 MGNSWAP_SO=target/deploy/jet_margin_swap.so
+MGNORCA_SO=target/deploy/jet_margin_orca.so
 SPLSWAP_SO=$SPL_V20_FROM_CRATES
 ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
@@ -85,6 +87,7 @@ start-validator() {
         --bpf-program $POOL_PID $POOL_SO \
         --bpf-program $META_PID $META_SO \
         --bpf-program $MRKT_PID $MRKT_SO \
+        --bpf-program $MGNORCA_PID $MGNORCA_SO \
         --bpf-program $ASM_PID $ASM_SO \
         --bpf-program $MGNSWAP_PID $MGNSWAP_SO \
         --bpf-program $SPLSWAP_PID $SPLSWAP_SO \

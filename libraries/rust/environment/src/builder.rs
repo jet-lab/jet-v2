@@ -16,6 +16,7 @@ use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signer::Signer};
 use jet_instructions::{
     control::ControlIxBuilder,
     margin::{derive_token_config, MarginConfigIxBuilder},
+    margin_orca::MarginOrcaIxBuilder,
     test_service::{derive_token_mint, if_not_initialized},
 };
 use jet_margin::TokenConfig;
@@ -30,6 +31,7 @@ use crate::config::{EnvironmentConfig, TokenDescription};
 pub(crate) mod fixed_term;
 pub(crate) mod global;
 pub(crate) mod margin;
+pub(crate) mod margin_orca;
 pub(crate) mod margin_pool;
 pub(crate) mod swap;
 
@@ -68,6 +70,9 @@ pub enum BuilderError {
         expected: NetworkKind,
         actual: NetworkKind,
     },
+
+    #[error("missing Orca whirlpool '{0}'")]
+    MissingOrcaWhirlpool(String),
 }
 
 /// How will the proposed instructions be executed?
@@ -300,6 +305,17 @@ impl Builder {
 
     pub(crate) fn control_ix(&self) -> ControlIxBuilder {
         ControlIxBuilder::new_for_authority(self.proposal_authority(), self.proposal_payer())
+    }
+
+    pub(crate) fn margin_orca_ix(
+        &self,
+        airspace: &Pubkey,
+        token_a: &Pubkey,
+        token_b: &Pubkey,
+        oracle_a: &Pubkey,
+        oracle_b: &Pubkey,
+    ) -> MarginOrcaIxBuilder {
+        MarginOrcaIxBuilder::new(*airspace, *token_a, *token_b, *oracle_a, *oracle_b)
     }
 }
 

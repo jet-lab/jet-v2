@@ -54,6 +54,7 @@ jet-control = { path = "../../programs/control", features = ["no-entrypoint", "t
 jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "testing"] }
 jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint", "testing"] }
+jet-margin-orca = { path = "../../programs/margin-orca", features = ["no-entrypoint", "testing"] }
 jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "testing"] }
 jet-airspace = { path = "../../programs/airspace", features = ["no-entrypoint", "testing"] }
 jet-test-service = { path = "../../programs/test-service", features = ["no-entrypoint"] }

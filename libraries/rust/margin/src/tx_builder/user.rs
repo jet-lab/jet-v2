@@ -15,11 +15,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use anchor_spl::associated_token::get_associated_token_address;
 use async_trait::async_trait;
+use jet_instructions::margin_orca::{
+    MarginOrcaIxBuilder, WhirlpoolPositionSummary, WhirlpoolSummary,
+};
 use jet_instructions::openbook::{close_open_orders, create_open_orders};
 use jet_margin_pool::program::JetMarginPool;
 
@@ -854,6 +857,123 @@ impl MarginTxBuilder {
         let open_orders_ix =
             close_open_orders(*self.address(), *market, self.rpc.payer().pubkey(), program);
         let instruction = self.adapter_invoke_ix(open_orders_ix);
+        self.create_transaction_builder(&[instruction])
+    }
+
+    /// Register a margin account position that enables supplying liquidity to
+    /// Orca Whirlpools that are denominated in the builder's token pair.
+    pub fn orca_register_position_meta(&self, builder: &MarginOrcaIxBuilder) -> TransactionBuilder {
+        let position_ix = builder.register_position_meta(*self.address(), self.ix.payer());
+        let instruction = self.adapter_invoke_ix(position_ix);
+        self.create_transaction_builder(&[instruction])
+    }
+
+    /// Close the margin account position associated with the Orca liquidity
+    /// for the builder's token pair.
+    pub fn orca_close_position_meta(&self, builder: &MarginOrcaIxBuilder) -> TransactionBuilder {
+        let position_ix = builder.close_position_meta(*self.address(), self.ix.payer());
+        let instruction = self.adapter_invoke_ix(position_ix);
+        self.create_transaction_builder(&[instruction])
+    }
+
+    /// Open an Orca Whirlpool position
+    pub fn orca_open_position(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpool_address: Pubkey,
+        tick_lower_index: i32,
+        tick_upper_index: i32,
+    ) -> (TransactionBuilder, Pubkey, Pubkey) {
+        let (position_ix, position_mint, position) = builder.open_position(
+            *self.address(),
+            self.ix.payer(),
+            whirlpool_address,
+            0,
+            tick_lower_index,
+            tick_upper_index,
+        );
+        let instruction = self.adapter_invoke_ix(position_ix);
+        (
+            self.create_transaction_builder(&[instruction]),
+            position_mint,
+            position,
+        )
+    }
+
+    /// Close an Orca Whirlpool position
+    pub fn orca_close_position(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        mint: Pubkey,
+    ) -> TransactionBuilder {
+        let position_ix = builder.close_position(*self.address(), self.ix.payer(), mint);
+        let instruction = self.adapter_invoke_ix(position_ix);
+        self.create_transaction_builder(&[instruction])
+    }
+
+    /// Increase liquidity in an Orca Whirlpool position owned by the margin account
+    #[allow(clippy::too_many_arguments)]
+    pub fn orca_add_liquidity(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpool_summary: &WhirlpoolSummary,
+        position_summary: &WhirlpoolPositionSummary,
+        whirlpools: &HashSet<Pubkey>,
+        positions: &HashSet<Pubkey>,
+        liquidity_amount: u128,
+        token_max_a: u64,
+        token_max_b: u64,
+    ) -> TransactionBuilder {
+        let position_ix = builder.add_liquidity(
+            *self.address(),
+            whirlpool_summary,
+            position_summary,
+            whirlpools,
+            positions,
+            liquidity_amount,
+            token_max_a,
+            token_max_b,
+        );
+        let instruction = self.adapter_invoke_ix(position_ix);
+        self.create_transaction_builder(&[instruction])
+    }
+
+    /// Decrease liquidity in an Orca Whirlpool position owned by the margin account
+    #[allow(clippy::too_many_arguments)]
+    pub fn orca_remove_liquidity(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpool_summary: &WhirlpoolSummary,
+        position_summary: &WhirlpoolPositionSummary,
+        whirlpools: &HashSet<Pubkey>,
+        positions: &HashSet<Pubkey>,
+        liquidity_amount: u128,
+        token_max_a: u64,
+        token_max_b: u64,
+    ) -> TransactionBuilder {
+        let position_ix = builder.remove_liquidity(
+            *self.address(),
+            whirlpool_summary,
+            position_summary,
+            whirlpools,
+            positions,
+            liquidity_amount,
+            token_max_a,
+            token_max_b,
+        );
+        let instruction = self.adapter_invoke_ix(position_ix);
+        self.create_transaction_builder(&[instruction])
+    }
+
+    /// Refresh the margin account position associated with the Orca liquidity
+    pub fn orca_refresh_position(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+        whirlpools: &HashSet<Pubkey>,
+        positions: &HashSet<Pubkey>,
+    ) -> TransactionBuilder {
+        let position_ix = builder.margin_refresh_position(*self.address(), whirlpools, positions);
+        let instruction = self.ix.accounting_invoke(position_ix);
         self.create_transaction_builder(&[instruction])
     }
 

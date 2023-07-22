@@ -34,6 +34,7 @@ async fn setup_context(name: &str, tenor: u64) -> TestEnv {
             .into(),
         ],
         dexes: vec![("spl-swap", "TSOL/USDC")],
+        whirlpools: vec![],
     };
 
     let ctx = TestContext::new(name, &setup_config).await.unwrap();
