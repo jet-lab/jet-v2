@@ -78,7 +78,7 @@ pub fn resolve_swap_address(program: &Pubkey, base: &Pubkey, quote: &Pubkey) -> 
     }
 }
 
-pub async fn create_swap_pools<'a>(
+pub async fn create_swap_pools(
     builder: &mut Builder,
     config: &EnvironmentConfig,
 ) -> Result<(), BuilderError> {

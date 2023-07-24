@@ -57,6 +57,9 @@ jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypo
 jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "testing"] }
 jet-airspace = { path = "../../programs/airspace", features = ["no-entrypoint", "testing"] }
 jet-test-service = { path = "../../programs/test-service", features = ["no-entrypoint"] }
+jet-rewards = { path = "../../programs/rewards", features = ["no-entrypoint"] }
+jet-staking = { path = "../../programs/staking", features = ["no-entrypoint"] }
+jet-auth = { path = "../../programs/auth", features = ["no-entrypoint", "testing"] }
 
 jet-instructions = { path = "../../libraries/rust/instructions" }
 jet-solana-client = { path = "../../libraries/rust/solana-client" }

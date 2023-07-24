@@ -12,6 +12,7 @@ pub mod programs;
 pub mod serialization;
 pub mod traits;
 pub mod map;
+pub mod seeds;
 
 #[doc(inline)]
 pub use functions::*;
@@ -59,3 +60,5 @@ pub const DEFAULT_AIRSPACE: Pubkey = pubkey!("BwQhHumhyyyRBtCsiSrdnFCinJDCaaMBbb
 /// importing the crate just to get the ID.
 pub const ADDRESS_LOOKUP_REGISTRY_ID: Pubkey =
     pubkey!("LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru");
+
+pub const GOVERNANCE_PROGRAM: Pubkey = pubkey!("JPGov2SBA6f7XSJF5R4Si5jEJekGiyrwP2m7gSEqLUs");

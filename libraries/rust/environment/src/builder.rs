@@ -32,6 +32,7 @@ pub(crate) mod global;
 pub(crate) mod margin;
 pub(crate) mod margin_pool;
 pub(crate) mod swap;
+pub(crate) mod governance;
 
 pub use fixed_term::configure_market_for_token;
 pub use global::{configure_environment, configure_tokens, create_test_tokens, token_context};

@@ -9,7 +9,7 @@ use crate::seeds;
 use crate::spl_addin::MaxVoterWeightRecord;
 use crate::state::*;
 
-#[derive(AnchorSerialize, AnchorDeserialize)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct PoolConfig {
     /// The time period for unbonding staked tokens from the pool.
     ///

@@ -244,13 +244,8 @@ impl Client {
         }
 
         let mut ui_progress_group = ProgressTracker::new(self.config.no_confirm);
-
-        #[allow(clippy::needless_collect)]
-        let ui_progress_tx = plan
-            .entries
-            .iter()
-            .map(|_| ui_progress_group.add_line("in queue"))
-            .collect::<Vec<_>>();
+        let active_progress = ui_progress_group.add_line("pending ...");
+        let submission_progress = ui_progress_group.add_line("submitting transactions ...");
 
         if !self.config.no_confirm {
             std::thread::spawn(move || ui_progress_group.join().unwrap());
@@ -258,8 +253,10 @@ impl Client {
 
         let tx_count = plan.entries.len();
 
-        for (mut entry, ui_progress_bar) in plan.entries.into_iter().zip(ui_progress_tx.into_iter())
+        for (i, mut entry) in plan.entries.into_iter().enumerate()
         {
+            submission_progress.set_message(format!("submitting transactions [{i}/{tx_count}]"));
+
             let recent_blockhash = self.rpc().get_latest_blockhash().await?;
             entry
                 .transaction
@@ -270,24 +267,26 @@ impl Client {
 
             match self.config.dry_run {
                 false => {
-                    self.submit_transaction(&entry.transaction, ui_progress_bar)
+                    self.submit_transaction(&entry.transaction, &active_progress)
                         .await?
                 }
                 true => {
-                    self.simulate_transaction(&entry.transaction, ui_progress_bar)
+                    self.simulate_transaction(&entry.transaction, &active_progress)
                         .await?
                 }
             }
         }
 
-        println!("submitted {} transactions", tx_count);
+        active_progress.finish_with_message("done");
+        submission_progress.finish_with_message(format!("submitted {} transactions", tx_count));
+
         Ok(())
     }
 
     async fn simulate_transaction(
         &self,
         transaction: &Transaction,
-        ui_progress: Spinner,
+        ui_progress: &Spinner,
     ) -> Result<()> {
         ui_progress.set_message("simulating");
 
@@ -309,7 +308,7 @@ impl Client {
     async fn submit_transaction(
         &self,
         transaction: &Transaction,
-        ui_progress: Spinner,
+        ui_progress: &Spinner,
     ) -> Result<()> {
         loop {
             ui_progress.set_message("submitting");
@@ -368,7 +367,7 @@ impl Client {
                 match status {
                     None => tokio::time::sleep(Duration::from_millis(100)).await,
                     Some(Ok(())) => {
-                        ui_progress.finish_with_message(format!("confirmed {signature}"));
+                        ui_progress.set_message(format!("confirmed {signature}"));
                         return Ok(());
                     }
                     Some(Err(e)) => {

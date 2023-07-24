@@ -12,7 +12,7 @@ use jet_instructions::{
 
 use super::{
     filter_initializers, fixed_term, margin::configure_margin_token, margin_pool, Builder,
-    BuilderError, NetworkKind, SetupPhase, TokenContext,
+    BuilderError, NetworkKind, SetupPhase, TokenContext, governance,
 };
 use crate::config::{AirspaceConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS};
 
@@ -31,6 +31,11 @@ pub async fn configure_environment(
     let as_ix = AirspaceIxBuilder::new("", payer, builder.proposal_authority());
     let ctrl_ix = ControlIxBuilder::new_for_authority(builder.proposal_authority(), payer);
 
+    let oracle_authority = config.oracle_authority.unwrap_or(payer);
+
+    // governance
+    governance::create_governance_system(builder, &oracle_authority).await?;
+
     // global authority accounts
     builder.setup(
         SetupPhase::TokenMints,
@@ -43,8 +48,6 @@ pub async fn configure_environment(
         )
         .await?,
     );
-
-    let oracle_authority = config.oracle_authority.unwrap_or(payer);
 
     // airspaces
     for airspace in &config.airspaces {

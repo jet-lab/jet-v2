@@ -1,3 +1,5 @@
+use std::cell::RefMut;
+
 use bytemuck::{Pod, Zeroable};
 use thiserror::Error;
 
@@ -34,8 +36,8 @@ where
     K: Pod + AsRef<[u8]>,
     V: Pod,
 {
-    header: &'a mut Header,
-    storage: &'a mut [StorageNode<K, V>],
+    header: RefMut<'a, Header>,
+    storage: RefMut<'a, [StorageNode<K, V>]>,
 }
 
 impl<'a, K, V> Map<'a, K, V>
@@ -43,11 +45,22 @@ where
     V: Pod,
     K: Pod + AsRef<[u8]> + std::fmt::Debug,
 {
+    /// The size of the map header
+    pub const HEADER_SIZE: usize = std::mem::size_of::<Header>();
+
+    /// The size of one entry in the map
+    pub const ENTRY_SIZE: usize = std::mem::size_of::<StorageNode<K, V>>();
+
     /// Initialize a new map inside a buffer
-    pub fn initialize(buffer: &'a mut [u8]) -> Self {
-        let (buf_header, buf_nodes) = buffer.split_at_mut(std::mem::size_of::<Header>());
-        let header = bytemuck::from_bytes_mut::<Header>(buf_header);
-        let (_, storage, _) = bytemuck::pod_align_to_mut(buf_nodes);
+    pub fn initialize(buffer: RefMut<'a, [u8]>) -> Self {
+        let (buf_header, buf_nodes) = RefMut::map_split(buffer, |buffer| {
+            buffer.split_at_mut(std::mem::size_of::<Header>())
+        });
+
+        let mut header = RefMut::map(buf_header, |header| {
+            bytemuck::from_bytes_mut::<Header>(header)
+        });
+        let storage = RefMut::map(buf_nodes, |nodes| bytemuck::pod_align_to_mut(nodes).1);
 
         header.magic = MAP_MAGIC;
 
@@ -55,14 +68,19 @@ where
     }
 
     /// Load a map from a buffer
-    pub fn from_buffer(buffer: &'a mut [u8]) -> Result<Self, MapError> {
+    pub fn from_buffer(buffer: RefMut<'a, [u8]>) -> Result<Self, MapError> {
         if &buffer[..4] != MAP_MAGIC {
             return Err(MapError::InvalidFormat);
         }
 
-        let (buf_header, buf_nodes) = buffer.split_at_mut(std::mem::size_of::<Header>());
-        let header = bytemuck::from_bytes_mut::<Header>(buf_header);
-        let (_, storage, _) = bytemuck::pod_align_to_mut(buf_nodes);
+        let (buf_header, buf_nodes) = RefMut::map_split(buffer, |buffer| {
+            buffer.split_at_mut(std::mem::size_of::<Header>())
+        });
+
+        let header = RefMut::map(buf_header, |header| {
+            bytemuck::from_bytes_mut::<Header>(header)
+        });
+        let storage = RefMut::map(buf_nodes, |nodes| bytemuck::pod_align_to_mut(nodes).1);
 
         Ok(Self { header, storage })
     }
@@ -604,11 +622,13 @@ fn diff_value(mut bits: u32) -> u8 {
 mod tests {
     use super::*;
     use solana_program::pubkey::Pubkey;
+    use std::cell::RefCell;
 
     #[test]
     fn can_insert_remove_one() {
-        let mut buffer = [0u8; 256];
-        let mut map = Map::initialize(&mut buffer);
+        let storage = [0u8; 256];
+        let buffer = RefCell::new(storage);
+        let mut map = Map::initialize(buffer.borrow_mut());
         let key = Pubkey::default();
 
         map.insert(key, 42).unwrap();
@@ -617,8 +637,9 @@ mod tests {
 
     #[test]
     fn can_find_entry_in_seq_2() {
-        let mut buffer = [0u8; 2048];
-        let mut map = Map::initialize(&mut buffer);
+        let storage = [0u8; 2048];
+        let buffer = RefCell::new(storage);
+        let mut map = Map::initialize(buffer.borrow_mut());
         let mut keys = vec![];
 
         for i in 0..2 {
@@ -634,8 +655,9 @@ mod tests {
 
     #[test]
     fn correct_len_20() {
-        let mut buffer = [0u8; 2048];
-        let mut map = Map::initialize(&mut buffer);
+        let storage = [0u8; 2048];
+        let buffer = RefCell::new(storage);
+        let mut map = Map::initialize(buffer.borrow_mut());
 
         for i in 0..20 {
             let key_buf = [i; 32];
@@ -650,8 +672,9 @@ mod tests {
 
     #[test]
     fn can_insert_remove_seq_20() {
-        let mut buffer = [0u8; 2048];
-        let mut map = Map::initialize(&mut buffer);
+        let storage = [0u8; 2048];
+        let buffer = RefCell::new(storage);
+        let mut map = Map::initialize(buffer.borrow_mut());
         let mut keys = vec![];
 
         for i in 0..20 {
@@ -669,8 +692,9 @@ mod tests {
 
     #[test]
     fn can_iter() {
-        let mut buffer = [0u8; 16384];
-        let mut map = Map::initialize(&mut buffer);
+        let storage = [0u8; 16384];
+        let buffer = RefCell::new(storage);
+        let mut map = Map::initialize(buffer.borrow_mut());
         let mut keys = vec![];
 
         for i in 0..128 {

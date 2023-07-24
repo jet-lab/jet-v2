@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use anyhow::Result;
 use solana_sdk::pubkey::Pubkey;
 use spl_governance::state::proposal::get_proposal_address;
@@ -25,11 +27,14 @@ pub async fn process_proposal_create(
     )
     .await?;
 
+    let time = SystemTime::UNIX_EPOCH.elapsed().unwrap().as_secs();
+    let proposal_seed =
+        Pubkey::find_program_address(&[time.to_le_bytes().as_ref()], &JET_GOVERNANCE_PROGRAM).0;
     let proposal_address = get_proposal_address(
         &JET_GOVERNANCE_PROGRAM,
         &governance_address,
         realm.config.council_mint.as_ref().unwrap(),
-        &governance.proposals_count.to_le_bytes(),
+        &proposal_seed,
     );
 
     Ok(client
@@ -53,7 +58,7 @@ pub async fn process_proposal_create(
                 VoteType::SingleChoice,
                 vec!["Approve".to_owned()],
                 true,
-                governance.proposals_count,
+                &proposal_seed,
             )],
         )
         .build())

@@ -98,6 +98,7 @@ start-validator() {
         $@ &
     VALIDATOR_PID=$!
     sleep ${VALIDATOR_STARTUP:-5}
+    wait
 }
 
 start-oracle() {
