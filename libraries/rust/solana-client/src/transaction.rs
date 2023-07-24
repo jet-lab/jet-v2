@@ -13,6 +13,7 @@ use solana_sdk::signers::Signers;
 use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{instruction::Instruction, signature::Signature, transaction::Transaction};
 
+use crate::lookup_tables::optimize_lookup_tables;
 use crate::signature::NeedsSignature;
 use crate::util::data::{Concat, DeepReverse, Join};
 use crate::util::keypair::clone_vec;
@@ -138,6 +139,9 @@ impl TransactionBuilder {
     /// compile_partial.
     ///
     /// Returns error if any required signers are not provided.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
     pub fn compile_with_lookup<'a>(
         self,
         payer: &'a (impl Signer + 'a),
@@ -151,6 +155,9 @@ impl TransactionBuilder {
     /// provided lookup tables.
     ///
     /// Returns error if any required signers are not provided.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
     pub fn compile_custom_with_lookup<'a>(
         self,
         payer: &Pubkey,
@@ -166,6 +173,9 @@ impl TransactionBuilder {
 
     /// Like compile, except that it will not fail if signers are missing.
     /// Intended to have other signatures, such as the payer's, added later.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
     pub fn compile_partial_with_lookup(
         mut self,
         payer: &Pubkey,
@@ -173,10 +183,11 @@ impl TransactionBuilder {
         recent_blockhash: Hash,
     ) -> Result<VersionedTransaction, TransactionBuildError> {
         self.prune();
+        let optimal_tables = optimize_lookup_tables(&self.instructions, lookup_tables);
         let mut tx = create_unsigned_transaction(
             &self.instructions,
             payer,
-            lookup_tables,
+            &optimal_tables,
             recent_blockhash,
         )?;
         sign_transaction(&self.signers, &mut tx)?;
@@ -196,6 +207,42 @@ impl TransactionBuilder {
         let serialized = bincode::serialize::<Transaction>(&compiled)?;
         Ok(base64::encode(serialized))
     }
+
+    /// convert transaction to a base64 string similar to one that would be
+    /// submitted to rpc node. It uses fake signatures so it's not the real
+    /// transaction, but it should have the same size.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
+    pub fn fake_encode_with_lookup(
+        &self,
+        payer: &Pubkey,
+        lookup_tables: &[AddressLookupTableAccount],
+    ) -> Result<String, FakeEncodeError> {
+        let optimal_tables = optimize_lookup_tables(&self.instructions, lookup_tables);
+        let message = VersionedMessage::V0(v0::Message::try_compile(
+            payer,
+            &self.instructions,
+            &optimal_tables,
+            Hash::default(),
+        )?);
+        let tx = VersionedTransaction {
+            signatures: (0..message.header().num_required_signatures as usize)
+                .map(|_| Signature::new_unique())
+                .collect(),
+            message,
+        };
+        let serialized = bincode::serialize(&tx)?;
+        Ok(base64::encode(serialized))
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum FakeEncodeError {
+    #[error("fake serialization error: {0}")]
+    Serialization(#[from] bincode::Error),
+    #[error("fake compilation error: {0}")]
+    Compilation(#[from] CompileError),
 }
 
 impl Concat for TransactionBuilder {
@@ -304,7 +351,7 @@ const MAX_TX_SIZE: usize = 1232;
 pub fn condense(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
     condense_right(txs, payer)
 }
 
@@ -314,8 +361,8 @@ pub fn condense(
 pub fn condense_fast(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
-    condense_left(txs, payer)
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
+    condense_left(txs, payer, &[])
 }
 
 /// The last transaction is maximized in size, the first is not.
@@ -324,8 +371,8 @@ pub fn condense_fast(
 pub fn condense_right(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
-    Ok(condense_left(&txs.to_vec().deep_reverse(), payer)?.deep_reverse())
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
+    Ok(condense_left(&txs.to_vec().deep_reverse(), payer, &[])?.deep_reverse())
 }
 
 /// The first transaction is maximized in size, the last is not.
@@ -334,14 +381,15 @@ pub fn condense_right(
 pub fn condense_left(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
     let mut shrink_me = txs.to_vec();
     let mut condensed = vec![];
     loop {
         if shrink_me.is_empty() {
             return Ok(condensed);
         }
-        let next_idx = find_first_condensed(&shrink_me, payer)?;
+        let next_idx = find_first_condensed(&shrink_me, payer, lookup_tables)?;
         let next_tx = shrink_me[0..next_idx].ijoin();
         if !next_tx.instructions.is_empty() {
             condensed.push(shrink_me[0..next_idx].ijoin());
@@ -360,14 +408,22 @@ pub fn condense_left(
 fn find_first_condensed(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<usize, bincode::Error> {
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<usize, FakeEncodeError> {
     let mut try_len = txs.len();
     let mut bounds = (min(txs.len(), 1), try_len);
     loop {
         if bounds.1 == bounds.0 {
             return Ok(bounds.0);
         }
-        let size = txs[0..try_len].ijoin().fake_encode(payer)?.len();
+        let size = if lookup_tables.is_empty() {
+            txs[0..try_len].ijoin().fake_encode(payer)?.len()
+        } else {
+            txs[0..try_len]
+                .ijoin()
+                .fake_encode_with_lookup(payer, lookup_tables)?
+                .len()
+        };
         if size > MAX_TX_SIZE {
             bounds = (bounds.0, try_len - 1);
         } else {
