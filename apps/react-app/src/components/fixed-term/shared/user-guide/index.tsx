@@ -41,7 +41,7 @@ const UserGuidePage = ({
         href="https://docs.jetprotocol.io/jet-protocol/protocol/jet-products/fixed-rate"
         target="_blank"
         rel="noopener noreferrer">
-        Read the Litepaper
+        Read the Docs
       </a>
       {!isFirstPage && (
         <button className="flex-1" onClick={previousPage}>
