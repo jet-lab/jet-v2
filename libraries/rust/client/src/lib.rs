@@ -20,6 +20,7 @@ pub mod margin_pool;
 pub mod state;
 pub mod swaps;
 pub mod test_service;
+pub mod governance;
 mod wallet;
 
 pub use client::{ClientError, ClientResult};
@@ -84,6 +85,11 @@ impl JetClient {
     /// Get the client for the fixed term markets program
     pub fn fixed_term(&self) -> FixedTermMarketClient {
         FixedTermMarketClient::new(self.client.clone())
+    }
+
+    /// Get the client for interacting with governance programs
+    pub fn governance(&self) -> governance::GovernanceClient {
+        governance::GovernanceClient::new(self.client.clone())
     }
 }
 

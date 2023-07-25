@@ -17,7 +17,7 @@ solana-address-lookup-table-program = "1.14"
 spl-token = { version = "3", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
 
-spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
+spl-governance = "3.1"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
 lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main", features = ["no-entrypoint"] }

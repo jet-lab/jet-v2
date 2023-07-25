@@ -1,9 +1,9 @@
 use anchor_lang::{InstructionData, ToAccountMetas};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
-use jet_staking::{seeds, PoolConfig};
+use jet_staking::{seeds};
 
-pub use jet_staking::ID as STAKING_PROGRAM;
+pub use jet_staking::{ID as STAKING_PROGRAM, PoolConfig};
 
 use crate::auth::derive_user_auth;
 

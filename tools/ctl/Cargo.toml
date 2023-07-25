@@ -53,5 +53,6 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-environment = { path = "../../libraries/rust/environment" }
 jet-solana-client = { path = "../../libraries/rust/solana-client" }
+jet-instructions= { path = "../../libraries/rust/instructions" }
 
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["cli"] }

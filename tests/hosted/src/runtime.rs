@@ -1,4 +1,5 @@
 use anchor_lang::prelude::{AccountInfo, Pubkey};
+use jet_program_common::GOVERNANCE_PROGRAM;
 use jet_solana_client::rpc::{native::RpcConnection, SolanaRpc};
 use solana_sdk::entrypoint::ProgramResult;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -104,6 +105,9 @@ fn simulation_runtime() -> TestRuntimeRpcClient {
         jet_airspace,
         jet_margin_pool,
         jet_margin_swap,
+        jet_staking,
+        jet_rewards,
+        jet_auth,
         (spl_token::ID, spl_token::processor::Processor::process),
         (
             orca_swap_v1::id(),
@@ -126,6 +130,7 @@ fn simulation_runtime() -> TestRuntimeRpcClient {
             saber_program::processor::Processor::process
         ),
         (anchor_spl::dex::id(), openbook_processor),
+        (GOVERNANCE_PROGRAM, spl_governance::processor::process_instruction),
         lookup_table_registry,
         orca_whirlpool
     ]
