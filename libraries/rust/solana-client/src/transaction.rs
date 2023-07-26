@@ -351,8 +351,9 @@ const MAX_TX_SIZE: usize = 1232;
 pub fn condense(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
+    lookup_tables: &[AddressLookupTableAccount],
 ) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
-    condense_right(txs, payer)
+    condense_right(txs, payer, lookup_tables)
 }
 
 /// Use this when you don't care how transactions bundled, and just want all the
@@ -361,8 +362,9 @@ pub fn condense(
 pub fn condense_fast(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
+    lookup_tables: &[AddressLookupTableAccount],
 ) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
-    condense_left(txs, payer, &[])
+    condense_left(txs, payer, lookup_tables)
 }
 
 /// The last transaction is maximized in size, the first is not.
@@ -371,8 +373,9 @@ pub fn condense_fast(
 pub fn condense_right(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
+    lookup_tables: &[AddressLookupTableAccount],
 ) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
-    Ok(condense_left(&txs.to_vec().deep_reverse(), payer, &[])?.deep_reverse())
+    Ok(condense_left(&txs.to_vec().deep_reverse(), payer, lookup_tables)?.deep_reverse())
 }
 
 /// The first transaction is maximized in size, the last is not.

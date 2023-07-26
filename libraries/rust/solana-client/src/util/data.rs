@@ -107,11 +107,12 @@ pub(crate) fn retain<T>(v: impl IntoIterator<Item = T>, to_keep: Vec<usize>) -> 
 /// to_keep.
 pub(crate) fn retain_cloned<'a, T: Clone + 'a>(
     v: impl IntoIterator<Item = &'a T>,
-    to_keep: Vec<usize>,
+    mut to_keep: Vec<usize>,
 ) -> Vec<T> {
     if to_keep.is_empty() {
         return vec![];
     }
+    to_keep.sort();
     let mut ret = Vec::with_capacity(to_keep.len());
     let mut to_keep = to_keep.into_iter();
     let mut next_keep = to_keep.next().unwrap();

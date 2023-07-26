@@ -231,6 +231,97 @@ mod test_optimize_lookup_tables {
     }
 
     #[test]
+    fn hierarchy() {
+        run_test(
+            &[&["a", "b", "c"], &["d", "e", "f", "g", "h"]],
+            &[
+                ("complete", &["a", "b", "c", "d", "e", "f", "g", "h"]),
+                ("-1", &["b", "c", "d", "e", "f", "g", "h"]),
+                ("-2", &["c", "d", "e", "f", "g", "h"]),
+                ("-3", &["d", "e", "f", "g", "h"]),
+                ("-4", &["e", "f", "g", "h"]),
+                ("-5", &["f", "g", "h"]),
+                ("-6", &["g", "h"]),
+                ("-7", &["h"]),
+            ],
+            &["complete"],
+            AllMustBePerfect,
+        )
+    }
+
+    #[test]
+    fn diagonal_hierarchy() {
+        run_test(
+            &[&["a", "b", "c"], &["d", "e", "f", "g", "h"]],
+            &[
+                ("best", &["a", "b", "c", "d", "e", "f", "g"]),
+                ("-1", &["b", "c", "d", "e", "f", "h"]),
+                ("-2", &["c", "d", "e", "g", "h"]),
+                ("-3", &["d", "f", "g", "h"]),
+                ("-5", &["f", "g", "h"]),
+                ("-6", &["g", "h"]),
+                ("-7", &["h"]),
+            ],
+            &["best"],
+            AllMustBePerfect,
+        )
+    }
+
+    #[test]
+    fn partial_double_diagonal_hierarchy() {
+        run_test(
+            &[&["a", "b", "c"], &["d", "e", "f", "g", "h"]],
+            &[
+                ("best", &["a", "b", "c", "d", "e", "f"]),
+                ("-1", &["b", "c", "d", "e", "f", "h"]),
+                ("-2", &["c", "d", "e", "g", "h"]),
+                ("-3", &["d", "f", "g", "h"]),
+                ("-5", &["f", "g", "h"]),
+                ("-6", &["g", "h"]),
+                ("-7", &["h"]),
+            ],
+            &["best", "-3"],
+            RoughCanBe(&["-1"]),
+        )
+    }
+
+    #[test]
+    fn trimmed_partial_double_diagonal_hierarchy() {
+        run_test(
+            &[&["a", "b", "c"], &["d", "e", "f", "g", "h"]],
+            &[
+                ("best", &["a", "b", "c", "d", "e", "f"]),
+                ("-1", &["c", "d", "e", "f"]),
+                ("-2", &["c", "d", "e", "g"]),
+                ("-3", &["d", "f", "g", "h"]),
+                ("-5", &["f", "g", "h"]),
+                ("-6", &["g", "h"]),
+                ("-7", &["h"]),
+            ],
+            &["best", "-3"],
+            AllMustBePerfect,
+        )
+    }
+
+    #[test]
+    fn sloppy_double_diagonal_hierarchy() {
+        run_test(
+            &[&["a", "b", "c"], &["d", "e", "f", "g", "h"]],
+            &[
+                ("best", &["a", "b", "c", "d", "e", "f"]),
+                ("-1", &["c", "d", "e", "f", "g"]),
+                ("-2", &["c", "d", "e", "h"]),
+                ("-3", &["d", "f", "g"]),
+                ("-5", &["f", "h"]),
+                ("-6", &["g"]),
+                ("-7", &["h"]),
+            ],
+            &["best"],
+            AllMustBePerfect,
+        )
+    }
+
+    #[test]
     fn multi() {
         run_test(
             &[&["red", "green", "blue", "true", "false"]],
