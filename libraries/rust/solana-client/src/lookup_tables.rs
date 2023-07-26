@@ -221,6 +221,21 @@ mod test_optimize_lookup_tables {
     };
 
     #[test]
+    fn no_tables() {
+        run_test(&[&["true", "false"]], &[], &[], AllMustBePerfect)
+    }
+
+    #[test]
+    fn no_instructions() {
+        run_test(
+            &[],
+            &[("good", &["true", "false"]), ("bad", &["true", "red"])],
+            &[],
+            AllMustBePerfect,
+        )
+    }
+
+    #[test]
     fn basic() {
         run_test(
             &[&["true", "false"]],
