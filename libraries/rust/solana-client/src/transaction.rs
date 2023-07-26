@@ -13,7 +13,7 @@ use solana_sdk::signers::Signers;
 use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{instruction::Instruction, signature::Signature, transaction::Transaction};
 
-use crate::lookup_tables::optimize_lookup_tables;
+use crate::lookup_tables::{exclude_useless_lookup_tables, optimize_lookup_tables};
 use crate::signature::NeedsSignature;
 use crate::util::data::{Concat, DeepReverse, Join};
 use crate::util::keypair::clone_vec;
@@ -65,6 +65,18 @@ impl From<Vec<Instruction>> for TransactionBuilder {
             signers: vec![],
         }
     }
+}
+
+/// Returns an iterator of references to all the instructions contained within
+/// all the transactions. This is efficient when you just need to read the
+/// instructions without owning them.
+///
+/// If you need owned instructions, do not use this function, unless you also
+/// need to keep ownership over the transactions. It would typically be more
+/// efficient to consume a vec of transaction builders with into_iter to get
+/// owned instructions, rather than copying these references.
+pub fn instructions(transactions: &[TransactionBuilder]) -> impl Iterator<Item = &Instruction> {
+    transactions.iter().flat_map(|t| t.instructions.iter())
 }
 
 impl From<Instruction> for TransactionBuilder {
@@ -386,13 +398,14 @@ pub fn condense_left(
     payer: &Pubkey,
     lookup_tables: &[AddressLookupTableAccount],
 ) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
+    let useful_tables = exclude_useless_lookup_tables(instructions(txs), lookup_tables);
     let mut shrink_me = txs.to_vec();
     let mut condensed = vec![];
     loop {
         if shrink_me.is_empty() {
             return Ok(condensed);
         }
-        let next_idx = find_first_condensed(&shrink_me, payer, lookup_tables)?;
+        let next_idx = find_first_condensed(&shrink_me, payer, &useful_tables)?;
         let next_tx = shrink_me[0..next_idx].ijoin();
         if !next_tx.instructions.is_empty() {
             condensed.push(shrink_me[0..next_idx].ijoin());

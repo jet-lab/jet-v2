@@ -32,11 +32,11 @@ use crate::util::data::{intersect, retain, retain_cloned};
 ///
 /// If that number >= 10, the output will typically be good, but may not be
 /// perfect.
-pub fn optimize_lookup_tables(
-    instructions: &[Instruction],
+pub fn optimize_lookup_tables<'a>(
+    instructions: impl IntoIterator<Item = &'a Instruction>,
     tables: &[AddressLookupTableAccount],
 ) -> Vec<AddressLookupTableAccount> {
-    if tables.is_empty() || instructions.is_empty() {
+    if tables.is_empty() {
         return vec![];
     }
     let table_intersections = get_table_intersections(instructions, tables);
@@ -68,11 +68,11 @@ pub fn optimize_lookup_tables(
 /// This is useful if:
 /// - guaranteeing perfectly optimized transaction sizes is critical
 /// - you know there aren't enough tables to cause a performance problem
-pub fn perfectly_optimize_lookup_tables(
-    instructions: &[Instruction],
+pub fn perfectly_optimize_lookup_tables<'a>(
+    instructions: impl IntoIterator<Item = &'a Instruction>,
     tables: &[AddressLookupTableAccount],
 ) -> Vec<AddressLookupTableAccount> {
-    if tables.is_empty() || instructions.is_empty() {
+    if tables.is_empty() {
         return vec![];
     }
     let table_intersections = get_table_intersections(instructions, tables);
@@ -97,8 +97,8 @@ pub fn perfectly_optimize_lookup_tables(
 /// Excludes tables with either...
 /// - no more than 1 account that is needed by any instructions
 /// - 0 accounts that are not provided by another table with at least as many matches
-pub fn exclude_useless_lookup_tables(
-    instructions: &[Instruction],
+pub fn exclude_useless_lookup_tables<'a>(
+    instructions: impl IntoIterator<Item = &'a Instruction>,
     tables: &[AddressLookupTableAccount],
 ) -> Vec<AddressLookupTableAccount> {
     basic_optimization(instructions, tables, 0)
@@ -117,8 +117,8 @@ pub fn exclude_useless_lookup_tables(
 /// Excludes tables with no more than 1 account that is...
 /// - needed by an instructions
 /// - not provided by another table with at least as many matches
-pub fn roughly_optimize_lookup_tables(
-    instructions: &[Instruction],
+pub fn roughly_optimize_lookup_tables<'a>(
+    instructions: impl IntoIterator<Item = &'a Instruction>,
     tables: &[AddressLookupTableAccount],
 ) -> Vec<AddressLookupTableAccount> {
     basic_optimization(instructions, tables, 1)
@@ -139,12 +139,12 @@ fn perfectly_optimize<T: Clone>(intersections: Vec<(T, HashSet<Pubkey>)>) -> Vec
 
 /// fast optimization that returns a useful subset of lookup tables, but it is
 /// not always optimal.
-fn basic_optimization(
-    instructions: &[Instruction],
+fn basic_optimization<'a>(
+    instructions: impl IntoIterator<Item = &'a Instruction>,
     tables: &[AddressLookupTableAccount],
     max_novel: usize,
 ) -> Vec<AddressLookupTableAccount> {
-    if tables.is_empty() || instructions.is_empty() {
+    if tables.is_empty() {
         return vec![];
     }
     let table_intersections = get_table_intersections(instructions, tables);
@@ -158,12 +158,12 @@ fn basic_optimization(
 /// - 0 = the index of the lookup table in the input
 /// - 1 = the intersection of the accounts from *that* table with the set of all
 ///       accounts in all instructions
-fn get_table_intersections(
-    instructions: &[Instruction],
+fn get_table_intersections<'a>(
+    instructions: impl IntoIterator<Item = &'a Instruction>,
     tables: &[AddressLookupTableAccount],
 ) -> Vec<(usize, HashSet<Pubkey>)> {
     let accounts = instructions
-        .iter()
+        .into_iter()
         .flat_map(|ix| ix.accounts.iter().map(|acc| acc.pubkey))
         .collect::<HashSet<_>>();
     tables
