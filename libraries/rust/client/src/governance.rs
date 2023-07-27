@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::client::ClientState;
 
-
+/// Client for interacting with the governance system
 pub struct GovernanceClient {
     client: Arc<ClientState>,
 }

@@ -62,3 +62,4 @@ pub const ADDRESS_LOOKUP_REGISTRY_ID: Pubkey =
     pubkey!("LTR8xXcSrEDsCbTWPY4JmJREFdMz4uYh65uajkVjzru");
 
 pub const GOVERNANCE_PROGRAM: Pubkey = pubkey!("JPGov2SBA6f7XSJF5R4Si5jEJekGiyrwP2m7gSEqLUs");
+pub const GOVERNANCE_REALM_DAO: &'static str = "Jet DAO";

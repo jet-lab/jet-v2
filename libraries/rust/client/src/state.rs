@@ -22,6 +22,7 @@ pub mod margin_pool;
 pub mod oracles;
 pub mod spl_swap;
 pub mod tokens;
+pub mod governance;
 
 /// A utility for synchronizing information about the current protocol state
 /// with an active Solana network.
