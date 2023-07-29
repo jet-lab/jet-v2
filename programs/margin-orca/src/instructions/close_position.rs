@@ -29,7 +29,7 @@ pub struct ClosePosition<'info> {
     pub receiver: Signer<'info>,
 
     #[account(mut)]
-    pub whirlpool_config: Account<'info, WhirlpoolConfig>,
+    pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     #[account(mut, has_one = owner)]
     pub adapter_position_metadata: Box<Account<'info, PositionMetadata>>,

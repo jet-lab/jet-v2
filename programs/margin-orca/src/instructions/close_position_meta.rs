@@ -28,7 +28,7 @@ pub struct ClosePositionMeta<'info> {
     #[account(signer)]
     pub owner: AccountLoader<'info, MarginAccount>,
 
-    pub whirlpool_config: Account<'info, WhirlpoolConfig>,
+    pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     /// The margin position that tracks the number of open positions
     #[account(mut,

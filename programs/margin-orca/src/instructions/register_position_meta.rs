@@ -44,7 +44,7 @@ pub struct RegisterPositionMeta<'info> {
     )]
     pub adapter_position_metadata: Box<Account<'info, PositionMetadata>>,
 
-    pub whirlpool_config: Account<'info, WhirlpoolConfig>,
+    pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     /// This will be required for margin to register the position,
     /// so requiring it here makes it easier for clients to ensure

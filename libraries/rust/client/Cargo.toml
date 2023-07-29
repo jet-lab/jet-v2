@@ -16,7 +16,7 @@ base64 = "0.13"
 cached = "0.40"
 bytemuck = "1.7"
 wasm-bindgen = "0.2.83"
-rust_decimal = { version = "1.29", features = ["maths"] }
+rust_decimal = { version = "1", features = ["maths"] }
 num-traits = "0.2"
 
 chrono = "0.4"

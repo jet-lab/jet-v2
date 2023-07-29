@@ -27,10 +27,10 @@ pub struct ModifyLiquidity<'info> {
     pub owner: AccountLoader<'info, MarginAccount>,
 
     #[account(mut)]
-    pub whirlpool: Account<'info, orca_whirlpool::state::Whirlpool>,
+    pub whirlpool: Box<Account<'info, orca_whirlpool::state::Whirlpool>>,
 
     #[account(mut)]
-    pub whirlpool_config: Account<'info, WhirlpoolConfig>,
+    pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     #[account(mut, has_one = owner, has_one = whirlpool_config)]
     pub adapter_position_metadata: Box<Account<'info, PositionMetadata>>,

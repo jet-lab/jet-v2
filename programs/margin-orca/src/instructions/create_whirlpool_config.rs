@@ -34,14 +34,14 @@ pub struct CreateWhirlpoolConfig<'info> {
 
     /// The airspace being modified, disable testing
     #[account(has_one = authority @ MarginOrcaErrorCode::WrongAirspaceAuthorization)]
-    pub airspace: Account<'info, Airspace>,
+    pub airspace: Box<Account<'info, Airspace>>,
 
     /// Check that there is an adapter config for this program in margin
     #[account(
         has_one = airspace @ MarginOrcaErrorCode::WrongAirspaceAuthorization,
         constraint = adapter_config.adapter_program == crate::ID
     )]
-    pub adapter_config: Account<'info, AdapterConfig>,
+    pub adapter_config: Box<Account<'info, AdapterConfig>>,
 
     #[account(init,
                 seeds = [
@@ -54,15 +54,15 @@ pub struct CreateWhirlpoolConfig<'info> {
                 payer = payer,
                 space = WhirlpoolConfig::SIZE
     )]
-    pub whirlpool_config: Account<'info, WhirlpoolConfig>,
+    pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     #[account(constraint = token_a_config.mint == mint_a.key())]
-    pub token_a_config: Account<'info, TokenConfig>,
+    pub token_a_config: Box<Account<'info, TokenConfig>>,
     #[account(constraint = token_b_config.mint == mint_b.key())]
-    pub token_b_config: Account<'info, TokenConfig>,
+    pub token_b_config: Box<Account<'info, TokenConfig>>,
 
-    pub mint_a: Account<'info, Mint>,
-    pub mint_b: Account<'info, Mint>,
+    pub mint_a: Box<Account<'info, Mint>>,
+    pub mint_b: Box<Account<'info, Mint>>,
 
     /// Mints tokens representing the amount of liquidity of positions in the margin account
     #[account(init,

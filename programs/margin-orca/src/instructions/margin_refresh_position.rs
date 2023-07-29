@@ -44,7 +44,7 @@ pub struct MarginRefreshPosition<'info> {
         has_one = token_a_oracle,
         has_one = token_b_oracle
     )]
-    pub whirlpool_config: Account<'info, WhirlpoolConfig>,
+    pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     #[account(mut, has_one = owner)]
     pub adapter_position_metadata: Box<Account<'info, PositionMetadata>>,

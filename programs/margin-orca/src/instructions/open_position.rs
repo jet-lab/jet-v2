@@ -35,7 +35,7 @@ pub struct OpenPosition<'info> {
     pub owner: AccountLoader<'info, MarginAccount>,
 
     #[account(mut)]
-    pub whirlpool_config: Account<'info, WhirlpoolConfig>,
+    pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     /// CHECK: will be initialized and validated by orca
     #[account(mut,
