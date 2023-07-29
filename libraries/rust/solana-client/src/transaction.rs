@@ -13,6 +13,7 @@ use solana_sdk::signers::Signers;
 use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{instruction::Instruction, signature::Signature, transaction::Transaction};
 
+use crate::lookup_tables::{exclude_useless_lookup_tables, optimize_lookup_tables};
 use crate::signature::NeedsSignature;
 use crate::util::data::{Concat, DeepReverse, Join};
 use crate::util::keypair::clone_vec;
@@ -64,6 +65,18 @@ impl From<Vec<Instruction>> for TransactionBuilder {
             signers: vec![],
         }
     }
+}
+
+/// Returns an iterator of references to all the instructions contained within
+/// all the transactions. This is efficient when you just need to read the
+/// instructions without owning them.
+///
+/// If you need owned instructions, do not use this function, unless you also
+/// need to keep ownership over the transactions. It would typically be more
+/// efficient to consume a vec of transaction builders with into_iter to get
+/// owned instructions, rather than copying these references.
+pub fn instructions(transactions: &[TransactionBuilder]) -> impl Iterator<Item = &Instruction> {
+    transactions.iter().flat_map(|t| t.instructions.iter())
 }
 
 impl From<Instruction> for TransactionBuilder {
@@ -130,6 +143,69 @@ impl TransactionBuilder {
         tx
     }
 
+    /// Convert the TransactionBuilder into a VersionedTransaction using the
+    /// provided lookup tables.
+    ///
+    /// Handles the typical situation where the payer is the only additional
+    /// signer needed. For arbitrary additional signers, use compile_custom or
+    /// compile_partial.
+    ///
+    /// Returns error if any required signers are not provided.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
+    pub fn compile_with_lookup<'a>(
+        self,
+        payer: &'a (impl Signer + 'a),
+        lookup_tables: &[AddressLookupTableAccount],
+        recent_blockhash: Hash,
+    ) -> Result<VersionedTransaction, TransactionBuildError> {
+        self.compile_custom_with_lookup(&payer.pubkey(), [payer], lookup_tables, recent_blockhash)
+    }
+
+    /// Convert the TransactionBuilder into a VersionedTransaction using the
+    /// provided lookup tables.
+    ///
+    /// Returns error if any required signers are not provided.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
+    pub fn compile_custom_with_lookup<'a>(
+        self,
+        payer: &Pubkey,
+        signers: impl IntoIterator<Item = &'a (impl Signer + 'a)>,
+        lookup_tables: &[AddressLookupTableAccount],
+        recent_blockhash: Hash,
+    ) -> Result<VersionedTransaction, TransactionBuildError> {
+        let mut tx = self.compile_partial_with_lookup(payer, lookup_tables, recent_blockhash)?;
+        sign_transaction(signers, &mut tx)?;
+        verify_signatures(&tx)?;
+        Ok(tx)
+    }
+
+    /// Like compile, except that it will not fail if signers are missing.
+    /// Intended to have other signatures, such as the payer's, added later.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
+    pub fn compile_partial_with_lookup(
+        mut self,
+        payer: &Pubkey,
+        lookup_tables: &[AddressLookupTableAccount],
+        recent_blockhash: Hash,
+    ) -> Result<VersionedTransaction, TransactionBuildError> {
+        self.prune();
+        let optimal_tables = optimize_lookup_tables(&self.instructions, lookup_tables);
+        let mut tx = create_unsigned_transaction(
+            &self.instructions,
+            payer,
+            &optimal_tables,
+            recent_blockhash,
+        )?;
+        sign_transaction(&self.signers, &mut tx)?;
+        Ok(tx)
+    }
+
     /// convert transaction to a base64 string similar to one that would be
     /// submitted to rpc node. It uses fake signatures so it's not the real
     /// transaction, but it should have the same size.
@@ -143,6 +219,42 @@ impl TransactionBuilder {
         let serialized = bincode::serialize::<Transaction>(&compiled)?;
         Ok(base64::encode(serialized))
     }
+
+    /// convert transaction to a base64 string similar to one that would be
+    /// submitted to rpc node. It uses fake signatures so it's not the real
+    /// transaction, but it should have the same size.
+    ///
+    /// Feel free to provide any lookup tables that you think might be useful.
+    /// Only the optimal subset will be included in the transaction.
+    pub fn fake_encode_with_lookup(
+        &self,
+        payer: &Pubkey,
+        lookup_tables: &[AddressLookupTableAccount],
+    ) -> Result<String, FakeEncodeError> {
+        let optimal_tables = optimize_lookup_tables(&self.instructions, lookup_tables);
+        let message = VersionedMessage::V0(v0::Message::try_compile(
+            payer,
+            &self.instructions,
+            &optimal_tables,
+            Hash::default(),
+        )?);
+        let tx = VersionedTransaction {
+            signatures: (0..message.header().num_required_signatures as usize)
+                .map(|_| Signature::new_unique())
+                .collect(),
+            message,
+        };
+        let serialized = bincode::serialize(&tx)?;
+        Ok(base64::encode(serialized))
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum FakeEncodeError {
+    #[error("fake serialization error: {0}")]
+    Serialization(#[from] bincode::Error),
+    #[error("fake compilation error: {0}")]
+    Compilation(#[from] CompileError),
 }
 
 impl Concat for TransactionBuilder {
@@ -246,11 +358,14 @@ const MAX_TX_SIZE: usize = 1232;
 /// go in the same transaction with the user action. Once any get separated from
 /// the user action, it doesn't really matter how they are grouped any more. But
 /// you still want as many as possible with the user action.
+///
+/// TODO: lookup tables
 pub fn condense(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
-    condense_right(txs, payer)
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
+    condense_right(txs, payer, lookup_tables)
 }
 
 /// Use this when you don't care how transactions bundled, and just want all the
@@ -259,8 +374,9 @@ pub fn condense(
 pub fn condense_fast(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
-    condense_left(txs, payer)
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
+    condense_left(txs, payer, lookup_tables)
 }
 
 /// The last transaction is maximized in size, the first is not.
@@ -269,8 +385,9 @@ pub fn condense_fast(
 pub fn condense_right(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
-    Ok(condense_left(&txs.to_vec().deep_reverse(), payer)?.deep_reverse())
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
+    Ok(condense_left(&txs.to_vec().deep_reverse(), payer, lookup_tables)?.deep_reverse())
 }
 
 /// The first transaction is maximized in size, the last is not.
@@ -279,19 +396,64 @@ pub fn condense_right(
 pub fn condense_left(
     txs: &[TransactionBuilder],
     payer: &Pubkey,
-) -> Result<Vec<TransactionBuilder>, bincode::Error> {
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<Vec<TransactionBuilder>, FakeEncodeError> {
+    let useful_tables = exclude_useless_lookup_tables(instructions(txs), lookup_tables);
     let mut shrink_me = txs.to_vec();
     let mut condensed = vec![];
     loop {
         if shrink_me.is_empty() {
             return Ok(condensed);
         }
-        let next_idx = find_first_condensed(&shrink_me, payer)?;
+        let next_idx = find_first_condensed(&shrink_me, payer, &useful_tables)?;
         let next_tx = shrink_me[0..next_idx].ijoin();
         if !next_tx.instructions.is_empty() {
             condensed.push(shrink_me[0..next_idx].ijoin());
         }
         shrink_me = shrink_me[next_idx..shrink_me.len()].to_vec();
+    }
+}
+
+/// Searches efficiently for the largest continuous group of TransactionBuilders
+/// starting from index 0 that can be merged into a single transaction without
+/// exceeding the transaction size limit.
+///
+/// TODO: this could be modified to search from the end instead of the
+/// beginning, so it would serve condense_right instead of condense_left. Then
+/// condense and condense_fast could be consolidated.
+fn find_first_condensed(
+    txs: &[TransactionBuilder],
+    payer: &Pubkey,
+    lookup_tables: &[AddressLookupTableAccount],
+) -> Result<usize, FakeEncodeError> {
+    let mut try_len = txs.len();
+    let mut bounds = (min(txs.len(), 1), try_len);
+    loop {
+        if bounds.1 == bounds.0 {
+            return Ok(bounds.0);
+        }
+        let size = if lookup_tables.is_empty() {
+            txs[0..try_len].ijoin().fake_encode(payer)?.len()
+        } else {
+            txs[0..try_len]
+                .ijoin()
+                .fake_encode_with_lookup(payer, lookup_tables)?
+                .len()
+        };
+        if size > MAX_TX_SIZE {
+            bounds = (bounds.0, try_len - 1);
+        } else {
+            bounds = (try_len, bounds.1);
+        }
+        let ratio = MAX_TX_SIZE as f64 / size as f64;
+        let mut maybe_try = (ratio * try_len as f64).round() as usize;
+        maybe_try = min(bounds.1, max(bounds.0, maybe_try));
+        if maybe_try == try_len {
+            // if the approximated search leads to an infinite loop, fall back to a binary search.
+            try_len = ((bounds.0 + bounds.1) as f64 / 2.0).round() as usize;
+        } else {
+            try_len = maybe_try;
+        }
     }
 }
 
@@ -324,28 +486,71 @@ pub fn create_unsigned_transaction(
     Ok(tx)
 }
 
-/// Sign a transaction with a keypair
-pub fn sign_transaction(
-    signer: &Keypair,
+/// Sign a versioned transaction with keypairs
+pub fn sign_transaction<'a>(
+    signers: impl IntoIterator<Item = &'a (impl Signer + 'a)>,
     tx: &mut VersionedTransaction,
 ) -> Result<(), TransactionBuildError> {
-    let index = tx
-        .message
-        .static_account_keys()
-        .iter()
-        .position(|key| *key == signer.pubkey())
-        .ok_or(SignerError::KeypairPubkeyMismatch)?;
-
     let to_sign = tx.message.serialize();
-    let signature = signer.sign_message(&to_sign);
-
     tx.signatures.resize(
         tx.message.header().num_required_signatures.into(),
         Default::default(),
     );
-    tx.signatures[index] = signature;
+
+    for signer in signers {
+        let index = tx
+            .message
+            .static_account_keys()
+            .iter()
+            .position(|key| *key == signer.pubkey())
+            .ok_or(SignerError::KeypairPubkeyMismatch)?;
+        let signature = signer.sign_message(&to_sign);
+        tx.signatures[index] = signature;
+    }
 
     Ok(())
+}
+
+/// if there are any required signers that have not signed, returns an error
+/// with a detailed message explaining the problem.
+pub fn verify_signatures(tx: &VersionedTransaction) -> Result<(), SignerError> {
+    use std::fmt::Write;
+    let mut error_message = String::new();
+
+    // check total
+    let not_enough = tx.signatures.len() < tx.message.header().num_required_signatures.into();
+    if not_enough {
+        write!(
+            error_message,
+            "Not enough signatures. expected {} but got {}. ",
+            tx.message.header().num_required_signatures,
+            tx.signatures.len()
+        )
+        .expect("string formatting should never fail");
+    }
+
+    // check each
+    let mut fail_pubkeys = vec![];
+    let keys = tx.message.static_account_keys();
+    for (index, verified) in tx.verify_with_results().into_iter().enumerate() {
+        if !verified {
+            fail_pubkeys.push((index, keys.get(index)));
+        }
+    }
+    if !fail_pubkeys.is_empty() {
+        write!(
+            error_message,
+            "Signatures failed verification for unknown reasons: {fail_pubkeys:#?}"
+        )
+        .expect("string formatting should never fail");
+    }
+
+    // aggregate checks
+    if !not_enough && fail_pubkeys.is_empty() && error_message.is_empty() {
+        Ok(())
+    } else {
+        Err(SignerError::Custom(error_message))
+    }
 }
 
 /// Compile and sign the instructions into a versioned transaction
@@ -362,43 +567,8 @@ pub fn create_signed_transaction(
         recent_blockhash,
     )?;
 
-    sign_transaction(signer, &mut tx)?;
+    sign_transaction([signer], &mut tx)?;
     Ok(tx)
-}
-
-/// Searches efficiently for the largest continuous group of TransactionBuilders
-/// starting from index 0 that can be merged into a single transaction without
-/// exceeding the transaction size limit.
-///
-/// TODO: this could be modified to search from the end instead of the
-/// beginning, so it would serve condense_right instead of condense_left. Then
-/// condense and condense_fast could be consolidated.
-fn find_first_condensed(
-    txs: &[TransactionBuilder],
-    payer: &Pubkey,
-) -> Result<usize, bincode::Error> {
-    let mut try_len = txs.len();
-    let mut bounds = (min(txs.len(), 1), try_len);
-    loop {
-        if bounds.1 == bounds.0 {
-            return Ok(bounds.0);
-        }
-        let size = txs[0..try_len].ijoin().fake_encode(payer)?.len();
-        if size > MAX_TX_SIZE {
-            bounds = (bounds.0, try_len - 1);
-        } else {
-            bounds = (try_len, bounds.1);
-        }
-        let ratio = MAX_TX_SIZE as f64 / size as f64;
-        let mut maybe_try = (ratio * try_len as f64).round() as usize;
-        maybe_try = min(bounds.1, max(bounds.0, maybe_try));
-        if maybe_try == try_len {
-            // if the approximated search leads to an infinite loop, fall back to a binary search.
-            try_len = ((bounds.0 + bounds.1) as f64 / 2.0).round() as usize;
-        } else {
-            try_len = maybe_try;
-        }
-    }
 }
 
 /// A type convertible to a solana transaction

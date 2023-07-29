@@ -356,7 +356,7 @@ async fn sync_oracles(
         })
         .collect::<Vec<_>>();
 
-    let txs = condense(&txs, &signer.pubkey())?;
+    let txs = condense(&txs, &signer.pubkey(), &[])?;
 
     for txb in txs {
         let recent_blockhash = target.get_latest_blockhash().await?;

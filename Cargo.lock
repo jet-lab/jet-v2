@@ -1674,9 +1674,9 @@ dependencies = [
 
 [[package]]
 name = "either"
-version = "1.8.0"
+version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
+checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "encode_unicode"
@@ -2585,6 +2585,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2800,7 +2809,7 @@ dependencies = [
  "borsh 0.9.3",
  "bs58 0.4.0",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-airspace",
  "jet-margin",
  "jet-program-common",
@@ -2873,7 +2882,7 @@ dependencies = [
  "anchor-spl",
  "bitflags 2.3.2",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-airspace",
  "jet-metadata",
  "jet-program-common",
@@ -3072,9 +3081,11 @@ name = "jet-solana-client"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "anyhow",
  "async-trait",
  "base64 0.13.1",
  "bincode",
+ "itertools 0.11.0",
  "log",
  "paste",
  "serde",
@@ -3329,7 +3340,7 @@ dependencies = [
 [[package]]
 name = "lookup-table-registry"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#ca61c0741d44b774705bc1de303770534b1c05d7"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#a511ccef72fb7f0df33553ef906ec695069ac022"
 dependencies = [
  "anchor-lang",
  "solana-address-lookup-table-program-gateway",
@@ -3339,9 +3350,11 @@ dependencies = [
 [[package]]
 name = "lookup-table-registry-client"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#ca61c0741d44b774705bc1de303770534b1c05d7"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#a511ccef72fb7f0df33553ef906ec695069ac022"
 dependencies = [
  "anchor-lang",
+ "anyhow",
+ "async-trait",
  "endorphin",
  "lookup-table-registry",
  "solana-address-lookup-table-program-gateway",
@@ -5377,7 +5390,7 @@ dependencies = [
 [[package]]
 name = "solana-address-lookup-table-program-gateway"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#ca61c0741d44b774705bc1de303770534b1c05d7"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#a511ccef72fb7f0df33553ef906ec695069ac022"
 dependencies = [
  "bincode",
  "bytemuck",

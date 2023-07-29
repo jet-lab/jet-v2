@@ -67,7 +67,7 @@ pub async fn update_registry(
     let rpc = RpcConnection::from(client.config.rpc_client());
     let mut program_addresses = ProgramAddresses::fetch(&rpc, airspace).await?;
 
-    let mut registry = Registry::fetch(&client.rpc(), &builder.authority).await?;
+    let mut registry = Registry::fetch(&*client.rpc(), &builder.authority).await?;
 
     // Remove addresses that already exist
     for table in &registry.tables {
@@ -115,7 +115,7 @@ pub async fn remove_lookup_table(
     builder: &InstructionBuilder,
     address: Pubkey,
 ) -> Result<Plan> {
-    let registry = Registry::fetch(&client.rpc(), &builder.authority).await?;
+    let registry = Registry::fetch(&*client.rpc(), &builder.authority).await?;
     registry
         .tables
         .iter()
