@@ -888,7 +888,6 @@ impl MarginTxBuilder {
             *self.address(),
             self.ix.payer(),
             whirlpool_address,
-            0,
             tick_lower_index,
             tick_upper_index,
         );

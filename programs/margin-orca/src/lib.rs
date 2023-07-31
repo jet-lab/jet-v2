@@ -69,11 +69,11 @@ mod jet_margin_orca {
     pub fn open_position<'info>(
         ctx: Context<'_, '_, '_, 'info, OpenPosition<'info>>,
         bumps: OpenPositionBumps,
-        timestamp: u64,
+        seed: u64,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        open_position_handler(ctx, bumps, timestamp, tick_lower_index, tick_upper_index)
+        open_position_handler(ctx, bumps, seed, tick_lower_index, tick_upper_index)
     }
 
     pub fn close_position<'info>(

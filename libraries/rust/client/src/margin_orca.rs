@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anchor_lang::{system_program, InstructionData, ToAccountMetas};
-use cached::instant::SystemTime;
 use jet_solana_client::{rpc::SolanaRpcExtra, transaction::TransactionBuilder};
 use num_traits::pow::Pow;
 use orca_whirlpool::{
@@ -133,11 +132,6 @@ impl MarginAccountOrcaClient {
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> ClientResult<WhirlpoolPositionSummary> {
-        let timestamp = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-
         // Check if the ticks exist, create them if not
         let mut ixns = vec![];
         self.with_tick_array(&mut ixns, tick_lower_index).await?;
@@ -146,7 +140,6 @@ impl MarginAccountOrcaClient {
             self.account.address,
             self.account.client.signer(),
             self.whirlpool.address,
-            timestamp,
             tick_lower_index,
             tick_upper_index,
         );

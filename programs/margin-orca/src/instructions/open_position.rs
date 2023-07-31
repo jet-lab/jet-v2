@@ -26,7 +26,7 @@ use orca_whirlpool::{program::Whirlpool, state::OpenPositionBumps};
 use crate::*;
 
 #[derive(Accounts)]
-#[instruction(bumps: OpenPositionBumps, timestamp: u64)]
+#[instruction(bumps: OpenPositionBumps, seed: u64)]
 pub struct OpenPosition<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -49,7 +49,7 @@ pub struct OpenPosition<'info> {
     #[account(mut,
         seeds = [
             seeds::POSITION_MINT,
-            timestamp.to_le_bytes().as_ref(),
+            seed.to_le_bytes().as_ref(),
             owner.key().as_ref(),
             whirlpool.key().as_ref()
         ],
@@ -104,7 +104,7 @@ impl<'info> OpenPosition<'info> {
         &self,
         bumps: OpenPositionBumps,
         ctx_bumps: &BTreeMap<String, u8>,
-        timestamp: u64,
+        seed: u64,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
@@ -125,7 +125,7 @@ impl<'info> OpenPosition<'info> {
                 },
                 &[&[
                     seeds::POSITION_MINT,
-                    timestamp.to_le_bytes().as_ref(),
+                    seed.to_le_bytes().as_ref(),
                     self.owner.key().as_ref(),
                     self.whirlpool.key().as_ref(),
                     &[*ctx_bumps.get("position_mint").unwrap()],
@@ -143,7 +143,7 @@ impl<'info> OpenPosition<'info> {
 pub fn open_position_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, OpenPosition<'info>>,
     bumps: OpenPositionBumps,
-    timestamp: u64,
+    seed: u64,
     tick_lower_index: i32,
     tick_upper_index: i32,
 ) -> Result<()> {
@@ -154,13 +154,8 @@ pub fn open_position_handler<'info>(
         .free_position()
         .ok_or(MarginOrcaErrorCode::PositionsFull)?;
 
-    ctx.accounts.open_position(
-        bumps,
-        &ctx.bumps,
-        timestamp,
-        tick_lower_index,
-        tick_upper_index,
-    )?;
+    ctx.accounts
+        .open_position(bumps, &ctx.bumps, seed, tick_lower_index, tick_upper_index)?;
     // Mint a position note
     mint_to(
         CpiContext::new(
@@ -189,17 +184,6 @@ pub fn open_position_handler<'info>(
         ctx.accounts.whirlpool.key(),
         empty_position_ix,
     )?;
-
-    // // Tell margin that position balances have changed
-    // jet_margin::write_adapter_result(
-    //     &*ctx.accounts.owner.load()?,
-    //     &AdapterResult {
-    //         position_changes: vec![(
-    //             ctx.accounts.margin_position_mint.key(),
-    //             vec![PositionChange::]
-    //         )]
-    //     }
-    // )
 
     Ok(())
 }

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, time::SystemTime};
 
 use anchor_lang::{prelude::Id, system_program::System, InstructionData, ToAccountMetas};
 use orca_whirlpool::{
@@ -155,12 +155,15 @@ impl MarginOrcaIxBuilder {
         margin_account: Pubkey,
         payer: Pubkey,
         whirlpool_address: Pubkey,
-        timestamp: u64,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> (Instruction, Pubkey, Pubkey) {
+        let seed = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
         let position_mint =
-            derive::derive_whirlpool_mint(&margin_account, &whirlpool_address, timestamp);
+            derive::derive_whirlpool_mint(&margin_account, &whirlpool_address, seed);
         let (position, position_bump) = crate::orca::derive_position(&position_mint);
         let position_token_account = get_associated_token_address(&margin_account, &position_mint);
         let adapter_position_metadata =
@@ -192,7 +195,7 @@ impl MarginOrcaIxBuilder {
                 accounts,
                 data: ix_data::OpenPosition {
                     bumps: OpenPositionBumps { position_bump },
-                    timestamp,
+                    seed,
                     tick_lower_index,
                     tick_upper_index,
                 }
@@ -584,11 +587,11 @@ pub mod derive {
         .0
     }
 
-    pub fn derive_whirlpool_mint(owner: &Pubkey, whirlpool: &Pubkey, timestamp: u64) -> Pubkey {
+    pub fn derive_whirlpool_mint(owner: &Pubkey, whirlpool: &Pubkey, seed: u64) -> Pubkey {
         Pubkey::find_program_address(
             &[
                 seeds::POSITION_MINT,
-                timestamp.to_le_bytes().as_ref(),
+                seed.to_le_bytes().as_ref(),
                 owner.as_ref(),
                 whirlpool.as_ref(),
             ],
