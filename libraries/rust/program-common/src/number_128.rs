@@ -90,19 +90,29 @@ impl Number128 {
 
     /// Convert another integer
     pub fn from_decimal(value: impl Into<i128>, exponent: impl Into<i32>) -> Self {
-        let extra_precision = PRECISION + exponent.into();
+        Self::const_from_decimal(value.into(), exponent.into())
+    }
+
+    /// Convert another integer at compile-time
+    pub const fn const_from_decimal(value: i128, exponent: i32) -> Self {
+        let extra_precision = PRECISION + exponent;
         let prec_value = POWERS_OF_TEN[extra_precision.unsigned_abs() as usize];
 
         if extra_precision < 0 {
-            Self(value.into() / prec_value)
+            Self(value / prec_value)
         } else {
-            Self(value.into() * prec_value)
+            Self(value * prec_value)
         }
     }
 
     /// Convert from basis points
     pub fn from_bps(basis_points: u16) -> Self {
-        Self::from_decimal(basis_points, crate::BPS_EXPONENT)
+        Self::const_from_bps(basis_points.into())
+    }
+
+    /// Convert from basis points at compile-time
+    pub const fn const_from_bps(basis_points: i128) -> Self {
+        Self::const_from_decimal(basis_points, crate::BPS_EXPONENT)
     }
 
     /// Get the underlying 128-bit representation in bytes.
