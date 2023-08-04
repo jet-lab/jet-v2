@@ -1,6 +1,6 @@
 use solana_sdk::pubkey::Pubkey;
 
-use jet_instructions::margin::{derive_margin_account, derive_token_config};
+use jet_instructions::margin::derive_margin_account;
 use jet_margin::{MarginAccount, TokenAdmin, TokenConfig, TokenOracle};
 use jet_margin_pool::MarginPool;
 use jet_solana_client::rpc::SolanaRpcExtra;
@@ -39,40 +39,23 @@ pub async fn sync_configs(states: &AccountStates) -> ClientResult<()> {
         tokens.push(market_state.market.ticket_mint);
     });
 
-    // derive all the config addresses
-    let configs = tokens
-        .iter()
-        .map(|token| derive_token_config(&states.config.airspace, token))
-        .collect::<Vec<_>>();
-
     let accounts = states
         .network
-        .try_get_anchor_accounts::<TokenConfig>(&configs)
-        .await?;
+        .find_anchor_accounts::<TokenConfig>()
+        .await?
+        .into_iter()
+        .filter(|(_, config)| config.airspace == states.config.airspace);
 
-    for (index, account) in accounts.into_iter().enumerate() {
-        let address = configs[index];
+    for (address, config) in accounts {
+        states.register::<Mint>(&config.mint);
+        states.register::<Mint>(&config.underlying_mint);
 
-        match account {
-            None => {
-                log::warn!(
-                    "missing expected margin token config for token {}",
-                    tokens[index]
-                )
-            }
-
-            Some(config) => {
-                states.register::<Mint>(&config.mint);
-                states.register::<Mint>(&config.underlying_mint);
-
-                if let TokenAdmin::Margin { oracle } = &config.admin {
-                    let TokenOracle::Pyth { price, .. } = oracle;
-                    states.register::<PriceOracleState>(price);
-                }
-
-                states.set(&address, config);
-            }
+        if let TokenAdmin::Margin { oracle } = &config.admin {
+            let TokenOracle::Pyth { price, .. } = oracle;
+            states.register::<PriceOracleState>(price);
         }
+
+        states.set(&address, config);
     }
 
     Ok(())

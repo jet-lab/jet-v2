@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use jet_solana_client::{rpc::SolanaRpcExtra, transaction::TransactionBuilder};
@@ -94,10 +94,10 @@ impl MarginAccountOrcaClient {
         })
     }
 
-    /// Get the current outstanding loans in this market for the current user
+    /// Get the current whirlpool positions
     pub fn positions(&self) -> Vec<Arc<WhirlpoolPosition>> {
         self.get_user_position_meta_state()
-            .map(|state| state.positions().into_iter().collect())
+            .map(|state| state.positions().values().cloned().collect())
             .unwrap_or_default()
     }
 
@@ -265,6 +265,36 @@ impl MarginAccountOrcaClient {
         self.client.send(&ixns).await
     }
 
+    pub async fn remove_all_liquidity(
+        &mut self,
+        position_summary: &WhirlpoolPositionSummary,
+    ) -> ClientResult<()> {
+        self.refresh_prices().await?;
+        let position_summary = self.update_position(&position_summary.position).await?;
+
+        let user_state = self.get_user_position_meta_state().unwrap();
+        let (whirlpools, positions) = user_state.addresses_for_refresh();
+
+        let liquidity_amount = position_summary.liquidity;
+
+        let ixns = vec![self
+            .account
+            .builder
+            .adapter_invoke(self.builder.remove_liquidity(
+                self.account.address,
+                &self.whirlpool,
+                &position_summary,
+                &whirlpools,
+                &positions,
+                liquidity_amount,
+                1, // TODO: account for slippage correctly
+                1,
+            ))];
+
+        // Small enough to not need lookup tables
+        self.client.send(&ixns).await
+    }
+
     /// Refresh the position by refreshing the positions in the whirlpool program and then the margin program
     pub async fn margin_refresh_position(&self) -> ClientResult<()> {
         let user_state = self.get_user_position_meta_state().unwrap();
@@ -359,6 +389,66 @@ impl MarginAccountOrcaClient {
             derive::derive_adapter_position_metadata(&self.account.address, &self.builder.address);
         self.client.state().get(&position_metadata)
     }
+}
+
+pub(crate) fn instruction_for_refresh(
+    account: &MarginAccountClient,
+    token: &Pubkey,
+    refreshing_tokens: &mut HashSet<Pubkey>,
+) -> ClientResult<Vec<Instruction>> {
+    let found = account
+        .client
+        .state()
+        .filter(|_, state: &WhirlpoolConfigState| state.config.position_mint == *token);
+
+    let Some((config_address, state)) = found.into_iter().next() else {
+        bail!(
+            "account {} contains margin-orca token {} belonging to unknown token pair",
+            account.address, token
+        );
+    };
+
+    refreshing_tokens.insert(state.config.position_mint);
+
+    let builder = MarginOrcaIxBuilder::new_from_config(&state.config);
+
+    let position_meta_address =
+        derive::derive_adapter_position_metadata(&account.address, &config_address);
+    let user_state = account
+        .client
+        .state()
+        .get::<UserState>(&position_meta_address)
+        .unwrap();
+
+    let whirlpools = user_state.whirlpools();
+
+    let mut instructions = user_state
+        .positions()
+        .into_iter()
+        .map(|(address, position)| {
+            let whirlpool = whirlpools
+                .get(&position.whirlpool)
+                .expect("Position whirlpool not found");
+            let whirlpool_summary = (position.whirlpool, whirlpool.as_ref());
+            let position_summary =
+                WhirlpoolPositionSummary::from_position(*address, position, whirlpool_summary);
+            builder.update_fees_and_rewards(&position_summary)
+        })
+        .collect::<Vec<_>>();
+
+    let (whirlpools, positions) = user_state.addresses_for_refresh();
+
+    instructions.push(
+        account
+            .builder
+            .accounting_invoke(builder.margin_refresh_position(
+                account.address,
+                &whirlpools,
+                &positions,
+            )),
+    );
+
+    Ok(instructions)
 }
 
 fn liquidity_for_token_a(amount: u64, min_sqrt_price: u128, max_sqrt_price: u128) -> u128 {

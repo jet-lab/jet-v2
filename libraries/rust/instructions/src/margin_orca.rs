@@ -409,6 +409,23 @@ impl MarginOrcaIxBuilder {
         }
     }
 
+    /// Refresh positions by updating entitled fees and rewards
+    pub fn update_fees_and_rewards(&self, position: &WhirlpoolPositionSummary) -> Instruction {
+        let accounts = orca_whirlpool::accounts::UpdateFeesAndRewards {
+            whirlpool: position.whirlpool,
+            position: position.position,
+            tick_array_lower: position.tick_array_lower,
+            tick_array_upper: position.tick_array_upper,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: orca_whirlpool::ID,
+            accounts,
+            data: orca_whirlpool::instruction::UpdateFeesAndRewards {}.data(),
+        }
+    }
+
     // Collect reward
     pub fn collect_reward(&self, margin_account: Pubkey) -> Instruction {
         unimplemented!("TODO {margin_account}");
@@ -476,6 +493,7 @@ impl WhirlpoolSummary {
 pub struct WhirlpoolPositionSummary {
     pub position: Pubkey,
     pub position_mint: Pubkey,
+    pub whirlpool: Pubkey,
     pub tick_array_lower: Pubkey,
     pub tick_array_upper: Pubkey,
     pub tick_lower_index: i32,
@@ -499,6 +517,7 @@ impl WhirlpoolPositionSummary {
         Self {
             position,
             position_mint,
+            whirlpool: summary.address,
             tick_array_lower,
             tick_array_upper,
             tick_lower_index,
@@ -518,6 +537,7 @@ impl WhirlpoolPositionSummary {
         Self {
             position: address,
             position_mint: position.position_mint,
+            whirlpool: summary.address,
             tick_array_lower,
             tick_array_upper,
             tick_lower_index: position.tick_lower_index,

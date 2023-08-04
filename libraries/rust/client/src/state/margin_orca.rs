@@ -46,12 +46,12 @@ impl UserState {
         self.metadata.whirlpool_config
     }
 
-    pub fn whirlpools(&self) -> impl IntoIterator<Item = Arc<Whirlpool>> {
-        self.whirlpools.values().cloned().collect::<Vec<_>>()
+    pub fn whirlpools(&self) -> &HashMap<Pubkey, Arc<Whirlpool>> {
+        &self.whirlpools
     }
 
-    pub fn positions(&self) -> impl IntoIterator<Item = Arc<WhirlpoolPosition>> {
-        self.positions.values().cloned().collect::<Vec<_>>()
+    pub fn positions(&self) -> &HashMap<Pubkey, Arc<WhirlpoolPosition>> {
+        &self.positions
     }
 
     /// Get the addresses to use in a refresh position.

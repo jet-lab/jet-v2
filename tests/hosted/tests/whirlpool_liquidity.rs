@@ -3,11 +3,13 @@ use std::rc::Rc;
 
 use anchor_lang::prelude::Pubkey;
 use hosted_tests::tokens::TokenManager;
+use jet_client::margin::MarginAccountClient;
 use jet_client::state::dexes::DexState;
 use jet_client::JetClient;
 use jet_environment::builder::WHIRLPOOL_TICK_SPACING;
 use jet_instructions::orca::derive_whirlpool;
 use jet_instructions::test_service::derive_whirlpool_config;
+use jet_margin::AccountPosition;
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_solana_client::util::keypair;
 
@@ -129,21 +131,19 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
         .unwrap();
 
     user_account.update_lookup_tables().await.unwrap();
-    user_account.sync().await.unwrap();
-    // Sync whirlpools before creating a client
-    jet_client::state::margin_orca::sync(user_account.client().state()).await?;
+    refresh_state(&user_account).await?;
+
     let mut orca_client = user_account.orca(&whirlpool_address)?;
 
     // Register a margin position
     orca_client.register_position_meta().await?;
 
-    // Register a position in the whirlpool
-    // TODO: Better to combine the instructions
+    // Register positions in the whirlpool
     // Provide liquidity between 20.1147 and 23.9087
     let position = orca_client.open_position(30016, 31744).await?;
 
     // Refresh to update positions
-    jet_client::state::margin_orca::sync(user_account.client().state()).await?;
+    refresh_state(&user_account).await?;
 
     let tsol_balance = position_balance(&user_account, &tsol);
     let usdc_balance = position_balance(&user_account, &usdc);
@@ -155,9 +155,7 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
         .add_liquidity(&position, liquidity_amount_tsol, liquidity_amount_usdc)
         .await?;
 
-    user_account.sync().await.unwrap();
-    // Sync whirlpools before creating a client
-    jet_client::state::margin_orca::sync(user_account.client().state()).await?;
+    refresh_state(&user_account).await?;
 
     let tsol_change = tsol_balance - position_balance(&user_account, &tsol);
     let usdc_change = usdc_balance - position_balance(&user_account, &usdc);
@@ -167,11 +165,9 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     // howeve we have registered the config, so unclear.
     // user_account.send_with_refresh(&[]).await?;
 
-    let state = user_account.state();
-    let margin_position = state
-        .positions()
-        .find(|p| p.adapter == jet_margin_orca::ID)
-        .expect("Position not registered");
+    let margin_positions = get_positions_by_adapter(&user_account, &jet_margin_orca::ID);
+    assert_eq!(margin_positions.len(), 1);
+    let margin_position = margin_positions.first().unwrap();
     // The position should have been added, and should have a balance and value
     assert_eq!(margin_position.balance, 1);
     let position_value = margin_position.value().as_f64();
@@ -183,15 +179,10 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
         .remove_liquidity(&position, tsol_change, usdc_change)
         .await?;
 
-    user_account.sync().await.unwrap();
-    // Sync whirlpools before creating a client
-    jet_client::state::margin_orca::sync(user_account.client().state()).await?;
+    refresh_state(&user_account).await?;
+    assert_eq!(orca_client.positions().len(), 1);
 
-    let state = user_account.state();
-    let margin_position = state
-        .positions()
-        .find(|p| p.adapter == jet_margin_orca::ID)
-        .expect("Position not registered");
+    let margin_position = get_positions_by_adapter(&user_account, &jet_margin_orca::ID)[0];
     // The position should have been added, and should have a balance and value
     assert_eq!(margin_position.balance, 1);
     let position_value = margin_position.value().as_f64();
@@ -199,32 +190,87 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     assert!(position_value < 0.001);
 
     // The other positions should have their values restored, minus some dust
+    let state = user_account.state();
     for position in state.positions() {
         if position.adapter == Pubkey::default() {
             assert!(position.value().as_f64() >= 999.90);
         }
     }
 
+    // Registering a new position should not incrememnt margin accounts
+    let position2 = orca_client.open_position(30080, 31744).await?;
+    refresh_state(&user_account).await?;
+
+    // There should be 2 positions
+    assert_eq!(orca_client.positions().len(), 2);
     // Close the position
     orca_client.close_position(position.position_mint).await?;
 
-    // There should be a position with a balance of 0
-    user_account.sync().await.unwrap();
-    // Sync whirlpools before creating a client
-    jet_client::state::margin_orca::sync(user_account.client().state()).await?;
+    // Can't close the margin position if there's still a whirlpool position
+    assert!(orca_client.close_position_meta().await.is_err());
 
-    let state = user_account.state();
-    let margin_position = state
-        .positions()
-        .find(|p| p.adapter == jet_margin_orca::ID)
-        .expect("Position not registered");
-    assert_eq!(margin_position.balance, 0);
+    // Add another position, test that its valuation is correct
+    let liquidity_amount_tsol = tsol.amount(100.0 / 22.0);
+    let liquidity_amount_usdc = usdc.amount(100.0);
+    let position = orca_client.open_position(30080, 31744).await?;
+    refresh_state(&user_account).await?;
 
-    // Close the margin position
+    // Add liquidity to both positions
+    orca_client
+        .add_liquidity(&position2, liquidity_amount_tsol, liquidity_amount_usdc)
+        .await?;
+    orca_client
+        .add_liquidity(
+            &position,
+            liquidity_amount_tsol * 2,
+            liquidity_amount_usdc * 2,
+        )
+        .await?;
+    orca_client.margin_refresh_position().await?;
+    refresh_state(&user_account).await?;
+
+    let margin_positions = get_positions_by_adapter(&user_account, &jet_margin_orca::ID);
+    // There should be 1 margin position for the 2 whirlpool positions
+    assert_eq!(margin_positions.len(), 1);
+
+    // The total balance of the position should be 550-600.
+    let margin_position = margin_positions.first().unwrap();
+    assert!(margin_position.value().as_f64() >= 550.0);
+    assert!(margin_position.value().as_f64() < 600.0);
+
+    // Remove liquidity from both positions
+    orca_client.remove_all_liquidity(&position).await?;
+    orca_client.remove_all_liquidity(&position2).await?;
+    orca_client.close_position(position.position_mint).await?;
+    orca_client.close_position(position2.position_mint).await?;
+    refresh_state(&user_account).await?;
     orca_client.close_position_meta().await?;
 
-    // There should be only 2 positions left
-    user_account.sync().await.unwrap();
+    user_account.sync().await?;
+
+    let margin_positions = get_positions_by_adapter(&user_account, &jet_margin_orca::ID);
+    assert!(margin_positions.is_empty());
+
     assert_eq!(user_account.state().positions().count(), 2);
+
     Ok(())
+}
+
+async fn refresh_state(user_account: &MarginAccountClient) -> anyhow::Result<()> {
+    user_account.sync().await?;
+    // Sync whirlpools before creating a client
+    jet_client::state::margin_orca::sync(user_account.client().state()).await?;
+    Ok(())
+}
+
+fn get_positions_by_adapter(
+    user_account: &MarginAccountClient,
+    adapter: &Pubkey,
+) -> Vec<AccountPosition> {
+    let state = user_account.state();
+    state
+        .positions()
+        .filter(|p| p.adapter == *adapter)
+        .cloned()
+        .collect()
 }
