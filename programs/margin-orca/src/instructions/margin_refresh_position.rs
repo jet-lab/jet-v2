@@ -72,7 +72,6 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
     let info = &ctx.accounts.whirlpool_config;
     let meta = &ctx.accounts.adapter_position_metadata;
 
-    let total_positions = meta.positions().into_iter().count();
     let total_whirlpools = meta
         .positions()
         .into_iter()
@@ -153,13 +152,11 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
     let value_a = balance_a.safe_mul(Number128::from_decimal(price_a.price, price_a.expo))?;
     let value_b = balance_b.safe_mul(Number128::from_decimal(price_b.price, price_b.expo))?;
     let total_value = value_a + value_b;
-    // We can divide this by the number of positions to get an average position value
-    let unit_value = total_value.safe_div(
-        // TODO: it's safer to read this value from a token account
-        Number128::from_decimal(total_positions as i128, 0),
-    )?;
+    // We divide by 1 to prevent an overflow issue
+    let unit_value = total_value.safe_div(Number128::from_decimal(1, 0))?;
 
-    let unit_value_i64: i64 = i64::try_from(unit_value.as_u64(POSITION_VALUE_EXPO)).expect("todo");
+    let unit_value_i64: i64 =
+        i64::try_from(unit_value.as_u64(POSITION_VALUE_EXPO)).expect("Value overflowed");
 
     // Tell the margin program what the current prices are
     jet_margin::write_adapter_result(
