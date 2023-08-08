@@ -21,7 +21,7 @@ use jet_margin::{AdapterResult, PositionChange};
 use crate::*;
 
 #[derive(Accounts)]
-pub struct RegisterPositionMeta<'info> {
+pub struct RegisterMarginPosition<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
@@ -82,8 +82,8 @@ pub struct RegisterPositionMeta<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn register_position_meta_handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, RegisterPositionMeta<'info>>,
+pub fn register_margin_position_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, RegisterMarginPosition<'info>>,
 ) -> Result<()> {
     // Check that the mint and config match
     if ctx.accounts.whirlpool_config.position_mint != ctx.accounts.margin_position_mint.key() {

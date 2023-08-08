@@ -106,10 +106,10 @@ impl MarginAccountOrcaClient {
         crate::state::margin_orca::sync_user_positions(self.client.state()).await
     }
 
-    pub async fn register_position_meta(&self) -> ClientResult<()> {
+    pub async fn register_margin_position(&self) -> ClientResult<()> {
         let ixns = vec![self.account.builder.adapter_invoke(
             self.builder
-                .register_position_meta(self.account.address, self.account.client.signer()),
+                .register_margin_position(self.account.address, self.account.client.signer()),
         )];
 
         // Small enough to not need lookup tables
@@ -126,8 +126,8 @@ impl MarginAccountOrcaClient {
         self.client.send(&ixns).await
     }
 
-    /// Open a position and return its mint address
-    pub async fn open_position(
+    /// Open a whirlpool position and return summary infrmation about the position
+    pub async fn open_whirlpool_position(
         &self,
         tick_lower_index: i32,
         tick_upper_index: i32,
@@ -136,7 +136,7 @@ impl MarginAccountOrcaClient {
         let mut ixns = vec![];
         self.with_tick_array(&mut ixns, tick_lower_index).await?;
         self.with_tick_array(&mut ixns, tick_upper_index).await?;
-        let (position_ix, _, position) = self.builder.open_position(
+        let (position_ix, _, position) = self.builder.open_whirlpool_position(
             self.account.address,
             self.account.client.signer(),
             self.whirlpool.address,
@@ -158,15 +158,16 @@ impl MarginAccountOrcaClient {
         Ok(position_summary)
     }
 
-    pub async fn close_position(&self, mint: Pubkey) -> ClientResult<()> {
-        let ixns = vec![self
-            .account
-            .builder
-            .adapter_invoke(self.builder.close_position(
-                self.account.address,
-                self.account.client.signer(),
-                mint,
-            ))];
+    pub async fn close_whirlpool_position(&self, mint: Pubkey) -> ClientResult<()> {
+        let ixns =
+            vec![self
+                .account
+                .builder
+                .adapter_invoke(self.builder.close_whirlpool_position(
+                    self.account.address,
+                    self.account.client.signer(),
+                    mint,
+                ))];
 
         // Small enough to not need lookup tables
         self.client.send(&ixns).await

@@ -66,20 +66,20 @@ mod jet_margin_orca {
     // Open position: https://explorer.solana.com/tx/5dUnLAdzYYgeTbqw5H2ieVpdEFrVWxXFwKPiX7UY3Wk7nJvm7yqEg4rYfEhSfqT5RwSMndYrKGMzvkg4HmvdEDE2?cluster=mainnet-beta
     // Increate liquidity: https://explorer.solana.com/tx/5HZGVjnRKohd4uXiT1h14WSNztVgMs5iaRnkmDiM8dzRmM9WajbMMiuLLik447vhwbYNyvuyxNzZtaBoqjXKUFeS?cluster=mainnet-beta
 
-    pub fn open_position<'info>(
-        ctx: Context<'_, '_, '_, 'info, OpenPosition<'info>>,
+    pub fn open_whirlpool_position<'info>(
+        ctx: Context<'_, '_, '_, 'info, OpenWhirlpoolPosition<'info>>,
         bumps: OpenPositionBumps,
         seed: u64,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        open_position_handler(ctx, bumps, seed, tick_lower_index, tick_upper_index)
+        open_whirlpool_position_handler(ctx, bumps, seed, tick_lower_index, tick_upper_index)
     }
 
-    pub fn close_position<'info>(
-        ctx: Context<'_, '_, '_, 'info, ClosePosition<'info>>,
+    pub fn close_whirlpool_position<'info>(
+        ctx: Context<'_, '_, '_, 'info, CloseWhirlpoolPosition<'info>>,
     ) -> Result<()> {
-        close_position_handler(ctx)
+        close_whirlpool_position_handler(ctx)
     }
 
     pub fn increase_liquidity<'info>(
@@ -113,10 +113,10 @@ mod jet_margin_orca {
         margin_refresh_position_handler(ctx)
     }
 
-    pub fn register_position_meta<'info>(
-        ctx: Context<'_, '_, '_, 'info, RegisterPositionMeta<'info>>,
+    pub fn register_margin_position<'info>(
+        ctx: Context<'_, '_, '_, 'info, RegisterMarginPosition<'info>>,
     ) -> Result<()> {
-        register_position_meta_handler(ctx)
+        register_margin_position_handler(ctx)
     }
 
     pub fn close_position_meta<'info>(

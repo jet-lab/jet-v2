@@ -80,12 +80,6 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
         .collect::<HashSet<_>>()
         .len();
 
-    // Validate the number of whirlpools
-    if total_whirlpools == 0 && total_positions > 0 {
-        msg!("Cannot have 0 whirlpools with positions");
-        return err!(MarginOrcaErrorCode::InvalidArgument);
-    }
-
     let mut remaining_accounts = ctx.remaining_accounts.iter();
     // Get whirlpools
     let whirlpools = remaining_accounts

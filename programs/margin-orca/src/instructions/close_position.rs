@@ -21,14 +21,13 @@ use orca_whirlpool::program::Whirlpool;
 use crate::*;
 
 #[derive(Accounts)]
-pub struct ClosePosition<'info> {
+pub struct CloseWhirlpoolPosition<'info> {
     #[account(signer)]
     pub owner: AccountLoader<'info, MarginAccount>,
 
     #[account(mut)]
     pub receiver: Signer<'info>,
 
-    #[account(mut)]
     pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     #[account(mut, has_one = owner)]
@@ -77,7 +76,7 @@ pub struct ClosePosition<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> ClosePosition<'info> {
+impl<'info> CloseWhirlpoolPosition<'info> {
     #[inline(never)]
     pub fn close_position(&self) -> Result<()> {
         orca_whirlpool::cpi::close_position(CpiContext::new(
@@ -94,10 +93,28 @@ impl<'info> ClosePosition<'info> {
 
         Ok(())
     }
+
+    #[inline(never)]
+    pub fn burn_margin_position_note(&self) -> Result<()> {
+        burn(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                Burn {
+                    mint: self.margin_position_mint.to_account_info(),
+                    from: self.margin_position.to_account_info(),
+                    authority: self.whirlpool_config.to_account_info(),
+                },
+            )
+            .with_signer(&[&self.whirlpool_config.authority_seeds()]),
+            1,
+        )?;
+
+        Ok(())
+    }
 }
 
-pub fn close_position_handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, ClosePosition<'info>>,
+pub fn close_whirlpool_position_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, CloseWhirlpoolPosition<'info>>,
 ) -> Result<()> {
     let position_address = ctx.accounts.position.key();
     let position_index = ctx
@@ -111,27 +128,17 @@ pub fn close_position_handler<'info>(
         .adapter_position_metadata
         .clear_position(position_index)?;
 
-    // Increment the global number of positions owned
-    ctx.accounts.whirlpool_config.total_positions = ctx
+    // Burn position note if this is the last position
+    if ctx
         .accounts
-        .whirlpool_config
-        .total_positions
-        .checked_sub(1)
-        .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
-
-    // Burn position note
-    burn(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Burn {
-                mint: ctx.accounts.margin_position_mint.to_account_info(),
-                from: ctx.accounts.margin_position.to_account_info(),
-                authority: ctx.accounts.whirlpool_config.to_account_info(),
-            },
-        )
-        .with_signer(&[&ctx.accounts.whirlpool_config.authority_seeds()]),
-        1,
-    )?;
+        .adapter_position_metadata
+        .positions()
+        .into_iter()
+        .count()
+        == 0
+    {
+        ctx.accounts.burn_margin_position_note()?;
+    }
 
     // TODO: do we need to update margin?
 

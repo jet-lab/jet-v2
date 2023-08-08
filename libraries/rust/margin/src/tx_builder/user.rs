@@ -862,8 +862,11 @@ impl MarginTxBuilder {
 
     /// Register a margin account position that enables supplying liquidity to
     /// Orca Whirlpools that are denominated in the builder's token pair.
-    pub fn orca_register_position_meta(&self, builder: &MarginOrcaIxBuilder) -> TransactionBuilder {
-        let position_ix = builder.register_position_meta(*self.address(), self.ix.payer());
+    pub fn orca_register_margin_position(
+        &self,
+        builder: &MarginOrcaIxBuilder,
+    ) -> TransactionBuilder {
+        let position_ix = builder.register_margin_position(*self.address(), self.ix.payer());
         let instruction = self.adapter_invoke_ix(position_ix);
         self.create_transaction_builder(&[instruction])
     }
@@ -877,14 +880,14 @@ impl MarginTxBuilder {
     }
 
     /// Open an Orca Whirlpool position
-    pub fn orca_open_position(
+    pub fn orca_open_whirlpool_position(
         &self,
         builder: &MarginOrcaIxBuilder,
         whirlpool_address: Pubkey,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> (TransactionBuilder, Pubkey, Pubkey) {
-        let (position_ix, position_mint, position) = builder.open_position(
+        let (position_ix, position_mint, position) = builder.open_whirlpool_position(
             *self.address(),
             self.ix.payer(),
             whirlpool_address,
@@ -900,12 +903,12 @@ impl MarginTxBuilder {
     }
 
     /// Close an Orca Whirlpool position
-    pub fn orca_close_position(
+    pub fn orca_close_whirlpool_position(
         &self,
         builder: &MarginOrcaIxBuilder,
         mint: Pubkey,
     ) -> TransactionBuilder {
-        let position_ix = builder.close_position(*self.address(), self.ix.payer(), mint);
+        let position_ix = builder.close_whirlpool_position(*self.address(), self.ix.payer(), mint);
         let instruction = self.adapter_invoke_ix(position_ix);
         self.create_transaction_builder(&[instruction])
     }

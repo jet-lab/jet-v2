@@ -99,12 +99,12 @@ impl MarginOrcaIxBuilder {
     }
 
     // Register meta
-    pub fn register_position_meta(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
+    pub fn register_margin_position(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
         let adapter_position_metadata =
             derive::derive_adapter_position_metadata(&margin_account, &self.address);
         let margin_position = derive::derive_margin_position(&margin_account, &self.address);
 
-        let accounts = ix_accounts::RegisterPositionMeta {
+        let accounts = ix_accounts::RegisterMarginPosition {
             payer,
             owner: margin_account,
             adapter_position_metadata,
@@ -121,7 +121,7 @@ impl MarginOrcaIxBuilder {
         Instruction {
             program_id: MARGIN_ORCA_PROGRAM,
             accounts,
-            data: ix_data::RegisterPositionMeta {}.data(),
+            data: ix_data::RegisterMarginPosition {}.data(),
         }
     }
 
@@ -149,8 +149,8 @@ impl MarginOrcaIxBuilder {
         }
     }
 
-    // Create position returning the position mint and position account
-    pub fn open_position(
+    // Create a whirlpool position returning the position mint and position account
+    pub fn open_whirlpool_position(
         &self,
         margin_account: Pubkey,
         payer: Pubkey,
@@ -170,7 +170,7 @@ impl MarginOrcaIxBuilder {
             derive::derive_adapter_position_metadata(&margin_account, &self.address);
         let margin_position = derive::derive_margin_position(&margin_account, &self.address);
 
-        let accounts = ix_accounts::OpenPosition {
+        let accounts = ix_accounts::OpenWhirlpoolPosition {
             payer,
             owner: margin_account,
             adapter_position_metadata,
@@ -193,7 +193,7 @@ impl MarginOrcaIxBuilder {
             Instruction {
                 program_id: MARGIN_ORCA_PROGRAM,
                 accounts,
-                data: ix_data::OpenPosition {
+                data: ix_data::OpenWhirlpoolPosition {
                     bumps: OpenPositionBumps { position_bump },
                     seed,
                     tick_lower_index,
@@ -207,7 +207,7 @@ impl MarginOrcaIxBuilder {
     }
 
     // Close position
-    pub fn close_position(
+    pub fn close_whirlpool_position(
         &self,
         margin_account: Pubkey,
         receiver: Pubkey,
@@ -219,7 +219,7 @@ impl MarginOrcaIxBuilder {
             derive::derive_adapter_position_metadata(&margin_account, &self.address);
         let margin_position = derive::derive_margin_position(&margin_account, &self.address);
 
-        let accounts = ix_accounts::ClosePosition {
+        let accounts = ix_accounts::CloseWhirlpoolPosition {
             receiver,
             owner: margin_account,
             adapter_position_metadata,
@@ -237,7 +237,7 @@ impl MarginOrcaIxBuilder {
         Instruction {
             program_id: MARGIN_ORCA_PROGRAM,
             accounts,
-            data: ix_data::ClosePosition {}.data(),
+            data: ix_data::CloseWhirlpoolPosition {}.data(),
         }
     }
     // Add liquidity

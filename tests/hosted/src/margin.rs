@@ -770,7 +770,7 @@ impl MarginUser {
         builder: &MarginOrcaIxBuilder,
     ) -> Result<(), Error> {
         self.tx
-            .orca_register_position_meta(builder)
+            .orca_register_margin_position(builder)
             .send_and_confirm(&self.rpc)
             .await?;
 
@@ -798,9 +798,12 @@ impl MarginUser {
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<Pubkey, Error> {
-        let (builder, position_mint, position) =
-            self.tx
-                .orca_open_position(builder, whirlpool, tick_lower_index, tick_upper_index);
+        let (builder, position_mint, position) = self.tx.orca_open_whirlpool_position(
+            builder,
+            whirlpool,
+            tick_lower_index,
+            tick_upper_index,
+        );
 
         builder.send_and_confirm(&self.rpc).await?;
 
@@ -814,7 +817,7 @@ impl MarginUser {
         mint: Pubkey,
     ) -> Result<(), Error> {
         self.tx
-            .orca_close_position(builder, mint)
+            .orca_close_whirlpool_position(builder, mint)
             .send_and_confirm(&self.rpc)
             .await?;
 

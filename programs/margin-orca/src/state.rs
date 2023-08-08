@@ -34,10 +34,6 @@ pub struct WhirlpoolConfig {
     pub position_mint: Pubkey,
     pub token_a_oracle: Pubkey,
     pub token_b_oracle: Pubkey,
-    // Q: in addition to tracking total positions, do we want to track how much
-    // liquidity has been supplied per whirlpool? It'd have to be something like:
-    // pub total_liquidity: [{whilpool: Pubkey, liquidity: u128}; n]
-    pub total_positions: u64,
     pub mint_a_decimals: u8,
     pub mint_b_decimals: u8,
     pub(crate) bump: [u8; 1],
@@ -45,7 +41,7 @@ pub struct WhirlpoolConfig {
     // TODO flags, enabled|paused|withdrawal_only
 }
 
-declare_account_size!(WhirlpoolConfig, 216);
+declare_account_size!(WhirlpoolConfig, 208);
 
 impl WhirlpoolConfig {
     pub fn authority_seeds(&self) -> [&[u8]; 5] {

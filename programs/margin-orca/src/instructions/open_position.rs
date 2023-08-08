@@ -27,14 +27,13 @@ use crate::*;
 
 #[derive(Accounts)]
 #[instruction(bumps: OpenPositionBumps, seed: u64)]
-pub struct OpenPosition<'info> {
+pub struct OpenWhirlpoolPosition<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
     #[account(signer)]
     pub owner: AccountLoader<'info, MarginAccount>,
 
-    #[account(mut)]
     pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     /// CHECK: will be initialized and validated by orca
@@ -96,11 +95,10 @@ pub struct OpenPosition<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-impl<'info> OpenPosition<'info> {
-    /// Issue a Orca swap
-    #[allow(clippy::too_many_arguments)]
+impl<'info> OpenWhirlpoolPosition<'info> {
+    /// Open an Orca position
     #[inline(never)]
-    pub fn open_position(
+    fn open_position(
         &self,
         bumps: OpenPositionBumps,
         ctx_bumps: &BTreeMap<String, u8>,
@@ -138,10 +136,35 @@ impl<'info> OpenPosition<'info> {
 
         Ok(())
     }
+
+    /// Conditionally mint a position note to indicate that there is 1+ Whirlpool position
+    /// in the margin account.
+    #[inline(never)]
+    fn maybe_mint_position_note(&self) -> Result<()> {
+        let balance = anchor_spl::token::accessor::amount(&self.margin_position.to_account_info())?;
+        if balance > 0 {
+            return Ok(());
+        }
+        // Mint a position note
+        mint_to(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                MintTo {
+                    mint: self.margin_position_mint.to_account_info(),
+                    to: self.margin_position.to_account_info(),
+                    authority: self.whirlpool_config.to_account_info(),
+                },
+            )
+            .with_signer(&[&self.whirlpool_config.authority_seeds()]),
+            1,
+        )?;
+
+        Ok(())
+    }
 }
 
-pub fn open_position_handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, OpenPosition<'info>>,
+pub fn open_whirlpool_position_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, OpenWhirlpoolPosition<'info>>,
     bumps: OpenPositionBumps,
     seed: u64,
     tick_lower_index: i32,
@@ -156,27 +179,8 @@ pub fn open_position_handler<'info>(
 
     ctx.accounts
         .open_position(bumps, &ctx.bumps, seed, tick_lower_index, tick_upper_index)?;
-    // Mint a position note
-    mint_to(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo {
-                mint: ctx.accounts.margin_position_mint.to_account_info(),
-                to: ctx.accounts.margin_position.to_account_info(),
-                authority: ctx.accounts.whirlpool_config.to_account_info(),
-            },
-        )
-        .with_signer(&[&ctx.accounts.whirlpool_config.authority_seeds()]),
-        1,
-    )?;
 
-    // Increment the global number of positions owned
-    ctx.accounts.whirlpool_config.total_positions = ctx
-        .accounts
-        .whirlpool_config
-        .total_positions
-        .checked_add(1)
-        .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
+    ctx.accounts.maybe_mint_position_note()?;
 
     // Update position metadata
     ctx.accounts.adapter_position_metadata.set_position(

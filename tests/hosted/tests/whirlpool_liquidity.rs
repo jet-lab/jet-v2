@@ -136,11 +136,11 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     let mut orca_client = user_account.orca(&whirlpool_address)?;
 
     // Register a margin position
-    orca_client.register_position_meta().await?;
+    orca_client.register_margin_position().await?;
 
     // Register positions in the whirlpool
     // Provide liquidity between 20.1147 and 23.9087
-    let position = orca_client.open_position(30016, 31744).await?;
+    let position = orca_client.open_whirlpool_position(30016, 31744).await?;
 
     // Refresh to update positions
     refresh_state(&user_account).await?;
@@ -198,13 +198,15 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     }
 
     // Registering a new position should not incrememnt margin accounts
-    let position2 = orca_client.open_position(30080, 31744).await?;
+    let position2 = orca_client.open_whirlpool_position(30080, 31744).await?;
     refresh_state(&user_account).await?;
 
     // There should be 2 positions
     assert_eq!(orca_client.positions().len(), 2);
     // Close the position
-    orca_client.close_position(position.position_mint).await?;
+    orca_client
+        .close_whirlpool_position(position.position_mint)
+        .await?;
 
     // Can't close the margin position if there's still a whirlpool position
     assert!(orca_client.close_position_meta().await.is_err());
@@ -212,7 +214,7 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     // Add another position, test that its valuation is correct
     let liquidity_amount_tsol = tsol.amount(100.0 / 22.0);
     let liquidity_amount_usdc = usdc.amount(100.0);
-    let position = orca_client.open_position(30080, 31744).await?;
+    let position = orca_client.open_whirlpool_position(30080, 31744).await?;
     refresh_state(&user_account).await?;
 
     // Add liquidity to both positions
@@ -241,8 +243,12 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     // Remove liquidity from both positions
     orca_client.remove_all_liquidity(&position).await?;
     orca_client.remove_all_liquidity(&position2).await?;
-    orca_client.close_position(position.position_mint).await?;
-    orca_client.close_position(position2.position_mint).await?;
+    orca_client
+        .close_whirlpool_position(position.position_mint)
+        .await?;
+    orca_client
+        .close_whirlpool_position(position2.position_mint)
+        .await?;
     refresh_state(&user_account).await?;
     orca_client.close_position_meta().await?;
 
