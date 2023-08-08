@@ -52,6 +52,9 @@ jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+jet-staking = { path = "../../../programs/staking", features = ["no-entrypoint"] }
+jet-rewards = { path = "../../../programs/rewards", features = ["no-entrypoint"] }
+jet-auth = { path = "../../../programs/auth", features = ["no-entrypoint"] }
 
 lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main", default-features = false }
 lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }

@@ -1,12 +1,8 @@
 use std::collections::HashMap;
 
 use anchor_lang::AnchorDeserialize;
-
-use jet_instructions::staking::{derive_stake_account, derive_stake_pool};
 use solana_sdk::pubkey::Pubkey;
 
-use jet_program_common::{GOVERNANCE_PROGRAM, GOVERNANCE_REALM_DAO};
-use jet_solana_client::rpc::{AccountFilter, SolanaRpcExtra};
 use spl_governance::state::{
     enums::GovernanceAccountType,
     governance::GovernanceV2,
@@ -15,6 +11,12 @@ use spl_governance::state::{
     token_owner_record::get_token_owner_record_address,
     vote_record::{get_vote_record_address, VoteRecordV2},
 };
+
+use jet_instructions::staking::{derive_stake_account, derive_stake_pool};
+use jet_staking::state::{StakeAccount, StakePool};
+
+use jet_program_common::{GOVERNANCE_PROGRAM, GOVERNANCE_REALM_DAO};
+use jet_solana_client::rpc::{AccountFilter, SolanaRpcExtra};
 
 use super::AccountStates;
 use crate::{bail, ClientResult};
@@ -30,6 +32,7 @@ pub struct RealmInfo {
 
 pub async fn sync(states: &AccountStates) -> ClientResult<()> {
     sync_realm(states).await?;
+    sync_stake(states).await?;
     Ok(())
 }
 
@@ -103,7 +106,7 @@ pub async fn sync_realm(states: &AccountStates) -> ClientResult<()> {
     );
     let vote_addrs = proposals
         .iter()
-        .map(|(address, proposal)| {
+        .map(|(address, _)| {
             get_vote_record_address(&GOVERNANCE_PROGRAM, address, &token_owner_record)
         })
         .collect::<Vec<_>>();
@@ -143,6 +146,24 @@ pub async fn sync_realm(states: &AccountStates) -> ClientResult<()> {
 pub async fn sync_stake(states: &AccountStates) -> ClientResult<()> {
     let stake_pool = derive_stake_pool(DEFAULT_STAKE_SEED);
     let stake_account = derive_stake_account(&stake_pool, &states.wallet);
+
+    match states
+        .network
+        .try_get_anchor_account::<StakePool>(&stake_pool)
+        .await?
+    {
+        Some(data) => states.set(&stake_pool, data),
+        None => log::warn!("stake pool {stake_pool} not found"),
+    }
+
+    match states
+        .network
+        .try_get_anchor_account::<StakeAccount>(&stake_account)
+        .await?
+    {
+        Some(data) => states.set(&stake_account, data),
+        None => log::debug!("stake account {stake_account} not found"),
+    }
 
     Ok(())
 }
