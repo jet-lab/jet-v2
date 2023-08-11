@@ -174,7 +174,6 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     // The position should have been added, and should have a balance and value
     assert_eq!(margin_position.balance, 1);
     let position_value = margin_position.value().as_f64();
-    dbg!(position_value);
     assert!(position_value > 900.0);
     assert!(position_value <= 1000.0);
 

@@ -160,16 +160,14 @@ pub fn modify_liquidity_handler<'info>(
     // Update the cache with the whirlpool and its position
     ctx.accounts
         .adapter_position_metadata
-        .update_whirlpool_prices(&whirlpool, timestamp);
+        .update_whirlpool_prices(whirlpool, timestamp);
 
     ctx.accounts
         .adapter_position_metadata
-        .update_position(&position)?;
+        .update_position(position)?;
 
     // Tell the margin program what the current prices are
     ctx.accounts
         .adapter_position_metadata
-        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)?;
-
-    Ok(())
+        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)
 }

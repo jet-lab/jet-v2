@@ -44,6 +44,7 @@ pub struct RegisterMarginPosition<'info> {
     )]
     pub adapter_position_metadata: Box<Account<'info, PositionMetadata>>,
 
+    #[account(constraint = whirlpool_config.position_mint == margin_position_mint.key())]
     pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     /// This will be required for margin to register the position,
@@ -85,11 +86,6 @@ pub struct RegisterMarginPosition<'info> {
 pub fn register_margin_position_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, RegisterMarginPosition<'info>>,
 ) -> Result<()> {
-    // Check that the mint and config match
-    if ctx.accounts.whirlpool_config.position_mint != ctx.accounts.margin_position_mint.key() {
-        return err!(MarginOrcaErrorCode::InvalidArgument);
-    }
-
     // TODO: when adding config flags, check if new positions can be registered
 
     let meta = &mut ctx.accounts.adapter_position_metadata;
@@ -104,7 +100,5 @@ pub fn register_margin_position_handler<'info>(
                 vec![PositionChange::Register(ctx.accounts.margin_position.key())],
             )],
         },
-    )?;
-
-    Ok(())
+    )
 }

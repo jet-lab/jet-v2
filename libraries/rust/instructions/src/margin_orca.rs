@@ -98,7 +98,7 @@ impl MarginOrcaIxBuilder {
         }
     }
 
-    // Register meta
+    // Register margin position
     pub fn register_margin_position(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
         let adapter_position_metadata =
             derive::derive_adapter_position_metadata(&margin_account, &self.address);
@@ -125,13 +125,13 @@ impl MarginOrcaIxBuilder {
         }
     }
 
-    // Close position meta
-    pub fn close_position_meta(&self, margin_account: Pubkey, receiver: Pubkey) -> Instruction {
+    // Close margin position
+    pub fn close_margin_position(&self, margin_account: Pubkey, receiver: Pubkey) -> Instruction {
         let adapter_position_metadata =
             derive::derive_adapter_position_metadata(&margin_account, &self.address);
         let margin_position = derive::derive_margin_position(&margin_account, &self.address);
 
-        let accounts = ix_accounts::ClosePositionMeta {
+        let accounts = ix_accounts::CloseMarginPosition {
             receiver,
             owner: margin_account,
             whirlpool_config: self.address,
@@ -145,7 +145,7 @@ impl MarginOrcaIxBuilder {
         Instruction {
             program_id: MARGIN_ORCA_PROGRAM,
             accounts,
-            data: ix_data::ClosePositionMeta {}.data(),
+            data: ix_data::CloseMarginPosition {}.data(),
         }
     }
 

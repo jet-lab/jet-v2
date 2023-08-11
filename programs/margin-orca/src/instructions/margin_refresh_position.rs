@@ -111,7 +111,5 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
     // Tell the margin program what the current prices are
     ctx.accounts
         .adapter_position_metadata
-        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)?;
-
-    Ok(())
+        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)
 }

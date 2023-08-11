@@ -21,7 +21,7 @@ use jet_margin::{AdapterResult, PositionChange};
 use crate::*;
 
 #[derive(Accounts)]
-pub struct ClosePositionMeta<'info> {
+pub struct CloseMarginPosition<'info> {
     #[account(mut)]
     pub receiver: Signer<'info>,
 
@@ -62,8 +62,8 @@ pub struct ClosePositionMeta<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn close_position_meta_handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, ClosePositionMeta<'info>>,
+pub fn close_margin_position_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, CloseMarginPosition<'info>>,
 ) -> Result<()> {
     if ctx
         .accounts
@@ -96,6 +96,5 @@ pub fn close_position_meta_handler<'info>(
                 vec![PositionChange::Close(ctx.accounts.margin_position.key())],
             )],
         },
-    )?;
-    Ok(())
+    )
 }

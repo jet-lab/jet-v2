@@ -119,7 +119,7 @@ impl MarginAccountOrcaClient {
     pub async fn close_position_meta(&self) -> ClientResult<()> {
         let ixns = vec![self.account.builder.adapter_invoke(
             self.builder
-                .close_position_meta(self.account.address, self.account.client.signer()),
+                .close_margin_position(self.account.address, self.account.client.signer()),
         )];
 
         // Small enough to not need lookup tables
@@ -464,7 +464,7 @@ pub(crate) fn instruction_for_refresh(
 
     let mut instructions = user_state
         .positions()
-        .into_iter()
+        .iter()
         .map(|(address, position)| {
             let whirlpool = whirlpools
                 .get(&position.whirlpool)

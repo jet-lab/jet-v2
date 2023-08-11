@@ -170,13 +170,6 @@ pub fn open_whirlpool_position_handler<'info>(
     tick_lower_index: i32,
     tick_upper_index: i32,
 ) -> Result<()> {
-    // Check if there is enough space for the position
-    let empty_position_ix = ctx
-        .accounts
-        .adapter_position_metadata
-        .free_position()
-        .ok_or(MarginOrcaErrorCode::PositionsFull)?;
-
     ctx.accounts
         .open_position(bumps, &ctx.bumps, seed, tick_lower_index, tick_upper_index)?;
 
@@ -187,32 +180,30 @@ pub fn open_whirlpool_position_handler<'info>(
 
     let whirlpool = &ctx.accounts.whirlpool;
 
-    // Update existing positions before adding the new one
+    // Update existing positions' whirlpool prices before adding the new one
     ctx.accounts
         .adapter_position_metadata
         .update_whirlpool_prices(whirlpool, current_timestamp);
 
-    // Update position metadata
-    ctx.accounts.adapter_position_metadata.set_position(
-        PositionDetails {
-            address: ctx.accounts.position.key(),
-            whirlpool: ctx.accounts.whirlpool.key(),
-            liquidity: 0, // new position
-            current_sqrt_price: whirlpool.sqrt_price,
-            tick_index_current: whirlpool.tick_current_index,
-            tick_index_lower: tick_lower_index,
-            tick_index_upper: tick_upper_index,
-            last_refresh: clock.unix_timestamp,
-            fee_owed_a: 0,
-            fee_owed_b: 0,
-        },
-        empty_position_ix,
-    )?;
+    // Add the new position
+    let position_details = PositionDetails {
+        address: ctx.accounts.position.key(),
+        whirlpool: ctx.accounts.whirlpool.key(),
+        liquidity: 0, // new position
+        current_sqrt_price: whirlpool.sqrt_price,
+        tick_index_current: whirlpool.tick_current_index,
+        tick_index_lower: tick_lower_index,
+        tick_index_upper: tick_upper_index,
+        last_refresh: clock.unix_timestamp,
+        fee_owed_a: 0,
+        fee_owed_b: 0,
+    };
+    ctx.accounts
+        .adapter_position_metadata
+        .add_position(position_details)?;
 
     // Tell the margin program what the current prices are
     ctx.accounts
         .adapter_position_metadata
-        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)?;
-
-    Ok(())
+        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)
 }

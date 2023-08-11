@@ -131,33 +131,17 @@ impl PositionMetadata {
             })
     }
 
-    /// Set a position at an empty index
-    pub(crate) fn set_position(
-        &mut self,
-        position_details: PositionDetails,
-        index: usize,
-    ) -> Result<()> {
-        assert!(index <= MAX_POSITIONS);
-
-        if position_details.address == Pubkey::default() {
-            msg!("Should not set_position to a default address");
-            return err!(MarginOrcaErrorCode::PositionUpdateError);
+    /// Add a new position
+    pub(crate) fn add_position(&mut self, position_details: PositionDetails) -> Result<()> {
+        for slot in self.positions.iter_mut() {
+            if slot.address == Pubkey::default() {
+                *slot = position_details;
+                return Ok(());
+            }
         }
 
-        // Q: if this is called internaly only, should we worry about duplicate
-        // positions?
-        if self.position_index(position_details.address).is_some() {
-            msg!("Cannot add a position more than once");
-            return err!(MarginOrcaErrorCode::PositionUpdateError);
-        }
-
-        if self.positions[index].address != Pubkey::default() {
-            msg!("Slot has a position, cannot overwrite");
-            return err!(MarginOrcaErrorCode::PositionUpdateError);
-        }
-        self.positions[index] = position_details;
-
-        Ok(())
+        msg!("No free position slots");
+        err!(MarginOrcaErrorCode::PositionUpdateError)
     }
 
     /// Clear position at an index

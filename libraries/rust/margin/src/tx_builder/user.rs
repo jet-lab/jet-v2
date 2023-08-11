@@ -874,7 +874,7 @@ impl MarginTxBuilder {
     /// Close the margin account position associated with the Orca liquidity
     /// for the builder's token pair.
     pub fn orca_close_position_meta(&self, builder: &MarginOrcaIxBuilder) -> TransactionBuilder {
-        let position_ix = builder.close_position_meta(*self.address(), self.ix.payer());
+        let position_ix = builder.close_margin_position(*self.address(), self.ix.payer());
         let instruction = self.adapter_invoke_ix(position_ix);
         self.create_transaction_builder(&[instruction])
     }

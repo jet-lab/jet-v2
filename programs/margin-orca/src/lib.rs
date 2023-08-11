@@ -119,10 +119,10 @@ mod jet_margin_orca {
         register_margin_position_handler(ctx)
     }
 
-    pub fn close_position_meta<'info>(
-        ctx: Context<'_, '_, '_, 'info, ClosePositionMeta<'info>>,
+    pub fn close_margin_position<'info>(
+        ctx: Context<'_, '_, '_, 'info, CloseMarginPosition<'info>>,
     ) -> Result<()> {
-        close_position_meta_handler(ctx)
+        close_margin_position_handler(ctx)
     }
 }
 
