@@ -247,8 +247,6 @@ impl MarginOrcaIxBuilder {
         margin_account: Pubkey,
         pool_summary: &WhirlpoolSummary,
         position_summary: &WhirlpoolPositionSummary,
-        whirlpools: &HashSet<Pubkey>,
-        positions: &HashSet<Pubkey>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
@@ -257,8 +255,6 @@ impl MarginOrcaIxBuilder {
             margin_account,
             pool_summary,
             position_summary,
-            whirlpools,
-            positions,
             liquidity_amount,
             token_max_a,
             token_max_b,
@@ -273,8 +269,6 @@ impl MarginOrcaIxBuilder {
         margin_account: Pubkey,
         pool_summary: &WhirlpoolSummary,
         position_summary: &WhirlpoolPositionSummary,
-        whirlpools: &HashSet<Pubkey>,
-        positions: &HashSet<Pubkey>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
@@ -283,8 +277,6 @@ impl MarginOrcaIxBuilder {
             margin_account,
             pool_summary,
             position_summary,
-            whirlpools,
-            positions,
             liquidity_amount,
             token_max_a,
             token_max_b,
@@ -298,8 +290,6 @@ impl MarginOrcaIxBuilder {
         margin_account: Pubkey,
         pool_summary: &WhirlpoolSummary,
         position_summary: &WhirlpoolPositionSummary,
-        whirlpools: &HashSet<Pubkey>,
-        positions: &HashSet<Pubkey>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
@@ -314,7 +304,7 @@ impl MarginOrcaIxBuilder {
         let token_owner_a = get_associated_token_address(&margin_account, &self.token_a);
         let token_owner_b = get_associated_token_address(&margin_account, &self.token_b);
 
-        let mut accounts = ix_accounts::ModifyLiquidity {
+        let accounts = ix_accounts::ModifyLiquidity {
             owner: margin_account,
             adapter_position_metadata,
             position,
@@ -327,26 +317,10 @@ impl MarginOrcaIxBuilder {
             token_owner_account_b: token_owner_b,
             token_vault_a: pool_summary.vault_a,
             token_vault_b: pool_summary.vault_b,
-            token_a_oracle: self.oracle_a,
-            token_b_oracle: self.oracle_b,
             tick_array_lower: position_summary.tick_array_lower,
             tick_array_upper: position_summary.tick_array_upper,
         }
         .to_account_metas(None);
-
-        accounts.extend_from_slice(
-            &whirlpools
-                .iter()
-                .map(|address| AccountMeta::new_readonly(*address, false))
-                .collect::<Vec<_>>(),
-        );
-
-        accounts.extend_from_slice(
-            &positions
-                .iter()
-                .map(|address| AccountMeta::new_readonly(*address, false))
-                .collect::<Vec<_>>(),
-        );
 
         Instruction {
             program_id: MARGIN_ORCA_PROGRAM,

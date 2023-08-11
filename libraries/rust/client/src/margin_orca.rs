@@ -143,6 +143,17 @@ impl MarginAccountOrcaClient {
             tick_lower_index,
             tick_upper_index,
         );
+        let user_state = self.get_user_position_meta_state().unwrap();
+        let (whirlpools, positions) = user_state.addresses_for_refresh();
+        ixns.push(
+            self.account
+                .builder
+                .accounting_invoke(self.builder.margin_refresh_position(
+                    self.account.address,
+                    &whirlpools,
+                    &positions,
+                )),
+        );
         ixns.push(self.account.builder.adapter_invoke(position_ix));
 
         let builder = TransactionBuilder {
@@ -159,15 +170,24 @@ impl MarginAccountOrcaClient {
     }
 
     pub async fn close_whirlpool_position(&self, mint: Pubkey) -> ClientResult<()> {
-        let ixns =
-            vec![self
-                .account
+        let user_state = self.get_user_position_meta_state().unwrap();
+        let (whirlpools, positions) = user_state.addresses_for_refresh();
+        let ixns = vec![
+            self.account
+                .builder
+                .accounting_invoke(self.builder.margin_refresh_position(
+                    self.account.address,
+                    &whirlpools,
+                    &positions,
+                )),
+            self.account
                 .builder
                 .adapter_invoke(self.builder.close_whirlpool_position(
                     self.account.address,
                     self.account.client.signer(),
                     mint,
-                ))];
+                )),
+        ];
 
         // Small enough to not need lookup tables
         self.client.send(&ixns).await
@@ -201,19 +221,26 @@ impl MarginAccountOrcaClient {
             std::cmp::min(liquidity_a, liquidity_b)
         };
 
-        let ixns = vec![self
-            .account
-            .builder
-            .adapter_invoke(self.builder.add_liquidity(
-                self.account.address,
-                &self.whirlpool,
-                position_summary,
-                &whirlpools,
-                &positions,
-                liquidity_amount,
-                token_max_a,
-                token_max_b,
-            ))];
+        // Refresh before modifying liquidity
+        let ixns = vec![
+            self.account
+                .builder
+                .accounting_invoke(self.builder.margin_refresh_position(
+                    self.account.address,
+                    &whirlpools,
+                    &positions,
+                )),
+            self.account
+                .builder
+                .adapter_invoke(self.builder.add_liquidity(
+                    self.account.address,
+                    &self.whirlpool,
+                    position_summary,
+                    liquidity_amount,
+                    token_max_a,
+                    token_max_b,
+                )),
+        ];
 
         // Small enough to not need lookup tables
         self.client.send(&ixns).await
@@ -248,19 +275,25 @@ impl MarginAccountOrcaClient {
         };
         let liquidity_amount = liquidity_amount.min(position_summary.liquidity);
 
-        let ixns = vec![self
-            .account
-            .builder
-            .adapter_invoke(self.builder.remove_liquidity(
-                self.account.address,
-                &self.whirlpool,
-                &position_summary,
-                &whirlpools,
-                &positions,
-                liquidity_amount,
-                token_max_a - 1, // TODO: account for slippage correctly
-                token_max_b - 1,
-            ))];
+        let ixns = vec![
+            self.account
+                .builder
+                .accounting_invoke(self.builder.margin_refresh_position(
+                    self.account.address,
+                    &whirlpools,
+                    &positions,
+                )),
+            self.account
+                .builder
+                .adapter_invoke(self.builder.remove_liquidity(
+                    self.account.address,
+                    &self.whirlpool,
+                    &position_summary,
+                    liquidity_amount,
+                    token_max_a - 1, // TODO: account for slippage correctly
+                    token_max_b - 1,
+                )),
+        ];
 
         // Small enough to not need lookup tables
         self.client.send(&ixns).await
@@ -278,19 +311,25 @@ impl MarginAccountOrcaClient {
 
         let liquidity_amount = position_summary.liquidity;
 
-        let ixns = vec![self
-            .account
-            .builder
-            .adapter_invoke(self.builder.remove_liquidity(
-                self.account.address,
-                &self.whirlpool,
-                &position_summary,
-                &whirlpools,
-                &positions,
-                liquidity_amount,
-                1, // TODO: account for slippage correctly
-                1,
-            ))];
+        let ixns = vec![
+            self.account
+                .builder
+                .accounting_invoke(self.builder.margin_refresh_position(
+                    self.account.address,
+                    &whirlpools,
+                    &positions,
+                )),
+            self.account
+                .builder
+                .adapter_invoke(self.builder.remove_liquidity(
+                    self.account.address,
+                    &self.whirlpool,
+                    &position_summary,
+                    liquidity_amount,
+                    1, // TODO: account for slippage correctly
+                    1,
+                )),
+        ];
 
         // Small enough to not need lookup tables
         self.client.send(&ixns).await

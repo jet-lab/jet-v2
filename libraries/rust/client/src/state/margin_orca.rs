@@ -62,7 +62,7 @@ impl UserState {
 
         for detail in self.metadata.positions() {
             whirlpools.insert(detail.whirlpool);
-            positions.insert(detail.position);
+            positions.insert(detail.address);
         }
 
         (whirlpools, positions)
@@ -171,7 +171,7 @@ async fn sync_user_whirlpool_positions(states: &AccountStates) -> ClientResult<(
     let position_addresses =
         HashSet::<Pubkey>::from_iter(user_states.iter().flat_map(|(_, state)| {
             let metadata: &PositionMetadata = state.deref();
-            metadata.positions().into_iter().map(|p| p.position)
+            metadata.positions().into_iter().map(|p| p.address)
         }))
         .into_iter()
         .collect::<Vec<_>>();
@@ -198,10 +198,8 @@ async fn sync_user_whirlpool_positions(states: &AccountStates) -> ClientResult<(
             .expect("No config");
 
         for detail in metadata.positions() {
-            if let Some(position) = positions.get(&detail.position) {
-                new_state
-                    .positions
-                    .insert(detail.position, position.clone());
+            if let Some(position) = positions.get(&detail.address) {
+                new_state.positions.insert(detail.address, position.clone());
             }
         }
         // TODO: should we filter them for pools a user explicitly interacts with?

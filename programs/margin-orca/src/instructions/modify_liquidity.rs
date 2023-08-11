@@ -35,9 +35,10 @@ pub struct ModifyLiquidity<'info> {
     #[account(mut, has_one = owner, has_one = whirlpool_config)]
     pub adapter_position_metadata: Box<Account<'info, PositionMetadata>>,
 
-    /// CHECK: Will be validated by Orca
     #[account(mut)]
-    pub position: UncheckedAccount<'info>,
+    pub position: Box<Account<'info, orca_whirlpool::state::Position>>,
+
+    /// CHECK: Will be validated by Orca
     pub position_token_account: UncheckedAccount<'info>,
 
     /// CHECK: Will be validated by Orca
@@ -56,14 +57,6 @@ pub struct ModifyLiquidity<'info> {
     #[account(mut)]
     pub token_vault_b: UncheckedAccount<'info>,
 
-    /// The pyth price account for the position's token A
-    /// CHECK:
-    pub token_a_oracle: AccountInfo<'info>,
-
-    /// The pyth price account for the position's token B
-    /// CHECK:
-    pub token_b_oracle: AccountInfo<'info>,
-
     /// CHECK: Will be validated by Orca
     #[account(mut)]
     pub tick_array_lower: UncheckedAccount<'info>,
@@ -74,7 +67,6 @@ pub struct ModifyLiquidity<'info> {
 
     pub orca_program: Program<'info, Whirlpool>,
     pub token_program: Program<'info, Token>,
-    // Whirlpools and positions are passed in as remaining_accounts
 }
 
 impl<'info> ModifyLiquidity<'info> {
@@ -158,22 +150,26 @@ pub fn modify_liquidity_handler<'info>(
             .decrease_liquidity(liquidity_amount, token_max_a, token_max_b)?;
     }
 
-    // Tell margin how position has changed by refreshing all positions
-    // TODO: validate the addresses
-    let mut refresh_context = MarginRefreshPosition {
-        owner: ctx.accounts.owner.clone(),
-        whirlpool_config: ctx.accounts.whirlpool_config.clone(),
-        adapter_position_metadata: ctx.accounts.adapter_position_metadata.clone(),
-        token_a_oracle: ctx.accounts.token_a_oracle.clone(),
-        token_b_oracle: ctx.accounts.token_b_oracle.clone(),
-    };
-    let context = Context::new(
-        ctx.program_id,
-        &mut refresh_context,
-        ctx.remaining_accounts,
-        ctx.bumps,
-    );
-    super::margin_refresh_position_handler(context)?;
+    let timestamp = Clock::get()?.unix_timestamp;
+
+    let position = &mut ctx.accounts.position;
+    let whirlpool = &mut ctx.accounts.whirlpool;
+    position.reload()?;
+    whirlpool.reload()?;
+
+    // Update the cache with the whirlpool and its position
+    ctx.accounts
+        .adapter_position_metadata
+        .update_whirlpool_prices(&whirlpool, timestamp);
+
+    ctx.accounts
+        .adapter_position_metadata
+        .update_position(&position)?;
+
+    // Tell the margin program what the current prices are
+    ctx.accounts
+        .adapter_position_metadata
+        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)?;
 
     Ok(())
 }

@@ -140,7 +140,10 @@ pub fn close_whirlpool_position_handler<'info>(
         ctx.accounts.burn_margin_position_note()?;
     }
 
-    // TODO: do we need to update margin?
+    // Tell the margin program what the current prices are
+    ctx.accounts
+        .adapter_position_metadata
+        .update_position_balance(&*ctx.accounts.owner.load()?, &ctx.accounts.whirlpool_config)?;
 
     Ok(())
 }

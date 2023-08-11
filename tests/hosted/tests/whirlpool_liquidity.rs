@@ -137,6 +137,9 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
 
     // Register a margin position
     orca_client.register_margin_position().await?;
+    // TODO: the client library has some papercuts. We should refresh the state internally after
+    // every transaction that updates it.
+    refresh_state(&user_account).await?;
 
     // Register positions in the whirlpool
     // Provide liquidity between 20.1147 and 23.9087
@@ -171,6 +174,7 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     // The position should have been added, and should have a balance and value
     assert_eq!(margin_position.balance, 1);
     let position_value = margin_position.value().as_f64();
+    dbg!(position_value);
     assert!(position_value > 900.0);
     assert!(position_value <= 1000.0);
 
@@ -210,6 +214,7 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
 
     // Can't close the margin position if there's still a whirlpool position
     assert!(orca_client.close_position_meta().await.is_err());
+    refresh_state(&user_account).await?;
 
     // Add another position, test that its valuation is correct
     let liquidity_amount_tsol = tsol.amount(100.0 / 22.0);
@@ -246,6 +251,7 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     orca_client
         .close_whirlpool_position(position.position_mint)
         .await?;
+    refresh_state(&user_account).await?;
     orca_client
         .close_whirlpool_position(position2.position_mint)
         .await?;

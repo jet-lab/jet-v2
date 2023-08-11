@@ -914,14 +914,11 @@ impl MarginTxBuilder {
     }
 
     /// Increase liquidity in an Orca Whirlpool position owned by the margin account
-    #[allow(clippy::too_many_arguments)]
     pub fn orca_add_liquidity(
         &self,
         builder: &MarginOrcaIxBuilder,
         whirlpool_summary: &WhirlpoolSummary,
         position_summary: &WhirlpoolPositionSummary,
-        whirlpools: &HashSet<Pubkey>,
-        positions: &HashSet<Pubkey>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
@@ -930,8 +927,6 @@ impl MarginTxBuilder {
             *self.address(),
             whirlpool_summary,
             position_summary,
-            whirlpools,
-            positions,
             liquidity_amount,
             token_max_a,
             token_max_b,
@@ -941,14 +936,11 @@ impl MarginTxBuilder {
     }
 
     /// Decrease liquidity in an Orca Whirlpool position owned by the margin account
-    #[allow(clippy::too_many_arguments)]
     pub fn orca_remove_liquidity(
         &self,
         builder: &MarginOrcaIxBuilder,
         whirlpool_summary: &WhirlpoolSummary,
         position_summary: &WhirlpoolPositionSummary,
-        whirlpools: &HashSet<Pubkey>,
-        positions: &HashSet<Pubkey>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
@@ -957,8 +949,6 @@ impl MarginTxBuilder {
             *self.address(),
             whirlpool_summary,
             position_summary,
-            whirlpools,
-            positions,
             liquidity_amount,
             token_max_a,
             token_max_b,
