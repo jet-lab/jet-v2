@@ -353,13 +353,46 @@ impl MarginAccountOrcaClient {
         self.account.send_with_refresh(&ixns).await
     }
 
-    pub async fn collect_reward(&self) -> ClientResult<()> {
+    pub async fn collect_fees(
+        &self,
+        position_summary: &WhirlpoolPositionSummary,
+    ) -> ClientResult<()> {
         let ixns = vec![self
             .account
             .builder
-            .adapter_invoke(self.builder.collect_reward(self.account.address))];
+            .adapter_invoke(self.builder.collect_fees(
+                self.account.address,
+                &self.whirlpool,
+                position_summary,
+            ))];
 
-        // Small enough to not need lookup tables
+        // TODO: add lookup tables
+        self.account.send_with_refresh(&ixns).await
+    }
+
+    pub async fn collect_rewards(
+        &self,
+        position_summary: &WhirlpoolPositionSummary,
+    ) -> ClientResult<()> {
+        let mut ixns = vec![];
+
+        for (index, reward) in self.whirlpool.rewards.iter().enumerate() {
+            if reward.mint != Pubkey::default() {
+                ixns.push(
+                    self.account
+                        .builder
+                        .adapter_invoke(self.builder.collect_reward(
+                            self.account.address,
+                            &self.whirlpool,
+                            position_summary,
+                            reward,
+                            index as u8,
+                        )),
+                );
+            }
+        }
+
+        // TODO: add lookup tables
         self.account.send_with_refresh(&ixns).await
     }
 

@@ -285,7 +285,6 @@ impl PositionMetadata {
                 .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
 
             // Add fees (not yet rewards)
-            // TODO: there should be an adapter_invoke that calls orca::update_fees_and_rewards for each position
             token_a = token_a
                 .checked_add(position_details.fee_owed_a)
                 .ok_or(MarginOrcaErrorCode::ArithmeticError)?;

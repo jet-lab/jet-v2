@@ -29,7 +29,6 @@ pub struct ModifyLiquidity<'info> {
     #[account(mut)]
     pub whirlpool: Box<Account<'info, orca_whirlpool::state::Whirlpool>>,
 
-    #[account(mut)]
     pub whirlpool_config: Box<Account<'info, WhirlpoolConfig>>,
 
     #[account(mut, has_one = owner, has_one = whirlpool_config)]

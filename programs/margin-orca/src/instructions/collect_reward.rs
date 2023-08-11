@@ -22,10 +22,11 @@ use crate::*;
 
 #[derive(Accounts)]
 pub struct CollectReward<'info> {
+    #[account(signer)]
+    pub owner: AccountLoader<'info, MarginAccount>,
+
     /// CHECK: will be validated by orca
     pub whirlpool: UncheckedAccount<'info>,
-
-    pub position_authority: Signer<'info>,
 
     /// CHECK: will be validated by orca
     #[account(mut)]
@@ -59,7 +60,7 @@ impl<'info> CollectReward<'info> {
                     position_token_account: self.position_token_account.to_account_info(),
                     whirlpool: self.whirlpool.to_account_info(),
                     token_program: self.token_program.to_account_info(),
-                    position_authority: self.position_authority.to_account_info(),
+                    position_authority: self.owner.to_account_info(),
                     reward_owner_account: self.reward_owner_account.to_account_info(),
                     reward_vault: self.reward_vault.to_account_info(),
                 },
@@ -71,12 +72,13 @@ impl<'info> CollectReward<'info> {
     }
 }
 
+/// Collect rewards into a token account owned by the margin account.
+/// The rewards are not deposited into any pool as the reward token might not have
+/// such a pool. The caller of this instruction can thus deposit in a separate instruction.
 pub fn collect_reward_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CollectReward<'info>>,
     reward_index: u8,
 ) -> Result<()> {
-    // TODO: do we want to deposit any supported tokens into a pool?
-
     ctx.accounts.collect_reward(reward_index)?;
 
     Ok(())

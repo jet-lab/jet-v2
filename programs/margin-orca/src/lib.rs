@@ -107,6 +107,10 @@ mod jet_margin_orca {
         collect_reward_handler(ctx, reward_index)
     }
 
+    pub fn collect_fees<'info>(ctx: Context<'_, '_, '_, 'info, CollectFees<'info>>) -> Result<()> {
+        collect_fees_handler(ctx)
+    }
+
     pub fn margin_refresh_position<'info>(
         ctx: Context<'_, '_, '_, 'info, MarginRefreshPosition<'info>>,
     ) -> Result<()> {

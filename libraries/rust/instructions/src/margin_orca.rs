@@ -3,7 +3,7 @@ use std::{collections::HashSet, time::SystemTime};
 use anchor_lang::{prelude::Id, system_program::System, InstructionData, ToAccountMetas};
 use orca_whirlpool::{
     math::sqrt_price_from_tick_index,
-    state::{OpenPositionBumps, Position as WhirlpoolPosition},
+    state::{OpenPositionBumps, Position as WhirlpoolPosition, WhirlpoolRewardInfo},
 };
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -400,32 +400,73 @@ impl MarginOrcaIxBuilder {
         }
     }
 
+    // Collect fees
+    pub fn collect_fees(
+        &self,
+        margin_account: Pubkey,
+        pool_summary: &WhirlpoolSummary,
+        position_summary: &WhirlpoolPositionSummary,
+    ) -> Instruction {
+        let adapter_position_metadata =
+            derive::derive_adapter_position_metadata(&margin_account, &self.address);
+        let position_token_account =
+            get_associated_token_address(&margin_account, &position_summary.position_mint);
+        let token_owner_a = get_associated_token_address(&margin_account, &self.token_a);
+        let token_owner_b = get_associated_token_address(&margin_account, &self.token_b);
+
+        let accounts = ix_accounts::CollectFees {
+            owner: margin_account,
+            adapter_position_metadata,
+            whirlpool: position_summary.whirlpool,
+            whirlpool_config: self.address,
+            position: position_summary.position,
+            position_token_account,
+            token_owner_account_a: token_owner_a,
+            token_owner_account_b: token_owner_b,
+            token_vault_a: pool_summary.vault_a,
+            token_vault_b: pool_summary.vault_b,
+            orca_program: orca_whirlpool::ID,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: MARGIN_ORCA_PROGRAM,
+            accounts,
+            data: ix_data::CollectFees {}.data(),
+        }
+    }
+
     // Collect reward
-    pub fn collect_reward(&self, margin_account: Pubkey) -> Instruction {
-        unimplemented!("TODO {margin_account}");
-        // let adapter_position_metadata =
-        //     derive::derive_adapter_position_metadata(&margin_account, &self.address);
+    pub fn collect_reward(
+        &self,
+        margin_account: Pubkey,
+        pool_summary: &WhirlpoolSummary,
+        position_summary: &WhirlpoolPositionSummary,
+        reward: &WhirlpoolRewardInfo,
+        reward_index: u8,
+    ) -> Instruction {
+        let position_token_account =
+            get_associated_token_address(&margin_account, &position_summary.position_mint);
+        let reward_owner_account = get_associated_token_address(&margin_account, &reward.mint);
 
-        // let accounts = ix_accounts::CollectReward {
-        //     whirlpool: todo!(),
-        //     position_authority: todo!(),
-        //     position: todo!(),
-        //     position_token_account: todo!(),
-        //     reward_owner_account: margin_account,
-        //     reward_vault: todo!(),
-        //     orca_program: orca_whirlpool::ID,
-        //     token_program: spl_token::ID,
-        // }
-        // .to_account_metas(None);
+        let accounts = ix_accounts::CollectReward {
+            whirlpool: pool_summary.address,
+            owner: margin_account,
+            position: position_summary.position,
+            position_token_account,
+            reward_owner_account,
+            reward_vault: reward.vault,
+            orca_program: orca_whirlpool::ID,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
 
-        // Instruction {
-        //     program_id: MARGIN_ORCA_PROGRAM,
-        //     accounts,
-        //     data: ix_data::CollectReward {
-        //         reward_index: todo!(),
-        //     }
-        //     .data(),
-        // }
+        Instruction {
+            program_id: MARGIN_ORCA_PROGRAM,
+            accounts,
+            data: ix_data::CollectReward { reward_index }.data(),
+        }
     }
 }
 
@@ -440,7 +481,7 @@ pub struct WhirlpoolSummary {
     pub current_tick_index: i32,
     /// The current sqrt price, should be updated regularly
     pub current_sqrt_price: u128,
-    // TODO: reward info
+    pub rewards: [orca_whirlpool::state::WhirlpoolRewardInfo; orca_whirlpool::state::NUM_REWARDS],
 }
 
 impl From<(Pubkey, &Whirlpool)> for WhirlpoolSummary {
@@ -453,6 +494,7 @@ impl From<(Pubkey, &Whirlpool)> for WhirlpoolSummary {
             tick_spacing: pool.tick_spacing,
             current_tick_index: pool.tick_current_index,
             current_sqrt_price: pool.sqrt_price,
+            rewards: pool.reward_infos,
         }
     }
 }

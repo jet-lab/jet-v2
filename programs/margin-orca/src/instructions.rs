@@ -17,6 +17,7 @@
 
 mod close_position;
 mod close_position_meta;
+mod collect_fees;
 mod collect_reward;
 mod create_whirlpool_config;
 mod margin_refresh_position;
@@ -26,6 +27,7 @@ mod register_position_meta;
 
 pub use close_position::*;
 pub use close_position_meta::*;
+pub use collect_fees::*;
 pub use collect_reward::*;
 pub use create_whirlpool_config::*;
 pub use margin_refresh_position::*;

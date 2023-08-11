@@ -244,9 +244,17 @@ async fn whirlpool_liquidity_workflow() -> anyhow::Result<()> {
     assert!(margin_position.value().as_f64() >= 550.0);
     assert!(margin_position.value().as_f64() < 600.0);
 
+    // Collect fees and rewards before closing position.
+    // This has no effect on the balance as there are currently no fees earned
+    orca_client.collect_fees(&position).await?;
+    orca_client.collect_fees(&position2).await?;
+    orca_client.collect_rewards(&position).await?;
+    orca_client.collect_rewards(&position2).await?;
+
     // Remove liquidity from both positions
     orca_client.remove_all_liquidity(&position).await?;
     orca_client.remove_all_liquidity(&position2).await?;
+
     orca_client
         .close_whirlpool_position(position.position_mint)
         .await?;
