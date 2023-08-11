@@ -90,11 +90,6 @@ export const Geobanned = selector<GeobanOutput>({
       return { banned: true, countryCode };
     }
 
-    if (Object.values(data.security).some(v => v)) {
-      // is masking traffic
-      return { banned: true, countryCode };
-    }
-
     return { banned: false, countryCode };
   }
 });
@@ -118,7 +113,8 @@ export const geoBannedCountries = [
     code: 'AF'
   },
   {
-    country: 'Crimea (Ukraine)',
+    // can't differentiate between Ukraine and Crimea
+    country: 'Ukraine',
     code: 'UA'
   },
   {
@@ -146,10 +142,6 @@ export const geoBannedCountries = [
     code: 'KP'
   },
   {
-    country: 'Russia',
-    code: 'RU'
-  },
-  {
     country: 'Sudan',
     code: 'SD'
   },
@@ -160,14 +152,6 @@ export const geoBannedCountries = [
   {
     country: 'Tajikistan',
     code: 'TJ'
-  },
-  {
-    country: 'Ukraine',
-    code: 'UA'
-  },
-  {
-    country: 'United States',
-    code: 'US'
   },
   {
     country: 'Venezuela',
