@@ -11,6 +11,7 @@ use jet_program_common::{
 };
 use orca_whirlpool::{
     manager::liquidity_manager::calculate_liquidity_token_deltas,
+    math::sqrt_price_from_tick_index,
     state::{Position as WhirlpoolPosition, Whirlpool},
 };
 
@@ -89,7 +90,9 @@ pub struct PositionDetails {
     pub address: Pubkey,
     pub whirlpool: Pubkey,
     pub liquidity: u128,
-    /// The current sqrt price from the whirlpool
+    /// The current sqrt price from the whirlpool.
+    /// RISK: we do not currently use this, perhaps we can use it to compare
+    /// against the oracle price.
     pub current_sqrt_price: u128,
     /// The current tick index from the whirlpool
     pub tick_index_current: i32,
@@ -98,6 +101,7 @@ pub struct PositionDetails {
     pub last_refresh: i64,
     pub fee_owed_a: u64,
     pub fee_owed_b: u64,
+    // TODO: more info, any flags?
 }
 
 impl PositionMetadata {
@@ -237,7 +241,6 @@ impl PositionMetadata {
 
         // CHECK: This relies on the margin program verifying oracle staleness.
         // We return the date of the oldest oracle in the pair.
-        // TODO: Ensure that this condition is met
         let price_a = token_a_oracle.get_price_unchecked();
         let price_b = token_b_oracle.get_price_unchecked();
 
@@ -251,10 +254,25 @@ impl PositionMetadata {
 
     /// Value the overall position in the context of tokens that the user would
     /// receive if they were to withdraw all their liquidity.
-    // Q: any better option than a hashmap?
-    pub fn position_token_balances(&self) -> Result<(u64, u64)> {
+    /// The calculation is based on the latest oracle prices.
+    pub fn position_token_balances(
+        &self,
+        whirlpool_config: &WhirlpoolConfig,
+    ) -> Result<(u64, u64)> {
         let mut token_a = 0u64;
         let mut token_b = 0u64;
+
+        // Get the oracle price and use that for pricing the position.
+        // Using the price removes the dependency on the whirlpool's price, as that has a
+        // lower probability of being updated as quickly as the oracle (esp in low volume pools).
+        // If the user is withdrawing from the pool, we do not invoke this function,
+        // and this is handled by the whirlpool. If there indeed is a significant difference between the
+        // oracle and the pool, and that difference has not been arbitraged, it does not concern
+        // our position(s), as the user could arb the difference themselves by taking an action
+        // directly against the whirlpool.
+        // We are here concerned with a user inflating their position's collateral weight, and using
+        // that to exploit the rest of the protocol.
+        let (oracle_tick_index, oracle_sqrt_price) = self.oracle_price(whirlpool_config)?;
 
         for position_details in self.positions() {
             // If a position has no liquidity, skip it
@@ -272,8 +290,8 @@ impl PositionMetadata {
                 ..Default::default()
             };
             let (a, b) = calculate_liquidity_token_deltas(
-                position_details.tick_index_current,
-                position_details.current_sqrt_price,
+                oracle_tick_index,
+                oracle_sqrt_price,
                 &position,
                 -liquidity_delta,
             )?;
@@ -284,7 +302,7 @@ impl PositionMetadata {
                 .checked_add(b)
                 .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
 
-            // Add fees (not yet rewards)
+            // Add fees
             token_a = token_a
                 .checked_add(position_details.fee_owed_a)
                 .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
@@ -306,8 +324,7 @@ impl PositionMetadata {
         let position_update_times = self.positions().into_iter().map(|p| p.last_refresh).min();
         let earliest_refresh = publish_time.min(position_update_times.unwrap_or(publish_time));
 
-        // TODO: as part of this we still have to find the correct minimum collateral value
-        let (token_balance_a, token_balance_b) = self.position_token_balances()?;
+        let (token_balance_a, token_balance_b) = self.position_token_balances(whirlpool_config)?;
 
         // Calculate the weighted value of both tokens
         let balance_a =
@@ -339,5 +356,24 @@ impl PositionMetadata {
                 )],
             },
         )
+    }
+
+    fn oracle_price(&self, whirlpool_config: &WhirlpoolConfig) -> Result<(i32, u128)> {
+        let price_a = Number128::from_bits(self.price_a);
+        let price_b = Number128::from_bits(self.price_b);
+
+        let pair_price = price_a
+            .safe_div(price_b)?
+            .safe_mul(Number128::ONE)?
+            .as_f64();
+
+        // In a SOL/USDC pair where SOL decimals = 9 and USDC = 6, expo = 0.001;
+        let expo = 10f64.powi(
+            whirlpool_config.mint_b_decimals as i32 - whirlpool_config.mint_a_decimals as i32,
+        );
+        // Get the pool's current tick index based on the oracle price.
+        let tick_index = f64::log(pair_price * expo, 1.0001).round() as i32;
+
+        Ok((tick_index, sqrt_price_from_tick_index(tick_index)))
     }
 }

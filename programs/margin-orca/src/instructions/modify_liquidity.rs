@@ -22,7 +22,6 @@ use crate::*;
 
 #[derive(Accounts)]
 pub struct ModifyLiquidity<'info> {
-    // Q: Is it fine to use an opaque Signer<'> instead?
     #[account(signer)]
     pub owner: AccountLoader<'info, MarginAccount>,
 

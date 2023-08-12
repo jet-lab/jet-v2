@@ -59,13 +59,6 @@ mod jet_margin_orca {
         create_whirlpool_config_handler(ctx)
     }
 
-    // Collect reward: https://explorer.solana.com/tx/2gQd6mPTZfaKLQiexPQf2bEobkupqii9xReoYRJbVdeYqiXiUtdkt4WEQ39UM2QrgUeZhDX5bn7JbVJWx7ncEgrT?cluster=mainnet-beta
-    // Close position
-    // Close bundled position?
-    // Decrease liquidity
-    // Open position: https://explorer.solana.com/tx/5dUnLAdzYYgeTbqw5H2ieVpdEFrVWxXFwKPiX7UY3Wk7nJvm7yqEg4rYfEhSfqT5RwSMndYrKGMzvkg4HmvdEDE2?cluster=mainnet-beta
-    // Increate liquidity: https://explorer.solana.com/tx/5HZGVjnRKohd4uXiT1h14WSNztVgMs5iaRnkmDiM8dzRmM9WajbMMiuLLik447vhwbYNyvuyxNzZtaBoqjXKUFeS?cluster=mainnet-beta
-
     pub fn open_whirlpool_position<'info>(
         ctx: Context<'_, '_, '_, 'info, OpenWhirlpoolPosition<'info>>,
         bumps: OpenPositionBumps,

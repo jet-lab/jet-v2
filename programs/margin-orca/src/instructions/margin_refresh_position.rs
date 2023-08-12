@@ -23,9 +23,6 @@ use orca_whirlpool::state::Position;
 use crate::*;
 
 pub const POSITION_VALUE_EXPO: i32 = -8;
-/// The percentage tolerance for the price of a whirlpool to be considered valid.
-/// The percentage is in units, such that 1 = 1%.
-pub const _PRICE_TICK_TOLERANCE: i32 = 3;
 
 #[derive(Accounts)]
 pub struct MarginRefreshPosition<'info> {
@@ -71,25 +68,6 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
     let timestamp = clock.unix_timestamp;
 
     let total_whirlpools = ctx.accounts.adapter_position_metadata.total_whirlpools();
-
-    // let pair_price = price_a_num
-    //     .safe_div(price_b_num)?
-    //     .safe_mul(Number128::ONE)?
-    //     .as_f64();
-
-    // dbg!((pair_price, price_a_num, price_b_num));
-
-    // // In a SOL/USDC pair where SOL decimals = 9 and USDC = 6, expo = 0.001;
-    // let expo = 10f64.powi(info.mint_b_decimals as i32 - info.mint_a_decimals as i32);
-    // // Get the approximate tick index which the whirlpool prices should be within to be considered valid.
-    // // If the price is too far from this tick index, the whirlpool's positions will carry a 0 value
-    // // until the price stabilises. The user should still be able to close their position by withdrawing
-    // // tokens, provided that their margin account remains healthy after the withdrawal.
-    // let approx_tick_index = f64::log(pair_price * expo, 1.0001).round() as i32;
-    // let (min_tick_index, max_tick_index) = (
-    //     approx_tick_index * (100 - PRICE_TICK_TOLERANCE) / 100,
-    //     approx_tick_index * (100 + PRICE_TICK_TOLERANCE) / 100,
-    // );
 
     let mut remaining_accounts = ctx.remaining_accounts.iter();
     // Update whirlpool prices
