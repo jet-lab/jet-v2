@@ -279,6 +279,12 @@ impl PositionMetadata {
             if position_details.liquidity == 0 {
                 continue;
             }
+            // Calculate the number of entitled tokens under 3 scenarios:
+            // 1. The current oracle price
+            // 2. The lower tick index
+            // 3. The upper tick index
+            // After calculating the tokens, find the tokens such that the position's USD value is lowest.
+
             let liquidity_delta = TryInto::<i128>::try_into(position_details.liquidity)
                 .map_err(|_| MarginOrcaErrorCode::ArithmeticError)?;
             // Reconstruct a whirlpool position with the bare info required
@@ -289,12 +295,45 @@ impl PositionMetadata {
                 tick_upper_index: position_details.tick_index_upper,
                 ..Default::default()
             };
-            let (a, b) = calculate_liquidity_token_deltas(
+
+            let lower_sqrt_price = sqrt_price_from_tick_index(position_details.tick_index_lower);
+            let upper_sqrt_price = sqrt_price_from_tick_index(position_details.tick_index_upper);
+
+            // First at the oracle price
+            let (mut a, mut b, mut c) = self.position_min_value(
+                &position,
+                whirlpool_config,
                 oracle_tick_index,
                 oracle_sqrt_price,
-                &position,
                 -liquidity_delta,
             )?;
+            // Then at the lower tick index
+            let lower = self.position_min_value(
+                &position,
+                whirlpool_config,
+                position_details.tick_index_lower,
+                lower_sqrt_price,
+                -liquidity_delta,
+            )?;
+            if lower.2 < c {
+                a = lower.0;
+                b = lower.1;
+                c = lower.2;
+            }
+            // Then at the upper tick index
+            let upper = self.position_min_value(
+                &position,
+                whirlpool_config,
+                position_details.tick_index_upper,
+                upper_sqrt_price,
+                -liquidity_delta,
+            )?;
+            if upper.2 < c {
+                a = upper.0;
+                b = upper.1;
+            }
+
+            // Add the worst valuation tokens to the total
             token_a = token_a
                 .checked_add(a)
                 .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
@@ -302,7 +341,7 @@ impl PositionMetadata {
                 .checked_add(b)
                 .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
 
-            // Add fees
+            // Add fees at their currently accrued tokens
             token_a = token_a
                 .checked_add(position_details.fee_owed_a)
                 .ok_or(MarginOrcaErrorCode::ArithmeticError)?;
@@ -375,5 +414,36 @@ impl PositionMetadata {
         let tick_index = f64::log(pair_price * expo, 1.0001).round() as i32;
 
         Ok((tick_index, sqrt_price_from_tick_index(tick_index)))
+    }
+
+    fn position_min_value(
+        &self,
+        position: &WhirlpoolPosition,
+        whirlpool_config: &WhirlpoolConfig,
+        current_tick_index: i32,
+        current_sqrt_price: u128,
+        liquidity_delta: i128,
+    ) -> Result<(u64, u64, u64)> {
+        let (tokens_a, tokens_b) = calculate_liquidity_token_deltas(
+            current_tick_index,
+            current_sqrt_price,
+            position,
+            -liquidity_delta,
+        )?;
+
+        let a = Number128::from_decimal(tokens_a, -(whirlpool_config.mint_a_decimals as i32));
+        let b = Number128::from_decimal(tokens_b, -(whirlpool_config.mint_b_decimals as i32));
+
+        let value_a = a
+            .safe_mul(Number128::from_bits(self.price_a))?
+            .safe_div(Number128::ONE)?;
+        let value_b = b
+            .safe_mul(Number128::from_bits(self.price_b))?
+            .safe_div(Number128::ONE)?;
+
+        let total_value = value_a + value_b;
+        let value = total_value.as_u64(POSITION_VALUE_EXPO);
+
+        Ok((tokens_a, tokens_b, value))
     }
 }
