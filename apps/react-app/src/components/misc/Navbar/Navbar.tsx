@@ -1,5 +1,6 @@
 import { useRecoilState } from 'recoil';
 import { TpsBanner } from '../TpsBanner';
+import { Banner } from '../Banner';
 import { WalletButton } from '../WalletButton';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
@@ -12,31 +13,42 @@ export function Navbar(): JSX.Element {
   const [drawerOpen, setDrawerOpen] = useRecoilState(NavDrawerOpen);
   return (
     <div className={`navbar-container flex-centered column ${drawerOpen ? 'drawer-open' : ''}`}>
+      <Banner
+        message={
+          <p>
+            Liquidity Mining for Fixed Term is Live.{' '}
+            <u>
+              <a href="https://forum.jetprotocol.io/t/j-dap-liquidity-incentive-program/1375"> Visit forum</a>
+            </u>{' '}
+            for more detail.
+          </p>
+        }
+      />
       <TpsBanner />
       {/* Desktop Nav */}
-      <nav className="desktop flex align-center justify-between">
-        <div className="nav-section flex align-center justify-start">
+      <nav className="desktop align-center flex justify-between">
+        <div className="nav-section align-center flex justify-start">
           <NavLogo />
         </div>
         <div className="nav-section flex-centered">
           <NavLinks />
         </div>
-        <div className="nav-section flex align-center justify-end">
+        <div className="nav-section align-center flex justify-end">
           <NavButtons showWalletButton />
         </div>
       </nav>
       {/* Mobile Nav */}
-      <nav className="mobile flex align-center justify-between">
+      <nav className="mobile align-center flex justify-between">
         <NavButtons />
         <NavLogo />
         <div
-          className={`hamburger flex align-center justify-between column ${drawerOpen ? 'close' : ''}`}
+          className={`hamburger align-center column flex justify-between ${drawerOpen ? 'close' : ''}`}
           onClick={() => setDrawerOpen(!drawerOpen)}>
           <span></span>
           <span></span>
           <span></span>
         </div>
-        <div className="drawer flex align-center justify-between column">
+        <div className="drawer align-center column flex justify-between">
           <div className="drawer-top flex-centered column">
             <NavLinks />
             <WalletButton mobile />
