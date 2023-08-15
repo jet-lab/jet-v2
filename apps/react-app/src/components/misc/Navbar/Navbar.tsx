@@ -18,7 +18,7 @@ export function Navbar(): JSX.Element {
           <p>
             Liquidity Mining for Fixed Term is Live.{' '}
             <u>
-              <a href="https://forum.jetprotocol.io/t/j-dap-liquidity-incentive-program/1375"> Visit forum</a>
+              <a href="https://forum.jetprotocol.io/t/j-dap-liquidity-incentive-program/1375" target="_blank"> Visit the forum</a>
             </u>{' '}
             for more detail.
           </p>
