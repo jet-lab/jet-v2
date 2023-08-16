@@ -1326,7 +1326,9 @@ export class Pool {
       path: swapPaths,
       shift: changeKind.changeKind.isShiftBy(),
       input: changeKind.value.toNumber(),
-      minimum_out: minAmountOut.lamports.toNumber()
+      minimum_out: minAmountOut.lamports.toNumber(),
+      margin_pool_deposit_notes: true,
+      is_liquidation: false,
     })
 
     // If there are > 1 instructions, the first ones are setup instructions

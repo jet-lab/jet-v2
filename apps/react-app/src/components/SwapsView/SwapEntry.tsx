@@ -138,17 +138,27 @@ export function SwapEntry(): JSX.Element {
   }
   useEffect(getSlippageInput, [setSlippage, slippageInput]);
 
+  function clearValues() {
+    setSwapOutputTokens(TokenAmount.zero(0));
+    setMinOutAmount(TokenAmount.zero(0));
+    setSwapFeeUsd(0.0);
+  }
+
   // Get swap quote when token inputs change or on a timer
   useEffect(() => {
     if (!currentPool || !outputToken) {
+      clearValues();
       return;
     }
     // If the token input is 0, don't send a request
     if (tokenInputAmount.isZero()) {
+      // Clear the token output amount
+      clearValues();
       return;
     }
     async function getSwapTokenPrices() {
       if (!currentPool || !outputToken || !pools) {
+        clearValues();
         return;
       }
       try {
@@ -159,20 +169,17 @@ export function SwapEntry(): JSX.Element {
           tokenInputAmount
         );
         if (!routes) {
+          clearValues();
           return;
         }
         setSwapQuotes(routes);
         if (!routes.length) {
-          setSwapOutputTokens(TokenAmount.zero(0));
-          setMinOutAmount(TokenAmount.zero(0));
-          setSwapFeeUsd(0.0);
+          clearValues();
           return;
         }
         // TODO: assume that the user will take the cheapest route always
-        setSelectedSwapQuote(swapQuotes[0]);
-        const selectedQuote = swapQuotes[0];
-        console.log((selectedQuote.swaps[0][0] as any)?.program)
-        console.log(selectedQuote.tokens_out, outputToken.decimals)
+        setSelectedSwapQuote(routes[0]);
+        const selectedQuote = routes[0];
         setSwapOutputTokens(new TokenAmount(new BN(selectedQuote.tokens_out), outputToken.decimals));
         setMinOutAmount(
           new TokenAmount(new BN(Math.round(selectedQuote.tokens_out * (1 - slippage))), outputToken.decimals)
@@ -190,7 +197,6 @@ export function SwapEntry(): JSX.Element {
             totalFee += price * swapFee * Math.pow(10, decimals || -6);
           }
         }
-        console.log('swap fee', totalFee);
         setSwapFeeUsd(totalFee);
       } catch (err) {
         console.error(err);
