@@ -8,7 +8,9 @@ use orca_whirlpool::{
     state::Position as WhirlpoolPosition,
 };
 use rust_decimal::{prelude::*, Decimal, MathematicalOps};
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
+use solana_sdk::{
+    compute_budget::ComputeBudgetInstruction, instruction::Instruction, pubkey::Pubkey,
+};
 
 use jet_instructions::{
     margin_orca::{derive, MarginOrcaIxBuilder},
@@ -223,6 +225,7 @@ impl MarginAccountOrcaClient {
 
         // Refresh before modifying liquidity
         let ixns = vec![
+            ComputeBudgetInstruction::set_compute_unit_limit(1_200_000),
             self.account
                 .builder
                 .accounting_invoke(self.builder.margin_refresh_position(
@@ -276,6 +279,7 @@ impl MarginAccountOrcaClient {
         let liquidity_amount = liquidity_amount.min(position_summary.liquidity);
 
         let ixns = vec![
+            ComputeBudgetInstruction::set_compute_unit_limit(1_200_000),
             self.account
                 .builder
                 .accounting_invoke(self.builder.margin_refresh_position(
@@ -312,6 +316,7 @@ impl MarginAccountOrcaClient {
         let liquidity_amount = position_summary.liquidity;
 
         let ixns = vec![
+            ComputeBudgetInstruction::set_compute_unit_limit(1_200_000),
             self.account
                 .builder
                 .accounting_invoke(self.builder.margin_refresh_position(
@@ -339,15 +344,16 @@ impl MarginAccountOrcaClient {
     pub async fn margin_refresh_position(&self) -> ClientResult<()> {
         let user_state = self.get_user_position_meta_state().unwrap();
         let (whirlpools, positions) = user_state.addresses_for_refresh();
-        let ixns =
-            vec![self
-                .account
+        let ixns = vec![
+            ComputeBudgetInstruction::set_compute_unit_limit(1_200_000),
+            self.account
                 .builder
                 .accounting_invoke(self.builder.margin_refresh_position(
                     self.account.address,
                     &whirlpools,
                     &positions,
-                ))];
+                )),
+        ];
 
         // Small enough to not need lookup tables
         self.account.send_with_refresh(&ixns).await
