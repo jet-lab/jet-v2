@@ -53,7 +53,7 @@ export function useMarginActions() {
   const setActionRefresh = useSetRecoilState(ActionRefresh);
   const swapEndpoint: string =
     (cluster === 'mainnet-beta'
-      ? ''
+      ? process.env.REACT_APP_SWAP_API
       : cluster === 'devnet'
         ? process.env.REACT_APP_DEV_SWAP_API
         : process.env.REACT_APP_LOCAL_SWAP_API) || '';
@@ -229,7 +229,9 @@ export function useMarginActions() {
   }
 
   // Withdraw
-  async function withdraw(): Promise<[string | undefined, ActionResponse]> {
+  async function withdraw(
+    lookupTables: LookupTable[]
+  ): Promise<[string | undefined, ActionResponse]> {
     if (!pools?.tokenPools || !currentPool || !walletTokens || !currentAccount || !accountPoolPosition) {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
@@ -248,6 +250,7 @@ export function useMarginActions() {
         pools: Object.values(pools.tokenPools),
         markets: markets.map(m => m.market),
         destination: token.address,
+        lookupTables,
         change
       });
       await actionRefresh();

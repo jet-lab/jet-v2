@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
 import { SwapEntry } from '@components/SwapsView/SwapEntry';
@@ -16,11 +15,9 @@ function SwapsView(): JSX.Element {
   const rowOrder = useRecoilValue(SwapsRowOrder);
   const networkState = useRecoilValue(NetworkStateAtom);
   const geoBanned = useRecoilValue(Geobanned);
-
   // Localize page title
-  useEffect(() => {
-    document.title = `${dictionary.swapsView.title} | Jet Protocol`;
-  }, [dictionary.swapsView.title]);
+  document.title = `${dictionary.swapsView.title} | Jet Protocol`;
+
   // Row of Swap Entry and Swaps Graph
 
   const rowComponents: Record<string, JSX.Element> = {

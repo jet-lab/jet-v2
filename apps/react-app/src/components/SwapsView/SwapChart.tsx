@@ -62,10 +62,10 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
   const { cluster, prices } = useJetStore(state => ({ cluster: state.settings.cluster, prices: state.prices }));
   const swapEndpoint: string =
     cluster === 'mainnet-beta'
-      ? ''
+      ? String(process.env.REACT_APP_SWAP_API)
       : cluster === 'devnet'
-      ? String(process.env.REACT_APP_DEV_SWAP_API)
-      : String(process.env.REACT_APP_LOCAL_SWAP_API);
+        ? String(process.env.REACT_APP_DEV_SWAP_API)
+        : String(process.env.REACT_APP_LOCAL_SWAP_API);
 
   const { data } = getSwapLiquidity(
     swapEndpoint,
@@ -80,6 +80,45 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
     const quote = prices[data.quote.mint].price;
     return base / quote;
   }, [data, prices]);
+
+  const [steppedBids, steppedAsks] = useMemo(() => {
+    let steppedBids: PriceLevel[] = [];
+    let steppedAsks: PriceLevel[] = []
+    if (!data) {
+      return [steppedBids, steppedAsks];
+    }
+    const totalBids = data.bids.length - 1;
+    data.bids.forEach((bid, i) => {
+      // Check if the value is worse than the previous, skip it if it is
+      if (i == 0) {
+        steppedBids.push(bid);
+        if (i < totalBids - 1) {
+          steppedBids.push([bid[0], data.bids[i + 1][1]])
+        }
+      } else if (i > 0 && steppedBids.length && bid[0] <= steppedBids[steppedBids.length - 1][0]) {
+        steppedBids.push(bid);
+        if (i < totalBids - 1) {
+          steppedBids.push([bid[0], data.bids[i + 1][1]])
+        }
+      }
+    })
+    const totalAsks = data.asks.length - 1;
+    data.asks.forEach((ask, i) => {
+      // Check if the value is worse than the previous, skip it if it is
+      if (i == 0) {
+        steppedAsks.push(ask);
+        if (i < totalAsks - 1) {
+          steppedAsks.push([ask[0], data.asks[i + 1][1]])
+        }
+      } else if (i > 0 && steppedAsks.length && ask[0] >= steppedAsks[steppedAsks.length - 1][0]) {
+        steppedAsks.push(ask);
+        if (i < totalAsks - 1) {
+          steppedAsks.push([ask[0], data.asks[i + 1][1]])
+        }
+      }
+    })
+    return [steppedBids, steppedAsks]
+  }, [data])
 
   return (
     <>
@@ -106,8 +145,8 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
           {({ height, width }) => (
             <DepthChart
               midPoint={oraclePrice}
-              bidsDescending={data.bids}
-              asksAscending={data.asks}
+              bidsDescending={steppedBids}
+              asksAscending={steppedAsks}
               asksColor="#e36868"
               bidsColor="#84c1ca"
               height={height}

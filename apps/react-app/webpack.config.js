@@ -28,7 +28,7 @@ module.exports = (_env, arg) => {
           REACT_APP_DEV_WS_API: process.env.REACT_APP_DEV_WS_API,
           REACT_APP_WS_API: process.env.REACT_APP_WS_API,
 
-          REACT_APP_DEV_SWAP_API: process.env.REACT_APP_SWAP_API,
+          REACT_APP_SWAP_API: process.env.REACT_APP_SWAP_API,
           REACT_APP_DEV_SWAP_API: process.env.REACT_APP_DEV_SWAP_API,
           REACT_APP_LOCAL_SWAP_API: process.env.REACT_APP_LOCAL_SWAP_API,
 

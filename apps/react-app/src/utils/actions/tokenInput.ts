@@ -143,6 +143,7 @@ export function useTokenInputWarningMessage(account?: MarginAccount | undefined)
   const projectedRiskIndicator = canProjectRisk
     ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
     : defaultRiskProjection;
+  const riskIndicator = marginAccount?.riskIndicator ?? 0;
 
   // If we should check for a risk level warning
   const checkForWarning =
@@ -152,8 +153,10 @@ export function useTokenInputWarningMessage(account?: MarginAccount | undefined)
     (marginAccount?.summary.borrowedValue || currentAction === 'borrow');
   let warningMessage = '';
   if (checkForWarning) {
-    // User's new Risk Level would be in liduidation territory (subject to market volatility)
+    // User's new Risk Level would be in liduidation territory (subject to market volatility).
+    // Only show the warning if the user's account was healthy before.
     if (
+      riskIndicator < MarginAccount.RISK_WARNING_LEVEL &&
       projectedRiskIndicator >= MarginAccount.RISK_WARNING_LEVEL &&
       projectedRiskIndicator <= MarginAccount.RISK_CRITICAL_LEVEL
     ) {
@@ -182,18 +185,19 @@ export function useTokenInputErrorMessage(account?: MarginAccount | undefined, p
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const projectedRiskIndicator =
     currentPool &&
-    currentAccount &&
-    currentAction &&
-    !(currentAction === 'swap' || currentAction === 'transfer') &&
-    !tokenInputAmount.isZero()
+      currentAccount &&
+      currentAction &&
+      !(currentAction === 'swap' || currentAction === 'transfer') &&
+      !tokenInputAmount.isZero()
       ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
       : currentAccount?.riskIndicator ?? 0;
   const risk = projectedRisk ?? projectedRiskIndicator;
+  const riskIndicator = marginAccount?.riskIndicator ?? 0;
 
   let errorMessage = '';
   if (marginAccount && !tokenInputAmount.isZero() && walletTokens) {
     // User's new Risk Level would be above our maximum
-    if (risk >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
+    if (riskIndicator < MarginAccount.RISK_LIQUIDATION_LEVEL && risk >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
       errorMessage = dictionary.actions.errorMessages.maxRiskLevel.replaceAll(
         '{{NEW_RISK}}',
         formatRiskIndicator(risk)

@@ -19,7 +19,7 @@ import { OKXWalletAdapter } from './wallets';
 
 const AccountsView = lazy(() => import('@views/AccountsView'));
 const PoolsView = lazy(() => import('@views/PoolsView'));
-// const SwapsView = lazy(() => import('@views/SwapsView'));
+const SwapsView = lazy(() => import('@views/SwapsView'));
 
 const StateSyncer = lazy(() => import('@state/StateSyncer'));
 const FixedLendView = lazy(() => import('@views/FixedLendView'));
@@ -54,14 +54,14 @@ export const App = (): JSX.Element => {
                 </Suspense>
               }
             />
-            {/* <Route
+            <Route
               path="/swaps"
               element={
                 <Suspense>
                   <SwapsView />
                 </Suspense>
               }
-            /> */}
+            />
             <Route
               path="/accounts"
               element={
