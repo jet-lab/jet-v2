@@ -33,7 +33,7 @@ export function TokenLogo(props: {
       return <BTC className="token-logo" height={height} width={height} style={style} />;
     case 'SRM':
       return <SRM className="token-logo" height={height} width={height} style={style} />;
-    case 'ETH':
+    case 'whETH':
       return <ETH className="token-logo" height={height} width={height} style={style} />;
     case 'USDT':
       return <USDT className="token-logo" height={height} width={height} style={style} />;

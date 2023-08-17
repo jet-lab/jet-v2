@@ -12,6 +12,7 @@ html {
 
 // App
 .jet-app {
+
   // Views
   .view {
     &-element {
@@ -214,6 +215,7 @@ html {
 
   // Token Input
   .token-input {
+
     // If there's a specified external value
     &.external-value {
       input {
@@ -547,7 +549,7 @@ html {
     .ant-modal-content {
       max-width: 335px;
     }
-    
+
     &-bullets {
       position: relative;
       width: calc(100% - (@spacing-sm * 2));
@@ -790,6 +792,7 @@ html {
     }
 
     .slippage-btns {
+
       .ant-radio-button-wrapper,
       .swap-slippage-input {
         padding-left: 0;
@@ -1125,9 +1128,10 @@ html {
     width: 100%;
   }
 
-  // Swap And Fixed View
+  // Fixed View
   .swaps-view,
   .fixed-term-view {
+
     // Order Entry, Orderbook and Trades Table
     .order-entry,
     .orderbook,
@@ -1224,7 +1228,7 @@ html {
               color: @jet-green;
             }
 
-            + .ant-tabs-tab {
+            +.ant-tabs-tab {
               &:hover {
                 color: @danger;
               }
@@ -1352,7 +1356,7 @@ html {
           }
         }
 
-        .ant-checkbox-wrapper + .ant-typography {
+        .ant-checkbox-wrapper+.ant-typography {
           text-align: left !important;
         }
 
@@ -1411,6 +1415,194 @@ html {
 
         text {
           fill: @secondary-5;
+        }
+      }
+    }
+  }
+
+  // Swaps View
+  .swaps-view {
+
+    // Order Entry
+    .order-entry {
+      &-footer {
+        width: 100%;
+        height: 75px;
+        padding: 0 @spacing-lg;
+      }
+    }
+
+    // Order entry
+    .order-entry {
+      height: 660px;
+      margin-right: 16px;
+
+      &-head {
+        height: 50px;
+
+        .ant-tabs {
+          width: 100%;
+          text-transform: uppercase;
+
+          &-tab {
+            width: 100%;
+            padding: @spacing-sm 0;
+            font-size: @btn-font-size;
+
+            &:hover {
+              color: @jet-green;
+            }
+
+            +.ant-tabs-tab {
+              &:hover {
+                color: @danger;
+              }
+            }
+          }
+        }
+      }
+
+      &-body {
+        width: 100%;
+        height: 525px;
+        padding: @spacing-lg;
+
+        &-section {
+          &-price {
+            width: 100%;
+
+            .tick-arrows {
+              .anticon {
+                color: @secondary-5;
+                margin: 1px @spacing-xs;
+                margin-right: -5px;
+                font-size: @btn-font-size;
+                transition: color @transition-duration ease;
+                cursor: pointer;
+
+                &:hover {
+                  color: @secondary;
+                }
+
+                &:active {
+                  color: @secondary-3;
+                }
+              }
+
+              &.disabled {
+                .anticon {
+                  cursor: not-allowed;
+
+                  &:hover,
+                  &:active {
+                    color: @secondary-5;
+                  }
+                }
+              }
+            }
+          }
+
+          &-type {
+            margin-left: @spacing-sm;
+
+            .ant-select {
+              text-transform: uppercase;
+            }
+          }
+
+          &-amount {
+            width: calc(50% - @spacing-xs);
+          }
+
+          &-info {
+            position: relative;
+            width: calc(100% - @spacing-xl);
+            padding: @spacing-xs @spacing-base;
+            border-radius: @border-radius;
+            background: @gradient;
+
+            &::before {
+              content: '';
+              position: absolute;
+              top: 1px;
+              left: 1px;
+              width: calc(100% - 2px);
+              height: calc(100% - 2px);
+              border-radius: calc(@border-radius - 1px);
+              background: @primary;
+            }
+
+            &-item {
+              width: 100%;
+              margin: @spacing-xs 0;
+              z-index: 1;
+
+              .ant-typography:last-of-type {
+                text-align: right;
+              }
+            }
+          }
+
+          .order-review,
+          .order-error {
+            width: 100%;
+            margin-top: 8px;
+            text-align: center;
+            transition: all @transition-duration ease;
+          }
+
+          .order-review {
+            color: @secondary-4;
+          }
+
+          .ant-slider {
+            width: calc(100% - @spacing-sm);
+            margin: @spacing-sm auto 0 auto;
+          }
+        }
+
+        .ant-select-selection-item {
+          font-size: @btn-font-size;
+        }
+
+        // Order input
+        .order-input {
+          position: relative;
+
+          .ant-typography {
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            padding-left: @spacing-xl;
+            color: @secondary-5;
+            line-height: @spacing-lg;
+            background: linear-gradient(90deg, transparent 0%, @primary 35%);
+          }
+        }
+
+        .ant-checkbox-wrapper+.ant-typography {
+          text-align: left !important;
+        }
+
+        .order-review {
+          margin-top: @spacing-sm;
+        }
+
+        .swap-assets {
+          background: unset;
+          padding: unset;
+
+          .jet-icon {
+            width: 35px;
+            height: 35px;
+          }
+        }
+      }
+
+      &-footer {
+        button {
+          transition: opacity @transition-duration ease-out, background-color @transition-duration ease;
         }
       }
     }
@@ -1552,7 +1744,7 @@ html {
       ry: 10;
       rx: 10;
 
-      + text {
+      +text {
         stroke: @primary-3;
         stroke-width: 0px;
         fill: @primary-3;
@@ -1648,6 +1840,7 @@ html {
       }
     }
   }
+
   // Pools View
   .pools-view {
     position: relative;
@@ -1906,6 +2099,7 @@ html {
   // Any account Table
   .account-table {
     min-height: 160px;
+
     &-search {
       position: absolute;
       top: @spacing-xs;
@@ -2256,6 +2450,7 @@ html {
 // Tablet styling
 @media screen and (max-width: 1000px) {
   .jet-app {
+
     .table-token,
     .price {
       min-width: unset;
@@ -2278,6 +2473,7 @@ html {
 // Mobile styling
 @media screen and (max-width: 800px) {
   .jet-app {
+
     // Reorder Arrows && TPS Banner
     .reorder-arrows,
     .tps-banner {
@@ -2386,6 +2582,7 @@ html {
 
     // Any Account Table
     .account-table {
+
       &-search,
       .download-btns,
       .full-accounts-text {
@@ -2448,6 +2645,7 @@ html {
 .fixed-lend-entry,
 .fixed-borrow-entry {
   height: 720px !important;
+
   .ant-tabs {
     width: 100%;
     text-transform: uppercase;
@@ -2771,6 +2969,7 @@ html {
   left: 50%;
   transform: translate(-50%, 0);
 }
+
 .fixed-order-entry-fields label,
 .autoroll-modal label {
   text-transform: uppercase;
