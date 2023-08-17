@@ -508,13 +508,13 @@ export function SwapEntry(): JSX.Element {
                 placeholder="0.75"
                 value={slippageInput}
                 disabled={sendingTransaction}
-                onChange={debounce(e => {
+                onChange={e => {
                   let inputString = e.target.value;
                   if (isNaN(+inputString) || +inputString < 0) {
                     inputString = '0';
                   }
                   setSlippageInput(inputString);
-                }, 300)}
+                }}
                 onPressEnter={sendSwap}
               />
               <Text type="secondary" strong>
@@ -592,7 +592,7 @@ export function SwapEntry(): JSX.Element {
           <></>
         )}
       </div>
-      <div className="order-entry-footer flex-centered">
+      <div className="order-entry-footer column flex">
         <Button
           block
           disabled={disabled || tokenInputAmount.isZero() || priceImpact >= 0.05}
