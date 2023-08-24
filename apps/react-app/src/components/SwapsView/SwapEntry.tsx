@@ -106,7 +106,7 @@ export function SwapEntry(): JSX.Element {
   const [slippageInput, setSlippageInput] = useState('');
   const [swapOutputTokens, setSwapOutputTokens] = useState(TokenAmount.zero(0));
   const [minOutAmount, setMinOutAmount] = useState(TokenAmount.zero(0));
-  const priceImpact = !selectedSwapQuote ? 0.0 : selectedSwapQuote.price_impact;
+  const priceImpact = !selectedSwapQuote ? 0.0 : parseFloat(selectedSwapQuote.price_impact);
   const [swapFeeUsd, setSwapFeeUsd] = useState(0.0);
   const priceImpactStyle = priceImpact <= 0.01 ? 'success' : priceImpact <= 0.03 ? 'warning' : 'danger';
   const [repayLoanWithOutput, setRepayLoanWithOutput] = useState(false);
