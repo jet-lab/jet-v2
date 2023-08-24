@@ -95,10 +95,15 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
         if (i < totalBids - 1) {
           steppedBids.push([bid[0], data.bids[i + 1][1]])
         }
-      } else if (i > 0 && steppedBids.length && bid[0] <= steppedBids[steppedBids.length - 1][0]) {
+      } else if (steppedBids.length && bid[0] <= steppedBids[steppedBids.length - 1][0]) {
         steppedBids.push(bid);
         if (i < totalBids - 1) {
           steppedBids.push([bid[0], data.bids[i + 1][1]])
+        }
+      } else {
+        steppedBids.push([steppedBids[steppedBids.length - 1][0], bid[1]]);
+        if (i < totalBids - 1) {
+          steppedBids.push([steppedBids[steppedBids.length - 1][0], data.bids[i + 1][1]])
         }
       }
     })
@@ -110,10 +115,15 @@ const DataWrapper = ({ currentPool, outputToken }: DataWrapperProps) => {
         if (i < totalAsks - 1) {
           steppedAsks.push([ask[0], data.asks[i + 1][1]])
         }
-      } else if (i > 0 && steppedAsks.length && ask[0] >= steppedAsks[steppedAsks.length - 1][0]) {
+      } else if (steppedAsks.length && ask[0] >= steppedAsks[steppedAsks.length - 1][0]) {
         steppedAsks.push(ask);
         if (i < totalAsks - 1) {
           steppedAsks.push([ask[0], data.asks[i + 1][1]])
+        }
+      } else {
+        steppedAsks.push([steppedAsks[steppedAsks.length - 1][0], ask[1]]);
+        if (i < totalAsks - 1) {
+          steppedAsks.push([steppedAsks[steppedAsks.length - 1][0], data.asks[i + 1][1]])
         }
       }
     })

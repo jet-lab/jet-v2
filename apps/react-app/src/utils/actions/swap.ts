@@ -23,10 +23,10 @@ export interface SwapQuote {
   token_out: string;
   tokens_in: number;
   tokens_out: number;
-  market_price: number;
-  trade_price: number;
-  effective_price: number;
-  price_impact: number;
+  market_price: string;
+  trade_price: string;
+  effective_price: string;
+  price_impact: string;
   fees: Record<string, number>;
   swaps: SwapStepOutput[][];
 }
