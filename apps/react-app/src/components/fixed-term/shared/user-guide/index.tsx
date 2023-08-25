@@ -26,7 +26,7 @@ const UserGuidePage = ({
   isFirstPage,
   isEndPage
 }: IUserGuidePage) => (
-  <div className="flex flex-col max-width-60">
+  <div className="flex flex-col">
     <div className="flex pt-12">
       <div className="flex flex-col flex-1 px-4">
         <Title>{currentPage}/{totalPages}</Title>
@@ -188,7 +188,7 @@ const Page4Sidebar = () => {
 
 export const UserGuide = () => (
   // <div className="relative top-44 left-96 rounded">
-  <DismissModal storageKey="fixed-term-guide" title="Fixed Rate Debt Markets" className="w-3/4" open={false}>
+  <DismissModal storageKey="fixed-term-guide" title="Fixed Rate Debt Markets" className="w-3/4 max-width-60" open={false}>
     {({ dismiss }) => (
       <Carousel
         pagesToRender={4}
