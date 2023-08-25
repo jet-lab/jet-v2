@@ -26,7 +26,7 @@ const UserGuidePage = ({
   isFirstPage,
   isEndPage
 }: IUserGuidePage) => (
-  <div className="flex flex-col">
+  <div className="flex flex-col max-width-60">
     <div className="flex pt-12">
       <div className="flex flex-col flex-1 px-4">
         <Title>{currentPage}/{totalPages}</Title>
