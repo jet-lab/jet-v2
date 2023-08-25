@@ -3,7 +3,7 @@ use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
 use jet_rewards::{seeds, state::AirdropRecipient, AirdropV2CreateParams};
 
-pub use jet_rewards::ID as REWARDS_PROGRAM;
+use super::REWARDS_PROGRAM;
 
 use crate::staking::{
     derive_max_voter_weight_record, derive_stake_account, derive_stake_pool,

@@ -41,5 +41,9 @@ async fn run_command(client: &Client, command: AirdropCommand) -> Result<Plan> {
 }
 
 async fn process_create(client: &Client, input: PathBuf) -> Result<Plan> {
+    let create_info: AirdropCreateInfo = serde_json::from_str(&std::fs::read_to_string(input)?)?;
+    let create_params = AirdropCreateParams
+
+    
     Ok(Plan::default())
 }
