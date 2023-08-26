@@ -23,7 +23,7 @@ solana-cli-config = "1.14"
 lookup-table-registry-client = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main" }
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
 jet-simulation = { path = "../../libraries/rust/simulation" }
-jet-solana-client = { path = "../../libraries/rust/solana-client" }
+jet-solana-client = { path = "../../libraries/rust/solana-client", features = ["client-native"] }
 
 # For deriving ATAs
 spl-token = "3"

@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-client-native = ["solana-client"]
+client-native = ["solana-client", "solana-transaction-status", "solana-account-decoder"]
 client-wasm = ["solana-client-wasm", "solana-extra-wasm"]
-default = ["client-native"]
+default = []
 
 [dependencies]
 async-trait = "0.1"
@@ -21,8 +21,8 @@ thiserror = "1"
 tokio = { version = "1", features = ["time"] }
 
 solana-sdk = "1.14"
-solana-transaction-status = "1.14"
-solana-account-decoder = "1.14"
+solana-transaction-status = { version = "1.14", optional = true }
+solana-account-decoder = { version = "1.14", optional = true }
 solana-client = { version = "1.14", optional = true }
 solana-client-wasm = { version = "1.14", optional = true }
 solana-extra-wasm = { version = "1.14", optional = true }

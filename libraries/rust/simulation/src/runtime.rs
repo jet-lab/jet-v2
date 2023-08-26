@@ -1,7 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, sync::Arc, sync::Mutex};
 
 use async_trait::async_trait;
-use jet_solana_client::rpc::{AccountFilter, ClientError, ClientResult, SolanaRpc};
 use lazy_static::lazy_static;
 
 use solana_bpf_loader_program::serialization::{
@@ -36,8 +35,9 @@ use solana_sdk::{
         MessageHash, SanitizedTransaction, Transaction, TransactionError, VersionedTransaction,
     },
 };
-use solana_transaction_status::{TransactionConfirmationStatus, TransactionStatus};
 use spl_token::state::Account as TokenAccount;
+
+use jet_solana_client::rpc::{AccountFilter, ClientError, ClientResult, SolanaRpc, TransactionConfirmationStatus, TransactionStatus};
 
 use crate::log::declare_logging;
 

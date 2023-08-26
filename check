@@ -51,6 +51,15 @@ cargo-test() {
     fi
 }
 
+wasm() {
+    pushd .
+
+    cd libraries/rust/client-web
+    cargo check --target wasm32-unknown-unknown
+
+    popd
+}
+
 #################
 # Docker
 

@@ -16,10 +16,9 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::Signature,
 };
-use solana_transaction_status::{TransactionConfirmationStatus, TransactionStatus};
 use spl_token::state::Account as TokenAccount;
 
-use super::{AccountFilter, ClientError, ClientResult, SolanaRpc};
+use super::{AccountFilter, ClientError, ClientResult, SolanaRpc, TransactionConfirmationStatus, TransactionStatus};
 
 /// A wrapper for an RPC client to implement `SolanaRpc` trait
 #[derive(Clone)]
@@ -41,7 +40,7 @@ impl From<WasmClient> for RpcConnection {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl SolanaRpc for RpcConnection {
     async fn get_genesis_hash(&self) -> ClientResult<Hash> {
         self.rpc.get_genesis_hash().await.map_err(convert_err)
@@ -88,7 +87,7 @@ impl SolanaRpc for RpcConnection {
     async fn get_signature_statuses(
         &self,
         signatures: &[Signature],
-    ) -> ClientResult<Vec<Option<solana_transaction_status::TransactionStatus>>> {
+    ) -> ClientResult<Vec<Option<TransactionStatus>>> {
         use solana_extra_wasm::transaction_status::TransactionConfirmationStatus as WasmConfirmationStatus;
 
         self.rpc

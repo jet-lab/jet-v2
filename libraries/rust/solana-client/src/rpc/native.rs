@@ -23,7 +23,10 @@ use solana_sdk::{
 };
 use spl_token::state::Account as TokenAccount;
 
-use super::{AccountFilter, ClientError, ClientResult, SolanaRpc};
+use super::{
+    AccountFilter, ClientError, ClientResult, SolanaRpc, TransactionConfirmationStatus,
+    TransactionStatus,
+};
 
 /// A wrapper for an RPC client to implement `SolanaRpc` trait
 #[derive(Clone)]
@@ -126,12 +129,24 @@ impl SolanaRpc for RpcConnection {
     async fn get_signature_statuses(
         &self,
         signatures: &[Signature],
-    ) -> ClientResult<Vec<Option<solana_transaction_status::TransactionStatus>>> {
+    ) -> ClientResult<Vec<Option<TransactionStatus>>> {
         self.rpc
             .get_signature_statuses(signatures)
             .await
             .map_err(convert_err)
-            .map(|r| r.value)
+            .map(|r| r.value.into_iter()
+            .map(|s| s.map(|s| TransactionStatus {
+                slot: s.slot,
+                err: s.err,
+                status: s.status,
+                confirmations: s.confirmations,
+                confirmation_status: s.confirmation_status.map(|cs| match cs {
+                    solana_transaction_status::TransactionConfirmationStatus::Processed => TransactionConfirmationStatus::Processed,
+                    solana_transaction_status::TransactionConfirmationStatus::Confirmed => TransactionConfirmationStatus::Confirmed,
+                    solana_transaction_status::TransactionConfirmationStatus::Finalized => TransactionConfirmationStatus::Finalized,
+                })
+            })).collect()
+        )
     }
 
     async fn airdrop(&self, account: &Pubkey, lamports: u64) -> ClientResult<()> {

@@ -76,6 +76,7 @@ jobs:
             target/
 
       - run: /github-entrypoint.sh ./check cargo-lint
+      - run: /github-entrypoint.sh ./check wasm
 
 
   cargo-test:

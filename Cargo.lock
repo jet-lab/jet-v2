@@ -2677,7 +2677,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with 1.14.0",
- "solana-address-lookup-table-program",
+ "solana-address-lookup-table-program-gateway",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token 3.5.0",
@@ -2686,30 +2686,6 @@ dependencies = [
  "tokio",
  "wasm-bindgen",
  "whirlpool",
-]
-
-[[package]]
-name = "jet-client-web"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bincode",
- "console_error_panic_hook",
- "console_log",
- "jet-client",
- "jet-program-common",
- "jet-solana-client",
- "js-sys",
- "log",
- "serde-wasm-bindgen",
- "serde_json",
- "solana-sdk",
- "spl-token 3.5.0",
- "thiserror",
- "wasm-bindgen",
- "wasm-bindgen-derive",
- "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]
@@ -2788,7 +2764,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with 1.14.0",
- "solana-address-lookup-table-program",
+ "solana-address-lookup-table-program-gateway",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-governance",
@@ -3340,7 +3316,7 @@ dependencies = [
 [[package]]
 name = "lookup-table-registry"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#a511ccef72fb7f0df33553ef906ec695069ac022"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#93d17400b30d73292757c886a179cf802e41250d"
 dependencies = [
  "anchor-lang",
  "solana-address-lookup-table-program-gateway",
@@ -3350,7 +3326,7 @@ dependencies = [
 [[package]]
 name = "lookup-table-registry-client"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#a511ccef72fb7f0df33553ef906ec695069ac022"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#93d17400b30d73292757c886a179cf802e41250d"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -5390,13 +5366,12 @@ dependencies = [
 [[package]]
 name = "solana-address-lookup-table-program-gateway"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#a511ccef72fb7f0df33553ef906ec695069ac022"
+source = "git+https://github.com/jet-lab/lookup-table-registry?branch=main#93d17400b30d73292757c886a179cf802e41250d"
 dependencies = [
  "bincode",
  "bytemuck",
  "serde",
  "solana-address-lookup-table-program",
- "solana-frozen-abi-macro",
  "solana-program",
 ]
 
@@ -7316,19 +7291,6 @@ dependencies = [
  "quote 1.0.26",
  "syn 2.0.15",
  "wasm-bindgen-shared",
-]
-
-[[package]]
-name = "wasm-bindgen-derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3451353ff163a0d7053a2b0e1e2b698a466317791b027c50142bb0d3387fb90"
-dependencies = [
- "js-sys",
- "proc-macro2 1.0.56",
- "quote 1.0.26",
- "syn 1.0.107",
- "wasm-bindgen",
 ]
 
 [[package]]

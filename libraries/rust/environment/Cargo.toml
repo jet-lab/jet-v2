@@ -13,20 +13,25 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 
 solana-sdk = "1.14"
-solana-address-lookup-table-program = "1.14"
 spl-token = { version = "3", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "1", features = ["no-entrypoint"] }
 
 spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "fill-event", features = ["lib", "utils"] }
-lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main", features = ["no-entrypoint"] }
+lookup-table-registry = { git = "https://github.com/jet-lab/lookup-table-registry", branch = "main", default-features = false, features = ["no-entrypoint", "api"] }
 
 jet-program-common = { path = "../program-common" }
-jet-solana-client = { path = "../solana-client" }
+jet-solana-client = { path = "../solana-client", default-features = false }
 jet-instructions = { path = "../instructions" }
 jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"]}
 jet-fixed-term = { path = "../../../programs/fixed-term", features = ["no-entrypoint"]}
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"]}
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"]}
 jet-static-program-registry = { path = "../static-program-registry" }
+
+[dependencies.solana-address-lookup-table-program]
+package = "solana-address-lookup-table-program-gateway"
+git = "https://github.com/jet-lab/lookup-table-registry"
+branch = "main"
+features = ["stub-id", "stub-instruction", "stub-state"]
