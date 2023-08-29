@@ -18,7 +18,10 @@ use solana_sdk::{
 };
 use spl_token::state::Account as TokenAccount;
 
-use super::{AccountFilter, ClientError, ClientResult, SolanaRpc, TransactionConfirmationStatus, TransactionStatus};
+use super::{
+    AccountFilter, ClientError, ClientResult, SolanaRpc, TransactionConfirmationStatus,
+    TransactionStatus,
+};
 
 /// A wrapper for an RPC client to implement `SolanaRpc` trait
 #[derive(Clone)]

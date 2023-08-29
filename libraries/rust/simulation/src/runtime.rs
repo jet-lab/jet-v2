@@ -37,7 +37,10 @@ use solana_sdk::{
 };
 use spl_token::state::Account as TokenAccount;
 
-use jet_solana_client::rpc::{AccountFilter, ClientError, ClientResult, SolanaRpc, TransactionConfirmationStatus, TransactionStatus};
+use jet_solana_client::rpc::{
+    AccountFilter, ClientError, ClientResult, SolanaRpc, TransactionConfirmationStatus,
+    TransactionStatus,
+};
 
 use crate::log::declare_logging;
 
