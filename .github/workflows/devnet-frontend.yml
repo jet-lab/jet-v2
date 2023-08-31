@@ -47,7 +47,7 @@ jobs:
 
       - name: Install wasm-pack
         if: steps.cachedeps.outputs.cache-hit != 'true'
-        run: cargo install wasm-pack
+        run: cargo install wasm-pack --locked
 
       - name: Build
         run: yarn install --frozen-lockfile && yarn build

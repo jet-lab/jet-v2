@@ -45,7 +45,7 @@ Install yarn, anchor and the Solana CLI ([instructions](https://www.anchor-lang.
 To run the frontend web application also requires wasm-pack, which can be installed with `cargo`:
 
 ```bash
-cargo install wasm-pack
+cargo install wasm-pack --locked
 ```
 
 ### Test
