@@ -6,7 +6,7 @@ edition = "2021"
 [features]
 test = []
 default = ["test"]
-localnet = []
+localnet = ["jet-solana-client/client-native"]
 batch_all = []
 batch1 = []
 batch2 = []
