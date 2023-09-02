@@ -20,7 +20,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-hosted-tests-localnet-0-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -45,7 +45,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-hosted-tests-localnet-0-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
