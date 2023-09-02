@@ -2,7 +2,6 @@ use anchor_lang::{InstructionData, ToAccountMetas};
 use solana_sdk::{
     instruction::Instruction,
     pubkey::Pubkey,
-    signature::{Keypair, Signer},
     system_program,
 };
 
@@ -14,15 +13,15 @@ pub fn create(
     payer: Pubkey,
     token_mint: Pubkey,
     authority: Pubkey,
-    storage: Keypair,
+    storage: Pubkey,
     params: AirdropCreateParams,
 ) -> Instruction {
     let accounts = jet_rewards::accounts::AirdropCreate {
         payer,
         token_mint,
         authority,
-        airdrop: storage.pubkey(),
-        reward_vault: derive_reward_vault(&storage.pubkey()),
+        airdrop: storage,
+        reward_vault: derive_reward_vault(&storage),
         token_program: spl_token::ID,
         system_program: system_program::ID,
         rent: solana_sdk::sysvar::rent::ID,
@@ -42,19 +41,22 @@ pub fn add_recipients(
     recipients: impl IntoIterator<Item = (Pubkey, u64)>,
     start_index: u64,
 ) -> Vec<Instruction> {
+    const CHUNK_SIZE: usize = 24;
+
     let mut recipients = recipients.into_iter().collect::<Vec<_>>();
     recipients.sort_by_key(|r| r.0);
 
     recipients
-        .chunks(24)
+        .chunks(CHUNK_SIZE)
         .into_iter()
-        .map(|chunk| {
+        .enumerate()
+        .map(|(n, chunk)| {
             let accounts = jet_rewards::accounts::AirdropAddRecipients { airdrop, authority }
                 .to_account_metas(None);
 
             let data = jet_rewards::instruction::AirdropAddRecipients {
                 params: AirdropAddRecipientsParams {
-                    start_index,
+                    start_index: dbg!(start_index + (n * CHUNK_SIZE) as u64),
                     recipients: chunk
                         .into_iter()
                         .map(|(recipient, amount)| jet_rewards::AirdropRecipientParam {

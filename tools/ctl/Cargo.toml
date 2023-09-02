@@ -56,3 +56,4 @@ jet-solana-client = { path = "../../libraries/rust/solana-client" }
 jet-instructions= { path = "../../libraries/rust/instructions" }
 
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["cli"] }
+jet-rewards = { path = "../../programs/rewards", features = ["no-entrypoint"] }

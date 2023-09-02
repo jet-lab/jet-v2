@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use actions::{
     fixed_term::{FixedTermDisplayCmd, MarketParameters},
-    margin_pool::ConfigurePoolCliOptions,
+    margin_pool::ConfigurePoolCliOptions, airdrop::AirdropCommand,
 };
 use anchor_lang::prelude::Pubkey;
 use anyhow::{bail, Result};
@@ -340,6 +340,12 @@ pub enum Command {
         #[clap(subcommand)]
         subcmd: FixedTermCommand,
     },
+
+    /// Airdrop management
+    Airdrop {
+        #[clap(subcommand)]
+        subcmd: AirdropCommand
+    }
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
@@ -407,6 +413,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         }
         Command::MarginPool { subcmd } => run_margin_pool_command(&client, subcmd).await?,
         Command::Fixed { subcmd } => run_fixed_command(&client, subcmd).await?,
+        Command::Airdrop { subcmd } => actions::airdrop::run_command(&client, subcmd).await?
     };
 
     if let Some(proposal_id) = opts.target_proposal {

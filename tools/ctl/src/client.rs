@@ -244,7 +244,7 @@ impl Client {
         }
 
         let mut ui_progress_group = ProgressTracker::new(self.config.no_confirm);
-        let active_progress = ui_progress_group.add_line("pending ...");
+        let mut active_progress = ui_progress_group.add_line("pending ...");
         let submission_progress = ui_progress_group.add_line("submitting transactions ...");
 
         if !self.config.no_confirm {
@@ -275,6 +275,8 @@ impl Client {
                         .await?
                 }
             }
+
+            active_progress.increment()
         }
 
         active_progress.finish_with_message("done");
@@ -520,6 +522,10 @@ impl Spinner {
         instance.set_message(msg);
 
         instance
+    }
+
+    pub fn increment(&mut self) {
+        self.idx += 1;
     }
 
     pub fn set_message(&self, msg: impl Into<Cow<'static, str>>) {
