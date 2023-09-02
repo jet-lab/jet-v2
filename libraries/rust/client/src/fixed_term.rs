@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, rc::Rc};
 
 use jet_program_common::interest_pricing::f64_to_fp32;
 use serde::{Deserialize, Serialize};
@@ -53,11 +53,11 @@ pub struct MarketInfo {
 /// Client for interacting with the margin program
 #[derive(Clone)]
 pub struct FixedTermMarketClient {
-    client: Arc<ClientState>,
+    client: Rc<ClientState>,
 }
 
 impl FixedTermMarketClient {
-    pub(crate) fn new(inner: Arc<ClientState>) -> Self {
+    pub(crate) fn new(inner: Rc<ClientState>) -> Self {
         Self { client: inner }
     }
 
@@ -93,7 +93,7 @@ impl FixedTermMarketClient {
 /// Client for interacting with a fixed term market, from the perspective of a margin account
 #[derive(Clone)]
 pub struct MarginAccountMarketClient {
-    pub(crate) client: Arc<ClientState>,
+    pub(crate) client: Rc<ClientState>,
     pub(crate) builder: FixedTermIxBuilder,
     pub(crate) account: MarginAccountClient,
     pub(crate) market: Market,
@@ -122,14 +122,14 @@ impl MarginAccountMarketClient {
     }
 
     /// Get the current outstanding loans in this market for the current user
-    pub fn loans(&self) -> Vec<Arc<TermLoan>> {
+    pub fn loans(&self) -> Vec<Rc<TermLoan>> {
         self.get_user_market_state()
             .map(|state| state.loans().into_iter().collect())
             .unwrap_or_default()
     }
 
     /// Get the set of deposits that this user can eventually withdraw at maturity
-    pub fn deposits(&self) -> Vec<Arc<TermDeposit>> {
+    pub fn deposits(&self) -> Vec<Rc<TermDeposit>> {
         self.get_user_market_state()
             .map(|state| state.deposits().into_iter().collect())
             .unwrap_or_default()
@@ -558,12 +558,12 @@ impl MarginAccountMarketClient {
             .unwrap_or_default()
     }
 
-    fn get_user_market_state(&self) -> Option<Arc<UserState>> {
+    fn get_user_market_state(&self) -> Option<Rc<UserState>> {
         let address = self.builder.margin_user_account(self.account.address);
         self.client.state().get(&address)
     }
 
-    fn get_market_state(&self) -> Arc<MarketState> {
+    fn get_market_state(&self) -> Rc<MarketState> {
         self.client.state().get(&self.builder.market()).unwrap()
     }
 

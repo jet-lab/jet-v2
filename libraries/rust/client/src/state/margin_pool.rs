@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use solana_sdk::pubkey::Pubkey;
 
@@ -10,11 +10,11 @@ use super::AccountStates;
 use crate::client::ClientResult;
 
 pub trait MarginPoolCacheExt {
-    fn get_pool(&self, token: &Pubkey) -> Option<Arc<MarginPool>>;
+    fn get_pool(&self, token: &Pubkey) -> Option<Rc<MarginPool>>;
 }
 
 impl MarginPoolCacheExt for AccountStates {
-    fn get_pool(&self, token: &Pubkey) -> Option<Arc<MarginPool>> {
+    fn get_pool(&self, token: &Pubkey) -> Option<Rc<MarginPool>> {
         self.get::<MarginPool>(&derive_margin_pool(&self.config.airspace, token))
     }
 }

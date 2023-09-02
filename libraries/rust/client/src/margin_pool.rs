@@ -1,4 +1,4 @@
-use std::{collections::HashSet, convert::identity, sync::Arc};
+use std::{collections::HashSet, convert::identity, rc::Rc};
 
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
@@ -14,7 +14,7 @@ use crate::{
 /// Client for interacting with a margin pool, from the perspective of a margin account
 #[derive(Clone)]
 pub struct MarginAccountPoolClient {
-    pub(crate) client: Arc<ClientState>,
+    pub(crate) client: Rc<ClientState>,
     pub(crate) builder: MarginPoolIxBuilder,
     pub(crate) account: MarginAccountClient,
 }

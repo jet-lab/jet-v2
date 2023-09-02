@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -22,7 +22,7 @@ use crate::{
 
 /// Client for interacting with swap protocols, from the perspective of a margin account
 pub struct MarginAccountSwapsClient {
-    client: Arc<ClientState>,
+    client: Rc<ClientState>,
     account: MarginAccountClient,
 }
 

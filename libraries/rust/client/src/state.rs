@@ -1,6 +1,7 @@
 use std::{
     any::{Any, TypeId},
     collections::{BTreeMap, HashMap},
+    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -124,7 +125,7 @@ pub struct StateConfig {
     pub exchanges: Vec<DexInfo>,
 }
 
-type StoredStateObj = Arc<dyn Any + Send + Sync>;
+type StoredStateObj = Rc<dyn Any>;
 
 #[derive(Default)]
 pub struct AccountCache {
@@ -163,7 +164,7 @@ impl AccountCache {
             .collect()
     }
 
-    pub fn filter<T>(&self, mut predicate: impl FnMut(&Pubkey, &T) -> bool) -> Vec<(Pubkey, Arc<T>)>
+    pub fn filter<T>(&self, mut predicate: impl FnMut(&Pubkey, &T) -> bool) -> Vec<(Pubkey, Rc<T>)>
     where
         T: Any + Send + Sync,
     {
@@ -180,7 +181,7 @@ impl AccountCache {
         accounts
             .filter_map(|(address, data)| match data {
                 Some(x) if predicate(address, x.downcast_ref().unwrap()) => {
-                    Some((*address, Arc::downcast(x.clone()).unwrap()))
+                    Some((*address, Rc::downcast(x.clone()).unwrap()))
                 }
                 _ => None,
             })
@@ -200,14 +201,14 @@ impl AccountCache {
         }
     }
 
-    pub fn get_all<T: Any + Send + Sync>(&self) -> Vec<(Pubkey, Arc<T>)> {
+    pub fn get_all<T: Any>(&self) -> Vec<(Pubkey, Rc<T>)> {
         let mut result = vec![];
 
         let states = self.states.lock().unwrap();
         if let Some(objects) = states.get(&TypeId::of::<T>()) {
             for (address, maybe_object) in objects {
                 if let Some(object) = maybe_object {
-                    result.push((*address, Arc::downcast(object.clone()).unwrap()));
+                    result.push((*address, Rc::downcast(object.clone()).unwrap()));
                 }
             }
         }
@@ -215,18 +216,18 @@ impl AccountCache {
         result
     }
 
-    pub fn get<T: Any + Send + Sync>(&self, address: &Pubkey) -> Option<Arc<T>> {
+    pub fn get<T: Any>(&self, address: &Pubkey) -> Option<Rc<T>> {
         let states = self.states.lock().unwrap();
 
         states.get(&TypeId::of::<T>()).and_then(|accounts| {
             accounts
                 .get(address)
                 .cloned()
-                .and_then(|account| account.map(|a| Arc::downcast(a).unwrap()))
+                .and_then(|account| account.map(|a| Rc::downcast(a).unwrap()))
         })
     }
 
-    pub fn set<T: Any + Send + Sync>(&self, address: &Pubkey, data: T) {
+    pub fn set<T: Any>(&self, address: &Pubkey, data: T) {
         let type_id = TypeId::of::<T>();
 
         let mut states = self.states.lock().unwrap();
@@ -239,7 +240,7 @@ impl AccountCache {
             }
         };
 
-        accounts.insert(*address, Some(Arc::new(data)));
+        accounts.insert(*address, Some(Rc::new(data)));
     }
 
     pub fn register<T: Any + Send + Sync>(&self, address: &Pubkey) {

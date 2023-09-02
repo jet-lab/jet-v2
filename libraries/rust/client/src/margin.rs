@@ -1,7 +1,8 @@
+use std::{collections::HashSet, rc::Rc};
+
 use lookup_table_registry::RegistryAccount;
 use lookup_table_registry_client::Entry;
 use solana_address_lookup_table_program::state::AddressLookupTable;
-use std::{collections::HashSet, sync::Arc};
 use wasm_bindgen::prelude::*;
 
 use bytemuck::Zeroable;
@@ -40,11 +41,11 @@ use crate::{
 /// Client for interacting with the margin program
 #[derive(Clone)]
 pub struct MarginClient {
-    client: Arc<ClientState>,
+    client: Rc<ClientState>,
 }
 
 impl MarginClient {
-    pub(crate) fn new(inner: Arc<ClientState>) -> Self {
+    pub(crate) fn new(inner: Rc<ClientState>) -> Self {
         Self { client: inner }
     }
 
@@ -127,13 +128,13 @@ impl MarginClient {
 /// Client for interacting with a specific margin account
 #[derive(Clone)]
 pub struct MarginAccountClient {
-    pub(crate) client: Arc<ClientState>,
+    pub(crate) client: Rc<ClientState>,
     pub(crate) address: Pubkey,
     pub(crate) builder: MarginIxBuilder,
 }
 
 impl MarginAccountClient {
-    fn new(client: Arc<ClientState>, address: Pubkey) -> Self {
+    fn new(client: Rc<ClientState>, address: Pubkey) -> Self {
         let owner = client.signer();
         let builder = MarginIxBuilder::new_for_address(client.airspace(), address, owner);
 
@@ -151,7 +152,7 @@ impl MarginAccountClient {
         }
     }
 
-    pub fn state(&self) -> Arc<MarginAccount> {
+    pub fn state(&self) -> Rc<MarginAccount> {
         self.client.state().get(&self.address).unwrap()
     }
 
