@@ -8,7 +8,7 @@ on:
 
 jobs:
   hosted-tests-localnet-batch1:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.72.0-node-18.17.1-solana-1.14.27-anchor-0.27.0-1
     env:
@@ -33,7 +33,7 @@ jobs:
 
 
   hosted-tests-localnet-batch2:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.72.0-node-18.17.1-solana-1.14.27-anchor-0.27.0-1
     env:
@@ -58,7 +58,7 @@ jobs:
 
 
   cargo-lint:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:rust-1.72.0-node-18.17.1-solana-1.14.27-anchor-0.27.0-1
     steps:
@@ -80,7 +80,7 @@ jobs:
 
 
   cargo-test:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     env:
       CODECOV: true
     steps:
@@ -112,7 +112,7 @@ jobs:
           fail_ci_if_error: true
 
   e2e:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     env:
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
