@@ -586,7 +586,8 @@ pub(crate) fn instruction_for_refresh(
     let Some((_, market_state)) = found.into_iter().next() else {
         bail!(
             "account {} contains fixed-term token {} belonging to unknown market",
-            account.address, token
+            account.address,
+            token
         );
     };
 

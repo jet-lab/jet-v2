@@ -314,7 +314,11 @@ impl<'a> LiquidityManager<'a> {
             }
 
             let position_addr = derive_position(&token_account.mint).0;
-            let Ok(position) = self.client.get_anchor_account::<Position>(&position_addr).await else {
+            let Ok(position) = self
+                .client
+                .get_anchor_account::<Position>(&position_addr)
+                .await
+            else {
                 continue;
             };
 

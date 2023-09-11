@@ -98,7 +98,8 @@ impl OpenBookMarket {
                 continue;
             }
 
-            let Ok(mut parsed_market) = Self::from_market_state(market_address, program, market) else {
+            let Ok(mut parsed_market) = Self::from_market_state(market_address, program, market)
+            else {
                 continue;
             };
             let Ok(base_) = super::find_mint(rpc, &parsed_market.base_mint).await else {
