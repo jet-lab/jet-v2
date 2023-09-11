@@ -477,11 +477,7 @@ impl OrderbookModel {
             fp32_div(maker_sim.total_quote_qty, limit_price).unwrap()
         };
 
-        if remaining_base_qty < MIN_BASE_SIZE_POSTED {
-            maker_sim.would_post = false;
-        } else {
-            maker_sim.would_post = true;
-        }
+        maker_sim.would_post = remaining_base_qty >= MIN_BASE_SIZE_POSTED;
 
         if maker_sim.would_post {
             let side = action.side_posted();

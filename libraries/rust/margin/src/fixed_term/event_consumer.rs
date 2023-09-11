@@ -525,7 +525,7 @@ impl MarketState {
 fn make_seed() -> Vec<u8> {
     use rand::RngCore;
 
-    let rng = &mut rand::rngs::OsRng::default();
+    let rng = &mut rand::rngs::OsRng;
     let bytes = &mut [0u8; 16];
     rng.fill_bytes(bytes);
     bytes.to_vec()

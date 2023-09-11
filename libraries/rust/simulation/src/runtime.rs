@@ -121,7 +121,7 @@ impl TestRuntime {
             log::bank::info!("loading program {program}");
         }
 
-        GLOBAL_PROGRAM_MAP.insert(features, HashMap::from_iter(programs.into_iter()));
+        GLOBAL_PROGRAM_MAP.insert(features, HashMap::from_iter(programs));
 
         bank.add_builtin("compute_budget", &compute_budget::ID, noop_handler);
         #[cfg(feature = "test-runtime")]

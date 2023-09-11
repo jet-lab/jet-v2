@@ -43,7 +43,7 @@ async fn try_settle(
     margin_accounts
         .iter()
         .map(|margin_account| {
-            vec![accounting_invoke(
+            [accounting_invoke(
                 builder.airspace(),
                 *margin_account,
                 builder.settle(*margin_account),

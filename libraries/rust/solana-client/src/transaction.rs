@@ -259,15 +259,15 @@ pub enum FakeEncodeError {
 
 impl Concat for TransactionBuilder {
     fn cat(mut self, other: Self) -> Self {
-        self.instructions.extend(other.instructions.into_iter());
-        self.signers.extend(other.signers.into_iter());
+        self.instructions.extend(other.instructions);
+        self.signers.extend(other.signers);
 
         Self { ..self }
     }
 
     fn cat_ref(mut self, other: &Self) -> Self {
         self.instructions
-            .extend(other.instructions.clone().into_iter());
+            .extend(other.instructions.clone());
         self.signers.extend(other.signers.iter().map(|k| k.clone()));
 
         Self { ..self }
@@ -298,7 +298,7 @@ impl WithSigner for Instruction {
     type Output = TransactionBuilder;
 
     fn with_signers<K: ToKeypair>(self, signers: impl IntoIterator<Item = K>) -> Self::Output {
-        vec![self].with_signers(signers)
+        [self].with_signers(signers)
     }
 }
 

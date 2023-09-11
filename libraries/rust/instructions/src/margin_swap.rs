@@ -316,7 +316,7 @@ impl MarginSwapRouteIxBuilder {
         }
 
         // Update the route information and persist builder state
-        let Some(mut route) = self
+        let Some(route) = self
             .route_details
             .get_mut(self.next_route_index) else {
                 return Err(JetIxError::SwapIxError("Unable to get route detail".to_string()));
