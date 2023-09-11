@@ -266,8 +266,7 @@ impl Concat for TransactionBuilder {
     }
 
     fn cat_ref(mut self, other: &Self) -> Self {
-        self.instructions
-            .extend(other.instructions.clone());
+        self.instructions.extend(other.instructions.clone());
         self.signers.extend(other.signers.iter().map(|k| k.clone()));
 
         Self { ..self }

@@ -174,16 +174,16 @@ pub fn token_context(
 
         NetworkKind::Mainnet => {
             let Some(mint) = desc.mint else {
-                    return  Err(BuilderError::MissingMint(desc.name.clone()));
-                };
+                return Err(BuilderError::MissingMint(desc.name.clone()));
+            };
 
             let Some(pyth_price) = desc.pyth_price else {
-                    return Err(BuilderError::MissingPythPrice(desc.name.clone()));
-                };
+                return Err(BuilderError::MissingPythPrice(desc.name.clone()));
+            };
 
             let Some(pyth_product) = desc.pyth_product else {
-                    return Err(BuilderError::MissingPythProduct(desc.name.clone()));
-                };
+                return Err(BuilderError::MissingPythProduct(desc.name.clone()));
+            };
 
             (mint, pyth_price, pyth_product)
         }

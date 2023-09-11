@@ -316,11 +316,11 @@ impl MarginSwapRouteIxBuilder {
         }
 
         // Update the route information and persist builder state
-        let Some(route) = self
-            .route_details
-            .get_mut(self.next_route_index) else {
-                return Err(JetIxError::SwapIxError("Unable to get route detail".to_string()));
-            };
+        let Some(route) = self.route_details.get_mut(self.next_route_index) else {
+            return Err(JetIxError::SwapIxError(
+                "Unable to get route detail".to_string(),
+            ));
+        };
         if self.expects_multi_route {
             // This is the second leg of the multi-route
             route.route_b = pool.route_type();
