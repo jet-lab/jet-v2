@@ -66,8 +66,12 @@ fn strip() -> Option<()> {
             let val = type_.as_object_mut()?;
             val.remove("docs");
             let type_ = val.get_mut("type")?;
-            let Some(fields) = type_.as_object_mut()?.get_mut("fields").and_then(|v| v.as_array_mut()) else {
-                continue
+            let Some(fields) = type_
+                .as_object_mut()?
+                .get_mut("fields")
+                .and_then(|v| v.as_array_mut())
+            else {
+                continue;
             };
             for field in fields {
                 let val = field.as_object_mut()?;

@@ -17,8 +17,8 @@ pub(crate) async fn configure_for_token(
     let pool_ix = MarginPoolIxBuilder::new(token.mint);
 
     let Some(pool_config) = &token.desc.margin_pool else {
-            return Ok(());
-        };
+        return Ok(());
+    };
 
     let pool = builder
         .interface

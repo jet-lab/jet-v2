@@ -37,7 +37,7 @@ pub async fn load_openbook_markets(
         };
 
         let account_info = AccountInfo::from((&address, &mut account_state));
-        let Ok(state ) = MarketState::load(&account_info, &OPENBOOK) else {
+        let Ok(state) = MarketState::load(&account_info, &OPENBOOK) else {
             log::warn!("failed to load openbook market {address}");
             continue;
         };
@@ -106,9 +106,10 @@ impl OpenBookMarket {
         market: &MarketState,
     ) -> ClientResult<Self> {
         let Ok(vault_signer) =
-            gen_vault_signer_key(market.vault_signer_nonce, &market_address, &program) else {
-                bail!("could not generate vault signing address for market {market_address}");
-            };
+            gen_vault_signer_key(market.vault_signer_nonce, &market_address, &program)
+        else {
+            bail!("could not generate vault signing address for market {market_address}");
+        };
 
         Ok(Self {
             program,

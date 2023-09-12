@@ -161,7 +161,9 @@ pub async fn sync_markets(states: &AccountStates) -> ClientResult<()> {
                 continue;
             };
 
-            let Ok((asks, bids)) = parse_bid_asks(&address, market.borrow_tenor, asks_acc, bids_acc) else {
+            let Ok((asks, bids)) =
+                parse_bid_asks(&address, market.borrow_tenor, asks_acc, bids_acc)
+            else {
                 continue;
             };
 
@@ -279,15 +281,24 @@ where
         .try_get_anchor_accounts::<T>(&addresses)
         .await?;
 
-    Ok(accounts_data.into_iter().enumerate().filter_map(|(idx, maybe_data)| {
-        let Some(data) = maybe_data else {
-            log::warn!("missing expected account {} ({}), for market user {}", addresses[idx], std::any::type_name::<T>(), users[idx]);
-            return None;
-        };
+    Ok(accounts_data
+        .into_iter()
+        .enumerate()
+        .filter_map(|(idx, maybe_data)| {
+            let Some(data) = maybe_data else {
+                log::warn!(
+                    "missing expected account {} ({}), for market user {}",
+                    addresses[idx],
+                    std::any::type_name::<T>(),
+                    users[idx]
+                );
+                return None;
+            };
 
-        states.cache.set(&addresses[idx], data);
-        states.cache.get(&addresses[idx])
-    }).collect())
+            states.cache.set(&addresses[idx], data);
+            states.cache.get(&addresses[idx])
+        })
+        .collect())
 }
 
 fn parse_bid_asks(

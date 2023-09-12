@@ -24,8 +24,12 @@ pub async fn market_make(
     };
 
     let account_info = AccountInfo::from((&market_address, &mut market_account));
-    let Ok(market_info) = anchor_spl::dex::serum_dex::state::MarketState::load(&account_info, &dex_program) else {
-        return Err(ClientError::Other(format!("failed to deserialize market state at {market_address}")));
+    let Ok(market_info) =
+        anchor_spl::dex::serum_dex::state::MarketState::load(&account_info, &dex_program)
+    else {
+        return Err(ClientError::Other(format!(
+            "failed to deserialize market state at {market_address}"
+        )));
     };
 
     let mut instructions = vec![];

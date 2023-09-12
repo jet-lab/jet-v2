@@ -39,17 +39,21 @@ export function useProjectedRisk(
   const defaultActionProjection = account?.riskIndicator ?? 0;
 
   if (max && amount.gt(max)) {
+    // If the account has no liabilities, then the risk is 0
+    if ((marginAccount?.valuation.liabilities ?? 0) == 0) {
+      return 0;
+    }
     return Infinity;
   }
   const projectedRiskIndicator = canProjectAfterAction
     ? pool.projectAfterAction(
-        account,
-        amount.tokens,
-        action,
-        minAmountOut && minAmountOut.tokens,
-        outputToken,
-        swapRepayWithProceeds
-      ).riskIndicator
+      account,
+      amount.tokens,
+      action,
+      minAmountOut && minAmountOut.tokens,
+      outputToken,
+      swapRepayWithProceeds
+    ).riskIndicator
     : defaultActionProjection;
 
   return projectedRiskIndicator;

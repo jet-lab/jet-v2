@@ -486,7 +486,7 @@ pub async fn init_market(
         .with_signers([ob.event_queue, ob.bids, ob.asks])
         .send_and_confirm(rpc)
         .await?;
-    vec![init_manager, init_orderbook]
+    [init_manager, init_orderbook]
         .without_signer()
         .send_and_confirm(rpc)
         .await?;

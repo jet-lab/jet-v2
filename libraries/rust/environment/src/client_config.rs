@@ -258,7 +258,10 @@ pub mod legacy {
             let mut fixed_term_markets = HashMap::new();
 
             for market_address in &airspace.fixed_term_markets {
-                let Some(market_info) = network.try_get_anchor_account::<Market>(market_address).await? else {
+                let Some(market_info) = network
+                    .try_get_anchor_account::<Market>(market_address)
+                    .await?
+                else {
                     return Err(ConfigError::MissingMarket(*market_address));
                 };
 
@@ -266,7 +269,10 @@ pub mod legacy {
                     .get_account(&market_info.orderbook_market_state)
                     .await?
                     .unwrap();
-                let Ok(orderbook_market_state) = OrderbookMarketState::from_buffer(&mut orderbook_market_state_account.data, AccountTag::Market) else {
+                let Ok(orderbook_market_state) = OrderbookMarketState::from_buffer(
+                    &mut orderbook_market_state_account.data,
+                    AccountTag::Market,
+                ) else {
                     log::error!("failed to load agnostic orderbook market state from {} for market {market_address}", market_info.orderbook_market_state);
                     return Err(ConfigError::UnpackError(ProgramError::InvalidAccountData));
                 };

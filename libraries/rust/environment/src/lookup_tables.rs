@@ -15,7 +15,10 @@ pub async fn resolve_lookup_tables(
     let registry_address =
         Pubkey::find_program_address(&[authority.as_ref()], &lookup_table_registry::ID).0;
 
-    let Some(registry) = rpc.try_get_anchor_account::<RegistryAccount>(&registry_address).await? else {
+    let Some(registry) = rpc
+        .try_get_anchor_account::<RegistryAccount>(&registry_address)
+        .await?
+    else {
         log::warn!("no registry account for authority {}", authority);
         return Ok(vec![]);
     };

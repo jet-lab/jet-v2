@@ -671,6 +671,10 @@ export class MarginAccount {
       this.valuation.availableSetupCollateral / depositNoteValueModifier / tokenPrice,
       decimals
     )
+    // A user could have tokens that do not count as collateral, they should be able to withdraw them
+    if (pool.depositNoteMetadata.valueModifier === 0) {
+      withdraw = TokenAmount.max(withdraw, depositBalance);
+    }
     withdraw = TokenAmount.min(withdraw, depositBalance)
     withdraw = TokenAmount.min(withdraw, pool.vault)
     withdraw = TokenAmount.max(withdraw, zero)
