@@ -75,6 +75,7 @@ jobs:
             ~/.cargo/git/db/
             target/
 
+      - run: /github-entrypoint.sh rustup target add wasm32-unknown-unknown
       - run: /github-entrypoint.sh ./check cargo-lint
       - run: /github-entrypoint.sh ./check wasm
 
@@ -100,7 +101,7 @@ jobs:
             target/
 
       - name: Run tests
-        uses: docker://jetprotocol/builder:rust-1.72.0-node-18.17.1-solana-1.14.27-anchor-0.27.0-1
+        uses: docker://jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
         with: 
           options: -e HOME=/home/tools -e CODECOV=true
           args: /github-entrypoint.sh ./check cargo-test
