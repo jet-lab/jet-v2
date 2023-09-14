@@ -2,7 +2,7 @@ use std::{
     any::Any,
     collections::{BTreeMap, BTreeSet, HashMap},
     ops::Range,
-    sync::Arc,
+    rc::Rc,
 };
 
 use anchor_lang::AccountDeserialize;
@@ -80,8 +80,8 @@ impl Ord for OrderEntry {
 
 pub struct UserState {
     state: MarginUser,
-    loans: BTreeMap<u64, Arc<TermLoan>>,
-    deposits: BTreeMap<u64, Arc<TermDeposit>>,
+    loans: BTreeMap<u64, Rc<TermLoan>>,
+    deposits: BTreeMap<u64, Rc<TermDeposit>>,
 }
 
 impl UserState {
@@ -101,11 +101,11 @@ impl UserState {
         self.state.market
     }
 
-    pub fn loans(&self) -> impl IntoIterator<Item = Arc<TermLoan>> {
+    pub fn loans(&self) -> impl IntoIterator<Item = Rc<TermLoan>> {
         self.loans.values().cloned().collect::<Vec<_>>()
     }
 
-    pub fn deposits(&self) -> impl IntoIterator<Item = Arc<TermDeposit>> {
+    pub fn deposits(&self) -> impl IntoIterator<Item = Rc<TermDeposit>> {
         self.deposits.values().cloned().collect::<Vec<_>>()
     }
 }
@@ -209,14 +209,14 @@ pub async fn sync_user_accounts(states: &AccountStates) -> ClientResult<()> {
 }
 
 async fn sync_user_debt_assets(states: &AccountStates) -> ClientResult<()> {
-    let loans: Vec<Arc<TermLoan>> = load_user_positions(
+    let loans: Vec<Rc<TermLoan>> = load_user_positions(
         states,
         |state| state.debt().active_loans(),
         |user, state, seqno| derive::term_loan(&state.market, user, seqno),
     )
     .await?;
 
-    let deposits: Vec<Arc<TermDeposit>> = load_user_positions(
+    let deposits: Vec<Rc<TermDeposit>> = load_user_positions(
         states,
         |state| state.assets().active_deposits(),
         |_, state, seqno| derive::term_deposit(&state.market, &state.margin_account, seqno),
@@ -261,7 +261,7 @@ async fn load_user_positions<T, FR, FD>(
     states: &AccountStates,
     range: FR,
     derive_addr: FD,
-) -> ClientResult<Vec<Arc<T>>>
+) -> ClientResult<Vec<Rc<T>>>
 where
     T: Any + Send + Sync + AccountDeserialize,
     FR: Fn(&MarginUser) -> Range<u64>,

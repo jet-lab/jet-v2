@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use solana_sdk::pubkey::Pubkey;
 
@@ -9,11 +9,11 @@ use crate::client::{ClientResult, ClientState};
 /// Client for interacting with the test-service program
 #[derive(Clone)]
 pub struct TestServiceClient {
-    client: Arc<ClientState>,
+    client: Rc<ClientState>,
 }
 
 impl TestServiceClient {
-    pub(crate) fn new(client: Arc<ClientState>) -> Self {
+    pub(crate) fn new(client: Rc<ClientState>) -> Self {
         Self { client }
     }
 

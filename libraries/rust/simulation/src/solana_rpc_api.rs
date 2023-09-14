@@ -31,9 +31,8 @@ use solana_sdk::signature::{Keypair, Signature};
 use solana_sdk::signer::Signer;
 use solana_sdk::slot_history::Slot;
 use solana_sdk::transaction::{Transaction, VersionedTransaction};
-use solana_transaction_status::TransactionStatus;
 
-use jet_solana_client::rpc::{AccountFilter, SolanaRpc, SolanaRpcExtra};
+use jet_solana_client::rpc::{AccountFilter, SolanaRpc, SolanaRpcExtra, TransactionStatus};
 
 use crate::runtime::TestRuntimeRpcClient;
 

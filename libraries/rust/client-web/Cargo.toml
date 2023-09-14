@@ -1,3 +1,4 @@
+[workspace]
 [package]
 name = "jet-client-web"
 version = "0.1.0"
@@ -43,5 +44,5 @@ solana-sdk = "1.10"
 spl-token = "3"
 
 jet-client = { path = "../client" }
-jet-solana-client = { path = "../solana-client", default-features = false, features = ["client-wasm"] }
+jet-solana-client = { path = "../solana-client", features = ["client-wasm"] }
 jet-program-common = { path = "../program-common" }

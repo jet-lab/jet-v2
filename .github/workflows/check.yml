@@ -8,9 +8,9 @@ on:
 
 jobs:
   hosted-tests-localnet-batch1:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
+      image: jetprotocol/builder:rust-1.72.0-node-18.17.1-solana-1.14.27-anchor-0.27.0-1
     env:
       BATCH: batch1
     steps:
@@ -20,7 +20,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-hosted-tests-localnet-0-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -33,9 +33,9 @@ jobs:
 
 
   hosted-tests-localnet-batch2:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
+      image: jetprotocol/builder:rust-1.72.0-node-18.17.1-solana-1.14.27-anchor-0.27.0-1
     env:
       BATCH: batch2
     steps:
@@ -45,7 +45,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-hosted-tests-localnet-0-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -58,9 +58,9 @@ jobs:
 
 
   cargo-lint:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.68.0-node-18.15.0-solana-1.14.17-anchor-0.27.0-1
+      image: jetprotocol/builder:rust-1.72.0-node-18.17.1-solana-1.14.27-anchor-0.27.0-1
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -75,11 +75,13 @@ jobs:
             ~/.cargo/git/db/
             target/
 
+      - run: /github-entrypoint.sh rustup target add wasm32-unknown-unknown
       - run: /github-entrypoint.sh ./check cargo-lint
+      - run: /github-entrypoint.sh ./check wasm
 
 
   cargo-test:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     env:
       CODECOV: true
     steps:
@@ -111,7 +113,7 @@ jobs:
           fail_ci_if_error: true
 
   e2e:
-    runs-on: faster-ubuntu
+    runs-on: ubuntu-latest
     env:
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}

@@ -7,21 +7,38 @@ use thiserror::Error;
 use anchor_lang::{AccountDeserialize, Discriminator, Owner};
 use solana_sdk::{
     account::{Account, ReadableAccount},
+    clock::Slot,
     hash::Hash,
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
     signature::Signature,
-    transaction::{Transaction, TransactionError, VersionedTransaction},
+    transaction::{
+        Result as TransactionResult, Transaction, TransactionError, VersionedTransaction,
+    },
 };
 use spl_token::state::{Account as TokenAccount, Mint as TokenMint};
-
-use solana_transaction_status::TransactionStatus;
 
 #[cfg(feature = "client-native")]
 pub mod native;
 
 #[cfg(feature = "client-wasm")]
 pub mod wasm;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TransactionConfirmationStatus {
+    Processed,
+    Confirmed,
+    Finalized,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TransactionStatus {
+    pub slot: Slot,
+    pub confirmations: Option<usize>,  // None = rooted
+    pub status: TransactionResult<()>, // legacy field
+    pub err: Option<TransactionError>,
+    pub confirmation_status: Option<TransactionConfirmationStatus>,
+}
 
 /// Description of an error occurring while interacting with a Solana RPC node.
 #[derive(Error, Debug)]
@@ -72,7 +89,8 @@ impl AccountFilter {
 }
 
 /// A type that allows for interacting with a Solana RPC node
-#[async_trait]
+#[cfg_attr(not(feature = "client-wasm"), async_trait)]
+#[cfg_attr(feature = "client-wasm", async_trait(?Send))]
 pub trait SolanaRpc: Send + Sync {
     async fn get_genesis_hash(&self) -> ClientResult<Hash>;
     async fn get_latest_blockhash(&self) -> ClientResult<Hash>;
@@ -130,7 +148,8 @@ pub trait SolanaRpc: Send + Sync {
 }
 
 /// Extra helper functions for using the Solana RPC API
-#[async_trait]
+#[cfg_attr(not(feature = "client-wasm"), async_trait)]
+#[cfg_attr(feature = "client-wasm", async_trait(?Send))]
 pub trait SolanaRpcExtra: SolanaRpc {
     /// Confirm the status of submitted transactions
     async fn confirm_transactions(

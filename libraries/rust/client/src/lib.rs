@@ -29,7 +29,7 @@ pub use wallet::Wallet;
 /// Central client object for interacting with the protocol
 #[derive(Clone)]
 pub struct JetClient {
-    client: Arc<ClientState>,
+    client: Rc<ClientState>,
 }
 
 impl JetClient {
@@ -41,7 +41,7 @@ impl JetClient {
         airspace: &str,
     ) -> ClientResult<Self> {
         Ok(Self {
-            client: Arc::new(ClientState::new(
+            client: Rc::new(ClientState::new(
                 interface,
                 wallet,
                 config,
