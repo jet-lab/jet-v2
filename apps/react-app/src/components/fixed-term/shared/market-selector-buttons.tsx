@@ -81,7 +81,7 @@ export const MarketSelectorButtons = ({ marginAccount, markets, selectedMarket }
     return sum.add(value);
   }, new BN(0));
   const hasToClaim = depositsToClaim.length > 0;
-  const hasToSettle = owedTokens?.tokens > 0;
+  const hasToSettle = owedTokens?.tokens > 0 || true;
   const hasToRepay = data.total_borrowed > 0 && totalBorrowed;
 
   const handleRepay = async () => {
