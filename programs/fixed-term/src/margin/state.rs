@@ -57,6 +57,37 @@ pub struct MarginUser {
     pub lend_roll_config: Option<LendAutoRollConfig>,
 }
 
+#[cfg(feature = "cli")]
+impl std::fmt::Display for MarginUser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"MarginUser {{
+            version: {},
+            marginAccount: {},
+            market: {},
+            claims: {},
+            ticketCollateral: {},
+            underlyingCollateral: {},
+            borrowRollConfig: {:#?},
+            lendRollConfig: {:#?},
+            debt: {:#?},
+            assets: {},
+            "#,
+            self.version,
+            self.margin_account,
+            self.market,
+            self.claims,
+            self.ticket_collateral,
+            self.underlying_collateral,
+            self.borrow_roll_config,
+            self.lend_roll_config,
+            self.debt,
+            self.assets
+        )
+    }
+}
+
 impl MarginUser {
     /// Initialize a new [MarginUser]
     pub fn new(
@@ -549,6 +580,31 @@ impl Default for Assets {
             tokens_posted: 0,
             _reserved0: [0u8; 64],
         }
+    }
+}
+
+#[cfg(feature = "cli")]
+impl std::fmt::Display for Assets {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"Assets {{
+            entitledTokens: {},
+            entitledTickets: {},
+            nextDepositSeqNo: {},
+            nextUnredeemedDepositSeqNo: {},
+            ticketsStaked: {},
+            ticketsPosted: {},
+            tokensPosted: {},
+        }}"#,
+            self.entitled_tokens,
+            self.entitled_tickets,
+            self.next_deposit_seqno,
+            self.next_unredeemed_deposit_seqno,
+            self.tickets_staked,
+            self.tickets_posted,
+            self.tokens_posted
+        )
     }
 }
 
