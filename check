@@ -44,12 +44,11 @@ cargo-lint() {
 }
 
 cargo-test() {
-    cargo nextest run --features debug-msg
-    # if [[ ${CODECOV:-false} == true ]]; then
-    #     cargo llvm-cov --workspace --lcov --output-path lcov.info nextest --features debug-msg
-    # else 
-    #     cargo nextest run --features debug-msg
-    # fi
+    if [[ ${CODECOV:-false} == true ]]; then
+        cargo llvm-cov --workspace --lcov --output-path lcov.info nextest --features debug-msg
+    else 
+        cargo nextest run --features debug-msg
+    fi
 }
 
 wasm() {
