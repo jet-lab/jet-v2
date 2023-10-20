@@ -27,6 +27,7 @@ use crate::{
     bail,
     client::{ClientError, ClientResult, ClientState},
     fixed_term::MarginAccountMarketClient,
+    margin_orca::MarginAccountOrcaClient,
     margin_pool::MarginAccountPoolClient,
     state::{
         margin::load_margin_accounts,
@@ -187,6 +188,11 @@ impl MarginAccountClient {
     /// Get a client for using a fixed term market
     pub fn fixed_term(&self, market_address: &Pubkey) -> ClientResult<MarginAccountMarketClient> {
         MarginAccountMarketClient::from_address(self.clone(), market_address)
+    }
+
+    /// Get a client for using Orca for providing liquidity
+    pub fn orca(&self, whirlpool: &Pubkey) -> ClientResult<MarginAccountOrcaClient> {
+        MarginAccountOrcaClient::from_whirlpool(self.clone(), whirlpool)
     }
 
     /// Get the current balance of a token in the account
@@ -488,6 +494,15 @@ impl MarginAccountClient {
                         &mut included,
                     )?);
                 }
+
+                id if id == jet_margin_orca::ID => ixs.extend_from_slice(
+                    crate::margin_orca::instruction_for_refresh(
+                        self,
+                        &position.token,
+                        &mut included,
+                    )?
+                    .as_slice(),
+                ),
 
                 address => {
                     return Err(ClientError::Unexpected(format!(

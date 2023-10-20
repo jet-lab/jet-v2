@@ -16,6 +16,8 @@ base64 = "0.13"
 cached = "0.40"
 bytemuck = "1.7"
 wasm-bindgen = "0.2.83"
+rust_decimal = { version = "1", features = ["maths"] }
+num-traits = "0.2"
 
 chrono = "0.4"
 
@@ -48,6 +50,7 @@ jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint
 jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
 jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
+jet-margin-orca = { path = "../../../programs/margin-orca", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
 jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
 

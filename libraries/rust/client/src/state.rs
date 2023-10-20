@@ -18,6 +18,7 @@ pub mod dexes;
 pub mod fixed_term;
 pub mod lookup_tables;
 pub mod margin;
+pub mod margin_orca;
 pub mod margin_pool;
 pub mod oracles;
 pub mod spl_swap;

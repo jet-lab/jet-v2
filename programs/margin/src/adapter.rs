@@ -87,7 +87,7 @@ pub enum PositionChange {
     Close(Pubkey),
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug)]
 pub struct PriceChangeInfo {
     /// The current price of the asset
     pub value: i64,

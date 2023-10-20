@@ -49,6 +49,9 @@ pub async fn configure_environment(
     // airspaces
     for airspace in &config.airspaces {
         configure_airspace(builder, &oracle_authority, airspace).await?;
+        if !airspace.whirlpools.is_empty() {
+            super::margin_orca::configure_whirlpools(builder, airspace).await?;
+        }
     }
 
     // swap pools

@@ -17,7 +17,8 @@ feature_groups! {
         mod swap;
         mod pools;
         mod client_fixed_term;
-        mod whirlpool;
+        mod whirlpool_liquidity;
+        mod whirlpool_swap;
         mod client_swap;
     }
 }

@@ -8,7 +8,8 @@ use solana_sdk::pubkey::Pubkey;
 use jet_client::config::JetAppConfig;
 use jet_client::{JetClient, NetworkKind};
 use jet_environment::config::{
-    AirspaceConfig, DexConfig, EnvironmentConfig, TokenDescription, DEFAULT_MARGIN_ADAPTERS,
+    AirspaceConfig, AirspaceWhirlpool, DexConfig, EnvironmentConfig, TokenDescription,
+    DEFAULT_MARGIN_ADAPTERS,
 };
 use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
@@ -156,6 +157,7 @@ pub struct TestContextSetupInfo {
     pub is_restricted: bool,
     pub tokens: Vec<TokenDescription>,
     pub dexes: Vec<(&'static str, &'static str)>,
+    pub whirlpools: Vec<&'static str>,
 }
 
 impl TestDefault for TestContextSetupInfo {
@@ -167,6 +169,7 @@ impl TestDefault for TestContextSetupInfo {
                 TestToken::with_pool("USDC").into(),
             ],
             dexes: vec![("spl-swap", "TSOL/USDC")],
+            whirlpools: vec![],
         }
     }
 }
@@ -211,6 +214,11 @@ impl TestContextSetupInfo {
             airspaces: vec![AirspaceConfig {
                 name: airspace_name.to_string(),
                 is_restricted: self.is_restricted,
+                whirlpools: self
+                    .whirlpools
+                    .iter()
+                    .map(|pair| AirspaceWhirlpool::from_pair(pair, &tokens))
+                    .collect(),
                 tokens,
                 cranks: vec![crank],
                 lookup_registry_authority: None,

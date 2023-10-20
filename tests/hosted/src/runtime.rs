@@ -104,6 +104,7 @@ fn simulation_runtime() -> TestRuntimeRpcClient {
         jet_airspace,
         jet_margin_pool,
         jet_margin_swap,
+        jet_margin_orca,
         (spl_token::ID, spl_token::processor::Processor::process),
         (
             orca_swap_v1::id(),
