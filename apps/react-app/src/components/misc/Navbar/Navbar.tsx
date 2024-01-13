@@ -16,9 +16,9 @@ export function Navbar(): JSX.Element {
       <Banner
         message={
           <p>
-            The Jet Liquidity Incentive Program for Fixed Term is now live.{' '}
+            Jet Protocol is shutting down.{' '}
             <u>
-              <a href="https://forum.jetprotocol.io/t/liquidity-incentive-program-lip-now-live/1476" target="_blank"> Visit the forum</a>
+              <a href="https://forum.jetprotocol.io/t/community-update-jet-protocol-holdings-llc-is-shutting-down/1560" target="_blank"> Visit the forum</a>
             </u>{' '}
             for more detail.
           </p>
